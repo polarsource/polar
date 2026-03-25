@@ -340,12 +340,9 @@ class CustomerService:
         email_changed = False
 
         errors: list[ValidationError] = []
-        if (
-            customer_update.email is not None
-            and (
-                customer.email is None
-                or customer.email.lower() != customer_update.email.lower()
-            )
+        if customer_update.email is not None and (
+            customer.email is None
+            or customer.email.lower() != customer_update.email.lower()
         ):
             already_exists = await repository.get_by_email_and_organization(
                 customer_update.email, customer.organization_id

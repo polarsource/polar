@@ -149,9 +149,9 @@ class SeatService:
         """Resolve billing manager display string for invitation emails."""
         if customer.email is not None:
             return customer.email
-        owner = await MemberRepository.from_session(
-            session
-        ).get_owner_by_customer_id(session, customer.id)
+        owner = await MemberRepository.from_session(session).get_owner_by_customer_id(
+            session, customer.id
+        )
         return (owner.email if owner else None) or customer.display_name
 
     def _get_product(self, container: SeatContainer) -> Product | None:

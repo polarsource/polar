@@ -37,11 +37,13 @@ export const CustomerContextView = ({
   const [customerSession, setCustomerSession] = useState<
     schemas['CustomerSession'] | null
   >(null)
+  const memberModelEnabled =
+    !!organization.feature_settings?.member_model_enabled
   const createCustomerSession = useCallback(async () => {
     setCustomerSessionLoading(true)
 
     let memberId: string | undefined
-    if (customer.type === 'team') {
+    if (memberModelEnabled && customer.type === 'team') {
       const { data: membersData } = await api.GET('/v1/members/', {
         params: {
           query: { customer_id: customer.id, role: 'owner', limit: 1 },
@@ -70,7 +72,7 @@ export const CustomerContextView = ({
       return
     }
     setCustomerSession(session)
-  }, [customer])
+  }, [customer, memberModelEnabled])
 
   const metrics = useMetrics({
     startDate: new Date(customer.created_at),

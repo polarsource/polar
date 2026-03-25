@@ -64,9 +64,11 @@ const CustomerHeader = ({
   } = useModal()
 
   const safeCopy = useSafeCopy(toast)
+  const memberModelEnabled =
+    !!organization.feature_settings?.member_model_enabled
   const createCustomerSession = useCallback(async () => {
     let memberId: string | undefined
-    if (customer.type === 'team') {
+    if (memberModelEnabled && customer.type === 'team') {
       const { data: membersData } = await api.GET('/v1/members/', {
         params: {
           query: { customer_id: customer.id, role: 'owner', limit: 1 },
@@ -105,7 +107,7 @@ const CustomerHeader = ({
       title: 'Copied To Clipboard',
       description: `Customer Portal Link was copied to clipboard`,
     })
-  }, [safeCopy, customer, organization])
+  }, [safeCopy, customer, organization, memberModelEnabled])
 
   const deleteCustomer = useDeleteCustomer(
     customer.id,

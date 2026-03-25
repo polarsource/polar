@@ -441,7 +441,7 @@ export function BusinessDetailsStep() {
                       </a>{' '}
                       &amp;{' '}
                       <a
-                        href="https://polar.sh/docs/merchant-of-record/account-reviews"
+                        href="https://polar.sh/legal/acceptable-use-policy"
                         className="text-gray-900 underline dark:text-white"
                         target="_blank"
                         rel="noreferrer"

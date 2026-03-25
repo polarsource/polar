@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         'Deze bestelling wordt verwerkt door onze online wederverkoper & Merchant of Record, Polar, die ook bestelgerelateerde vragen en terugbetalingen afhandelt.',
       mandateSubscriptionTrial:
-        'Door op "{buttonLabel}" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om uw geselecteerde betaalmethode te belasten voor het hierboven getoonde bedrag aan het einde van uw proefperiode en op elke volgende factuurdatum totdat u opzegt. U kunt op elk moment vóór het einde van uw proefperiode opzeggen om kosten te voorkomen.',
+        'Door op "{buttonLabel}" te klikken, machtig je Polar Software, Inc., onze online wederverkoper en geregistreerde verkoper, om het hierboven getoonde bedrag aan het einde van je proefperiode en op elke volgende factuurdatum af te schrijven van je gekozen betaalmethode totdat je annuleert, en ga je akkoord met de {buyerTermsLink}. Je kunt op elk moment voor het einde van je proefperiode annuleren om te voorkomen dat er kosten in rekening worden gebracht.',
       mandateSubscription:
-        'Door op "{buttonLabel}" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om uw geselecteerde betaalmethode onmiddellijk te belasten voor het hierboven getoonde bedrag en om hetzelfde bedrag in rekening te brengen op elke volgende factuurdatum totdat u opzegt.',
+        'Door op "{buttonLabel}" te klikken, machtig je Polar Software, Inc., onze online wederverkoper en geregistreerde verkoper, om het hierboven getoonde bedrag onmiddellijk af te schrijven van je gekozen betaalmethode en ditzelfde bedrag op elke volgende factuurdatum af te schrijven totdat je annuleert, en ga je akkoord met de {buyerTermsLink}.',
+      buyerTermsLink: 'Kopersvoorwaarden',
       mandateOneTime:
-        'Door op "{buttonLabel}" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om uw geselecteerde betaalmethode te belasten voor het hierboven getoonde bedrag. Dit is een eenmalige betaling.',
+        'Door op "{buttonLabel}" te klikken, machtig je Polar Software, Inc., onze online wederverkoper en officiële verkoper, om het hierboven getoonde bedrag via je gekozen betaalmethode in rekening te brengen, en ga je akkoord met de {buyerTermsLink}. Dit is een eenmalige betaling.',
     },
     form: {
       email: 'E-mailadres',

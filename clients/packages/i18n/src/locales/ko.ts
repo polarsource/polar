@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         '이 주문은 온라인 리셀러이자 Merchant of Record인 Polar가 처리하며, 주문 관련 문의 및 반품도 Polar에서 담당합니다.',
       mandateSubscriptionTrial:
-        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 체험 기간 종료 시점 및 이후 취소할 때까지 매 결제일마다 선택한 결제 수단으로 위에 표시된 금액을 청구하는 데 동의하게 됩니다. 요금이 청구되지 않도록 체험 기간 종료 전에 언제든지 취소할 수 있습니다.',
+        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 체험 기간 종료 시 및 취소할 때까지 이후 매 결제일마다 선택한 결제 수단으로 위에 표시된 금액을 청구하는 것에 동의하며, {buyerTermsLink}에 동의하게 됩니다. 결제가 진행되지 않도록 체험 기간 종료 전에 언제든지 취소할 수 있습니다.',
       mandateSubscription:
-        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택한 결제 수단으로 위에 표시된 금액을 즉시 청구하고, 이후 취소할 때까지 매 결제일마다 동일한 금액을 청구하는 데 동의하게 됩니다.',
+        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택한 결제 수단으로 위에 표시된 금액을 즉시 청구하고 취소할 때까지 이후 매 결제일마다 동일한 금액을 청구하는 것에 동의하며, {buyerTermsLink}에 동의하게 됩니다.',
+      buyerTermsLink: '구매자 약관',
       mandateOneTime:
-        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택한 결제 수단으로 위에 표시된 금액을 청구하는 데 동의하게 됩니다. 이는 일회성 결제입니다.',
+        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택하신 결제 수단으로 위에 표시된 금액을 청구하는 것을 승인하며, {buyerTermsLink}에 동의하게 됩니다. 이는 일회성 결제입니다.',
     },
     form: {
       email: '이메일',

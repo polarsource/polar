@@ -163,11 +163,17 @@ class OrganizationListView:
                         ),
                         classes="font-semibold hover:underline flex items-center gap-2",
                     ):
-                        with tag.span(classes="truncate max-w-[200px] inline-block", title=org.name):
+                        with tag.span(
+                            classes="truncate max-w-[200px] inline-block",
+                            title=org.name,
+                        ):
                             text(org.name)
                         with status_badge(org.status):
                             pass
-                    with tag.div(classes="text-xs text-base-content/60 font-mono truncate max-w-[200px]", title=org.slug):
+                    with tag.div(
+                        classes="text-xs text-base-content/60 font-mono truncate max-w-[200px]",
+                        title=org.slug,
+                    ):
                         text(org.slug)
                     # Appeal indicator
                     if (
@@ -508,7 +514,6 @@ class OrganizationListView:
                                     ):
                                         pass
 
-
                                     with self.sortable_header(
                                         request,
                                         "Country",
@@ -588,7 +593,6 @@ class OrganizationListView:
                                     status_filter=status_filter,
                                 ):
                                     pass
-
 
                                 with self.sortable_header(
                                     request,
@@ -722,7 +726,6 @@ class OrganizationListView:
                                     ):
                                         pass
 
-
                                     with self.sortable_header(
                                         request,
                                         "Country",
@@ -802,7 +805,6 @@ class OrganizationListView:
                                     status_filter=status_filter,
                                 ):
                                     pass
-
 
                                 with self.sortable_header(
                                     request,

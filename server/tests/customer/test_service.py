@@ -7,7 +7,6 @@ from sqlalchemy.exc import IntegrityError
 from polar.auth.models import AuthSubject, is_user
 from polar.customer.repository import CustomerRepository
 from polar.customer.schemas.customer import (
-    CustomerCreate,
     CustomerIndividualCreate,
     CustomerUpdate,
 )

@@ -422,7 +422,6 @@ class TestGetPaymentStatus:
         assert json["payment_ready"] is True
 
 
-
 @pytest.mark.asyncio
 class TestGetAccount:
     async def test_anonymous(

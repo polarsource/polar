@@ -150,7 +150,7 @@ const formatCurrencySubcent = (
     currency,
     currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 14,
+    maximumFractionDigits: 6,
   })
 
   return currencyNumberFormat.format(cents / decimalFactor)

@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.organization_review.collectors.setup import (
     _extract_domain,
@@ -333,15 +334,26 @@ class TestCollectSetupDataCombined:
 
 
 class TestResolveUrlRedirects:
+    """Tests for resolve_url_redirects.
+
+    All tests patch _validate_url_host to skip DNS resolution / SSRF checks,
+    since test domains don't resolve in CI.
+    """
+
     @pytest.mark.asyncio
     async def test_empty_urls(self) -> None:
         results = await resolve_url_redirects([])
         assert results == []
 
     @pytest.mark.asyncio
-    async def test_no_redirect(self) -> None:
+    async def test_no_redirect(self, mocker: MockerFixture) -> None:
         """URL that does not redirect reports redirected=False."""
         import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
 
         with respx.mock:
             respx.head("https://example.com/thanks").respond(200)
@@ -352,9 +364,14 @@ class TestResolveUrlRedirects:
         assert results[0].final_domain == "example.com"
 
     @pytest.mark.asyncio
-    async def test_cross_domain_redirect(self) -> None:
+    async def test_cross_domain_redirect(self, mocker: MockerFixture) -> None:
         """URL that redirects to a different domain reports redirected=True."""
         import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
 
         with respx.mock:
             respx.head("https://api.legit.com/success").respond(
@@ -369,9 +386,14 @@ class TestResolveUrlRedirects:
         assert results[0].final_url == "https://porn-site.com/landing"
 
     @pytest.mark.asyncio
-    async def test_same_domain_redirect(self) -> None:
+    async def test_same_domain_redirect(self, mocker: MockerFixture) -> None:
         """URL that redirects within the same domain reports redirected=False."""
         import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
 
         with respx.mock:
             respx.head("https://example.com/old").respond(
@@ -384,9 +406,14 @@ class TestResolveUrlRedirects:
         assert results[0].redirected is False
 
     @pytest.mark.asyncio
-    async def test_timeout_error(self) -> None:
+    async def test_timeout_error(self, mocker: MockerFixture) -> None:
         """Timeout is reported as an error, not a crash."""
         import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
 
         with respx.mock:
             respx.head("https://slow.com/timeout").mock(

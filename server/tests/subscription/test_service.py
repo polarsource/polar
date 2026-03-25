@@ -4245,6 +4245,120 @@ class TestUpdateSeats:
         assert entry.discount is None
         assert entry.discount_amount is None
 
+    async def test_seat_increase_with_100_percent_discount_invoice(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Mock webhook calls to avoid serialization issues with discount
+        mocker.patch.object(
+            subscription_service, "_after_subscription_updated", new=AsyncMock()
+        )
+
+        # Given: Subscription with 1 seat and 100% discount
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],  # $10 per seat
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,  # 100% discount
+            duration=DiscountDuration.forever,
+            organization=organization,
+            products=[product],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=1,
+            discount=discount,
+        )
+        assert subscription.seats == 1
+
+        # When: Increase to 2 seats with invoice proration behavior
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=2,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+        await session.flush()
+
+        # Then: Seats updated successfully, no billing entries created
+        assert updated.seats == 2
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        proration_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_increase
+        ]
+        assert len(proration_entries) == 0
+
+    async def test_seat_increase_with_100_percent_discount_prorate(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Mock webhook calls to avoid serialization issues with discount
+        mocker.patch.object(
+            subscription_service, "_after_subscription_updated", new=AsyncMock()
+        )
+
+        # Given: Subscription with 1 seat and 100% discount
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],  # $10 per seat
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,  # 100% discount
+            duration=DiscountDuration.forever,
+            organization=organization,
+            products=[product],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=1,
+            discount=discount,
+        )
+        assert subscription.seats == 1
+
+        # When: Increase to 2 seats with prorate behavior
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=2,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Seats updated successfully, no billing entries created
+        assert updated.seats == 2
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        proration_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_increase
+        ]
+        assert len(proration_entries) == 0
+
 
 @pytest.mark.asyncio
 class TestEnqueueBenefitsGrantsGracePeriod:

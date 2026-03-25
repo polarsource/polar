@@ -1422,6 +1422,7 @@ class SubscriptionService:
             if (
                 proration_behavior == SubscriptionProrationBehavior.invoice
                 and not subscription.trialing
+                and len(billing_entries) > 0
             ):
                 # Invoice and attempt to pay immediately
                 await self._create_subscription_update_order(session, subscription)

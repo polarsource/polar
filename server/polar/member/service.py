@@ -234,13 +234,16 @@ class MemberService:
 
         raw_email = owner_email or customer.email
         if raw_email is None:
-            log.info(
-                "member.create_owner_member.skipped",
-                reason="no_email_available",
-                customer_id=customer.id,
-                organization_id=organization.id,
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "An email is required to create an owner member.",
+                        "input": None,
+                    }
+                ]
             )
-            return None
         email = raw_email.strip().lower()
         name = owner_name or customer.name
         external_id = owner_external_id or customer.external_id

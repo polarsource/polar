@@ -20,7 +20,6 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_seat.service import seat_service
-from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.email.schemas import EmailAdapter
@@ -1988,7 +1987,7 @@ class SubscriptionService:
                 notif=PartialNotification(
                     type=NotificationType.maintainer_new_paid_subscription,
                     payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                        subscriber_name=subscription.customer.email or subscription.customer.name or "Team customer",
+                        subscriber_name=subscription.customer.display_name,
                         tier_name=product.name,
                         tier_price_amount=subscription.amount,
                         tier_price_recurring_interval=subscription.recurring_interval,
@@ -2293,20 +2292,21 @@ class SubscriptionService:
 
         customer = subscription.customer
 
-        # Resolve email recipients — owner/billing_manager members for team customers
         from polar.customer.service import customer as customer_service
 
         recipients = await customer_service.get_email_recipients(session, customer)
         if not recipients:
             return
 
-        token, _ = await customer_session_service.create_customer_session(
-            session, customer
-        )
-
         subject = subject_template.format(product=product)
 
         for recipient_email in recipients:
+            token = await customer_service.create_session_token_for_recipient(
+                session, customer, recipient_email
+            )
+            if token is None:
+                continue
+
             query_string = urlencode(
                 {
                     "customer_session_token": token,

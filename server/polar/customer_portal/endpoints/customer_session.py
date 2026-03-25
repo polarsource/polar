@@ -2,6 +2,7 @@ from fastapi import Depends, Response
 from fastapi.responses import JSONResponse
 
 from polar.auth.models import is_customer, is_member
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.models import CustomerSession, MemberSession
 from polar.openapi import APITag
@@ -129,10 +130,21 @@ async def get_authenticated_user(
         )
     elif is_customer(auth_subject):
         customer = auth_subject.subject
+        if customer.email is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body",),
+                        "msg": "Team customers must use member sessions. Create a customer session via the API with a member_id.",
+                        "type": "value_error",
+                        "input": None,
+                    }
+                ]
+            )
         return PortalAuthenticatedUser(
             type="customer",
             name=customer.name,
-            email=customer.email or "",
+            email=customer.email,
             customer_id=customer.id,
             role=None,
         )

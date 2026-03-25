@@ -137,11 +137,23 @@ class SeatAssignmentTarget:
     - member_model_enabled=False: None (email comes from customer)
     """
 
-    seat_member_email: str
-    """The email of the person getting the seat (for invitation emails)."""
+    seat_member_email: str | None
+    """The email of the person getting the seat (for invitation emails).
+    None for team customers without email — invitation is skipped."""
 
 
 class SeatService:
+    async def _resolve_billing_manager_display(
+        self, session: AsyncSession, customer: Customer
+    ) -> str:
+        """Resolve billing manager display string for invitation emails."""
+        if customer.email is not None:
+            return customer.email
+        owner = await MemberRepository.from_session(
+            session
+        ).get_owner_by_customer_id(session, customer.id)
+        return (owner.email if owner else None) or customer.display_name
+
     def _get_product(self, container: SeatContainer) -> Product | None:
         return container.product
 
@@ -384,23 +396,19 @@ class SeatService:
                 invitation_token=invitation_token or "none",
             )
             if organization:
-                billing_manager_display = billing_manager_customer.email
-                if billing_manager_display is None:
-                    owner = await MemberRepository.from_session(
-                        session
-                    ).get_owner_by_customer_id(
-                        session, billing_manager_customer.id
-                    )
+                if target.seat_member_email is not None:
                     billing_manager_display = (
-                        owner.email if owner else None
-                    ) or billing_manager_customer.name or ""
-                send_seat_invitation_email(
-                    customer_email=target.seat_member_email,
-                    seat=seat,
-                    organization=organization,
-                    product_name=product.name,
-                    billing_manager_email=billing_manager_display,
-                )
+                        await self._resolve_billing_manager_display(
+                            session, billing_manager_customer
+                        )
+                    )
+                    send_seat_invitation_email(
+                        customer_email=target.seat_member_email,
+                        seat=seat,
+                        organization=organization,
+                        product_name=product.name,
+                        billing_manager_email=billing_manager_display,
+                    )
                 await webhook_service.send(
                     session,
                     organization,
@@ -718,21 +726,16 @@ class SeatService:
             order_id=seat.order_id,
         )
 
-        billing_manager_email = billing_customer.email
-        if billing_manager_email is None:
-            owner = await MemberRepository.from_session(
-                session
-            ).get_owner_by_customer_id(session, billing_customer.id)
-            billing_manager_email = (
-                owner.email if owner else None
-            ) or billing_customer.name or ""
+        billing_manager_display = await self._resolve_billing_manager_display(
+            session, billing_customer
+        )
 
         send_seat_invitation_email(
             customer_email=seat_member_email,
             seat=seat,
             organization=organization,
             product_name=product_name,
-            billing_manager_email=billing_manager_email,
+            billing_manager_email=billing_manager_display,
         )
 
         return seat
@@ -1054,7 +1057,7 @@ class SeatService:
             customer_id=customer.id,
             member_id=member.id if member else None,
             email=customer.email,
-            seat_member_email=customer.email or "",
+            seat_member_email=customer.email,
         )
 
     async def update_product_benefits_grants(

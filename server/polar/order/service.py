@@ -17,11 +17,11 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
 )
-from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.enums import (
@@ -1466,10 +1466,7 @@ class OrderService:
                     type=NotificationType.maintainer_new_product_sale,
                     payload=MaintainerNewProductSaleNotificationPayload(
                         customer_email=customer.email,
-                        customer_name=customer.name
-                        or order.billing_name
-                        or customer.email
-                        or "Team customer",
+                        customer_name=customer.display_name,
                         billing_address_country=billing_address.country
                         if billing_address
                         else None,
@@ -1593,16 +1590,9 @@ class OrderService:
         customer = order.customer
         subscription = order.subscription
 
-        # Resolve email recipients — owner/billing_manager members for team customers
-        from polar.customer.service import customer as customer_service
-
         recipients = await customer_service.get_email_recipients(session, customer)
         if not recipients:
             return
-
-        token, _ = await customer_session_service.create_customer_session(
-            session, customer
-        )
 
         subject = subject_template.format(description=order.description)
 
@@ -1624,6 +1614,12 @@ class OrderService:
             ]
 
         for recipient_email in recipients:
+            token = await customer_service.create_session_token_for_recipient(
+                session, customer, recipient_email
+            )
+            if token is None:
+                continue
+
             # Build query parameters with per-recipient email
             params = {
                 key: value.format(

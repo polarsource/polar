@@ -516,7 +516,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                     <Select
                       value={field.value || 'none'}
                       onValueChange={(value) => {
-                        field.onChange(value === 'none' ? undefined : value)
+                        field.onChange(value === 'none' ? null : value)
                         setValue('details.switching', value !== 'none', {
                           shouldDirty: true,
                         })
@@ -603,6 +603,13 @@ const OrganizationProfileSettings: React.FC<
       socials: body.socials?.filter(
         (social) => social.url && social.url.trim() !== '',
       ),
+      details: body.details
+        ? {
+            ...body.details,
+            switching: !!body.details.switching_from,
+            switching_from: body.details.switching_from || undefined,
+          }
+        : body.details,
     }
 
     const { data, error } = await updateOrganization.mutateAsync({

@@ -147,16 +147,12 @@ async def fetch_policy_content() -> str:
                 follow_redirects=True,
             )
             if response.status_code == 200:
-                content = trafilatura.extract(
-                    response.text, output_format="markdown"
-                )
+                content = trafilatura.extract(response.text, output_format="markdown")
                 if content:
                     _cached_policy_content = content
                     log.info("Successfully fetched acceptable use policy")
                 else:
-                    log.warning(
-                        "trafilatura extracted empty content, using fallback"
-                    )
+                    log.warning("trafilatura extracted empty content, using fallback")
                     _cached_policy_content = FALLBACK_POLICY
             else:
                 log.warning(

@@ -841,7 +841,10 @@ class EventService:
                     if parent_event is not None:
                         event_dict["parent_id"] = parent_event.id
                         event_dict["root_id"] = parent_event.root_id or parent_event.id
-                        if not event_dict.get("customer_id") and parent_event.customer_id:
+                        if (
+                            not event_dict.get("customer_id")
+                            and parent_event.customer_id
+                        ):
                             event_dict["customer_id"] = parent_event.customer_id
                         if (
                             not event_dict.get("external_customer_id")

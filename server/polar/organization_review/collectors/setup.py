@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 
 import httpx
 import structlog
+from playwright.async_api import async_playwright
 
 from polar.models.checkout_link import CheckoutLink
 from polar.models.webhook_endpoint import WebhookEndpoint
@@ -28,6 +29,8 @@ _REDIRECT_TIMEOUT = 5.0
 _MAX_URLS_TO_RESOLVE = 20
 # Maximum concurrent redirect resolutions
 _MAX_CONCURRENT = 5
+# Timeout for Playwright page navigation (ms)
+_BROWSER_PAGE_TIMEOUT_MS = 10_000
 
 
 def _extract_domain(url: str) -> str | None:
@@ -134,22 +137,124 @@ def _pick_one_per_hostname(urls: list[str]) -> list[str]:
     return result
 
 
+async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
+    """Use a headless browser to detect client-side redirects (meta refresh, JS).
+
+    Launches a fresh Playwright browser, navigates to the URL, waits for
+    any client-side redirects to settle, then compares the final domain.
+    """
+    try:
+        _validate_url_scheme(url)
+        await _validate_url_host(url)
+    except (ValueError, SSRFBlockedError):
+        return UrlRedirectInfo(original_url=url, error="blocked")
+
+    pw = None
+    browser = None
+    try:
+        pw = await async_playwright().start()
+        browser = await pw.chromium.launch(headless=True)
+        context = await browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            ),
+            java_script_enabled=True,
+        )
+        page = await context.new_page()
+
+        # Install SSRF-only interceptor (allow cross-origin — we want to detect it)
+        async def _ssrf_handler(route):  # type: ignore[no-untyped-def]
+            parsed = urlparse(route.request.url)
+            if parsed.scheme in ("data", "blob"):
+                await route.continue_()
+                return
+            hostname = parsed.hostname
+            if hostname:
+                try:
+                    await _resolve_and_validate_ip(hostname)
+                except SSRFBlockedError:
+                    await route.abort("blockedbyclient")
+                    return
+            await route.continue_()
+
+        await page.route("**/*", _ssrf_handler)
+
+        await page.goto(
+            url,
+            timeout=_BROWSER_PAGE_TIMEOUT_MS,
+            wait_until="domcontentloaded",
+        )
+        # Wait for JS / meta-refresh redirects to settle
+        try:
+            await page.wait_for_load_state("networkidle", timeout=5_000)
+        except Exception:
+            pass  # best-effort
+        await page.wait_for_timeout(1_000)
+
+        final_url = page.url
+        final_domain = _extract_domain(final_url)
+        original_domain = _extract_domain(url)
+        redirected = final_domain != original_domain
+
+        return UrlRedirectInfo(
+            original_url=url,
+            final_url=final_url,
+            final_domain=final_domain,
+            redirected=redirected,
+        )
+    except Exception:
+        log.warning("setup_collector.browser_redirect_error", url=url, exc_info=True)
+        return UrlRedirectInfo(original_url=url, error="browser_error")
+    finally:
+        if browser:
+            try:
+                await browser.close()
+            except Exception:
+                pass
+        if pw:
+            try:
+                await pw.stop()
+            except Exception:
+                pass
+
+
 async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
-    """Follow redirects for a sample of URLs (one per hostname)."""
+    """Follow redirects for a sample of URLs (one per hostname).
+
+    Uses a two-pass approach:
+    1. Fast HEAD requests to detect HTTP-level redirects (301/302).
+    2. For URLs that returned 200 (no HTTP redirect), a headless browser
+       check to detect client-side redirects (meta refresh, JS).
+    """
     if not urls:
         return []
 
     urls_to_check = _pick_one_per_hostname(urls)[:_MAX_URLS_TO_RESOLVE]
     semaphore = asyncio.Semaphore(_MAX_CONCURRENT)
 
+    # Pass 1: HEAD requests (fast)
     async with httpx.AsyncClient(
         follow_redirects=False,  # We follow manually to validate each hop
         timeout=_REDIRECT_TIMEOUT,
         headers={"User-Agent": "Mozilla/5.0 (compatible; PolarReviewBot/1.0)"},
     ) as client:
-        results = await asyncio.gather(
-            *[_resolve_redirect(client, semaphore, url) for url in urls_to_check]
+        results = list(
+            await asyncio.gather(
+                *[_resolve_redirect(client, semaphore, url) for url in urls_to_check]
+            )
         )
+
+    # Pass 2: browser check for URLs that HEAD didn't detect as redirected
+    needs_browser = [r for r in results if not r.redirected and r.error is None]
+    if needs_browser:
+        result_map = {r.original_url: r for r in results}
+        for info in needs_browser:
+            browser_result = await _resolve_redirect_with_browser(info.original_url)
+            if browser_result.redirected or browser_result.error:
+                result_map[info.original_url] = browser_result
+        results = [result_map[url] for url in urls_to_check if url in result_map]
 
     redirected = [r for r in results if r.redirected]
     if redirected:
@@ -159,7 +264,7 @@ async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
             urls=[(r.original_url, r.final_url) for r in redirected],
         )
 
-    return list(results)
+    return results
 
 
 def collect_setup_data(

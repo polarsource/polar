@@ -139,9 +139,7 @@ class TestCollectSetupDataSuccessUrls:
 
     def test_checkout_success_urls_only_from_checkouts(self) -> None:
         """Success URLs from API-created checkouts appear even without links."""
-        result = collect_setup_data(
-            [], [], ["https://api-app.com/success"], 0, []
-        )
+        result = collect_setup_data([], [], ["https://api-app.com/success"], 0, [])
 
         assert result.checkout_success_urls.unique_urls == [
             "https://api-app.com/success",

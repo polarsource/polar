@@ -30,6 +30,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
+import { TermsCheckbox } from './TermsCheckbox'
 
 const MONTH_NAMES = [
   'January',
@@ -53,6 +54,7 @@ interface FormSchema {
   dobYear: string
   dobMonth: string
   dobDay: string
+  terms: boolean
 }
 
 function FormSync() {
@@ -98,10 +100,11 @@ export function PersonalDetailsStep() {
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
       dobDay: parsedDob[2] ? String(Number(parsedDob[2])) : '',
+      terms: currentUser?.accepted_terms_of_service_at != null,
     },
   })
 
-  const { control, handleSubmit, watch } = form
+  const { control, handleSubmit, watch, setValue } = form
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('country')
@@ -140,6 +143,7 @@ export function PersonalDetailsStep() {
         last_name: formData.lastName,
         country: formData.country as schemas['CountryAlpha2Input'],
         date_of_birth: dateOfBirth,
+        ...(formData.terms ? { accepted_terms_of_service: true } : {}),
       })
 
       if (error) {
@@ -336,6 +340,8 @@ export function PersonalDetailsStep() {
               />
             </Box>
           </Box>
+
+          <TermsCheckbox control={control} name="terms" setValue={setValue} />
 
           <div className="flex flex-col gap-y-2">
             <Button type="submit" loading={submitting} fullWidth>

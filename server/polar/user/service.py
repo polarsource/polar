@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -105,11 +106,18 @@ class UserService:
         session: AsyncSession,
         user: User,
         update_schema: UserUpdate,
+        *,
+        ip_address: str | None = None,
     ) -> User:
+        update_dict = update_schema.model_dump(exclude_unset=True)
+
+        if update_dict.pop("accepted_terms_of_service", None) is True:
+            update_dict["accepted_terms_of_service"] = True
+            update_dict["accepted_terms_of_service_at"] = datetime.now(UTC)
+            update_dict["accepted_terms_of_service_ip"] = ip_address
+
         repository = UserRepository.from_session(session)
-        return await repository.update(
-            user, update_dict=update_schema.model_dump(exclude_unset=True)
-        )
+        return await repository.update(user, update_dict=update_dict)
 
     async def create_identity_verification(
         self, session: AsyncSession, user: User

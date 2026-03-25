@@ -27223,6 +27223,13 @@ export interface components {
       id: string
       /** Accepted Terms Of Service */
       accepted_terms_of_service: boolean
+      /**
+       * Accepted Terms Of Service At
+       * Format: date-time
+       */
+      accepted_terms_of_service_at: string | null
+      /** Accepted Terms Of Service Ip */
+      accepted_terms_of_service_ip: string | null
       /** Is Admin */
       is_admin: boolean
       /** Identity Verified */
@@ -27533,6 +27540,8 @@ export interface components {
         | null
       /** Date Of Birth */
       date_of_birth?: string | null
+      /** Accepted Terms Of Service */
+      accepted_terms_of_service?: boolean | null
     }
     /** ValidatedLicenseKey */
     ValidatedLicenseKey: {

@@ -77,7 +77,6 @@ export function ProductDetailsStep() {
   trackStepViewed('product')
   const [aupVerdict, setAupVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
   const [aupMessage, setAupMessage] = useState<string | null>(null)
-  const [validationError, setValidationError] = useState(false)
   const [aupHistory, setAupHistory] = useState<
     Array<{ product_description: string; verdict: string; message?: string }>
   >([])
@@ -165,6 +164,15 @@ export function ProductDetailsStep() {
     })
 
     if (error) {
+      Sentry.captureException(error)
+      form.setError('root', {
+        message:
+          typeof error.detail === 'string'
+            ? error.detail
+            : Array.isArray(error.detail)
+              ? error.detail[0]?.msg ?? 'Validation failed'
+              : 'Something went wrong, please try again.',
+      })
       showApiResponse(400, 'Failed to create organization')
       return false
     }
@@ -195,7 +203,7 @@ export function ProductDetailsStep() {
       })
     } catch (error) {
       Sentry.captureException(error)
-      setValidationError(true)
+      form.setError('root', { message: 'Something went wrong, please try again.' })
       setLoading(null)
       return
     }
@@ -204,12 +212,10 @@ export function ProductDetailsStep() {
       Sentry.captureException(
         new Error(`Validation failed with status ${res.status}`),
       )
-      setValidationError(true)
+      form.setError('root', { message: 'Something went wrong, please try again.' })
       setLoading(null)
       return
     }
-
-    setValidationError(false)
     const validation: {
       verdict: 'APPROVE' | 'DENY' | 'CLARIFY'
       confidence: number
@@ -398,6 +404,7 @@ export function ProductDetailsStep() {
           <div className="flex flex-col gap-y-2">
             <Button
               type="submit"
+              onClick={() => form.clearErrors()}
               loading={loading === 'validating' || loading === 'submitting'}
               disabled={
                 loading === 'submitting-anyway' ||
@@ -426,9 +433,9 @@ export function ProductDetailsStep() {
                   Continue without review
                 </Button>
               )}
-            {validationError && (
+            {form.formState.errors.root && (
               <p className="text-sm text-red-500 dark:text-red-500">
-                Something went wrong, please try again.
+                {form.formState.errors.root.message}
               </p>
             )}
           </div>

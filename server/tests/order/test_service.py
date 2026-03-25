@@ -1721,6 +1721,7 @@ class TestCreateSubscriptionOrder:
             {
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": 0,
+                "tax_behavior": TaxBehavior.exclusive,
                 "taxability_reason": TaxabilityReason.not_subject_to_tax,
                 "tax_rate": {},
             },
@@ -1784,6 +1785,7 @@ class TestCreateSubscriptionOrder:
             {
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": 0,
+                "tax_behavior": TaxBehavior.exclusive,
                 "taxability_reason": TaxabilityReason.not_subject_to_tax,
                 "tax_rate": {},
             },
@@ -1848,6 +1850,7 @@ class TestCreateSubscriptionOrder:
             {
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": 0,
+                "tax_behavior": TaxBehavior.exclusive,
                 "taxability_reason": TaxabilityReason.not_subject_to_tax,
                 "tax_rate": {},
             },
@@ -1912,6 +1915,7 @@ class TestCreateSubscriptionOrder:
             {
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": 0,
+                "tax_behavior": TaxBehavior.exclusive,
                 "taxability_reason": TaxabilityReason.not_subject_to_tax,
                 "tax_rate": {},
             },

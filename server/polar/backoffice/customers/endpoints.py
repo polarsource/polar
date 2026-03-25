@@ -173,7 +173,7 @@ async def get(
     with layout(
         request,
         [
-            (customer.name or customer.email or "No email", str(request.url)),
+            (customer.display_name, str(request.url)),
             ("Customers", str(request.url_for("customers:list"))),
         ],
         "customers:get",
@@ -181,7 +181,7 @@ async def get(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.div(classes="flex justify-between items-center"):
                 with tag.h1(classes="text-4xl"):
-                    text(customer.name or customer.email or "No email")
+                    text(customer.display_name)
                 with button(
                     hx_get=str(
                         request.url_for(

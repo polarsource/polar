@@ -17,6 +17,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.address import Address
 from polar.kit.anonymization import (
+    ANONYMIZED_EMAIL_DOMAIN,
     anonymize_email_for_deletion,
     anonymize_for_deletion,
 )
@@ -545,7 +546,7 @@ class CustomerService:
         This is idempotent - calling it on an already-anonymized customer
         will return success without making changes.
         """
-        if customer.user_metadata.get("__anonymized_at") is not None:
+        if self._is_anonymized(customer):
             return customer
 
         repository = CustomerRepository.from_session(session)
@@ -587,6 +588,16 @@ class CustomerService:
         customer = await repository.update(customer, update_dict=update_dict)
 
         return customer
+
+    def _is_anonymized(self, customer: Customer) -> bool:
+        if customer.user_metadata.get("__anonymized_at") is not None:
+            return True
+        # Backward compat: customers anonymized before __anonymized_at was added
+        if customer.email is not None and customer.email.endswith(
+            f"@{ANONYMIZED_EMAIL_DOMAIN}"
+        ):
+            return True
+        return False
 
     async def get_email_recipients(
         self,

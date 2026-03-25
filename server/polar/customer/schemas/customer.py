@@ -223,10 +223,12 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     )
 
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
-    def avatar_url(self) -> str | None:
-        if self.email is None:
-            return None
-        return _avatar_url_for_email(self.email)
+    def avatar_url(self) -> str:
+        if self.email is not None:
+            return _avatar_url_for_email(self.email)
+        identifier = self.name or str(self.id)
+        email_hash = hashlib.sha256(identifier.lower().encode()).hexdigest()
+        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
 
 def _customer_type_discriminator(v: dict[str, object] | object) -> str:

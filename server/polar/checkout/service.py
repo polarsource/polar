@@ -564,6 +564,7 @@ class CheckoutService:
             # For team customers without email, use the owner member email
             if (
                 checkout.customer_email is None
+                and checkout.customer.email is None
                 and checkout.customer.type == CustomerType.team
             ):
                 member_repository = MemberRepository.from_session(session)
@@ -1138,10 +1139,14 @@ class CheckoutService:
                             "intent_status": intent.status,
                         }
 
-                # Check for trial abuse
+                # Check for trial abuse (skip for customers without email)
                 if (
                     checkout.trial_end is not None
                     and checkout.organization.prevent_trial_abuse
+                    and (
+                        checkout.customer_email is not None
+                        or customer.email is not None
+                    )
                 ):
                     trial_already_redeemed = (
                         await trial_redemption_service.check_trial_already_redeemed(
@@ -2539,11 +2544,10 @@ class CheckoutService:
                 generate_customer_session = False
 
         stripe_customer_id = customer.stripe_customer_id
-        stripe_email = customer.email or checkout.customer_email
         if stripe_customer_id is None:
             create_params: CustomerCreateParams = {}
-            if stripe_email is not None:
-                create_params["email"] = stripe_email
+            if customer.email is not None:
+                create_params["email"] = customer.email
             if checkout.customer_billing_name is not None:
                 create_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:
@@ -2558,8 +2562,8 @@ class CheckoutService:
             stripe_customer_id = stripe_customer.id
         else:
             update_params: CustomerModifyParams = {}
-            if stripe_email is not None:
-                update_params["email"] = stripe_email
+            if customer.email is not None:
+                update_params["email"] = customer.email
             if checkout.customer_billing_name is not None:
                 update_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:

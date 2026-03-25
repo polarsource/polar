@@ -339,7 +339,7 @@ class TestResolveUrlRedirects:
         assert results == []
 
     @pytest.mark.asyncio
-    async def test_no_redirect(self, respx_mock: pytest.fixture) -> None:  # type: ignore[name-defined]
+    async def test_no_redirect(self) -> None:
         """URL that does not redirect reports redirected=False."""
         import respx
 

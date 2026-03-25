@@ -1,8 +1,10 @@
 'use client'
 
+import { useAuth } from '@/hooks'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import LogoIcon from '../../Brand/logos/LogoIcon'
@@ -31,6 +33,7 @@ export function OnboardingShell({
   children,
 }: OnboardingShellProps) {
   const router = useRouter()
+  const { userOrganizations } = useAuth()
   const currentIndex = step ? STEPS.indexOf(step) : -1
 
   return (
@@ -66,46 +69,56 @@ export function OnboardingShell({
               flexDirection="column"
               rowGap="xl"
             >
-              <Box display="flex" alignItems="center" justifyContent="center">
-                {currentIndex > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => router.push(STEP_ROUTES[currentIndex - 1])}
-                    className="dark:text-polar-400 dark:hover:text-polar-200 absolute left-0 text-gray-400 hover:text-gray-900"
-                  >
-                    <ArrowLeft size={20} />
-                  </button>
-                )}
-                <LogoIcon size={36} />
-              </Box>
-              {step && (
-                <Box display="flex" width="100%" alignItems="center" gap="s">
-                  {STEPS.map((s, i) => (
-                    <Box key={s} display="flex" flex={1}>
-                      <div
-                        className={`h-0.5 w-full rounded-full transition-colors ${
-                          i <= currentIndex
-                            ? 'dark:bg-polar-50 bg-gray-900'
-                            : 'dark:bg-polar-700 bg-gray-200'
-                        }`}
-                      />
-                    </Box>
-                  ))}
+              <Box display="flex" flexDirection="column" rowGap="xl">
+                <Box display="flex" alignItems="center" justifyContent="center">
+                  {currentIndex > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => router.push(STEP_ROUTES[currentIndex - 1])}
+                      className="dark:text-polar-400 dark:hover:text-polar-200 absolute left-0 text-gray-400 hover:text-gray-900"
+                    >
+                      <ArrowLeft size={20} />
+                    </button>
+                  )}
+                  <LogoIcon size={36} />
                 </Box>
-              )}
-            </Box>
+                {step && (
+                  <Box display="flex" width="100%" alignItems="center" gap="s">
+                    {STEPS.map((s, i) => (
+                      <Box key={s} display="flex" flex={1}>
+                        <div
+                          className={`h-0.5 w-full rounded-full transition-colors ${
+                            i <= currentIndex
+                              ? 'dark:bg-polar-50 bg-gray-900'
+                              : 'dark:bg-polar-700 bg-gray-200'
+                          }`}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
 
-            <Box display="flex" flexDirection="column" rowGap="m">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {title}
-              </h1>
-              {subtitle && (
-                <p className="dark:text-polar-400 text-sm text-gray-500">
-                  {subtitle}
-                </p>
+              <Box display="flex" flexDirection="column" rowGap="m">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {title}
+                </h1>
+                {subtitle && (
+                  <p className="dark:text-polar-400 text-sm text-gray-500">
+                    {subtitle}
+                  </p>
+                )}
+              </Box>
+              {children}
+              {userOrganizations.length > 0 && (
+                <Link
+                  href="/dashboard"
+                  className="dark:text-polar-400 dark:hover:text-polar-200 text-center text-sm text-gray-500 hover:text-gray-900"
+                >
+                  Back to dashboard
+                </Link>
               )}
             </Box>
-            {children}
           </motion.div>
         </Box>
 

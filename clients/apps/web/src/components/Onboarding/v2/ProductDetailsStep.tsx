@@ -164,13 +164,12 @@ export function ProductDetailsStep() {
     })
 
     if (error) {
-      Sentry.captureException(error)
       form.setError('root', {
         message:
           typeof error.detail === 'string'
             ? error.detail
             : Array.isArray(error.detail)
-              ? error.detail[0]?.msg ?? 'Validation failed'
+              ? (error.detail[0]?.msg ?? 'Validation failed')
               : 'Something went wrong, please try again.',
       })
       showApiResponse(400, 'Failed to create organization')
@@ -203,7 +202,9 @@ export function ProductDetailsStep() {
       })
     } catch (error) {
       Sentry.captureException(error)
-      form.setError('root', { message: 'Something went wrong, please try again.' })
+      form.setError('root', {
+        message: 'Something went wrong, please try again.',
+      })
       setLoading(null)
       return
     }
@@ -212,7 +213,9 @@ export function ProductDetailsStep() {
       Sentry.captureException(
         new Error(`Validation failed with status ${res.status}`),
       )
-      form.setError('root', { message: 'Something went wrong, please try again.' })
+      form.setError('root', {
+        message: 'Something went wrong, please try again.',
+      })
       setLoading(null)
       return
     }

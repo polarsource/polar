@@ -164,7 +164,6 @@ class OrganizationReviewRepository(
         ).where(
             Refund.organization_id == organization_id,
             Refund.status == RefundStatus.succeeded,
-            Refund.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
         row = result.one()

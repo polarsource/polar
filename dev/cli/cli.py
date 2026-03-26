@@ -15,6 +15,7 @@ A CLI tool to streamline Polar development environment setup and management.
 
 import importlib.util
 import sys
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -22,6 +23,11 @@ import typer
 
 CLI_DIR = Path(__file__).parent
 sys.path.insert(0, str(CLI_DIR))
+
+from rich.padding import Padding
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 
 from shared import (
     CLIENTS_DIR,
@@ -146,57 +152,98 @@ def up(
     Installs dependencies, starts infrastructure, runs migrations,
     and prompts to configure GitHub and Stripe integrations.
     """
-    console.print("\n[bold blue]Setting up Polar development environment[/bold blue]\n")
+    console.print()
+    console.print(Panel(
+        Text("Setting up Polar development environment", justify="center", style="bold"),
+        border_style="blue",
+        padding=(1, 4),
+    ))
+    console.print()
 
     ctx = Context(clean=clean, skip_integrations=skip_integrations)
     steps = discover_steps()
+    total = len(steps)
+    start_time = time.time()
 
-    for name, module in steps:
-        console.print(f"[bold]{name}...[/bold]")
+    for i, (name, module) in enumerate(steps, 1):
+        console.print(f"[bold blue][{i}/{total}][/bold blue] [bold]{name}[/bold]")
         if not module.run(ctx):
-            console.print(f"\n[red]Setup failed at: {name}[/red]")
+            console.print(f"\n[red]Setup failed at step {i}/{total}: {name}[/red]")
             raise typer.Exit(1)
         console.print()
 
-    console.print("[bold green]Environment ready![/bold green]")
-    console.print("\nNext steps:")
-    console.print("  [dim]dev api[/dim]      - Start API server")
-    console.print("  [dim]dev worker[/dim]   - Start background worker")
-    console.print("  [dim]dev web[/dim]      - Start web frontend")
-    console.print("  [dim]dev stripe[/dim]   - Start Stripe webhook listener")
+    elapsed = time.time() - start_time
+    minutes, seconds = divmod(int(elapsed), 60)
+    time_str = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
+
+    next_steps = Table(show_header=False, box=None, padding=(0, 2))
+    next_steps.add_column(style="bold cyan")
+    next_steps.add_column(style="dim")
+    next_steps.add_row("dev seed", "Load sample data (organizations, products, etc.)")
+    next_steps.add_row("dev api", "Start the API server")
+    next_steps.add_row("dev worker", "Start the background worker")
+    next_steps.add_row("dev web", "Start the frontend dev server")
+    next_steps.add_row("dev stripe", "Start the Stripe webhook listener")
+
+    console.print(Panel(
+        Padding(next_steps, (1, 2)),
+        title="[bold green]Ready![/bold green]",
+        subtitle=f"[dim]completed in {time_str}[/dim]",
+        border_style="green",
+        padding=(0, 0),
+    ))
     console.print()
 
 
 @app.command()
 def help() -> None:
     """Show all available commands."""
-    console.print("\n[bold blue]Polar Development CLI[/bold blue]\n")
-    console.print("Usage: [bold]dev <command>[/bold]\n")
+    console.print()
+    console.print(Panel(
+        Text("Polar Development CLI", justify="center", style="bold"),
+        border_style="blue",
+        padding=(1, 4),
+    ))
 
-    console.print("[bold]Setup & Environment:[/bold]")
-    console.print("  [bold]up[/bold]            Prepare the development environment")
-    console.print("  [bold]down[/bold]          Stop infrastructure")
-    console.print("  [bold]reset[/bold]         Reset environment to clean state")
-    console.print("  [bold]status[/bold]        Show environment status")
-    console.print("  [bold]logs[/bold]          View Docker container logs")
+    def _section(title: str, commands: list[tuple[str, str]]) -> None:
+        table = Table(show_header=False, box=None, padding=(0, 2))
+        table.add_column(style="bold cyan", min_width=16)
+        table.add_column(style="dim")
+        for cmd, desc in commands:
+            table.add_row(cmd, desc)
+        console.print(f"\n  [bold]{title}[/bold]")
+        console.print(Padding(table, (0, 2)))
 
-    console.print("\n[bold]Run Services:[/bold]")
-    console.print("  [bold]api[/bold]           Start the backend API server")
-    console.print("  [bold]worker[/bold]        Start the background job worker")
-    console.print("  [bold]web[/bold]           Start the frontend dev server")
-    console.print("  [bold]stripe[/bold]        Start Stripe webhook listener")
+    _section("Setup & Environment", [
+        ("up", "Prepare the development environment"),
+        ("down", "Stop infrastructure"),
+        ("reset", "Reset environment to clean state"),
+        ("status", "Show environment status"),
+        ("logs", "View Docker container logs"),
+    ])
 
-    console.print("\n[bold]Database:[/bold]")
-    console.print("  [bold]db migrate[/bold]    Run database migrations")
-    console.print("  [bold]db reset[/bold]      Reset database")
+    _section("Run Services", [
+        ("api", "Start the backend API server"),
+        ("worker", "Start the background job worker"),
+        ("web", "Start the frontend dev server"),
+        ("stripe", "Start Stripe webhook listener"),
+    ])
 
-    console.print("\n[bold]Docker (Isolated):[/bold]")
-    console.print("  [bold]docker up[/bold]      Start full stack in Docker containers")
-    console.print("  [bold]docker down[/bold]    Stop Docker services")
-    console.print("  [bold]docker logs[/bold]    View Docker service logs")
-    console.print("  [bold]docker ps[/bold]      List running Docker services")
-    console.print("  [bold]docker shell[/bold]   Open shell in a Docker container")
-    console.print("  [bold]docker cleanup[/bold] Remove containers and volumes")
+    _section("Database", [
+        ("seed", "Load sample data into the database"),
+        ("db migrate", "Run database migrations"),
+        ("db reset", "Reset database"),
+    ])
+
+    _section("Docker (Isolated)", [
+        ("docker up", "Start full stack in Docker containers"),
+        ("docker down", "Stop Docker services"),
+        ("docker logs", "View Docker service logs"),
+        ("docker ps", "List running Docker services"),
+        ("docker shell", "Open shell in a Docker container"),
+        ("docker cleanup", "Remove containers and volumes"),
+    ])
+
     console.print()
 
 

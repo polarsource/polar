@@ -9,6 +9,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from rich.console import Console
+from rich.live import Live
+from rich.padding import Padding
+from rich.spinner import Spinner
+from rich.text import Text
 
 console = Console()
 ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
@@ -84,6 +88,12 @@ def find_available_port(start_port: int, max_attempts: int = 100) -> int:
         if not is_port_in_use(port):
             return port
     raise RuntimeError(f"Could not find available port starting from {start_port}")
+
+
+def step_spinner(message: str):
+    """Return a Rich Live spinner with consistent indentation matching step_status."""
+    spinner = Spinner("dots", text=Text(f" {message}", style="bold"))
+    return Live(Padding(spinner, (0, 0, 0, 2)), console=console, refresh_per_second=12, transient=True)
 
 
 def step_status(success: bool, message: str, detail: str = "") -> None:

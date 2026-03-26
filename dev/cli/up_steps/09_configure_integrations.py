@@ -233,7 +233,9 @@ def run(ctx: Context) -> bool:
     elif is_github_skipped():
         step_status(True, "GitHub App", "skipped (run with --clean to reconfigure)")
     else:
-        if typer.confirm("GitHub App not configured. Set it up now?", default=True):
+        console.print("\n  [dim]GitHub App enables login with GitHub and repository integrations.[/dim]")
+        console.print("  [dim]You can skip this and still develop most features without it.[/dim]\n")
+        if typer.confirm("Set up GitHub App now?", default=False):
             console.print("\n[bold]GitHub App Setup[/bold]\n")
             console.print("[bold]Step 1:[/bold] Start ngrok to get an external URL")
             console.print("  Run in another terminal: [bold]ngrok http 8000[/bold]")
@@ -269,7 +271,8 @@ def run(ctx: Context) -> bool:
     elif is_stripe_skipped():
         step_status(True, "Stripe", "skipped (run with --clean to reconfigure)")
     else:
-        if typer.confirm("Stripe not configured. Set it up now?", default=True):
+        console.print("\n  [dim]Stripe is required for payments, subscriptions, and checkout.[/dim]")
+        if typer.confirm("Set up Stripe now?", default=True):
             _setup_stripe()
         else:
             if typer.confirm("Remember this choice?", default=True):

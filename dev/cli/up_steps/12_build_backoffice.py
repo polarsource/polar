@@ -5,6 +5,7 @@ from shared import (
     SERVER_DIR,
     console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -27,7 +28,7 @@ def run(ctx: Context) -> bool:
         step_status(True, "Backoffice assets", "already built")
         return True
 
-    with console.status("[bold]Building backoffice assets...[/bold]"):
+    with step_spinner("Building backoffice assets..."):
         result = run_command(
             ["uv", "run", "task", "backoffice"], cwd=SERVER_DIR, capture=True
         )

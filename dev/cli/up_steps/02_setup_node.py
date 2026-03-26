@@ -10,6 +10,7 @@ from shared import (
     console,
     get_command_version,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -112,7 +113,7 @@ def run(ctx: Context) -> bool:
 
     # Install nvm if needed
     if not is_nvm_installed():
-        with console.status("[bold]Installing nvm...[/bold]"):
+        with step_spinner("Installing nvm..."):
             if install_nvm():
                 step_status(True, "nvm", "installed")
             else:
@@ -121,7 +122,7 @@ def run(ctx: Context) -> bool:
                 return False
 
     # Install correct Node version
-    with console.status(f"[bold]Installing Node {REQUIRED_NODE_MAJOR} via nvm...[/bold]"):
+    with step_spinner(f"Installing Node {REQUIRED_NODE_MAJOR} via nvm..."):
         if run_nvm_install_node():
             step_status(True, f"Node {REQUIRED_NODE_MAJOR}", "installed via nvm")
         else:

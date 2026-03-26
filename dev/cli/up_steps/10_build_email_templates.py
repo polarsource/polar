@@ -6,6 +6,7 @@ from shared import (
     check_email_binary_exists,
     console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -18,7 +19,7 @@ def run(ctx: Context) -> bool:
         step_status(True, "Email templates", "already built")
         return True
 
-    with console.status("[bold]Building emails...[/bold]"):
+    with step_spinner("Building emails..."):
         result = run_command(
             ["uv", "run", "task", "emails"], cwd=SERVER_DIR, capture=True
         )

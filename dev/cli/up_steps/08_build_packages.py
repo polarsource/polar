@@ -5,6 +5,7 @@ from shared import (
     CLIENTS_DIR,
     console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -13,7 +14,7 @@ NAME = "Building packages"
 
 def run(ctx: Context) -> bool:
     """Build shared packages that the web app depends on."""
-    with console.status("[bold]Building packages (ui, client, checkout, customer-portal)...[/bold]"):
+    with step_spinner("Building packages (ui, client, checkout, customer-portal)..."):
         result = run_command(
             ["pnpm", "turbo", "run", "build", "--filter=./packages/*"],
             cwd=CLIENTS_DIR,

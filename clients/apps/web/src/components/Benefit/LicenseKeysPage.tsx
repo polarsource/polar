@@ -156,10 +156,10 @@ export const LicenseKeysPage = ({
         <Avatar
           className="h-10 w-10"
           avatar_url={selectedLicenseKey.customer.avatar_url}
-          name={selectedLicenseKey.customer.email}
+          name={selectedLicenseKey.customer.display_email}
         />
         <div className="flex flex-col">
-          <span>{selectedLicenseKey.customer.email}</span>
+          <span>{selectedLicenseKey.customer.display_email}</span>
         </div>
       </div>
       <div className="flex flex-col gap-y-6">

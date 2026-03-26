@@ -220,10 +220,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex flex-row items-center gap-2">
             <Avatar
               avatar_url={customer.avatar_url}
-              name={customer.name || customer.email}
+              name={customer.name || customer.display_email}
             />
             <div className="fw-medium overflow-hidden text-ellipsis">
-              {customer.email}
+              {customer.display_email}
             </div>
           </div>
         )

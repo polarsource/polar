@@ -12,7 +12,7 @@ export const CustomerEventsView = ({
   organization,
   dateRange,
 }: {
-  customer: schemas['Customer']
+  customer: schemas['CustomerResponse']
   organization: schemas['Organization']
   dateRange: { startDate: Date; endDate: Date }
 }) => {

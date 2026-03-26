@@ -25,13 +25,13 @@ export const EditCustomerModal = ({
   customer,
   onClose,
 }: {
-  customer: schemas['Customer']
+  customer: schemas['CustomerResponse']
   onClose: () => void
 }) => {
   const form = useForm<CustomerUpdateForm>({
     defaultValues: {
       name: customer.name || '',
-      email: customer.email || '',
+      email: customer.display_email || '',
       external_id: customer.external_id || '',
       metadata: Object.entries(customer.metadata).map(([key, value]) => ({
         key,
@@ -62,7 +62,7 @@ export const EditCustomerModal = ({
           } else {
             toast({
               title: 'Customer Update Failed',
-              description: `Error updating customer ${customer.email}: ${error.detail}`,
+              description: `Error updating customer ${customer.display_email}: ${error.detail}`,
             })
           }
         return
@@ -70,7 +70,7 @@ export const EditCustomerModal = ({
 
       toast({
         title: 'Customer Updated',
-        description: `Customer ${customer.email} updated successfully`,
+        description: `Customer ${customer.display_email} updated successfully`,
       })
       revalidate(`customer:${customer.id}`)
       onClose()

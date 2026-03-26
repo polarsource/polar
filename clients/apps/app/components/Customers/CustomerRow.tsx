@@ -1,5 +1,6 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
+import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
 import { Avatar } from '../Shared/Avatar'
@@ -7,13 +8,10 @@ import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 
 export interface CustomerRowProps {
-  customer: {
-    id: string
-    name: string | null
-    email?: string | null
-    display_email: string
-    avatar_url: string
-  }
+  customer:
+    | schemas['CustomerResponse']
+    | schemas['OrderCustomer']
+    | schemas['SubscriptionCustomer']
 }
 
 export const CustomerRow = ({ customer }: CustomerRowProps) => {

@@ -34,11 +34,6 @@ const JOBS = [
         link: 'https://jobs.ashbyhq.com/polar/955c6935-6d03-46e5-b649-a8b958a52962',
       },
       {
-        role: 'Technical Support Lead',
-        location: 'Remote, Europe',
-        link: 'https://jobs.ashbyhq.com/polar/4adb9a30-28d1-4db1-a7bf-80a07bfea337',
-      },
-      {
         role: 'Risk Analyst',
         location: 'Remote, Europe',
         link: 'https://jobs.ashbyhq.com/polar/cfca47be-734f-4d42-8644-31b2d6220534',

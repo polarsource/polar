@@ -204,30 +204,31 @@ class StripeTaxService(TaxServiceProtocol):
         self,
         transaction_id: str,
         reference: str,
-        total_amount: int | None = None,
-        tax_amount: int | None = None,
+        reverted_amount: int | None = None,
+        reverted_tax_amount: int | None = None,
     ) -> str:
-        if total_amount is None and tax_amount is None:
+        if reverted_amount is None and reverted_tax_amount is None:
             transaction = await stripe_service.revert_tax_transaction(
                 transaction_id, "full", reference
             )
         else:
-            assert total_amount is not None
+            assert reverted_amount is not None
             transaction = await stripe_service.revert_tax_transaction(
-                transaction_id, "partial", reference, -total_amount
+                transaction_id, "partial", reference, -reverted_amount
             )
         return transaction.id
 
     async def backfill(
         self,
-        calculation: TaxCalculation,
         amount: int,
+        tax_amount: int,
+        currency: str,
         address: Address,
         tax_code: TaxCode,
         reference: str,
         transaction_date: datetime,
     ) -> str:
-        raise NotADirectoryError(
+        raise NotImplementedError(
             "Backfilling tax calculations is not supported for StripeTaxService."
         )
 

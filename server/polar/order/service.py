@@ -602,15 +602,10 @@ class OrderService:
             assert order.product is not None
             transaction_id, tax_processor = await tax_calculation_service.record(
                 checkout.tax_processor,
-                calculation={
-                    "processor_id": checkout.tax_processor_id,
-                    "amount": checkout.tax_amount or 0,
-                    "currency": checkout.currency,
-                    "tax_rate": checkout.tax_rate,
-                    "tax_behavior": checkout.tax_behavior,
-                    "taxability_reason": checkout.taxability_reason,
-                },
+                checkout.tax_processor_id,
                 amount=checkout.net_amount,
+                tax_amount=checkout.tax_amount or 0,
+                currency=checkout.currency,
                 address=order.billing_address,
                 tax_code=order.product.tax_code,
                 reference=str(order.id),
@@ -960,15 +955,10 @@ class OrderService:
             assert order.billing_address is not None
             transaction_id, tax_processor = await tax_calculation_service.record(
                 wallet_transaction.tax_processor,
-                calculation={
-                    "processor_id": wallet_transaction.tax_calculation_processor_id,
-                    "amount": wallet_transaction.tax_amount or 0,
-                    "currency": wallet_transaction.currency,
-                    "tax_rate": wallet_transaction.tax_rate,
-                    "taxability_reason": wallet_transaction.taxability_reason,
-                    "tax_behavior": TaxBehavior.exclusive,  # TODO: add tax behavior to wallet transactions
-                },
+                wallet_transaction.tax_calculation_processor_id,
                 amount=order.net_amount,
+                tax_amount=order.tax_amount,
+                currency=order.currency,
                 address=order.billing_address,
                 tax_code=TaxCode.general_electronically_supplied_services,
                 reference=str(order.id),
@@ -1356,15 +1346,10 @@ class OrderService:
             try:
                 transaction_id, tax_processor = await tax_calculation_service.record(
                     order.tax_processor,
-                    calculation={
-                        "processor_id": order.tax_calculation_processor_id,
-                        "amount": order.tax_amount or 0,
-                        "currency": order.currency,
-                        "tax_rate": order.tax_rate,
-                        "tax_behavior": order.tax_behavior,
-                        "taxability_reason": order.taxability_reason,
-                    },
+                    order.tax_calculation_processor_id,
                     amount=order.net_amount,
+                    tax_amount=order.tax_amount,
+                    currency=order.currency,
                     address=order.billing_address,
                     tax_code=order.product.tax_code,
                     reference=str(order.id),
@@ -1421,15 +1406,10 @@ class OrderService:
                         tax_processor,
                     ) = await tax_calculation_service.record(
                         tax_processor,
-                        calculation={
-                            "processor_id": tax_calculation_processor_id,
-                            "amount": tax_amount,
-                            "currency": order.currency,
-                            "tax_rate": tax_rate,
-                            "tax_behavior": order.tax_behavior,
-                            "taxability_reason": taxability_reason,
-                        },
+                        tax_calculation_processor_id,
                         amount=order.net_amount,
+                        tax_amount=tax_amount,
+                        currency=order.currency,
                         address=order.billing_address,
                         tax_code=order.product.tax_code,
                         reference=str(order.id),

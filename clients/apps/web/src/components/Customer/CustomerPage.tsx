@@ -501,7 +501,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             <div className="flex flex-col">
               <DetailRow label="ID" value={customer.id} />
               <DetailRow label="External ID" value={customer.external_id} />
-              <DetailRow label="Email" value={customer.display_email} />
+              <DetailRow label="Email" value={customer.email ?? '—'} />
               <DetailRow label="Name" value={customer.name} />
               <DetailRow
                 label="Type"

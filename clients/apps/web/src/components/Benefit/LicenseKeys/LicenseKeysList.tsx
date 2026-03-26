@@ -55,13 +55,13 @@ export const LicenseKeysList = ({
               className="h-10 w-10"
               avatar_url={licenseKey.customer.avatar_url}
               name={
-                licenseKey.customer.name || licenseKey.customer.display_email
+                licenseKey.customer.email ?? licenseKey.customer.name ?? '—'
               }
             />
             <div className="flex flex-col">
               <span className="text-sm">{licenseKey.customer.name}</span>
               <span className="dark:text-polar-500 text-xs text-gray-500">
-                {licenseKey.customer.display_email}
+                {licenseKey.customer.email ?? '—'}
               </span>
             </div>
           </div>

@@ -31,7 +31,7 @@ export const EditCustomerModal = ({
   const form = useForm<CustomerUpdateForm>({
     defaultValues: {
       name: customer.name || '',
-      email: customer.display_email || '',
+      email: customer.email ?? '',
       external_id: customer.external_id || '',
       metadata: Object.entries(customer.metadata).map(([key, value]) => ({
         key,
@@ -62,7 +62,7 @@ export const EditCustomerModal = ({
           } else {
             toast({
               title: 'Customer Update Failed',
-              description: `Error updating customer ${customer.display_email}: ${error.detail}`,
+              description: `Error updating customer ${customer.email ?? customer.name ?? 'customer'}: ${error.detail}`,
             })
           }
         return
@@ -70,7 +70,7 @@ export const EditCustomerModal = ({
 
       toast({
         title: 'Customer Updated',
-        description: `Customer ${customer.display_email} updated successfully`,
+        description: `Customer ${customer.email ?? customer.name ?? 'customer'} updated successfully`,
       })
       revalidate(`customer:${customer.id}`)
       onClose()

@@ -30,7 +30,7 @@ export const CustomerRow = ({ customer }: CustomerRowProps) => {
       <Touchable>
         <Avatar
           image={customer.avatar_url}
-          name={customer.display_email}
+          name={customer.email ?? customer.name ?? '—'}
           size={40}
         />
         <Box flex={1} flexDirection="column" gap="spacing-2">

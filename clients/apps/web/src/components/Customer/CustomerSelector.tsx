@@ -124,11 +124,11 @@ export const CustomerSelector = ({
                       <Avatar
                         className="size-7"
                         avatar_url={customer.avatar_url}
-                        name={customer.name || customer.display_email}
+                        name={customer.email ?? customer.name ?? '—'}
                       />
                       <div className="flex flex-col">
                         <div className="w-full truncate text-sm">
-                          {customer.name ?? customer.display_email}
+                          {customer.name ?? customer.email ?? '—'}
                         </div>
                       </div>
                     </div>
@@ -159,11 +159,11 @@ export const CustomerSelector = ({
                 <Avatar
                   className="size-7"
                   avatar_url={customer.avatar_url}
-                  name={customer.name || customer.display_email}
+                  name={customer.email ?? customer.name ?? '—'}
                 />
                 <div className="flex flex-col">
                   <div className="w-full truncate text-sm">
-                    {customer.name ?? customer.display_email}
+                    {customer.name ?? customer.email ?? '—'}
                   </div>
                 </div>
               </div>

@@ -37,21 +37,13 @@ export const CreateCustomerModal = ({
   const createCustomer = useCreateCustomer(organization.id)
 
   const handleCreateCustomer = (customerCreate: CustomerCreateForm) => {
-    const metadata = customerCreate.metadata?.reduce(
-      (acc, { key, value }) => ({ ...acc, [key]: value }),
-      {} as Record<string, string | number | boolean>,
-    )
-
-    const { type, email, ...rest } = customerCreate
-    const data: schemas['CustomerCreate'] =
-      type === 'team'
-        ? {
-            ...rest,
-            metadata,
-            type: 'team' as const,
-            email: email ?? undefined,
-          }
-        : { ...rest, metadata, type: 'individual' as const, email: email ?? '' }
+    const data = {
+      ...customerCreate,
+      metadata: customerCreate.metadata?.reduce(
+        (acc, { key, value }) => ({ ...acc, [key]: value }),
+        {} as Record<string, string | number | boolean>,
+      ),
+    }
 
     createCustomer.mutateAsync(data).then(async ({ data: customer, error }) => {
       if (error) {
@@ -62,7 +54,7 @@ export const CreateCustomerModal = ({
       }
       toast({
         title: 'Customer Created',
-        description: `Customer ${customer.display_email} created successfully`,
+        description: `Customer ${customer.email ?? customer.name ?? 'customer'} created successfully`,
       })
       revalidate(`customer:${customer.id}`)
       onClose()

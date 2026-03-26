@@ -13167,8 +13167,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -13621,8 +13619,61 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
-    CustomerCreate:
-      | components['schemas']['CustomerIndividualCreate']
+    /** CustomerCreate */
+    CustomerCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /** Name */
+      name?: string | null
+      billing_address?: components['schemas']['AddressInput'] | null
+      /** Tax Id */
+      tax_id?: string | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
+      owner?: components['schemas']['OwnerCreate'] | null
+      /**
+       * Type
+       * @default individual
+       * @constant
+       */
+      type: 'individual'
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string
+    }
+    CustomerCreateInput:
+      | components['schemas']['CustomerCreate']
       | components['schemas']['CustomerTeamCreate']
     /**
      * CustomerCreatedEvent
@@ -13902,59 +13953,6 @@ export interface components {
       customer_name: string | null
       /** Customer External Id */
       customer_external_id: string | null
-    }
-    /** CustomerIndividualCreate */
-    CustomerIndividualCreate: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
-       * @example usr_1337
-       */
-      external_id?: string | null
-      /** Name */
-      name?: string | null
-      billing_address?: components['schemas']['AddressInput'] | null
-      /** Tax Id */
-      tax_id?: string | null
-      /** Locale */
-      locale?: string | null
-      /**
-       * Organization Id
-       * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
-       */
-      organization_id?: string | null
-      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
-      owner?: components['schemas']['OwnerCreate'] | null
-      /**
-       * Type
-       * @default individual
-       * @constant
-       */
-      type: 'individual'
-      /**
-       * Email
-       * Format: email
-       * @description The email address of the customer. This must be unique within the organization.
-       * @example customer@example.com
-       */
-      email: string
     }
     /**
      * CustomerMeter
@@ -15191,8 +15189,6 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -15568,8 +15564,6 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -16011,8 +16005,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -18779,8 +18771,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -20783,8 +20773,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -26046,8 +26034,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -35296,7 +35282,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CustomerCreate']
+        'application/json': components['schemas']['CustomerCreateInput']
       }
     }
     responses: {

@@ -127,10 +127,10 @@ export const ProductOverview = ({
                     <div className="flex flex-row items-center gap-2">
                       <Avatar
                         avatar_url={customer.avatar_url}
-                        name={customer.name || customer.display_email}
+                        name={customer.email ?? customer.name ?? '—'}
                       />
                       <div className="fw-medium overflow-hidden text-ellipsis">
-                        {customer.display_email}
+                        {customer.email ?? '—'}
                       </div>
                     </div>
                   )
@@ -242,10 +242,10 @@ export const ProductOverview = ({
                     <Avatar
                       className="h-8 w-8"
                       avatar_url={customer.avatar_url}
-                      name={customer.name || customer.display_email}
+                      name={customer.email ?? customer.name ?? '—'}
                     />
                     <div className="fw-medium truncate">
-                      {customer.display_email}
+                      {customer.email ?? '—'}
                     </div>
                   </div>
                 )

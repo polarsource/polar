@@ -1854,6 +1854,7 @@ class OrderService:
             await event_service.create_event(session, balance_order_event)
         except Exception as e:
             log.error("Could not save balance.order event", error=str(e))
+            raise
 
     async def send_webhook(
         self,
@@ -2038,6 +2039,7 @@ class OrderService:
             await event_service.create_event(session, credit_event)
         except Exception as e:
             log.error("Could not save balance.credit_order event", error=str(e))
+            raise
 
     async def handle_payment_failure(
         self, session: AsyncSession, order: Order, *, skip_dunning: bool = False

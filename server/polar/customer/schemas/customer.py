@@ -237,7 +237,6 @@ class CustomerIndividual(CustomerBase):
     """A customer in an organization."""
 
     type: Literal[CustomerType.individual] = Field(
-        default=CustomerType.individual,
         description="The type of customer.",
         examples=["individual"],
     )

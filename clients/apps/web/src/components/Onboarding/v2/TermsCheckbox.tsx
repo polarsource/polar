@@ -39,7 +39,10 @@ export function TermsCheckbox<T extends FieldValues>({
                 id="terms"
                 checked={field.value}
                 onCheckedChange={(checked) => {
-                  setValue(name, (checked ? true : false) as PathValue<T, Path<T>>)
+                  setValue(
+                    name,
+                    (checked ? true : false) as PathValue<T, Path<T>>,
+                  )
                 }}
                 className="mt-0.5"
               />

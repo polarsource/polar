@@ -82,7 +82,13 @@ function SubmitButton({ loading }: { loading: boolean }) {
     useWatch<FormSchema>()
 
   const disabled =
-    !firstName || !lastName || !country || !dobYear || !dobMonth || !dobDay || !terms
+    !firstName ||
+    !lastName ||
+    !country ||
+    !dobYear ||
+    !dobMonth ||
+    !dobDay ||
+    !terms
 
   return (
     <Button type="submit" loading={loading} disabled={disabled} fullWidth>

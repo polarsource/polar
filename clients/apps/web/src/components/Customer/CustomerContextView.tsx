@@ -22,7 +22,7 @@ import { EditCustomerModal } from './EditCustomerModal'
 interface CustomerContextViewProps {
   organization: schemas['Organization']
   customer:
-    | schemas['CustomerResponse']
+    | schemas['Customer']
     | schemas['OrderCustomer']
     | schemas['SubscriptionCustomer']
 }

@@ -6128,7 +6128,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6224,7 +6224,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6332,7 +6332,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6407,7 +6407,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6513,7 +6513,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6623,7 +6623,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6910,7 +6910,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -7863,7 +7863,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       member?: components['schemas']['Member'] | null
       /** Benefit */
       benefit: components['schemas']['Benefit']
@@ -7946,7 +7946,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitCustom']
       properties: components['schemas']['BenefitGrantCustomProperties']
@@ -8033,7 +8033,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDiscord']
       properties: components['schemas']['BenefitGrantDiscordProperties']
@@ -8114,7 +8114,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDownloadables']
       properties: components['schemas']['BenefitGrantDownloadablesProperties']
@@ -8201,7 +8201,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitFeatureFlag']
       properties: components['schemas']['BenefitGrantFeatureFlagProperties']
@@ -8293,7 +8293,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitGitHubRepository']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
@@ -8378,7 +8378,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitLicenseKeys']
       properties: components['schemas']['BenefitGrantLicenseKeysProperties']
@@ -8473,7 +8473,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitMeterCredit']
       properties: components['schemas']['BenefitGrantMeterCreditProperties']
@@ -8530,7 +8530,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -9096,7 +9096,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -9238,7 +9238,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -9815,7 +9815,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -13097,6 +13097,9 @@ export interface components {
       type: 'text'
       properties?: components['schemas']['CustomFieldTextProperties'] | null
     }
+    Customer:
+      | components['schemas']['CustomerIndividual']
+      | components['schemas']['CustomerTeam']
     CustomerBenefitGrant:
       | components['schemas']['CustomerBenefitGrantDiscord']
       | components['schemas']['CustomerBenefitGrantGitHubRepository']
@@ -13576,7 +13579,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -13769,7 +13772,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -14009,7 +14012,7 @@ export interface components {
        */
       balance: number
       /** @description The customer associated with this meter. */
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
       /** @description The meter associated with this customer. */
       meter: components['schemas']['Meter']
     }
@@ -14825,9 +14828,6 @@ export interface components {
        */
       medias: components['schemas']['ProductMediaFileRead'][]
     }
-    CustomerResponse:
-      | components['schemas']['CustomerIndividual']
-      | components['schemas']['CustomerTeam']
     /** CustomerSeat */
     CustomerSeat: {
       /**
@@ -14993,7 +14993,7 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
-      customer: components['schemas']['CustomerResponse']
+      customer: components['schemas']['Customer']
     }
     /** CustomerSessionCodeAuthenticateRequest */
     CustomerSessionCodeAuthenticateRequest: {
@@ -16170,7 +16170,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -19219,7 +19219,7 @@ export interface components {
     /** ListResource[] */
     ListResource__: {
       /** Items */
-      items: components['schemas']['CustomerResponse'][]
+      items: components['schemas']['Customer'][]
       pagination: components['schemas']['Pagination']
     }
     /**
@@ -19667,7 +19667,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -19777,7 +19777,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -20899,7 +20899,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -21070,7 +21070,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -25559,7 +25559,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -25688,7 +25688,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -25901,7 +25901,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26066,7 +26066,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26217,7 +26217,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26355,7 +26355,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26445,7 +26445,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26566,7 +26566,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26731,7 +26731,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -27351,7 +27351,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['CustomerResponse'] | null
+      customer: components['schemas']['Customer'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -28114,7 +28114,7 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
-      data: components['schemas']['CustomerResponse']
+      data: components['schemas']['Customer']
     }
     /**
      * WebhookCustomerDeletedPayload
@@ -28134,7 +28134,7 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
-      data: components['schemas']['CustomerResponse']
+      data: components['schemas']['Customer']
     }
     /**
      * WebhookCustomerSeatAssignedPayload
@@ -28245,7 +28245,7 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
-      data: components['schemas']['CustomerResponse']
+      data: components['schemas']['Customer']
     }
     /**
      * WebhookDelivery
@@ -35288,7 +35288,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerResponse']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Validation Error */
@@ -35353,7 +35353,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerResponse']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Customer not found. */
@@ -35440,7 +35440,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerResponse']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Customer not found. */
@@ -35481,7 +35481,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerResponse']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Customer not found. */
@@ -35568,7 +35568,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerResponse']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Customer not found. */

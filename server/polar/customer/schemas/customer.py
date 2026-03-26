@@ -258,5 +258,5 @@ class CustomerTeam(CustomerBase):
 CustomerResponse = Annotated[
     CustomerIndividual | CustomerTeam,
     Discriminator("type"),
-    SetSchemaReference("CustomerResponse"),
+    SetSchemaReference("Customer"),
 ]

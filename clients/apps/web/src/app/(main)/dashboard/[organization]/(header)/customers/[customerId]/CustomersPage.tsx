@@ -38,7 +38,7 @@ const CustomerHeader = ({
   organization,
   metrics,
 }: {
-  customer: schemas['CustomerResponse']
+  customer: schemas['Customer']
   organization: schemas['Organization']
   metrics: {
     startDate: Date
@@ -241,7 +241,7 @@ const CustomerHeader = ({
 
 interface ClientPageProps {
   organization: schemas['Organization']
-  customer: schemas['CustomerResponse']
+  customer: schemas['Customer']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {

@@ -17,7 +17,7 @@ type AnonymousCustomerEvent = schemas['Event'] & {
 }
 
 type IdentifiedCustomerEvent = schemas['Event'] & {
-  customer: schemas['CustomerResponse']
+  customer: schemas['Customer']
   external_customer_id?: string
 }
 

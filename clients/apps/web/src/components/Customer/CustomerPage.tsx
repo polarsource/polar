@@ -42,7 +42,7 @@ import { CustomerTrendStatBox } from './CustomerTrendStatBox'
 
 interface CustomerPageProps {
   organization: schemas['Organization']
-  customer: schemas['CustomerResponse']
+  customer: schemas['Customer']
   dateRange: { startDate: Date; endDate: Date }
   interval: schemas['TimeInterval']
 }

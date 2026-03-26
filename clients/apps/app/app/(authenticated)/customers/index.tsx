@@ -38,7 +38,7 @@ export default function Index() {
       </Box>
       <FlashList
         data={customersData}
-        renderItem={({ item }: { item: schemas['CustomerResponse'] }) => {
+        renderItem={({ item }: { item: schemas['Customer'] }) => {
           return <CustomerRow customer={item} />
         }}
         contentContainerStyle={{

@@ -26,7 +26,7 @@ export const EditCustomerModal = ({
   onClose,
 }: {
   customer:
-    | schemas['CustomerResponse']
+    | schemas['Customer']
     | schemas['OrderCustomer']
     | schemas['SubscriptionCustomer']
   onClose: () => void

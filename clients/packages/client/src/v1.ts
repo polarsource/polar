@@ -13941,8 +13941,9 @@ export interface components {
       /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
       owner?: components['schemas']['MemberOwnerCreate'] | null
       /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
+       * Type
+       * @default individual
+       * @constant
        */
       type: 'individual'
       /**
@@ -16046,8 +16047,8 @@ export interface components {
       /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
       owner?: components['schemas']['MemberOwnerCreate'] | null
       /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
+       * Type
+       * @constant
        */
       type: 'team'
       /**
@@ -46497,9 +46498,6 @@ export const customerDeletedEventNameValues: ReadonlyArray<
 export const customerIndividualTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerIndividual']['type']
 > = ['individual']
-export const customerIndividualCreateTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['CustomerIndividualCreate']['type']
-> = ['individual']
 export const customerMeterSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerMeterSortProperty']
 > = [
@@ -46573,9 +46571,6 @@ export const customerSubscriptionSortPropertyValues: ReadonlyArray<
 ]
 export const customerTeamTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerTeam']['type']
-> = ['team']
-export const customerTeamCreateTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['CustomerTeamCreate']['type']
 > = ['team']
 export const customerTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerType']

@@ -44,7 +44,7 @@ module.exports = {
   expo: {
     name: 'Polar',
     slug: 'Polar',
-    version: '1.3.1',
+    version: '1.3.2',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'polar',

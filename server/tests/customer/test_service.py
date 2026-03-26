@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from polar.auth.models import AuthSubject, is_user
 from polar.customer.repository import CustomerRepository
 from polar.customer.schemas.customer import (
-    CustomerIndividualCreate,
+    CustomerCreate,
     CustomerUpdate,
 )
 from polar.customer.service import customer as customer_service
@@ -95,7 +95,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
                 session,
-                CustomerIndividualCreate(
+                CustomerCreate(
                     email="customer@example.com", organization_id=organization.id
                 ),
                 auth_subject,
@@ -121,7 +121,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerCreate.model_validate(payload), auth_subject
             )
             await session.flush()
 
@@ -145,7 +145,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerCreate.model_validate(payload), auth_subject
             )
             await session.flush()
 
@@ -167,7 +167,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -197,7 +197,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -232,7 +232,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -271,7 +271,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -319,7 +319,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "email")
 
@@ -360,7 +360,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "external_id")
 
@@ -384,7 +384,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "billing_address")
 
@@ -409,7 +409,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
 
@@ -433,7 +433,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 

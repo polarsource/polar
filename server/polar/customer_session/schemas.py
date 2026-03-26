@@ -4,7 +4,7 @@ from typing import Annotated
 from pydantic import UUID4, Field, HttpUrl
 from pydantic.aliases import AliasChoices
 
-from polar.customer.schemas.customer import Customer
+from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
 

@@ -28,7 +28,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.subscription.schemas import SubscriptionMeterBase
 
 from .customer import (
-    CustomerIndividual,
+    Customer,
     CustomerTeam,
     _customer_type_discriminator,
 )
@@ -189,9 +189,9 @@ class _CustomerStateFields:
     )
 
 
-class CustomerStateIndividual(_CustomerStateFields, CustomerIndividual):
+class CustomerState(_CustomerStateFields, Customer):
     """
-    An individual customer along with additional state information:
+    A customer along with additional state information:
 
     * Active subscriptions
     * Granted benefits
@@ -209,9 +209,9 @@ class CustomerStateTeam(_CustomerStateFields, CustomerTeam):
     """
 
 
-CustomerState = Annotated[
-    Annotated[CustomerStateIndividual, Tag("individual")]
+CustomerStateResponse = Annotated[
+    Annotated[CustomerState, Tag("individual")]
     | Annotated[CustomerStateTeam, Tag("team")],
     Discriminator(_customer_type_discriminator),
-    SetSchemaReference("CustomerState"),
+    SetSchemaReference("CustomerStateResponse"),
 ]

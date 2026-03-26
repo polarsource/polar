@@ -14,7 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
-from polar.customer.schemas.state import CustomerState
+from polar.customer.schemas.state import CustomerStateResponse as CustomerState
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound

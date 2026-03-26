@@ -90,6 +90,10 @@ class CustomerIndividualCreate(_CustomerCreateBase):
     )
 
 
+# Convenience alias for internal usage
+CustomerCreate = CustomerIndividualCreate
+
+
 class CustomerTeamCreate(_CustomerCreateBase):
     type: Literal["team"]
     email: EmailStrDNS | None = Field(
@@ -118,8 +122,8 @@ def _customer_create_discriminator(v: dict[str, object] | object) -> str:
     return getattr(v, "type", "individual")
 
 
-CustomerCreate = Annotated[
-    Annotated[CustomerIndividualCreate, Tag("individual")]
+CustomerCreateInput = Annotated[
+    Annotated[CustomerCreate, Tag("individual")]
     | Annotated[CustomerTeamCreate, Tag("team")],
     Discriminator(_customer_create_discriminator),
     SetSchemaReference("CustomerCreate"),
@@ -245,17 +249,10 @@ def _customer_type_discriminator(v: dict[str, object] | object) -> str:
     return "team" if t == "team" or t == CustomerType.team else "individual"
 
 
-class CustomerIndividual(CustomerBase):
-    """An individual customer in an organization."""
+class Customer(CustomerBase):
+    """A customer in an organization."""
 
-    type: CustomerType | None = Field(
-        default=None,
-        description=(
-            "The type of customer. "
-            "Individual customers (or legacy NULL type) are single users."
-        ),
-        examples=["individual"],
-    )
+    email: str = Field(description=_email_description, examples=[_email_example])
 
 
 class CustomerTeam(CustomerBase):
@@ -267,9 +264,8 @@ class CustomerTeam(CustomerBase):
     )
 
 
-Customer = Annotated[
-    Annotated[CustomerIndividual, Tag("individual")]
-    | Annotated[CustomerTeam, Tag("team")],
+CustomerResponse = Annotated[
+    Annotated[Customer, Tag("individual")] | Annotated[CustomerTeam, Tag("team")],
     Discriminator(_customer_type_discriminator),
-    SetSchemaReference("Customer"),
+    SetSchemaReference("CustomerResponse"),
 ]

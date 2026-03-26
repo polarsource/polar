@@ -6128,7 +6128,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6224,7 +6224,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6332,7 +6332,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6407,7 +6407,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6513,7 +6513,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6623,7 +6623,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -6910,7 +6910,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -7863,7 +7863,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       member?: components['schemas']['Member'] | null
       /** Benefit */
       benefit: components['schemas']['Benefit']
@@ -7946,7 +7946,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitCustom']
       properties: components['schemas']['BenefitGrantCustomProperties']
@@ -8033,7 +8033,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDiscord']
       properties: components['schemas']['BenefitGrantDiscordProperties']
@@ -8114,7 +8114,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDownloadables']
       properties: components['schemas']['BenefitGrantDownloadablesProperties']
@@ -8201,7 +8201,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitFeatureFlag']
       properties: components['schemas']['BenefitGrantFeatureFlagProperties']
@@ -8293,7 +8293,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitGitHubRepository']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
@@ -8378,7 +8378,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitLicenseKeys']
       properties: components['schemas']['BenefitGrantLicenseKeysProperties']
@@ -8473,7 +8473,7 @@ export interface components {
       benefit_id: string
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitMeterCredit']
       properties: components['schemas']['BenefitGrantMeterCreditProperties']
@@ -8530,7 +8530,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -9096,7 +9096,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -9238,7 +9238,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -9815,7 +9815,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -13167,6 +13167,8 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /** Display Email */
+      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -13619,58 +13621,9 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
-    /** CustomerCreate */
-    CustomerCreate: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
-       * @example usr_1337
-       */
-      external_id?: string | null
-      /**
-       * Email
-       * Format: email
-       * @description The email address of the customer. This must be unique within the organization.
-       * @example customer@example.com
-       */
-      email: string
-      /** Name */
-      name?: string | null
-      billing_address?: components['schemas']['AddressInput'] | null
-      /** Tax Id */
-      tax_id?: string | null
-      /** Locale */
-      locale?: string | null
-      /**
-       * @description The type of customer. Defaults to 'individual'. Set to 'team' for customers that can have multiple members.
-       * @example individual
-       */
-      type?: components['schemas']['CustomerType'] | null
-      /**
-       * Organization Id
-       * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
-       */
-      organization_id?: string | null
-      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
-      owner?: components['schemas']['OwnerCreate'] | null
-    }
+    CustomerCreate:
+      | components['schemas']['CustomerIndividualCreate']
+      | components['schemas']['CustomerTeamCreate']
     /**
      * CustomerCreatedEvent
      * @description An event created by Polar when a customer is created.
@@ -13701,7 +13654,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -13751,7 +13704,7 @@ export interface components {
       /** Customer Id */
       customer_id: string
       /** Customer Email */
-      customer_email: string
+      customer_email: string | null
       /** Customer Name */
       customer_name: string | null
       /** Customer External Id */
@@ -13894,7 +13847,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -13944,11 +13897,64 @@ export interface components {
       /** Customer Id */
       customer_id: string
       /** Customer Email */
-      customer_email: string
+      customer_email: string | null
       /** Customer Name */
       customer_name: string | null
       /** Customer External Id */
       customer_external_id: string | null
+    }
+    /** CustomerIndividualCreate */
+    CustomerIndividualCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /** Name */
+      name?: string | null
+      billing_address?: components['schemas']['AddressInput'] | null
+      /** Tax Id */
+      tax_id?: string | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
+      owner?: components['schemas']['OwnerCreate'] | null
+      /**
+       * Type
+       * @default individual
+       * @constant
+       */
+      type: 'individual'
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string
     }
     /**
      * CustomerMeter
@@ -14005,7 +14011,7 @@ export interface components {
        */
       balance: number
       /** @description The customer associated with this meter. */
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
       /** @description The meter associated with this customer. */
       meter: components['schemas']['Meter']
     }
@@ -14821,6 +14827,9 @@ export interface components {
        */
       medias: components['schemas']['ProductMediaFileRead'][]
     }
+    CustomerResponse:
+      | components['schemas']['Customer']
+      | components['schemas']['CustomerTeam']
     /** CustomerSeat */
     CustomerSeat: {
       /**
@@ -14986,7 +14995,7 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
-      customer: components['schemas']['Customer']
+      customer: components['schemas']['CustomerResponse']
     }
     /** CustomerSessionCodeAuthenticateRequest */
     CustomerSessionCodeAuthenticateRequest: {
@@ -15182,6 +15191,8 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
+      /** Display Email */
+      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -15294,6 +15305,9 @@ export interface components {
        */
       balance: number
     }
+    CustomerStateResponse:
+      | components['schemas']['CustomerState']
+      | components['schemas']['CustomerStateTeam']
     /**
      * CustomerStateSubscription
      * @description An active customer subscription.
@@ -15462,6 +15476,105 @@ export interface components {
        * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
       meter_id: string
+    }
+    /**
+     * CustomerStateTeam
+     * @description A team customer along with additional state information:
+     *
+     *     * Active subscriptions
+     *     * Granted benefits
+     *     * Active meters
+     */
+    CustomerStateTeam: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email?: string | null
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * Type
+       * @description The type of customer. Team customers can have multiple members.
+       * @example team
+       * @constant
+       */
+      type: 'team'
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Active Subscriptions
+       * @description The customer's active subscriptions.
+       */
+      active_subscriptions: components['schemas']['CustomerStateSubscription'][]
+      /**
+       * Granted Benefits
+       * @description The customer's active benefit grants.
+       */
+      granted_benefits: components['schemas']['CustomerStateBenefitGrant'][]
+      /**
+       * Active Meters
+       * @description The customer's active meters.
+       */
+      active_meters: components['schemas']['CustomerStateMeter'][]
+      /** Display Email */
+      readonly display_email: string
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
     }
     /** CustomerSubscription */
     CustomerSubscription: {
@@ -15827,6 +15940,137 @@ export interface components {
         | null
     }
     /**
+     * CustomerTeam
+     * @description A team customer in an organization.
+     */
+    CustomerTeam: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email?: string | null
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * Type
+       * @description The type of customer. Team customers can have multiple members.
+       * @example team
+       * @constant
+       */
+      type: 'team'
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /** Display Email */
+      readonly display_email: string
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
+    }
+    /** CustomerTeamCreate */
+    CustomerTeamCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /** Name */
+      name?: string | null
+      billing_address?: components['schemas']['AddressInput'] | null
+      /** Tax Id */
+      tax_id?: string | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
+      owner?: components['schemas']['OwnerCreate'] | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'team'
+      /**
+       * Email
+       * @description The email address of the team customer. Optional for team customers — if omitted, an owner with an email must be provided.
+       * @example customer@example.com
+       */
+      email?: string | null
+    }
+    /**
      * CustomerType
      * @enum {string}
      */
@@ -15938,7 +16182,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -16002,7 +16246,7 @@ export interface components {
       /** Customer Id */
       customer_id: string
       /** Customer Email */
-      customer_email: string
+      customer_email: string | null
       /** Customer Name */
       customer_name: string | null
       /** Customer External Id */
@@ -18500,7 +18744,7 @@ export interface components {
        * @description The email address of the customer. This must be unique within the organization.
        * @example customer@example.com
        */
-      email: string
+      email?: string | null
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
@@ -18535,6 +18779,8 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /** Display Email */
+      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -18638,7 +18884,7 @@ export interface components {
        */
       id: string
       /** Email */
-      email: string
+      email?: string | null
       /** Public Name */
       public_name: string
       /** Avatar Url */
@@ -18830,12 +19076,6 @@ export interface components {
       items: components['schemas']['CustomerWallet'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[Customer] */
-    ListResource_Customer_: {
-      /** Items */
-      items: components['schemas']['Customer'][]
-      pagination: components['schemas']['Pagination']
-    }
     /** ListResource[Discount] */
     ListResource_Discount_: {
       /** Items */
@@ -18993,7 +19233,7 @@ export interface components {
     /** ListResource[] */
     ListResource__: {
       /** Items */
-      items: components['schemas']['Payment'][]
+      items: components['schemas']['CustomerResponse'][]
       pagination: components['schemas']['Pagination']
     }
     /**
@@ -19421,7 +19661,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -19531,7 +19771,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -20508,7 +20748,7 @@ export interface components {
        * @description The email address of the customer. This must be unique within the organization.
        * @example customer@example.com
        */
-      email: string
+      email?: string | null
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
@@ -20543,6 +20783,8 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /** Display Email */
+      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -20653,7 +20895,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -20824,7 +21066,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -21051,7 +21293,7 @@ export interface components {
        */
       id: string
       /** Email */
-      email: string
+      email?: string | null
       /** Public Name */
       public_name: string
       /** Avatar Url */
@@ -25333,7 +25575,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -25462,7 +25704,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -25675,7 +25917,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -25769,7 +26011,7 @@ export interface components {
        * @description The email address of the customer. This must be unique within the organization.
        * @example customer@example.com
        */
-      email: string
+      email?: string | null
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
@@ -25804,6 +26046,8 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /** Display Email */
+      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -25840,7 +26084,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -25991,7 +26235,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26129,7 +26373,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26219,7 +26463,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26340,7 +26584,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26505,7 +26749,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -26587,7 +26831,7 @@ export interface components {
        */
       id: string
       /** Email */
-      email: string
+      email?: string | null
       /** Public Name */
       public_name: string
       /** Avatar Url */
@@ -27125,7 +27369,7 @@ export interface components {
        */
       customer_id: string | null
       /** @description The customer associated with the event. */
-      customer: components['schemas']['Customer'] | null
+      customer: components['schemas']['CustomerResponse'] | null
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
@@ -27888,7 +28132,7 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
-      data: components['schemas']['Customer']
+      data: components['schemas']['CustomerResponse']
     }
     /**
      * WebhookCustomerDeletedPayload
@@ -27908,7 +28152,7 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
-      data: components['schemas']['Customer']
+      data: components['schemas']['CustomerResponse']
     }
     /**
      * WebhookCustomerSeatAssignedPayload
@@ -27995,7 +28239,7 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
-      data: components['schemas']['CustomerState']
+      data: components['schemas']['CustomerStateResponse']
     }
     /**
      * WebhookCustomerUpdatedPayload
@@ -28019,7 +28263,7 @@ export interface components {
        * Format: date-time
        */
       timestamp: string
-      data: components['schemas']['Customer']
+      data: components['schemas']['CustomerResponse']
     }
     /**
      * WebhookDelivery
@@ -35029,7 +35273,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_Customer_']
+          'application/json': components['schemas']['ListResource__']
         }
       }
       /** @description Validation Error */
@@ -35062,7 +35306,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerResponse']
         }
       }
       /** @description Validation Error */
@@ -35127,7 +35371,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerResponse']
         }
       }
       /** @description Customer not found. */
@@ -35214,7 +35458,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerResponse']
         }
       }
       /** @description Customer not found. */
@@ -35255,7 +35499,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerResponse']
         }
       }
       /** @description Customer not found. */
@@ -35342,7 +35586,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerResponse']
         }
       }
       /** @description Customer not found. */
@@ -35383,7 +35627,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerState']
+          'application/json': components['schemas']['CustomerStateResponse']
         }
       }
       /** @description Customer not found. */
@@ -35424,7 +35668,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerState']
+          'application/json': components['schemas']['CustomerStateResponse']
         }
       }
       /** @description Customer not found. */

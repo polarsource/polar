@@ -14,7 +14,7 @@ from pydantic import (
 from pydantic.type_adapter import TypeAdapter
 from typing_extensions import TypedDict
 
-from polar.customer.schemas.customer import Customer
+from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.event.system import (
     BalanceCreditOrderMetadata,
     BalanceDisputeMetadata,

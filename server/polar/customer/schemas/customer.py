@@ -1,6 +1,6 @@
 import hashlib
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from annotated_types import MaxLen
 from fastapi import Path
@@ -102,21 +102,20 @@ class CustomerTeamCreate(CustomerCreateBase):
     )
 
     @model_validator(mode="after")
-    def _require_owner_email_when_no_email(self) -> "CustomerTeamCreate":
-        if self.email is None:
-            if self.owner is None or self.owner.email is None:
-                raise ValueError(
-                    "An owner with an email address is required when creating "
-                    "a team customer without an email."
-                )
+    def _require_owner_when_no_email(self) -> "CustomerTeamCreate":
+        if self.email is None and self.owner is None:
+            raise ValueError(
+                "An owner with an email address is required when creating "
+                "a team customer without an email."
+            )
         return self
 
 
-def _customer_create_type(v: Any) -> str:
+def _customer_create_type(v: dict[str, object] | object) -> str:
     """Default to 'individual' for backward compat when type is omitted."""
     if isinstance(v, dict):
-        return v.get("type", "individual")
-    return getattr(v, "type", "individual")
+        return str(v.get("type", "individual"))
+    return str(getattr(v, "type", "individual"))
 
 
 CustomerCreate = Annotated[

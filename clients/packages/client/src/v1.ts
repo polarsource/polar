@@ -19511,10 +19511,11 @@ export interface components {
     MemberOwnerCreate: {
       /**
        * Email
+       * Format: email
        * @description The email address of the member.
        * @example member@example.com
        */
-      email?: string | null
+      email: string
       /** Name */
       name?: string | null
       /**

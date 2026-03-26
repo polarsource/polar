@@ -8,7 +8,10 @@ import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 
 export interface CustomerRowProps {
-  customer: schemas['Customer']
+  customer:
+    | schemas['Customer']
+    | schemas['OrderCustomer']
+    | schemas['SubscriptionCustomer']
 }
 
 export const CustomerRow = ({ customer }: CustomerRowProps) => {

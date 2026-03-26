@@ -25,39 +25,48 @@ def is_nvm_installed() -> bool:
     return nvm_dir.exists() and (nvm_dir / "nvm.sh").exists()
 
 
+def _nvm_script() -> Path:
+    """Return the path to nvm.sh."""
+    return Path.home() / ".nvm" / "nvm.sh"
+
+
+def _run_with_nvm(nvm_cmd: str, capture: bool = True) -> "subprocess.CompletedProcess | None":
+    """Run a command inside a bash shell with nvm sourced."""
+    import subprocess  # noqa: F811
+
+    cmd = f'source "{_nvm_script()}" && {nvm_cmd}'
+    return run_command(["bash", "-c", cmd], cwd=ROOT_DIR, capture=capture)
+
+
 def install_nvm() -> bool:
     """Install nvm using the official install script."""
-    console.print("  [dim]Installing nvm...[/dim]")
     result = run_command(
         ["bash", "-c", "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash"],
         capture=True,
     )
+    if result and result.returncode != 0 and result.stderr:
+        console.print(f"  [dim]{result.stderr[:500]}[/dim]")
     return result is not None and result.returncode == 0
 
 
 def run_nvm_install_node() -> bool:
     """Use nvm to install the correct Node version."""
-    nvm_dir = Path.home() / ".nvm"
-    nvm_script = nvm_dir / "nvm.sh"
-
-    if not nvm_script.exists():
+    if not _nvm_script().exists():
         return False
 
-    cmd = f'source "{nvm_script}" && nvm install'
-    result = run_command(["bash", "-c", cmd], cwd=ROOT_DIR, capture=True)
+    result = _run_with_nvm(f"nvm install {REQUIRED_NODE_MAJOR}")
+    if result and result.returncode != 0 and result.stderr:
+        console.print(f"  [dim]{result.stderr[:500]}[/dim]")
     return result is not None and result.returncode == 0
 
 
 def activate_nvm_node() -> bool:
     """Activate nvm Node in the current process by updating PATH."""
-    nvm_dir = Path.home() / ".nvm"
-    nvm_script = nvm_dir / "nvm.sh"
-
-    if not nvm_script.exists():
+    if not _nvm_script().exists():
         return False
 
-    cmd = f'source "{nvm_script}" && nvm which current'
-    result = run_command(["bash", "-c", cmd], cwd=ROOT_DIR, capture=True)
+    # Use the specific required version, not "current" which may not be set
+    result = _run_with_nvm(f"nvm which {REQUIRED_NODE_MAJOR}")
 
     if result and result.returncode == 0 and result.stdout.strip():
         node_path = Path(result.stdout.strip())

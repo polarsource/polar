@@ -70,27 +70,25 @@ def install_homebrew() -> bool:
     return result is not None and result.returncode == 0
 
 
-def install_pnpm() -> bool:
-    """Install pnpm using corepack or npm."""
-    # Try corepack first
-    if check_command_exists("corepack"):
-        result = run_command(["corepack", "enable"], capture=True)
-        if result and result.returncode == 0:
-            result = run_command(["corepack", "prepare", "pnpm@latest", "--activate"], capture=True)
-            if result and result.returncode == 0:
-                return True
 
-    # Try npm
-    if check_command_exists("npm"):
-        result = run_command(["npm", "install", "-g", "pnpm"], capture=True)
-        if result and result.returncode == 0:
-            return True
+def is_xcode_clt_installed() -> bool:
+    """Check if Xcode Command Line Tools are installed."""
+    result = run_command(["xcode-select", "-p"], capture=True)
+    return result is not None and result.returncode == 0
 
-    # Try Homebrew on macOS
-    if platform.system() == "Darwin" and check_command_exists("brew"):
-        result = run_command(["brew", "install", "pnpm"], capture=True)
-        return result is not None and result.returncode == 0
 
+def install_xcode_clt() -> bool:
+    """Install Xcode Command Line Tools."""
+    console.print("  [dim]This may open a system dialog — click Install when prompted.[/dim]")
+    result = run_command(["xcode-select", "--install"], capture=False)
+    if result and result.returncode == 0:
+        # Wait for installation to complete
+        import time
+        with step_spinner("Waiting for Xcode Command Line Tools to install..."):
+            for _ in range(300):  # up to 5 minutes
+                if is_xcode_clt_installed():
+                    return True
+                time.sleep(2)
     return False
 
 
@@ -98,6 +96,18 @@ def run(ctx: Context) -> bool:
     """Check and install prerequisites: Docker, uv, pnpm, Node.js."""
     prereqs_ok = True
     system = platform.system()
+
+    # Xcode Command Line Tools (macOS) - required for git, compilers, etc.
+    if system == "Darwin":
+        if is_xcode_clt_installed():
+            step_status(True, "Xcode CLT", "installed")
+        else:
+            console.print("  [yellow]Xcode Command Line Tools not found, installing...[/yellow]")
+            if install_xcode_clt():
+                step_status(True, "Xcode CLT", "installed")
+            else:
+                step_status(False, "Xcode CLT", "installation failed - run: xcode-select --install")
+                prereqs_ok = False
 
     # Homebrew (macOS) - needed for installing other tools
     if system == "Darwin":
@@ -140,18 +150,25 @@ def run(ctx: Context) -> bool:
     version = get_command_version("uv")
     step_status(True, "uv", version or "")
 
-    # pnpm
+    # pnpm - just report status, step 02 handles installation after Node is set up
     if check_command_exists("pnpm"):
         version = get_command_version("pnpm")
         step_status(True, "pnpm", version or "")
     else:
-        console.print("  [yellow]pnpm not found, installing...[/yellow]")
-        if install_pnpm():
-            version = get_command_version("pnpm")
-            step_status(True, "pnpm", f"installed ({version})" if version else "installed")
+        step_status(True, "pnpm", "not found (will install after Node setup)")
+
+    # Tailscale
+    if system == "Darwin":
+        if check_command_exists("tailscale"):
+            step_status(True, "Tailscale", "installed")
         else:
-            step_status(False, "pnpm", "installation failed - install manually: npm install -g pnpm")
-            prereqs_ok = False
+            console.print("  [yellow]Tailscale not found, installing...[/yellow]")
+            result = run_command(["brew", "install", "--cask", "tailscale"], capture=False)
+            if result and result.returncode == 0:
+                step_status(True, "Tailscale", "installed")
+            else:
+                step_status(False, "Tailscale", "installation failed")
+                prereqs_ok = False
 
     # Node.js - just report status, step 02 handles installation via nvm
     if check_command_exists("node"):

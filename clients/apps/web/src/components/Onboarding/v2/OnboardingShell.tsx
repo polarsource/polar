@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import LogoIcon from '../../Brand/logos/LogoIcon'
 import { type APIPreviewStep, APIPreview } from './APIPreview'
 
@@ -34,6 +34,7 @@ export function OnboardingShell({
 }: OnboardingShellProps) {
   const router = useRouter()
   const { userOrganizations } = useAuth()
+  const [hadOrgs] = useState(() => userOrganizations.length > 0)
   const currentIndex = step ? STEPS.indexOf(step) : -1
 
   return (
@@ -110,7 +111,7 @@ export function OnboardingShell({
                 )}
               </Box>
               {children}
-              {userOrganizations.length > 0 && (
+              {hadOrgs && (
                 <Link
                   href="/dashboard"
                   className="dark:text-polar-400 dark:hover:text-polar-200 text-center text-sm text-gray-500 hover:text-gray-900"

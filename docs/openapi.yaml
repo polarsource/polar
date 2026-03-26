@@ -41675,7 +41675,14 @@
             "description": "The ID of the object."
           },
           "email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email"
           },
           "email_verified": {

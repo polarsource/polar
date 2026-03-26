@@ -14627,7 +14627,7 @@ export interface components {
        */
       id: string
       /** Email */
-      email: string
+      email: string | null
       /** Email Verified */
       email_verified: boolean
       /** Name */

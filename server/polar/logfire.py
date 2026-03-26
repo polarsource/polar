@@ -117,6 +117,15 @@ def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
     # Don't scrub auth subject in log messages
     if match.path == ("attributes", "subject"):
         return match.value
+    # Don't scrub thread stacks from the event loop watchdog — they contain
+    # "session" via SQLAlchemy frames which triggers the default scrubber,
+    # but these are stack traces, not secrets.
+    if match.path == ("attributes", "thread_stacks"):
+        return match.value
+    if match.path == ("attributes", "event_loop_stack"):
+        return match.value
+    if match.path == ("attributes", "asyncio_tasks"):
+        return match.value
     return None
 
 

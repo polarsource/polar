@@ -109,3 +109,40 @@ class TestEventLoopWatchdog:
             call_kwargs = mock_log.error.call_args_list[0][1]
             assert "thread_stacks" in call_kwargs
             assert "obviously_blocking_function" in call_kwargs["thread_stacks"]
+            assert "event_loop_stack" in call_kwargs
+            assert "asyncio_tasks" in call_kwargs
+            assert "consecutive_misses" in call_kwargs
+            assert call_kwargs["consecutive_misses"] >= 1
+
+    def test_consecutive_misses_tracked(
+        self, event_loop_thread: asyncio.AbstractEventLoop
+    ) -> None:
+        blocker_started = threading.Event()
+
+        def block_loop() -> None:
+            blocker_started.set()
+            time.sleep(3)
+
+        event_loop_thread.call_soon_threadsafe(block_loop)
+        blocker_started.wait(timeout=1)
+
+        watchdog = _EventLoopWatchdog(
+            event_loop_thread,
+            heartbeat_interval=0.05,
+            heartbeat_timeout=0.3,
+        )
+
+        with patch("polar.worker._asyncio.log") as mock_log:
+            watchdog.start()
+            time.sleep(1.0)
+            watchdog.stop()
+            watchdog.join(timeout=5)
+
+            error_calls = [
+                c
+                for c in mock_log.error.call_args_list
+                if c[0][0] == "event_loop_unresponsive"
+            ]
+            assert len(error_calls) >= 2
+            assert error_calls[0][1]["consecutive_misses"] == 1
+            assert error_calls[1][1]["consecutive_misses"] == 2

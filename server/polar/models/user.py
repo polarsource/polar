@@ -135,12 +135,6 @@ class User(RecordModel):
     def oauth_accounts(cls) -> Mapped[list[OAuthAccount]]:
         return relationship(OAuthAccount, lazy="joined", back_populates="user")
 
-    accepted_terms_of_service: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-        deferred=True,
-    )
     accepted_terms_of_service_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
@@ -151,6 +145,10 @@ class User(RecordModel):
         nullable=True,
         default=None,
     )
+
+    @hybrid_property
+    def accepted_terms_of_service(self) -> bool:
+        return self.accepted_terms_of_service_at is not None
 
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=True

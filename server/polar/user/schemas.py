@@ -30,7 +30,7 @@ class OAuthAccountRead(TimestampedSchema):
 
 class UserRead(UserBase, TimestampedSchema):
     id: uuid.UUID
-    accepted_terms_of_service: bool
+    accepted_terms_of_service: bool = Field(description="Whether the user has accepted the terms of service")
     is_admin: bool
     identity_verified: bool
     identity_verification_status: IdentityVerificationStatus

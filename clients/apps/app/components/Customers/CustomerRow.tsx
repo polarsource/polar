@@ -1,6 +1,5 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
-import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
 import { Avatar } from '../Shared/Avatar'
@@ -8,7 +7,13 @@ import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 
 export interface CustomerRowProps {
-  customer: schemas['Customer']
+  customer: {
+    id: string
+    name: string | null
+    email?: string | null
+    display_email: string
+    avatar_url: string
+  }
 }
 
 export const CustomerRow = ({ customer }: CustomerRowProps) => {
@@ -28,11 +33,11 @@ export const CustomerRow = ({ customer }: CustomerRowProps) => {
       asChild
     >
       <Touchable>
-        <Avatar image={customer.avatar_url} name={customer.email} size={40} />
+        <Avatar image={customer.avatar_url} name={customer.display_email} size={40} />
         <Box flex={1} flexDirection="column" gap="spacing-2">
           <Text variant="bodyMedium">{customer.name ?? '—'}</Text>
           <Box flexDirection="row" gap="spacing-4">
-            <Text color="subtext">{customer.email}</Text>
+            <Text color="subtext">{customer.display_email}</Text>
           </Box>
         </Box>
       </Touchable>

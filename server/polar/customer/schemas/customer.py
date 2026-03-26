@@ -83,15 +83,11 @@ class _CustomerCreateBase(MetadataInputMixin, Schema):
     )
 
 
-class CustomerIndividualCreate(_CustomerCreateBase):
+class CustomerCreate(_CustomerCreateBase):
     type: Literal["individual"] = "individual"
     email: EmailStrDNS = Field(
         description=_email_description, examples=[_email_example]
     )
-
-
-# Convenience alias for internal usage
-CustomerCreate = CustomerIndividualCreate
 
 
 class CustomerTeamCreate(_CustomerCreateBase):
@@ -126,7 +122,7 @@ CustomerCreateInput = Annotated[
     Annotated[CustomerCreate, Tag("individual")]
     | Annotated[CustomerTeamCreate, Tag("team")],
     Discriminator(_customer_create_discriminator),
-    SetSchemaReference("CustomerCreate"),
+    SetSchemaReference("CustomerCreateInput"),
 ]
 
 

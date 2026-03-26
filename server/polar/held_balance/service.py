@@ -160,6 +160,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
             await event_service.create_event(session, balance_order_event)
         except Exception as e:
             log.error("Could not save balance.order event", error=str(e))
+            raise
 
 
 held_balance = HeldBalanceService(HeldBalance)

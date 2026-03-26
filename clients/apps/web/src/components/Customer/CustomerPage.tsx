@@ -303,16 +303,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </StatisticCard>
         </div>
 
-        {/** Disabling this for now until we're satisfied with the layout/presentation design */}
-
-        {/** organization.feature_settings?.revops_enabled && (}
-          <CashflowChart
-            organizationId={organization.id}
-            customerId={customer.id}
-            customerCreatedAt={customer.created_at}
-          />
-        ) */}
-
         <MetricChartBox
           metric={selectedMetric}
           onMetricChange={setSelectedMetric}
@@ -588,6 +578,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       </TabsContent>
       <CustomerUsageView
         customer={customer}
+        organization={organization}
         dateRange={dateRange}
         interval={interval}
       />

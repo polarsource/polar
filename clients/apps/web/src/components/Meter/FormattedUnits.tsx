@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 
 interface FormattedUnitsProps {
   value: string | number
@@ -24,7 +24,7 @@ const FormattedUnits = ({ value }: FormattedUnitsProps) => {
     return value
   }, [value, formatter])
 
-  return formattedValue
+  return <span>{formattedValue}</span>
 }
 
 export default FormattedUnits

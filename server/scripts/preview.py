@@ -19,6 +19,8 @@ MAX_POSTGRES_IDENTIFIER_LENGTH = 63
 DEFAULT_POSTGRES_PORT = 5432
 PREVIEW_POSTGRES_DROP_RETRIES = 5
 PREVIEW_POSTGRES_DROP_RETRY_DELAY_SECONDS = 1.0
+PREVIEW_POSTGRES_TEMPLATE_RETRIES = 10
+PREVIEW_POSTGRES_TEMPLATE_RETRY_DELAY_SECONDS = 2.0
 
 cli = typer.Typer()
 
@@ -746,15 +748,26 @@ def provision_preview_postgres(
                         f"CREATE DATABASE {database_name} WITH OWNER {role_name}"
                     )
                 else:
-                    cursor.execute(
-                        " ".join(
-                            [
-                                f"CREATE DATABASE {database_name}",
-                                f"WITH OWNER {role_name}",
-                                f"TEMPLATE {config.template_database}",
-                            ]
-                        )
+                    create_from_template_sql = " ".join(
+                        [
+                            f"CREATE DATABASE {database_name}",
+                            f"WITH OWNER {role_name}",
+                            f"TEMPLATE {config.template_database}",
+                        ]
                     )
+                    for attempt in range(PREVIEW_POSTGRES_TEMPLATE_RETRIES):
+                        try:
+                            cursor.execute(create_from_template_sql)
+                            break
+                        except psycopg2.errors.ObjectInUse:
+                            if attempt == PREVIEW_POSTGRES_TEMPLATE_RETRIES - 1:
+                                raise
+                            log_preview(
+                                f"Template {config.template_database} is in use, "
+                                f"retrying ({attempt + 1}/{PREVIEW_POSTGRES_TEMPLATE_RETRIES})"
+                            )
+                            connection.rollback()
+                            time.sleep(PREVIEW_POSTGRES_TEMPLATE_RETRY_DELAY_SECONDS)
                 database_created = True
                 log_preview(
                     "Created preview Postgres database "

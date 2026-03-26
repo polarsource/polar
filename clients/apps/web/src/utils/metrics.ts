@@ -427,6 +427,41 @@ export const METRIC_GROUPS: MetricGroup[] = [
       },
     ],
   },
+  {
+    category: 'Customers',
+    metrics: [
+      {
+        slug: 'seat_customers',
+        display_name: 'Active Customers',
+        description: 'Distinct customers with at least one seat in the period.',
+      },
+      {
+        slug: 'new_seat_customers',
+        display_name: 'New Customers',
+        description: 'Customers whose first seat was created in the period.',
+      },
+      {
+        slug: 'churned_seat_customers',
+        display_name: 'Churned Customers',
+        description: 'Customers whose last seat was removed in the period.',
+      },
+      {
+        slug: 'seats_total',
+        display_name: 'Seat Count',
+        description: 'Total seats across all customers at period end.',
+      },
+      {
+        slug: 'average_seats_per_customer',
+        display_name: 'Average Seats per Customer',
+        description: 'Mean number of seats held per active customer.',
+      },
+      {
+        slug: 'seat_utilization_rate',
+        display_name: 'Seat Utilization Rate',
+        description: 'Share of total seats that have been claimed.',
+      },
+    ],
+  },
 ]
 
 export const ALL_METRICS = METRIC_GROUPS.flatMap((g) => g.metrics)

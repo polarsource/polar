@@ -18,7 +18,7 @@ from sqlalchemy import (
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
-from polar.models import Checkout, Subscription
+from polar.models import Checkout, CustomerSeat, Order, Subscription
 from polar.models.checkout import CheckoutStatus
 
 from .queries import MetricQuery
@@ -448,6 +448,163 @@ class ChurnRateMetric(SQLMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class TotalSeatsMetric(SQLMetric):
+    slug = "seats_total"
+    display_name = "Seat Count"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(CustomerSeat.id)
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class ClaimedSeatsMetric(SQLMetric):
+    slug = "seats_claimed"
+    display_name = "Claimed Seats"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(CustomerSeat.id).filter(
+            CustomerSeat.claimed_at.is_not(None),
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], CustomerSeat.claimed_at)
+            )
+            <= i.sql_date_trunc(t),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class PendingSeatsMetric(SQLMetric):
+    slug = "seats_pending"
+    display_name = "Pending Seats"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(CustomerSeat.id).filter(
+            or_(
+                CustomerSeat.claimed_at.is_(None),
+                i.sql_date_trunc(
+                    cast(SQLColumnExpression[datetime], CustomerSeat.claimed_at)
+                )
+                > i.sql_date_trunc(t),
+            )
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class SeatCustomersMetric(SQLMetric):
+    slug = "seat_customers"
+    display_name = "Active Customers"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(
+            func.distinct(
+                func.coalesce(
+                    Subscription.customer_id,
+                    Order.customer_id,
+                )
+            )
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class NewSeatCustomersMetric(SQLMetric):
+    slug = "new_seat_customers"
+    display_name = "New Customers"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        raise NotImplementedError("Computed directly in get_seats_cte")
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class ChurnedSeatCustomersMetric(SQLMetric):
+    slug = "churned_seat_customers"
+    display_name = "Churned Customers"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        raise NotImplementedError("Computed directly in get_seats_cte")
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class AverageSeatsPerCustomerMetric(MetaMetric):
+    slug = "average_seats_per_customer"
+    display_name = "Average Seats per Customer"
+    type = MetricType.scalar
+    dependencies: ClassVar[list[str]] = ["seats_total", "seat_customers"]
+
+    @classmethod
+    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+        total = period.seats_total or 0
+        customers = period.seat_customers or 0
+        return total / customers if customers > 0 else 0.0
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        return float(cumulative_last(periods, cls.slug))
+
+
+class SeatUtilizationRateMetric(MetaMetric):
+    slug = "seat_utilization_rate"
+    display_name = "Seat Utilization Rate"
+    type = MetricType.percentage
+    dependencies: ClassVar[list[str]] = ["seats_claimed", "seats_total"]
+
+    @classmethod
+    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+        claimed = period.seats_claimed or 0
+        total = period.seats_total or 0
+        return claimed / total if total > 0 else 0.0
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        return float(cumulative_last(periods, cls.slug))
+
+
 class LTVMetric(MetaMetric):
     slug = "ltv"
     display_name = "Lifetime Value"
@@ -845,6 +1002,12 @@ METRICS_POSTGRES: list[type[SQLMetric]] = [
     SucceededCheckoutsMetric,
     ChurnedSubscriptionsMetric,
     ChurnRateMetric,
+    TotalSeatsMetric,
+    ClaimedSeatsMetric,
+    PendingSeatsMetric,
+    SeatCustomersMetric,
+    NewSeatCustomersMetric,
+    ChurnedSeatCustomersMetric,
 ]
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
@@ -853,6 +1016,8 @@ METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
     GrossMarginMetric,
     GrossMarginPercentageMetric,
     CashflowMetric,
+    AverageSeatsPerCustomerMetric,
+    SeatUtilizationRateMetric,
 ]
 
 METRICS: list[type[Metric]] = [

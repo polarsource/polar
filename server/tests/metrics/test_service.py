@@ -34,6 +34,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
@@ -45,6 +46,7 @@ from tests.fixtures.random_objects import (
     create_account,
     create_checkout,
     create_customer,
+    create_customer_seat,
     create_discount,
     create_event,
     create_order,
@@ -770,6 +772,24 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 2, 11),
         interval=TimeInterval.month,
         organization_id_filter=True,
+        auth_type="user",
+    ),
+    QueryCase(
+        label="seats",
+        org_key="seats",
+        start_date=date(2024, 1, 1),
+        end_date=date(2024, 3, 1),
+        interval=TimeInterval.month,
+        metrics=(
+            "seats_total",
+            "seats_claimed",
+            "seats_pending",
+            "seat_customers",
+            "new_seat_customers",
+            "churned_seat_customers",
+            "average_seats_per_customer",
+            "seat_utilization_rate",
+        ),
         auth_type="user",
     ),
 )
@@ -1985,6 +2005,121 @@ async def _seed_filtering_ltv(
     }
 
 
+async def _seed_seats(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    events: list[Event],
+) -> tuple[dict[str, UUID], dict[str, UUID]]:
+    c1 = await create_customer(
+        save_fixture, organization=organization, email="seat-c1@example.com"
+    )
+    c2 = await create_customer(
+        save_fixture, organization=organization, email="seat-c2@example.com"
+    )
+    c3 = await create_customer(
+        save_fixture, organization=organization, email="seat-c3@example.com"
+    )
+
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(100_00, "usd")],
+    )
+    ot_product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(50_00, "usd")],
+    )
+
+    subscription = await create_subscription(
+        save_fixture,
+        product=product,
+        customer=c1,
+        status=SubscriptionStatus.active,
+        started_at=_date_to_datetime(date(2024, 1, 1)),
+    )
+
+    order = await create_order(
+        save_fixture,
+        product=ot_product,
+        customer=c1,
+        status=OrderStatus.paid,
+        subtotal_amount=50_00,
+        created_at=_date_to_datetime(date(2024, 1, 1)),
+    )
+
+    # Seat A: claimed Jan 1 via subscription, customer c1
+    seat_a = await create_customer_seat(
+        save_fixture,
+        subscription=subscription,
+        status=SeatStatus.claimed,
+        customer=c1,
+        claimed_at=datetime(2024, 1, 1, tzinfo=UTC),
+    )
+    seat_a.created_at = datetime(2024, 1, 1, tzinfo=UTC)
+    await save_fixture(seat_a)
+
+    # Seat B: created Jan 15, claimed Jan 20 via subscription, customer c2
+    seat_b = await create_customer_seat(
+        save_fixture,
+        subscription=subscription,
+        status=SeatStatus.claimed,
+        customer=c2,
+        claimed_at=datetime(2024, 1, 20, tzinfo=UTC),
+    )
+    seat_b.created_at = datetime(2024, 1, 15, tzinfo=UTC)
+    await save_fixture(seat_b)
+
+    # Seat C: pending via subscription, created Jan 15 (never claimed)
+    seat_c = await create_customer_seat(
+        save_fixture,
+        subscription=subscription,
+        status=SeatStatus.pending,
+    )
+    seat_c.created_at = datetime(2024, 1, 15, tzinfo=UTC)
+    await save_fixture(seat_c)
+
+    # Seat D: claimed Jan 1, revoked Feb 15 via subscription, customer c3
+    seat_d = await create_customer_seat(
+        save_fixture,
+        subscription=subscription,
+        status=SeatStatus.revoked,
+        customer=c3,
+        claimed_at=datetime(2024, 1, 1, tzinfo=UTC),
+        revoked_at=datetime(2024, 2, 15, tzinfo=UTC),
+    )
+    seat_d.created_at = datetime(2024, 1, 1, tzinfo=UTC)
+    await save_fixture(seat_d)
+
+    # Seat E: claimed Feb 15 via order, customer c1 (same as Seat A for uniqueness test)
+    seat_e = await create_customer_seat(
+        save_fixture,
+        order=order,
+        status=SeatStatus.claimed,
+        customer=c1,
+        claimed_at=datetime(2024, 2, 15, tzinfo=UTC),
+    )
+    seat_e.created_at = datetime(2024, 2, 10, tzinfo=UTC)
+    await save_fixture(seat_e)
+
+    await _append_fixture_events(
+        save_fixture,
+        organization,
+        c1,
+        {"subscription_product": product, "one_time_product": ot_product},
+        {"subscription": subscription},
+        {"order": order},
+        events=events,
+    )
+
+    return (
+        {"subscription_product": product.id, "one_time_product": ot_product.id},
+        {"c1": c1.id, "c2": c2.id, "c3": c3.id},
+    )
+
+
 async def _seed_checkout_historical(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -2460,6 +2595,13 @@ async def metrics_harness(
             p, c = await _seed_sub_after_bounds(save_fixture, sab_org, events)
             organizations["sub_after_bounds"] = OrganizationContext(
                 organization=sab_org, product_ids=p, customer_ids=c
+            )
+
+            # --- seats ---
+            seats_org = await make_org("seats")
+            p, c = await _seed_seats(save_fixture, seats_org, events)
+            organizations["seats"] = OrganizationContext(
+                organization=seats_org, product_ids=p, customer_ids=c
             )
 
             # --- filtering_churn_rate ---
@@ -4441,6 +4583,108 @@ class TestGetMetrics:
         assert feb.timestamp == datetime(2024, 2, 1, 0, 0, 0, tzinfo=UTC)
         assert feb.active_subscriptions == 1
         assert feb.committed_subscriptions == 1
+
+    async def test_seats(
+        self,
+        metrics_harness: MetricsHarness,
+        metrics_session: AsyncSession,
+    ) -> None:
+        case = QUERY_CASES_BY_LABEL["seats"]
+        org_ctx = metrics_harness.organizations[case.org_key]
+        auth_subject = _metrics_auth_subject(
+            metrics_harness.user,
+            metrics_harness.unauthorized_user,
+            org_ctx.organization,
+            case.auth_type,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            metrics_session,
+            auth_subject,
+            start_date=case.start_date,
+            end_date=case.end_date,
+            timezone=ZoneInfo(case.timezone),
+            interval=case.interval,
+            organization_id=[org_ctx.organization.id],
+            metrics=list(case.metrics) if case.metrics is not None else None,
+            now=case.now,
+        )
+
+        assert len(metrics.periods) == 3
+
+        # Jan: A(claimed), B(claimed), C(pending), D(claimed, not yet revoked)
+        jan = metrics.periods[0]
+        assert jan.seats_total == 4
+        assert jan.seats_claimed == 3
+        assert jan.seats_pending == 1
+        assert jan.seat_customers == 1
+        assert jan.new_seat_customers == 1  # c1 first seen in Jan
+        assert jan.churned_seat_customers == 0
+        assert jan.average_seats_per_customer == 4.0  # 4 seats / 1 customer
+        assert jan.seat_utilization_rate == 0.75  # 3 claimed / 4 total
+
+        # Feb: D revoked, E appears (claimed via order, same customer as A)
+        feb = metrics.periods[1]
+        assert feb.seats_total == 4  # A, B, C, E
+        assert feb.seats_claimed == 3  # A, B, E
+        assert feb.seats_pending == 1  # C
+        assert feb.seat_customers == 1
+        assert feb.new_seat_customers == 0  # c1 already had seats before Feb
+        assert feb.churned_seat_customers == 0  # c1 still has active seats
+        assert feb.average_seats_per_customer == 4.0
+        assert feb.seat_utilization_rate == 0.75
+
+        # Mar: same as Feb
+        mar = metrics.periods[2]
+        assert mar.seats_total == 4
+        assert mar.seats_claimed == 3
+        assert mar.seats_pending == 1
+        assert mar.seat_customers == 1
+        assert mar.new_seat_customers == 0
+        assert mar.churned_seat_customers == 0
+        assert mar.average_seats_per_customer == 4.0
+        assert mar.seat_utilization_rate == 0.75
+
+        # cumulative_last → last period value for scalar/percentage metrics;
+        # cumulative_sum for the new/churned customer counters.
+        assert metrics.totals.seats_total == 4
+        assert metrics.totals.seats_claimed == 3
+        assert metrics.totals.seats_pending == 1
+        assert metrics.totals.seat_customers == 1
+        assert metrics.totals.new_seat_customers == 1  # sum: 1 + 0 + 0
+        assert metrics.totals.churned_seat_customers == 0
+        assert metrics.totals.average_seats_per_customer == 4.0
+        assert metrics.totals.seat_utilization_rate == 0.75
+
+    async def test_seat_meta_metrics_resolve_dependencies(
+        self,
+        metrics_harness: MetricsHarness,
+        metrics_session: AsyncSession,
+    ) -> None:
+        case = QUERY_CASES_BY_LABEL["seats"]
+        org_ctx = metrics_harness.organizations[case.org_key]
+        auth_subject = _metrics_auth_subject(
+            metrics_harness.user,
+            metrics_harness.unauthorized_user,
+            org_ctx.organization,
+            case.auth_type,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            metrics_session,
+            auth_subject,
+            start_date=case.start_date,
+            end_date=case.end_date,
+            timezone=ZoneInfo(case.timezone),
+            interval=case.interval,
+            organization_id=[org_ctx.organization.id],
+            metrics=["seat_utilization_rate", "average_seats_per_customer"],
+            now=case.now,
+        )
+
+        jan = metrics.periods[0]
+        assert jan.seat_utilization_rate == 0.75
+        assert jan.average_seats_per_customer == 4.0
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")

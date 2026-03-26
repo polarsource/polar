@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 from sqlalchemy import select
 
@@ -129,6 +131,9 @@ class TestRequestDeletion:
         """User PII is properly anonymized on deletion."""
         user.avatar_url = "https://example.com/avatar.png"
         user.meta = {"signup": {"intent": "creator"}}
+        user.first_name = "John"
+        user.last_name = "Doe"
+        user.date_of_birth = date(1990, 1, 15)
         await save_fixture(user)
 
         original_email = user.email
@@ -140,6 +145,9 @@ class TestRequestDeletion:
         assert user.email.endswith("@anonymized.polar.sh")
         assert user.avatar_url is None
         assert user.meta == {}
+        assert user.first_name is None
+        assert user.last_name is None
+        assert user.date_of_birth == date.fromtimestamp(0)
         assert user.deleted_at is not None
 
     async def test_oauth_accounts_deleted(

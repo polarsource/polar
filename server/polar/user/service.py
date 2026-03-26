@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -342,6 +342,9 @@ class UserService:
         update_dict: dict[str, Any] = {}
 
         update_dict["email"] = anonymize_email_for_deletion(user.email)
+        update_dict["first_name"] = None
+        update_dict["last_name"] = None
+        update_dict["date_of_birth"] = date.fromtimestamp(0)
 
         if user.avatar_url:
             update_dict["avatar_url"] = None

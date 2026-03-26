@@ -277,7 +277,7 @@ export function BusinessDetailsStep() {
   const [editingSlug, setEditingSlug] = useState(false)
   const [editedSlug, setEditedSlug] = useState(
     () =>
-      data.orgSlug !==
+      (data.orgSlug ?? '') !==
       slugify(data.orgName ?? '', { lower: true, strict: true }),
   )
   const [editedBusinessName, setEditedBusinessName] = useState(

@@ -8,7 +8,7 @@ import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 
 export interface CustomerRowProps {
-  customer: schemas['OrderCustomer']
+  customer: schemas['Customer']
 }
 
 export const CustomerRow = ({ customer }: CustomerRowProps) => {

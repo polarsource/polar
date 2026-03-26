@@ -7,7 +7,11 @@ import httpx
 import pytest
 import respx
 
-from polar.integrations.tinybird.client import TinybirdClient, TinybirdRequestError
+from polar.integrations.tinybird.client import (
+    MAX_RETRIES,
+    TinybirdClient,
+    TinybirdRequestError,
+)
 from polar.integrations.tinybird.service import (
     DATASOURCE_EVENTS,
     TinybirdEventsQuery,
@@ -412,6 +416,111 @@ class TestTinybirdDelete:
         stats_after = await _get_source_stats(tinybird_client, org_id)
         assert "batch.delete" not in stats_after
         assert stats_after["batch.keep"] == 1
+
+
+@pytest.mark.asyncio
+class TestRequestWithRetry:
+    async def test_retries_on_timeout(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        call_count = 0
+
+        def side_effect(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
+                raise httpx.ReadTimeout("timed out", request=request)
+            return httpx.Response(200, json={"data": []})
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                side_effect=side_effect
+            )
+            result = await client.endpoint("metrics")
+
+        assert result == []
+        assert call_count == 3
+
+    async def test_raises_after_all_retries_exhausted_on_timeout(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        def side_effect(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectTimeout("connect timed out", request=request)
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                side_effect=side_effect
+            )
+            with pytest.raises(httpx.ConnectTimeout):
+                await client.endpoint("metrics")
+
+    async def test_retries_on_connection_error(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        call_count = 0
+
+        def side_effect(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise httpx.ConnectError("connection refused", request=request)
+            return httpx.Response(200, json={"data": []})
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                side_effect=side_effect
+            )
+            result = await client.endpoint("metrics")
+
+        assert result == []
+        assert call_count == 2
+
+    async def test_total_attempts_is_max_retries_plus_one(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        call_count = 0
+
+        def side_effect(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.ReadTimeout("timed out", request=request)
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                side_effect=side_effect
+            )
+            with pytest.raises(httpx.ReadTimeout):
+                await client.endpoint("metrics")
+
+        assert call_count == MAX_RETRIES + 1
 
 
 @pytest.mark.asyncio

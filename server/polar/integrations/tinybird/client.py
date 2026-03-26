@@ -145,32 +145,46 @@ class TinybirdClient:
     ) -> httpx.Response:
         last_response: httpx.Response | None = None
         for attempt in range(MAX_RETRIES + 1):
-            response = await client.request(method, url, **kwargs)
-            if response.is_success:
-                return response
-            if response.status_code not in RETRYABLE_STATUS_CODES:
-                return response
-            last_response = response
-            if attempt < MAX_RETRIES:
+            retry_delay: float | None = None
+            try:
+                response = await client.request(method, url, **kwargs)
+            except httpx.RequestError as exc:
+                if attempt >= MAX_RETRIES:
+                    raise
+                retry_delay = RETRY_BACKOFF_SECONDS[attempt]
+                log.warning(
+                    "tinybird.retry.request_error",
+                    error=str(exc),
+                    error_type=type(exc).__name__,
+                    attempt=attempt + 1,
+                    delay=retry_delay,
+                    endpoint=endpoint_name,
+                )
+            else:
+                if response.is_success:
+                    return response
+                if response.status_code not in RETRYABLE_STATUS_CODES:
+                    return response
+                last_response = response
+                if attempt >= MAX_RETRIES:
+                    break
+                retry_delay = RETRY_BACKOFF_SECONDS[attempt]
                 if response.status_code == 429:
                     retry_after = response.headers.get("Retry-After")
                     if retry_after:
                         try:
-                            delay = min(float(retry_after), 1.0)
+                            retry_delay = min(float(retry_after), 1.0)
                         except ValueError:
-                            delay = RETRY_BACKOFF_SECONDS[attempt]
-                    else:
-                        delay = RETRY_BACKOFF_SECONDS[attempt]
-                else:
-                    delay = RETRY_BACKOFF_SECONDS[attempt]
+                            pass
                 log.debug(
                     "tinybird.retry",
                     status_code=response.status_code,
                     attempt=attempt + 1,
-                    delay=delay,
+                    delay=retry_delay,
                     endpoint=endpoint_name,
                 )
-                await asyncio.sleep(delay)
+
+            await asyncio.sleep(retry_delay)
         assert last_response is not None
         return last_response
 

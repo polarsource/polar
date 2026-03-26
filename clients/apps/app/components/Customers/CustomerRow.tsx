@@ -28,7 +28,11 @@ export const CustomerRow = ({ customer }: CustomerRowProps) => {
       asChild
     >
       <Touchable>
-        <Avatar image={customer.avatar_url} name={customer.display_email} size={40} />
+        <Avatar
+          image={customer.avatar_url}
+          name={customer.display_email}
+          size={40}
+        />
         <Box flex={1} flexDirection="column" gap="spacing-2">
           <Text variant="bodyMedium">{customer.name ?? '—'}</Text>
           <Box flexDirection="row" gap="spacing-4">

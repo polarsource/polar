@@ -212,13 +212,9 @@ class CustomerService:
             owner_email=(
                 customer_create.owner.email if customer_create.owner else None
             ),
-            owner_name=(
-                customer_create.owner.name if customer_create.owner else None
-            ),
+            owner_name=(customer_create.owner.name if customer_create.owner else None),
             owner_external_id=(
-                customer_create.owner.external_id
-                if customer_create.owner
-                else None
+                customer_create.owner.external_id if customer_create.owner else None
             ),
         )
 
@@ -235,9 +231,7 @@ class CustomerService:
         """Create a customer for a known organization (internal flows)."""
         repository = CustomerRepository.from_session(session)
 
-        if await repository.get_by_email_and_organization(
-            email, organization.id
-        ):
+        if await repository.get_by_email_and_organization(email, organization.id):
             raise PolarRequestValidationError(
                 [
                     {

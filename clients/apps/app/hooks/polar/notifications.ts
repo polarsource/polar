@@ -173,6 +173,9 @@ export const useListNotifications = (): UseQueryResult<
         },
       )
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
       return response.json()
     },
   })
@@ -197,6 +200,9 @@ export const useNotificationsMarkRead = () => {
         },
       )
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
       return response.json()
     },
     onSuccess: (result, _variables, _ctx) => {

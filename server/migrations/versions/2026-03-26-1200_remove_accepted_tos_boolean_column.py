@@ -19,17 +19,6 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    # Backfill accepted_terms_of_service_at for users who accepted but don't
-    # have the timestamp yet (accepted before the _at column was added).
-    op.execute(
-        sa.text("""
-        UPDATE users
-        SET accepted_terms_of_service_at = now()
-        WHERE accepted_terms_of_service = TRUE
-          AND accepted_terms_of_service_at IS NULL
-        """)
-    )
-
     op.drop_column("users", "accepted_terms_of_service")
 
 

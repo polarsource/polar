@@ -13,6 +13,8 @@ import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo } from 'react'
 import FormattedUnits from '../Meter/FormattedUnits'
 import StackedMeterChart from '../Meter/StackedMeterChart'
+import { EmptyState } from '../CustomerPortal/EmptyState'
+import { GaugeCircle, GaugeCircleIcon } from 'lucide-react'
 
 const METER_COLORS = [
   '#2563eb',
@@ -144,12 +146,11 @@ export const CustomerUsageView = ({
   if (!isLoading && customerMeters.length === 0) {
     return (
       <TabsContent value="usage" className="flex flex-col gap-y-8">
-        <div className="flex flex-col items-center gap-y-2">
-          <h3 className="text-lg font-medium">No active meters</h3>
-          <p className="dark:text-polar-500 text-gray-500">
-            This customer has no active meters.
-          </p>
-        </div>
+        <EmptyState
+          icon={<GaugeCircleIcon className="h-6 w-6" />}
+          title="No active meters"
+          description="This customer does not have any active meters"
+        />
       </TabsContent>
     )
   }

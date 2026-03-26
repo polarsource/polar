@@ -91,7 +91,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           <FormControl>
             <Input
               type="email"
-              value={customer.email}
+              value={customer.email ?? ''}
               disabled
               readOnly
               className="bg-white shadow-xs"

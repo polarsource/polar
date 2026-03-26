@@ -400,7 +400,12 @@ class WebhookOrderPayloadBase(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.description},
             {"name": "Amount", "value": amount_display},
-            {"name": "Customer", "value": self.data.customer.display_email},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
         ]
         if self.data.subscription is not None:
             fields.append({"name": "Subscription", "value": "Yes"})
@@ -431,7 +436,7 @@ class WebhookOrderPayloadBase(BaseWebhookPayload):
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
             {
                 "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.display_email}",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
             },
         ]
         if self.data.subscription is not None:
@@ -522,7 +527,12 @@ class WebhookOrderRefundedPayload(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.description},
             {"name": "Refunded", "value": amount_display},
-            {"name": "Customer", "value": self.data.customer.display_email},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
         ]
         if self.data.subscription is not None:
             fields.append({"name": "Subscription", "value": "Yes"})
@@ -556,7 +566,7 @@ class WebhookOrderRefundedPayload(BaseWebhookPayload):
             {"type": "mrkdwn", "text": f"*Refunded*\n{amount_display}"},
             {
                 "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.display_email}",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
             },
         ]
         if self.data.subscription is not None:
@@ -605,7 +615,12 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.product.name},
             {"name": "Amount", "value": amount_display},
-            {"name": "Customer", "value": self.data.customer.display_email},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
         ]
         payload: DiscordPayload = {
             "content": "New Subscription",
@@ -633,7 +648,7 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
             {
                 "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.display_email}",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
             },
         ]
         payload: SlackPayload = get_branded_slack_payload(
@@ -868,7 +883,12 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.product.name},
             {"name": "Amount", "value": amount_display},
-            {"name": "Customer", "value": self.data.customer.display_email},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
             {"name": "Status", "value": self.data.status},
         ]
         return fields
@@ -880,7 +900,7 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
             {
                 "type": "mrkdwn",
-                "text": f"*Customer*\n{self.data.customer.display_email}",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
             },
             {"type": "mrkdwn", "text": f"*Status*\n{self.data.status}"},
         ]

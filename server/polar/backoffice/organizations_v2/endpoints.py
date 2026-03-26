@@ -422,7 +422,8 @@ async def get_organization_detail(
         .limit(10)
     )
     members_result = await session.execute(members_stmt)
-    organization.members = list(members_result.scalars().unique().all())  # type: ignore[attr-defined]
+    members = list(members_result.scalars().unique().all())
+    organization.members = members  # type: ignore[attr-defined]
 
     # Fetch AI verdict for action buttons (needed regardless of section)
     review_repo = OrganizationReviewRepository.from_session(session)
@@ -436,9 +437,17 @@ async def get_organization_detail(
     admin_user = await repository.get_admin_user(session, organization)
     admin_email = admin_user.email if admin_user else None
 
+    # Determine impersonation target: admin, or first member as fallback
+    impersonate_user = admin_user
+    if not impersonate_user and members:
+        impersonate_user = members[0].user
+
     # Create views
     detail_view = OrganizationDetailView(
-        organization, ai_verdict=ai_verdict, admin_email=admin_email
+        organization,
+        ai_verdict=ai_verdict,
+        admin_email=admin_email,
+        impersonate_user=impersonate_user,
     )
 
     # Fetch analytics data for overview section

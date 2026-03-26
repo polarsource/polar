@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import Request
 from tagflow import tag, text
 
-from polar.models import Organization
+from polar.models import Organization, User
 from polar.models.organization import OrganizationStatus
 
 from ...components import (
@@ -40,10 +40,12 @@ class OrganizationDetailView:
         organization: Organization,
         ai_verdict: str = "",
         admin_email: str | None = None,
+        impersonate_user: User | None = None,
     ):
         self.org = organization
         self.ai_verdict = ai_verdict
         self.admin_email = admin_email
+        self.impersonate_user = impersonate_user
 
     @contextlib.contextmanager
     def section_tabs(
@@ -178,6 +180,33 @@ class OrganizationDetailView:
                                 text("Country")
                             with tag.dd(classes="font-semibold"):
                                 text(self.org.account.country)
+
+            # Impersonate
+            if self.impersonate_user:
+                with card(bordered=True, classes="mb-4"):
+                    with tag.h3(
+                        classes="font-bold text-sm uppercase tracking-wide mb-3"
+                    ):
+                        text("Impersonate")
+                    with tag.div(classes="text-sm text-base-content/60 mb-3"):
+                        text(self.impersonate_user.email)
+                    with tag.form(
+                        hx_post=str(request.url_for("backoffice:start_impersonation")),
+                        hx_confirm=f"Impersonate {self.impersonate_user.email}?",
+                    ):
+                        with tag.input(
+                            type="hidden",
+                            name="user_id",
+                            value=str(self.impersonate_user.id),
+                        ):
+                            pass
+                        with button(
+                            variant="secondary",
+                            size="sm",
+                            outline=True,
+                            type="submit",
+                        ):
+                            text("Impersonate")
 
             # Internal Notes
             if self.org.internal_notes:

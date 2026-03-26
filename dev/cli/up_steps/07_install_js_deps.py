@@ -5,6 +5,7 @@ from shared import (
     CLIENTS_DIR,
     console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -13,7 +14,7 @@ NAME = "Installing JavaScript dependencies"
 
 def run(ctx: Context) -> bool:
     """Run pnpm install to install JS dependencies."""
-    with console.status("[bold]Running pnpm install...[/bold]"):
+    with step_spinner("Running pnpm install..."):
         result = run_command(["pnpm", "install"], cwd=CLIENTS_DIR, capture=True)
         if result and result.returncode == 0:
             step_status(True, "pnpm install", "complete")

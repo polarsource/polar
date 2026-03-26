@@ -9,6 +9,7 @@ from shared import (
     console,
     get_command_version,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -42,7 +43,7 @@ def start_docker() -> bool:
     if platform.system() == "Darwin":
         result = run_command(["open", "-a", "Docker"], capture=True)
         if result and result.returncode == 0:
-            with console.status("[bold]Waiting for Docker to start...[/bold]"):
+            with step_spinner("Waiting for Docker to start..."):
                 for _ in range(60):
                     time.sleep(2)
                     if is_docker_running():

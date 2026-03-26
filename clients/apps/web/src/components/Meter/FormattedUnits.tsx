@@ -8,7 +8,7 @@ const FormattedUnits = ({ value }: FormattedUnitsProps) => {
   const formatter = useMemo(() => {
     return new Intl.NumberFormat('en-US', {
       notation: 'standard',
-      maximumFractionDigits: 14,
+      maximumFractionDigits: 6,
     })
   }, [])
 

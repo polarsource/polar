@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from annotated_types import MaxLen
 from fastapi import Path
-from pydantic import UUID4, Discriminator, Field, Tag, computed_field, model_validator
+from pydantic import UUID4, Discriminator, Field, computed_field, model_validator
 from pydantic.aliases import AliasChoices
 
 from polar.config import settings
@@ -119,8 +119,7 @@ def _customer_create_type(v: dict[str, object] | object) -> str:
 
 
 CustomerCreate = Annotated[
-    Annotated[CustomerIndividualCreate, Tag("individual")]
-    | Annotated[CustomerTeamCreate, Tag("team")],
+    CustomerIndividualCreate | CustomerTeamCreate,
     Discriminator(_customer_create_type),
     SetSchemaReference("CustomerCreate"),
 ]

@@ -111,7 +111,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       contextView={
         <CustomerContextView
           organization={organization}
-          customer={order.customer as schemas['CustomerResponse']}
+          customer={order.customer}
         />
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
@@ -518,7 +518,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <h3 className="text-lg">Customer</h3>
         <CustomerContextView
           organization={organization}
-          customer={order.customer as schemas['CustomerResponse']}
+          customer={order.customer}
         />
       </div>
 

@@ -21,7 +21,10 @@ import { EditCustomerModal } from './EditCustomerModal'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
-  customer: schemas['CustomerResponse']
+  customer:
+    | schemas['CustomerResponse']
+    | schemas['OrderCustomer']
+    | schemas['SubscriptionCustomer']
 }
 
 export const CustomerContextView = ({

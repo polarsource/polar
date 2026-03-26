@@ -74,7 +74,7 @@ export default function EventDetailPage({
         event.customer ? (
           <CustomerContextView
             organization={organization}
-            customer={event.customer as schemas['CustomerResponse']}
+            customer={event.customer}
           />
         ) : undefined
       }

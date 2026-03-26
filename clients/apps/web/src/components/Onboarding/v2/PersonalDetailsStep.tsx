@@ -30,6 +30,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
+import { TermsCheckbox } from './TermsCheckbox'
 
 const MONTH_NAMES = [
   'January',
@@ -53,6 +54,7 @@ interface FormSchema {
   dobYear: string
   dobMonth: string
   dobDay: string
+  terms: boolean
 }
 
 function FormSync() {
@@ -73,6 +75,26 @@ function FormSync() {
   }, [values, updateData])
 
   return null
+}
+
+function SubmitButton({ loading }: { loading: boolean }) {
+  const { firstName, lastName, country, dobYear, dobMonth, dobDay, terms } =
+    useWatch<FormSchema>()
+
+  const disabled =
+    !firstName ||
+    !lastName ||
+    !country ||
+    !dobYear ||
+    !dobMonth ||
+    !dobDay ||
+    !terms
+
+  return (
+    <Button type="submit" loading={loading} disabled={disabled} fullWidth>
+      Continue
+    </Button>
+  )
 }
 
 export function PersonalDetailsStep() {
@@ -98,10 +120,11 @@ export function PersonalDetailsStep() {
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
       dobDay: parsedDob[2] ? String(Number(parsedDob[2])) : '',
+      terms: currentUser?.accepted_terms_of_service ?? false,
     },
   })
 
-  const { control, handleSubmit, watch } = form
+  const { control, handleSubmit, watch, setValue } = form
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('country')
@@ -140,6 +163,7 @@ export function PersonalDetailsStep() {
         last_name: formData.lastName,
         country: formData.country as schemas['CountryAlpha2Input'],
         date_of_birth: dateOfBirth,
+        ...(formData.terms ? { accepted_terms_of_service: true } : {}),
       })
 
       if (error) {
@@ -258,7 +282,7 @@ export function PersonalDetailsStep() {
                 name="dobMonth"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -276,7 +300,7 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
@@ -285,7 +309,7 @@ export function PersonalDetailsStep() {
                 name="dobDay"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -303,7 +327,7 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
@@ -312,7 +336,7 @@ export function PersonalDetailsStep() {
                 name="dobYear"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -330,17 +354,19 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
             </Box>
           </Box>
 
+          {!currentUser?.accepted_terms_of_service && (
+            <TermsCheckbox control={control} name="terms" setValue={setValue} />
+          )}
+
           <div className="flex flex-col gap-y-2">
-            <Button type="submit" loading={submitting} fullWidth>
-              Continue
-            </Button>
+            <SubmitButton loading={submitting} />
             {submitError && (
               <p className="text-sm text-red-500 dark:text-red-500">
                 Something went wrong, please try again.

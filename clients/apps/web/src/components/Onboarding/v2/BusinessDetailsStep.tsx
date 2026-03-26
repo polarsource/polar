@@ -8,8 +8,6 @@ import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
-
 import {
   Form,
   FormControl,
@@ -34,7 +32,6 @@ interface FormSchema {
   defaultCurrency: string
   businessCountry: string
   registeredBusinessName: string
-  terms: boolean
 }
 
 function FormSync() {
@@ -257,13 +254,11 @@ function CurrencyAndCountryFields() {
 function SubmitButton({ loading }: { loading: boolean }) {
   const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
   const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
-  const terms = useWatch<FormSchema, 'terms'>({ name: 'terms' })
-
   return (
     <Button
       type="submit"
       loading={loading}
-      disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
+      disabled={orgName.length === 0 || orgSlug.length === 0}
       fullWidth
     >
       Continue
@@ -291,14 +286,12 @@ export function BusinessDetailsStep() {
       defaultCurrency: data.defaultCurrency || 'usd',
       businessCountry: data.businessCountry || '',
       registeredBusinessName: data.registeredBusinessName || '',
-      terms: false,
     },
   })
 
   const { handleSubmit, setValue } = form
 
   const onSubmit = async (formData: FormSchema) => {
-    if (!formData.terms) return
     setSubmitting(true)
     setApiLoading(true)
 
@@ -395,66 +388,6 @@ export function BusinessDetailsStep() {
           />
 
           <CurrencyAndCountryFields />
-
-          <FormField
-            control={form.control}
-            name="terms"
-            rules={{ required: 'You must accept the terms to continue' }}
-            render={({ field }) => (
-              <FormItem>
-                <Box
-                  display="flex"
-                  flexDirection="row"
-                  alignItems="start"
-                  columnGap="m"
-                >
-                  <Checkbox
-                    id="terms"
-                    checked={field.value}
-                    onCheckedChange={(checked) => {
-                      setValue('terms', checked ? true : false)
-                    }}
-                    className="mt-0.5"
-                  />
-                  <div className="flex flex-col gap-y-1 text-sm">
-                    <label
-                      htmlFor="terms"
-                      className="cursor-pointer leading-snug font-medium"
-                    >
-                      I agree to Polar&apos;s{' '}
-                      <a
-                        href="https://polar.sh/legal/master-services-terms"
-                        className="text-gray-900 underline dark:text-white"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Terms
-                      </a>
-                      ,{' '}
-                      <a
-                        href="https://polar.sh/legal/privacy-policy"
-                        className="text-gray-900 underline dark:text-white"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Privacy Policy
-                      </a>{' '}
-                      &amp;{' '}
-                      <a
-                        href="https://polar.sh/legal/acceptable-use-policy"
-                        className="text-gray-900 underline dark:text-white"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        AUP
-                      </a>
-                    </label>
-                  </div>
-                </Box>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
           <SubmitButton loading={submitting} />
         </form>

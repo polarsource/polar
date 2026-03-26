@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from polar.auth.dependencies import Authenticator, WebUserRead, WebUserWrite
 from polar.auth.models import AuthSubject
@@ -40,10 +40,14 @@ async def get_authenticated(auth_subject: WebUserRead) -> User:
 @router.patch("/me", response_model=UserRead)
 async def update_authenticated(
     user_update: UserUpdate,
+    request: Request,
     auth_subject: WebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
-    return await user_service.update(session, auth_subject.subject, user_update)
+    ip_address = request.client.host if request.client else None
+    return await user_service.update(
+        session, auth_subject.subject, user_update, ip_address=ip_address
+    )
 
 
 @router.get("/me/scopes", response_model=UserScopes)

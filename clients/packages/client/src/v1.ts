@@ -27533,6 +27533,8 @@ export interface components {
         | null
       /** Date Of Birth */
       date_of_birth?: string | null
+      /** Accepted Terms Of Service */
+      accepted_terms_of_service?: boolean | null
     }
     /** ValidatedLicenseKey */
     ValidatedLicenseKey: {

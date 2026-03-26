@@ -109,7 +109,7 @@ module.exports = {
       },
     },
     runtimeVersion: {
-      policy: 'appVersion',
+      policy: 'fingerprint',
     },
     updates: {
       url: 'https://u.expo.dev/0c79977b-c070-4416-8878-d8b8febe2e25',

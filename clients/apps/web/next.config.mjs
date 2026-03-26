@@ -95,6 +95,16 @@ const nextConfig = {
     eslint: { ignoreDuringBuilds: true },
   }),
 
+  outputFileTracingExcludes: {
+    '/api/cover': ['**/*'],
+  },
+  outputFileTracingIncludes: {
+    '/api/cover': [
+      './src/app/(main)/(website)/(landing)/(mdx)/blog/(header)/_posts/**/*',
+      './src/app/(main)/(website)/(landing)/customers/(stories)/**/*',
+    ],
+  },
+
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 

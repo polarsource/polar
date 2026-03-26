@@ -25,7 +25,7 @@ from polar.routing import APIRouter
 from . import auth, sorting
 from .repository import CustomerRepository
 from .schemas.customer import (
-    CustomerCreateInput,
+    CustomerCreate,
     CustomerID,
     CustomerUpdate,
     CustomerUpdateExternalID,
@@ -34,7 +34,7 @@ from .schemas.customer import (
 from .schemas.customer import (
     CustomerResponse as CustomerSchema,
 )
-from .schemas.state import CustomerStateResponse
+from .schemas.state import CustomerState
 from .service import customer as customer_service
 
 _CustomerAdapter: TypeAdapter[CustomerSchema] = TypeAdapter(CustomerSchema)
@@ -209,7 +209,7 @@ async def get_external(
 @router.get(
     "/{id}/state",
     summary="Get Customer State",
-    response_model=CustomerStateResponse,
+    response_model=CustomerState,
     responses={404: CustomerNotFound},
 )
 async def get_state(
@@ -217,7 +217,7 @@ async def get_state(
     auth_subject: auth.CustomerRead,
     session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
-) -> CustomerStateResponse:
+) -> CustomerState:
     """
     Get a customer state by ID.
 
@@ -238,7 +238,7 @@ async def get_state(
 @router.get(
     "/external/{external_id}/state",
     summary="Get Customer State by External ID",
-    response_model=CustomerStateResponse,
+    response_model=CustomerState,
     responses={404: CustomerNotFound},
 )
 async def get_state_external(
@@ -246,7 +246,7 @@ async def get_state_external(
     auth_subject: auth.CustomerRead,
     session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
-) -> CustomerStateResponse:
+) -> CustomerState:
     """
     Get a customer state by external ID.
 
@@ -272,7 +272,7 @@ async def get_state_external(
     responses={201: {"description": "Customer created."}},
 )
 async def create(
-    customer_create: CustomerCreateInput,
+    customer_create: CustomerCreate,
     auth_subject: auth.CustomerWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:

@@ -17,7 +17,10 @@ import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerCreateForm = Omit<schemas['CustomerCreate'], 'metadata'> & {
+export type CustomerCreateForm = Omit<
+  schemas['CustomerIndividualCreate'],
+  'metadata'
+> & {
   metadata: { key: string; value: string | number | boolean }[]
 }
 

@@ -125,7 +125,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       contextView={
         <CustomerContextView
           organization={organization}
-          customer={subscription.customer as schemas['Customer']}
+          customer={subscription.customer as schemas['CustomerResponse']}
         />
       }
     >
@@ -219,7 +219,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       <div className="flex flex-col gap-4 md:hidden">
         <CustomerContextView
           organization={organization}
-          customer={subscription.customer as schemas['Customer']}
+          customer={subscription.customer as schemas['CustomerResponse']}
         />
       </div>
 

@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from annotated_types import MaxLen
 from fastapi import Path
-from pydantic import UUID4, Discriminator, Field, Tag, computed_field, model_validator
+from pydantic import UUID4, Discriminator, Field, computed_field, model_validator
 from pydantic.aliases import AliasChoices
 
 from polar.config import settings
@@ -24,7 +24,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.member import OwnerCreate
+from polar.member import MemberOwnerCreate
 from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
 from polar.tax.tax_id import TaxID
@@ -56,7 +56,7 @@ CustomerNameInput = Annotated[
 # --- Create schemas ---
 
 
-class _CustomerCreateBase(MetadataInputMixin, Schema):
+class CustomerCreateBase(MetadataInputMixin, Schema):
     external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
         default=None,
         description=_external_id_description,
@@ -73,7 +73,7 @@ class _CustomerCreateBase(MetadataInputMixin, Schema):
             "**Required unless you use an organization token.**"
         ),
     )
-    owner: OwnerCreate | None = Field(
+    owner: MemberOwnerCreate | None = Field(
         default=None,
         description=(
             "Optional owner member to create with the customer. "
@@ -83,14 +83,14 @@ class _CustomerCreateBase(MetadataInputMixin, Schema):
     )
 
 
-class CustomerCreate(_CustomerCreateBase):
+class CustomerIndividualCreate(CustomerCreateBase):
     type: Literal["individual"] = "individual"
     email: EmailStrDNS = Field(
         description=_email_description, examples=[_email_example]
     )
 
 
-class CustomerTeamCreate(_CustomerCreateBase):
+class CustomerTeamCreate(CustomerCreateBase):
     type: Literal["team"]
     email: EmailStrDNS | None = Field(
         default=None,
@@ -112,17 +112,10 @@ class CustomerTeamCreate(_CustomerCreateBase):
         return self
 
 
-def _customer_create_discriminator(v: dict[str, object] | object) -> str:
-    if isinstance(v, dict):
-        return v.get("type", "individual")  # type: ignore[return-value]
-    return getattr(v, "type", "individual")
-
-
-CustomerCreateInput = Annotated[
-    Annotated[CustomerCreate, Tag("individual")]
-    | Annotated[CustomerTeamCreate, Tag("team")],
-    Discriminator(_customer_create_discriminator),
-    SetSchemaReference("CustomerCreateInput"),
+CustomerCreate = Annotated[
+    CustomerIndividualCreate | CustomerTeamCreate,
+    Discriminator("type"),
+    SetSchemaReference("CustomerCreate"),
 ]
 
 
@@ -200,12 +193,10 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         ),
         examples=[True],
     )
-    type: CustomerType | None = Field(
-        default=None,
+    type: CustomerType = Field(
         description=(
             "The type of customer: 'individual' for single users, "
-            "'team' for customers with multiple members. "
-            "Legacy customers may have NULL type which is treated as 'individual'."
+            "'team' for customers with multiple members."
         ),
         examples=["individual"],
     )
@@ -236,17 +227,14 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
 
-def _customer_type_discriminator(v: dict[str, object] | object) -> str:
-    if isinstance(v, dict):
-        t = v.get("type")
-    else:
-        t = getattr(v, "type", None)
-    return "team" if t == "team" or t == CustomerType.team else "individual"
-
-
-class Customer(CustomerBase):
+class CustomerIndividual(CustomerBase):
     """A customer in an organization."""
 
+    type: Literal[CustomerType.individual] = Field(
+        default=CustomerType.individual,
+        description="The type of customer.",
+        examples=["individual"],
+    )
     email: str = Field(description=_email_description, examples=[_email_example])
 
 
@@ -260,7 +248,7 @@ class CustomerTeam(CustomerBase):
 
 
 CustomerResponse = Annotated[
-    Annotated[Customer, Tag("individual")] | Annotated[CustomerTeam, Tag("team")],
-    Discriminator(_customer_type_discriminator),
+    CustomerIndividual | CustomerTeam,
+    Discriminator("type"),
     SetSchemaReference("CustomerResponse"),
 ]

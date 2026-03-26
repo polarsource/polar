@@ -2299,69 +2299,47 @@ class SubscriptionService:
 
         subject = subject_template.format(product=product)
 
-        await self._send_email_to_recipients(
-            session,
-            recipients=recipients,
-            customer=customer,
-            template_name=template_name,
-            subject=subject,
-            organization=organization,
-            product=product,
-            subscription=subscription,
-            extra_context=extra_context,
-        )
+        async def send_to_recipients(recipients: Sequence[str]) -> None:
+            for recipient_email in recipients:
+                token = await customer_service.create_session_token_for_recipient(
+                    session, customer, recipient_email
+                )
+                if token is None:
+                    continue
 
-    async def _send_email_to_recipients(
-        self,
-        session: AsyncSession,
-        *,
-        recipients: Sequence[str],
-        customer: Customer,
-        template_name: str,
-        subject: str,
-        organization: Organization,
-        product: Product,
-        subscription: Subscription,
-        extra_context: dict[str, Any] | None = None,
-    ) -> None:
-        for recipient_email in recipients:
-            token = await customer_service.create_session_token_for_recipient(
-                session, customer, recipient_email
-            )
-            if token is None:
-                continue
-
-            query_string = urlencode(
-                {
-                    "customer_session_token": token,
-                    "id": str(subscription.id),
-                    "email": recipient_email,
-                }
-            )
-            portal_url = settings.generate_frontend_url(
-                f"/{organization.slug}/portal?{query_string}"
-            )
-
-            email = EmailAdapter.validate_python(
-                {
-                    "template": template_name,
-                    "props": {
+                query_string = urlencode(
+                    {
+                        "customer_session_token": token,
+                        "id": str(subscription.id),
                         "email": recipient_email,
-                        "organization": organization,
-                        "product": product,
-                        "subscription": subscription,
-                        "url": portal_url,
-                        **(extra_context or {}),
-                    },
-                }
-            )
+                    }
+                )
+                portal_url = settings.generate_frontend_url(
+                    f"/{organization.slug}/portal?{query_string}"
+                )
 
-            enqueue_email_template(
-                email,
-                **organization.email_from_reply,
-                to_email_addr=recipient_email,
-                subject=subject,
-            )
+                email = EmailAdapter.validate_python(
+                    {
+                        "template": template_name,
+                        "props": {
+                            "email": recipient_email,
+                            "organization": organization,
+                            "product": product,
+                            "subscription": subscription,
+                            "url": portal_url,
+                            **(extra_context or {}),
+                        },
+                    }
+                )
+
+                enqueue_email_template(
+                    email,
+                    **organization.email_from_reply,
+                    to_email_addr=recipient_email,
+                    subject=subject,
+                )
+
+        await send_to_recipients(recipients)
 
     async def _get_outdated_grants(
         self,

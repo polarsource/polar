@@ -44,20 +44,18 @@ from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
 from .schemas.customer import (
-    CustomerCreate,
+    CustomerIndividualCreate,
     CustomerTeamCreate,
     CustomerUpdate,
     CustomerUpdateExternalID,
 )
-from .schemas.state import CustomerStateResponse
+from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
 
 log = structlog.get_logger()
 
-# Pydantic TypeAdapter to validate/serialize the CustomerStateResponse union type
-_CustomerStateResponseAdapter: TypeAdapter[CustomerStateResponse] = TypeAdapter(
-    CustomerStateResponse
-)
+# Pydantic TypeAdapter to validate/serialize the CustomerState union type
+_CustomerStateAdapter: TypeAdapter[CustomerState] = TypeAdapter(CustomerState)
 
 
 class CustomerService:
@@ -138,7 +136,7 @@ class CustomerService:
     async def create(
         self,
         session: AsyncSession,
-        customer_create: CustomerCreate | CustomerTeamCreate,
+        customer_create: CustomerIndividualCreate | CustomerTeamCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Customer:
         organization = await get_payload_organization(
@@ -788,7 +786,7 @@ class CustomerService:
         redis: Redis,
         customer: Customer,
         cache: bool = True,
-    ) -> CustomerStateResponse:
+    ) -> CustomerState:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
         cache_key = f"polar:customer_state:v4:{customer.id}"
@@ -796,7 +794,7 @@ class CustomerService:
         if cache:
             raw_state = await redis.get(cache_key)
             if raw_state is not None:
-                return _CustomerStateResponseAdapter.validate_json(raw_state)
+                return _CustomerStateAdapter.validate_json(raw_state)
 
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
@@ -815,9 +813,7 @@ class CustomerService:
             customer.id
         )
 
-        state = _CustomerStateResponseAdapter.validate_python(
-            customer, from_attributes=True
-        )
+        state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
         await redis.set(
             cache_key,

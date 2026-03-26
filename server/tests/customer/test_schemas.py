@@ -5,7 +5,7 @@ import pytest
 from pydantic import TypeAdapter
 
 from polar.customer.schemas.customer import CustomerResponse as Customer
-from polar.customer.schemas.state import CustomerStateResponse as CustomerState
+from polar.customer.schemas.state import CustomerState
 from polar.models import Organization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer

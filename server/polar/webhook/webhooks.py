@@ -21,7 +21,7 @@ from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
 from polar.checkout.schemas import Checkout as CheckoutSchema
 from polar.customer.schemas.customer import CustomerResponse as CustomerSchema
-from polar.customer.schemas.state import CustomerStateResponse as CustomerStateSchema
+from polar.customer.schemas.state import CustomerState as CustomerStateSchema
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.exceptions import PolarError
 from polar.integrations.discord.webhook import (

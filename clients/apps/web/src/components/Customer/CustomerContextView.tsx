@@ -21,7 +21,7 @@ import { EditCustomerModal } from './EditCustomerModal'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
-  customer: schemas['Customer']
+  customer: schemas['CustomerResponse']
 }
 
 export const CustomerContextView = ({
@@ -91,7 +91,7 @@ export const CustomerContextView = ({
         >
           <Avatar
             avatar_url={customer.avatar_url}
-            name={customer.name || customer.email}
+            name={customer.name || customer.email || '—'}
             className="size-12 text-sm"
           />
           <div className="flex flex-col">

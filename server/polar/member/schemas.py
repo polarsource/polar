@@ -29,7 +29,7 @@ MemberNameInput = Annotated[
 ]
 
 
-class OwnerCreate(Schema):
+class MemberOwnerCreate(Schema):
     """Schema for creating an owner member during customer creation."""
 
     email: EmailStrDNS | None = Field(

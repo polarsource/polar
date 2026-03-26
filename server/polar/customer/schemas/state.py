@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AliasChoices, Discriminator, Field, Tag
+from pydantic import UUID4, AliasChoices, Discriminator, Field
 from pydantic.aliases import AliasPath
 from pydantic.json_schema import SkipJsonSchema
 
@@ -28,9 +28,8 @@ from polar.models.subscription import SubscriptionStatus
 from polar.subscription.schemas import SubscriptionMeterBase
 
 from .customer import (
-    Customer,
+    CustomerIndividual,
     CustomerTeam,
-    _customer_type_discriminator,
 )
 
 
@@ -189,7 +188,7 @@ class _CustomerStateFields:
     )
 
 
-class CustomerState(_CustomerStateFields, Customer):
+class CustomerStateIndividual(_CustomerStateFields, CustomerIndividual):
     """
     A customer along with additional state information:
 
@@ -209,9 +208,8 @@ class CustomerStateTeam(_CustomerStateFields, CustomerTeam):
     """
 
 
-CustomerStateResponse = Annotated[
-    Annotated[CustomerState, Tag("individual")]
-    | Annotated[CustomerStateTeam, Tag("team")],
-    Discriminator(_customer_type_discriminator),
-    SetSchemaReference("CustomerStateResponse"),
+CustomerState = Annotated[
+    CustomerStateIndividual | CustomerStateTeam,
+    Discriminator("type"),
+    SetSchemaReference("CustomerState"),
 ]

@@ -44,7 +44,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
         customer ? (
           <CustomerContextView
             organization={organization}
-            customer={customer as schemas['Customer']}
+            customer={customer as schemas['CustomerResponse']}
           />
         ) : undefined
       }

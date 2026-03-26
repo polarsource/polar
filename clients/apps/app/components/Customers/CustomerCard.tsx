@@ -9,7 +9,7 @@ import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 
 export interface CustomerCardProps {
-  customer?: schemas['Customer']
+  customer?: schemas['CustomerResponse']
   loading?: boolean
 }
 

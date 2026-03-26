@@ -148,7 +148,15 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
             "amount": 0,
             "taxability_reason": TaxabilityReason.standard_rated,
             "tax_behavior": TaxBehavior.exclusive,
-            "tax_rate": {},
+            "tax_rate": {
+                "rate_type": "percentage",
+                "basis_points": 2000,
+                "amount": None,
+                "amount_currency": None,
+                "display_name": "Tax",
+                "country": "US",
+                "state": None,
+            },
         },
         TaxProcessor.numeral,
     )
@@ -991,7 +999,15 @@ class TestCreate:
                 "amount": tax_amount,
                 "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_behavior": tax_behavior,
-                "tax_rate": {},
+                "tax_rate": {
+                    "rate_type": "percentage",
+                    "basis_points": 2000,
+                    "amount": None,
+                    "amount_currency": None,
+                    "display_name": "Tax",
+                    "country": "US",
+                    "state": None,
+                },
             },
             TaxProcessor.numeral,
         )
@@ -1011,7 +1027,15 @@ class TestCreate:
         assert checkout.tax_behavior == tax_behavior
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
         assert checkout.taxability_reason == TaxabilityReason.standard_rated
-        assert checkout.tax_rate == {}  # type: ignore
+        assert checkout.tax_rate == {
+            "rate_type": "percentage",
+            "basis_points": 2000,
+            "amount": None,
+            "amount_currency": None,
+            "display_name": "Tax",
+            "country": "US",
+            "state": None,
+        }
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 
@@ -2966,7 +2990,15 @@ class TestUpdate:
                 "amount": tax_amount,
                 "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_behavior": tax_behavior,
-                "tax_rate": {},
+                "tax_rate": {
+                    "rate_type": "percentage",
+                    "basis_points": 2000,
+                    "amount": None,
+                    "amount_currency": None,
+                    "display_name": "Tax",
+                    "country": "US",
+                    "state": None,
+                },
             },
             TaxProcessor.numeral,
         )
@@ -2985,7 +3017,15 @@ class TestUpdate:
         assert checkout.tax_behavior == tax_behavior
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
         assert checkout.taxability_reason == TaxabilityReason.standard_rated
-        assert checkout.tax_rate == {}  # type: ignore
+        assert checkout.tax_rate == {
+            "rate_type": "percentage",
+            "basis_points": 2000,
+            "amount": None,
+            "amount_currency": None,
+            "display_name": "Tax",
+            "country": "US",
+            "state": None,
+        }
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 

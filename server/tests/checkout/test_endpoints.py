@@ -71,7 +71,15 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
             "amount": 0,
             "taxability_reason": TaxabilityReason.standard_rated,
             "tax_behavior": TaxBehavior.exclusive,
-            "tax_rate": {},
+            "tax_rate": {
+                "rate_type": "percentage",
+                "basis_points": 2000,
+                "amount": None,
+                "amount_currency": None,
+                "display_name": "Tax",
+                "country": "US",
+                "state": None,
+            },
         },
         TaxProcessor.numeral,
     )

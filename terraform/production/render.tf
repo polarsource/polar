@@ -209,6 +209,12 @@ module "production" {
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }
+    "worker-tinybird" = {
+      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
+      image_url          = "ghcr.io/polarsource/polar"
+      image_digest       = "latest"
+      dramatiq_prom_port = "10002"
+    }
   }
 
   cron_jobs = {

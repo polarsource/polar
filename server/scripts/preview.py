@@ -694,6 +694,31 @@ def drop_preview_database(cursor: Any, database_name: str) -> None:
     ) from last_error
 
 
+def grant_template_objects(
+    config: PreviewPostgresAdminConfig,
+    database_name: str,
+    role_name: str,
+) -> None:
+    parsed = urlparse(config.admin_dsn)
+    db_dsn = parsed._replace(path=f"/{database_name}").geturl()
+    db_connection = psycopg2.connect(db_dsn)
+    db_connection.autocommit = True
+    try:
+        db_cursor = db_connection.cursor()
+        try:
+            db_cursor.execute(
+                f"GRANT ALL ON ALL TABLES IN SCHEMA public TO {role_name}"
+            )
+            db_cursor.execute(
+                f"GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO {role_name}"
+            )
+            db_cursor.execute(f"GRANT USAGE ON SCHEMA public TO {role_name}")
+        finally:
+            db_cursor.close()
+    finally:
+        db_connection.close()
+
+
 def provision_preview_postgres(
     preview_id: str,
     *,
@@ -769,6 +794,8 @@ def provision_preview_postgres(
                             connection.rollback()
                             time.sleep(PREVIEW_POSTGRES_TEMPLATE_RETRY_DELAY_SECONDS)
                 database_created = True
+                if config.template_database is not None:
+                    grant_template_objects(config, database_name, role_name)
                 log_preview(
                     "Created preview Postgres database "
                     f"{database_name}"

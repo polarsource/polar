@@ -1,12 +1,12 @@
 import uuid
 from datetime import datetime
-from typing import overload
 
 import structlog
 
 from polar.config import settings
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
 from polar.kit.address import Address
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.observability import TAX_CALCULATION_TOTAL
 
@@ -57,6 +57,9 @@ def get_tax_behavior_from_option(
                 if address.country in TAX_EXCLUSIVE_COUNTRIES
                 else TaxBehavior.inclusive
             )
+
+
+_BACKFILL_REFERENCE_PREFIX = "backfill_"
 
 
 class TaxCalculationService:
@@ -127,9 +130,11 @@ class TaxCalculationService:
     async def record(
         self,
         calculation_processor: TaxProcessor,
+        processor_id: str,
         *,
-        calculation: TaxCalculation,
         amount: int,
+        tax_amount: int,
+        currency: str,
         address: Address,
         tax_code: TaxCode,
         reference: str,
@@ -141,47 +146,58 @@ class TaxCalculationService:
                 "Recording tax calculation with a different processor than the one used for calculation",
                 calculation_processor=calculation_processor,
                 record_processor=settings.TAX_RECORD_PROCESSOR,
-                calculation_id=calculation["processor_id"],
+                calculation_id=processor_id,
             )
-            return await tax_processor_service.backfill(
-                calculation, amount, address, tax_code, reference, transaction_date
-            ), settings.TAX_RECORD_PROCESSOR
+            backfill_reference = await tax_processor_service.backfill(
+                amount,
+                tax_amount,
+                currency,
+                address,
+                tax_code,
+                reference,
+                transaction_date,
+            )
+            return (
+                f"{_BACKFILL_REFERENCE_PREFIX}{backfill_reference}",
+                settings.TAX_RECORD_PROCESSOR,
+            )
 
-        processor_id = calculation.get("processor_id")
         assert processor_id is not None
         return await tax_processor_service.record(
             processor_id, reference
         ), settings.TAX_RECORD_PROCESSOR
 
-    @overload
     async def revert(
         self,
         processor: TaxProcessor,
         transaction_id: str,
         reference: str,
+        address: Address,
+        tax_code: TaxCode,
+        currency: str,
         total_amount: int,
-        tax_amount: int,
-    ) -> str: ...
-
-    @overload
-    async def revert(
-        self, processor: TaxProcessor, transaction_id: str, reference: str
-    ) -> str: ...
-
-    async def revert(
-        self,
-        processor: TaxProcessor,
-        transaction_id: str,
-        reference: str,
-        total_amount: int | None = None,
-        tax_amount: int | None = None,
+        reverted_amount: int,
+        reverted_tax_amount: int,
     ) -> str:
         tax_processor_service = _get_tax_service(processor)
-        if total_amount is None or tax_amount is None:
+
+        if transaction_id.startswith(_BACKFILL_REFERENCE_PREFIX):
+            backfill_reference = await tax_processor_service.backfill(
+                -(reverted_amount - reverted_tax_amount),
+                -reverted_tax_amount,
+                currency,
+                address,
+                tax_code,
+                reference,
+                utc_now(),
+            )
+            return f"{_BACKFILL_REFERENCE_PREFIX}{backfill_reference}"
+
+        if reverted_amount >= total_amount:
             return await tax_processor_service.revert(transaction_id, reference)
 
         return await tax_processor_service.revert(
-            transaction_id, reference, total_amount, tax_amount
+            transaction_id, reference, reverted_amount, reverted_tax_amount
         )
 
 

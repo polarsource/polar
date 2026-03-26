@@ -148,7 +148,11 @@ class TaxServiceProtocol(Protocol):
 
     @overload
     async def revert(
-        self, transaction_id: str, reference: str, total_amount: int, tax_amount: int
+        self,
+        transaction_id: str,
+        reference: str,
+        reverted_amount: int,
+        reverted_tax_amount: int,
     ) -> str: ...
 
     @overload
@@ -158,14 +162,15 @@ class TaxServiceProtocol(Protocol):
         self,
         transaction_id: str,
         reference: str,
-        total_amount: int | None = None,
-        tax_amount: int | None = None,
+        reverted_amount: int | None = None,
+        reverted_tax_amount: int | None = None,
     ) -> str: ...
 
     async def backfill(
         self,
-        calculation: TaxCalculation,
         amount: int,
+        tax_amount: int,
+        currency: str,
         address: Address,
         tax_code: TaxCode,
         reference: str,

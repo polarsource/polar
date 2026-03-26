@@ -2420,14 +2420,8 @@ class TestHandlePayment:
         # once succeeding with the newly recalculated calculation ID
         assert tax_service_mock.record.call_count == 2
         first_record_call, second_record_call = tax_service_mock.record.call_args_list
-        assert (
-            first_record_call.kwargs["calculation"]["processor_id"]
-            == "tax_calc_expired_123"
-        )
-        assert (
-            second_record_call.kwargs["calculation"]["processor_id"]
-            == "TAX_PROCESSOR_ID"
-        )
+        assert first_record_call.args[1] == "tax_calc_expired_123"
+        assert second_record_call.args[1] == "TAX_PROCESSOR_ID"
 
         # The tax transaction processor ID should reflect the second (successful) record call
         assert updated_order.tax_transaction_processor_id == "NEW_TAX_TRANSACTION_ID"

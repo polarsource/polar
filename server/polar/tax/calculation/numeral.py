@@ -294,12 +294,12 @@ class NumeralTaxService(TaxServiceProtocol):
         self,
         transaction_id: str,
         reference: str,
-        total_amount: int | None = None,
-        tax_amount: int | None = None,
+        reverted_amount: int | None = None,
+        reverted_tax_amount: int | None = None,
     ) -> str:
         refund: NumeralTaxRefundResponse
 
-        if total_amount is None and tax_amount is None:
+        if reverted_amount is None and reverted_tax_amount is None:
             response = await self.client.post(
                 "/tax/refunds",
                 json={
@@ -311,8 +311,8 @@ class NumeralTaxService(TaxServiceProtocol):
             refund = response.json()
             return refund["id"]
 
-        assert total_amount is not None
-        assert tax_amount is not None
+        assert reverted_amount is not None
+        assert reverted_tax_amount is not None
 
         response = await self.client.get(f"/tax/transactions/{transaction_id}")
         response.raise_for_status()
@@ -329,8 +329,10 @@ class NumeralTaxService(TaxServiceProtocol):
                     {
                         "reference_product_id": reference_product_id,
                         "quantity": 1,
-                        "sales_amount_refunded": -(total_amount - tax_amount),
-                        "tax_amount_refunded": -tax_amount,
+                        "sales_amount_refunded": -(
+                            reverted_amount - reverted_tax_amount
+                        ),
+                        "tax_amount_refunded": -reverted_tax_amount,
                     }
                 ],
             },
@@ -342,8 +344,9 @@ class NumeralTaxService(TaxServiceProtocol):
 
     async def backfill(
         self,
-        calculation: TaxCalculation,
         amount: int,
+        tax_amount: int,
+        currency: str,
         address: Address,
         tax_code: TaxCode,
         reference: str,
@@ -357,12 +360,12 @@ class NumeralTaxService(TaxServiceProtocol):
                 "address_province": address.get_unprefixed_state() or "",
                 "address_country": address.country,
                 "transaction_date_time": int(transaction_date.timestamp()),
-                "currency_code": calculation["currency"],
+                "currency_code": currency,
                 "line_items": [
                     {
-                        "line_item_id": calculation["processor_id"],
+                        "line_item_id": reference,
                         "sales": amount,
-                        "total_taxes": calculation["amount"],
+                        "total_taxes": tax_amount,
                         "product_category": tax_code.to_numeral(),
                     }
                 ],

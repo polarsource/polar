@@ -465,20 +465,19 @@ class RefundService:
                 and order.tax_amount > 0
             ):
                 assert order.tax_processor is not None
-                if refund.total_amount >= order.total_amount:
-                    transaction_id = await tax_calculation_service.revert(
-                        order.tax_processor,
-                        order.tax_transaction_processor_id,
-                        reference=str(refund.id),
-                    )
-                else:
-                    transaction_id = await tax_calculation_service.revert(
-                        order.tax_processor,
-                        order.tax_transaction_processor_id,
-                        reference=str(refund.id),
-                        total_amount=refund.total_amount,
-                        tax_amount=refund.tax_amount,
-                    )
+                assert order.billing_address is not None
+                assert order.product is not None
+                transaction_id = await tax_calculation_service.revert(
+                    order.tax_processor,
+                    order.tax_transaction_processor_id,
+                    reference=str(refund.id),
+                    address=order.billing_address,
+                    tax_code=order.product.tax_code,
+                    currency=order.currency,
+                    total_amount=order.total_amount,
+                    reverted_amount=refund.total_amount,
+                    reverted_tax_amount=refund.tax_amount,
+                )
                 refund.tax_transaction_processor_id = transaction_id
                 session.add(refund)
 

@@ -89,22 +89,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
               accessorKey: 'method',
               header: 'Method',
               cell: ({ row: { original } }) => (
-                <PaymentMethod
-                  payment={original as unknown as schemas['Payment']}
-                />
+                <PaymentMethod payment={original} />
               ),
             },
             {
               accessorKey: 'status',
               header: 'Status',
               cell: ({ row: { original } }) => (
-                <PaymentStatus
-                  payment={original as unknown as schemas['Payment']}
-                />
+                <PaymentStatus payment={original} />
               ),
             },
           ]}
-          data={payments?.items ?? []}
+          data={(payments?.items ?? []) as unknown as schemas['Payment'][]}
         />
       </div>
     </DashboardBody>

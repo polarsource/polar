@@ -4,6 +4,7 @@ import { Input } from '@/components/Shared/Input'
 import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { schemas } from '@polar-sh/client'
 import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo, useState } from 'react'
@@ -37,7 +38,7 @@ export default function Index() {
       </Box>
       <FlashList
         data={customersData}
-        renderItem={({ item }) => {
+        renderItem={({ item }: { item: schemas['CustomerResponse'] }) => {
           return <CustomerRow customer={item} />
         }}
         contentContainerStyle={{

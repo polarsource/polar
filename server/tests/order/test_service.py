@@ -1723,7 +1723,7 @@ class TestCreateSubscriptionOrder:
                 "amount": 0,
                 "tax_behavior": TaxBehavior.exclusive,
                 "taxability_reason": TaxabilityReason.not_subject_to_tax,
-                "tax_rate": {},
+                "tax_rate": None,
             },
             TaxProcessor.numeral,
         )
@@ -1787,7 +1787,7 @@ class TestCreateSubscriptionOrder:
                 "amount": 0,
                 "tax_behavior": TaxBehavior.exclusive,
                 "taxability_reason": TaxabilityReason.not_subject_to_tax,
-                "tax_rate": {},
+                "tax_rate": None,
             },
             TaxProcessor.numeral,
         )
@@ -1852,7 +1852,7 @@ class TestCreateSubscriptionOrder:
                 "amount": 0,
                 "tax_behavior": TaxBehavior.exclusive,
                 "taxability_reason": TaxabilityReason.not_subject_to_tax,
-                "tax_rate": {},
+                "tax_rate": None,
             },
             TaxProcessor.numeral,
         )
@@ -1917,7 +1917,7 @@ class TestCreateSubscriptionOrder:
                 "amount": 0,
                 "tax_behavior": TaxBehavior.exclusive,
                 "taxability_reason": TaxabilityReason.not_subject_to_tax,
-                "tax_rate": {},
+                "tax_rate": None,
             },
             TaxProcessor.numeral,
         )
@@ -2057,7 +2057,15 @@ class TestCreateWalletOrder:
             amount=100_00,
             tax_amount=20_00,
             taxability_reason=TaxabilityReason.standard_rated,
-            tax_rate={},  # type: ignore
+            tax_rate={
+                "rate_type": "percentage",
+                "basis_points": 2000,
+                "amount": None,
+                "amount_currency": None,
+                "display_name": "Tax",
+                "country": "US",
+                "state": None,
+            },
             tax_calculation_processor_id="TAX_CALCULATION_ID",
         )
         payment = await create_payment(
@@ -2076,7 +2084,15 @@ class TestCreateWalletOrder:
         assert order.tax_amount == 20_00
         assert order.total_amount == 120_00
         assert order.taxability_reason == TaxabilityReason.standard_rated
-        assert order.tax_rate == {}  # type: ignore
+        assert order.tax_rate == {
+            "rate_type": "percentage",
+            "basis_points": 2000,
+            "amount": None,
+            "amount_currency": None,
+            "display_name": "Tax",
+            "country": "US",
+            "state": None,
+        }
 
         enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id=payment.processor_id

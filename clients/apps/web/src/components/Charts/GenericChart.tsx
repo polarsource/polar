@@ -361,8 +361,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
                 key={s.key}
                 dataKey={s.key}
                 fill={`var(--color-${s.key})`}
-                radius={4}
-                maxBarSize={32}
+                maxBarSize={8}
                 opacity={
                   activeSeries === null || activeSeries === s.key ? 1 : 0.3
                 }

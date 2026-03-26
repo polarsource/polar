@@ -17,6 +17,7 @@ from polar import tasks  # noqa: F401
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarError
 from polar.kit.address import SUPPORTED_COUNTRIES, Address, CountryAlpha2
 from polar.license_key.repository import LicenseKeyRepository
@@ -163,14 +164,12 @@ async def orders_import(
                     city=_getter(row, "city"),
                     country=CountryAlpha2(country),
                 )
-            customer = await customer_repository.create(
-                Customer(
-                    email=email,
-                    name=name,
-                    billing_address=billing_address,
-                    organization=organization,
-                ),
-                flush=True,
+            customer = await customer_service.create_for_organization(
+                session,
+                organization,
+                email=email,
+                name=name,
+                billing_address=billing_address,
             )
         customer_map[email] = customer
 

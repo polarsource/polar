@@ -12,6 +12,7 @@ from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.exceptions import PolarRequestValidationError, ValidationError
+from polar.kit.address import Address
 from polar.kit.anonymization import (
     ANONYMIZED_EMAIL_DOMAIN,
     anonymize_email_for_deletion,
@@ -194,36 +195,103 @@ class CustomerService:
                     ]
                 ) from e
 
-        try:
-            async with repository.create_context(
-                Customer(
-                    organization=organization,
-                    **customer_create.model_dump(
-                        exclude={"organization_id", "owner", "tax_id"},
-                        by_alias=True,
-                    ),
-                    tax_id=validated_tax_id,
-                )
-            ) as customer:
-                owner_email = (
-                    customer_create.owner.email if customer_create.owner else None
-                )
-                owner_name = (
-                    customer_create.owner.name if customer_create.owner else None
-                )
-                owner_external_id = (
-                    customer_create.owner.external_id if customer_create.owner else None
-                )
+        customer_obj = Customer(
+            organization=organization,
+            **customer_create.model_dump(
+                exclude={"organization_id", "owner", "tax_id"},
+                by_alias=True,
+            ),
+            tax_id=validated_tax_id,
+        )
 
+        return await self._persist_customer(
+            session,
+            customer_obj,
+            organization,
+            send_webhooks=True,
+            owner_email=(
+                customer_create.owner.email if customer_create.owner else None
+            ),
+            owner_name=(customer_create.owner.name if customer_create.owner else None),
+            owner_external_id=(
+                customer_create.owner.external_id if customer_create.owner else None
+            ),
+        )
+
+    async def create_for_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        email: str,
+        name: str | None = None,
+        billing_address: Address | None = None,
+        send_webhooks: bool = False,
+    ) -> Customer:
+        """Create a customer for a known organization (internal flows)."""
+        repository = CustomerRepository.from_session(session)
+
+        if await repository.get_by_email_and_organization(email, organization.id):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "A customer with this email address already exists.",
+                        "input": email,
+                    }
+                ]
+            )
+
+        customer_obj = Customer(
+            email=email,
+            name=name,
+            billing_address=billing_address,
+            organization=organization,
+        )
+
+        return await self._persist_customer(
+            session,
+            customer_obj,
+            organization,
+            send_webhooks=send_webhooks,
+        )
+
+    async def _persist_customer(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        *,
+        send_webhooks: bool,
+        owner_email: str | None = None,
+        owner_name: str | None = None,
+        owner_external_id: str | None = None,
+    ) -> Customer:
+        repository = CustomerRepository.from_session(session)
+        try:
+            if send_webhooks:
+                async with repository.create_context(customer) as created:
+                    await member_service.create_owner_member(
+                        session,
+                        created,
+                        organization,
+                        owner_email=owner_email,
+                        owner_name=owner_name,
+                        owner_external_id=owner_external_id,
+                    )
+                    return created
+            else:
+                created = await repository.create(customer, flush=True)
                 await member_service.create_owner_member(
                     session,
-                    customer,
+                    created,
                     organization,
                     owner_email=owner_email,
                     owner_name=owner_name,
                     owner_external_id=owner_external_id,
                 )
-                return customer
+                return created
         except IntegrityError as e:
             error_str = str(e)
             if "ix_customers_organization_id_email_not_null" in error_str:
@@ -233,7 +301,7 @@ class CustomerService:
                             "type": "value_error",
                             "loc": ("body", "email"),
                             "msg": "A customer with this email address already exists.",
-                            "input": customer_create.email,
+                            "input": customer.email,
                         }
                     ]
                 ) from e
@@ -244,7 +312,7 @@ class CustomerService:
                             "type": "value_error",
                             "loc": ("body", "external_id"),
                             "msg": "A customer with this external ID already exists.",
-                            "input": customer_create.external_id,
+                            "input": customer.external_id,
                         }
                     ]
                 ) from e

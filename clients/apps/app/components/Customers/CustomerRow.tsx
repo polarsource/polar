@@ -32,7 +32,7 @@ export const CustomerRow = ({ customer }: CustomerRowProps) => {
         <Box flex={1} flexDirection="column" gap="spacing-2">
           <Text variant="bodyMedium">{customer.name ?? '—'}</Text>
           <Box flexDirection="row" gap="spacing-4">
-            <Text color="subtext">{customer.display_email}</Text>
+            <Text color="subtext">{customer.email ?? '—'}</Text>
           </Box>
         </Box>
       </Touchable>

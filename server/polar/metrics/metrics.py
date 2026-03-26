@@ -258,6 +258,36 @@ class SucceededCheckoutsMetric(SQLMetric):
         return cumulative_sum(periods, cls.slug)
 
 
+class AnnualRecurringRevenueMetric(MetaMetric):
+    slug = "annual_recurring_revenue"
+    display_name = "Annual Recurring Revenue"
+    type = MetricType.currency
+    dependencies: ClassVar[list[str]] = ["monthly_recurring_revenue"]
+
+    @classmethod
+    def compute_from_period(cls, period: "MetricsPeriod") -> int | float:
+        return (period.monthly_recurring_revenue or 0) * 12
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class CommittedAnnualRecurringRevenueMetric(MetaMetric):
+    slug = "committed_annual_recurring_revenue"
+    display_name = "Committed Annual Recurring Revenue"
+    type = MetricType.currency
+    dependencies: ClassVar[list[str]] = ["committed_monthly_recurring_revenue"]
+
+    @classmethod
+    def compute_from_period(cls, period: "MetricsPeriod") -> int | float:
+        return (period.committed_monthly_recurring_revenue or 0) * 12
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
 class CheckoutsConversionMetric(MetaMetric):
     slug = "checkouts_conversion"
     display_name = "Checkouts Conversion Rate"
@@ -793,6 +823,8 @@ METRICS_POSTGRES: list[type[SQLMetric]] = [
 ]
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
+    AnnualRecurringRevenueMetric,
+    CommittedAnnualRecurringRevenueMetric,
     CheckoutsConversionMetric,
     LTVMetric,
     GrossMarginMetric,

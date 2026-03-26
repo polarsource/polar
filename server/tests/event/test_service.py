@@ -1449,6 +1449,14 @@ class TestIngested:
             any_order=True,
         )
 
+        tinybird_calls = [
+            c for c in enqueue_job_mock.call_args_list if c.args[0] == "tinybird.ingest"
+        ]
+        assert len(tinybird_calls) == 1
+        tinybird_payload = tinybird_calls[0].args[1]
+        assert len(tinybird_payload) == len(events)
+        assert {tb["id"] for tb in tinybird_payload} == {str(e.id) for e in events}
+
     async def test_auto_enable_revops_for_cost_events(
         self,
         save_fixture: SaveFixture,

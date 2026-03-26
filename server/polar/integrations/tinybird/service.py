@@ -217,6 +217,13 @@ def _event_to_tinybird(
     )
 
 
+def events_to_tinybird(
+    events: Sequence[Event],
+    ancestors_by_event: Mapping[UUID, Sequence[str]] | None = None,
+) -> list[TinybirdEvent]:
+    return [_event_to_tinybird(e, (ancestors_by_event or {}).get(e.id)) for e in events]
+
+
 async def ingest_events(
     events: Sequence[Event],
     ancestors_by_event: Mapping[UUID, Sequence[str]] | None = None,
@@ -224,9 +231,7 @@ async def ingest_events(
     if not events:
         return
 
-    tinybird_events = [
-        _event_to_tinybird(e, (ancestors_by_event or {}).get(e.id)) for e in events
-    ]
+    tinybird_events = events_to_tinybird(events, ancestors_by_event)
     await client.ingest(DATASOURCE_EVENTS, tinybird_events)
 
 

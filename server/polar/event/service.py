@@ -21,7 +21,7 @@ from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.tinybird.service import (
     TinybirdTimeseriesStats,
-    ingest_events,
+    events_to_tinybird,
 )
 from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams
@@ -957,7 +957,9 @@ class EventService:
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
 
-        await ingest_events(events, ancestors_by_event)
+        if events:
+            tinybird_events = events_to_tinybird(events, ancestors_by_event)
+            enqueue_job("tinybird.ingest", tinybird_events)
 
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)

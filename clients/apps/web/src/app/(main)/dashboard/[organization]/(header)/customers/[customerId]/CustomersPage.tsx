@@ -31,7 +31,7 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { endOfToday, startOfDay } from 'date-fns'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback } from 'react'
 
 const CustomerHeader = ({
   customer,
@@ -148,12 +148,19 @@ const CustomerHeader = ({
     [metrics],
   )
 
+  const onIntervalChange = useCallback(
+    (newInterval: schemas['TimeInterval']) => {
+      metrics.setInterval(newInterval)
+    },
+    [metrics],
+  )
+
   return (
     <div className="flex flex-row gap-2">
       <div>
         <IntervalPicker
           interval={metrics.interval}
-          onChange={metrics.setInterval}
+          onChange={onIntervalChange}
           startDate={metrics.startDate}
           endDate={metrics.endDate}
         />
@@ -237,7 +244,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
     defaultEndDate: endOfToday(),
   })
 
-  const [interval, setInterval] = useQueryState(
+  const [intervalParam, setInterval] = useQueryState(
     'interval',
     parseAsStringLiteral([
       'hour',
@@ -245,21 +252,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
       'week',
       'month',
       'year',
-    ] as schemas['TimeInterval'][]).withDefault(
-      getNextValidInterval('day', startDate, endDate),
-    ),
+    ] as schemas['TimeInterval'][]),
   )
 
-  useEffect(() => {
-    if (customer) {
-      const customerCreatedAt = startOfDay(new Date(customer.created_at))
-      const now = endOfToday()
-
-      setStartDate(customerCreatedAt)
-      setEndDate(now)
-      setInterval((prev) => getNextValidInterval(prev, customerCreatedAt, now))
-    }
-  }, [customer, setStartDate, setEndDate, setInterval])
+  const interval: schemas['TimeInterval'] =
+    intervalParam ?? getNextValidInterval('day', startDate, endDate)
 
   return (
     <MasterDetailLayoutContent

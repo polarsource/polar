@@ -160,9 +160,10 @@ def up(
 
     console.print("[bold green]Environment ready![/bold green]")
     console.print("\nNext steps:")
-    console.print("  [dim]dev api[/dim]     - Start API server")
-    console.print("  [dim]dev worker[/dim]  - Start background worker")
-    console.print("  [dim]dev web[/dim]     - Start web frontend")
+    console.print("  [dim]dev api[/dim]      - Start API server")
+    console.print("  [dim]dev worker[/dim]   - Start background worker")
+    console.print("  [dim]dev web[/dim]      - Start web frontend")
+    console.print("  [dim]dev stripe[/dim]   - Start Stripe webhook listener")
     console.print()
 
 
@@ -183,6 +184,7 @@ def help() -> None:
     console.print("  [bold]api[/bold]           Start the backend API server")
     console.print("  [bold]worker[/bold]        Start the background job worker")
     console.print("  [bold]web[/bold]           Start the frontend dev server")
+    console.print("  [bold]stripe[/bold]        Start Stripe webhook listener")
 
     console.print("\n[bold]Database:[/bold]")
     console.print("  [bold]db migrate[/bold]    Run database migrations")

@@ -15,6 +15,9 @@ class TrialRedemptionService:
         product: Product | None = None,
         payment_method_fingerprint: str | None = None,
     ) -> bool:
+        if customer.email is None:
+            return False
+
         repository = TrialRedemptionRepository.from_session(session)
         trial_redemptions = await repository.get_all_by_organization_and_hints(
             organization.id,
@@ -31,7 +34,10 @@ class TrialRedemptionService:
         customer: Customer,
         product: Product | None = None,
         payment_method_fingerprint: str | None = None,
-    ) -> TrialRedemption:
+    ) -> TrialRedemption | None:
+        if customer.email is None:
+            return None
+
         repository = TrialRedemptionRepository.from_session(session)
         return await repository.create(
             TrialRedemption(

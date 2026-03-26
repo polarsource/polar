@@ -97,14 +97,14 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
               <Avatar
                 className="h-10 w-10"
                 avatar_url={grant.customer.avatar_url}
-                name={grant.customer.name || grant.customer.email}
+                name={grant.customer.email ?? grant.customer.name ?? '—'}
               />
               <div className="flex min-w-0 flex-col">
                 <div className="w-full truncate text-sm">
                   {grant.customer.name ?? '—'}
                 </div>
                 <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
-                  {grant.customer.email}
+                  {grant.customer.email ?? '—'}
                 </div>
               </div>
             </div>

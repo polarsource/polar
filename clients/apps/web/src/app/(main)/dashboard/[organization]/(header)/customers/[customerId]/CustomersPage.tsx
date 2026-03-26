@@ -119,18 +119,24 @@ const CustomerHeader = ({
       if (response.error) {
         toast({
           title: 'Delete Customer Failed',
-          description: `Error deleting customer ${customer.email}: ${response.error.detail}`,
+          description: `Error deleting customer ${customer.email ?? customer.name ?? 'customer'}: ${response.error.detail}`,
         })
         return
       }
       toast({
         title: 'Customer Deleted',
-        description: `Customer ${customer.email} deleted successfully`,
+        description: `Customer ${customer.email ?? customer.name ?? 'customer'} deleted successfully`,
       })
 
       pushRouteWithoutCache(`/dashboard/${organization.slug}/customers`)
     })
-  }, [deleteCustomer, customer.email, pushRouteWithoutCache, organization.slug])
+  }, [
+    deleteCustomer,
+    customer.email,
+    customer.name,
+    pushRouteWithoutCache,
+    organization.slug,
+  ])
 
   const onDateChange = useCallback(
     (date: { from: Date; to: Date }) => {
@@ -184,7 +190,7 @@ const CustomerHeader = ({
             Copy Customer Portal
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <a href={`mailto:${customer.email}`}>Contact Customer</a>
+            <a href={`mailto:${customer.email ?? ''}`}>Contact Customer</a>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={showEditCustomerModal}>
             Edit Customer
@@ -208,7 +214,7 @@ const CustomerHeader = ({
       <ConfirmModal
         isShown={isDeleteCustomerModalShown}
         hide={hideDeleteCustomerModal}
-        title={`Delete Customer "${customer.email}"?`}
+        title={`Delete Customer "${customer.email ?? customer.name ?? 'customer'}"?`}
         body={
           <div className="dark:text-polar-400 flex flex-col gap-y-2 text-sm leading-relaxed text-gray-500">
             <p>This action cannot be undone and will immediately:</p>
@@ -225,7 +231,7 @@ const CustomerHeader = ({
           </div>
         }
         onConfirm={onDeleteCustomer}
-        confirmPrompt={customer.email}
+        confirmPrompt={customer.email ?? customer.name ?? ''}
         destructiveText="Delete"
         destructive
       />
@@ -265,7 +271,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
           <div className="flex flex-row items-center gap-6">
             <Avatar
               avatar_url={customer.avatar_url}
-              name={customer.name || customer.email}
+              name={customer.email ?? customer.name ?? '—'}
               className="h-16 w-16"
             />
             <div className="flex flex-col">
@@ -273,7 +279,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                 {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
               </p>
               <div className="dark:text-polar-500 flex flex-row items-center text-base font-normal text-gray-500">
-                <span>{customer.email}</span>
+                <span>{customer.email ?? '—'}</span>
               </div>
             </div>
           </div>

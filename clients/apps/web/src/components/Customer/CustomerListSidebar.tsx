@@ -191,14 +191,14 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
                   <Avatar
                     className="h-8 w-8"
                     avatar_url={customer.avatar_url}
-                    name={customer.name || customer.email}
+                    name={customer.email ?? customer.name ?? '—'}
                   />
                   <div className="flex min-w-0 flex-col">
                     <div className="w-full truncate text-sm">
                       {customer.name ?? '—'}
                     </div>
                     <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
-                      {customer.email}
+                      {customer.email ?? '—'}
                     </div>
                   </div>
                 </div>

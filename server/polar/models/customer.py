@@ -143,7 +143,7 @@ class Customer(MetadataMixin, RecordModel):
         index=True,
         server_default=sa.text("generate_customer_short_id()"),
     )
-    email: Mapped[str] = mapped_column(String(320), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=False
@@ -201,11 +201,25 @@ class Customer(MetadataMixin, RecordModel):
     a seat-based product. Individual customers can transition to a team customer by
     purchasing a seat-based product. This transition is only one-way.
     """
-    type: Mapped[CustomerType | None] = mapped_column(
+    _type: Mapped[CustomerType | None] = mapped_column(
+        "type",
         String,
         nullable=True,
         default=CustomerType.individual,
     )
+
+    @hybrid_property
+    def type(self) -> CustomerType:
+        return self._type or CustomerType.individual
+
+    @type.inplace.setter
+    def _type_setter(self, value: CustomerType | None) -> None:
+        self._type = value
+
+    @type.inplace.expression
+    @classmethod
+    def _type_expression(cls) -> ColumnElement[str]:
+        return cls._type  # type: ignore[return-value]
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
@@ -298,10 +312,22 @@ class Customer(MetadataMixin, RecordModel):
         return self._legacy_user_id or self.id
 
     @property
+    def display_name(self) -> str:
+        """Human-readable display name: name, email, or 'Team Customer'."""
+        return self.name or self.email or "Team Customer"
+
+    @property
+    def display_email(self) -> str:
+        """Email for display purposes: email, name, or 'Team Customer'."""
+        return self.email or self.name or "Team Customer"
+
+    @property
     def legacy_user_public_name(self) -> str:
         if self.name:
             return self.name[0]
-        return self.email[0]
+        if self.email:
+            return self.email[0]
+        return "?"
 
     @property
     def active_subscriptions(self) -> Sequence["Subscription"] | None:

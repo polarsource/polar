@@ -113,7 +113,7 @@ class LicenseKeyUser(Schema):
             "id",
         )
     )
-    email: str
+    email: str | None = None
     public_name: str = Field(
         validation_alias=AliasChoices(
             # Validate from ORM model

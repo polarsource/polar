@@ -32,7 +32,7 @@ export async function generateMetadata(props: {
     }
   }
 
-  const title = customer.name || customer.email
+  const title = customer.name || customer.email || '—'
 
   return {
     title,

@@ -4720,6 +4720,7 @@ class TestConfirm:
         existing_customer = await create_customer(
             save_fixture, organization=organization, email="customer@example.com"
         )
+        assert existing_customer.email is not None
         await create_trial_redemption(
             save_fixture,
             customer=existing_customer,

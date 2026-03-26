@@ -17,11 +17,11 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
 )
-from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.enums import (
@@ -1466,9 +1466,7 @@ class OrderService:
                     type=NotificationType.maintainer_new_product_sale,
                     payload=MaintainerNewProductSaleNotificationPayload(
                         customer_email=customer.email,
-                        customer_name=customer.name
-                        or order.billing_name
-                        or customer.email,
+                        customer_name=customer.display_name,
                         billing_address_country=billing_address.country
                         if billing_address
                         else None,
@@ -1591,48 +1589,22 @@ class OrderService:
         product = order.product
         customer = order.customer
         subscription = order.subscription
-        token, _ = await customer_session_service.create_customer_session(
-            session, customer
-        )
 
-        # Build query parameters with proper URL encoding
-        params = {
-            key: value.format(
-                token=token,
-                order=order.id,
-                subscription=subscription.id if subscription else "",
-                email=customer.email,
-            )
-            for key, value in url_params.items()
-        }
-        query_string = urlencode(params)
-        url_path = url_path_template.format(organization=organization.slug)
-        url = settings.generate_frontend_url(f"{url_path}?{query_string}")
+        recipients = await customer_service.get_email_recipients(session, customer)
+        if not recipients:
+            return
+
         subject = subject_template.format(description=order.description)
-        email = EmailAdapter.validate_python(
-            {
-                "template": template_name,
-                "props": {
-                    "email": customer.email,
-                    "organization": organization,
-                    "product": product,
-                    "order": order,
-                    "subscription": subscription,
-                    "url": url,
-                },
-            }
-        )
 
         # Generate invoice to attach to the email
         invoice_path: str | None = None
-        if invoice_path is None:
-            if order.billing_name is None or order.billing_address is None:
-                log.warning(
-                    "Cannot generate invoice, missing billing info", order_id=order.id
-                )
-            else:
-                order = await self.generate_invoice(session, order)
-                invoice_path = order.invoice_path
+        if order.billing_name is not None and order.billing_address is not None:
+            order = await self.generate_invoice(session, order)
+            invoice_path = order.invoice_path
+        else:
+            log.warning(
+                "Cannot generate invoice, missing billing info", order_id=order.id
+            )
 
         attachments: list[Attachment] = []
         if invoice_path is not None:
@@ -1641,13 +1613,47 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
-        enqueue_email_template(
-            email,
-            **organization.email_from_reply,
-            to_email_addr=customer.email,
-            subject=subject,
-            attachments=attachments,
-        )
+        for recipient_email in recipients:
+            token = await customer_service.create_session_token_for_recipient(
+                session, customer, recipient_email
+            )
+            if token is None:
+                continue
+
+            # Build query parameters with per-recipient email
+            params = {
+                key: value.format(
+                    token=token,
+                    order=order.id,
+                    subscription=subscription.id if subscription else "",
+                    email=recipient_email,
+                )
+                for key, value in url_params.items()
+            }
+            query_string = urlencode(params)
+            url_path = url_path_template.format(organization=organization.slug)
+            url = settings.generate_frontend_url(f"{url_path}?{query_string}")
+            email = EmailAdapter.validate_python(
+                {
+                    "template": template_name,
+                    "props": {
+                        "email": recipient_email,
+                        "organization": organization,
+                        "product": product,
+                        "order": order,
+                        "subscription": subscription,
+                        "url": url,
+                    },
+                }
+            )
+
+            enqueue_email_template(
+                email,
+                **organization.email_from_reply,
+                to_email_addr=recipient_email,
+                subject=subject,
+                attachments=attachments,
+            )
 
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product

@@ -13097,82 +13097,9 @@ export interface components {
       type: 'text'
       properties?: components['schemas']['CustomFieldTextProperties'] | null
     }
-    /**
-     * Customer
-     * @description A customer in an organization.
-     */
-    Customer: {
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the customer.
-       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      metadata: components['schemas']['MetadataOutputType']
-      /**
-       * External Id
-       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
-       * @example usr_1337
-       */
-      external_id?: string | null
-      /**
-       * Email
-       * @description The email address of the customer. This must be unique within the organization.
-       * @example customer@example.com
-       */
-      email: string
-      /**
-       * Email Verified
-       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
-       * @example true
-       */
-      email_verified: boolean
-      /**
-       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
-       * @example individual
-       */
-      type?: components['schemas']['CustomerType'] | null
-      /**
-       * Name
-       * @description The name of the customer.
-       * @example John Doe
-       */
-      name: string | null
-      billing_address: components['schemas']['Address'] | null
-      /** Tax Id */
-      tax_id: [string, components['schemas']['TaxIDFormat']] | null
-      /** Locale */
-      locale?: string | null
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The ID of the organization owning the customer.
-       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
-       */
-      organization_id: string
-      /**
-       * Deleted At
-       * @description Timestamp for when the customer was soft deleted.
-       */
-      deleted_at: string | null
-      /**
-       * Avatar Url
-       * @example https://www.gravatar.com/avatar/xxx?d=404
-       */
-      readonly avatar_url: string
-    }
+    Customer:
+      | components['schemas']['CustomerIndividual']
+      | components['schemas']['CustomerTeam']
     CustomerBenefitGrant:
       | components['schemas']['CustomerBenefitGrantDiscord']
       | components['schemas']['CustomerBenefitGrantGitHubRepository']
@@ -13619,58 +13546,9 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
-    /** CustomerCreate */
-    CustomerCreate: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
-       * @example usr_1337
-       */
-      external_id?: string | null
-      /**
-       * Email
-       * Format: email
-       * @description The email address of the customer. This must be unique within the organization.
-       * @example customer@example.com
-       */
-      email: string
-      /** Name */
-      name?: string | null
-      billing_address?: components['schemas']['AddressInput'] | null
-      /** Tax Id */
-      tax_id?: string | null
-      /** Locale */
-      locale?: string | null
-      /**
-       * @description The type of customer. Defaults to 'individual'. Set to 'team' for customers that can have multiple members.
-       * @example individual
-       */
-      type?: components['schemas']['CustomerType'] | null
-      /**
-       * Organization Id
-       * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
-       */
-      organization_id?: string | null
-      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
-      owner?: components['schemas']['OwnerCreate'] | null
-    }
+    CustomerCreate:
+      | components['schemas']['CustomerIndividualCreate']
+      | components['schemas']['CustomerTeamCreate']
     /**
      * CustomerCreatedEvent
      * @description An event created by Polar when a customer is created.
@@ -13751,7 +13629,7 @@ export interface components {
       /** Customer Id */
       customer_id: string
       /** Customer Email */
-      customer_email: string
+      customer_email: string | null
       /** Customer Name */
       customer_name: string | null
       /** Customer External Id */
@@ -13944,11 +13822,140 @@ export interface components {
       /** Customer Id */
       customer_id: string
       /** Customer Email */
-      customer_email: string
+      customer_email: string | null
       /** Customer Name */
       customer_name: string | null
       /** Customer External Id */
       customer_external_id: string | null
+    }
+    /**
+     * CustomerIndividual
+     * @description A customer in an organization.
+     */
+    CustomerIndividual: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * @description The type of customer. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'individual'
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
+    }
+    /** CustomerIndividualCreate */
+    CustomerIndividualCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /** Name */
+      name?: string | null
+      billing_address?: components['schemas']['AddressInput'] | null
+      /** Tax Id */
+      tax_id?: string | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
+      owner?: components['schemas']['MemberOwnerCreate'] | null
+      /**
+       * Type
+       * @default individual
+       * @constant
+       */
+      type: 'individual'
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string
     }
     /**
      * CustomerMeter
@@ -15093,101 +15100,9 @@ export interface components {
       | '-email'
       | 'name'
       | '-name'
-    /**
-     * CustomerState
-     * @description A customer along with additional state information:
-     *
-     *     * Active subscriptions
-     *     * Granted benefits
-     *     * Active meters
-     */
-    CustomerState: {
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the customer.
-       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      metadata: components['schemas']['MetadataOutputType']
-      /**
-       * External Id
-       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
-       * @example usr_1337
-       */
-      external_id?: string | null
-      /**
-       * Email
-       * @description The email address of the customer. This must be unique within the organization.
-       * @example customer@example.com
-       */
-      email: string
-      /**
-       * Email Verified
-       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
-       * @example true
-       */
-      email_verified: boolean
-      /**
-       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
-       * @example individual
-       */
-      type?: components['schemas']['CustomerType'] | null
-      /**
-       * Name
-       * @description The name of the customer.
-       * @example John Doe
-       */
-      name: string | null
-      billing_address: components['schemas']['Address'] | null
-      /** Tax Id */
-      tax_id: [string, components['schemas']['TaxIDFormat']] | null
-      /** Locale */
-      locale?: string | null
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The ID of the organization owning the customer.
-       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
-       */
-      organization_id: string
-      /**
-       * Deleted At
-       * @description Timestamp for when the customer was soft deleted.
-       */
-      deleted_at: string | null
-      /**
-       * Active Subscriptions
-       * @description The customer's active subscriptions.
-       */
-      active_subscriptions: components['schemas']['CustomerStateSubscription'][]
-      /**
-       * Granted Benefits
-       * @description The customer's active benefit grants.
-       */
-      granted_benefits: components['schemas']['CustomerStateBenefitGrant'][]
-      /**
-       * Active Meters
-       * @description The customer's active meters.
-       */
-      active_meters: components['schemas']['CustomerStateMeter'][]
-      /**
-       * Avatar Url
-       * @example https://www.gravatar.com/avatar/xxx?d=404
-       */
-      readonly avatar_url: string
-    }
+    CustomerState:
+      | components['schemas']['CustomerStateIndividual']
+      | components['schemas']['CustomerStateTeam']
     /**
      * CustomerStateBenefitGrant
      * @description An active benefit grant for a customer.
@@ -15245,6 +15160,101 @@ export interface components {
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | components['schemas']['BenefitGrantCustomProperties']
         | components['schemas']['BenefitGrantFeatureFlagProperties']
+    }
+    /**
+     * CustomerStateIndividual
+     * @description A customer along with additional state information:
+     *
+     *     * Active subscriptions
+     *     * Granted benefits
+     *     * Active meters
+     */
+    CustomerStateIndividual: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * @description The type of customer. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'individual'
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Active Subscriptions
+       * @description The customer's active subscriptions.
+       */
+      active_subscriptions: components['schemas']['CustomerStateSubscription'][]
+      /**
+       * Granted Benefits
+       * @description The customer's active benefit grants.
+       */
+      granted_benefits: components['schemas']['CustomerStateBenefitGrant'][]
+      /**
+       * Active Meters
+       * @description The customer's active meters.
+       */
+      active_meters: components['schemas']['CustomerStateMeter'][]
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
     }
     /**
      * CustomerStateMeter
@@ -15462,6 +15472,101 @@ export interface components {
        * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
       meter_id: string
+    }
+    /**
+     * CustomerStateTeam
+     * @description A team customer along with additional state information:
+     *
+     *     * Active subscriptions
+     *     * Granted benefits
+     *     * Active meters
+     */
+    CustomerStateTeam: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email?: string | null
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * @description The type of customer. Team customers can have multiple members. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'team'
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Active Subscriptions
+       * @description The customer's active subscriptions.
+       */
+      active_subscriptions: components['schemas']['CustomerStateSubscription'][]
+      /**
+       * Granted Benefits
+       * @description The customer's active benefit grants.
+       */
+      granted_benefits: components['schemas']['CustomerStateBenefitGrant'][]
+      /**
+       * Active Meters
+       * @description The customer's active meters.
+       */
+      active_meters: components['schemas']['CustomerStateMeter'][]
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
     }
     /** CustomerSubscription */
     CustomerSubscription: {
@@ -15827,6 +15932,133 @@ export interface components {
         | null
     }
     /**
+     * CustomerTeam
+     * @description A team customer in an organization.
+     */
+    CustomerTeam: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email?: string | null
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * @description The type of customer. Team customers can have multiple members. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'team'
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
+    }
+    /** CustomerTeamCreate */
+    CustomerTeamCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /** Name */
+      name?: string | null
+      billing_address?: components['schemas']['AddressInput'] | null
+      /** Tax Id */
+      tax_id?: string | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
+      owner?: components['schemas']['MemberOwnerCreate'] | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'team'
+      /**
+       * Email
+       * @description The email address of the team customer. Optional for team customers — if omitted, an owner with an email must be provided.
+       * @example customer@example.com
+       */
+      email?: string | null
+    }
+    /**
      * CustomerType
      * @enum {string}
      */
@@ -16002,7 +16234,7 @@ export interface components {
       /** Customer Id */
       customer_id: string
       /** Customer Email */
-      customer_email: string
+      customer_email: string | null
       /** Customer Name */
       customer_name: string | null
       /** Customer External Id */
@@ -18500,7 +18732,7 @@ export interface components {
        * @description The email address of the customer. This must be unique within the organization.
        * @example customer@example.com
        */
-      email: string
+      email?: string | null
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
@@ -18508,10 +18740,10 @@ export interface components {
        */
       email_verified: boolean
       /**
-       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members.
        * @example individual
        */
-      type?: components['schemas']['CustomerType'] | null
+      type: components['schemas']['CustomerType']
       /**
        * Name
        * @description The name of the customer.
@@ -18638,7 +18870,7 @@ export interface components {
        */
       id: string
       /** Email */
-      email: string
+      email?: string | null
       /** Public Name */
       public_name: string
       /** Avatar Url */
@@ -18830,12 +19062,6 @@ export interface components {
       items: components['schemas']['CustomerWallet'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[Customer] */
-    ListResource_Customer_: {
-      /** Items */
-      items: components['schemas']['Customer'][]
-      pagination: components['schemas']['Pagination']
-    }
     /** ListResource[Discount] */
     ListResource_Discount_: {
       /** Items */
@@ -18993,7 +19219,7 @@ export interface components {
     /** ListResource[] */
     ListResource__: {
       /** Items */
-      items: components['schemas']['Payment'][]
+      items: components['schemas']['Customer'][]
       pagination: components['schemas']['Pagination']
     }
     /**
@@ -19277,6 +19503,27 @@ export interface components {
        * @example member
        */
       role: components['schemas']['MemberRole']
+    }
+    /**
+     * MemberOwnerCreate
+     * @description Schema for creating an owner member during customer creation.
+     */
+    MemberOwnerCreate: {
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the member.
+       * @example member@example.com
+       */
+      email: string
+      /** Name */
+      name?: string | null
+      /**
+       * External Id
+       * @description The ID of the member in your system. This must be unique within the customer.
+       * @example usr_1337
+       */
+      external_id?: string | null
     }
     /**
      * MemberRole
@@ -20508,7 +20755,7 @@ export interface components {
        * @description The email address of the customer. This must be unique within the organization.
        * @example customer@example.com
        */
-      email: string
+      email?: string | null
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
@@ -20516,10 +20763,10 @@ export interface components {
        */
       email_verified: boolean
       /**
-       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members.
        * @example individual
        */
-      type?: components['schemas']['CustomerType'] | null
+      type: components['schemas']['CustomerType']
       /**
        * Name
        * @description The name of the customer.
@@ -21051,7 +21298,7 @@ export interface components {
        */
       id: string
       /** Email */
-      email: string
+      email?: string | null
       /** Public Name */
       public_name: string
       /** Avatar Url */
@@ -22859,26 +23106,6 @@ export interface components {
         | null
       /** @description Default tax behavior applied on products. */
       default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
-    }
-    /**
-     * OwnerCreate
-     * @description Schema for creating an owner member during customer creation.
-     */
-    OwnerCreate: {
-      /**
-       * Email
-       * @description The email address of the member.
-       * @example member@example.com
-       */
-      email?: string | null
-      /** Name */
-      name?: string | null
-      /**
-       * External Id
-       * @description The ID of the member in your system. This must be unique within the customer.
-       * @example usr_1337
-       */
-      external_id?: string | null
     }
     /** Pagination */
     Pagination: {
@@ -25769,7 +25996,7 @@ export interface components {
        * @description The email address of the customer. This must be unique within the organization.
        * @example customer@example.com
        */
-      email: string
+      email?: string | null
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
@@ -25777,10 +26004,10 @@ export interface components {
        */
       email_verified: boolean
       /**
-       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members.
        * @example individual
        */
-      type?: components['schemas']['CustomerType'] | null
+      type: components['schemas']['CustomerType']
       /**
        * Name
        * @description The name of the customer.
@@ -26587,7 +26814,7 @@ export interface components {
        */
       id: string
       /** Email */
-      email: string
+      email?: string | null
       /** Public Name */
       public_name: string
       /** Avatar Url */
@@ -35029,7 +35256,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_Customer_']
+          'application/json': components['schemas']['ListResource__']
         }
       }
       /** @description Validation Error */
@@ -46269,6 +46496,9 @@ export const customerCustomerMeterSortPropertyValues: ReadonlyArray<
 export const customerDeletedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerDeletedEvent']['name']
 > = ['customer.deleted']
+export const customerIndividualTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerIndividual']['type']
+> = ['individual']
 export const customerMeterSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerMeterSortProperty']
 > = [
@@ -46317,9 +46547,15 @@ export const customerPaymentMethodCreateSucceededResponseStatusValues: ReadonlyA
 export const customerSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerSortProperty']
 > = ['created_at', '-created_at', 'email', '-email', 'name', '-name']
+export const customerStateIndividualTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerStateIndividual']['type']
+> = ['individual']
 export const customerStateSubscriptionStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerStateSubscription']['status']
 > = ['active', 'trialing']
+export const customerStateTeamTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerStateTeam']['type']
+> = ['team']
 export const customerSubscriptionSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerSubscriptionSortProperty']
 > = [
@@ -46334,6 +46570,9 @@ export const customerSubscriptionSortPropertyValues: ReadonlyArray<
   'product',
   '-product',
 ]
+export const customerTeamTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerTeam']['type']
+> = ['team']
 export const customerTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerType']
 > = ['individual', 'team']

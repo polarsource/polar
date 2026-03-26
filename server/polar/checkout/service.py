@@ -56,6 +56,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.logging import Logger
+from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
     Account,
@@ -74,6 +75,7 @@ from polar.models import (
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
+from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceSource
@@ -558,6 +560,19 @@ class CheckoutService:
                         checkout_attribute,
                         getattr(checkout.customer, attribute),
                     )
+
+            # For team customers without email, use the owner member email
+            if (
+                checkout.customer_email is None
+                and checkout.customer.email is None
+                and checkout.customer.type == CustomerType.team
+            ):
+                member_repository = MemberRepository.from_session(session)
+                owner_member = await member_repository.get_owner_by_customer_id(
+                    session, checkout.customer.id
+                )
+                if owner_member is not None and owner_member.email is not None:
+                    checkout.customer_email = owner_member.email
 
             if checkout.locale is None and checkout.customer.locale is not None:
                 checkout.locale = checkout.customer.locale
@@ -1125,9 +1140,13 @@ class CheckoutService:
                         }
 
                 # Check for trial abuse
+                # Skip for team customers without email — no email to check against
                 if (
                     checkout.trial_end is not None
                     and checkout.organization.prevent_trial_abuse
+                    and not (
+                        customer.type == CustomerType.team and customer.email is None
+                    )
                 ):
                     trial_already_redeemed = (
                         await trial_redemption_service.check_trial_already_redeemed(
@@ -2463,7 +2482,10 @@ class CheckoutService:
                 )
 
     def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
-        fields: set[tuple[str, ...]] = {("customer_email",)}
+        fields: set[tuple[str, ...]] = set()
+        # Email is not required when the customer is already identified
+        if checkout.customer_id is None:
+            fields.add(("customer_email",))
         if checkout.is_payment_form_required:
             fields.update({("customer_billing_address",)})
             for (
@@ -2521,7 +2543,9 @@ class CheckoutService:
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
-            create_params: CustomerCreateParams = {"email": customer.email}
+            create_params: CustomerCreateParams = {}
+            if customer.email is not None:
+                create_params["email"] = customer.email
             if checkout.customer_billing_name is not None:
                 create_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:
@@ -2535,7 +2559,9 @@ class CheckoutService:
             stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
         else:
-            update_params: CustomerModifyParams = {"email": customer.email}
+            update_params: CustomerModifyParams = {}
+            if customer.email is not None:
+                update_params["email"] = customer.email
             if checkout.customer_billing_name is not None:
                 update_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:

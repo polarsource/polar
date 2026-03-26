@@ -1,8 +1,10 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Any
 
 import structlog
+from pydantic import TypeAdapter
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -11,6 +13,7 @@ from sqlalchemy_utils.types.range import timedelta
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.address import Address
 from polar.kit.anonymization import (
@@ -24,8 +27,10 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
+from polar.member_session.service import member_session as member_session_service
 from polar.models import BenefitGrant, Customer, Order, Organization, Subscription, User
 from polar.models.customer import CustomerType
+from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.organization.resolver import get_payload_organization
@@ -39,7 +44,8 @@ from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
 from .schemas.customer import (
-    CustomerCreate,
+    CustomerIndividualCreate,
+    CustomerTeamCreate,
     CustomerUpdate,
     CustomerUpdateExternalID,
 )
@@ -47,6 +53,9 @@ from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
 
 log = structlog.get_logger()
+
+# Pydantic TypeAdapter to validate/serialize the CustomerState union type
+_CustomerStateAdapter: TypeAdapter[CustomerState] = TypeAdapter(CustomerState)
 
 
 class CustomerService:
@@ -127,7 +136,7 @@ class CustomerService:
     async def create(
         self,
         session: AsyncSession,
-        customer_create: CustomerCreate,
+        customer_create: CustomerIndividualCreate | CustomerTeamCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Customer:
         organization = await get_payload_organization(
@@ -137,8 +146,11 @@ class CustomerService:
 
         errors: list[ValidationError] = []
 
-        if await repository.get_by_email_and_organization(
-            customer_create.email, organization.id
+        if (
+            customer_create.email is not None
+            and await repository.get_by_email_and_organization(
+                customer_create.email, organization.id
+            )
         ):
             errors.append(
                 {
@@ -330,9 +342,9 @@ class CustomerService:
         email_changed = False
 
         errors: list[ValidationError] = []
-        if (
-            customer_update.email is not None
-            and customer.email.lower() != customer_update.email.lower()
+        if customer_update.email is not None and (
+            customer.email is None
+            or customer.email.lower() != customer_update.email.lower()
         ):
             already_exists = await repository.get_by_email_and_organization(
                 customer_update.email, customer.organization_id
@@ -535,15 +547,15 @@ class CustomerService:
         This is idempotent - calling it on an already-anonymized customer
         will return success without making changes.
         """
-        # Skip if already anonymized (idempotent)
-        if customer.email.endswith(f"@{ANONYMIZED_EMAIL_DOMAIN}"):
+        if self._is_anonymized(customer):
             return customer
 
         repository = CustomerRepository.from_session(session)
         update_dict: dict[str, Any] = {}
 
-        # Anonymize email (always)
-        update_dict["email"] = anonymize_email_for_deletion(customer.email)
+        # Anonymize email (if present)
+        if customer.email is not None:
+            update_dict["email"] = anonymize_email_for_deletion(customer.email)
         update_dict["email_verified"] = False
 
         # Anonymize name only for individuals (no tax_id = individual)
@@ -577,6 +589,71 @@ class CustomerService:
         customer = await repository.update(customer, update_dict=update_dict)
 
         return customer
+
+    def _is_anonymized(self, customer: Customer) -> bool:
+        if customer.user_metadata.get("__anonymized_at") is not None:
+            return True
+        # Backward compat: customers anonymized before __anonymized_at was added
+        if customer.email is not None and customer.email.endswith(
+            f"@{ANONYMIZED_EMAIL_DOMAIN}"
+        ):
+            return True
+        return False
+
+    async def get_email_recipients(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+    ) -> "builtins.list[str]":
+        """Return deduplicated email addresses to use for notifications.
+
+        For team customers: customer.email (if any) + owner/billing_manager emails.
+        For individual customers: customer.email.
+        """
+        emails: builtins.list[str] = []
+
+        if customer.email is not None:
+            emails.append(customer.email)
+
+        is_team = customer.type == CustomerType.team
+        if is_team:
+            member_repository = MemberRepository.from_session(session)
+            members = await member_repository.list_by_customer(session, customer.id)
+            for m in members:
+                if (
+                    m.email is not None
+                    and m.role in (MemberRole.owner, MemberRole.billing_manager)
+                    and m.email not in emails
+                ):
+                    emails.append(m.email)
+
+        return emails
+
+    async def create_session_token_for_recipient(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        recipient_email: str,
+    ) -> str | None:
+        """Create the appropriate session token for an email recipient.
+
+        Individual customers get a customer session.
+        Team customer members get a member session.
+        """
+        if customer.email is not None and customer.email == recipient_email:
+            token, _ = await customer_session_service.create_customer_session(
+                session, customer
+            )
+            return token
+
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_customer_and_email(
+            session, customer, recipient_email
+        )
+        if member is None:
+            return None
+        token, _ = await member_session_service.create_member_session(session, member)
+        return token
 
     async def get_export(
         self,
@@ -717,7 +794,7 @@ class CustomerService:
         if cache:
             raw_state = await redis.get(cache_key)
             if raw_state is not None:
-                return CustomerState.model_validate_json(raw_state)
+                return _CustomerStateAdapter.validate_json(raw_state)
 
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
@@ -736,7 +813,7 @@ class CustomerService:
             customer.id
         )
 
-        state = CustomerState.model_validate(customer)
+        state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
         await redis.set(
             cache_key,

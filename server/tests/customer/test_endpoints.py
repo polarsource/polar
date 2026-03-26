@@ -561,6 +561,7 @@ class TestDeleteCustomerWithAnonymize:
         assert deleted is not None
 
         # Email should be hashed
+        assert deleted.email is not None
         assert deleted.email.endswith("@anonymized.polar.sh")
         assert deleted.email_verified is False
 
@@ -599,6 +600,7 @@ class TestDeleteCustomerWithAnonymize:
         assert deleted is not None
 
         # Email should be hashed
+        assert deleted.email is not None
         assert deleted.email.endswith("@anonymized.polar.sh")
 
         # Name should be PRESERVED for businesses
@@ -702,6 +704,7 @@ class TestDeleteCustomerExternalWithAnonymize:
         assert deleted is not None
 
         # Email should be hashed
+        assert deleted.email is not None
         assert deleted.email.endswith("@anonymized.polar.sh")
 
         # External ID should be preserved

@@ -277,15 +277,11 @@ export function BusinessDetailsStep() {
   const [editingSlug, setEditingSlug] = useState(false)
   const [editedSlug, setEditedSlug] = useState(
     () =>
-      !!data.orgSlug &&
-      !!data.orgName &&
-      data.orgSlug !== slugify(data.orgName, { lower: true, strict: true }),
+      data.orgSlug !==
+      slugify(data.orgName ?? '', { lower: true, strict: true }),
   )
   const [editedBusinessName, setEditedBusinessName] = useState(
-    () =>
-      !!data.registeredBusinessName &&
-      !!data.orgName &&
-      data.registeredBusinessName !== data.orgName,
+    () => (data.registeredBusinessName ?? '') !== (data.orgName ?? ''),
   )
 
   const form = useForm<FormSchema>({

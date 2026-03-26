@@ -140,6 +140,16 @@ class User(RecordModel):
         nullable=False,
         default=False,
     )
+    accepted_terms_of_service_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
+    )
+    accepted_terms_of_service_ip: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+        default=None,
+    )
 
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=True

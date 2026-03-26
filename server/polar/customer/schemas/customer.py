@@ -221,7 +221,6 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="Timestamp for when the customer was soft deleted."
     )
 
-    @computed_field  # type: ignore[prop-decorator]
     @property
     def display_email(self) -> str:
         return self.email or self.name or "Team Customer"

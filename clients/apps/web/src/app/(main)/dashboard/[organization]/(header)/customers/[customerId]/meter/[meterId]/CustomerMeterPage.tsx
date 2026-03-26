@@ -218,7 +218,7 @@ const CustomerMeterPage = ({
         <div className="flex flex-row items-center gap-6">
           <Avatar
             avatar_url={customer.avatar_url}
-            name={customer.display_email}
+            name={customer.name || customer.email || 'Customer'}
             className="h-16 w-16"
           />
           <div className="flex flex-col">
@@ -226,7 +226,7 @@ const CustomerMeterPage = ({
               {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
             </p>
             <div className="dark:text-polar-500 flex flex-row items-center text-base font-normal text-gray-500">
-              <span>{customer.display_email}</span>
+              <span>{customer.email ?? '—'}</span>
             </div>
           </div>
         </div>

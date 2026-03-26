@@ -13898,8 +13898,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -15252,8 +15250,6 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -15566,8 +15562,6 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -16007,8 +16001,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -18775,8 +18767,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -20799,8 +20789,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -26042,8 +26030,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Display Email */
-      readonly display_email: string
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404

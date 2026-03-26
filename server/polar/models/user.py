@@ -139,6 +139,7 @@ class User(RecordModel):
         Boolean,
         nullable=False,
         default=False,
+        deferred=True,
     )
     accepted_terms_of_service_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),

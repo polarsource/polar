@@ -1075,7 +1075,7 @@ class OrderService:
                         if (
                             "requires a mandate" in message
                             or "detached from a customer" in message
-                            or "does not belong to the customer"
+                            or "does not belong to the customer" in message
                         ):
                             log.info(
                                 "Invalid or expired payment method",

@@ -113,6 +113,7 @@ class UserService:
 
         if update_dict.pop("accepted_terms_of_service", None) is True:
             if not user.accepted_terms_of_service:
+                update_dict["accepted_terms_of_service"] = True
                 update_dict["accepted_terms_of_service_at"] = datetime.now(UTC)
                 update_dict["accepted_terms_of_service_ip"] = ip_address
 

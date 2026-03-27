@@ -2307,6 +2307,49 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == metered_only_product
 
+    async def test_seat_to_seat_product_change_invoice(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        enqueue_job_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        old_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        new_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=old_seat_product,
+            customer=customer,
+            seats=3,
+        )
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=new_seat_product.id,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+
+        assert updated_subscription.product == new_seat_product
+        create_subscription_update_order_mock.assert_called_once()
+
     async def test_unavailable_currency(
         self,
         session: AsyncSession,

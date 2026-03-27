@@ -1105,7 +1105,7 @@ class SubscriptionService:
             if (
                 proration_behavior == SubscriptionProrationBehavior.invoice
                 or interval_changed
-            ):
+            ) and len(billing_entries) > 0:
                 # Invoice and attempt to pay immediately
                 await self._create_subscription_update_order(session, subscription)
             elif proration_behavior == SubscriptionProrationBehavior.prorate:

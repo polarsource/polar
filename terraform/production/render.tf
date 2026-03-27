@@ -211,7 +211,7 @@ module "production" {
     }
     "worker-tinybird" = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
-      image_url          = "ghcr.io/polarsource/polar"
+      image_url          = "ghcr.io/polarsource/polar@"
       image_digest       = "latest"
       dramatiq_prom_port = "10002"
     }

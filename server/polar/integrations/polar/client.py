@@ -1,0 +1,132 @@
+import httpx
+import structlog
+from polar_sdk import Polar as PolarSDK
+from polar_sdk.models import (
+    CustomerCreate,
+    EventCreateExternalCustomer,
+    EventsIngest,
+    MemberCreate,
+    SubscriptionCreateExternalCustomer,
+)
+from polar_sdk.models.polarerror import PolarError
+
+from polar.config import settings
+from polar.exceptions import PolarError as InternalPolarError
+from polar.logging import Logger
+
+log: Logger = structlog.get_logger()
+
+
+class PolarSelfClientError(InternalPolarError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class PolarSelfClient:
+    def __init__(self, *, access_token: str, api_url: str) -> None:
+        self._sdk = PolarSDK(
+            access_token=access_token or "unconfigured",
+            server_url=api_url,
+        )
+
+    async def create_customer(
+        self, *, external_id: str, email: str, name: str, organization_id: str
+    ) -> None:
+        try:
+            await self._sdk.customers.create_async(
+                request=CustomerCreate(
+                    email=email,
+                    name=name,
+                    external_id=external_id,
+                    organization_id=organization_id,
+                )
+            )
+        except PolarError as e:
+            self._handle_error(e, "create_customer", external_id=external_id)
+
+    async def create_free_subscription(
+        self, *, external_customer_id: str, product_id: str
+    ) -> None:
+        try:
+            await self._sdk.subscriptions.create_async(
+                request=SubscriptionCreateExternalCustomer(
+                    product_id=product_id,
+                    external_customer_id=external_customer_id,
+                )
+            )
+        except PolarError as e:
+            self._handle_error(
+                e,
+                "create_free_subscription",
+                external_customer_id=external_customer_id,
+            )
+
+    async def add_member(
+        self, *, customer_id: str, email: str, name: str, external_id: str
+    ) -> None:
+        try:
+            await self._sdk.members.create_member_async(
+                request=MemberCreate(
+                    customer_id=customer_id,
+                    email=email,
+                    name=name,
+                    external_id=external_id,
+                )
+            )
+        except PolarError as e:
+            self._handle_error(e, "add_member", external_id=external_id)
+
+    async def remove_member(self, *, member_id: str) -> None:
+        try:
+            await self._sdk.members.delete_member_async(id=member_id)
+        except PolarError as e:
+            self._handle_error(e, "remove_member", member_id=member_id)
+
+    async def track_event_ingestion(
+        self, *, external_customer_id: str, count: int, organization_id: str
+    ) -> None:
+        try:
+            await self._sdk.events.ingest_async(
+                request=EventsIngest(
+                    events=[
+                        EventCreateExternalCustomer(
+                            name="event_ingestion",
+                            external_customer_id=external_customer_id,
+                            organization_id=organization_id,
+                            metadata={"count": count},
+                        )
+                    ]
+                )
+            )
+        except PolarError as e:
+            self._handle_error(
+                e,
+                "track_event_ingestion",
+                external_customer_id=external_customer_id,
+            )
+
+    def _handle_error(self, error: PolarError, operation: str, **context: str) -> None:
+        if error.status_code == 409:
+            log.debug(
+                "polar_self.conflict",
+                operation=operation,
+                **context,
+            )
+            return
+
+        if error.status_code >= 500 or isinstance(error.__cause__, httpx.RequestError):
+            raise PolarSelfClientError(str(error)) from error
+
+        log.warning(
+            "polar_self.client_error",
+            operation=operation,
+            status_code=error.status_code,
+            body=error.body,
+            **context,
+        )
+
+
+client = PolarSelfClient(
+    access_token=settings.POLAR_ACCESS_TOKEN,
+    api_url=settings.POLAR_API_URL,
+)

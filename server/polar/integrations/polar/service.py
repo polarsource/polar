@@ -1,0 +1,63 @@
+import uuid
+
+from polar.config import settings
+from polar.worker import enqueue_job
+
+
+class PolarSelfService:
+    @property
+    def is_configured(self) -> bool:
+        return bool(settings.POLAR_ACCESS_TOKEN)
+
+    def enqueue_create_customer(
+        self, *, organization_id: uuid.UUID, email: str, name: str
+    ) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job(
+            "polar_self.create_customer",
+            external_id=str(organization_id),
+            email=email,
+            name=name,
+            organization_id=settings.POLAR_ORGANIZATION_ID,
+        )
+
+    def enqueue_create_free_subscription(self, *, external_customer_id: str) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job(
+            "polar_self.create_free_subscription",
+            external_customer_id=external_customer_id,
+            product_id=settings.POLAR_FREE_PRODUCT_ID,
+        )
+
+    def enqueue_add_member(
+        self, *, customer_id: str, email: str, name: str, external_id: str
+    ) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job(
+            "polar_self.add_member",
+            customer_id=customer_id,
+            email=email,
+            name=name,
+            external_id=external_id,
+        )
+
+    def enqueue_remove_member(self, *, member_id: str) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job("polar_self.remove_member", member_id=member_id)
+
+    def enqueue_track_ingestion(self, *, external_customer_id: str, count: int) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job(
+            "polar_self.track_event_ingestion",
+            external_customer_id=external_customer_id,
+            count=count,
+            organization_id=settings.POLAR_ORGANIZATION_ID,
+        )
+
+
+polar_self = PolarSelfService()

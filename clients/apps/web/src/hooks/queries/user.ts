@@ -7,12 +7,7 @@ import { defaultRetry } from './retry'
 export const usePersonalAccessTokens = () =>
   useQuery({
     queryKey: ['personalAccessTokens'],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/personal_access_tokens/', {
-          params: { query: { limit: 100 } },
-        }),
-      ),
+    queryFn: () => unwrap(api.GET('/v1/personal_access_tokens/')),
     retry: defaultRetry,
   })
 

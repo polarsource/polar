@@ -5,7 +5,7 @@ from .client import client as polar_self_client
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
 async def create_customer(
-    external_id: str, email: str, name: str, organization_id: str
+    external_id: str, email: str, name: str, organization_id: str, product_id: str
 ) -> None:
     await polar_self_client.create_customer(
         external_id=external_id,
@@ -13,12 +13,8 @@ async def create_customer(
         name=name,
         organization_id=organization_id,
     )
-
-
-@actor(actor_name="polar_self.create_free_subscription", priority=TaskPriority.LOW)
-async def create_free_subscription(external_customer_id: str, product_id: str) -> None:
     await polar_self_client.create_free_subscription(
-        external_customer_id=external_customer_id,
+        external_customer_id=external_id,
         product_id=product_id,
     )
 

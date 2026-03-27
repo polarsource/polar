@@ -415,6 +415,35 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
             remaining -= seats_in_tier
         return total
 
+    def get_seat_tier_rows(self, seats: int) -> list[tuple[int, int]]:
+        """Return per-tier breakdown as list of (seat_count, price_per_seat) tuples.
+
+        For volume pricing, returns a single row with all seats at the matching tier price.
+        For graduated pricing, returns one row per tier with seats distributed across tiers.
+        """
+        seat_tier_type = self.seat_tiers.get("seat_tier_type", SeatTierType.volume)
+        if seat_tier_type == SeatTierType.graduated:
+            rows: list[tuple[int, int]] = []
+            remaining = seats
+            for tier in sorted(
+                self.seat_tiers.get("tiers", []), key=lambda t: t["min_seats"]
+            ):
+                if remaining <= 0:
+                    break
+                max_seats = tier.get("max_seats")
+                tier_capacity = (
+                    (max_seats - tier["min_seats"] + 1)
+                    if max_seats is not None
+                    else remaining
+                )
+                seats_in_tier = min(remaining, tier_capacity)
+                rows.append((seats_in_tier, tier["price_per_seat"]))
+                remaining -= seats_in_tier
+            return rows
+        else:
+            tier = self.get_tier_for_seats(seats)
+            return [(seats, tier["price_per_seat"])]
+
     def get_minimum_seats(self) -> int:
         """Get the minimum number of seats allowed, derived from first tier's min_seats."""
         tiers = self.seat_tiers.get("tiers", [])

@@ -541,10 +541,15 @@ class OrderService:
                 if not is_static_price(price):
                     continue
                 if is_custom_price(price):
-                    item = OrderItem.from_price(price, 0, checkout.amount)
+                    items.append(OrderItem.from_price(price, 0, checkout.amount))
+                elif is_seat_price(price) and checkout.seats is not None:
+                    items.extend(
+                        OrderItem.from_seat_price(
+                            price, 0, checkout.seats, checkout.currency
+                        )
+                    )
                 else:
-                    item = OrderItem.from_price(price, 0, seats=checkout.seats)
-                items.append(item)
+                    items.append(OrderItem.from_price(price, 0, seats=checkout.seats))
 
         discount_amount = checkout.discount_amount
 

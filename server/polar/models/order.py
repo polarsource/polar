@@ -219,6 +219,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         cascade="all, delete-orphan",
         # Items are almost always needed, so eager loading makes sense
         lazy="selectin",
+        order_by="OrderItem.created_at",
     )
 
     @declared_attr

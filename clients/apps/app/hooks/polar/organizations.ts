@@ -2,6 +2,7 @@ import { usePolarClient } from '@/providers/PolarClientProvider'
 import { useSession } from '@/providers/SessionProvider'
 import { queryClient } from '@/utils/query'
 import { operations, schemas, unwrap } from '@polar-sh/client'
+import * as Sentry from '@sentry/react-native'
 import {
   useMutation,
   UseMutationResult,
@@ -26,16 +27,24 @@ export const useOrganizations = (
 
   return useQuery({
     queryKey: ['organizations'],
-    queryFn: () =>
-      unwrap(
-        polar.GET('/v1/organizations/', {
-          params: {
-            query: {
-              limit: 100,
+    queryFn: async () => {
+      try {
+        return await unwrap(
+          polar.GET('/v1/organizations/', {
+            params: {
+              query: {
+                limit: 100,
+              },
             },
-          },
-        }),
-      ),
+          }),
+        )
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { context: 'useOrganizations' },
+        })
+        throw error
+      }
+    },
     enabled,
   })
 }

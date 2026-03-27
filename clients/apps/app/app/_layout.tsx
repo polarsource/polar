@@ -35,6 +35,18 @@ Sentry.init({
   replaysOnErrorSampleRate: 1,
   integrations: [Sentry.mobileReplayIntegration()],
 
+  // Limit breadcrumb size to prevent JSI crashes from oversized payloads
+  maxBreadcrumbs: 50,
+  beforeBreadcrumb(breadcrumb) {
+    if (breadcrumb.data) {
+      const serialized = JSON.stringify(breadcrumb.data)
+      if (serialized.length > 10_000) {
+        breadcrumb.data = { truncated: true, originalLength: serialized.length }
+      }
+    }
+    return breadcrumb
+  },
+
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
 })

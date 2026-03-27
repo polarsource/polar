@@ -9,6 +9,7 @@ import { useSettingsActions } from '@/hooks/useSettingsActions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
 import Constants from 'expo-constants'
+import { useUpdates } from 'expo-updates'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useState } from 'react'
 import {
@@ -30,7 +31,20 @@ const PLATFORM_DISPLAY_NAME: Record<PlatformOSType, string> = {
   native: 'Native',
 }
 
-const BUILD_VERSION = Constants.expoConfig?.version ?? 'Unknown'
+const APP_VERSION = Constants.expoConfig?.version ?? 'Unknown'
+
+function UpdateId() {
+  const { currentlyRunning } = useUpdates()
+  const updateId = currentlyRunning.updateId
+
+  if (!updateId) return null
+
+  return (
+    <Text variant="caption" color="subtext" textAlign="center">
+      {updateId.slice(0, 8)}
+    </Text>
+  )
+}
 
 export default function Index() {
   const {
@@ -123,10 +137,16 @@ export default function Index() {
           />
           <SettingsItem title="Logout" variant="navigate" onPress={logout} />
         </Box>
-        <Box justifyContent="center" flexDirection="row">
+        <Box
+          justifyContent="center"
+          flexDirection="column"
+          alignItems="center"
+          gap="spacing-4"
+        >
           <Text variant="body" color="subtext" textAlign="center">
-            {`Polar for ${PLATFORM_DISPLAY_NAME[Platform.OS as keyof typeof PLATFORM_DISPLAY_NAME]} ${BUILD_VERSION}`}
+            {`Polar for ${PLATFORM_DISPLAY_NAME[Platform.OS as keyof typeof PLATFORM_DISPLAY_NAME]} (${APP_VERSION})`}
           </Text>
+          <UpdateId />
         </Box>
       </ScrollView>
 

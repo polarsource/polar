@@ -3668,6 +3668,88 @@ class TestTriggerPayment:
         await session.refresh(order)
         assert order.payment_lock_acquired_at is None
 
+    @pytest.mark.parametrize(
+        "error_message",
+        [
+            "This PaymentMethod requires a mandate",
+            "The payment method has been detached from a customer",
+            "The payment method does not belong to the customer",
+        ],
+    )
+    async def test_invalid_payment_method_error_triggers_deletion(
+        self,
+        error_message: str,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        await save_fixture(order)
+
+        invalid_request_error = stripe_lib.InvalidRequestError(
+            error_message,
+            param="payment_method",
+            json_body={"error": {"message": error_message}},
+        )
+        stripe_service_mock.create_payment_intent.side_effect = invalid_request_error
+
+        delete_mock = mocker.patch(
+            "polar.order.service.payment_method_service.delete", new=AsyncMock()
+        )
+
+        # When/Then
+        with pytest.raises(PaymentFailed):
+            await order_service.trigger_payment(session, order, payment_method)
+
+        delete_mock.assert_called_once()
+
+    async def test_unrelated_invalid_request_error_not_caught(
+        self,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        await save_fixture(order)
+
+        # An unrelated InvalidRequestError should NOT trigger payment method deletion
+        invalid_request_error = stripe_lib.InvalidRequestError(
+            "Amount must be at least 50 cents",
+            param="amount",
+            json_body={"error": {"message": "Amount must be at least 50 cents"}},
+        )
+        stripe_service_mock.create_payment_intent.side_effect = invalid_request_error
+
+        delete_mock = mocker.patch(
+            "polar.order.service.payment_method_service.delete", new=AsyncMock()
+        )
+
+        # When/Then - should re-raise the original error, not catch it
+        with pytest.raises(stripe_lib.InvalidRequestError):
+            await order_service.trigger_payment(session, order, payment_method)
+
+        delete_mock.assert_not_called()
+
     async def test_due_amount_less_than_50(
         self,
         stripe_service_mock: MagicMock,

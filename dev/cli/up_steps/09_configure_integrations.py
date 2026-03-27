@@ -81,6 +81,7 @@ def save_stripe_keys(secret_key: str, publishable_key: str, webhook_secret: str 
     _update_secrets_file("POLAR_STRIPE_PUBLISHABLE_KEY", publishable_key)
     if webhook_secret:
         _update_secrets_file("POLAR_STRIPE_WEBHOOK_SECRET", webhook_secret)
+        _update_secrets_file("POLAR_STRIPE_CONNECT_WEBHOOK_SECRET", webhook_secret)
 
 
 def _update_secrets_file(key: str, value: str | None) -> None:
@@ -213,8 +214,8 @@ def _setup_stripe() -> None:
     console.print("[dim]Updating environment files...[/dim]")
     run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
 
-    console.print("\n[bold]To receive webhooks locally, run in a separate terminal:[/bold]")
-    console.print("  [bold]stripe listen --forward-to http://127.0.0.1:8000/v1/integrations/stripe/webhook[/bold]\n")
+    console.print("\n[bold]To receive webhooks locally, run:[/bold]")
+    console.print("  [bold]dev stripe --listen[/bold]\n")
 
 
 def run(ctx: Context) -> bool:

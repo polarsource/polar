@@ -319,6 +319,13 @@ class Settings(BaseSettings):
     # Chargeback Stop
     CHARGEBACK_STOP_WEBHOOK_SECRET: str = ""
 
+    # Polar's usage of Polar
+    POLAR_ACCESS_TOKEN: str = ""
+    POLAR_WEBHOOK_SECRET: str = ""
+    POLAR_ORGANIZATION_ID: str = ""
+    POLAR_FREE_PRODUCT_ID: str = ""
+    POLAR_API_URL: str = "https://api.polar.sh"
+
     # Invoices
     S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"
     S3_PAYOUT_INVOICES_BUCKET_NAME: str = "polar-payout-invoices"

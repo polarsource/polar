@@ -250,6 +250,18 @@ variable "memory_profile_config" {
   default = null
 }
 
+variable "polar_self_config" {
+  description = "Polar self-billing integration"
+  type = object({
+    access_token    = string
+    webhook_secret  = string
+    organization_id = string
+    free_product_id = string
+  })
+  default   = null
+  sensitive = true
+}
+
 variable "cron_jobs" {
   description = "Map of cron job configurations. image_url defaults to the API service image. Uses 'latest' tag so Render pulls the newest image before each run."
   type = map(object({

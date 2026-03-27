@@ -49,8 +49,7 @@ export default function Notifications() {
     isLoading,
   } = useListNotifications()
   const markNotificationAsRead = useNotificationsMarkRead()
-  const markNotificationAsReadRef = useRef(markNotificationAsRead)
-  markNotificationAsReadRef.current = markNotificationAsRead
+  const markedIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!notifications?.notifications.length) return
@@ -58,12 +57,13 @@ export default function Notifications() {
     const latestId = notifications.notifications[0].id
     const isUnread = latestId !== notifications.last_read_notification_id
 
-    if (isUnread) {
-      markNotificationAsReadRef.current.mutate({ notificationId: latestId })
+    if (isUnread && markedIdRef.current !== latestId) {
+      markedIdRef.current = latestId
+      markNotificationAsRead.mutate({ notificationId: latestId })
     }
 
     setBadgeCountAsync(0)
-  }, [notifications])
+  }, [notifications, markNotificationAsRead])
 
   return (
     <React.Fragment>

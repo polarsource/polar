@@ -68,9 +68,10 @@ locals {
 
 locals {
   sandbox_service_ids = {
-    api                    = "srv-crkocgbtq21c73ddsdbg"
-    worker-sandbox         = "srv-d089jj7diees73934kgg"
-    worker-sandbox-webhook = "srv-d62q7vh4tr6s73fk44ng"
+    api                     = "srv-crkocgbtq21c73ddsdbg"
+    worker-sandbox          = "srv-d089jj7diees73934kgg"
+    worker-sandbox-webhook  = "srv-d62q7vh4tr6s73fk44ng"
+    worker-sandbox-tinybird = "srv-d733cp15pdvs73f6vqng"
   }
 }
 
@@ -141,8 +142,8 @@ module "sandbox" {
     }
     worker-sandbox-tinybird = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
-      image_url          = "ghcr.io/polarsource/polar"
-      image_digest       = "sha256:33a06ffd86b6fde95761d3c4485f72b0dc1c76dc1b4fc128212aa9f709048751"
+      image_url          = data.render_web_service.sandbox_worker["worker-sandbox-tinybird"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.sandbox_worker["worker-sandbox-tinybird"].runtime_source.image.digest
       dramatiq_prom_port = "10002"
     }
   }

@@ -141,8 +141,8 @@ module "sandbox" {
     }
     worker-sandbox-tinybird = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
-      image_url          = "ghcr.io/polarsource/polar@"
-      image_digest       = "latest"
+      image_url          = "ghcr.io/polarsource/polar@sha256"
+      image_digest       = "33a06ffd86b6fde95761d3c4485f72b0dc1c76dc1b4fc128212aa9f709048751"
       dramatiq_prom_port = "10002"
     }
   }

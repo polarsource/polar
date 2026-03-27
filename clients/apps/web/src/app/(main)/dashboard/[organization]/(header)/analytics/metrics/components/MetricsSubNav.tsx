@@ -72,6 +72,12 @@ export function MetricsSubNav({
         href: `${basePath}/costs`,
         visible: organization.feature_settings?.revops_enabled ?? false,
       },
+      {
+        title: 'Seats',
+        href: `${basePath}/seats`,
+        visible:
+          organization.feature_settings?.seat_based_pricing_enabled ?? false,
+      },
     ]
     return allTabs.filter((tab) => tab.visible)
   }, [
@@ -79,6 +85,7 @@ export function MetricsSubNav({
     hasRecurringProducts,
     hasOneTimeProducts,
     organization.feature_settings?.revops_enabled,
+    organization.feature_settings?.seat_based_pricing_enabled,
   ])
 
   const currentTab = tabs.find(
@@ -93,19 +100,19 @@ export function MetricsSubNav({
   }
 
   const [breakpointHidden, breakpointBlock] = useMemo(() => {
+    const hasRevops = organization.feature_settings?.revops_enabled ?? false
+    const hasSeats =
+      organization.feature_settings?.seat_based_pricing_enabled ?? false
+
     if (!hasRecurringProducts && !hasOneTimeProducts) {
       return ['@sm:hidden', '@sm:block']
     }
 
-    if (
-      hasRecurringProducts &&
-      hasOneTimeProducts &&
-      organization.feature_settings?.revops_enabled
-    ) {
+    if (hasRecurringProducts && hasOneTimeProducts && (hasRevops || hasSeats)) {
       return ['@3xl:hidden', '@3xl:block']
     }
 
-    if (hasRecurringProducts || organization.feature_settings?.revops_enabled) {
+    if (hasRecurringProducts || hasRevops || hasSeats) {
       return ['@2xl:hidden', '@2xl:block']
     }
 
@@ -114,6 +121,7 @@ export function MetricsSubNav({
     hasRecurringProducts,
     hasOneTimeProducts,
     organization.feature_settings?.revops_enabled,
+    organization.feature_settings?.seat_based_pricing_enabled,
   ])
 
   return (

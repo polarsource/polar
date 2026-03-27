@@ -5,6 +5,7 @@ import subprocess
 import typer
 from alembic.command import upgrade as alembic_upgrade
 from alembic.config import Config
+from sqlalchemy import create_engine, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.config import settings
@@ -114,6 +115,34 @@ def _upgrade(revision: str = "head") -> None:
     alembic_upgrade(config, revision)
 
 
+def _grant_read_user_permissions() -> None:
+    read_user = settings.POSTGRES_READ_USER
+    if not read_user:
+        return
+
+    engine = create_engine(get_sync_postgres_dsn())
+    with engine.connect() as conn:
+        conn.execute(text(f"GRANT USAGE ON SCHEMA public TO {read_user}"))
+        conn.execute(
+            text(f"GRANT SELECT ON ALL TABLES IN SCHEMA public TO {read_user}")
+        )
+        conn.execute(
+            text(
+                f"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO {read_user}"
+            )
+        )
+        conn.execute(
+            text(f"GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO {read_user}")
+        )
+        conn.execute(
+            text(
+                f"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO {read_user}"
+            )
+        )
+        conn.commit()
+    engine.dispose()
+
+
 def _recreate() -> None:
     assert_dev_or_testing()
 
@@ -122,6 +151,7 @@ def _recreate() -> None:
 
     create_database(get_sync_postgres_dsn())
     _upgrade("head")
+    _grant_read_user_permissions()
 
 
 @cli.command()

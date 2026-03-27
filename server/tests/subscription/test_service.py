@@ -2307,6 +2307,66 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == metered_only_product
 
+    async def test_update_to_metered_only_product_invoice(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        meter: Meter,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await save_fixture(subscription)
+
+        metered_only_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=metered_only_product.id,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+
+        assert updated_subscription.product == metered_only_product
+
+    async def test_update_to_metered_only_product_interval_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        meter: Meter,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await save_fixture(subscription)
+
+        yearly_metered_only_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=yearly_metered_only_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        assert updated_subscription.product == yearly_metered_only_product
+
     async def test_unavailable_currency(
         self,
         session: AsyncSession,

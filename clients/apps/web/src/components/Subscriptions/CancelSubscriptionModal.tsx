@@ -68,9 +68,7 @@ const CancelSubscriptionModal = ({
       customer_cancellation_comment: undefined,
     },
   })
-  const { control, handleSubmit, setError, setValue, watch } = form
-
-  const selectedReason = watch('customer_cancellation_reason')
+  const { control, handleSubmit, setError, setValue } = form
 
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
@@ -214,26 +212,24 @@ const CancelSubscriptionModal = ({
                   </FormItem>
                 )}
               />
-              {selectedReason === 'other' && (
-                <FormField
-                  control={control}
-                  name="customer_cancellation_comment"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Comment</FormLabel>
-                      <FormControl>
-                        <TextArea
-                          {...field}
-                          value={field.value ?? ''}
-                          placeholder="Why is the customer cancelling?"
-                          rows={3}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={control}
+                name="customer_cancellation_comment"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Comment</FormLabel>
+                    <FormControl>
+                      <TextArea
+                        {...field}
+                        value={field.value ?? ''}
+                        placeholder="Why is the customer cancelling?"
+                        rows={3}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             <Button
               type="submit"

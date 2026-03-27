@@ -368,7 +368,7 @@ export const BillingDiagram = () => {
   return (
     <div
       ref={containerRef}
-      className="flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16"
+      className="relative flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16"
     >
       {/* Left — pipeline description */}
       <div className="flex flex-col gap-y-12 md:w-2/5">

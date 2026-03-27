@@ -29,23 +29,24 @@ function nextEvent() {
   return { id: _uid++, def, org, value }
 }
 
-function initBars() {
-  return Array.from({ length: 64 }, () => Math.random() * 0.55 + 0.08)
-}
+const INITIAL_EVENTS = [4821, 9314, 2047, 11582, 7293, 1456, 13904, 6138].map(
+  (value, i) => ({
+    id: i,
+    def: EVENT_DEFS[0],
+    org: ORG_IDS[0],
+    value,
+  }),
+)
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export const EventStream = () => {
-  const [events, setEvents] = useState(() =>
-    Array.from({ length: 8 }, nextEvent),
-  )
-  const [, setBars] = useState(initBars)
+  const [events, setEvents] = useState(INITIAL_EVENTS)
   const totalRef = useRef(38_471)
   const [total, setTotal] = useState(38_471)
 
   useEffect(() => {
     const interval = setInterval(() => {
       setEvents((prev) => [nextEvent(), ...prev.slice(0, 7)])
-      setBars((prev) => [...prev.slice(1), Math.random() * 0.65 + 0.12])
       totalRef.current += rand(4, 18)
       setTotal(totalRef.current)
     }, 750)

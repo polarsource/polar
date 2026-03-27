@@ -187,6 +187,7 @@ export const useOrganizationAccessTokens = (
           params: {
             query: {
               organization_id,
+              limit: 100,
               ...(params || {}),
             },
           },

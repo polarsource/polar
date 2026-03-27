@@ -5,37 +5,34 @@ import { Modal } from '@/components/Modal'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
-import {
-  type CancellationReason,
-  REASON_COLORS,
-  REASON_LABELS,
-} from './constants'
+import { type CancellationReason, REASON_LABELS } from './constants'
 
 interface CancellationReasonModalProps {
-  isOpen: boolean
   onOpenChange: (open: boolean) => void
   reason: CancellationReason
   organizationId: string
   startDate: Date
   endDate: Date
   productId?: string[]
+  totalCount?: number
 }
 
 export function CancellationReasonModal({
-  isOpen,
   onOpenChange,
   reason,
   organizationId,
   startDate,
   endDate,
   productId,
+  totalCount = 0,
 }: CancellationReasonModalProps) {
   const [page, setPage] = useState(1)
 
-  const { data, isLoading } = useSubscriptions(organizationId, {
+  const { data, isPending } = useSubscriptions(organizationId, {
     customer_cancellation_reason: [reason],
     canceled_at_after: startDate.toISOString(),
     canceled_at_before: endDate.toISOString(),
@@ -45,33 +42,26 @@ export function CancellationReasonModal({
   })
 
   const items = data?.items ?? []
-  const totalCount = data?.pagination?.total_count ?? 0
+  const resolvedTotalCount = data?.pagination?.total_count ?? totalCount
   const maxPage = data?.pagination?.max_page ?? 1
 
   return (
     <Modal
-      title={REASON_LABELS[reason]}
-      isShown={isOpen}
+      title={
+        <>
+          {resolvedTotalCount} &ldquo;{REASON_LABELS[reason]}&rdquo;
+          cancellation
+          {resolvedTotalCount !== 1 ? 's' : ''} between{' '}
+          <FormattedInterval startDatetime={startDate} endDatetime={endDate} />
+        </>
+      }
+      isShown={true}
       hide={() => onOpenChange(false)}
-      className="lg:w-[540px]"
+      className="lg:w-xl"
       modalContent={
         <div className="flex flex-col gap-4 p-6">
-          <div className="flex items-center gap-2">
-            <div
-              className="h-3 w-3 rounded-full"
-              style={{ backgroundColor: REASON_COLORS[reason] }}
-            />
-            <span className="text-lg font-medium">
-              {REASON_LABELS[reason]}
-            </span>
-          </div>
-          <p className="dark:text-polar-400 text-sm text-gray-500">
-            {totalCount} cancellation{totalCount !== 1 ? 's' : ''} in selected
-            period
-          </p>
-
           <div className="flex flex-col gap-2">
-            {isLoading && (
+            {isPending && (
               <div className="flex flex-col gap-3 py-4">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
@@ -82,17 +72,23 @@ export function CancellationReasonModal({
               </div>
             )}
 
-{items.map((subscription) => (
-              <SubscriptionRow
-                key={subscription.id}
-                subscription={subscription}
-                showComment={reason === 'other'}
-              />
-            ))}
+            {resolvedTotalCount === 0 ? (
+              <div className="dark:text-polar-400 text-center text-sm text-gray-500">
+                No &ldquo;{REASON_LABELS[reason]}&rdquo; cancellations
+              </div>
+            ) : (
+              items.map((subscription) => (
+                <SubscriptionRow
+                  key={subscription.id}
+                  subscription={subscription}
+                  showComment={reason === 'other'}
+                />
+              ))
+            )}
           </div>
 
           {maxPage > 1 && (
-            <div className="dark:border-polar-700 flex items-center justify-between border-t pt-3">
+            <div className="flex items-center justify-between">
               <span className="dark:text-polar-400 text-xs text-gray-500">
                 Page {page} of {maxPage}
               </span>

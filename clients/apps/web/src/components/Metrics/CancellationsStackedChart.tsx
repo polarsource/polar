@@ -108,7 +108,7 @@ export default function CancellationsStackedChart({
     useState<CancellationReason | null>(null)
   const [modalStartDate, setModalStartDate] = useState<Date>(startDate)
   const [modalEndDate, setModalEndDate] = useState<Date>(endDate)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalTotalCount, setModalTotalCount] = useState(0)
 
   const handleBarClick = useCallback(
     (reason: CancellationReason) =>
@@ -119,22 +119,9 @@ export default function CancellationsStackedChart({
         setSelectedReason(reason)
         setModalStartDate(timestamp)
         setModalEndDate(getPeriodEnd(timestamp, interval))
-        setIsModalOpen(true)
+        setModalTotalCount(Number(data.payload[reason]) || 0)
       },
     [interval],
-  )
-
-  const handleLegendClick = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (entry: any) => {
-      const reason = entry?.dataKey as CancellationReason
-      if (!reason || !CANCELLATION_REASONS.includes(reason)) return
-      setSelectedReason(reason)
-      setModalStartDate(startDate)
-      setModalEndDate(endDate)
-      setIsModalOpen(true)
-    },
-    [startDate, endDate],
   )
 
   return (
@@ -181,12 +168,7 @@ export default function CancellationsStackedChart({
               />
             )}
           />
-          <ChartLegend
-            content={
-              <ChartLegendContent className="cursor-pointer justify-start" />
-            }
-            onClick={handleLegendClick}
-          />
+          <ChartLegend content={<ChartLegendContent />} />
           {CANCELLATION_REASONS.map((reason) => (
             <Bar
               key={reason}
@@ -202,13 +184,13 @@ export default function CancellationsStackedChart({
 
       {selectedReason && (
         <CancellationReasonModal
-          isOpen={isModalOpen}
-          onOpenChange={setIsModalOpen}
+          onOpenChange={() => setSelectedReason(null)}
           reason={selectedReason}
           organizationId={organizationId}
           startDate={modalStartDate}
           endDate={modalEndDate}
           productId={productId}
+          totalCount={modalTotalCount}
         />
       )}
     </div>

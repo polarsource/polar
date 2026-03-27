@@ -90,11 +90,9 @@ export default function CancellationsDistributionChart({
 
   const [selectedReason, setSelectedReason] =
     useState<CancellationReason | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleReasonClick = (reason: CancellationReason) => {
     setSelectedReason(reason)
-    setIsModalOpen(true)
   }
 
   return (
@@ -111,7 +109,7 @@ export default function CancellationsDistributionChart({
           {chartData.map((item) => (
             <div
               key={item.reason}
-              className="relative cursor-pointer transition-opacity hover:opacity-80"
+              className="relative cursor-pointer"
               style={{
                 width: `${item.percentage}%`,
                 backgroundColor: item.color,
@@ -161,13 +159,17 @@ export default function CancellationsDistributionChart({
 
       {selectedReason && (
         <CancellationReasonModal
-          isOpen={isModalOpen}
-          onOpenChange={setIsModalOpen}
+          key={selectedReason}
+          onOpenChange={() => setSelectedReason(null)}
           reason={selectedReason}
           organizationId={organizationId}
           startDate={startDate}
           endDate={endDate}
           productId={productId}
+          totalCount={
+            legendData.find((item) => item.reason === selectedReason)?.total ??
+            0
+          }
         />
       )}
     </div>

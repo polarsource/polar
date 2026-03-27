@@ -179,11 +179,20 @@ def up(
     next_steps = Table(show_header=False, box=None, padding=(0, 2))
     next_steps.add_column(style="bold cyan")
     next_steps.add_column(style="dim")
-    next_steps.add_row("dev seed", "Load sample data (organizations, products, etc.)")
-    next_steps.add_row("dev api", "Start the API server")
-    next_steps.add_row("dev worker", "Start the background worker")
-    next_steps.add_row("dev web", "Start the frontend dev server")
-    next_steps.add_row("dev stripe", "Start the Stripe webhook listener")
+    next_steps.add_row("[dim]Recommended", "")
+    next_steps.add_row("dev seed", "Load sample data")
+    next_steps.add_row()
+    next_steps.add_row("[dim]Start all services", "")
+    next_steps.add_row("dev start", "API, worker, web, and Stripe in a tmux session")
+    next_steps.add_row()
+    next_steps.add_row("[dim]Start specific services", "")
+    next_steps.add_row("dev api", "API server")
+    next_steps.add_row("dev worker", "Background worker")
+    next_steps.add_row("dev web", "Frontend dev server")
+    next_steps.add_row("dev stripe", "Stripe webhook listener")
+    next_steps.add_row()
+    next_steps.add_row("[dim]Need assistance?", "")
+    next_steps.add_row("dev help", "Show all available commands")
 
     console.print(Panel(
         Padding(next_steps, (1, 2)),
@@ -223,6 +232,7 @@ def help() -> None:
     ])
 
     _section("Run Services", [
+        ("start", "Start all services in a tmux session"),
         ("api", "Start the backend API server"),
         ("worker", "Start the background job worker"),
         ("web", "Start the frontend dev server"),

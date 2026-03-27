@@ -211,6 +211,29 @@ variable "apple_key_value" {
   sensitive   = true
 }
 
+# Polar
+variable "polar_access_token" {
+  description = "Polar API access token"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_webhook_secret" {
+  description = "Polar webhook secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_organization_id" {
+  description = "Polar organization ID"
+  type        = string
+}
+
+variable "polar_free_product_id" {
+  description = "Polar free-tier product ID"
+  type        = string
+}
+
 variable "grafana_cloud_prometheus_url" {
   description = "Grafana Cloud Prometheus base URL"
   type        = string

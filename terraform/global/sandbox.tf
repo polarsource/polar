@@ -244,6 +244,44 @@ resource "tfe_variable" "numeral_api_key_sandbox" {
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
+resource "tfe_variable" "polar_access_token_sandbox" {
+  key             = "polar_access_token"
+  category        = "terraform"
+  description     = "Polar API access token"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "polar_webhook_secret_sandbox" {
+  key             = "polar_webhook_secret"
+  category        = "terraform"
+  description     = "Polar webhook secret"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "polar_organization_id_sandbox" {
+  key             = "polar_organization_id"
+  category        = "terraform"
+  description     = "Polar organization ID"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "polar_free_product_id_sandbox" {
+  key             = "polar_free_product_id"
+  category        = "terraform"
+  description     = "Polar free-tier product ID"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "tinybird_api_token_sandbox" {
   key             = "tinybird_api_token"
   category        = "terraform"

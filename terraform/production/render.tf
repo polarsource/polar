@@ -340,6 +340,13 @@ module "production" {
     s3_bucket_name = "polar-production-logs"
   }
 
+  polar_self_config = {
+    access_token    = var.polar_access_token
+    webhook_secret  = var.polar_webhook_secret
+    organization_id = var.polar_organization_id
+    free_product_id = var.polar_free_product_id
+  }
+
   tinybird_config = {
     api_url             = "https://api.us-east.aws.tinybird.co"
     clickhouse_url      = "https://clickhouse.us-east.aws.tinybird.co"

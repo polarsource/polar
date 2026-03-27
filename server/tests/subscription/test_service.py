@@ -2311,9 +2311,15 @@ class TestUpdateProduct:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        enqueue_job_mock: MagicMock,
         organization: Organization,
         customer: Customer,
     ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
         old_seat_product = await create_product(
             save_fixture,
             organization=organization,
@@ -2342,6 +2348,7 @@ class TestUpdateProduct:
         )
 
         assert updated_subscription.product == new_seat_product
+        create_subscription_update_order_mock.assert_called_once()
 
     async def test_unavailable_currency(
         self,

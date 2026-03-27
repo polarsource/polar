@@ -10,6 +10,7 @@ from shared import (
     SECRETS_FILE,
     console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -143,7 +144,7 @@ def _setup_stripe() -> None:
     """Interactive Stripe setup using Stripe CLI."""
     import webbrowser
 
-    console.print("\n[bold]Stripe Setup[/bold]\n")
+    console.print("\n  [bold]Stripe Setup[/bold]\n")
     console.print("  Polar uses Stripe for payment processing. You'll need a Stripe")
     console.print("  account and the Stripe CLI to develop locally.\n")
     console.print("  [dim]All keys are test mode only — no real charges will be made.[/dim]\n")
@@ -152,13 +153,13 @@ def _setup_stripe() -> None:
     if not _is_stripe_cli_installed():
         step_status(False, "Stripe CLI", "not installed")
         if typer.confirm("\n  Install Stripe CLI via Homebrew now?", default=True):
-            console.print()
-            result = run_command(["brew", "install", "stripe/stripe-cli/stripe"], capture=False)
+            with step_spinner("Installing Stripe CLI..."):
+                result = run_command(["brew", "install", "stripe/stripe-cli/stripe"], capture=True)
             if not result or result.returncode != 0 or not _is_stripe_cli_installed():
-                console.print("[red]Installation failed. Install manually: brew install stripe/stripe-cli/stripe[/red]")
+                console.print("  [red]Installation failed. Install manually: brew install stripe/stripe-cli/stripe[/red]")
                 return
         else:
-            console.print("[yellow]Stripe CLI is required. Install it and re-run dev up.[/yellow]")
+            console.print("  [yellow]Stripe CLI is required. Install it and re-run dev up.[/yellow]")
             return
     step_status(True, "Stripe CLI", "installed")
 
@@ -178,44 +179,44 @@ def _setup_stripe() -> None:
         console.print("\n  Logging in to Stripe — this will open your browser to authenticate.\n")
         run_command(["stripe", "login"], capture=False)
         if not _is_stripe_cli_logged_in():
-            console.print("[red]Stripe login failed. Please try again.[/red]")
+            console.print("  [red]Stripe login failed. Please try again.[/red]")
             return
     step_status(True, "Stripe CLI", "logged in")
 
     # Step 3: Fetch API keys
-    console.print("\n[bold]Fetching test API keys from Stripe CLI...[/bold]")
+    console.print("\n  [bold]Fetching test API keys from Stripe CLI...[/bold]")
     secret_key, publishable_key = _get_stripe_keys_from_cli()
 
     if secret_key and publishable_key:
-        console.print(f"[green]✓ Secret key: {secret_key[:12]}...{secret_key[-4:]}[/green]")
-        console.print(f"[green]✓ Publishable key: {publishable_key[:12]}...{publishable_key[-4:]}[/green]")
+        console.print(f"  [green]✓ Secret key: {secret_key[:12]}...{secret_key[-4:]}[/green]")
+        console.print(f"  [green]✓ Publishable key: {publishable_key[:12]}...{publishable_key[-4:]}[/green]")
     else:
-        console.print("[yellow]Could not fetch keys automatically. Please enter manually.[/yellow]")
-        console.print("Get your test API keys from: [link=https://dashboard.stripe.com/test/apikeys]https://dashboard.stripe.com/test/apikeys[/link]\n")
-        secret_key = typer.prompt("Stripe Secret Key (sk_test_...)")
-        publishable_key = typer.prompt("Stripe Publishable Key (pk_test_...)")
+        console.print("  [yellow]Could not fetch keys automatically. Please enter manually.[/yellow]")
+        console.print("  Get your test API keys from: [link=https://dashboard.stripe.com/test/apikeys]https://dashboard.stripe.com/test/apikeys[/link]\n")
+        secret_key = typer.prompt("  Stripe Secret Key (sk_test_...)")
+        publishable_key = typer.prompt("  Stripe Publishable Key (pk_test_...)")
 
     # Step 4: Get webhook secret
-    console.print("\n[bold]Getting webhook secret...[/bold]")
-    console.print("[dim]Webhooks let Stripe notify your local server about payment events (e.g. checkout completed).[/dim]")
+    console.print("\n  [bold]Getting webhook secret...[/bold]")
+    console.print("  [dim]Webhooks let Stripe notify your local server about payment events (e.g. checkout completed).[/dim]")
     result = run_command(["stripe", "listen", "--print-secret"], capture=True)
     webhook_secret = ""
     if result and result.returncode == 0:
         webhook_secret = result.stdout.strip()
-        console.print("[green]✓ Webhook secret obtained[/green]")
+        console.print("  [green]✓ Webhook secret obtained[/green]")
     else:
-        console.print("[yellow]Could not get webhook secret automatically.[/yellow]")
-        webhook_secret = typer.prompt("Enter webhook secret manually (whsec_...), or press Enter to skip", default="")
+        console.print("  [yellow]Could not get webhook secret automatically.[/yellow]")
+        webhook_secret = typer.prompt("  Enter webhook secret manually (whsec_...), or press Enter to skip", default="")
 
     save_stripe_keys(secret_key, publishable_key, webhook_secret)
     set_stripe_skipped(False)
     step_status(True, "Stripe", "configured")
 
-    console.print("[dim]Updating environment files...[/dim]")
+    console.print("  [dim]Updating environment files...[/dim]")
     run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
 
-    console.print("\n[bold]To receive webhooks locally, run:[/bold]")
-    console.print("  [bold]dev stripe --listen[/bold]\n")
+    console.print("\n  [bold]To receive webhooks locally, run:[/bold]")
+    console.print("    [bold]dev stripe --listen[/bold]\n")
 
 
 def run(ctx: Context) -> bool:
@@ -236,16 +237,16 @@ def run(ctx: Context) -> bool:
     else:
         console.print("\n  [dim]GitHub App enables login with GitHub and repository integrations.[/dim]")
         console.print("  [dim]You can skip this and still develop most features without it.[/dim]\n")
-        if typer.confirm("Set up GitHub App now?", default=False):
-            console.print("\n[bold]GitHub App Setup[/bold]\n")
-            console.print("[bold]Step 1:[/bold] Start ngrok to get an external URL")
-            console.print("  Run in another terminal: [bold]ngrok http 8000[/bold]")
-            console.print("  Get ngrok at: [link=https://ngrok.com]https://ngrok.com[/link]\n")
+        if typer.confirm("  Set up GitHub App now?", default=False):
+            console.print("\n  [bold]GitHub App Setup[/bold]\n")
+            console.print("  [bold]Step 1:[/bold] Start ngrok to get an external URL")
+            console.print("    Run in another terminal: [bold]ngrok http 8000[/bold]")
+            console.print("    Get ngrok at: [link=https://ngrok.com]https://ngrok.com[/link]\n")
 
-            external_url = typer.prompt("Enter your ngrok URL (e.g., https://abc123.ngrok.dev)")
+            external_url = typer.prompt("  Enter your ngrok URL (e.g., https://abc123.ngrok.dev)")
 
-            console.print("\n[bold]Step 2:[/bold] Your browser will open to create a GitHub App")
-            console.print("  Just click through - all settings are pre-configured!\n")
+            console.print("\n  [bold]Step 2:[/bold] Your browser will open to create a GitHub App")
+            console.print("    Just click through - all settings are pre-configured!\n")
 
             setup_args = [
                 str(ROOT_DIR / "dev" / "setup-environment"),
@@ -260,7 +261,7 @@ def run(ctx: Context) -> bool:
             else:
                 step_status(False, "GitHub App", "setup failed")
         else:
-            if typer.confirm("Remember this choice?", default=True):
+            if typer.confirm("  Remember this choice?", default=True):
                 set_github_skipped(True)
                 step_status(True, "GitHub App", "skipped (remembered)")
             else:
@@ -273,10 +274,10 @@ def run(ctx: Context) -> bool:
         step_status(True, "Stripe", "skipped (run with --clean to reconfigure)")
     else:
         console.print("\n  [dim]Stripe is required for payments, subscriptions, and checkout.[/dim]")
-        if typer.confirm("Set up Stripe now?", default=True):
+        if typer.confirm("  Set up Stripe now?", default=True):
             _setup_stripe()
         else:
-            if typer.confirm("Remember this choice?", default=True):
+            if typer.confirm("  Remember this choice?", default=True):
                 set_stripe_skipped(True)
                 step_status(True, "Stripe", "skipped (remembered)")
             else:

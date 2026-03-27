@@ -81,6 +81,7 @@ def _save_stripe_keys(secret_key: str, publishable_key: str, webhook_secret: str
     _update_secrets_file("POLAR_STRIPE_PUBLISHABLE_KEY", publishable_key)
     if webhook_secret:
         _update_secrets_file("POLAR_STRIPE_WEBHOOK_SECRET", webhook_secret)
+        _update_secrets_file("POLAR_STRIPE_CONNECT_WEBHOOK_SECRET", webhook_secret)
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
@@ -163,9 +164,14 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 def _start_webhook_listener() -> None:
     """Start Stripe webhook forwarding."""
     console.print("\n[bold]Starting Stripe webhook forwarding...[/bold]")
-    console.print("[dim]Forwarding to: http://127.0.0.1:8000/v1/integrations/stripe/webhook[/dim]")
+    console.print("[dim]Forwarding to:         http://127.0.0.1:8000/v1/integrations/stripe/webhook[/dim]")
+    console.print("[dim]Connect forwarding to: http://127.0.0.1:8000/v1/integrations/stripe/webhook-connect[/dim]")
     console.print("[dim]Press Ctrl+C to stop[/dim]\n")
     run_command(
-        ["stripe", "listen", "--forward-to", "http://127.0.0.1:8000/v1/integrations/stripe/webhook"],
+        [
+            "stripe", "listen",
+            "--forward-to", "http://127.0.0.1:8000/v1/integrations/stripe/webhook",
+            "--forward-connect-to", "http://127.0.0.1:8000/v1/integrations/stripe/webhook-connect",
+        ],
         capture=False,
     )

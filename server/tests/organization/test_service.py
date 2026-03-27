@@ -21,7 +21,10 @@ from polar.organization.schemas import (
     OrganizationUpdate,
 )
 from polar.organization.service import AccountAlreadySet
-from polar.organization.service import organization as organization_service
+from polar.organization.service import (
+    get_review_threshold_for_country,
+    organization as organization_service,
+)
 from polar.organization_review.schemas import ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -1791,3 +1794,177 @@ class TestUpdateSeatBasedPricing:
         )
 
         assert result.feature_settings["seat_based_pricing_enabled"] is True
+
+
+class TestGetReviewThresholdForCountry:
+    """Unit tests for the country → threshold mapping function."""
+
+    @pytest.mark.parametrize(
+        ("country", "expected"),
+        [
+            # USD countries
+            ("US", 1000),
+            ("PR", 1000),
+            ("GU", 1000),
+            # EUR countries
+            ("DE", 1300),
+            ("FR", 1300),
+            ("NL", 1300),
+            ("IT", 1300),
+            # GBP
+            ("GB", 1500),
+            # CHF
+            ("CH", 1500),
+            ("LI", 1500),
+            # AOA
+            ("AO", 3000),
+            # COP
+            ("CO", 5000),
+            # 4000-bucket currencies
+            ("AL", 4000),  # ALL
+            ("KR", 4000),  # KRW
+            ("TH", 4000),  # THB
+            ("MY", 4000),  # MYR
+            ("TW", 4000),  # TWD
+            ("RS", 4000),  # RSD
+            ("MN", 4000),  # MNT
+            ("KH", 4000),  # KHR
+            # Unknown / default
+            ("JP", 1000),
+            ("AU", 1000),
+            ("BR", 1000),
+            ("XX", 1000),
+            (None, 1000),
+        ],
+    )
+    def test_mapping(self, country: str | None, expected: int) -> None:
+        assert get_review_threshold_for_country(country) == expected
+
+    def test_case_insensitive(self) -> None:
+        assert get_review_threshold_for_country("us") == 1000
+        assert get_review_threshold_for_country("de") == 1300
+        assert get_review_threshold_for_country("gb") == 1500
+
+
+@pytest.mark.asyncio
+class TestCreateWithCountryThreshold:
+    @pytest.mark.auth
+    async def test_create_with_us_country(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="US Org", slug="us-org-threshold", country="US"
+            ),
+            auth_subject,
+        )
+        assert organization.next_review_threshold == 1000
+
+    @pytest.mark.auth
+    async def test_create_with_de_country(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="DE Org", slug="de-org-threshold", country="DE"
+            ),
+            auth_subject,
+        )
+        assert organization.next_review_threshold == 1300
+
+    @pytest.mark.auth
+    async def test_create_with_gb_country(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="GB Org", slug="gb-org-threshold", country="GB"
+            ),
+            auth_subject,
+        )
+        assert organization.next_review_threshold == 1500
+
+    @pytest.mark.auth
+    async def test_create_with_co_country(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="CO Org", slug="co-org-threshold", country="CO"
+            ),
+            auth_subject,
+        )
+        assert organization.next_review_threshold == 5000
+
+    @pytest.mark.auth
+    async def test_create_without_country_uses_default(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="No Country Org", slug="no-country-threshold"
+            ),
+            auth_subject,
+        )
+        assert organization.next_review_threshold == 1000
+
+
+@pytest.mark.asyncio
+class TestSetAccountUpdatesThreshold:
+    @pytest.mark.auth
+    async def test_set_account_updates_threshold_from_account_country(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        """When an account is linked, the threshold should be set based on
+        the account's country."""
+        organization.account_id = None
+        await save_fixture(organization)
+
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="DE",
+            currency="EUR",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_DE",
+        )
+        await save_fixture(account)
+
+        updated = await organization_service.set_account(
+            session, auth_subject, organization, account.id
+        )
+
+        assert updated.account_id == account.id
+        assert updated.next_review_threshold == 1300  # EUR threshold

@@ -62,6 +62,105 @@ log = structlog.get_logger()
 
 _MIN_REVIEW_THRESHOLD = 10_000
 
+# ── Country → Currency → Review-threshold mapping ──────────────────────
+#
+# Thresholds are in **cents** of the local currency equivalent.  The
+# default (for unknown / unmapped countries) mirrors USD → 1000 ($10).
+
+_CURRENCY_THRESHOLD: dict[str, int] = {
+    "USD": 1000,
+    "EUR": 1300,
+    "GBP": 1500,
+    "CHF": 1500,
+    "AOA": 3000,
+    "COP": 5000,
+    # Bulk bucket – 4000 for a range of smaller / emerging-market currencies
+    "ALL": 4000,
+    "AMD": 4000,
+    "AZN": 4000,
+    "BAM": 4000,
+    "BOB": 4000,
+    "BTN": 4000,
+    "CLP": 4000,
+    "GMD": 4000,
+    "GYD": 4000,
+    "KHR": 4000,
+    "KRW": 4000,
+    "LAK": 4000,
+    "MDL": 4000,
+    "MGA": 4000,
+    "MKD": 4000,
+    "MNT": 4000,
+    "MYR": 4000,
+    "MZN": 4000,
+    "NAD": 4000,
+    "PYG": 4000,
+    "RSD": 4000,
+    "THB": 4000,
+    "TWD": 4000,
+    "UZS": 4000,
+}
+
+_COUNTRY_CURRENCY: dict[str, str] = {
+    # USD
+    "US": "USD", "AS": "USD", "GU": "USD", "MH": "USD",
+    "MP": "USD", "PR": "USD", "UM": "USD", "VI": "USD",
+    # EUR
+    "AT": "EUR", "BE": "EUR", "CY": "EUR", "DE": "EUR",
+    "EE": "EUR", "ES": "EUR", "FI": "EUR", "FR": "EUR",
+    "GR": "EUR", "HR": "EUR", "IE": "EUR", "IT": "EUR",
+    "LT": "EUR", "LU": "EUR", "LV": "EUR", "MT": "EUR",
+    "NL": "EUR", "PT": "EUR", "SI": "EUR", "SK": "EUR",
+    # GBP
+    "GB": "GBP",
+    # CHF
+    "CH": "CHF", "LI": "CHF",
+    # Individual currencies
+    "AO": "AOA",
+    "CO": "COP",
+    "AL": "ALL",
+    "AM": "AMD",
+    "AZ": "AZN",
+    "BA": "BAM",
+    "BO": "BOB",
+    "BT": "BTN",
+    "CL": "CLP",
+    "GM": "GMD",
+    "GY": "GYD",
+    "KH": "KHR",
+    "KR": "KRW",
+    "LA": "LAK",
+    "MD": "MDL",
+    "MG": "MGA",
+    "MK": "MKD",
+    "MN": "MNT",
+    "MY": "MYR",
+    "MZ": "MZN",
+    "NA": "NAD",
+    "PY": "PYG",
+    "RS": "RSD",
+    "TH": "THB",
+    "TW": "TWD",
+    "UZ": "UZS",
+}
+
+_DEFAULT_REVIEW_THRESHOLD = 1000  # USD-equivalent default
+
+
+def get_review_threshold_for_country(country: str | None) -> int:
+    """Return the initial ``next_review_threshold`` (in cents) for a given
+    ISO 3166-1 alpha-2 *country* code.
+
+    The mapping goes country → currency → threshold.  Unknown or ``None``
+    countries fall back to the USD default of 1000 ($10).
+    """
+    if country is None:
+        return _DEFAULT_REVIEW_THRESHOLD
+    currency = _COUNTRY_CURRENCY.get(country.upper())
+    if currency is None:
+        return _DEFAULT_REVIEW_THRESHOLD
+    return _CURRENCY_THRESHOLD.get(currency, _DEFAULT_REVIEW_THRESHOLD)
+
 
 class PaymentStatusResponse(BaseModel):
     """Service-level response for payment status."""
@@ -192,6 +291,9 @@ class OrganizationService:
             Organization(
                 **create_data,
                 customer_invoice_prefix=create_schema.slug.upper(),
+                next_review_threshold=get_review_threshold_for_country(
+                    create_schema.country
+                ),
             )
         )
         await self.add_user(session, organization, auth_subject.subject)
@@ -651,7 +753,13 @@ class OrganizationService:
 
         repository = OrganizationRepository.from_session(session)
         organization = await repository.update(
-            organization, update_dict={"account": account}
+            organization,
+            update_dict={
+                "account": account,
+                "next_review_threshold": get_review_threshold_for_country(
+                    account.country
+                ),
+            },
         )
 
         enqueue_job("organization.account_set", organization.id)

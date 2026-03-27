@@ -47,6 +47,7 @@ class PolarSelfClient:
                     name=name,
                     external_id=external_id,
                     organization_id=organization_id,
+                    type="team",
                 )
             )
         except PolarError as e:

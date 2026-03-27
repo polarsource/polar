@@ -5,7 +5,7 @@ from .client import get_client
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
 async def create_customer(
-    external_id: str, email: str, name: str, organization_id: str
+    external_id: str, email: str, name: str, organization_id: str, product_id: str
 ) -> None:
     await get_client().create_customer(
         external_id=external_id,

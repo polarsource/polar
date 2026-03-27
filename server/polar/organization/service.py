@@ -17,6 +17,7 @@ from polar.enums import InvoiceNumbering
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
+from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
@@ -199,6 +200,12 @@ class OrganizationService:
             session, auth_subject.subject
         )
         enqueue_job("organization.created", organization_id=organization.id)
+
+        polar_self_service.enqueue_create_customer(
+            organization_id=organization.id,
+            email=organization.email or auth_subject.subject.email,
+            name=organization.name,
+        )
 
         posthog.auth_subject_event(
             auth_subject,

@@ -260,7 +260,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=OrganizationStatus.CREATED,
     )
     next_review_threshold: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
+        Integer, nullable=False, default=1000
     )
     status_updated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True

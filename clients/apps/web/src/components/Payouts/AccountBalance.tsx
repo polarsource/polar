@@ -73,7 +73,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
         </WellContent>
         <WellFooter>
           <p className="dark:text-polar-500 text-gray-500">
-            You may only withdraw funds above $10.
+            Minimum withdrawal amounts apply.
           </p>
         </WellFooter>
       </Well>

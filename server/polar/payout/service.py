@@ -16,6 +16,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.csv import IterableCSVWriter
+from polar.kit.currency import format_currency
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -86,10 +87,15 @@ class PayoutError(PolarError): ...
 
 
 class InsufficientBalance(PayoutError):
-    def __init__(self, account: Account, balance: int) -> None:
+    def __init__(
+        self, account: Account, balance: int, *, minimum_amount: int | None = None
+    ) -> None:
         self.account = account
         self.balance = balance
         message = "You have an insufficient balance to make a payout."
+        if minimum_amount is not None:
+            formatted = format_currency(minimum_amount, "usd")
+            message += f" The minimum withdrawal amount is {formatted}."
         super().__init__(message, 400)
 
 
@@ -245,8 +251,11 @@ class PayoutService:
         balance_amount = await transaction_service.get_transactions_sum(
             session, account.id
         )
-        if balance_amount < settings.get_minimum_payout_for_currency(account.currency):
-            raise InsufficientBalance(account, balance_amount)
+        minimum_amount = settings.get_minimum_payout_for_currency(account.currency)
+        if balance_amount < minimum_amount:
+            raise InsufficientBalance(
+                account, balance_amount, minimum_amount=minimum_amount
+            )
 
         try:
             payout_fees = await platform_fee_transaction_service.get_payout_fees(
@@ -278,10 +287,11 @@ class PayoutService:
             balance_amount = await transaction_service.get_transactions_sum(
                 session, account.id
             )
-            if balance_amount < settings.get_minimum_payout_for_currency(
-                account.currency
-            ):
-                raise InsufficientBalance(account, balance_amount)
+            minimum_amount = settings.get_minimum_payout_for_currency(account.currency)
+            if balance_amount < minimum_amount:
+                raise InsufficientBalance(
+                    account, balance_amount, minimum_amount=minimum_amount
+                )
 
             try:
                 (

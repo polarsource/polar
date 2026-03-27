@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from datetime import datetime
 
 import structlog
 from fastapi import Depends, Query, Response
@@ -12,6 +13,7 @@ from polar.kit.pagination import ListResource, PaginationParams, PaginationParam
 from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
 from polar.models import Subscription
+from polar.models.subscription import CustomerCancellationReason
 from polar.openapi import APITag
 from polar.order.service import PaymentFailed
 from polar.organization.schemas import OrganizationID
@@ -85,6 +87,20 @@ async def list(
         None,
         description="Filter by subscriptions that are set to cancel at period end.",
     ),
+    customer_cancellation_reason: MultipleQueryFilter[CustomerCancellationReason]
+    | None = Query(
+        None,
+        title="CustomerCancellationReason Filter",
+        description="Filter by customer cancellation reason.",
+    ),
+    canceled_at_after: datetime | None = Query(
+        None,
+        description="Filter by cancellation date (after or equal to).",
+    ),
+    canceled_at_before: datetime | None = Query(
+        None,
+        description="Filter by cancellation date (before or equal to).",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[SubscriptionSchema]:
     """List subscriptions."""
@@ -98,6 +114,9 @@ async def list(
         discount_id=discount_id,
         active=active,
         cancel_at_period_end=cancel_at_period_end,
+        customer_cancellation_reason=customer_cancellation_reason,
+        canceled_at_after=canceled_at_after,
+        canceled_at_before=canceled_at_before,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,

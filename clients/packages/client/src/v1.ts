@@ -30830,6 +30830,15 @@ export interface operations {
         active?: boolean | null
         /** @description Filter by subscriptions that are set to cancel at period end. */
         cancel_at_period_end?: boolean | null
+        /** @description Filter by customer cancellation reason. */
+        customer_cancellation_reason?:
+          | components['schemas']['CustomerCancellationReason']
+          | components['schemas']['CustomerCancellationReason'][]
+          | null
+        /** @description Filter by cancellation date (after or equal to). */
+        canceled_at_after?: string | null
+        /** @description Filter by cancellation date (before or equal to). */
+        canceled_at_before?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

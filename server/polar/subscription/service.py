@@ -244,6 +244,10 @@ class SubscriptionService:
         discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         cancel_at_period_end: bool | None = None,
+        customer_cancellation_reason: Sequence[CustomerCancellationReason]
+        | None = None,
+        canceled_at_after: datetime | None = None,
+        canceled_at_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SubscriptionSortProperty]] = [
@@ -283,6 +287,19 @@ class SubscriptionService:
             statement = statement.where(
                 Subscription.cancel_at_period_end.is_(cancel_at_period_end)
             )
+
+        if customer_cancellation_reason is not None:
+            statement = statement.where(
+                Subscription.customer_cancellation_reason.in_(
+                    customer_cancellation_reason
+                )
+            )
+
+        if canceled_at_after is not None:
+            statement = statement.where(Subscription.canceled_at >= canceled_at_after)
+
+        if canceled_at_before is not None:
+            statement = statement.where(Subscription.canceled_at <= canceled_at_before)
 
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)

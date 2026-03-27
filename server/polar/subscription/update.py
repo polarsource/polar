@@ -9,6 +9,7 @@ from polar.models.product_price import ProductPriceSeatUnit
 from polar.product.guard import (
     is_fixed_price,
     is_recurring_product,
+    is_seat_price,
 )
 from polar.product.price_set import PriceSet
 
@@ -46,10 +47,12 @@ def _generate_product_credit_proration_billing_entries(
 
     for initial_price in subscription.prices:
         # Metered and free prices don't get prorated
-        if not is_fixed_price(initial_price):
+        if is_fixed_price(initial_price):
+            base_amount = initial_price.price_amount
+        elif is_seat_price(initial_price) and subscription.seats is not None:
+            base_amount = initial_price.calculate_amount(subscription.seats)
+        else:
             continue
-
-        base_amount = initial_price.price_amount
         discount_amount = 0
         if subscription.discount:
             discount_amount = subscription.discount.get_discount_amount(
@@ -100,10 +103,12 @@ def _generate_product_debit_proration_billing_entries(
     new_prices = PriceSet.from_product(new_product, subscription.currency)
     for new_price in new_prices:
         # Metered and free prices don't get prorated
-        if not is_fixed_price(new_price):
+        if is_fixed_price(new_price):
+            base_amount = new_price.price_amount
+        elif is_seat_price(new_price) and subscription.seats is not None:
+            base_amount = new_price.calculate_amount(subscription.seats)
+        else:
             continue
-
-        base_amount = new_price.price_amount
         discount_amount = 0
         if subscription.discount and subscription.discount.is_applicable(
             new_price.product, subscription.currency

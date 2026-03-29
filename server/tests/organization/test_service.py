@@ -1791,3 +1791,56 @@ class TestUpdateSeatBasedPricing:
         )
 
         assert result.feature_settings["seat_based_pricing_enabled"] is True
+
+    async def test_update_unrelated_setting_with_inconsistent_state(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Orgs in inconsistent state (seat_based=True, member_model=False)
+        should still be able to update other feature settings."""
+        organization.feature_settings = {
+            "member_model_enabled": False,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                feature_settings=OrganizationFeatureSettings(
+                    checkout_localization_enabled=True,
+                ),
+            ),
+        )
+
+        assert result.feature_settings["seat_based_pricing_enabled"] is True
+        assert result.feature_settings["checkout_localization_enabled"] is True
+
+    async def test_resend_seat_based_true_with_inconsistent_state(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Orgs in inconsistent state should not be blocked when
+        seat_based_pricing_enabled=True is re-sent (no False->True transition)."""
+        organization.feature_settings = {
+            "member_model_enabled": False,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                feature_settings=OrganizationFeatureSettings(
+                    seat_based_pricing_enabled=True,
+                ),
+            ),
+        )
+
+        assert result.feature_settings["seat_based_pricing_enabled"] is True

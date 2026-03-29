@@ -289,7 +289,7 @@ class OrganizationService:
                     ]
                 )
 
-            if new_seat_based and not new_member_model:
+            if not old_seat_based and new_seat_based and not new_member_model:
                 raise PolarRequestValidationError(
                     [
                         {

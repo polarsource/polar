@@ -29,6 +29,7 @@ from polar.models import (
     Checkout,
     CheckoutProduct,
     Customer,
+    CustomerSeat,
     Order,
     Organization,
     Product,
@@ -52,6 +53,7 @@ class MetricQuery(StrEnum):
     churned_subscriptions = "churned_subscriptions"
     churn_rate = "churn_rate"
     events = "events"
+    seats = "seats"
 
 
 def _get_metrics_columns(
@@ -699,11 +701,122 @@ def get_churn_rate_cte(
     )
 
 
+def _get_readable_seats_statement(
+    auth_subject: AuthSubject[User | Organization],
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> Select[tuple[uuid.UUID]]:
+    statement = (
+        select(CustomerSeat.id)
+        .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)
+        .outerjoin(Order, CustomerSeat.order_id == Order.id)
+        .join(
+            Product,
+            Product.id == func.coalesce(Subscription.product_id, Order.product_id),
+        )
+    )
+
+    if is_user(auth_subject):
+        statement = statement.where(
+            Product.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.is_deleted.is_(False),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        statement = statement.where(Product.organization_id == auth_subject.subject.id)
+
+    if organization_id is not None:
+        statement = statement.where(Product.organization_id.in_(organization_id))
+
+    if product_id is not None:
+        statement = statement.where(
+            func.coalesce(Subscription.product_id, Order.product_id).in_(product_id)
+        )
+
+    if billing_type is not None:
+        statement = statement.where(Product.billing_type.in_(billing_type))
+
+    if customer_id is not None:
+        statement = statement.where(
+            func.coalesce(Subscription.customer_id, Order.customer_id).in_(customer_id)
+        )
+
+    return statement
+
+
+def get_seats_cte(
+    timestamp_series: CTE,
+    interval: TimeInterval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[SQLMetric]"],
+    now: datetime,
+    *,
+    bounds: tuple[datetime, datetime],
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    start_timestamp, end_timestamp = bounds
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_seats_statement = _get_readable_seats_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
+    )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *_get_metrics_columns(
+                MetricQuery.seats, timestamp_column, interval, metrics, now
+            ),
+        )
+        .select_from(
+            timestamp_series.join(
+                CustomerSeat,
+                isouter=True,
+                onclause=and_(
+                    interval.sql_date_trunc(
+                        cast(SQLColumnExpression[datetime], CustomerSeat.created_at)
+                    )
+                    <= interval.sql_date_trunc(timestamp_column),
+                    or_(
+                        CustomerSeat.revoked_at.is_(None),
+                        interval.sql_date_trunc(
+                            cast(SQLColumnExpression[datetime], CustomerSeat.revoked_at)
+                        )
+                        > interval.sql_date_trunc(timestamp_column),
+                    ),
+                    CustomerSeat.id.in_(readable_seats_statement),
+                    CustomerSeat.created_at <= end_timestamp,
+                    or_(
+                        CustomerSeat.revoked_at.is_(None),
+                        CustomerSeat.revoked_at >= start_timestamp,
+                    ),
+                ),
+            )
+        )
+        .group_by(timestamp_column)
+        .order_by(timestamp_column.asc())
+    )
+
+
 QUERIES: list[QueryCallable] = [
     get_active_subscriptions_cte,
     get_checkouts_cte,
     get_churned_subscriptions_cte,
     get_churn_rate_cte,
+    get_seats_cte,
 ]
 
 QUERY_TO_FUNCTION: dict[MetricQuery, QueryCallable] = {
@@ -711,4 +824,5 @@ QUERY_TO_FUNCTION: dict[MetricQuery, QueryCallable] = {
     MetricQuery.checkouts: get_checkouts_cte,
     MetricQuery.churned_subscriptions: get_churned_subscriptions_cte,
     MetricQuery.churn_rate: get_churn_rate_cte,
+    MetricQuery.seats: get_seats_cte,
 }

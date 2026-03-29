@@ -18,7 +18,7 @@ from sqlalchemy import (
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
-from polar.models import Checkout, Subscription
+from polar.models import Checkout, CustomerSeat, Subscription
 from polar.models.checkout import CheckoutStatus
 
 from .queries import MetricQuery
@@ -448,6 +448,71 @@ class ChurnRateMetric(SQLMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class TotalSeatsMetric(SQLMetric):
+    slug = "seats_total"
+    display_name = "Total Seats"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(CustomerSeat.id)
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class ClaimedSeatsMetric(SQLMetric):
+    slug = "seats_claimed"
+    display_name = "Claimed Seats"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(CustomerSeat.id).filter(
+            CustomerSeat.claimed_at.is_not(None),
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], CustomerSeat.claimed_at)
+            )
+            <= i.sql_date_trunc(t),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class PendingSeatsMetric(SQLMetric):
+    slug = "seats_pending"
+    display_name = "Pending Seats"
+    type = MetricType.scalar
+    query = MetricQuery.seats
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(CustomerSeat.id).filter(
+            or_(
+                CustomerSeat.claimed_at.is_(None),
+                i.sql_date_trunc(
+                    cast(SQLColumnExpression[datetime], CustomerSeat.claimed_at)
+                )
+                > i.sql_date_trunc(t),
+            )
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
 class LTVMetric(MetaMetric):
     slug = "ltv"
     display_name = "Lifetime Value"
@@ -845,6 +910,9 @@ METRICS_POSTGRES: list[type[SQLMetric]] = [
     SucceededCheckoutsMetric,
     ChurnedSubscriptionsMetric,
     ChurnRateMetric,
+    TotalSeatsMetric,
+    ClaimedSeatsMetric,
+    PendingSeatsMetric,
 ]
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [

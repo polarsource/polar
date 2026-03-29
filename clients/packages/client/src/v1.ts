@@ -19988,6 +19988,12 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
+      /** Total Seats */
+      seats_total?: number | null
+      /** Claimed Seats */
+      seats_claimed?: number | null
+      /** Pending Seats */
+      seats_pending?: number | null
     }
     /**
      * MetricType
@@ -20053,6 +20059,9 @@ export interface components {
       gross_margin?: components['schemas']['Metric'] | null
       gross_margin_percentage?: components['schemas']['Metric'] | null
       cashflow?: components['schemas']['Metric'] | null
+      seats_total?: components['schemas']['Metric'] | null
+      seats_claimed?: components['schemas']['Metric'] | null
+      seats_pending?: components['schemas']['Metric'] | null
     }
     /**
      * MetricsIntervalLimit
@@ -20203,6 +20212,12 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
+      /** Total Seats */
+      seats_total?: number | null
+      /** Claimed Seats */
+      seats_claimed?: number | null
+      /** Pending Seats */
+      seats_pending?: number | null
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {

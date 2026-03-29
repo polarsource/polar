@@ -8,6 +8,7 @@ export const METRIC_TYPES = [
   'checkouts',
   'net-revenue',
   'costs',
+  'seats',
 ] as const
 
 export type MetricType = (typeof METRIC_TYPES)[number]
@@ -90,6 +91,12 @@ const COST_METRICS: (keyof schemas['Metrics'])[] = [
   'cashflow',
 ]
 
+const SEAT_METRICS: (keyof schemas['Metrics'])[] = [
+  'seats_total',
+  'seats_claimed',
+  'seats_pending',
+]
+
 export function getMetricsForType(
   metricType: MetricType,
   options?: {
@@ -118,5 +125,7 @@ export function getMetricsForType(
       ]
     case 'costs':
       return COST_METRICS
+    case 'seats':
+      return SEAT_METRICS
   }
 }

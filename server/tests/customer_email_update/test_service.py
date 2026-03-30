@@ -360,7 +360,7 @@ class TestVerify:
             stripe_customer_id=None,
         )
         # Simulate a customer with no old email
-        customer.email = None  # type: ignore[assignment]
+        customer.email = None
         await save_fixture(customer)
 
         _record, token = await _create_verification(

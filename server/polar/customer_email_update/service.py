@@ -175,7 +175,7 @@ class CustomerEmailUpdateService:
                 )
 
         # Sync to Stripe
-        if customer.stripe_customer_id is not None:
+        if customer.stripe_customer_id is not None and customer.email is not None:
             await stripe_service.update_customer(
                 customer.stripe_customer_id, email=customer.email
             )

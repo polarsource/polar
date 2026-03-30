@@ -3957,7 +3957,6 @@ class TestAcquirePaymentLock:
         assert order.payment_lock_acquired_at is None
 
 
-
 @pytest.mark.asyncio
 class TestProcessRetryPayment:
     async def test_process_retry_payment_success(
@@ -4256,7 +4255,6 @@ class TestProcessRetryPayment:
         )
 
         assert order.payment_lock_acquired_at is not None
-
 
 
 @pytest.mark.asyncio

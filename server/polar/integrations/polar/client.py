@@ -2,6 +2,7 @@ import httpx
 import structlog
 from polar_sdk import Polar as PolarSDK
 from polar_sdk.models import (
+    Customer,
     CustomerCreate,
     EventCreateExternalCustomer,
     EventsIngest,
@@ -60,6 +61,9 @@ class PolarSelfClient:
                 "create_free_subscription",
                 external_customer_id=external_customer_id,
             )
+
+    async def get_customer_by_external_id(self, external_id: str) -> Customer:
+        return await self._sdk.customers.get_external_async(external_id=external_id)
 
     async def add_member(
         self, *, customer_id: str, email: str, name: str, external_id: str

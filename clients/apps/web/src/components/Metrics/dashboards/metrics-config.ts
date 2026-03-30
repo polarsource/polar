@@ -8,7 +8,6 @@ export const METRIC_TYPES = [
   'checkouts',
   'net-revenue',
   'costs',
-  'custom',
 ] as const
 
 export type MetricType = (typeof METRIC_TYPES)[number]
@@ -119,7 +118,5 @@ export function getMetricsForType(
       ]
     case 'costs':
       return COST_METRICS
-    case 'custom':
-      return []
   }
 }

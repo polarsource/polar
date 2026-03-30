@@ -4,6 +4,7 @@ import { usePostHog, type EventName } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
+
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import LoginCodeForm from '../Auth/LoginCodeForm'
 import AppleLoginButton from './AppleLoginButton'
@@ -13,10 +14,12 @@ const Login = ({
   returnTo,
   returnParams,
   signup,
+  lastLoginMethod,
 }: {
   returnTo?: string
   returnParams?: Record<string, string>
   signup?: schemas['UserSignupAttribution']
+  lastLoginMethod?: string | null
 }) => {
   const posthog = usePostHog()
 
@@ -84,15 +87,23 @@ const Login = ({
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex w-full flex-col gap-y-4">
-        <GithubLoginButton size="large" fullWidth {...loginProps} />
-        <GoogleLoginButton {...loginProps} />
-        <AppleLoginButton {...loginProps} />
+        <LastUsedWrapper show={lastLoginMethod === 'github'}>
+          <GithubLoginButton size="large" fullWidth {...loginProps} />
+        </LastUsedWrapper>
+        <LastUsedWrapper show={lastLoginMethod === 'google'}>
+          <GoogleLoginButton {...loginProps} />
+        </LastUsedWrapper>
+        <LastUsedWrapper show={lastLoginMethod === 'apple'}>
+          <AppleLoginButton {...loginProps} />
+        </LastUsedWrapper>
         <div className="flex w-full flex-row items-center gap-6">
           <div className="dark:border-polar-700 grow border-t border-gray-200" />
           <div className="text-sm text-gray-500">or</div>
           <div className="dark:border-polar-700 grow border-t border-gray-200" />
         </div>
-        <LoginCodeForm {...loginProps} />
+        <LastUsedWrapper show={lastLoginMethod === 'email'}>
+          <LoginCodeForm {...loginProps} />
+        </LastUsedWrapper>
       </div>
       <div className="dark:text-polar-500 mt-6 text-center text-xs text-balance text-gray-400">
         By using Polar, you agree to our{' '}
@@ -114,5 +125,22 @@ const Login = ({
     </div>
   )
 }
+
+const LastUsedWrapper = ({
+  show,
+  children,
+}: {
+  show: boolean
+  children: React.ReactNode
+}) => (
+  <div className="relative">
+    {show && (
+      <span className="dark:bg-polar-900 dark:border-polar-600 absolute -top-3 -right-2 z-20 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs text-black dark:text-white">
+        Last used
+      </span>
+    )}
+    {children}
+  </div>
+)
 
 export default Login

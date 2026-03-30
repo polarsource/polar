@@ -159,7 +159,7 @@ const LandingPageMobileNavigation = () => {
         </SidebarContent>
       </Sidebar>
       <Modal
-        title="Login"
+        title="Sign in"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={<AuthModal />}
@@ -320,13 +320,13 @@ const LandingPageDesktopNavigation = () => {
             variant="ghost"
             className="rounded-full"
           >
-            Log In
+            Sign in
           </Button>
           <GetStartedButton size="default" />
         </div>
       </div>
       <Modal
-        title="Login"
+        title="Sign in"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={<AuthModal />}

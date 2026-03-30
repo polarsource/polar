@@ -338,6 +338,7 @@ class TestCreate:
         assert subscription.current_period_end is not None
         assert subscription.started_at == subscription.current_period_start
         assert subscription.current_period_end > subscription.current_period_start
+        assert subscription.anchor_day == subscription.current_period_start.day
 
         assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)

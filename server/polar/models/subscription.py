@@ -147,9 +147,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     status: Mapped[SubscriptionStatus] = mapped_column(
         StringEnum(SubscriptionStatus), nullable=False
     )
-    anchor_day: Mapped[int | None] = mapped_column(
-        SmallInteger, nullable=True, default=None
-    )
+    anchor_day: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=None)
     current_period_start: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )

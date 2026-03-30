@@ -19,6 +19,8 @@ from polar.subscription.schemas import SubscriptionBase
 
 class EmailTemplate(StrEnum):
     login_code = "login_code"
+    customer_email_changed_notification = "customer_email_changed_notification"
+    customer_email_update_verification = "customer_email_update_verification"
     customer_session_code = "customer_session_code"
     email_update = "email_update"
     oauth2_leaked_client = "oauth2_leaked_client"
@@ -99,6 +101,31 @@ class EmailUpdateProps(EmailProps):
 class EmailUpdateEmail(BaseModel):
     template: Literal[EmailTemplate.email_update] = EmailTemplate.email_update
     props: EmailUpdateProps
+
+
+class CustomerEmailUpdateVerificationProps(EmailProps):
+    organization_name: str
+    token_lifetime_minutes: int
+    url: str
+
+
+class CustomerEmailUpdateVerificationEmail(BaseModel):
+    template: Literal[EmailTemplate.customer_email_update_verification] = (
+        EmailTemplate.customer_email_update_verification
+    )
+    props: CustomerEmailUpdateVerificationProps
+
+
+class CustomerEmailChangedNotificationProps(EmailProps):
+    organization_name: str
+    new_email: str
+
+
+class CustomerEmailChangedNotificationEmail(BaseModel):
+    template: Literal[EmailTemplate.customer_email_changed_notification] = (
+        EmailTemplate.customer_email_changed_notification
+    )
+    props: CustomerEmailChangedNotificationProps
 
 
 class OAuth2LeakedClientProps(EmailProps):
@@ -395,6 +422,8 @@ class OrganizationAccountUnlinkEmail(BaseModel):
 
 Email = Annotated[
     LoginCodeEmail
+    | CustomerEmailChangedNotificationEmail
+    | CustomerEmailUpdateVerificationEmail
     | CustomerSessionCodeEmail
     | EmailUpdateEmail
     | OAuth2LeakedClientEmail

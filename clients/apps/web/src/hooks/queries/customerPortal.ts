@@ -51,6 +51,35 @@ export function useCustomerPortalCustomer(options?: {
   }
 }
 
+export const useCustomerEmailUpdateRequest = () => {
+  const { client } = useCustomerPortalContext()
+
+  return useMutation({
+    mutationFn: async (data: { email: string }) => {
+      const result = await client.POST(
+        '/v1/customer-portal/customers/me/email-update/request',
+        { body: data },
+      )
+      if (result.error) {
+        const detail = (result.error as Record<string, unknown>)?.detail
+        if (result.response.status === 422 && Array.isArray(detail)) {
+          const err = new Error('Validation error') as Error & {
+            errors: schemas['ValidationError'][]
+          }
+          err.errors = detail
+          throw err
+        }
+        throw new Error(
+          typeof detail === 'string'
+            ? detail
+            : 'Failed to request email change',
+        )
+      }
+      return result
+    },
+  })
+}
+
 export const useCustomerPortalSessionRequest = (
   api: Client,
   organizationId: string,

@@ -2,7 +2,7 @@ import uuid
 
 import structlog
 from pydantic import HttpUrl
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -248,10 +248,18 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         return result.unique().scalar_one_or_none()
 
     async def delete_expired(self, session: AsyncSession) -> None:
-        statement = delete(CustomerSession).where(
-            CustomerSession.expires_at < utc_now()
-        )
-        await session.execute(statement)
+        from .repository import CustomerSessionRepository
+
+        repository = CustomerSessionRepository.from_session(session)
+        await repository.delete_expired()
+
+    async def delete_customer_sessions(
+        self, session: AsyncSession, customer_id: uuid.UUID
+    ) -> None:
+        from .repository import CustomerSessionRepository
+
+        repository = CustomerSessionRepository.from_session(session)
+        await repository.delete_by_customer_id(customer_id)
 
     async def revoke_leaked(
         self,

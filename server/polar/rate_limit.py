@@ -30,6 +30,9 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/customer-portal/customer-session/(request|authenticate)": [
         Rule(minute=6, hour=12, block_time=900, zone="customer-session-login")
     ],
+    "^/v1/customer-portal/customers/me/email-update/(request|check|verify)": [
+        Rule(minute=6, hour=12, block_time=900, zone="customer-email-update")
+    ],
     "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
         Rule(second=3, block_time=60, zone="customer-license-key")
     ],

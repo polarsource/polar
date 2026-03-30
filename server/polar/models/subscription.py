@@ -1,7 +1,7 @@
 import functools
 import operator
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import TYPE_CHECKING, Self, TypeVar
 from uuid import UUID
@@ -396,14 +396,6 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             self.cancel_at_period_end
             and self.status in SubscriptionStatus.billable_statuses()
         )
-
-    def set_started_at(self) -> None:
-        """
-        Stores the starting date when the subscription
-        becomes active for the first time.
-        """
-        if self.active and self.started_at is None:
-            self.started_at = datetime.now(UTC)
 
     def update_amount_and_currency(
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"

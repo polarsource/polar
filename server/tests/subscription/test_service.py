@@ -1,7 +1,7 @@
 import uuid
 from collections import namedtuple
 from collections.abc import Generator
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, call
 
@@ -558,6 +558,7 @@ class TestCreateOrUpdateFromCheckout:
         assert subscription.current_period_end is not None
         assert subscription.started_at == subscription.current_period_start
         assert subscription.current_period_end > subscription.current_period_start
+        assert subscription.anchor_day == subscription.current_period_start.day
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -776,6 +777,10 @@ class TestCreateOrUpdateFromCheckout:
         assert updated_subscription.current_period_end is not None
         assert previous_current_period_end is not None
         assert updated_subscription.current_period_end > previous_current_period_end
+        assert (
+            updated_subscription.anchor_day
+            == updated_subscription.current_period_start.day
+        )
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -824,6 +829,7 @@ class TestCreateOrUpdateFromCheckout:
         assert subscription.current_period_end > subscription.current_period_start
         assert subscription.current_period_end == checkout.trial_end
         assert subscription.trial_start == subscription.current_period_start
+        assert subscription.anchor_day == subscription.current_period_start.day
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -1094,6 +1100,46 @@ class TestCycle:
             third_cycle_billing_entry.end_timestamp
             == third_cycle_subscription.current_period_end
         )
+
+    async def test_anchor_monthly_cycle(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+            current_period_start=datetime(2024, 1, 31, tzinfo=UTC),
+        )
+        assert subscription.anchor_day == 31
+        assert subscription.recurring_interval_count == 1
+        assert subscription.current_period_start.month == 1
+        assert subscription.current_period_end.month == 2
+
+        second_cycle_subscription = await subscription_service.cycle(
+            session, subscription
+        )
+        second_period_start = second_cycle_subscription.current_period_start
+        assert second_period_start.month == 2
+        assert second_period_start.day == 29
+        second_period_end = second_cycle_subscription.current_period_end
+        assert second_period_end.month == 3
+        assert second_period_end.day == 31
+
+        third_cycle_subscription = await subscription_service.cycle(
+            session, second_cycle_subscription
+        )
+        third_period_start = third_cycle_subscription.current_period_start
+        assert third_period_start.month == 3
+        assert third_period_start.day == 31
+        third_period_end = third_cycle_subscription.current_period_end
+        assert third_period_end.month == 4
+        assert third_period_end.day == 30
 
     async def test_cancel_at_period_end(
         self,
@@ -1551,7 +1597,13 @@ class TestCycle:
         assert updated_subscription.current_period_start == old_period_end
         # The new period should end one year after the old period end (not two years)
         assert updated_subscription.current_period_end == (
-            SubscriptionRecurringInterval.year.get_next_period(old_period_end, 1)
+            SubscriptionRecurringInterval.year.get_next_period(
+                old_period_end, updated_subscription.current_period_start.day, 1
+            )
+        )
+        assert (
+            updated_subscription.anchor_day
+            == updated_subscription.current_period_start.day
         )
         assert updated_subscription.product == annual_product
         assert updated_subscription.pending_update is None
@@ -4589,7 +4641,7 @@ class TestEnqueueBenefitsGrantsGracePeriod:
 
 @pytest.mark.asyncio
 class TestUpdateBillingPeriod:
-    async def test_emits_event(
+    async def test_basic(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -4614,6 +4666,7 @@ class TestUpdateBillingPeriod:
         )
 
         assert updated_subscription.current_period_end == new_period_end
+        assert updated_subscription.anchor_day == new_period_end.day
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_name(

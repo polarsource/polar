@@ -152,7 +152,7 @@ def _generate_product_subscription_update(
         new_cycle_start = subscription.current_period_start
 
     new_cycle_end = new_product.recurring_interval.get_next_period(
-        new_cycle_start, new_product.recurring_interval_count
+        new_cycle_start, new_cycle_start.day, new_product.recurring_interval_count
     )
 
     subscription_update.new_cycle_start = new_cycle_start

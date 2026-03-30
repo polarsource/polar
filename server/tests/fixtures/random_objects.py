@@ -1061,9 +1061,12 @@ async def create_subscription(
     now = datetime.now(UTC)
     if not current_period_start:
         current_period_start = now
+
+    anchor_day = current_period_start.day
+
     if not current_period_end:
         current_period_end = recurring_interval.get_next_period(
-            current_period_start, recurring_interval_count
+            current_period_start, anchor_day, recurring_interval_count
         )
 
     canceled_at = None
@@ -1085,6 +1088,7 @@ async def create_subscription(
         tax_exempted=tax_exempted,
         current_period_start=current_period_start,
         current_period_end=current_period_end,
+        anchor_day=anchor_day,
         trial_start=trial_start,
         trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,

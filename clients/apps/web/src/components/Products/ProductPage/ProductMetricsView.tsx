@@ -1,4 +1,4 @@
-import MetricChartBox from '@/components/Metrics/MetricChartBox'
+import { MetricGroup } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/MetricGroup'
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 
@@ -35,42 +35,28 @@ export const ProductMetricsView = ({
     : ['average_order_value', 'cumulative_revenue']
 
   return (
-    <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+    <div className="flex flex-col gap-y-12">
       {product.is_recurring ? (
-        <>
-          {subscriptionMetrics.map((metric) => (
-            <MetricChartBox
-              key={metric}
-              data={data}
-              loading={loading}
-              metric={metric}
-              interval={interval}
-            />
-          ))}
-        </>
-      ) : (
-        <>
-          {oneTimeMetrics.map((metric) => (
-            <MetricChartBox
-              key={metric}
-              data={data}
-              loading={loading}
-              metric={metric}
-              interval={interval}
-            />
-          ))}
-        </>
-      )}
-
-      {orderMetrics.map((metric) => (
-        <MetricChartBox
-          key={metric}
+        <MetricGroup
+          metricKeys={subscriptionMetrics}
           data={data}
-          loading={loading}
-          metric={metric}
           interval={interval}
+          loading={loading}
         />
-      ))}
+      ) : (
+        <MetricGroup
+          metricKeys={oneTimeMetrics}
+          data={data}
+          interval={interval}
+          loading={loading}
+        />
+      )}
+      <MetricGroup
+        metricKeys={orderMetrics}
+        data={data}
+        interval={interval}
+        loading={loading}
+      />
     </div>
   )
 }

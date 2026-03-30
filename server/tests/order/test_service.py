@@ -4250,6 +4250,88 @@ class TestProcessRetryPayment:
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
 
+    async def test_process_retry_payment_lock_held_on_success(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that payment lock is held (not released) when payment succeeds."""
+        await save_fixture(customer)
+
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=utc_now(),
+        )
+        await save_fixture(order)
+
+        mock_payment_intent = MagicMock()
+        mock_payment_intent.id = "pi_test"
+        mock_payment_intent.status = "succeeded"
+        mock_payment_intent.client_secret = None
+        stripe_service_mock.create_payment_intent = AsyncMock(
+            return_value=mock_payment_intent
+        )
+
+        await order_service.process_retry_payment(
+            session, order, "ctoken_test", PaymentProcessor.stripe
+        )
+
+        assert order.payment_lock_acquired_at is not None
+
+    async def test_process_retry_payment_lock_released_on_failure(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that payment lock is released when payment fails."""
+        await save_fixture(customer)
+
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=utc_now(),
+        )
+        await save_fixture(order)
+
+        mock_payment_intent = MagicMock()
+        mock_payment_intent.id = "pi_test"
+        mock_payment_intent.status = "requires_payment_method"
+        mock_payment_intent.client_secret = None
+        mock_payment_intent.last_payment_error = MagicMock()
+        mock_payment_intent.last_payment_error.message = "Card was declined."
+        stripe_service_mock.create_payment_intent = AsyncMock(
+            return_value=mock_payment_intent
+        )
+
+        await order_service.process_retry_payment(
+            session, order, "ctoken_test", PaymentProcessor.stripe
+        )
+
+        assert order.payment_lock_acquired_at is None
+
 
 @pytest.mark.asyncio
 class TestCustomerBasedInvoiceNumbering:

@@ -1182,7 +1182,7 @@ class OrderService:
 
         try:
             async with self.acquire_payment_lock(
-                session, order, release_on_success=True
+                session, order, release_on_success=False
             ):
                 if saved_payment_method is not None:
                     # Using saved payment method
@@ -1261,6 +1261,9 @@ class OrderService:
                         status=payment_intent.status,
                         error=error_message,
                     )
+
+                    repository = OrderRepository.from_session(session)
+                    await repository.release_payment_lock(order, flush=True)
 
                     return CustomerOrderPaymentConfirmation(
                         status="failed",

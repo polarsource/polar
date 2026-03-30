@@ -11,9 +11,7 @@ from polar.models.customer import Customer
 
 
 def get_expires_at() -> datetime:
-    return utc_now() + timedelta(
-        seconds=settings.CUSTOMER_EMAIL_VERIFICATION_TTL_SECONDS
-    )
+    return utc_now() + timedelta(seconds=settings.EMAIL_VERIFICATION_TTL_SECONDS)
 
 
 class CustomerEmailVerification(RecordModel):

@@ -37,7 +37,7 @@ export function CustomerEmailUpdateVerification({
 CustomerEmailUpdateVerification.PreviewProps = {
   email: 'new@example.com',
   organization_name: 'Acme Inc.',
-  token_lifetime_minutes: 60,
+  token_lifetime_minutes: 30,
   url: 'https://polar.sh/acme-inc/portal/verify-email?token=polar_cev_abc123',
 }
 

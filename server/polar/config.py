@@ -141,7 +141,6 @@ class Settings(BaseSettings):
 
     # Email verification
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes
-    CUSTOMER_EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 60  # 60 minutes
 
     # Checkout
     CHECKOUT_TTL_SECONDS: int = 60 * 60 * 24  # 24 hours

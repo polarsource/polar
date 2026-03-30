@@ -1,8 +1,8 @@
 """Start Docker infrastructure (PostgreSQL, Redis, Minio)."""
 
 from shared import (
-    Context,
     SERVER_DIR,
+    Context,
     console,
     run_command,
     step_spinner,

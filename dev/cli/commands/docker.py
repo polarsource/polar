@@ -8,8 +8,7 @@ import hashlib
 import os
 import re
 import shutil
-from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
@@ -235,7 +234,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_callback(
         ctx: typer.Context,
         instance: Annotated[
-            Optional[int], typer.Option("--instance", "-i", help="Instance number for port isolation (auto-detected if not set)")
+            int | None, typer.Option("--instance", "-i", help="Instance number for port isolation (auto-detected if not set)")
         ] = None,
     ) -> None:
         """Isolated Docker development environment."""
@@ -263,7 +262,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             bool, typer.Option("--monitoring", help="Include Prometheus and Grafana")
         ] = False,
         services: Annotated[
-            Optional[list[str]], typer.Argument(help="Services to start (default: all)")
+            list[str] | None, typer.Argument(help="Services to start (default: all)")
         ] = None,
     ) -> None:
         """Start the full stack in Docker containers."""
@@ -303,7 +302,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_down(
         ctx: typer.Context,
         services: Annotated[
-            Optional[list[str]], typer.Argument(help="Services to stop (default: all)")
+            list[str] | None, typer.Argument(help="Services to stop (default: all)")
         ] = None,
     ) -> None:
         """Stop Docker services."""
@@ -327,7 +326,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             bool, typer.Option("--follow", "-f", help="Follow log output")
         ] = True,
         service: Annotated[
-            Optional[str], typer.Argument(help="Service to show logs for")
+            str | None, typer.Argument(help="Service to show logs for")
         ] = None,
     ) -> None:
         """View Docker service logs."""
@@ -360,7 +359,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_restart(
         ctx: typer.Context,
         services: Annotated[
-            Optional[list[str]], typer.Argument(help="Services to restart (default: all)")
+            list[str] | None, typer.Argument(help="Services to restart (default: all)")
         ] = None,
     ) -> None:
         """Restart Docker services."""
@@ -381,7 +380,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_build(
         ctx: typer.Context,
         services: Annotated[
-            Optional[list[str]], typer.Argument(help="Services to build (default: all)")
+            list[str] | None, typer.Argument(help="Services to build (default: all)")
         ] = None,
     ) -> None:
         """Build or rebuild Docker images."""

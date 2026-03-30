@@ -1,8 +1,8 @@
 """Build backoffice CSS and JS assets."""
 
 from shared import (
-    Context,
     SERVER_DIR,
+    Context,
     console,
     run_command,
     step_spinner,

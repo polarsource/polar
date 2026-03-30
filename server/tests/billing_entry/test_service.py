@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 
 from polar.billing_entry.service import billing_entry as billing_entry_service
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterConjunction
@@ -17,6 +17,7 @@ from polar.models import (
     Organization,
     Product,
     ProductPrice,
+    ProductPriceSeatUnit,
     Subscription,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
@@ -29,6 +30,7 @@ from polar.product.guard import (
     is_fixed_price,
     is_free_price,
     is_metered_price,
+    is_seat_price,
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -38,6 +40,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_product,
     create_product_price_metered_unit,
+    create_subscription_with_seats,
 )
 
 
@@ -234,6 +237,59 @@ async def create_static_price_billing_entry(
     return billing_entry
 
 
+async def create_seat_change_billing_entry(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    price: ProductPriceSeatUnit,
+    subscription: Subscription,
+    amount: int,
+    new_seats: int = 11,
+    pending: bool = True,
+    order: Order | None = None,
+) -> BillingEntry:
+    event = await create_event(
+        save_fixture,
+        source=EventSource.system,
+        name=SystemEvent.subscription_seats_updated,
+        organization=customer.organization,
+        customer=customer,
+        metadata={
+            "subscription_id": str(subscription.id),
+            "old_seats": subscription.seats,
+            "new_seats": new_seats,
+            "proration_behavior": SubscriptionProrationBehavior.invoice,
+        },
+    )
+    billing_entry = BillingEntry(
+        start_timestamp=subscription.current_period_start,
+        end_timestamp=subscription.current_period_end,
+        type=BillingEntryType.subscription_seats_increase,
+        direction=BillingEntryDirection.debit,
+        customer=customer,
+        product_price=price,
+        subscription=subscription,
+        event=event,
+        amount=amount,
+        currency=subscription.currency,
+    )
+    if not pending:
+        assert order is not None, "Order must be provided if not pending"
+        order_item = OrderItem(
+            label="",
+            amount=amount,
+            net_amount=amount,
+            tax_amount=0,
+            product_price=price,
+        )
+        order.items.append(order_item)
+        await save_fixture(order)
+        billing_entry.order_item = order_item
+
+    await save_fixture(billing_entry)
+    return billing_entry
+
+
 @pytest.mark.asyncio
 class TestCreateOrderItemsFromPending:
     async def test_one_metered_price(
@@ -384,6 +440,53 @@ class TestCreateOrderItemsFromPending:
         for entry in entries[2:]:
             await session.refresh(entry)
             assert entry.order_item_id == order_item_current_price.id
+
+    async def test_proration_seat_items(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10_00, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=10
+        )
+        price = product.prices[0]
+        assert is_seat_price(price)
+
+        entries = [
+            await create_seat_change_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=subscription,
+                amount=50_00,
+            ),
+        ]
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 1
+
+            order_item = order_items[0]
+            assert order_item.amount == 50_00
+
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        for entry in entries[1:]:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id
 
     async def test_credit_events(
         self,

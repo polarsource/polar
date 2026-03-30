@@ -56,6 +56,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.product_updated": "Subscription Product Updated",
     "order.paid": "Order Paid",
     "order.refunded": "Order Refunded",
+    "order.voided": "Order Voided",
     "checkout.created": "Checkout Created",
     "subscription.seats_updated": "Subscription Seats Updated",
     "customer.created": "Customer Created",

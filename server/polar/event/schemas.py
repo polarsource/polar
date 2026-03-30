@@ -29,6 +29,7 @@ from polar.event.system import (
     MeterResetMetadata,
     OrderPaidMetadata,
     OrderRefundedMetadata,
+    OrderVoidedMetadata,
     SubscriptionBillingPeriodUpdatedMetadata,
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
@@ -450,6 +451,15 @@ class OrderRefundedEvent(SystemEventBase):
     )
 
 
+class OrderVoidedEvent(SystemEventBase):
+    """An event created by Polar when an order is voided."""
+
+    name: Literal[SystemEventEnum.order_voided] = Field(description=_NAME_DESCRIPTION)
+    metadata: OrderVoidedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class CheckoutCreatedEvent(SystemEventBase):
     """An event created by Polar when a checkout is created."""
 
@@ -563,6 +573,7 @@ SystemEvent = Annotated[
     | SubscriptionBillingPeriodUpdatedEvent
     | OrderPaidEvent
     | OrderRefundedEvent
+    | OrderVoidedEvent
     | CheckoutCreatedEvent
     | CustomerCreatedEvent
     | CustomerUpdatedEvent

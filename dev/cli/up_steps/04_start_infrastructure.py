@@ -3,6 +3,7 @@
 from shared import (
     Context,
     SERVER_DIR,
+    console,
     run_command,
     step_spinner,
     step_status,

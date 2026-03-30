@@ -1,8 +1,8 @@
 """Install Python dependencies using uv."""
 
 from shared import (
-    Context,
     SERVER_DIR,
+    Context,
     console,
     run_command,
     step_spinner,

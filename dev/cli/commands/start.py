@@ -8,7 +8,6 @@ import typer
 
 from shared import CLIENTS_DIR, ROOT_DIR, SERVER_DIR, console, run_command, step_spinner
 
-
 SESSION = "polar"
 TMUX_CONF = Path.home() / ".tmux.conf"
 

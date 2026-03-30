@@ -1,7 +1,7 @@
 """View Docker container logs."""
 
 import os
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
@@ -12,7 +12,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def logs(
         service: Annotated[
-            Optional[str], typer.Argument(help="Service name (db, redis, minio, tinybird)")
+            str | None, typer.Argument(help="Service name (db, redis, minio, tinybird)")
         ] = None,
         follow: Annotated[
             bool, typer.Option("--follow", "-f", help="Follow log output")

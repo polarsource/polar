@@ -1,11 +1,12 @@
 """Set up the correct Node.js version via nvm."""
 
 import os
+import subprocess
 from pathlib import Path
 
 from shared import (
-    Context,
     ROOT_DIR,
+    Context,
     check_command_exists,
     console,
     get_command_version,
@@ -32,7 +33,6 @@ def _nvm_script() -> Path:
 
 def _run_with_nvm(nvm_cmd: str, capture: bool = True) -> "subprocess.CompletedProcess | None":
     """Run a command inside a bash shell with nvm sourced."""
-    import subprocess  # noqa: F811
 
     cmd = f'source "{_nvm_script()}" && {nvm_cmd}'
     return run_command(["bash", "-c", cmd], cwd=ROOT_DIR, capture=capture)

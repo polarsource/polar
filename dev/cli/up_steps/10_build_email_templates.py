@@ -1,8 +1,8 @@
 """Build email templates."""
 
 from shared import (
-    Context,
     SERVER_DIR,
+    Context,
     check_email_binary_exists,
     console,
     run_command,

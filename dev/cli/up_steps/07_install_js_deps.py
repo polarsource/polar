@@ -1,8 +1,8 @@
 """Install JavaScript dependencies using pnpm."""
 
 from shared import (
-    Context,
     CLIENTS_DIR,
+    Context,
     console,
     run_command,
     step_spinner,

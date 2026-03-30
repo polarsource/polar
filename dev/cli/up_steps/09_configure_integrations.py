@@ -1,13 +1,12 @@
 """Configure GitHub and Stripe integrations."""
 
-from pathlib import Path
 
 import typer
 
 from shared import (
-    Context,
     ROOT_DIR,
     SECRETS_FILE,
+    Context,
     console,
     run_command,
     step_spinner,

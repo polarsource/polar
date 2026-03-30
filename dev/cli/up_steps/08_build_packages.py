@@ -1,8 +1,8 @@
 """Build shared packages (ui, client, checkout, customer-portal)."""
 
 from shared import (
-    Context,
     CLIENTS_DIR,
+    Context,
     console,
     run_command,
     step_spinner,

@@ -140,7 +140,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         webhook_secret = ""
         if result and result.returncode == 0:
             webhook_secret = result.stdout.strip()
-            console.print(f"[green]✓ Webhook secret obtained[/green]")
+            console.print("[green]✓ Webhook secret obtained[/green]")
         else:
             console.print("[yellow]Could not get webhook secret automatically.[/yellow]")
             webhook_secret = typer.prompt("Enter webhook secret manually (whsec_...), or press Enter to skip", default="")

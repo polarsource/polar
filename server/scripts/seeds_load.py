@@ -474,6 +474,34 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             ],
         },
         {
+            "name": "Polar",
+            "slug": "polar",
+            "email": "admin@polar.sh",
+            "website": "https://polar.sh",
+            "bio": "Open source payment infrastructure for developers",
+            "status": OrganizationStatus.ACTIVE,
+            "details": {
+                "about": "Polar is an open source payment infrastructure platform for developers",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "SaaS platform with usage-based billing for event ingestion",
+                "previous_annual_revenue": 0,
+            },
+            "feature_settings": {
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+            "products": [
+                {
+                    "name": "Polar Default",
+                    "description": "Default Polar plan with seat-based pricing",
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "seat_based": True,
+                    "price_per_seat": 0,
+                },
+            ],
+        },
+        {
             "name": "SeatBased Members Corp",
             "slug": "seatbased-members-corp",
             "email": "admin@polar.sh",
@@ -694,6 +722,29 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 organization_id=organization.id,
             )
             coldmail_meter = await meter_service.create(
+                session=session,
+                meter_create=meter_create,
+                auth_subject=auth_subject,
+            )
+
+        # Create meter for Polar organization
+        if org_data["slug"] == "polar":
+            meter_create = MeterCreate(
+                name="Events Ingested",
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="events_ingested",
+                        )
+                    ],
+                ),
+                aggregation=CountAggregation(),
+                organization_id=organization.id,
+            )
+            await meter_service.create(
                 session=session,
                 meter_create=meter_create,
                 auth_subject=auth_subject,

@@ -156,7 +156,7 @@ module "production" {
     custom_domains  = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
     image_url       = data.render_web_service.production_api.runtime_source.image.image_url
     image_digest    = data.render_web_service.production_api.runtime_source.image.digest
-    plan            = "pro"
+    plan            = "pro_plus"
     web_concurrency = "4"
   }
 

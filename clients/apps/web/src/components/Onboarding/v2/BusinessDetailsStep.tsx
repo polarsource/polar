@@ -77,53 +77,6 @@ function OrgNameSync({
   return null
 }
 
-function SlugPreview({
-  editingSlug,
-  setEditingSlug,
-  onEditSlug,
-}: {
-  editingSlug: boolean
-  setEditingSlug: (v: boolean) => void
-  onEditSlug: () => void
-}) {
-  const { setValue } = useFormContext<FormSchema>()
-  const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
-
-  return (
-    <span className="dark:text-polar-500 flex items-center gap-1 text-xs text-gray-400">
-      <span>polar.sh/</span>
-      {editingSlug ? (
-        <input
-          value={orgSlug}
-          onChange={(e) => {
-            setValue(
-              'orgSlug',
-              slugify(e.target.value, {
-                lower: true,
-                trim: false,
-                strict: true,
-              }),
-            )
-            onEditSlug()
-          }}
-          onBlur={() => setEditingSlug(false)}
-          className="dark:text-polar-300 rounded border-none bg-transparent p-0 text-xs text-gray-600 outline-none"
-          style={{ width: `${Math.max(orgSlug.length, 8)}ch` }}
-          autoFocus
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setEditingSlug(true)}
-          className="dark:text-polar-300 dark:hover:text-polar-200 text-gray-600 underline decoration-dotted hover:text-gray-800"
-        >
-          {orgSlug || 'your-slug'}
-        </button>
-      )}
-    </span>
-  )
-}
-
 function CompanyFields({
   onEditBusinessName,
 }: {
@@ -274,7 +227,6 @@ export function BusinessDetailsStep() {
   const [submitting, setSubmitting] = useState(false)
 
   trackStepViewed('business')
-  const [editingSlug, setEditingSlug] = useState(false)
   const [editedSlug, setEditedSlug] = useState(
     () =>
       (data.orgSlug ?? '') !==
@@ -369,25 +321,50 @@ export function BusinessDetailsStep() {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="orgName"
-            rules={{ required: 'Organization name is required' }}
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Organization Name</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Acme Inc." />
-                </FormControl>
-                <FormMessage />
-                <SlugPreview
-                  editingSlug={editingSlug}
-                  setEditingSlug={setEditingSlug}
-                  onEditSlug={() => setEditedSlug(true)}
-                />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="orgName"
+              rules={{ required: 'Organization name is required' }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Organization Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Acme Inc." />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="orgSlug"
+              rules={{ required: 'Slug is required' }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Organization Slug</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="acme-inc"
+                      onChange={(e) => {
+                        field.onChange(
+                          slugify(e.target.value, {
+                            lower: true,
+                            trim: false,
+                            strict: true,
+                          }),
+                        )
+                        setEditedSlug(true)
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <CompanyFields
             onEditBusinessName={() => setEditedBusinessName(true)}

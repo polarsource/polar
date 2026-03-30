@@ -96,7 +96,7 @@ By using the Services, you confirm that you will not accept payments with any co
 - Third-party content downloaders, including, but not limited to YouTube, Instagram and Snapchat;
 - Digital services associated with pseudo-science including, but not limited to, clairvoyance, horoscopes, fortune-telling;
 - Medical and Health advice;
-- Content generation;
+- Content generation that infringes on trademarks or copyrights, enables face swaps or deep fakes, or produces adult content;
 - Technical support and repair services; or
 - Standardized test prep platforms reselling real or past exam questions (e.g. IELTS, SAT, GMAT). Due to the high risk of copyright infringement and illegal distribution of proprietary exam content, we disallow this category entirely.
 

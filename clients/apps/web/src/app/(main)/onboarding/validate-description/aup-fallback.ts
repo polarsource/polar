@@ -74,7 +74,7 @@ The following business categories and practices are not allowed:
 30. Third-party content downloaders, including, but not limited to YouTube, Instagram and Snapchat;
 31. Digital services associated with pseudo-science including, but not limited to, clairvoyance, horoscopes, fortune-telling;
 32. Medical and Health advice;
-33. Content generation;
+33. Content generation that infringes on trademarks or copyrights, enables face swaps or deep fakes, or produces adult content;
 34. Technical support and repair services; or
 35. Standardized test prep platforms reselling real or past exam questions (e.g. IELTS, SAT, GMAT).
 

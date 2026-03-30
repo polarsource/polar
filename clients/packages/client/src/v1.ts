@@ -19741,12 +19741,22 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
-      /** Total Seats */
+      /** Seat Count */
       seats_total?: number | null
       /** Claimed Seats */
       seats_claimed?: number | null
       /** Pending Seats */
       seats_pending?: number | null
+      /** Active Customers */
+      seat_customers?: number | null
+      /** New Customers */
+      new_seat_customers?: number | null
+      /** Churned Customers */
+      churned_seat_customers?: number | null
+      /** Average Seats per Customer */
+      average_seats_per_customer?: number | null
+      /** Seat Utilization Rate */
+      seat_utilization_rate?: number | null
     }
     /**
      * MetricType
@@ -19815,6 +19825,11 @@ export interface components {
       seats_total?: components['schemas']['Metric'] | null
       seats_claimed?: components['schemas']['Metric'] | null
       seats_pending?: components['schemas']['Metric'] | null
+      seat_customers?: components['schemas']['Metric'] | null
+      new_seat_customers?: components['schemas']['Metric'] | null
+      churned_seat_customers?: components['schemas']['Metric'] | null
+      average_seats_per_customer?: components['schemas']['Metric'] | null
+      seat_utilization_rate?: components['schemas']['Metric'] | null
     }
     /**
      * MetricsIntervalLimit
@@ -19965,12 +19980,22 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
-      /** Total Seats */
+      /** Seat Count */
       seats_total?: number | null
       /** Claimed Seats */
       seats_claimed?: number | null
       /** Pending Seats */
       seats_pending?: number | null
+      /** Active Customers */
+      seat_customers?: number | null
+      /** New Customers */
+      new_seat_customers?: number | null
+      /** Churned Customers */
+      churned_seat_customers?: number | null
+      /** Average Seats per Customer */
+      average_seats_per_customer?: number | null
+      /** Seat Utilization Rate */
+      seat_utilization_rate?: number | null
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {

@@ -12,9 +12,11 @@ import {
 } from 'nuqs'
 import { useMemo } from 'react'
 import { CancellationsContent } from '../components/CancellationsContent'
+import { CustomersContent } from '../components/CustomersContent'
 import { MetricGroup } from '../components/MetricGroup'
 import {
   CANCELLATION_METRICS,
+  CUSTOMERS_ALL_METRICS,
   getMetricsForType,
   MetricType,
 } from '../components/metrics-config'
@@ -63,16 +65,14 @@ export default function ClientPage({
 
   const [productId] = useQueryState('product_id', parseAsArrayOf(parseAsString))
 
-  const metrics = useMemo(
-    () =>
-      metric === 'cancellations'
-        ? CANCELLATION_METRICS
-        : getMetricsForType(metric, {
-            hasRecurringProducts,
-            hasOneTimeProducts,
-          }),
-    [metric, hasRecurringProducts, hasOneTimeProducts],
-  )
+  const metrics = useMemo(() => {
+    if (metric === 'cancellations') return CANCELLATION_METRICS
+    if (metric === 'customers') return CUSTOMERS_ALL_METRICS
+    return getMetricsForType(metric, {
+      hasRecurringProducts,
+      hasOneTimeProducts,
+    })
+  }, [metric, hasRecurringProducts, hasOneTimeProducts])
 
   const { data } = useMetrics({
     startDate,
@@ -91,6 +91,8 @@ export default function ClientPage({
     <div className="flex flex-col gap-12">
       {metric === 'cancellations' ? (
         <CancellationsContent data={data} interval={interval} />
+      ) : metric === 'customers' ? (
+        <CustomersContent data={data} interval={interval} />
       ) : (
         <MetricGroup metricKeys={metrics} data={data} interval={interval} />
       )}

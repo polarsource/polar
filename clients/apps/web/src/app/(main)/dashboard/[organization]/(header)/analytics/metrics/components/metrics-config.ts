@@ -8,7 +8,7 @@ export const METRIC_TYPES = [
   'checkouts',
   'net-revenue',
   'costs',
-  'seats',
+  'customers',
 ] as const
 
 export type MetricType = (typeof METRIC_TYPES)[number]
@@ -91,10 +91,21 @@ const COST_METRICS: (keyof schemas['Metrics'])[] = [
   'cashflow',
 ]
 
+const CUSTOMER_METRICS: (keyof schemas['Metrics'])[] = [
+  'seat_customers',
+  'new_seat_customers',
+  'churned_seat_customers',
+]
+
 const SEAT_METRICS: (keyof schemas['Metrics'])[] = [
   'seats_total',
-  'seats_claimed',
-  'seats_pending',
+  'average_seats_per_customer',
+  'seat_utilization_rate',
+]
+
+export const CUSTOMERS_ALL_METRICS: (keyof schemas['Metrics'])[] = [
+  ...CUSTOMER_METRICS,
+  ...SEAT_METRICS,
 ]
 
 export function getMetricsForType(
@@ -125,7 +136,7 @@ export function getMetricsForType(
       ]
     case 'costs':
       return COST_METRICS
-    case 'seats':
-      return SEAT_METRICS
+    case 'customers':
+      return CUSTOMERS_ALL_METRICS
   }
 }

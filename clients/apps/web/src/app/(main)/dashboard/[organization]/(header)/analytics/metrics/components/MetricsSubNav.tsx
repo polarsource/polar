@@ -73,8 +73,8 @@ export function MetricsSubNav({
         visible: organization.feature_settings?.revops_enabled ?? false,
       },
       {
-        title: 'Seats',
-        href: `${basePath}/seats`,
+        title: 'Customers',
+        href: `${basePath}/customers`,
         visible:
           organization.feature_settings?.seat_based_pricing_enabled ?? false,
       },

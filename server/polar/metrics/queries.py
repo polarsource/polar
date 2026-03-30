@@ -14,6 +14,7 @@ from sqlalchemy import (
     and_,
     case,
     cte,
+    exists,
     func,
     or_,
     select,
@@ -63,13 +64,14 @@ def _get_metrics_columns(
     metrics: list["type[SQLMetric]"],
     now: datetime,
 ) -> Generator[ColumnElement[int] | ColumnElement[float], None, None]:
-    return (
-        func.coalesce(
-            metric.get_sql_expression(timestamp_column, interval, now), 0
-        ).label(metric.slug)
-        for metric in metrics
-        if metric.query == metric_cte
-    )
+    for metric in metrics:
+        if metric.query != metric_cte:
+            continue
+        try:
+            expr = metric.get_sql_expression(timestamp_column, interval, now)
+        except NotImplementedError:
+            continue
+        yield func.coalesce(expr, 0).label(metric.slug)
 
 
 class QueryCallable(Protocol):
@@ -774,38 +776,144 @@ def get_seats_cte(
         customer_id=customer_id,
     )
 
+    from_clause = (
+        timestamp_series.join(
+            CustomerSeat,
+            isouter=True,
+            onclause=and_(
+                interval.sql_date_trunc(
+                    cast(SQLColumnExpression[datetime], CustomerSeat.created_at)
+                )
+                <= interval.sql_date_trunc(timestamp_column),
+                or_(
+                    CustomerSeat.revoked_at.is_(None),
+                    interval.sql_date_trunc(
+                        cast(
+                            SQLColumnExpression[datetime],
+                            CustomerSeat.revoked_at,
+                        )
+                    )
+                    > interval.sql_date_trunc(timestamp_column),
+                ),
+                CustomerSeat.id.in_(readable_seats_statement),
+                CustomerSeat.created_at <= end_timestamp,
+                or_(
+                    CustomerSeat.revoked_at.is_(None),
+                    CustomerSeat.revoked_at >= start_timestamp,
+                ),
+            ),
+        )
+        .join(
+            Subscription,
+            CustomerSeat.subscription_id == Subscription.id,
+            isouter=True,
+        )
+        .join(
+            Order,
+            CustomerSeat.order_id == Order.id,
+            isouter=True,
+        )
+    )
+
+    slugs_needed = {m.slug for m in metrics if m.query == MetricQuery.seats}
+    direct_columns: list[ColumnElement[int]] = []
+
+    if "new_seat_customers" in slugs_needed:
+        billing_customer = func.coalesce(
+            CustomerSeat.customer_id,
+            Subscription.customer_id,
+            Order.customer_id,
+        )
+        cs_e = CustomerSeat.__table__.alias("cs_earlier")
+        sub_e = Subscription.__table__.alias("sub_earlier")
+        ord_e = Order.__table__.alias("ord_earlier")
+        has_earlier_seat = exists(
+            select(1)
+            .select_from(cs_e)
+            .outerjoin(sub_e, cs_e.c.subscription_id == sub_e.c.id)
+            .outerjoin(ord_e, cs_e.c.order_id == ord_e.c.id)
+            .where(
+                func.coalesce(
+                    cs_e.c.customer_id,
+                    sub_e.c.customer_id,
+                    ord_e.c.customer_id,
+                )
+                == billing_customer,
+                interval.sql_date_trunc(
+                    cast(SQLColumnExpression[datetime], cs_e.c.created_at)
+                )
+                < interval.sql_date_trunc(timestamp_column),
+                cs_e.c.id.in_(readable_seats_statement),
+            )
+            .correlate(CustomerSeat, Subscription, Order, timestamp_series)
+        )
+        direct_columns.append(
+            func.coalesce(
+                func.count(func.distinct(billing_customer)).filter(
+                    interval.sql_date_trunc(
+                        cast(
+                            SQLColumnExpression[datetime],
+                            CustomerSeat.created_at,
+                        )
+                    )
+                    == interval.sql_date_trunc(timestamp_column),
+                    ~has_earlier_seat,
+                ),
+                0,
+            ).label("new_seat_customers")
+        )
+
+    if "churned_seat_customers" in slugs_needed:
+        cs_c = CustomerSeat.__table__.alias("cs_churned")
+        sub_c = Subscription.__table__.alias("sub_churned")
+        ord_c = Order.__table__.alias("ord_churned")
+        churned_sub = (
+            select(
+                func.coalesce(
+                    cs_c.c.customer_id,
+                    sub_c.c.customer_id,
+                    ord_c.c.customer_id,
+                ).label("billing_customer_id")
+            )
+            .select_from(cs_c)
+            .outerjoin(sub_c, cs_c.c.subscription_id == sub_c.c.id)
+            .outerjoin(ord_c, cs_c.c.order_id == ord_c.c.id)
+            .where(
+                cs_c.c.id.in_(readable_seats_statement),
+                cs_c.c.revoked_at.is_not(None),
+            )
+            .group_by("billing_customer_id")
+            .having(
+                func.count(cs_c.c.id) == func.count(cs_c.c.revoked_at),
+                interval.sql_date_trunc(
+                    cast(
+                        SQLColumnExpression[datetime],
+                        func.max(cs_c.c.revoked_at),
+                    )
+                )
+                == interval.sql_date_trunc(timestamp_column),
+            )
+            .correlate(timestamp_series)
+        )
+        direct_columns.append(
+            func.coalesce(
+                select(func.count())
+                .select_from(churned_sub.subquery())
+                .correlate(timestamp_series)
+                .scalar_subquery(),
+                0,
+            ).label("churned_seat_customers")
+        )
+
     return cte(
         select(
             timestamp_column.label("timestamp"),
             *_get_metrics_columns(
                 MetricQuery.seats, timestamp_column, interval, metrics, now
             ),
+            *direct_columns,
         )
-        .select_from(
-            timestamp_series.join(
-                CustomerSeat,
-                isouter=True,
-                onclause=and_(
-                    interval.sql_date_trunc(
-                        cast(SQLColumnExpression[datetime], CustomerSeat.created_at)
-                    )
-                    <= interval.sql_date_trunc(timestamp_column),
-                    or_(
-                        CustomerSeat.revoked_at.is_(None),
-                        interval.sql_date_trunc(
-                            cast(SQLColumnExpression[datetime], CustomerSeat.revoked_at)
-                        )
-                        > interval.sql_date_trunc(timestamp_column),
-                    ),
-                    CustomerSeat.id.in_(readable_seats_statement),
-                    CustomerSeat.created_at <= end_timestamp,
-                    or_(
-                        CustomerSeat.revoked_at.is_(None),
-                        CustomerSeat.revoked_at >= start_timestamp,
-                    ),
-                ),
-            )
-        )
+        .select_from(from_clause)
         .group_by(timestamp_column)
         .order_by(timestamp_column.asc())
     )

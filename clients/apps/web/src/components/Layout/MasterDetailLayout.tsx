@@ -1,6 +1,5 @@
 'use client'
 
-import useIsMobile from '@/utils/mobile'
 import { motion } from 'framer-motion'
 import { useSelectedLayoutSegment } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
@@ -17,10 +16,7 @@ export const MasterDetailLayout = ({
   listViewClassName?: string
   placement?: 'left' | 'right'
 }) => {
-  const segment = useSelectedLayoutSegment()
-  const { isMobile } = useIsMobile()
-
-  const showMobileListAsMain = isMobile && !segment && listView
+  const isIndexPage = !useSelectedLayoutSegment()
 
   return (
     <motion.div
@@ -41,7 +37,7 @@ export const MasterDetailLayout = ({
           }}
           className={twMerge(
             'dark:bg-polar-900 dark:border-polar-800 h-full w-full overflow-y-hidden rounded-2xl border border-gray-200 bg-white md:max-w-[300px] md:shadow-xs xl:max-w-[320px]',
-            showMobileListAsMain ? 'block mx-4 mt-4' : 'hidden md:block',
+            isIndexPage ? 'mx-4 mt-4 md:mx-0 md:mt-0' : 'hidden md:block',
           )}
         >
           {listView}
@@ -51,7 +47,7 @@ export const MasterDetailLayout = ({
       <div
         className={twMerge(
           'dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs',
-          showMobileListAsMain && 'hidden md:flex',
+          isIndexPage && 'hidden md:flex',
         )}
       >
         <motion.div

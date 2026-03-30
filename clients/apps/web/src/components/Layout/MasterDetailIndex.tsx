@@ -1,22 +1,15 @@
 'use client'
 
-import useIsMobile from '@/utils/mobile'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { MOBILE_MEDIA_QUERY } from '@/utils/mobile'
+import { redirect } from 'next/navigation'
 
-export const MasterDetailIndex = ({
-  redirectTo,
-}: {
-  redirectTo: string
-}) => {
-  const { isMobile, isLoading } = useIsMobile()
-  const router = useRouter()
+export const MasterDetailIndex = ({ redirectTo }: { redirectTo: string }) => {
+  const isBrowser = typeof window !== 'undefined'
+  const isDesktop = isBrowser && !window.matchMedia(MOBILE_MEDIA_QUERY).matches
 
-  useEffect(() => {
-    if (!isLoading && !isMobile) {
-      router.replace(redirectTo)
-    }
-  }, [isLoading, isMobile, redirectTo, router])
+  if (isDesktop) {
+    redirect(redirectTo)
+  }
 
   return null
 }

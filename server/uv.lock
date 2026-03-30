@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "2026-03-19T14:56:40.28487Z"
+exclude-newer = "2026-03-23T09:08:37.503757547Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -992,7 +992,7 @@ wheels = [
 
 [[package]]
 name = "githubkit"
-version = "0.15.0"
+version = "0.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1001,9 +1001,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/86/5e/b84c14df8f1445ae670971b79801fc6804af2678c7afda7d5ac7fe8b7c10/githubkit-0.15.0.tar.gz", hash = "sha256:1f425609b76cdb6711098b98ebb2f6137f153cff101d5ce0473803836ce49db7", size = 5403764, upload-time = "2026-03-13T04:34:53.822Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e9/93/1da0a9cb16c0b199a089f1e9011bbac9492f4440afcbfe7557dbf7c3759e/githubkit-0.15.1.tar.gz", hash = "sha256:e436494321bbd7abc27ad4fd3b8d82a94602bce0f9816ad01b58952ef299544c", size = 5419986, upload-time = "2026-03-22T09:38:26.878Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/42/18bb3a7bcde2ddc71bcf68561905e9971ecaefcf2544afe8ff55873e023a/githubkit-0.15.0-py3-none-any.whl", hash = "sha256:02daa0b7d7dbf7311754ab89adfc69f01c33bbee5c83764ebcc09dbb1cf4ce81", size = 13111153, upload-time = "2026-03-13T04:34:50.201Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/15/f5983ab415388885e6da7bdaed620e894e0d51fdf110847b985d098ccd1a/githubkit-0.15.1-py3-none-any.whl", hash = "sha256:17616c8ba3764e568727883db190512c1e64eb1b147b190a29a6cb46b1581409", size = 13151277, upload-time = "2026-03-22T09:38:29.474Z" },
 ]
 
 [[package]]
@@ -2159,7 +2159,7 @@ requires-dist = [
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = ">=0.120.2" },
     { name = "fpdf2", specifier = ">=2.8.3" },
-    { name = "githubkit", specifier = "==0.15.0" },
+    { name = "githubkit", specifier = "==0.15.1" },
     { name = "greenlet", specifier = ">=3.1.1" },
     { name = "httpx", specifier = ">=0.23.0" },
     { name = "httpx-oauth", specifier = ">=0.16.0" },

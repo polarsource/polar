@@ -24,13 +24,13 @@ class PolarSelfService:
         )
 
     def enqueue_add_member(
-        self, *, customer_id: str, email: str, name: str, external_id: str
+        self, *, external_customer_id: str, email: str, name: str, external_id: str
     ) -> None:
         if not self.is_configured:
             return
         enqueue_job(
             "polar_self.add_member",
-            customer_id=customer_id,
+            external_customer_id=external_customer_id,
             email=email,
             name=name,
             external_id=external_id,

@@ -641,6 +641,12 @@ class OrganizationService:
             await session.flush()
         finally:
             await loops_service.user_organization_added(session, user)
+            polar_self_service.enqueue_add_member(
+                external_customer_id=str(organization.id),
+                email=user.email,
+                name=user.public_name,
+                external_id=str(user.id),
+            )
 
     async def set_account(
         self,

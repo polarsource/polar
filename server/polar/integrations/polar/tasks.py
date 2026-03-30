@@ -20,9 +20,12 @@ async def create_customer(
 
 
 @actor(actor_name="polar_self.add_member", priority=TaskPriority.LOW)
-async def add_member(customer_id: str, email: str, name: str, external_id: str) -> None:
+async def add_member(
+    external_customer_id: str, email: str, name: str, external_id: str
+) -> None:
+    customer = await polar_self_client.get_customer_by_external_id(external_customer_id)
     await polar_self_client.add_member(
-        customer_id=customer_id,
+        customer_id=customer.id,
         email=email,
         name=name,
         external_id=external_id,

@@ -247,11 +247,11 @@ class BillingEntryService:
 
         start = format_date(entry.start_timestamp.date(), locale="en_US")
         end = format_date(entry.end_timestamp.date(), locale="en_US")
+        amount = entry.amount
 
         rows = price.get_seat_tier_rows(seats)
         items: list[SeatLineItem] = []
         for seat_count, price_per_seat in rows:
-            amount = seat_count * price_per_seat
             if entry.direction == BillingEntryDirection.credit:
                 seat_word = "seat" if seat_count == 1 else "seats"
                 unit_display = format_currency(price_per_seat, entry.currency)

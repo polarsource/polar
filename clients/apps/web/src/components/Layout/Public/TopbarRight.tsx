@@ -39,7 +39,7 @@ const TopbarRight = ({
   ) : (
     <>
       <Button onClick={onLoginClick} variant="secondary">
-        Log in
+        Sign in
       </Button>
 
       <GetStartedButton
@@ -49,7 +49,7 @@ const TopbarRight = ({
       />
 
       <Modal
-        title="Login"
+        title="Sign in"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={<AuthModal returnTo={loginReturnTo} />}

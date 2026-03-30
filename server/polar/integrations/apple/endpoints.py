@@ -130,7 +130,7 @@ async def apple_callback(
         await loops_service.user_update(session, user)
 
     response = await auth_service.get_login_response(
-        session, request, user, return_to=return_to
+        session, request, user, return_to=return_to, login_method="apple"
     )
     clear_login_cookie(request, response, cross_site=True)
     return response

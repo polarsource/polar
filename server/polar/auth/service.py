@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 import structlog
 from fastapi import Request, Response
@@ -18,6 +18,8 @@ from polar.postgres import AsyncSession
 
 log: Logger = structlog.get_logger()
 
+LoginMethod = Literal["github", "google", "apple", "email"]
+
 USER_SESSION_TOKEN_PREFIX = "polar_us_"
 
 R = TypeVar("R", bound=Response)
@@ -31,6 +33,7 @@ class AuthService:
         user: User,
         *,
         return_to: str | None = None,
+        login_method: LoginMethod | None = None,
     ) -> RedirectResponse:
         token, user_session = await self._create_user_session(
             session=session,
@@ -44,6 +47,8 @@ class AuthService:
         response = self._set_user_session_cookie(
             request, response, token, user_session.expires_at
         )
+        if login_method is not None:
+            self._set_last_login_method_cookie(request, response, login_method)
         return response
 
     async def get_logout_response(
@@ -151,6 +156,23 @@ class AuthService:
             domain=settings.USER_SESSION_COOKIE_DOMAIN,
             secure=secure,
             httponly=True,
+            samesite="lax",
+        )
+        return response
+
+    def _set_last_login_method_cookie(
+        self, request: Request, response: R, login_method: LoginMethod
+    ) -> R:
+        is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
+        secure = False if is_localhost else True
+        response.set_cookie(
+            "polar_last_login_method",
+            value=login_method,
+            max_age=60 * 60 * 24 * 365,
+            path="/",
+            domain=settings.USER_SESSION_COOKIE_DOMAIN,
+            secure=secure,
+            httponly=False,
             samesite="lax",
         )
         return response

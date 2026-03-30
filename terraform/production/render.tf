@@ -211,7 +211,7 @@ module "production" {
       database_pool_size = "16"
     }
     "worker-tinybird" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
+      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 32 --queues tinybird"
       image_url          = data.render_web_service.production_worker["worker-tinybird"].runtime_source.image.image_url
       image_digest       = data.render_web_service.production_worker["worker-tinybird"].runtime_source.image.digest
       dramatiq_prom_port = "10002"

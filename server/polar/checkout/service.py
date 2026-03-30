@@ -2589,6 +2589,21 @@ class CheckoutService:
         if checkout.locale is not None:
             customer.locale = checkout.locale
 
+        if checkout.external_customer_id is not None and not created:
+            if (
+                customer.external_id is not None
+                and customer.external_id != checkout.external_customer_id
+            ):
+                raise CheckoutCustomerExternalIdMismatch()
+            if customer.external_id is None:
+                existing = await repository.get_by_external_id_and_organization(
+                    checkout.external_customer_id,
+                    checkout.organization.id,
+                )
+                if existing is not None and existing.id != customer.id:
+                    raise CheckoutCustomerExternalIdMismatch()
+                customer.external_id = checkout.external_customer_id
+
         customer.stripe_customer_id = stripe_customer_id
         customer.user_metadata = {
             **customer.user_metadata,

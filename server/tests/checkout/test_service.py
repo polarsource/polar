@@ -4767,7 +4767,7 @@ class TestConfirm:
         """
         Customer exists, no external ID set.
 
-        Checkout should link to the existing customer by email, but not set the external ID.
+        Checkout should link to the existing customer by email and set the external ID.
         """
         customer = await create_customer(
             save_fixture,
@@ -4802,7 +4802,107 @@ class TestConfirm:
         assert checkout.customer is not None
         assert checkout.customer == customer
         assert checkout.customer.email == customer.email
-        assert checkout.customer.external_id is None
+        assert checkout.customer.external_id == "external_id_1"
+
+    async def test_existing_email_conflicting_external_id(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """
+        Customer exists with a different external ID.
+
+        Should raise CheckoutCustomerExternalIdMismatch.
+        """
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            external_id="existing_external_id",
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            external_customer_id="different_external_id",
+        )
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        with pytest.raises(CheckoutCustomerExternalIdMismatch):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer1@example.com",
+                        "customer_billing_address": {
+                            "country": "FR",
+                        },
+                    }
+                ),
+            )
+
+    async def test_existing_email_external_id_owned_by_other_customer(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """
+        Customer exists by email without external ID, but another customer
+        already owns the checkout's external_customer_id.
+
+        Should raise CheckoutCustomerExternalIdMismatch.
+        """
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="other@example.com",
+            external_id="external_id_1",
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            external_customer_id="external_id_1",
+        )
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        with pytest.raises(CheckoutCustomerExternalIdMismatch):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer1@example.com",
+                        "customer_billing_address": {
+                            "country": "FR",
+                        },
+                    }
+                ),
+            )
 
     async def test_existing_customer_email_changed(
         self,

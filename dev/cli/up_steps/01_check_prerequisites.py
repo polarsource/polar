@@ -157,19 +157,6 @@ def run(ctx: Context) -> bool:
     else:
         step_status(True, "pnpm", "not found (will install after Node setup)")
 
-    # Tailscale
-    if system == "Darwin":
-        if check_command_exists("tailscale"):
-            step_status(True, "Tailscale", "installed")
-        else:
-            console.print("  [yellow]Tailscale not found, installing...[/yellow]")
-            result = run_command(["brew", "install", "--cask", "tailscale"], capture=False)
-            if result and result.returncode == 0:
-                step_status(True, "Tailscale", "installed")
-            else:
-                step_status(False, "Tailscale", "installation failed")
-                prereqs_ok = False
-
     # Node.js - just report status, step 02 handles installation via nvm
     if check_command_exists("node"):
         version = get_command_version("node")

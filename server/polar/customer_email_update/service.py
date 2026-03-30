@@ -214,9 +214,5 @@ class CustomerEmailUpdateService:
 
         return customer, session_token
 
-    async def delete_expired(self, session: AsyncSession) -> None:
-        repository = CustomerEmailVerificationRepository.from_session(session)
-        await repository.delete_expired()
-
 
 customer_email_update = CustomerEmailUpdateService()

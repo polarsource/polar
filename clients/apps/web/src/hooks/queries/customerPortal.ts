@@ -80,6 +80,38 @@ export const useCustomerEmailUpdateRequest = () => {
   })
 }
 
+export const useCustomerEmailUpdateVerify = () => {
+  const { client } = useCustomerPortalContext()
+
+  return useMutation({
+    mutationFn: async (data: { token: string }) => {
+      const result = await client.POST(
+        '/v1/customer-portal/customers/me/email-update/verify',
+        { body: data },
+      )
+      if (result.error) {
+        const detail = (result.error as Record<string, unknown>)?.detail
+        if (result.response.status === 401) {
+          throw new Error('This link is invalid or has expired.')
+        }
+        if (result.response.status === 422 && Array.isArray(detail)) {
+          const err = new Error('Validation error') as Error & {
+            errors: schemas['ValidationError'][]
+          }
+          err.errors = detail
+          throw err
+        }
+        throw new Error(
+          typeof detail === 'string'
+            ? detail
+            : 'Something went wrong. Please try again.',
+        )
+      }
+      return result.data
+    },
+  })
+}
+
 export const useCustomerPortalSessionRequest = (
   api: Client,
   organizationId: string,

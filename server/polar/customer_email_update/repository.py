@@ -39,9 +39,3 @@ class CustomerEmailVerificationRepository(RepositoryBase[CustomerEmailVerificati
 
     async def delete(self, record: CustomerEmailVerification) -> None:
         await self.session.delete(record)
-
-    async def delete_expired(self) -> None:
-        statement = delete(CustomerEmailVerification).where(
-            CustomerEmailVerification.expires_at < utc_now()
-        )
-        await self.session.execute(statement)

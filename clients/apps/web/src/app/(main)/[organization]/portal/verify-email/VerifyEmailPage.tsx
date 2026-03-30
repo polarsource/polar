@@ -1,10 +1,11 @@
 'use client'
 
+import { useCustomerEmailUpdateVerify } from '@/hooks/queries/customerPortal'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useRouter } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 const VerifyEmailPage = ({
   organization,
@@ -16,53 +17,15 @@ const VerifyEmailPage = ({
   tokenValid: boolean
 }) => {
   const router = useRouter()
-
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const verify = useCustomerEmailUpdateVerify()
 
   const onConfirm = useCallback(async () => {
-    setIsPending(true)
-    setError(null)
-
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.polar.sh'
-      const response = await fetch(
-        `${apiUrl}/v1/customer-portal/customers/me/email-update/verify`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        },
-      )
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null)
-        if (response.status === 401) {
-          setError('This link is invalid or has expired.')
-        } else if (response.status === 422 && data?.detail) {
-          const detail = Array.isArray(data.detail)
-            ? (data.detail[0]?.msg ?? 'Validation error')
-            : data.detail
-          setError(detail)
-        } else {
-          setError('Something went wrong. Please try again.')
-        }
-        return
-      }
-
-      const data = await response.json()
-      const sessionToken = data.token
-
-      setSuccess(true)
-
-      router.push(
-        `/${organization.slug}/portal/settings?customer_session_token=${sessionToken}`,
-      )
-    } finally {
-      setIsPending(false)
-    }
-  }, [token, router, organization.slug])
+    if (!token) return
+    const data = await verify.mutateAsync({ token })
+    router.push(
+      `/${organization.slug}/portal/settings?customer_session_token=${data.token}`,
+    )
+  }, [token, verify, router, organization.slug])
 
   if (!token || !tokenValid) {
     return (
@@ -77,7 +40,7 @@ const VerifyEmailPage = ({
     )
   }
 
-  if (success) {
+  if (verify.isSuccess) {
     return (
       <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
         <div className="flex w-full flex-col items-center gap-y-4 md:max-w-sm">
@@ -104,9 +67,9 @@ const VerifyEmailPage = ({
           </p>
         </div>
 
-        {error && (
+        {verify.error && (
           <p className="text-sm font-medium text-red-500 dark:text-red-400">
-            {error}
+            {verify.error.message}
           </p>
         )}
 
@@ -114,8 +77,8 @@ const VerifyEmailPage = ({
           size="lg"
           className="w-full"
           onClick={onConfirm}
-          loading={isPending}
-          disabled={isPending}
+          loading={verify.isPending}
+          disabled={verify.isPending}
         >
           Confirm Email Change
         </Button>

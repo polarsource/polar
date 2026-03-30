@@ -21,9 +21,10 @@ const VerifyEmailPage = ({
 
   const onConfirm = useCallback(async () => {
     if (!token) return
-    const data = await verify.mutateAsync({ token })
+    const sessionToken = (await verify.mutateAsync({ token }))?.token
+    if (!sessionToken) return
     router.push(
-      `/${organization.slug}/portal/settings?customer_session_token=${data.token}`,
+      `/${organization.slug}/portal/settings?customer_session_token=${sessionToken}`,
     )
   }, [token, verify, router, organization.slug])
 

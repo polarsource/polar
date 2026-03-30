@@ -2928,6 +2928,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/customers/me/email-update/check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Check Email Change Token
+     * @description Check if an email change verification token is still valid.
+     */
+    get: operations['customer_portal:customers:check_email_update']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/customers/me/email-update/verify': {
     parameters: {
       query?: never
@@ -36744,6 +36764,42 @@ export interface operations {
         content: {
           'application/json': unknown
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customers:check_email_update': {
+    parameters: {
+      query: {
+        token: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Token is valid. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Invalid or expired verification token. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {

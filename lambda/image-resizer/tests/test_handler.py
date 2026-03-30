@@ -194,3 +194,19 @@ class TestHandler:
         obj = aws.get_object(Bucket=BUCKET, Key="resized/256x0/images/my photo.jpg")
         img = Image.open(io.BytesIO(obj["Body"].read()))
         assert img.size == (256, 256)
+
+    def test_uri_with_literal_space_is_normalized(self, aws: S3Client) -> None:
+        """CloudFront may decode %20 to a literal space before passing to Lambda@Edge."""
+        _upload(
+            aws,
+            "images/my photo.jpg",
+            _make_image(800, 800),
+        )
+
+        event = _make_event(uri="/images/my photo.jpg", querystring="width=200")
+        result = handler(event, None)
+
+        # URI must never contain a literal space (Lambda@Edge rejects those)
+        assert " " not in result["uri"]
+        assert result["uri"] == "/resized/256x0/images/my%20photo.jpg"
+        assert result["querystring"] == ""

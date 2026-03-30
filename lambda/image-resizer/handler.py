@@ -107,6 +107,12 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     logger.info("uri=%s querystring=%s", uri, querystring)
 
+    # Normalize URI: re-encode the path to ensure spaces are %20, not literal spaces.
+    # CloudFront may decode %20 to a literal space before passing to Lambda@Edge,
+    # and Lambda@Edge will reject a response containing a literal space in the URI.
+    uri = quote(unquote(urlparse(uri).path), safe="/")
+    request["uri"] = uri
+
     if not querystring or not is_image(uri):
         return request
 

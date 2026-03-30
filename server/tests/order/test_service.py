@@ -4230,8 +4230,6 @@ class TestProcessRetryPayment:
         organization: Organization,
     ) -> None:
         """Test that payment lock is held (not released) when payment succeeds."""
-        await save_fixture(customer)
-
         subscription = await create_subscription(
             save_fixture, customer=customer, product=product
         )
@@ -4244,7 +4242,6 @@ class TestProcessRetryPayment:
             subscription=subscription,
             next_payment_attempt_at=utc_now(),
         )
-        await save_fixture(order)
 
         mock_payment_intent = MagicMock()
         mock_payment_intent.id = "pi_test"

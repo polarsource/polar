@@ -169,6 +169,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         environment=settings.ENV,
         service_name=resolved_service_name,
         service_version=os.environ.get("RELEASE_VERSION", "development"),
+        inspect_arguments=False,
         code_source=logfire.CodeSource(
             repository="https://github.com/polarsource/polar",
             revision=os.environ.get("RELEASE_VERSION", "main"),

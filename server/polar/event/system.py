@@ -59,6 +59,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "order.voided": "Order Voided",
     "checkout.created": "Checkout Created",
     "subscription.seats_updated": "Subscription Seats Updated",
+    "subscription.billing_period_updated": "Subscription Billing Period Updated",
     "customer.created": "Customer Created",
     "customer.updated": "Customer Updated",
     "customer.deleted": "Customer Deleted",
@@ -67,6 +68,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "balance.order": "Balance Order",
     "balance.credit_order": "Balance Credit Order",
     "balance.refund": "Balance Refund",
+    "balance.refund_reversal": "Balance Refund Reversal",
     "balance.dispute": "Balance Dispute",
     "balance.dispute_reversal": "Balance Dispute Reversal",
 }

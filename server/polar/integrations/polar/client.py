@@ -11,6 +11,7 @@ from polar.logging import Logger
 
 if TYPE_CHECKING:
     from polar_sdk import Polar as PolarSDK
+    from polar_sdk.models import Customer
 
 log: Logger = structlog.get_logger()
 
@@ -37,7 +38,7 @@ class PolarSelfClient:
     async def create_customer(
         self, *, external_id: str, email: str, name: str, organization_id: str
     ) -> None:
-        from polar_sdk.models import CustomerCreate
+        from polar_sdk.models import CustomerCreate, CustomerType
         from polar_sdk.models.polarerror import PolarError
 
         try:
@@ -47,7 +48,7 @@ class PolarSelfClient:
                     name=name,
                     external_id=external_id,
                     organization_id=organization_id,
-                    type="team",
+                    type=CustomerType.TEAM,
                 )
             )
         except PolarError as e:
@@ -72,6 +73,9 @@ class PolarSelfClient:
                 "create_free_subscription",
                 external_customer_id=external_customer_id,
             )
+
+    async def get_customer_by_external_id(self, external_id: str) -> Customer:
+        return await self._sdk.customers.get_external_async(external_id=external_id)
 
     async def add_member(
         self, *, customer_id: str, email: str, name: str, external_id: str

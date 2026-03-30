@@ -255,10 +255,13 @@ class TaxCalculationChangedAfterPayment(OrderError):
 class OrderService:
     @asynccontextmanager
     async def acquire_payment_lock(
-        self, session: AsyncSession, order: Order, *, release_on_success: bool = True
+        self, session: AsyncSession, order: Order
     ) -> AsyncIterator[None]:
         """
-        Context manager to acquire and release a payment lock for an order.
+        Context manager to acquire a payment lock for an order.
+        The lock is held after a successful operation and must be released
+        by the webhook handler (e.g., handle_payment or handle_payment_failure).
+        The lock is released automatically if an exception occurs.
         """
 
         repository = OrderRepository.from_session(session)
@@ -273,9 +276,6 @@ class OrderService:
         except Exception:
             await repository.release_payment_lock(order, flush=True)
             raise
-        else:
-            if release_on_success:
-                await repository.release_payment_lock(order, flush=True)
 
     async def list(
         self,
@@ -1035,7 +1035,7 @@ class OrderService:
             await self._on_order_updated(session, order, previous_status)
             return
 
-        async with self.acquire_payment_lock(session, order, release_on_success=False):
+        async with self.acquire_payment_lock(session, order):
             if payment_method.processor == PaymentProcessor.stripe:
                 metadata: dict[str, Any] = {
                     "organization_id": str(order.organization.id),
@@ -1186,9 +1186,7 @@ class OrderService:
             metadata["tax_state"] = order.tax_rate["state"]
 
         try:
-            async with self.acquire_payment_lock(
-                session, order, release_on_success=True
-            ):
+            async with self.acquire_payment_lock(session, order):
                 if saved_payment_method is not None:
                     # Using saved payment method
                     payment_intent = await stripe_service.create_payment_intent(

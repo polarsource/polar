@@ -669,6 +669,7 @@ class SubscriptionService:
             # Apply any pending subscription update (product change, seats change)
             # scheduled for the beginning of this new cycle
             pending_update = subscription.pending_update
+            pending_update_changed_interval = False
             if pending_update is not None:
                 pending_update.subscription = subscription
                 if pending_update.product_id is not None:
@@ -679,6 +680,8 @@ class SubscriptionService:
                     )
                 else:
                     pending_update.product = None
+                # Check before apply_update() changes subscription.product
+                pending_update_changed_interval = pending_update.is_interval_changed()
                 pending_update.apply_update()
                 subscription_update_repository = (
                     SubscriptionUpdateRepository.from_session(session)
@@ -686,7 +689,7 @@ class SubscriptionService:
                 await subscription_update_repository.update(pending_update)
                 subscription.pending_update = None
 
-            if update_cycle_dates:
+            if update_cycle_dates and not pending_update_changed_interval:
                 current_period_end = subscription.current_period_end
                 subscription.current_period_start = current_period_end
                 subscription.current_period_end = (

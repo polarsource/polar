@@ -1512,6 +1512,61 @@ class TestCycle:
         assert updated_subscription_update is not None
         assert updated_subscription_update.applied_at is not None
 
+    async def test_pending_update_product_interval_change(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        annual_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(10000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription=subscription,
+            product=annual_product,
+            applies_at=subscription.current_period_end,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        old_period_end = subscription.current_period_end
+        assert old_period_end is not None
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        # The new period should start exactly at the old period end
+        assert updated_subscription.current_period_start == old_period_end
+        # The new period should end one year after the old period end (not two years)
+        assert updated_subscription.current_period_end == (
+            SubscriptionRecurringInterval.year.get_next_period(old_period_end, 1)
+        )
+        assert updated_subscription.product == annual_product
+        assert updated_subscription.pending_update is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        billing_entry = billing_entries[0]
+        assert (
+            billing_entry.start_timestamp == updated_subscription.current_period_start
+        )
+        assert billing_entry.end_timestamp == updated_subscription.current_period_end
+
 
 @pytest.mark.asyncio
 class TestRevoke:

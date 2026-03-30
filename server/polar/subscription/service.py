@@ -453,7 +453,7 @@ class SubscriptionService:
 
         current_period_start = utc_now()
         current_period_end = recurring_interval.get_next_period(
-            current_period_start, recurring_interval_count
+            current_period_start, current_period_start.day, recurring_interval_count
         )
 
         subscription = Subscription(
@@ -554,7 +554,7 @@ class SubscriptionService:
             current_period_end = trial_end
         else:
             current_period_end = recurring_interval.get_next_period(
-                current_period_start, recurring_interval_count
+                current_period_start, current_period_start.day, recurring_interval_count
             )
 
         # New subscription
@@ -573,6 +573,7 @@ class SubscriptionService:
         subscription.current_period_end = current_period_end
         subscription.trial_start = trial_start
         subscription.trial_end = trial_end
+        subscription.anchor_day = current_period_start.day
 
         subscription.recurring_interval = recurring_interval
         subscription.recurring_interval_count = recurring_interval_count
@@ -694,7 +695,9 @@ class SubscriptionService:
                 subscription.current_period_start = current_period_end
                 subscription.current_period_end = (
                     subscription.recurring_interval.get_next_period(
-                        current_period_end, subscription.recurring_interval_count
+                        current_period_end,
+                        subscription.anchor_day,
+                        subscription.recurring_interval_count,
                     )
                 )
 
@@ -1492,6 +1495,7 @@ class SubscriptionService:
         old_period_end = subscription.current_period_end
 
         subscription.current_period_end = new_period_end
+        subscription.anchor_day = new_period_end.day
 
         await event_service.create_event(
             session,

@@ -455,10 +455,12 @@ class SubscriptionService:
         current_period_end = recurring_interval.get_next_period(
             current_period_start, current_period_start.day, recurring_interval_count
         )
+        anchor_day = current_period_start.day
 
         subscription = Subscription(
             status=SubscriptionStatus.active,
             started_at=current_period_start,
+            anchor_day=anchor_day,
             current_period_start=current_period_start,
             current_period_end=current_period_end,
             cancel_at_period_end=False,

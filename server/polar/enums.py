@@ -64,9 +64,7 @@ class SubscriptionRecurringInterval(StrEnum):
     def as_literal(self) -> Literal["day", "week", "month", "year"]:
         return self.value
 
-    def get_next_period(
-        self, d: datetime, anchor_day: int | None, leap: int = 1
-    ) -> datetime:
+    def get_next_period(self, d: datetime, anchor_day: int, leap: int = 1) -> datetime:
         match self:
             case SubscriptionRecurringInterval.day:
                 return d + relativedelta(days=leap)
@@ -74,13 +72,13 @@ class SubscriptionRecurringInterval(StrEnum):
                 return d + relativedelta(weeks=leap)
             case SubscriptionRecurringInterval.month:
                 next = d + relativedelta(months=leap)
-                if anchor_day is not None and next.day != anchor_day:
+                if next.day != anchor_day:
                     _, max_month_day = calendar.monthrange(next.year, next.month)
                     next = next.replace(day=min(anchor_day, max_month_day))
                 return next
             case SubscriptionRecurringInterval.year:
                 next = d + relativedelta(years=leap)
-                if anchor_day is not None and next.day != anchor_day:
+                if next.day != anchor_day:
                     _, max_month_day = calendar.monthrange(next.year, next.month)
                     next = next.replace(day=min(anchor_day, max_month_day))
                 return next

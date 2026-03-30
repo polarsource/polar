@@ -1,14 +1,11 @@
 'use client'
 
-import MeterSelector from '@/components/Meter/MeterSelector'
 import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useDraggable } from '@/hooks/draggable'
 import {
   useCreateMetricDashboard,
-  useCreateMetricDefinition,
   useMetricDashboards,
-  useMetricDefinitions,
 } from '@/hooks/queries/metrics'
 import { ALL_METRICS } from '@/utils/metrics'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
@@ -57,11 +54,6 @@ export function DashboardsListSidebar({
     show: showDashboard,
     hide: hideDashboard,
   } = useModal()
-  const {
-    isShown: isMetricShown,
-    show: showMetric,
-    hide: hideMetric,
-  } = useModal()
   const pathname = usePathname()
   const basePath = `/dashboard/${organization.slug}/analytics/metrics`
 
@@ -87,7 +79,6 @@ export function DashboardsListSidebar({
             <DropdownMenuItem onClick={showDashboard}>
               New Dashboard
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={showMetric}>New Metric</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -147,16 +138,6 @@ export function DashboardsListSidebar({
           <CreateDashboardContent
             organization={organization}
             onClose={hideDashboard}
-          />
-        }
-      />
-      <InlineModal
-        isShown={isMetricShown}
-        hide={hideMetric}
-        modalContent={
-          <CreateMetricContent
-            organization={organization}
-            onClose={hideMetric}
           />
         }
       />
@@ -233,24 +214,17 @@ function CreateDashboardContent({
 }) {
   const router = useRouter()
   const createMutation = useCreateMetricDashboard(organization.id)
-  const { data: definitions } = useMetricDefinitions(organization.id)
   const [selected, setSelected] = useState<MetricItem[]>([])
 
-  const allMetrics = useMemo<MetricItem[]>(() => {
-    const builtIn = ALL_METRICS.map((m) => ({
-      id: m.slug as string,
-      slug: m.slug as string,
-      display_name: m.display_name,
-    }))
-    const custom = (definitions ?? []).map(
-      (d: schemas['MetricDefinitionSchema']) => ({
-        id: d.slug,
-        slug: d.slug,
-        display_name: d.name,
-      }),
-    )
-    return [...builtIn, ...custom]
-  }, [definitions])
+  const allMetrics = useMemo<MetricItem[]>(
+    () =>
+      ALL_METRICS.map((m) => ({
+        id: m.slug as string,
+        slug: m.slug as string,
+        display_name: m.display_name,
+      })),
+    [],
+  )
 
   const {
     sensors,
@@ -419,109 +393,3 @@ function CreateDashboardContent({
   )
 }
 
-// ─── Create metric form ───────────────────────────────────────────────────────
-
-function CreateMetricContent({
-  organization,
-  onClose,
-}: {
-  organization: schemas['Organization']
-  onClose: () => void
-}) {
-  const createMutation = useCreateMetricDefinition(organization.id)
-  const [selectedMeterId, setSelectedMeterId] = useState<string | null>(null)
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<{ name: string; slug: string }>()
-
-  const onSubmit = useCallback(
-    async (data: { name: string; slug: string }) => {
-      if (!selectedMeterId) return
-
-      const result = await createMutation.mutateAsync({
-        name: data.name,
-        slug: data.slug,
-        meter_id: selectedMeterId,
-        organization_id: organization.id,
-      })
-
-      if (!result.error) {
-        onClose()
-      }
-    },
-    [createMutation, selectedMeterId, organization.id, onClose],
-  )
-
-  return (
-    <div className="flex flex-col gap-y-6">
-      <InlineModalHeader hide={onClose}>
-        <span>Create Metric</span>
-      </InlineModalHeader>
-
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col gap-y-6 px-8 pb-8"
-      >
-        <div className="flex flex-col gap-y-2">
-          <label className="text-sm font-medium text-gray-900 dark:text-white">
-            Name
-          </label>
-          <Input
-            {...register('name', { required: 'Name is required' })}
-            placeholder="e.g. API Calls"
-          />
-          {errors.name && (
-            <span className="text-sm text-red-500">{errors.name.message}</span>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-y-2">
-          <label className="text-sm font-medium text-gray-900 dark:text-white">
-            Slug
-          </label>
-          <Input
-            {...register('slug', {
-              required: 'Slug is required',
-              pattern: {
-                value: /^[a-z0-9_]+$/,
-                message:
-                  'Only lowercase letters, numbers, and underscores allowed',
-              },
-            })}
-            placeholder="e.g. api_calls"
-          />
-          {errors.slug && (
-            <span className="text-sm text-red-500">{errors.slug.message}</span>
-          )}
-          <p className="dark:text-polar-400 text-xs text-gray-500">
-            Unique identifier used in API queries.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-y-2">
-          <label className="text-sm font-medium text-gray-900 dark:text-white">
-            Meter
-          </label>
-          <MeterSelector
-            organizationId={organization.id}
-            value={selectedMeterId}
-            onChange={setSelectedMeterId}
-            placeholder="Select a meter"
-          />
-        </div>
-
-        <Button
-          type="submit"
-          loading={createMutation.isPending}
-          disabled={!selectedMeterId}
-          className="self-start"
-        >
-          Create Metric
-        </Button>
-      </form>
-    </div>
-  )
-}

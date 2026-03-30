@@ -7,7 +7,6 @@ import { useDraggable } from '@/hooks/draggable'
 import {
   useDeleteMetricDashboard,
   useMetricDashboards,
-  useMetricDefinitions,
   useUpdateMetricDashboard,
 } from '@/hooks/queries/metrics'
 import { ALL_METRICS } from '@/utils/metrics'
@@ -250,23 +249,16 @@ function EditDashboardContent({
   onClose: () => void
 }) {
   const updateMutation = useUpdateMetricDashboard(dashboard.id, organization.id)
-  const { data: definitions } = useMetricDefinitions(organization.id)
 
-  const allMetrics = useMemo<MetricItem[]>(() => {
-    const builtIn = ALL_METRICS.map((m) => ({
-      id: m.slug as string,
-      slug: m.slug as string,
-      display_name: m.display_name,
-    }))
-    const custom = (definitions ?? []).map(
-      (d: schemas['MetricDefinitionSchema']) => ({
-        id: d.slug,
-        slug: d.slug,
-        display_name: d.name,
-      }),
-    )
-    return [...builtIn, ...custom]
-  }, [definitions])
+  const allMetrics = useMemo<MetricItem[]>(
+    () =>
+      ALL_METRICS.map((m) => ({
+        id: m.slug as string,
+        slug: m.slug as string,
+        display_name: m.display_name,
+      })),
+    [],
+  )
 
   const [selected, setSelected] = useState<MetricItem[]>(() =>
     dashboard.metrics.map((slug: string) => ({

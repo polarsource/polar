@@ -1,5 +1,4 @@
 import ClientPage from '@/components/metrics/dashboards/ClientPage'
-import CustomMetricsPage from '@/components/metrics/dashboards/CustomMetricsPage'
 import DashboardDetailClientPage from '@/components/metrics/dashboards/DashboardDetailClientPage'
 import {
   isValidMetricType,
@@ -51,10 +50,6 @@ export default async function Page(props: {
 
   if (!isValidMetricType(metric)) {
     notFound()
-  }
-
-  if (metric === 'custom') {
-    return <CustomMetricsPage organization={organization} />
   }
 
   const redirectPath = `/dashboard/${organizationSlug}/analytics/metrics/${metric}`

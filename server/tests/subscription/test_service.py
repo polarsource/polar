@@ -1602,10 +1602,7 @@ class TestCycle:
                 old_period_end, updated_subscription.current_period_start.day, 1
             )
         )
-        assert (
-            updated_subscription.anchor_day
-            == updated_subscription.current_period_start.day
-        )
+        assert updated_subscription.anchor_day == subscription.anchor_day
         assert updated_subscription.product == annual_product
         assert updated_subscription.pending_update is None
 

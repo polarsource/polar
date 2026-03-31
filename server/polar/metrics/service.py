@@ -202,15 +202,7 @@ class MetricsService:
 
         now_dt = now or datetime.now(tz=timezone)
 
-        builtin_slugs = {m.slug for m in METRICS}
-
-        # Expand built-in metrics
-        builtin_metrics_filter = (
-            [s for s in metrics if s in builtin_slugs] if metrics is not None else None
-        )
-        pg_slugs, tb_slugs, meta_slugs = _expand_metrics_with_dependencies(
-            builtin_metrics_filter
-        )
+        pg_slugs, tb_slugs, meta_slugs = _expand_metrics_with_dependencies(metrics)
 
         filtered_pg_metrics = [m for m in METRICS_POSTGRES if m.slug in pg_slugs]
         filtered_tb_metrics = [m for m in METRICS_TINYBIRD if m.slug in tb_slugs]
@@ -218,9 +210,7 @@ class MetricsService:
             m for m in METRICS_POST_COMPUTE if m.slug in meta_slugs
         ]
         filtered_all_metrics = (
-            [m for m in METRICS if m.slug in builtin_slugs & set(metrics)]
-            if metrics is not None
-            else list(METRICS)
+            [m for m in METRICS if m.slug in metrics] if metrics else list(METRICS)
         )
         required_queries = {m.query for m in filtered_pg_metrics}
         pg_query_fns: list[QueryCallable] = [
@@ -269,7 +259,6 @@ class MetricsService:
             tb_needed=tb_slugs,
         )
 
-        # Run PG and Tinybird queries concurrently (Tinybird doesn't use session)
         pg_periods, tb_periods = await asyncio.gather(pg_coro, tb_coro)
 
         periods: list[MetricsPeriod] = []
@@ -325,13 +314,11 @@ class MetricsService:
                 for p in periods
             ]
 
-        metrics_meta: dict[str, object] = {m.slug: m for m in filtered_all_metrics}
-
         return MetricsResponse.model_validate(
             {
                 "periods": periods,
                 "totals": totals,
-                "metrics": metrics_meta,
+                "metrics": {m.slug: m for m in filtered_all_metrics},
             }
         )
 

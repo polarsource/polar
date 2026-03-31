@@ -1,9 +1,9 @@
-import uuid
 from datetime import date
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Path, Query
+from pydantic import UUID4
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
@@ -40,7 +40,7 @@ from .service import metrics as metrics_service
 
 router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
 
-MetricDashboardID = Annotated[uuid.UUID, Path(description="The metric dashboard ID.")]
+MetricDashboardID = Annotated[UUID4, Path(description="The metric dashboard ID.")]
 
 
 @router.get(

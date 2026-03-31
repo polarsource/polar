@@ -32,6 +32,9 @@ log: Logger = structlog.get_logger()
 HTTP_HOST = os.getenv("dramatiq_prom_host", "0.0.0.0")
 HTTP_PORT = int(os.getenv("dramatiq_prom_port", "9191"))
 
+SCHEDULER_HEARTBEAT_KEY = "polar:worker:scheduler:heartbeat"
+SCHEDULER_HEARTBEAT_TTL_SECONDS = 90
+
 
 class HealthMiddleware(Middleware):
     @property
@@ -45,6 +48,10 @@ async def health(request: Request) -> JSONResponse:
         await redis.ping()
     except RedisError as e:
         raise HTTPException(status_code=503, detail="Redis is not available") from e
+
+    heartbeat = await redis.get(SCHEDULER_HEARTBEAT_KEY)
+    if heartbeat is None:
+        raise HTTPException(status_code=503, detail="Scheduler heartbeat is missing")
 
     return JSONResponse({"status": "ok"})
 

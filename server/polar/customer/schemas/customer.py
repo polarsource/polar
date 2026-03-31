@@ -18,6 +18,7 @@ from polar.kit.metadata import (
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     ORGANIZATION_ID_EXAMPLE,
+    ClassName,
     EmptyStrToNoneValidator,
     IDSchema,
     Schema,
@@ -253,4 +254,5 @@ CustomerResponse = Annotated[
     CustomerIndividual | CustomerTeam,
     Discriminator("type"),
     SetSchemaReference("Customer"),
+    ClassName("Customer"),
 ]

@@ -1190,7 +1190,7 @@ class OrderService:
                 if saved_payment_method is not None:
                     # Using saved payment method
                     payment_intent = await stripe_service.create_payment_intent(
-                        amount=order.total_amount,
+                        amount=order.due_amount,
                         currency=order.currency,
                         payment_method=saved_payment_method.processor_id,
                         customer=customer.stripe_customer_id,
@@ -1207,7 +1207,7 @@ class OrderService:
                     # Using confirmation token (new payment method)
                     assert confirmation_token_id is not None
                     payment_intent = await stripe_service.create_payment_intent(
-                        amount=order.total_amount,
+                        amount=order.due_amount,
                         currency=order.currency,
                         automatic_payment_methods={
                             "enabled": True,

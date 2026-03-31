@@ -88,6 +88,7 @@ export default {
           _mode: 'plural',
         },
       },
+      inclTax: 'Moms (ingår)',
     },
     trial: {
       ends: 'Testperioden slutar {endDate}',

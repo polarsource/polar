@@ -13,6 +13,7 @@ export interface CheckoutHeroPriceProps {
 
 const CheckoutHeroPrice = ({ checkout, locale }: CheckoutHeroPriceProps) => {
   const { product, product_price } = checkout
+
   const hasTrial =
     checkout.active_trial_interval && checkout.active_trial_interval_count
 

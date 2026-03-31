@@ -88,6 +88,7 @@ export default {
           _mode: 'plural',
         },
       },
+      inclTax: 'Impuestos (incluidos)',
     },
     trial: {
       ends: 'La prueba finaliza el {endDate}',

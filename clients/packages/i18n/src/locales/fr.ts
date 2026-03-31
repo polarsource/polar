@@ -88,6 +88,7 @@ export default {
           _mode: 'plural',
         },
       },
+      inclTax: 'TVA (incluse)',
     },
     trial: {
       ends: "L'essai se termine le {endDate}",

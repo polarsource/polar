@@ -140,6 +140,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     data: eventsData,
     fetchNextPage,
     hasNextPage,
+    isFetching,
   } = useInfiniteEvents(organization.id, eventParameters)
 
   const events = useMemo(() => {
@@ -363,7 +364,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       wide
     >
       <div className="flex h-full flex-col gap-y-4">
-        {events.length === 0 ? (
+        {events.length === 0 && !isFetching ? (
           <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
             <h1 className="text-2xl font-normal">No Events Found</h1>
             <p className="dark:text-polar-500 text-gray-500">

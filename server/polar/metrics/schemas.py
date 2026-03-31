@@ -1,7 +1,7 @@
 from datetime import date
 from typing import TYPE_CHECKING
 
-from pydantic import UUID4, AwareDatetime, ConfigDict, Field, create_model
+from pydantic import UUID4, AwareDatetime, Field, create_model
 
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.organization.schemas import OrganizationID
@@ -21,21 +21,16 @@ class Metric(Schema):
     )
 
 
-class _MetricsBase(Schema):
-    model_config = ConfigDict(from_attributes=True, extra="allow")
-
-
 if TYPE_CHECKING:
 
-    class Metrics(_MetricsBase):
+    class Metrics(Schema):
         def __getattr__(self, name: str) -> Metric | None: ...
 
 else:
-    # Metrics fields are optional to support metrics filtering
     Metrics = create_model(
         "Metrics",
         **{m.slug: (Metric | None, None) for m in METRICS},
-        __base__=_MetricsBase,
+        __base__=Schema,
     )
 
 

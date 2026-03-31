@@ -46,8 +46,6 @@ class MetricsPeriodBase(Schema):
     It maps each metric slug to its value for this timestamp.
     """
 
-    model_config = ConfigDict(from_attributes=True, extra="allow")
-
     timestamp: AwareDatetime = Field(description="Timestamp of this period data.")
 
 
@@ -72,8 +70,6 @@ class MetricsTotalsBase(Schema):
     It maps each metric slug to its value for this period. The aggregation is done
     differently depending on the metric type.
     """
-
-    model_config = ConfigDict(from_attributes=True, extra="allow")
 
 
 if TYPE_CHECKING:

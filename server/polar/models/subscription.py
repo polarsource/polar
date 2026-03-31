@@ -2,6 +2,7 @@ import functools
 import operator
 from collections.abc import Sequence
 from datetime import datetime, timedelta
+from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Self, TypeVar
 from uuid import UUID
@@ -419,7 +420,14 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 next(sm for sm in subscription_meters if sm.meter == price_meter)
             except StopIteration:
                 # If it doesn't, create a new SubscriptionMeter
-                subscription_meters.append(SubscriptionMeter(meter=price_meter))
+                subscription_meters.append(
+                    SubscriptionMeter(
+                        meter=price_meter,
+                        amount=0,
+                        consumed_units=Decimal(0),
+                        credited_units=0,
+                    )
+                )
 
         # Remove old ones
         for subscription_meter in subscription_meters:

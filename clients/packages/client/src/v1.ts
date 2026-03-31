@@ -9539,6 +9539,8 @@ export interface components {
        * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
        */
       tax_amount: number | null
+      /** @description Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
@@ -11213,6 +11215,8 @@ export interface components {
        * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
        */
       tax_amount: number | null
+      /** @description Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
@@ -11477,6 +11481,8 @@ export interface components {
        * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
        */
       tax_amount: number | null
+      /** @description Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
@@ -21306,6 +21312,90 @@ export interface components {
       /** Github Username */
       github_username?: string | null
     }
+    /**
+     * OrderVoidedEvent
+     * @description An event created by Polar when an order is voided.
+     */
+    OrderVoidedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'order.voided'
+      metadata: components['schemas']['OrderVoidedMetadata']
+    }
+    /** OrderVoidedMetadata */
+    OrderVoidedMetadata: {
+      /** Order Id */
+      order_id: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+    }
     /** Organization */
     Organization: {
       /**
@@ -26840,6 +26930,7 @@ export interface components {
       | components['schemas']['SubscriptionBillingPeriodUpdatedEvent']
       | components['schemas']['OrderPaidEvent']
       | components['schemas']['OrderRefundedEvent']
+      | components['schemas']['OrderVoidedEvent']
       | components['schemas']['CheckoutCreatedEvent']
       | components['schemas']['CustomerCreatedEvent']
       | components['schemas']['CustomerUpdatedEvent']
@@ -26850,6 +26941,11 @@ export interface components {
       | components['schemas']['BalanceRefundReversalEvent']
       | components['schemas']['BalanceDisputeEvent']
       | components['schemas']['BalanceDisputeReversalEvent']
+    /**
+     * TaxBehavior
+     * @enum {string}
+     */
+    TaxBehavior: 'inclusive' | 'exclusive'
     /**
      * TaxBehaviorOption
      * @enum {string}
@@ -46811,6 +46907,9 @@ export const orderSortPropertyValues: ReadonlyArray<
 export const orderStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderStatus']
 > = ['pending', 'paid', 'refunded', 'partially_refunded', 'void']
+export const orderVoidedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrderVoidedEvent']['name']
+> = ['order.voided']
 export const organizationCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Organization']['country']
 > = [
@@ -48349,6 +48448,9 @@ export const subscriptionUncanceledEventNameValues: ReadonlyArray<
 export const subscriptionUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdatedEvent']['name']
 > = ['subscription.updated']
+export const taxBehaviorValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TaxBehavior']
+> = ['inclusive', 'exclusive']
 export const taxBehaviorOptionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxBehaviorOption']
 > = ['location', 'inclusive', 'exclusive']

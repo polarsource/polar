@@ -96,6 +96,7 @@ const defaults: ProductCheckoutPublic = {
   discount_amount: 0,
   net_amount: 999,
   tax_amount: null,
+  tax_behavior: null,
   total_amount: 999,
   currency: 'usd',
   allow_trial: null,

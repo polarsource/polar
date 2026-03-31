@@ -1,7 +1,7 @@
 'use client'
 
 import { useMetrics } from '@/hooks/queries'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import { subMonths } from 'date-fns/subMonths'
 import {
   createParser,
@@ -13,11 +13,6 @@ import {
 import { useMemo } from 'react'
 import { CancellationsContent } from './CancellationsContent'
 import { MetricGroup } from './MetricGroup'
-import {
-  CANCELLATION_METRICS,
-  getMetricsForType,
-  MetricType,
-} from './metrics-config'
 
 const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
 
@@ -31,17 +26,13 @@ const parseAsISODate = createParser({
 })
 
 interface ClientPageProps {
-  metric: MetricType
+  metric: string
   organizationId: string
-  hasRecurringProducts: boolean
-  hasOneTimeProducts: boolean
 }
 
 export default function ClientPage({
   metric,
   organizationId,
-  hasRecurringProducts,
-  hasOneTimeProducts,
 }: ClientPageProps) {
   const defaultStartDate = useMemo(() => subMonths(new Date(), 1), [])
   const defaultEndDate = useMemo(() => new Date(), [])
@@ -63,16 +54,12 @@ export default function ClientPage({
 
   const [productId] = useQueryState('product_id', parseAsArrayOf(parseAsString))
 
-  const metrics = useMemo(
-    () =>
-      metric === 'cancellations'
-        ? CANCELLATION_METRICS
-        : getMetricsForType(metric, {
-            hasRecurringProducts,
-            hasOneTimeProducts,
-          }),
-    [metric, hasRecurringProducts, hasOneTimeProducts],
-  )
+  const metrics = useMemo(() => {
+    const group = METRIC_GROUPS.find(
+      (g) => g.category.toLowerCase().replace(/\s+/g, '-') === metric,
+    )
+    return group ? group.metrics.map((m) => m.slug) : []
+  }, [metric])
 
   const { data } = useMetrics({
     startDate,

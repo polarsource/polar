@@ -14,10 +14,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { MetricType } from './metrics-config'
-
 interface DefaultDashboard {
-  slug: MetricType
+  slug: string
   title: string
 }
 
@@ -57,6 +55,40 @@ export function DashboardsListSidebar({
       </div>
 
       <div className="dark:divide-polar-800 flex grow flex-col divide-y divide-gray-100 overflow-y-auto">
+        {customDashboards && customDashboards.length > 0 && (
+          <>
+            {[...customDashboards]
+              .sort(
+                (
+                  a: schemas['MetricDashboardSchema'],
+                  b: schemas['MetricDashboardSchema'],
+                ) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime(),
+              )
+              .map((dashboard: schemas['MetricDashboardSchema']) => (
+                <Link
+                  key={dashboard.id}
+                  href={`${basePath}/${dashboard.id}`}
+                  className={twMerge(
+                    'dark:hover:bg-polar-800 flex cursor-pointer flex-col gap-y-0.5 px-4 py-3 hover:bg-gray-100',
+                    selectedSlug === dashboard.id &&
+                      'dark:bg-polar-800 bg-gray-100',
+                  )}
+                >
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {dashboard.name}
+                  </span>
+                  <span className="dark:text-polar-400 text-sm text-gray-500">
+                    {dashboard.metrics.length === 0
+                      ? 'No metrics'
+                      : `${dashboard.metrics.length} metric${dashboard.metrics.length === 1 ? '' : 's'}`}
+                  </span>
+                </Link>
+              ))}
+          </>
+        )}
+
         {defaultDashboards.map((dashboard) => (
           <Link
             key={dashboard.slug}
@@ -72,33 +104,6 @@ export function DashboardsListSidebar({
             </span>
           </Link>
         ))}
-
-        {customDashboards && customDashboards.length > 0 && (
-          <>
-            {customDashboards.map(
-              (dashboard: schemas['MetricDashboardSchema']) => (
-                <Link
-                  key={dashboard.id}
-                  href={`${basePath}/${dashboard.id}`}
-                  className={twMerge(
-                    'dark:hover:bg-polar-800 flex cursor-pointer flex-col gap-y-0.5 px-4 py-3 hover:bg-gray-100',
-                    selectedSlug === dashboard.id &&
-                      'dark:bg-polar-800 bg-gray-100',
-                  )}
-                >
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {dashboard.name}
-                  </span>
-                  <span className="dark:text-polar-400 text-xs text-gray-500">
-                    {dashboard.metrics.length === 0
-                      ? 'No metrics'
-                      : `${dashboard.metrics.length} metric${dashboard.metrics.length === 1 ? '' : 's'}`}
-                  </span>
-                </Link>
-              ),
-            )}
-          </>
-        )}
       </div>
 
       <Modal

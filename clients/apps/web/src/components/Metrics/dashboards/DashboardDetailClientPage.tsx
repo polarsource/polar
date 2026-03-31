@@ -87,14 +87,10 @@ export default function DashboardDetailClientPage({
   }
 
   return (
-    <div className="py-8">
-      <MetricGroup
-        metricKeys={
-          dashboard.metrics as unknown as (keyof schemas['Metrics'])[]
-        }
-        data={data}
-        interval={interval}
-      />
-    </div>
+    <MetricGroup
+      metricKeys={dashboard.metrics}
+      data={data}
+      interval={interval}
+    />
   )
 }

@@ -60,7 +60,7 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
           return (
             <div key={period.timestamp} className="flex flex-col gap-y-2">
               <Tooltip>
-                <TooltipTrigger className="relative min-h-48 flex-1 overflow-hidden rounded-lg bg-[repeating-linear-gradient(-45deg,rgba(0,0,0,0.08),rgba(0,0,0,0.08)_2px,transparent_2px,transparent_8px)] dark:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.03),rgba(255,255,255,0.03)_2px,transparent_2px,transparent_8px)]">
+                <TooltipTrigger className="relative min-h-48 flex-1 overflow-hidden rounded-lg bg-[repeating-linear-gradient(-45deg,rgba(0,0,0,0.08),rgba(0,0,0,0.08)_2px,transparent_2px,transparent_8px)] dark:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.04),rgba(255,255,255,0.04)_2px,transparent_2px,transparent_8px)]">
                   {revenueMetrics.isLoading ? (
                     <div className="dark:bg-polar-700 flex h-full w-full items-center justify-center rounded-lg bg-gray-200">
                       <Spinner />

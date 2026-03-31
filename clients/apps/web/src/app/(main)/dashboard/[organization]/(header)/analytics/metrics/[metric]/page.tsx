@@ -1,15 +1,15 @@
 import ClientPage from '@/components/metrics/dashboards/ClientPage'
 import DashboardDetailClientPage from '@/components/metrics/dashboards/DashboardDetailClientPage'
-import {
-  isValidMetricType,
-  MetricType,
-} from '@/components/metrics/dashboards/metrics-config'
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
 import { endOfDay, max, subMonths } from 'date-fns'
 import { notFound, redirect, RedirectType } from 'next/navigation'
+
+const METRIC_GROUP_SLUGS = new Set(
+  METRIC_GROUPS.map((g) => g.category.toLowerCase().replace(/\s+/g, '-')),
+)
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -48,7 +48,7 @@ export default async function Page(props: {
     )
   }
 
-  if (!isValidMetricType(metric)) {
+  if (!METRIC_GROUP_SLUGS.has(metric)) {
     notFound()
   }
 
@@ -139,31 +139,5 @@ export default async function Page(props: {
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 
-  const products = await unwrap(
-    api.GET('/v1/products/', {
-      params: {
-        query: {
-          organization_id: organization.id,
-          limit: 100,
-          is_archived: false,
-        },
-      },
-    }),
-  )
-
-  const relevantProducts = productId
-    ? products.items.filter((p) => productId.includes(p.id))
-    : products.items
-
-  const hasRecurringProducts = relevantProducts.some((p) => p.is_recurring)
-  const hasOneTimeProducts = relevantProducts.some((p) => !p.is_recurring)
-
-  return (
-    <ClientPage
-      metric={metric as MetricType}
-      organizationId={organization.id}
-      hasRecurringProducts={hasRecurringProducts}
-      hasOneTimeProducts={hasOneTimeProducts}
-    />
-  )
+  return <ClientPage metric={metric} organizationId={organization.id} />
 }

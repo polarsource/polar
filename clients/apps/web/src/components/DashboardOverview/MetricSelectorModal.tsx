@@ -213,7 +213,7 @@ export const MetricSelectorModalContent = ({
         {/* Right panel — available metrics */}
         <div className="flex flex-col gap-y-4 p-6">
           <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-            Available
+            Metrics
           </h3>
           <div className="flex max-h-80 flex-col gap-y-1 overflow-y-auto">
             {available.map((metric) => (

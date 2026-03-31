@@ -1,7 +1,7 @@
 """add_metric_dashboards_table
 
 Revision ID: 0d5be76ae2b2
-Revises: a6ed3955abe9
+Revises: 7b536908d8e5
 Create Date: 2026-03-15 18:39:50.908723
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0d5be76ae2b2"
-down_revision = "a6ed3955abe9"
+down_revision = "7b536908d8e5"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -280,6 +280,7 @@ const BaseCheckoutForm = ({
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-12"
+            translate="no"
           >
             <div className="flex flex-col gap-y-6">
               <FormField

@@ -388,7 +388,14 @@ const Checkout = ({
             {hasProductCheckout(checkout) && (
               <>
                 <div className="flex flex-col gap-y-2">
-                  <div className="flex flex-row items-start gap-x-3">
+                  <div
+                    className={twMerge(
+                      'flex flex-row gap-x-3',
+                      checkout.product.description
+                        ? 'items-start'
+                        : 'items-center',
+                    )}
+                  >
                     {hasMedia && checkout.product.medias[0]?.public_url && (
                       <Dialog>
                         <DialogTrigger

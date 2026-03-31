@@ -130,11 +130,13 @@ export const MeterPage = ({
                   }
                   interval={interval}
                   height={400}
-                  metric={{
-                    slug: 'quantity',
-                    display_name: meter.name,
-                    type: 'scalar',
-                  }}
+                  metrics={[
+                    {
+                      slug: 'quantity',
+                      display_name: meter.name,
+                      type: 'scalar',
+                    },
+                  ]}
                   chartType={
                     meter.aggregation.func === 'count' ? 'bar' : 'line'
                   }

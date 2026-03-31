@@ -267,11 +267,13 @@ const CustomerMeterPage = ({
               }
               interval={interval}
               height={300}
-              metric={{
-                slug: 'quantity',
-                display_name: meter.name,
-                type: 'scalar',
-              }}
+              metrics={[
+                {
+                  slug: 'quantity',
+                  display_name: meter.name,
+                  type: 'scalar',
+                },
+              ]}
               showYAxis
               chartType={meter.aggregation.func === 'count' ? 'bar' : 'line'}
             />

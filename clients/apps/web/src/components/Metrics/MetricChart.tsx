@@ -11,7 +11,7 @@ interface MetricChartProps {
   data: ParsedMetricPeriod[]
   previousData?: ParsedMetricPeriod[]
   interval: schemas['TimeInterval']
-  metric: schemas['Metric']
+  metrics: schemas['Metric'][]
   height?: number
   width?: number
   grid?: boolean
@@ -27,7 +27,7 @@ const MetricChart = ({
   data,
   previousData,
   interval,
-  metric,
+  metrics,
   height,
   width,
   grid,
@@ -42,40 +42,52 @@ const MetricChart = ({
 
   const genericData = useMemo(
     () =>
-      data.map((period, index) => ({
-        timestamp: period.timestamp.toISOString(),
-        current:
-          period[metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>],
-        ...(previousData && previousData[index]
-          ? {
-              previous:
-                previousData[index][
-                  metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>
-                ],
-            }
-          : {}),
-      })),
-    [data, previousData, metric.slug],
+      data.map((period, index) => {
+        const point: Record<string, unknown> = {
+          timestamp: period.timestamp.toISOString(),
+        }
+        for (const m of metrics) {
+          point[m.slug] =
+            period[m.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>]
+        }
+        if (metrics.length === 1 && previousData?.[index]) {
+          point['previous'] =
+            previousData[index][
+              metrics[0].slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>
+            ]
+        }
+        return point
+      }),
+    [data, previousData, metrics],
   )
 
   const series = useMemo(
-    () => [
-      ...(previousData
-        ? [
+    () =>
+      metrics.length > 1
+        ? metrics
+            .map((m, i) => ({
+              key: m.slug,
+              label: m.display_name,
+              color: i === 0 ? '#2563eb' : isDark ? '#383942' : '#ccc',
+            }))
+            .reverse()
+        : [
+            ...(previousData
+              ? [
+                  {
+                    key: 'previous',
+                    label: 'Previous Period',
+                    color: isDark ? '#383942' : '#ccc',
+                  },
+                ]
+              : []),
             {
-              key: 'previous',
-              label: 'Previous Period',
-              color: isDark ? '#383942' : '#ccc',
+              key: metrics[0].slug,
+              label: 'Current Period',
+              color: '#2563eb',
             },
-          ]
-        : []),
-      {
-        key: 'current',
-        label: 'Current Period',
-        color: '#2563eb',
-      },
-    ],
-    [previousData, isDark],
+          ],
+    [metrics, previousData, isDark],
   )
 
   const timestampFormatter = useMemo(() => {
@@ -85,8 +97,8 @@ const MetricChart = ({
   }, [interval])
 
   const valueFormatter = useMemo(
-    () => (value: number) => getFormattedMetricValue(metric, value),
-    [metric],
+    () => (value: number) => getFormattedMetricValue(metrics[0], value),
+    [metrics],
   )
 
   const ticks = useMemo((): AxisTick[] | undefined => {

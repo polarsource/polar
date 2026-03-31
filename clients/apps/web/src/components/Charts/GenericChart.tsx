@@ -178,7 +178,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
       if (valueFormatter) {
         const formattedValue = valueFormatter(value, name)
         return (
-          <div className="flex w-40 flex-row justify-between gap-x-8">
+          <div className="flex min-w-40 flex-row justify-between gap-x-8">
             <div className="flex flex-row items-center gap-x-2">
               <span
                 className="h-2 w-2 rounded-full"
@@ -196,7 +196,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
       }
 
       return (
-        <div className="flex w-40 flex-row justify-between gap-x-8">
+        <div className="flex min-w-40 flex-row justify-between gap-x-8">
           <div className="flex flex-row items-center gap-x-2">
             <span
               className="h-2 w-2 rounded-full"

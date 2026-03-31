@@ -80,7 +80,7 @@ export default function ClientPage({
     interval,
     organization_id: organizationId,
     ...(productId && productId.length > 0 ? { product_id: productId } : {}),
-    metrics,
+    metrics: metrics,
   })
 
   if (!data) {

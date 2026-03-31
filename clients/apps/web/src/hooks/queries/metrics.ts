@@ -4,6 +4,8 @@ import { operations, schemas, unwrap } from '@polar-sh/client'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+type MetricEntry = string | string[]
+
 interface GetMetricsRequest {
   startDate: Date
   endDate: Date
@@ -11,7 +13,7 @@ interface GetMetricsRequest {
   organization_id?: string
   product_id?: string[]
   customer_id?: string[]
-  metrics?: string[]
+  metrics?: MetricEntry[]
 }
 
 export type ParsedMetricPeriod = schemas['MetricPeriod'] & {
@@ -25,9 +27,10 @@ export interface ParsedMetricsResponse {
 }
 
 export const useMetrics = (
-  { startDate, endDate, ...parameters }: GetMetricsRequest,
+  { startDate, endDate, metrics, ...parameters }: GetMetricsRequest,
   enabled: boolean = true,
 ): UseQueryResult<ParsedMetricsResponse, Error> => {
+  const flatMetrics = metrics?.flatMap((m) => (Array.isArray(m) ? m : [m]))
   const timezone = Intl.DateTimeFormat().resolvedOptions()
     .timeZone as operations['metrics:get']['parameters']['query']['timezone']
   return useQuery({
@@ -37,11 +40,12 @@ export const useMetrics = (
         startDate: toISODate(startDate),
         endDate: toISODate(endDate),
         timezone,
+        metrics: flatMetrics,
         ...parameters,
       },
     ],
     queryFn: async () => {
-      const metrics = await unwrap(
+      const result = await unwrap(
         api.GET('/v1/metrics/', {
           params: {
             query: {
@@ -49,13 +53,14 @@ export const useMetrics = (
               end_date: toISODate(endDate),
               timezone,
               ...parameters,
+              metrics: flatMetrics,
             },
           },
         }),
       )
       return {
-        ...metrics,
-        periods: metrics.periods.map((period) => ({
+        ...result,
+        periods: result.periods.map((period) => ({
           ...period,
           timestamp: new Date(period.timestamp),
         })) as ParsedMetricPeriod[],

@@ -16,9 +16,13 @@ export function isValidMetricType(value: string): value is MetricType {
   return METRIC_TYPES.includes(value as MetricType)
 }
 
-const SUBSCRIPTION_METRICS: (keyof schemas['Metrics'])[] = [
-  'monthly_recurring_revenue',
-  'committed_monthly_recurring_revenue',
+export type MetricEntry =
+  | keyof schemas['Metrics']
+  | (keyof schemas['Metrics'])[]
+
+const SUBSCRIPTION_METRICS: MetricEntry[] = [
+  ['monthly_recurring_revenue', 'committed_monthly_recurring_revenue'],
+  ['annual_recurring_revenue', 'committed_annual_recurring_revenue'],
   'active_subscriptions',
   'new_subscriptions',
   'committed_subscriptions',
@@ -96,7 +100,7 @@ export function getMetricsForType(
     hasRecurringProducts?: boolean
     hasOneTimeProducts?: boolean
   },
-): (keyof schemas['Metrics'])[] {
+): MetricEntry[] {
   switch (metricType) {
     case 'subscriptions':
       return SUBSCRIPTION_METRICS

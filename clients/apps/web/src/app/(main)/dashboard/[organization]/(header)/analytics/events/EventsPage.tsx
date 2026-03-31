@@ -121,7 +121,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       sorting: [sorting] as ['-timestamp' | 'timestamp'],
       start_timestamp: startDate.toISOString(),
       end_timestamp: endDate.toISOString(),
-      query: debouncedQuery ?? null,
+      query:
+        debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null,
       metadata: debouncedMetadata ?? null,
       cursor_pagination: false,
     }
@@ -227,13 +228,22 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             )}
             onScroll={handleScroll}
           >
-            <div className="flex flex-row items-center gap-3">
-              <Input
-                placeholder="Search Events"
-                value={query ?? undefined}
-                onChange={(e) => setQuery(e.target.value)}
-                preSlot={<Search fontSize="small" />}
-              />
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-row items-center gap-3">
+                <Input
+                  placeholder="Search Events"
+                  value={query ?? undefined}
+                  onChange={(e) => setQuery(e.target.value)}
+                  preSlot={<Search fontSize="small" />}
+                />
+              </div>
+              {debouncedQuery &&
+                debouncedQuery.length > 0 &&
+                debouncedQuery.length < 3 && (
+                  <p className="dark:text-polar-500 text-xs text-gray-400">
+                    Type at least 3 characters to search
+                  </p>
+                )}
             </div>
             <div className="flex h-full grow flex-col gap-y-6">
               <div className="flex flex-col gap-y-2">

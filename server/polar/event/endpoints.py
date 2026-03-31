@@ -157,6 +157,18 @@ async def list(
             ]
         )
 
+    if query is not None and len(query) < 3:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "query",
+                    "msg": "Query must be at least 3 characters.",
+                    "loc": ("query", "query"),
+                    "input": query,
+                }
+            ]
+        )
+
     result = await event_service.list(
         session,
         auth_subject,
@@ -350,6 +362,18 @@ async def list_statistics_timeseries(
                 {
                     "type": "query",
                     "msg": "Query is only supported when organization_id is provided.",
+                }
+            ]
+        )
+
+    if query is not None and len(query) < 3:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "query",
+                    "msg": "Query must be at least 3 characters.",
+                    "loc": ("query", "query"),
+                    "input": query,
                 }
             ]
         )

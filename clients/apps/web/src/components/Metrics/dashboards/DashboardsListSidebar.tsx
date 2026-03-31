@@ -69,18 +69,9 @@ export function DashboardsListSidebar({
         <span className="font-medium text-gray-900 dark:text-white">
           Dashboards
         </span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" className="h-6 w-6">
-              <AddOutlined fontSize="small" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={showDashboard}>
-              New Dashboard
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button size="icon" className="h-6 w-6" onClick={showDashboard}>
+          <AddOutlined fontSize="small" />
+        </Button>
       </div>
 
       <div className="dark:divide-polar-800 flex grow flex-col divide-y divide-gray-50 overflow-y-auto">
@@ -392,4 +383,3 @@ function CreateDashboardContent({
     </div>
   )
 }
-

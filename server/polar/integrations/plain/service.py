@@ -1579,11 +1579,10 @@ class PlainService:
                 "We'll let you know as soon as you're all set, or if we need anything from you."
             )
         lines.append("")
-        lines.append(
-            "You can learn more about our review process on our website: "
-            "https://polar.sh/docs/merchant-of-record/account-reviews. "
-            "Any other questions? Just reply to this message."
-        )
+        lines.append("You can learn more about our review process on our website:")
+        lines.append("https://polar.sh/docs/merchant-of-record/account-reviews")
+        lines.append("")
+        lines.append("Any other questions? Just reply to this message.")
         lines.append("")
         lines.append("Cheers,")
         lines.append("")

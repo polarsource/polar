@@ -28,6 +28,7 @@ def _make_event(
     uri: str = "/images/photo.jpg",
     querystring: str = "width=300",
     bucket: str = BUCKET,
+    origin_type: str = "s3",
 ) -> dict[str, Any]:
     return {
         "Records": [
@@ -36,7 +37,9 @@ def _make_event(
                     "request": {
                         "uri": uri,
                         "querystring": querystring,
-                        "origin": {"s3": {"domainName": f"{bucket}.s3.amazonaws.com"}},
+                        "origin": {
+                            origin_type: {"domainName": f"{bucket}.s3.amazonaws.com"}
+                        },
                     }
                 }
             }
@@ -95,6 +98,34 @@ class TestResizeImage:
         assert result is not None
         img = Image.open(io.BytesIO(result))
         assert img.size[1] == 100
+
+
+class TestResizeLargeImage:
+    def test_draft_mode_for_large_jpeg(self) -> None:
+        image_bytes = _make_image(6400, 8000)
+        result = resize_image(image_bytes, 1440, None)
+        assert result is not None
+        img = Image.open(io.BytesIO(result))
+        assert img.size[0] == 1440
+
+    def test_draft_mode_preserves_aspect_ratio(self) -> None:
+        image_bytes = _make_image(6000, 4000)
+        result = resize_image(image_bytes, 256, None)
+        assert result is not None
+        img = Image.open(io.BytesIO(result))
+        assert img.size == (256, 170)
+
+    def test_large_png_skips_resize(self) -> None:
+        image_bytes = _make_image(6400, 8000, fmt="PNG")
+        result = resize_image(image_bytes, 1440, None)
+        assert result is None
+
+    def test_small_image_skips_draft(self) -> None:
+        image_bytes = _make_image(800, 800)
+        result = resize_image(image_bytes, 256, None)
+        assert result is not None
+        img = Image.open(io.BytesIO(result))
+        assert img.size[0] == 256
 
 
 class TestHandler:
@@ -210,3 +241,66 @@ class TestHandler:
         assert " " not in result["uri"]
         assert result["uri"] == "/resized/256x0/images/my%20photo.jpg"
         assert result["querystring"] == ""
+
+    def test_custom_origin_with_encoded_space(self, aws: S3Client) -> None:
+        """Production CloudFront uses custom origin (no s3_origin_config)."""
+        _upload(aws, "images/my photo.jpg", _make_image(800, 800))
+
+        event = _make_event(
+            uri="/images/my%20photo.jpg",
+            querystring="width=200",
+            origin_type="custom",
+        )
+        result = handler(event, None)
+
+        assert " " not in result["uri"]
+        assert result["uri"] == "/resized/256x0/images/my%20photo.jpg"
+        assert result["querystring"] == ""
+
+    def test_custom_origin_with_literal_space(self, aws: S3Client) -> None:
+        """Custom origin + CloudFront-decoded literal space."""
+        _upload(aws, "images/my photo.jpg", _make_image(800, 800))
+
+        event = _make_event(
+            uri="/images/my photo.jpg",
+            querystring="width=200",
+            origin_type="custom",
+        )
+        result = handler(event, None)
+
+        assert " " not in result["uri"]
+        assert result["uri"] == "/resized/256x0/images/my%20photo.jpg"
+        assert result["querystring"] == ""
+
+    def test_production_path_with_uuids_and_space(self, aws: S3Client) -> None:
+        """Full production-like path with UUIDs and encoded space."""
+        key = "product_media/f1917a86-cc1b-4edc-808c-447c41638af4/938c2d40-d614-427a-b9fc-24ea97a26165/Monochrome 3.jpg"
+        _upload(aws, key, _make_image(800, 800))
+
+        event = _make_event(
+            uri=f"/{key.replace(' ', '%20')}",
+            querystring="width=200",
+            origin_type="custom",
+        )
+        result = handler(event, None)
+
+        assert " " not in result["uri"]
+        assert result["uri"].startswith("/resized/256x0/product_media/")
+        assert result["uri"].endswith("Monochrome%203.jpg")
+        assert result["querystring"] == ""
+
+    def test_passthrough_preserves_encoded_space_no_querystring(self) -> None:
+        """Passthrough (no resize) still normalizes %20 in URI."""
+        event = _make_event(uri="/images/my%20photo.jpg", querystring="")
+        result = handler(event, None)
+
+        assert " " not in result["uri"]
+        assert result["uri"] == "/images/my%20photo.jpg"
+
+    def test_passthrough_normalizes_literal_space_no_querystring(self) -> None:
+        """Passthrough with literal space gets normalized to %20."""
+        event = _make_event(uri="/images/my photo.jpg", querystring="")
+        result = handler(event, None)
+
+        assert " " not in result["uri"]
+        assert result["uri"] == "/images/my%20photo.jpg"

@@ -77,13 +77,25 @@ def resize_image(
         return None
 
     if width and height:
-        img.thumbnail((width, height), Resampling.LANCZOS)
+        target_w, target_h = width, height
     elif width:
         ratio = width / orig_w
-        img = img.resize((width, int(orig_h * ratio)), Resampling.LANCZOS)
-    elif height:
+        target_w, target_h = width, int(orig_h * ratio)
+    else:
+        assert height is not None
         ratio = height / orig_h
-        img = img.resize((int(orig_w * ratio), height), Resampling.LANCZOS)
+        target_w, target_h = int(orig_w * ratio), height
+
+    if orig_w * orig_h > 25_000_000:
+        if orig_format in ("JPEG", "MPO"):
+            img.draft(img.mode, (target_w, target_h))
+        else:
+            return None
+
+    if width and height:
+        img.thumbnail((target_w, target_h), Resampling.LANCZOS)
+    else:
+        img = img.resize((target_w, target_h), Resampling.LANCZOS)
 
     buf = io.BytesIO()
     fmt = orig_format or "JPEG"

@@ -1,4 +1,5 @@
-import threading
+import os
+import signal
 
 import logfire
 from apscheduler.jobstores.memory import MemoryJobStore
@@ -12,7 +13,7 @@ from polar.sentry import configure_sentry
 from polar.subscription.scheduler import SubscriptionJobStore
 
 from ._broker import scheduler_middleware
-from ._health import _run_exposition_server
+from ._health import _run_scheduler_exposition_server
 
 configure_sentry()
 configure_logfire("worker")
@@ -30,8 +31,12 @@ class LogfireBlockingScheduler(BlockingScheduler):
 
 
 def start() -> None:
-    health_thread = threading.Thread(target=_run_exposition_server, daemon=True)
-    health_thread.start()
+    scheduler_pid = os.getpid()
+    child_pid = os.fork()
+
+    if child_pid == 0:
+        exit_code = _run_scheduler_exposition_server(scheduler_pid)
+        os._exit(exit_code)
 
     scheduler = LogfireBlockingScheduler()
 
@@ -45,6 +50,11 @@ def start() -> None:
         scheduler.start()
     except KeyboardInterrupt:
         scheduler.shutdown()
+    finally:
+        try:
+            os.kill(child_pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
 
 
 __all__ = ["start", "tasks"]

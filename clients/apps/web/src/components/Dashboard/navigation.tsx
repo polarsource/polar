@@ -221,7 +221,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
     subs: [
       {
-        title: 'Dashboards',
+        title: 'Metrics',
         link: `/dashboard/${org?.slug}/analytics/metrics`,
       },
       {

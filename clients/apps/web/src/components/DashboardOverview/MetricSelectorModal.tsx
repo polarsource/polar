@@ -56,7 +56,7 @@ function SortableMetricRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={twMerge(
-        'dark:bg-polar-800 flex h-12 w-full items-center justify-between rounded-lg  bg-gray-100 px-4',
+        'dark:bg-polar-800 flex w-full items-center justify-between rounded-lg bg-gray-100 px-4 py-2',
         isDragging && 'opacity-50',
       )}
     >
@@ -148,6 +148,7 @@ export const MetricDashboardEditorContent = ({
   )
 
   const atLimit = limit !== undefined && selected.length >= limit
+  const aboveLimit = limit !== undefined && selected.length > limit
   const dragOverlayItem = activeId
     ? selected.find((m) => m.id === activeId)
     : null
@@ -226,7 +227,7 @@ export const MetricDashboardEditorContent = ({
                 items={selected.map((m) => m.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="flex flex-col gap-y-2">
+                <div className="flex max-h-96 flex-col gap-y-2 overflow-y-auto">
                   {selected.map((item) => (
                     <SortableMetricRow
                       key={item.id}
@@ -320,7 +321,7 @@ export const MetricDashboardEditorContent = ({
         <div className="dark:border-polar-700 flex items-center justify-end gap-x-2 border-t border-gray-100 px-6 py-4">
           <Button
             type="submit"
-            disabled={(limit !== undefined && !atLimit) || isPending}
+            disabled={(limit !== undefined && aboveLimit) || isPending}
             loading={isPending}
           >
             {saveLabel}

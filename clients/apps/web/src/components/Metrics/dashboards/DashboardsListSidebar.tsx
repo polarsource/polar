@@ -56,7 +56,7 @@ export function DashboardsListSidebar({
         </Button>
       </div>
 
-      <div className="dark:divide-polar-800 flex grow flex-col divide-y divide-gray-50 overflow-y-auto">
+      <div className="dark:divide-polar-800 flex grow flex-col divide-y divide-gray-100 overflow-y-auto">
         {defaultDashboards.map((dashboard) => (
           <Link
             key={dashboard.slug}

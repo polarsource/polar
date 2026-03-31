@@ -346,7 +346,7 @@ class ReviewAnalyzer:
         timeout_seconds: int = 60,
         policy_override: str | None = None,
     ) -> tuple[ReviewAgentReport, UsageInfo]:
-        policy_content = policy_override or await fetch_policy_content()
+        policy_content = policy_override or fetch_policy_content()
 
         prompt = self._build_prompt(snapshot, policy_content)
 

@@ -81,6 +81,9 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Sync AUP to server
+        run: cp "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx" "server/polar/organization_review/acceptable-use-policy.mdx"
+
       - uses: useblacksmith/build-push-action@v2
         id: push
         with:

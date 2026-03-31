@@ -140,7 +140,7 @@ async def run(
         None,
         "--policy",
         "-p",
-        help="Policy source: 'fallback' (old hardcoded), 'live' (fetch from URL), or path to a .txt file",
+        help="Policy source: 'default' (read from disk), or path to a .txt file",
     ),
     concurrency: int = typer.Option(
         5, "--concurrency", "-c", help="Max parallel API calls"
@@ -154,15 +154,12 @@ async def run(
     Re-runs the analyzer on each case and checks whether the
     verdict matches the expected output.
     """
-    from polar.organization_review.policy import FALLBACK_POLICY, fetch_policy_content
+    from polar.organization_review.policy import fetch_policy_content
 
     policy_override: str | None = None
-    if policy == "fallback":
-        policy_override = FALLBACK_POLICY
-        typer.echo("Using FALLBACK (old) policy")
-    elif policy == "live":
-        policy_override = await fetch_policy_content()
-        typer.echo("Using LIVE (fetched) policy")
+    if policy == "default":
+        policy_override = fetch_policy_content()
+        typer.echo("Using DEFAULT (disk) policy")
     elif policy is not None:
         policy_override = Path(policy).read_text()
         typer.echo(f"Using policy from file: {policy}")

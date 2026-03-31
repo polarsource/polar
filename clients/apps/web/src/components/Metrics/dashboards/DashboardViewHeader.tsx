@@ -24,13 +24,14 @@ import { useCallback, useMemo } from 'react'
 import { MetricsHeader } from './MetricsHeader'
 
 const BUILT_IN_NAMES: Record<string, string> = {
-  subscriptions: 'Subscriptions',
-  cancellations: 'Cancellations',
-  'net-revenue': 'Net Revenue',
+  revenue: 'Revenue',
   orders: 'Orders',
+  subscriptions: 'Subscriptions',
   checkouts: 'Checkouts',
-  'one-time': 'One-time Purchases',
+  cancellations: 'Cancellations',
+  'unit-economics': 'Unit Economics',
   costs: 'Costs',
+  usage: 'Usage',
 }
 
 const UUID_REGEX =

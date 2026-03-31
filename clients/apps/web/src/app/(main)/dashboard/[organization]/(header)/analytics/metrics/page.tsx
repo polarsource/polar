@@ -15,28 +15,20 @@ export default async function Page(props: {
     params.organization,
   )
 
-  const products = await unwrap(
-    api.GET('/v1/products/', {
-      params: {
-        query: {
-          organization_id: organization.id,
-          limit: 100,
-          is_archived: false,
-        },
-      },
+  const dashboards = await unwrap(
+    api.GET('/v1/metrics/dashboards', {
+      params: { query: { organization_id: organization.id } },
     }),
   )
 
-  const hasRecurringProducts = products.items.some((p) => p.is_recurring)
-  const hasOneTimeProducts = products.items.some((p) => !p.is_recurring)
+  const newest =
+    dashboards.length > 0
+      ? dashboards.reduce((a, b) =>
+          new Date(a.created_at) > new Date(b.created_at) ? a : b,
+        )
+      : null
 
-  // Determine first available tab
-  let firstTab = 'orders' // Default fallback (always visible)
-  if (hasRecurringProducts) {
-    firstTab = 'subscriptions'
-  } else if (hasOneTimeProducts) {
-    firstTab = 'one-time'
-  }
+  const target = newest ? newest.id : 'revenue'
 
   // Preserve search params
   const urlSearchParams = new URLSearchParams()
@@ -50,7 +42,7 @@ export default async function Page(props: {
 
   const queryString = urlSearchParams.toString()
   redirect(
-    `/dashboard/${organization.slug}/analytics/metrics/${firstTab}${queryString ? `?${queryString}` : ''}`,
+    `/dashboard/${organization.slug}/analytics/metrics/${target}${queryString ? `?${queryString}` : ''}`,
     RedirectType.replace,
   )
 }

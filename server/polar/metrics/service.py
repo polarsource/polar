@@ -10,7 +10,6 @@ from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
-from polar.exceptions import PolarRequestValidationError
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.models import (
     Customer,
@@ -274,10 +273,7 @@ class MetricsService:
         pg_periods, tb_periods = await asyncio.gather(pg_coro, tb_coro)
 
         periods: list[MetricsPeriod] = []
-        all_timestamps = sorted(
-            set(pg_periods.keys())
-            | set(tb_periods.keys())
-        )
+        all_timestamps = sorted(set(pg_periods.keys()) | set(tb_periods.keys()))
 
         for ts in all_timestamps:
             period_dict: dict[str, object] = {"timestamp": ts}

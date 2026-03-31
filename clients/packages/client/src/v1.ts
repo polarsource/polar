@@ -2028,68 +2028,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/metrics/definitions': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List Metric Definitions
-     * @description List user-defined metric definitions backed by meters.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['metrics:list_definitions']
-    put?: never
-    /**
-     * Create Metric Definition
-     * @description Create a user-defined metric definition backed by a meter.
-     *
-     *     **Scopes**: `metrics:write`
-     */
-    post: operations['metrics:create_definition']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/metrics/definitions/{id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Metric Definition
-     * @description Get a user-defined metric definition by ID.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['metrics:get_definition']
-    put?: never
-    post?: never
-    /**
-     * Delete Metric Definition
-     * @description Delete a user-defined metric definition.
-     *
-     *     **Scopes**: `metrics:write`
-     */
-    delete: operations['metrics:delete_definition']
-    options?: never
-    head?: never
-    /**
-     * Update Metric Definition
-     * @description Update a user-defined metric definition.
-     *
-     *     **Scopes**: `metrics:write`
-     */
-    patch: operations['metrics:update_definition']
-    trace?: never
-  }
   '/v1/metrics/dashboards': {
     parameters: {
       query?: never
@@ -20097,91 +20035,6 @@ export interface components {
        */
       metrics?: string[] | null
     }
-    /**
-     * MetricDefinitionCreate
-     * @description Schema for creating a user-defined metric backed by a meter.
-     */
-    MetricDefinitionCreate: {
-      /**
-       * Name
-       * @description Display name for the metric.
-       */
-      name: string
-      /**
-       * Slug
-       * @description Unique identifier for the metric within the organization. Must not conflict with built-in metric slugs.
-       */
-      slug: string
-      /**
-       * Meter Id
-       * Format: uuid4
-       * @description ID of the meter to use as the data source for this metric.
-       */
-      meter_id: string
-      /**
-       * Organization Id
-       * @description The ID of the organization owning this metric. **Required unless you use an organization token.**
-       */
-      organization_id?: string | null
-    }
-    /**
-     * MetricDefinitionSchema
-     * @description A user-defined metric backed by a meter.
-     */
-    MetricDefinitionSchema: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Name
-       * @description Display name for the metric.
-       */
-      name: string
-      /**
-       * Slug
-       * @description Unique identifier for the metric.
-       */
-      slug: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The ID of the organization owning this metric.
-       */
-      organization_id: string
-      /**
-       * Meter Id
-       * Format: uuid4
-       * @description ID of the meter used as the data source for this metric.
-       */
-      meter_id: string
-      /** @description The meter used as the data source. */
-      meter: components['schemas']['Meter']
-    }
-    /**
-     * MetricDefinitionUpdate
-     * @description Schema for updating a user-defined metric.
-     */
-    MetricDefinitionUpdate: {
-      /**
-       * Name
-       * @description Display name for the metric.
-       */
-      name?: string | null
-    }
     /** MetricPeriod */
     MetricPeriod: {
       /**
@@ -20276,8 +20129,6 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
-    } & {
-      [key: string]: unknown
     }
     /**
      * MetricType
@@ -20343,8 +20194,6 @@ export interface components {
       gross_margin?: components['schemas']['Metric'] | null
       gross_margin_percentage?: components['schemas']['Metric'] | null
       cashflow?: components['schemas']['Metric'] | null
-    } & {
-      [key: string]: unknown
     }
     /**
      * MetricsIntervalLimit
@@ -20495,8 +20344,6 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
-    } & {
-      [key: string]: unknown
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
@@ -21599,6 +21446,90 @@ export interface components {
       avatar_url?: string | null
       /** Github Username */
       github_username?: string | null
+    }
+    /**
+     * OrderVoidedEvent
+     * @description An event created by Polar when an order is voided.
+     */
+    OrderVoidedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'order.voided'
+      metadata: components['schemas']['OrderVoidedMetadata']
+    }
+    /** OrderVoidedMetadata */
+    OrderVoidedMetadata: {
+      /** Order Id */
+      order_id: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
     }
     /** Organization */
     Organization: {
@@ -27135,6 +27066,7 @@ export interface components {
       | components['schemas']['SubscriptionBillingPeriodUpdatedEvent']
       | components['schemas']['OrderPaidEvent']
       | components['schemas']['OrderRefundedEvent']
+      | components['schemas']['OrderVoidedEvent']
       | components['schemas']['CheckoutCreatedEvent']
       | components['schemas']['CustomerCreatedEvent']
       | components['schemas']['CustomerUpdatedEvent']
@@ -34455,169 +34387,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MetricsLimits']
-        }
-      }
-    }
-  }
-  'metrics:list_definitions': {
-    parameters: {
-      query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MetricDefinitionSchema'][]
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'metrics:create_definition': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['MetricDefinitionCreate']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MetricDefinitionSchema']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'metrics:get_definition': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The metric definition ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MetricDefinitionSchema']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'metrics:delete_definition': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The metric definition ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'metrics:update_definition': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The metric definition ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['MetricDefinitionUpdate']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MetricDefinitionSchema']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }
@@ -47433,6 +47202,9 @@ export const orderSortPropertyValues: ReadonlyArray<
 export const orderStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderStatus']
 > = ['pending', 'paid', 'refunded', 'partially_refunded', 'void']
+export const orderVoidedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrderVoidedEvent']['name']
+> = ['order.voided']
 export const organizationCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Organization']['country']
 > = [

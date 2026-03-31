@@ -121,7 +121,11 @@ def compute_identity_match(
         return None
 
     first_name_parts = verified_first_name.split() if verified_first_name else []
+    if verified_first_name and len(first_name_parts) > 1:
+        first_name_parts.append(verified_first_name)
     last_name_parts = verified_last_name.split() if verified_last_name else []
+    if verified_last_name and len(last_name_parts) > 1:
+        last_name_parts.append(verified_last_name)
 
     first_name_score = _fuzzy_name_score(user.first_name, first_name_parts)
     last_name_score = _fuzzy_name_score(user.last_name, last_name_parts)

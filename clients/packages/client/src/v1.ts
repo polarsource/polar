@@ -9884,6 +9884,8 @@ export interface components {
        * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
        */
       tax_amount: number | null
+      /** @description Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
@@ -11558,6 +11560,8 @@ export interface components {
        * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
        */
       tax_amount: number | null
+      /** @description Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
@@ -11822,6 +11826,8 @@ export interface components {
        * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
        */
       tax_amount: number | null
+      /** @description Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated. */
+      tax_behavior: components['schemas']['TaxBehavior'] | null
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
@@ -27730,6 +27736,11 @@ export interface components {
       | components['schemas']['BalanceRefundReversalEvent']
       | components['schemas']['BalanceDisputeEvent']
       | components['schemas']['BalanceDisputeReversalEvent']
+    /**
+     * TaxBehavior
+     * @enum {string}
+     */
+    TaxBehavior: 'inclusive' | 'exclusive'
     /**
      * TaxBehaviorOption
      * @enum {string}
@@ -53687,6 +53698,9 @@ export const subscriptionUncanceledEventNameValues: ReadonlyArray<
 export const subscriptionUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdatedEvent']['name']
 > = ['subscription.updated']
+export const taxBehaviorValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TaxBehavior']
+> = ['inclusive', 'exclusive']
 export const taxBehaviorOptionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxBehaviorOption']
 > = ['location', 'inclusive', 'exclusive']

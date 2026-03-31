@@ -93,12 +93,13 @@ describe('CheckoutPricingBreakdown', () => {
     })
   })
 
-  describe('with taxes, no discount', () => {
+  describe('with exclusive taxes, no discount', () => {
     it('shows subtotal, tax amount, and total correctly', () => {
       const checkout = createBaseCheckout({
         amount: 999,
         net_amount: 999,
         tax_amount: 250,
+        tax_behavior: 'exclusive',
         total_amount: 1249,
       })
 
@@ -107,6 +108,23 @@ describe('CheckoutPricingBreakdown', () => {
       expect(getRowValue('Subtotal')).toBe('$9.99')
       expect(getRowValue('Taxes')).toBe('$2.50')
       expect(getRowValue('Total')).toBe('$12.49')
+    })
+  })
+
+  describe('with inclusive taxes', () => {
+    it('shows "Taxes (included)" label', () => {
+      const checkout = createBaseCheckout({
+        amount: 999,
+        net_amount: 799,
+        tax_amount: 200,
+        tax_behavior: 'inclusive',
+        total_amount: 999,
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(getRowValue('Taxes (included)')).toBe('$2')
+      expect(getRowValue('Total')).toBe('$9.99')
     })
   })
 

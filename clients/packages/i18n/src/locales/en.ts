@@ -57,6 +57,11 @@ export default {
         _llmContext:
           'Taxes applied to the order. This is VAT or sales tax. Prefer the specific term used in the target locale over a generic taxes (e.g. TVA in French, BTW in Dutch, etc.)',
       },
+      inclTax: {
+        value: 'Taxes (included)',
+        _llmContext:
+          'Label for the tax line in the pricing breakdown when tax is already included in the displayed price. Prefer the specific tax term used in the target locale (e.g. TVA (incluse) in French, BTW (inbegrepen) in Dutch, Moms (inkluderad) in Swedish, etc.)',
+      },
       free: 'Free',
       payWhatYouWant: {
         value: 'Pay what you want',

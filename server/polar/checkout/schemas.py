@@ -28,7 +28,7 @@ from polar.discount.schemas import (
     DiscountPercentageBase,
     DiscountRepeatDurationBase,
 )
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxBehavior
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
@@ -524,6 +524,14 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description=(
             "Sales tax amount in cents. "
             "If `null`, it means there is no enough information yet to calculate it."
+        )
+    )
+    tax_behavior: TaxBehavior | None = Field(
+        description=(
+            "Tax behavior of the checkout. "
+            "`inclusive` means the price includes tax, "
+            "`exclusive` means tax is added on top. "
+            "If `null`, tax is not yet calculated."
         )
     )
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")

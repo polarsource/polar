@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# AUP file generated at build time — do not commit
+src/app/(main)/onboarding/validate-description/acceptable-use-policy.mdx

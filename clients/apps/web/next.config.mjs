@@ -103,6 +103,9 @@ const nextConfig = {
       './src/app/(main)/(website)/(landing)/(mdx)/blog/(header)/_posts/**/*',
       './src/app/(main)/(website)/(landing)/customers/(stories)/**/*',
     ],
+    '/onboarding/validate-description': [
+      './src/app/(main)/onboarding/validate-description/acceptable-use-policy.mdx',
+    ],
   },
 
   // This is required to support PostHog trailing slash API requests

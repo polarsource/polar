@@ -1033,7 +1033,7 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
     async def get_acceptable_use_policy(ctx: RunContext[AppealAgentDeps]) -> str:
         """Fetch the current Polar Acceptable Use Policy text."""
         log.info("tool.get_acceptable_use_policy")
-        return await fetch_policy_content()
+        return fetch_policy_content()
 
     return agent
 

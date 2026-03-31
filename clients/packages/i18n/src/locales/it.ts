@@ -102,6 +102,7 @@ export default {
         maximum: 'Massimo {max} postazioni',
         updateFailed: 'Impossibile aggiornare le postazioni',
       },
+      inclTax: 'IVA (inclusa)',
     },
     trial: {
       ends: 'La prova termina il {endDate}',

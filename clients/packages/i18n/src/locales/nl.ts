@@ -102,6 +102,7 @@ export default {
         maximum: 'Maximaal {max} stoelen',
         updateFailed: 'Stoelen bijwerken mislukt',
       },
+      inclTax: 'Btw (inbegrepen)',
     },
     trial: {
       ends: 'Proefperiode eindigt op {endDate}',

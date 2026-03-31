@@ -102,6 +102,7 @@ export default {
         maximum: 'Máximo de {max} assentos',
         updateFailed: 'Falha ao atualizar os assentos',
       },
+      inclTax: 'Impostos (inclusos)',
     },
     trial: {
       ends: 'Teste termina a {endDate}',

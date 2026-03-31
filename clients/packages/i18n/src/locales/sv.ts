@@ -102,6 +102,7 @@ export default {
         maximum: 'Högst {max} platser',
         updateFailed: 'Det gick inte att uppdatera platserna',
       },
+      inclTax: 'Moms (ingår)',
     },
     trial: {
       ends: 'Testperioden slutar {endDate}',

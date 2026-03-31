@@ -102,6 +102,7 @@ export default {
         maximum: 'Maximum {max} postes',
         updateFailed: 'Échec de la mise à jour des postes',
       },
+      inclTax: 'TVA (incluse)',
     },
     trial: {
       ends: "L'essai se termine le {endDate}",

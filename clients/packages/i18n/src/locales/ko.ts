@@ -102,6 +102,7 @@ export default {
         maximum: '최대 {max}석',
         updateFailed: '좌석 수를 업데이트하지 못했습니다',
       },
+      inclTax: '부가세 (포함)',
     },
     trial: {
       ends: '체험 종료일: {endDate}',

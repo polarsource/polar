@@ -102,6 +102,7 @@ export default {
         maximum: 'Maximal {max} Plätze',
         updateFailed: 'Plätze konnten nicht aktualisiert werden',
       },
+      inclTax: 'MwSt. (inklusive)',
     },
     trial: {
       ends: 'Testphase endet am {endDate}',

@@ -171,7 +171,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -345,7 +346,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -519,7 +521,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -693,7 +696,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -867,7 +871,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1033,7 +1038,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1199,7 +1205,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1365,7 +1372,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1531,7 +1539,8 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1697,6 +1706,7 @@
     "checkout.pricing.seats.range": "{min} - {max} seats",
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
-    "checkout.pricing.seats.updateFailed": "Failed to update seats"
+    "checkout.pricing.seats.updateFailed": "Failed to update seats",
+    "checkout.pricing.inclTax": "Taxes (included)"
   }
 }

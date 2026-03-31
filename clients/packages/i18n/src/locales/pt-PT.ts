@@ -102,6 +102,7 @@ export default {
         maximum: 'Máximo de {max} licenças',
         updateFailed: 'Não foi possível atualizar as licenças',
       },
+      inclTax: 'IVA (incluído)',
     },
     trial: {
       ends: 'Teste termina a {endDate}',

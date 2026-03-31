@@ -102,6 +102,7 @@ export default {
         maximum: 'Máximo {max} asientos',
         updateFailed: 'No se pudieron actualizar los asientos',
       },
+      inclTax: 'Impuestos (incluidos)',
     },
     trial: {
       ends: 'La prueba finaliza el {endDate}',

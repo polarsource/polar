@@ -46,6 +46,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
+from polar.email.repository import EmailLogRepository
+from polar.email.sender import DEFAULT_FROM_EMAIL_ADDRESS, DEFAULT_FROM_NAME
+from polar.enums import EmailSender
 from polar.exceptions import PolarError
 from polar.kit.currency import format_currency
 from polar.models import (
@@ -57,6 +60,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.email_log import EmailLogStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
@@ -257,6 +261,21 @@ class PlainService:
                         slug=organization.slug,
                         error=reply_result.error.message,
                     )
+
+                email_log_repository = EmailLogRepository.from_session(session)
+                await email_log_repository.create_log(
+                    status=EmailLogStatus.failed
+                    if reply_result.error
+                    else EmailLogStatus.sent,
+                    processor=EmailSender.plain,
+                    processor_id=thread_result.thread.id,
+                    to_email_addr=admin.email,
+                    from_email_addr=DEFAULT_FROM_EMAIL_ADDRESS,
+                    from_name=DEFAULT_FROM_NAME,
+                    subject=title,
+                    email_template="_build_review_message",
+                    error=reply_result.error.message if reply_result.error else None,
+                )
 
                 # Snooze the thread if we asked the customer for more details
                 has_action_items = (

@@ -32,11 +32,23 @@ log: Logger = structlog.get_logger()
 HTTP_HOST = os.getenv("dramatiq_prom_host", "0.0.0.0")
 HTTP_PORT = int(os.getenv("dramatiq_prom_port", "9191"))
 
+_monitored_pid: int | None = None
+
 
 class HealthMiddleware(Middleware):
     @property
     def forks(self) -> list[Callable[[], int]]:
         return [_run_exposition_server]
+
+
+def _is_process_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
 
 
 async def health(request: Request) -> JSONResponse:
@@ -45,6 +57,9 @@ async def health(request: Request) -> JSONResponse:
         await redis.ping()
     except RedisError as e:
         raise HTTPException(status_code=503, detail="Redis is not available") from e
+
+    if _monitored_pid is not None and not _is_process_alive(_monitored_pid):
+        raise HTTPException(status_code=503, detail="Scheduler process is not alive")
 
     return JSONResponse({"status": "ok"})
 
@@ -147,3 +162,9 @@ def _run_exposition_server() -> int:
         pass
 
     return 0
+
+
+def _run_scheduler_exposition_server(scheduler_pid: int) -> int:
+    global _monitored_pid
+    _monitored_pid = scheduler_pid
+    return _run_exposition_server()

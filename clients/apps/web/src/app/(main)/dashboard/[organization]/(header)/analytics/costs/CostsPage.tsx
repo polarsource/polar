@@ -38,8 +38,8 @@ import { useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 import { getDefaultEndDate, getDefaultStartDate } from './utils'
-import { getMetricsForType } from '@/components/metrics/dashboards/metrics-config'
-import { MetricGroup } from '@/components/metrics/dashboards/MetricGroup'
+import { getMetricsForType } from '@/components/Metrics/dashboards/metrics-config'
+import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
 
 interface ClientPageProps {
   organization: schemas['Organization']

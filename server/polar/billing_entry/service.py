@@ -69,6 +69,9 @@ class BillingEntryService:
     async def create_order_items_from_pending(
         self, session: AsyncSession, subscription: Subscription
     ) -> AsyncGenerator[Sequence[OrderItem]]:
+        repository = BillingEntryRepository.from_session(session)
+        await repository.lock_pending_by_subscription(subscription.id)
+
         item_entries_map: dict[OrderItem, Sequence[uuid.UUID]] = {}
         async for line_item, entries in self.compute_pending_subscription_line_items(
             session, subscription

@@ -133,6 +133,7 @@ class MetricDashboardCreate(Schema):
     metrics: list[str] = Field(
         default_factory=list,
         description="List of metric slugs to display in this dashboard.",
+        max_length=10,
     )
     organization_id: OrganizationID | None = Field(
         default=None,
@@ -152,6 +153,7 @@ class MetricDashboardUpdate(Schema):
     metrics: list[str] | None = Field(
         default=None,
         description="List of metric slugs to display in this dashboard.",
+        max_length=10,
     )
 
 

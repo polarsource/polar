@@ -1,24 +1,14 @@
 'use client'
 
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
+import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import { useDraggable } from '@/hooks/draggable'
+import { MetricDashboardEditorContent } from '@/components/DashboardOverview/MetricSelectorModal'
 import {
   useDeleteMetricDashboard,
   useMetricDashboards,
   useUpdateMetricDashboard,
 } from '@/hooks/queries/metrics'
-import { ALL_METRICS } from '@/utils/metrics'
-import { DndContext, DragOverlay } from '@dnd-kit/core'
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import DragHandleOutlined from '@mui/icons-material/DragHandleOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -29,11 +19,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
-import Input from '@polar-sh/ui/components/atoms/Input'
 import { usePathname, useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
+import { useCallback, useMemo } from 'react'
 import { MetricsHeader } from './MetricsHeader'
 
 const BUILT_IN_NAMES: Record<string, string> = {
@@ -48,12 +35,6 @@ const BUILT_IN_NAMES: Record<string, string> = {
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-interface MetricItem {
-  id: string
-  slug: string
-  display_name: string
-}
 
 interface DashboardViewHeaderProps {
   organization: schemas['Organization']
@@ -117,7 +98,8 @@ export function DashboardViewHeader({
         )}
       </div>
       {currentDashboard && (
-        <InlineModal
+        <Modal
+          title="Edit Dashboard"
           isShown={isEditShown}
           hide={hideEdit}
           modalContent={
@@ -187,56 +169,6 @@ function DashboardDotMenu({
   )
 }
 
-// ─── Sortable metric row ──────────────────────────────────────────────────────
-
-function SortableMetricRow({
-  item,
-  onRemove,
-}: {
-  item: MetricItem
-  onRemove: () => void
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id })
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 flex h-10 w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3',
-        isDragging && 'opacity-50',
-      )}
-    >
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="dark:text-polar-500 dark:hover:text-polar-300 cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing"
-          {...attributes}
-          {...listeners}
-        >
-          <DragHandleOutlined fontSize="small" />
-        </button>
-        <span className="text-sm">{item.display_name}</span>
-      </div>
-      <Button
-        size="icon"
-        className="h-5 w-5"
-        variant="ghost"
-        onClick={onRemove}
-      >
-        <CloseOutlined fontSize="inherit" />
-      </Button>
-    </div>
-  )
-}
-
 // ─── Edit dashboard form ──────────────────────────────────────────────────────
 
 function EditDashboardContent({
@@ -250,180 +182,24 @@ function EditDashboardContent({
 }) {
   const updateMutation = useUpdateMetricDashboard(dashboard.id, organization.id)
 
-  const allMetrics = useMemo<MetricItem[]>(
-    () =>
-      ALL_METRICS.map((m) => ({
-        id: m.slug as string,
-        slug: m.slug as string,
-        display_name: m.display_name,
-      })),
-    [],
-  )
-
-  const [selected, setSelected] = useState<MetricItem[]>(() =>
-    dashboard.metrics.map((slug: string) => ({
-      id: slug,
-      slug,
-      display_name: slug,
-    })),
-  )
-
-  // Resolve display names once allMetrics is loaded
-  const resolvedSelected = useMemo(
-    () =>
-      selected.map((s) => {
-        const found = allMetrics.find((m) => m.slug === s.slug)
-        return found ?? s
-      }),
-    [selected, allMetrics],
-  )
-
-  const {
-    sensors,
-    activeId,
-    handleDragStart,
-    handleDragEnd,
-    handleDragCancel,
-  } = useDraggable(resolvedSelected, setSelected, () => {})
-
-  const available = useMemo(
-    () => allMetrics.filter((m) => !selected.some((s) => s.slug === m.slug)),
-    [allMetrics, selected],
-  )
-
-  const handleAdd = useCallback((item: MetricItem) => {
-    setSelected((prev) => [...prev, item])
-  }, [])
-
-  const handleRemove = useCallback((slug: string) => {
-    setSelected((prev) => prev.filter((m) => m.slug !== slug))
-  }, [])
-
-  const dragOverlayItem = activeId
-    ? selected.find((m) => m.id === activeId)
-    : null
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<{ name: string }>({
-    defaultValues: { name: dashboard.name },
-  })
-
-  const onSubmit = useCallback(
-    async (data: { name: string }) => {
-      await updateMutation.mutateAsync({
-        name: data.name,
-        metrics: selected.map((m) => m.slug),
-      })
+  const handleSave = useCallback(
+    async (metrics: string[], name?: string) => {
+      await updateMutation.mutateAsync({ name: name!, metrics })
       onClose()
     },
-    [updateMutation, selected, onClose],
+    [updateMutation, onClose],
   )
 
   return (
-    <div className="flex flex-col gap-y-6">
-      <InlineModalHeader hide={onClose}>
-        <span>Edit Dashboard</span>
-      </InlineModalHeader>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
-        <div className="flex flex-col gap-y-6 px-8 pb-6">
-          {/* Name */}
-          <div className="flex flex-col gap-y-2">
-            <label className="text-sm font-medium text-gray-900 dark:text-white">
-              Name
-            </label>
-            <Input
-              {...register('name', { required: 'Name is required' })}
-              placeholder="e.g. Revenue Overview"
-            />
-            {errors.name && (
-              <span className="text-sm text-red-500">
-                {errors.name.message}
-              </span>
-            )}
-          </div>
-
-          {/* Metrics */}
-          <div className="flex flex-col gap-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-900 dark:text-white">
-                Metrics
-              </label>
-              {resolvedSelected.length > 0 && (
-                <span className="dark:text-polar-400 text-xs text-gray-500">
-                  {resolvedSelected.length} selected
-                </span>
-              )}
-            </div>
-
-            {resolvedSelected.length > 0 && (
-              <DndContext
-                sensors={sensors}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onDragCancel={handleDragCancel}
-              >
-                <SortableContext
-                  items={resolvedSelected.map((m) => m.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="flex flex-col gap-y-1.5">
-                    {resolvedSelected.map((item) => (
-                      <SortableMetricRow
-                        key={item.id}
-                        item={item}
-                        onRemove={() => handleRemove(item.slug)}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-                <DragOverlay>
-                  {dragOverlayItem && (
-                    <div className="dark:bg-polar-800 dark:border-polar-700 flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 shadow-lg">
-                      <DragHandleOutlined
-                        fontSize="small"
-                        className="dark:text-polar-500 text-gray-400"
-                      />
-                      <span className="text-sm">
-                        {dragOverlayItem.display_name}
-                      </span>
-                    </div>
-                  )}
-                </DragOverlay>
-              </DndContext>
-            )}
-
-            {/* Available — flat list */}
-            {available.length > 0 ? (
-              <div className="flex flex-col">
-                {available.map((metric) => (
-                  <button
-                    key={metric.slug}
-                    type="button"
-                    onClick={() => handleAdd(metric)}
-                    className="dark:hover:bg-polar-800 dark:text-polar-200 flex items-center justify-between px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
-                  >
-                    <span>{metric.display_name}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="dark:text-polar-400 py-2 text-center text-sm text-gray-500">
-                All metrics selected
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="dark:bg-polar-900 dark:border-polar-800 sticky bottom-0 border-t border-gray-100 bg-white px-8 py-6">
-          <Button type="submit" loading={updateMutation.isPending}>
-            Save Changes
-          </Button>
-        </div>
-      </form>
-    </div>
+    <MetricDashboardEditorContent
+      title="Edit Dashboard"
+      showNameField
+      initialName={dashboard.name}
+      activeMetrics={dashboard.metrics}
+      limit={10}
+      onSave={handleSave}
+      isPending={updateMutation.isPending}
+      saveLabel="Save Changes"
+    />
   )
 }

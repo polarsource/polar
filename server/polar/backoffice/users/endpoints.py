@@ -1,9 +1,13 @@
+import builtins
 import contextlib
 import uuid
 from collections.abc import Generator
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from difflib import SequenceMatcher
 from typing import Annotated, Any
 
+import stripe as stripe_lib
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_, select
@@ -12,6 +16,7 @@ from tagflow import classes, tag, text
 
 from polar.account.repository import AccountRepository
 from polar.account.sorting import AccountSortProperty
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Account, User, UserOrganization
@@ -60,24 +65,131 @@ class IdentityVerificationStatusColumn(
         return None
 
 
-class IdentityVerificationStatusDescriptionListItem(
-    description_list.DescriptionListItem[User]
-):
-    def render(self, request: Request, item: User) -> Generator[None] | None:
-        status = item.identity_verification_status
-        if item.identity_verification_id is not None:
-            with tag.a(
-                href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
-                classes="link flex flex-row gap-1",
-                target="_blank",
-                rel="noopener noreferrer",
-            ):
-                text(status.get_display_name())
-                with tag.div(classes="icon-external-link"):
-                    pass
-        else:
-            text(status.get_display_name())
+class FullNameColumn(datatable.DatatableAttrColumn[User, UserSortProperty]):
+    def __init__(self) -> None:
+        super().__init__("full_name", "Full Name")
+
+
+@dataclass
+class IdentityMatchResult:
+    first_name_score: float
+    last_name_score: float
+    country_match: bool | None
+    dob_match: bool | None
+    overall_score: float
+
+
+def _fuzzy_name_score(
+    user_name: str | None, verified_parts: builtins.list[str]
+) -> float:
+    if not user_name:
+        return 0.0
+    user_lower = user_name.strip().lower()
+    if not user_lower:
+        return 0.0
+    best = 0.0
+    for part in verified_parts:
+        part_lower = part.strip().lower()
+        if not part_lower:
+            continue
+        if user_lower == part_lower:
+            return 1.0
+        if part_lower.startswith(user_lower) and len(user_lower) >= 3:
+            best = max(best, 0.85)
+        elif user_lower in part_lower or part_lower in user_lower:
+            best = max(best, 0.7)
+        ratio = SequenceMatcher(None, user_lower, part_lower).ratio()
+        best = max(best, ratio)
+    return best
+
+
+def compute_identity_match(
+    user: User,
+    verified_first_name: str | None,
+    verified_last_name: str | None,
+    verified_country: str | None,
+    verified_dob: str | None,
+) -> IdentityMatchResult | None:
+    # Need at least one field on both sides to compare
+    has_user_info = any(
+        [user.first_name, user.last_name, user.country, user.date_of_birth]
+    )
+    has_verified_info = any(
+        [verified_first_name, verified_last_name, verified_country, verified_dob]
+    )
+    if not has_user_info or not has_verified_info:
         return None
+
+    first_name_parts = verified_first_name.split() if verified_first_name else []
+    last_name_parts = verified_last_name.split() if verified_last_name else []
+
+    first_name_score = _fuzzy_name_score(user.first_name, first_name_parts)
+    last_name_score = _fuzzy_name_score(user.last_name, last_name_parts)
+
+    country_match: bool | None = None
+    if user.country and verified_country:
+        country_match = user.country.upper() == verified_country.upper()
+
+    dob_match: bool | None = None
+    if user.date_of_birth and verified_dob:
+        dob_match = user.date_of_birth.isoformat() == verified_dob
+
+    scores: builtins.list[float] = []
+    weights: builtins.list[float] = []
+    if user.first_name and verified_first_name:
+        scores.append(first_name_score)
+        weights.append(0.3)
+    if user.last_name and verified_last_name:
+        scores.append(last_name_score)
+        weights.append(0.3)
+    if country_match is not None:
+        scores.append(1.0 if country_match else 0.0)
+        weights.append(0.2)
+    if dob_match is not None:
+        scores.append(1.0 if dob_match else 0.0)
+        weights.append(0.2)
+
+    total_weight = sum(weights)
+    overall = (
+        sum(s * w for s, w in zip(scores, weights)) / total_weight
+        if total_weight > 0
+        else 0.0
+    )
+
+    return IdentityMatchResult(
+        first_name_score=first_name_score,
+        last_name_score=last_name_score,
+        country_match=country_match,
+        dob_match=dob_match,
+        overall_score=overall,
+    )
+
+
+def _score_color(score: float) -> str:
+    if score >= 0.8:
+        return "text-success"
+    if score >= 0.5:
+        return "text-warning"
+    return "text-error"
+
+
+def _render_match_row(
+    label: str,
+    user_val: str | None,
+    verified_val: str | None,
+    score: float | None = None,
+    score_text: str | None = None,
+) -> None:
+    with tag.tr():
+        with tag.td(classes="font-medium"):
+            text(label)
+        with tag.td():
+            text(user_val or "—")
+        with tag.td():
+            text(verified_val or "—")
+        if score_text is not None:
+            with tag.td(classes=_score_color(score) if score is not None else ""):
+                text(score_text)
 
 
 class OAuthPlatformColumn(
@@ -171,6 +283,7 @@ async def list(
                 datatable.DatatableAttrColumn(
                     "email", "Email", clipboard=True, sorting=UserSortProperty.email
                 ),
+                FullNameColumn(),
                 datatable.DatatableDateTimeColumn(
                     "created_at",
                     "Created At",
@@ -197,11 +310,44 @@ async def get(
     if user is None:
         raise HTTPException(status_code=404)
 
+    # Fetch Stripe verified outputs for identity comparison
+    identity_match: IdentityMatchResult | None = None
+    verified_first_name: str | None = None
+    verified_last_name: str | None = None
+    verified_country: str | None = None
+    verified_dob: str | None = None
+    if user.identity_verification_id is not None:
+        try:
+            vs = await stripe_service.get_verification_session(
+                user.identity_verification_id,
+                expand=["verified_outputs"],
+            )
+            verified_outputs = getattr(vs, "verified_outputs", None)
+            if verified_outputs:
+                verified_first_name = getattr(verified_outputs, "first_name", None)
+                verified_last_name = getattr(verified_outputs, "last_name", None)
+                address = getattr(verified_outputs, "address", None)
+                if address:
+                    verified_country = address.country
+                dob = getattr(verified_outputs, "dob", None)
+                if dob and dob.year and dob.month and dob.day:
+                    verified_dob = f"{dob.year}-{dob.month:02d}-{dob.day:02d}"
+
+                identity_match = compute_identity_match(
+                    user,
+                    verified_first_name,
+                    verified_last_name,
+                    verified_country,
+                    verified_dob,
+                )
+        except stripe_lib.StripeError:
+            pass
+
     with layout(
         request,
         [
-            (user.email, str(request.url)),
             ("Users", str(request.url_for("users:list"))),
+            (user.email, str(request.url)),
         ],
         "users:get",
     ):
@@ -211,7 +357,7 @@ async def get(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.div(classes="flex items-center justify-between"):
                 with tag.h1(classes="text-4xl"):
-                    text(user.email)
+                    text(user.full_name or user.email)
 
                 # Actions dropdown menu
                 with tag.div(classes="dropdown dropdown-end"):
@@ -264,9 +410,112 @@ async def get(
                 description_list.DescriptionListDateTimeItem(
                     "blocked_at", "Blocked At"
                 ),
-                IdentityVerificationStatusDescriptionListItem("Identity"),
             ).render(request, user):
                 pass
+
+        ################
+        ### Identity ###
+        ################
+        with tag.div(classes="flex flex-col gap-4 pt-8"):
+            with tag.div(classes="flex items-center gap-2"):
+                with tag.h2(classes="text-2xl"):
+                    text("Identity")
+                status = user.identity_verification_status
+                if user.identity_verification_id is not None:
+                    with tag.a(
+                        href=f"https://dashboard.stripe.com/identity/verification-sessions/{user.identity_verification_id}",
+                        classes="link",
+                        target="_blank",
+                        rel="noopener noreferrer",
+                    ):
+                        with identity_verification_status_badge(status):
+                            pass
+                else:
+                    with identity_verification_status_badge(status):
+                        pass
+                if identity_match is not None:
+                    overall_pct = int(identity_match.overall_score * 100)
+                    if overall_pct >= 80:
+                        badge_class = "badge-success"
+                    elif overall_pct >= 50:
+                        badge_class = "badge-warning"
+                    else:
+                        badge_class = "badge-error"
+                    with tag.div(classes=f"badge {badge_class}"):
+                        text(f"{overall_pct}% match")
+
+            with tag.div(
+                classes="overflow-x-auto rounded-box bg-base-100 border-1 border-base-200",
+            ):
+                with tag.table(classes="table"):
+                    with tag.thead():
+                        with tag.tr():
+                            with tag.th():
+                                pass
+                            with tag.th():
+                                text("User")
+                            with tag.th():
+                                text("Verified")
+                            if identity_match is not None:
+                                with tag.th():
+                                    text("Score")
+                    with tag.tbody():
+                        _render_match_row(
+                            "First Name",
+                            user.first_name,
+                            verified_first_name,
+                            score=identity_match.first_name_score
+                            if identity_match
+                            else None,
+                            score_text=f"{int(identity_match.first_name_score * 100)}%"
+                            if identity_match
+                            else None,
+                        )
+                        _render_match_row(
+                            "Last Name",
+                            user.last_name,
+                            verified_last_name,
+                            score=identity_match.last_name_score
+                            if identity_match
+                            else None,
+                            score_text=f"{int(identity_match.last_name_score * 100)}%"
+                            if identity_match
+                            else None,
+                        )
+                        _render_match_row(
+                            "Country",
+                            user.country,
+                            verified_country,
+                            score=1.0
+                            if identity_match and identity_match.country_match
+                            else 0.0
+                            if identity_match
+                            and identity_match.country_match is not None
+                            else None,
+                            score_text="Match"
+                            if identity_match and identity_match.country_match
+                            else "Mismatch"
+                            if identity_match
+                            and identity_match.country_match is not None
+                            else None,
+                        )
+                        _render_match_row(
+                            "Date of Birth",
+                            user.date_of_birth.isoformat()
+                            if user.date_of_birth
+                            else None,
+                            verified_dob,
+                            score=1.0
+                            if identity_match and identity_match.dob_match
+                            else 0.0
+                            if identity_match and identity_match.dob_match is not None
+                            else None,
+                            score_text="Match"
+                            if identity_match and identity_match.dob_match
+                            else "Mismatch"
+                            if identity_match and identity_match.dob_match is not None
+                            else None,
+                        )
 
         #####################
         ### Organizations ###

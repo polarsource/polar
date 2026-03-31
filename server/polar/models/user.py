@@ -183,6 +183,11 @@ class User(RecordModel):
         Date, nullable=True, default=None
     )
 
+    @property
+    def full_name(self) -> str | None:
+        parts = [p for p in (self.first_name, self.last_name) if p]
+        return " ".join(parts) if parts else None
+
     @hybrid_property
     def can_authenticate(self) -> bool:
         return not self.is_deleted and self.blocked_at is None

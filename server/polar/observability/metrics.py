@@ -1,6 +1,7 @@
 import gc
 import os
 import time
+from collections import deque
 
 from polar.config import settings
 
@@ -58,6 +59,7 @@ GC_COLLECTION_DURATION = Histogram(
 )
 
 _gc_start_time: float | None = None
+_gc_observations: deque[tuple[str, float]] = deque()
 
 
 def _gc_callback(phase: str, info: dict[str, int]) -> None:
@@ -68,8 +70,14 @@ def _gc_callback(phase: str, info: dict[str, int]) -> None:
         _gc_start_time = time.perf_counter()
     elif phase == "stop" and _gc_start_time is not None:
         duration = time.perf_counter() - _gc_start_time
-        GC_COLLECTION_DURATION.labels(generation=generation).observe(duration)
+        _gc_observations.append((generation, duration))
         _gc_start_time = None
+
+
+def flush_gc_metrics() -> None:
+    while _gc_observations:
+        generation, duration = _gc_observations.popleft()
+        GC_COLLECTION_DURATION.labels(generation=generation).observe(duration)
 
 
 def register_gc_metrics() -> None:

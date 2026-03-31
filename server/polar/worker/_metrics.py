@@ -7,6 +7,7 @@ from polar.observability import (
     TASK_DURATION,
     TASK_EXECUTIONS,
     TASK_RETRIES,
+    flush_gc_metrics,
     register_gc_metrics,
 )
 from polar.observability.remote_write import start_remote_write_pusher
@@ -58,6 +59,8 @@ class PrometheusMiddleware(dramatiq.Middleware):
             queue=queue_name, task_name=message.actor_name, status=status
         ).inc()
 
+        flush_gc_metrics()
+
     def after_skip_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
@@ -72,3 +75,5 @@ class PrometheusMiddleware(dramatiq.Middleware):
         TASK_EXECUTIONS.labels(
             queue=queue_name, task_name=message.actor_name, status="skipped"
         ).inc()
+
+        flush_gc_metrics()

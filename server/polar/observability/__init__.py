@@ -15,6 +15,7 @@ from polar.observability.metrics import (
     TASK_DURATION,
     TASK_EXECUTIONS,
     TASK_RETRIES,
+    flush_gc_metrics,
     register_gc_metrics,
 )
 from polar.observability.operational_errors import OPERATIONAL_ERROR_TOTAL
@@ -41,5 +42,6 @@ __all__ = [
     "TASK_RETRIES",
     # Tax metrics
     "TAX_CALCULATION_TOTAL",
+    "flush_gc_metrics",
     "register_gc_metrics",
 ]

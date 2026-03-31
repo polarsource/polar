@@ -713,6 +713,19 @@ def grant_template_objects(
                 f"GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO {role_name}"
             )
             db_cursor.execute(f"GRANT USAGE ON SCHEMA public TO {role_name}")
+            db_cursor.execute(
+                f"""
+                DO $$DECLARE r RECORD;
+                BEGIN
+                    FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+                        EXECUTE format('ALTER TABLE public.%I OWNER TO {role_name}', r.tablename);
+                    END LOOP;
+                    FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP
+                        EXECUTE format('ALTER SEQUENCE public.%I OWNER TO {role_name}', r.sequencename);
+                    END LOOP;
+                END $$;
+                """
+            )
         finally:
             db_cursor.close()
     finally:
@@ -806,6 +819,8 @@ def provision_preview_postgres(
                     )
                 )
             else:
+                if config.template_database is not None:
+                    grant_template_objects(config, database_name, role_name)
                 log_preview(f"Reusing preview Postgres database {database_name}")
 
             cursor.execute(f"REVOKE ALL ON DATABASE {database_name} FROM PUBLIC")

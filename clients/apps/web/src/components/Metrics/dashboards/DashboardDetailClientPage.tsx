@@ -88,7 +88,7 @@ export default function DashboardDetailClientPage({
 
   return (
     <MetricGroup
-      metricKeys={dashboard.metrics}
+      metricKeys={dashboard.metrics as (keyof schemas['Metrics'])[]}
       data={data}
       interval={interval}
     />

@@ -1,5 +1,5 @@
-import ClientPage from '@/components/metrics/dashboards/ClientPage'
-import DashboardDetailClientPage from '@/components/metrics/dashboards/DashboardDetailClientPage'
+import ClientPage from '@/components/Metrics/dashboards/ClientPage'
+import DashboardDetailClientPage from '@/components/Metrics/dashboards/DashboardDetailClientPage'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'

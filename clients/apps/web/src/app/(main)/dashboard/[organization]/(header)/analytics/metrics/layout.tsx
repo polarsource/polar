@@ -1,6 +1,6 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { DashboardsListSidebar } from '@/components/metrics/dashboards/DashboardsListSidebar'
-import { DashboardViewHeader } from '@/components/metrics/dashboards/DashboardViewHeader'
+import { DashboardsListSidebar } from '@/components/Metrics/dashboards/DashboardsListSidebar'
+import { DashboardViewHeader } from '@/components/Metrics/dashboards/DashboardViewHeader'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { METRIC_GROUPS } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'

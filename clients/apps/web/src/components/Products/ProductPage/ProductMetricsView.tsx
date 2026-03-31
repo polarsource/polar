@@ -1,4 +1,4 @@
-import { MetricGroup } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/MetricGroup'
+import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 

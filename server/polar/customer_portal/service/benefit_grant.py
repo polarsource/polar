@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
-from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, Customer, Member, is_customer, is_member
@@ -63,10 +63,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         )
 
         if query is not None:
-            ts_query_english = func.websearch_to_tsquery("english", query)
-            statement = statement.where(
-                Benefit.search_vector.op("@@")(ts_query_english)
-            )
+            statement = statement.where(Benefit.description.ilike(f"%{query}%"))
 
         if type is not None:
             statement = statement.where(Benefit.type.in_(type))

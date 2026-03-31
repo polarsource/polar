@@ -955,6 +955,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     customer_id=seat_customer.id,
                     product_id=seat_based_product.id,
                     seats=seats_purchased,
+                    anchor_day=utc_now().day,
                 )
                 session.add(subscription)
                 await session.flush()

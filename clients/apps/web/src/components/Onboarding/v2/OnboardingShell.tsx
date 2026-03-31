@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { CONFIG } from '@/utils/config'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
@@ -44,7 +45,22 @@ export function OnboardingShell({
       justifyContent="center"
       backgroundColor="background-primary"
       overflowX="hidden"
+      position="relative"
     >
+      <div className="dark:text-polar-500 absolute bottom-6 left-6 flex gap-4 text-sm text-gray-400">
+        <Link
+          href="/dashboard/account/preferences"
+          className="dark:hover:text-polar-200 hover:text-gray-900"
+        >
+          User settings
+        </Link>
+        <a
+          href={`${CONFIG.BASE_URL}/v1/auth/logout`}
+          className="dark:hover:text-polar-200 hover:text-gray-900"
+        >
+          Log out
+        </a>
+      </div>
       <Box display="flex" width="100%" maxWidth="60rem">
         {/* Left: form */}
         <Box

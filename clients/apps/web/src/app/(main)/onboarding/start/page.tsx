@@ -3,6 +3,7 @@
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { useOnboardingData } from '@/components/Onboarding/v2/OnboardingContext'
 import { CONFIG } from '@/utils/config'
+import Link from 'next/link'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { usePostHog } from '@/hooks/posthog'
@@ -45,7 +46,22 @@ export default function Page() {
       alignItems="center"
       justifyContent="center"
       paddingHorizontal="l"
+      position="relative"
     >
+      <div className="dark:text-polar-500 absolute bottom-6 left-6 flex gap-4 text-sm text-gray-400">
+        <Link
+          href="/dashboard/account/preferences"
+          className="dark:hover:text-polar-200 hover:text-gray-900"
+        >
+          User settings
+        </Link>
+        <a
+          href={`${CONFIG.BASE_URL}/v1/auth/logout`}
+          className="dark:hover:text-polar-200 hover:text-gray-900"
+        >
+          Log out
+        </a>
+      </div>
       <Box
         display="flex"
         width="100%"

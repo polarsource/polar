@@ -25,7 +25,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
@@ -99,10 +99,11 @@ function SubmitButton({ loading }: { loading: boolean }) {
 
 export function PersonalDetailsStep() {
   const router = useRouter()
-  const { currentUser } = useAuth()
+  const { currentUser, reloadUser } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
+  const showTerms = useRef(!currentUser?.accepted_terms_of_service)
   const updateUser = useUpdateUser()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(false)
@@ -182,6 +183,7 @@ export function PersonalDetailsStep() {
 
     trackStepCompleted('personal')
     await showApiResponse(201, 'Created')
+    reloadUser()
     router.push('/onboarding/business')
   }
 
@@ -361,7 +363,7 @@ export function PersonalDetailsStep() {
             </Box>
           </Box>
 
-          {!currentUser?.accepted_terms_of_service && (
+          {showTerms.current && (
             <TermsCheckbox control={control} name="terms" setValue={setValue} />
           )}
 

@@ -48,6 +48,17 @@ def _sql_lock_not_available_error_matcher(exc: BaseException) -> bool:
     return False
 
 
+def _sql_deadlock_error_matcher(exc: BaseException) -> bool:
+    if not isinstance(exc, DBAPIError):
+        return False
+    cause = exc.__cause__
+    while cause is not None:
+        if isinstance(cause, asyncpg.exceptions.DeadlockDetectedError):
+            return True
+        cause = cause.__cause__
+    return False
+
+
 def _timeout_lock_error_matcher(exc: BaseException) -> bool:
     return isinstance(exc, TimeoutLockError)
 
@@ -76,6 +87,7 @@ def _tinybird_operational_error_matcher(exc: BaseException) -> bool:
 _operation_error_matchers: dict[str, OperationalErrorMatcher] = {
     "sql_timeout_error": _sql_timeout_error_matcher,
     "sql_lock_not_available_error": _sql_lock_not_available_error_matcher,
+    "sql_deadlock_error": _sql_deadlock_error_matcher,
     "timeout_lock_error": _timeout_lock_error_matcher,
     "external_event_already_handled": _external_event_already_handled_error_matcher,
     "loops_client_operational_error": _loops_client_operational_error_matcher,

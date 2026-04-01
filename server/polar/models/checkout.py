@@ -432,7 +432,7 @@ class Checkout(
     def active_trial_interval(self) -> TrialInterval | None:
         if not self.allow_trial:
             return None
-        if self.product is None:
+        if self.product is None or not self.product.is_recurring:
             return None
         return self.trial_interval or self.product.trial_interval
 
@@ -440,7 +440,7 @@ class Checkout(
     def active_trial_interval_count(self) -> int | None:
         if not self.allow_trial:
             return None
-        if self.product is None:
+        if self.product is None or not self.product.is_recurring:
             return None
         return self.trial_interval_count or self.product.trial_interval_count
 

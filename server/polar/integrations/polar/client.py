@@ -1,18 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import httpx
 import structlog
-from polar_sdk import Polar as PolarSDK
-from polar_sdk.models import (
-    CustomerCreate,
-    EventCreateExternalCustomer,
-    EventsIngest,
-    MemberCreate,
-    SubscriptionCreateExternalCustomer,
-)
-from polar_sdk.models.polarerror import PolarError
 
 from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
 from polar.logging import Logger
+
+if TYPE_CHECKING:
+    from polar_sdk import Polar as PolarSDK
 
 log: Logger = structlog.get_logger()
 
@@ -22,9 +20,16 @@ class PolarSelfClientError(InternalPolarError):
         super().__init__(message)
 
 
+def _import_sdk() -> type[PolarSDK]:
+    from polar_sdk import Polar as PolarSDK
+
+    return PolarSDK
+
+
 class PolarSelfClient:
     def __init__(self, *, access_token: str, api_url: str) -> None:
-        self._sdk = PolarSDK(
+        cls = _import_sdk()
+        self._sdk = cls(
             access_token=access_token or "unconfigured",
             server_url=api_url,
         )
@@ -32,6 +37,9 @@ class PolarSelfClient:
     async def create_customer(
         self, *, external_id: str, email: str, name: str, organization_id: str
     ) -> None:
+        from polar_sdk.models import CustomerCreate
+        from polar_sdk.models.polarerror import PolarError
+
         try:
             await self._sdk.customers.create_async(
                 request=CustomerCreate(
@@ -47,6 +55,9 @@ class PolarSelfClient:
     async def create_free_subscription(
         self, *, external_customer_id: str, product_id: str
     ) -> None:
+        from polar_sdk.models import SubscriptionCreateExternalCustomer
+        from polar_sdk.models.polarerror import PolarError
+
         try:
             await self._sdk.subscriptions.create_async(
                 request=SubscriptionCreateExternalCustomer(
@@ -64,6 +75,9 @@ class PolarSelfClient:
     async def add_member(
         self, *, customer_id: str, email: str, name: str, external_id: str
     ) -> None:
+        from polar_sdk.models import MemberCreate
+        from polar_sdk.models.polarerror import PolarError
+
         try:
             await self._sdk.members.create_member_async(
                 request=MemberCreate(
@@ -77,6 +91,8 @@ class PolarSelfClient:
             self._handle_error(e, "add_member", external_id=external_id)
 
     async def remove_member(self, *, member_id: str) -> None:
+        from polar_sdk.models.polarerror import PolarError
+
         try:
             await self._sdk.members.delete_member_async(id=member_id)
         except PolarError as e:
@@ -85,6 +101,9 @@ class PolarSelfClient:
     async def track_event_ingestion(
         self, *, external_customer_id: str, count: int, organization_id: str
     ) -> None:
+        from polar_sdk.models import EventCreateExternalCustomer, EventsIngest
+        from polar_sdk.models.polarerror import PolarError
+
         try:
             await self._sdk.events.ingest_async(
                 request=EventsIngest(
@@ -105,7 +124,7 @@ class PolarSelfClient:
                 external_customer_id=external_customer_id,
             )
 
-    def _handle_error(self, error: PolarError, operation: str, **context: str) -> None:
+    def _handle_error(self, error: Any, operation: str, **context: str) -> None:
         if error.status_code == 409:
             log.debug(
                 "polar_self.conflict",

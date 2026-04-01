@@ -240,6 +240,7 @@ async def create_static_price_billing_entry(
 async def create_seat_change_billing_entry(
     save_fixture: SaveFixture,
     *,
+    type: BillingEntryType = BillingEntryType.subscription_seats_increase,
     customer: Customer,
     price: ProductPriceSeatUnit,
     subscription: Subscription,
@@ -264,7 +265,7 @@ async def create_seat_change_billing_entry(
     billing_entry = BillingEntry(
         start_timestamp=subscription.current_period_start,
         end_timestamp=subscription.current_period_end,
-        type=BillingEntryType.subscription_seats_increase,
+        type=type,
         direction=BillingEntryDirection.debit,
         customer=customer,
         product_price=price,
@@ -441,12 +442,20 @@ class TestCreateOrderItemsFromPending:
             await session.refresh(entry)
             assert entry.order_item_id == order_item_current_price.id
 
+    @pytest.mark.parametrize(
+        "entry_type",
+        [
+            BillingEntryType.subscription_seats_increase,
+            BillingEntryType.subscription_seats_decrease,
+        ],
+    )
     async def test_proration_seat_items(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
         organization: Organization,
+        entry_type: BillingEntryType,
     ) -> None:
         product = await create_product(
             save_fixture,
@@ -460,15 +469,14 @@ class TestCreateOrderItemsFromPending:
         price = product.prices[0]
         assert is_seat_price(price)
 
-        entries = [
-            await create_seat_change_billing_entry(
-                save_fixture,
-                customer=customer,
-                price=price,
-                subscription=subscription,
-                amount=50_00,
-            ),
-        ]
+        entry = await create_seat_change_billing_entry(
+            save_fixture,
+            type=entry_type,
+            customer=customer,
+            price=price,
+            subscription=subscription,
+            amount=50_00,
+        )
 
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription
@@ -477,6 +485,7 @@ class TestCreateOrderItemsFromPending:
 
             order_item = order_items[0]
             assert order_item.amount == 50_00
+            assert order_item.proration is True
 
             await create_order(
                 save_fixture,
@@ -484,9 +493,8 @@ class TestCreateOrderItemsFromPending:
                 order_items=list(order_items),
             )
 
-        for entry in entries[1:]:
-            await session.refresh(entry)
-            assert entry.order_item_id == order_item.id
+        await session.refresh(entry)
+        assert entry.order_item_id == order_item.id
 
     async def test_credit_events(
         self,

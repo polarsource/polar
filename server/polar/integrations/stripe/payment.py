@@ -159,6 +159,14 @@ async def resolve_order(
             uuid.UUID(order_id), options=order_repository.get_eager_options()
         )
         if order is None:
+            if object.OBJECT_NAME == "payment_intent":
+                updated_intent = await stripe_service.get_payment_intent(object.id)
+                if (
+                    updated_intent.metadata
+                    and updated_intent.metadata.get("polar_failed_sync_payment")
+                    == "true"
+                ):
+                    return None
             raise OrderDoesNotExist(order_id)
         return order
 

@@ -21,6 +21,7 @@ from polar.product.guard import (
     MeteredPrice,
     StaticPrice,
     is_metered_price,
+    is_seat_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 
@@ -90,7 +91,7 @@ class BillingEntryService:
         ):
             static_price = cast(StaticPrice, entry.product_price)
             static_line_item = await self._get_static_price_line_item(
-                session, static_price, entry
+                session, static_price, entry, seats=subscription.seats
             )
             yield static_line_item, [entry.id]
 
@@ -182,7 +183,12 @@ class BillingEntryService:
             yield metered_line_item, pending_entries_ids
 
     async def _get_static_price_line_item(
-        self, session: AsyncSession, price: StaticPrice, entry: BillingEntry
+        self,
+        session: AsyncSession,
+        price: StaticPrice,
+        entry: BillingEntry,
+        *,
+        seats: int | None,
     ) -> StaticLineItem:
         assert entry.amount is not None
         assert entry.currency is not None
@@ -195,12 +201,16 @@ class BillingEntryService:
         end = format_date(entry.end_timestamp.date(), locale="en_US")
         amount = entry.amount
 
-        if entry.direction == BillingEntryDirection.credit:
-            label = f"Remaining time on {product.name} — From {start} to {end}"
-            amount = -amount
-        elif entry.direction == BillingEntryDirection.debit:
-            label = f"{product.name} — From {start} to {end}"
-            amount = amount
+        match entry.direction:
+            case BillingEntryDirection.credit:
+                label = f"Remaining time on {product.name} — From {start} to {end}"
+                amount = -amount
+            case BillingEntryDirection.debit:
+                label = f"{product.name} — From {start} to {end}"
+
+        if is_seat_price(price) and seats is not None:
+            _, seat_label = price.get_amount_and_label(seats)
+            label += f"\n{seat_label}"
 
         return StaticLineItem(
             price=price,

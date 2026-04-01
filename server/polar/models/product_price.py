@@ -415,6 +415,55 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
             remaining -= seats_in_tier
         return total
 
+    def get_amount_and_label(self, seats: int) -> tuple[int, str]:
+        seat_tier_type = self.seat_tiers.get("seat_tier_type", SeatTierType.volume)
+        tiers = sorted(self.seat_tiers.get("tiers", []), key=lambda t: t["min_seats"])
+        show_tier_range = len(tiers) > 1
+
+        def format_tier_range(tier: SeatTier) -> str:
+            min_seats = tier["min_seats"]
+            max_seats = tier.get("max_seats")
+            if max_seats is None:
+                return f"{min_seats}+ seats"
+            return f"{min_seats}–{max_seats} seats"
+
+        def seat_line(n: int, tier: SeatTier) -> str:
+            seat_word = "seat" if n == 1 else "seats"
+            price_label = format_currency(tier["price_per_seat"], self.price_currency)
+            line = f"{n} {seat_word} × {price_label}/seat"
+            if show_tier_range:
+                line += f" ({format_tier_range(tier)} tier)"
+            return line
+
+        amount = self.calculate_amount(seats)
+
+        match seat_tier_type:
+            case SeatTierType.volume:
+                tier = self.get_tier_for_seats(seats)
+                label = seat_line(seats, tier)
+
+            case SeatTierType.graduated:
+                lines: list[str] = []
+                remaining = seats
+                for tier in tiers:
+                    if remaining <= 0:
+                        break
+                    min_seats = tier["min_seats"]
+                    max_seats = tier.get("max_seats")
+                    tier_capacity = (
+                        (max_seats - min_seats + 1)
+                        if max_seats is not None
+                        else remaining
+                    )
+                    seats_in_tier = min(remaining, tier_capacity)
+                    lines.append(seat_line(seats_in_tier, tier))
+                    remaining -= seats_in_tier
+                label = "\n+ ".join(lines)
+
+        seat_word = "seat" if seats == 1 else "seats"
+        header = f"{self.product.name} ({seats} {seat_word})"
+        return amount, f"{header}\n{label}"
+
     def get_minimum_seats(self) -> int:
         """Get the minimum number of seats allowed, derived from first tier's min_seats."""
         tiers = self.seat_tiers.get("tiers", [])

@@ -11,20 +11,16 @@ from sqlalchemy.util.typing import Literal
 from typing_extensions import AsyncGenerator
 
 from polar.event.repository import EventRepository
-from polar.kit.currency import format_currency
 from polar.kit.math import non_negative_running_sum
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Event, OrderItem, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
-from polar.models.product_price import ProductPriceSeatUnit
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
-    SeatPrice,
     StaticPrice,
     is_metered_price,
-    is_seat_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 
@@ -36,15 +32,6 @@ log = structlog.get_logger(__name__)
 @dataclasses.dataclass
 class StaticLineItem:
     price: StaticPrice
-    amount: int
-    currency: str
-    label: str
-    proration: bool
-
-
-@dataclasses.dataclass
-class SeatLineItem:
-    price: SeatPrice
     amount: int
     currency: str
     label: str
@@ -95,27 +82,17 @@ class BillingEntryService:
 
     async def compute_pending_subscription_line_items(
         self, session: AsyncSession, subscription: Subscription
-    ) -> AsyncGenerator[
-        tuple[StaticLineItem | SeatLineItem | MeteredLineItem, Sequence[uuid.UUID]]
-    ]:
+    ) -> AsyncGenerator[tuple[StaticLineItem | MeteredLineItem, Sequence[uuid.UUID]]]:
         repository = BillingEntryRepository.from_session(session)
 
         async for entry in repository.get_static_pending_by_subscription(
             subscription.id
         ):
-            if is_seat_price(entry.product_price) and subscription.seats is not None:
-                seat_line_items = await self._get_seat_price_line_items(
-                    session, entry.product_price, entry, subscription.seats
-                )
-                for i, line_item in enumerate(seat_line_items):
-                    # Link only the first tier item to the billing entry
-                    yield line_item, [entry.id] if i == 0 else []
-            else:
-                static_price = cast(StaticPrice, entry.product_price)
-                static_line_item = await self._get_static_price_line_item(
-                    session, static_price, entry
-                )
-                yield static_line_item, [entry.id]
+            static_price = cast(StaticPrice, entry.product_price)
+            static_line_item = await self._get_static_price_line_item(
+                session, static_price, entry
+            )
+            yield static_line_item, [entry.id]
 
         # 👋 Reading the code below, you might wonder:
         # "Why is this so complex?"
@@ -232,49 +209,6 @@ class BillingEntryService:
             label=label,
             proration=entry.type == BillingEntryType.proration,
         )
-
-    async def _get_seat_price_line_items(
-        self,
-        session: AsyncSession,
-        price: SeatPrice,
-        entry: BillingEntry,
-        seats: int,
-    ) -> list[SeatLineItem]:
-        assert entry.amount is not None
-        assert entry.currency is not None
-        assert isinstance(price, ProductPriceSeatUnit)
-
-        product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(price.product_id)
-        assert product is not None
-
-        start = format_date(entry.start_timestamp.date(), locale="en_US")
-        end = format_date(entry.end_timestamp.date(), locale="en_US")
-        amount = entry.amount
-
-        rows = price.get_seat_tier_rows(seats)
-        items: list[SeatLineItem] = []
-        for seat_count, price_per_seat in rows:
-            if entry.direction == BillingEntryDirection.credit:
-                seat_word = "seat" if seat_count == 1 else "seats"
-                unit_display = format_currency(price_per_seat, entry.currency)
-                label = f"Remaining time on {product.name} — {seat_count} {seat_word} \u00d7 {unit_display}/seat — From {start} to {end}"
-                amount = -amount
-            else:
-                seat_word = "seat" if seat_count == 1 else "seats"
-                unit_display = format_currency(price_per_seat, entry.currency)
-                label = f"{product.name} — {seat_count} {seat_word} \u00d7 {unit_display}/seat — From {start} to {end}"
-
-            items.append(
-                SeatLineItem(
-                    price=price,
-                    amount=amount,
-                    currency=entry.currency,
-                    label=label,
-                    proration=entry.type == BillingEntryType.proration,
-                )
-            )
-        return items
 
     async def _get_metered_line_item(
         self,

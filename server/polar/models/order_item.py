@@ -7,7 +7,6 @@ from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.kit.currency import format_currency
 from polar.kit.db.models import RecordModel
 from polar.models.product_price import (
     LegacyRecurringProductPriceCustom,
@@ -86,33 +85,6 @@ class OrderItem(RecordModel):
             proration=False,
             product_price=price,
         )
-
-    @classmethod
-    def from_seat_price(
-        cls,
-        price: ProductPriceSeatUnit,
-        tax_amount: int,
-        seats: int,
-        currency: str,
-    ) -> list[Self]:
-        rows = price.get_seat_tier_rows(seats)
-        items: list[Self] = []
-        for seat_count, price_per_seat in rows:
-            amount = seat_count * price_per_seat
-            seat_word = "seat" if seat_count == 1 else "seats"
-            unit_price_display = format_currency(price_per_seat, currency)
-            label = f"{price.product.name} — {seat_count} {seat_word} \u00d7 {unit_price_display}/seat"
-            items.append(
-                cls(
-                    label=label,
-                    amount=amount,
-                    tax_amount=tax_amount,
-                    net_amount=amount,
-                    proration=False,
-                    product_price=price,
-                )
-            )
-        return items
 
     @classmethod
     def from_trial(cls, product: "Product", start: datetime, end: datetime) -> Self:

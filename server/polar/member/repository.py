@@ -38,8 +38,8 @@ class MemberRepository(
         email = email or customer.email
         statement = select(Member).where(
             Member.customer_id == customer.id,
-            Member.email == email,
-            Member.is_deleted.is_(False),
+            func.lower(Member.email) == email.strip().lower(),
+            Member.deleted_at.is_(None),
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -57,8 +57,8 @@ class MemberRepository(
         """
         statement = select(Member).where(
             Member.customer_id == customer_id,
-            Member.email == email,
-            Member.is_deleted.is_(False),
+            func.lower(Member.email) == email.strip().lower(),
+            Member.deleted_at.is_(None),
         )
         return await self.get_one_or_none(statement)
 
@@ -76,7 +76,7 @@ class MemberRepository(
         statement = select(Member).where(
             Member.customer_id == customer_id,
             Member.external_id == external_id,
-            Member.is_deleted.is_(False),
+            Member.deleted_at.is_(None),
         )
         return await self.get_one_or_none(statement)
 
@@ -94,7 +94,7 @@ class MemberRepository(
         statement = select(Member).where(
             Member.id == member_id,
             Member.customer_id == customer_id,
-            Member.is_deleted.is_(False),
+            Member.deleted_at.is_(None),
         )
         return await self.get_one_or_none(statement)
 
@@ -105,7 +105,7 @@ class MemberRepository(
     ) -> Sequence[Member]:
         statement = select(Member).where(
             Member.customer_id == customer_id,
-            Member.is_deleted.is_(False),
+            Member.deleted_at.is_(None),
         )
         result = await session.execute(statement)
         return result.scalars().all()
@@ -127,7 +127,7 @@ class MemberRepository(
             .options(joinedload(Member.customer).joinedload(Customer.organization))
         )
         if not include_deleted:
-            statement = statement.where(Member.is_deleted.is_(False))
+            statement = statement.where(Member.deleted_at.is_(None))
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
 
@@ -147,7 +147,7 @@ class MemberRepository(
             .where(
                 func.lower(Member.email) == email.lower(),
                 Member.organization_id == organization_id,
-                Member.is_deleted.is_(False),
+                Member.deleted_at.is_(None),
             )
             .options(joinedload(Member.customer))
         )
@@ -167,7 +167,7 @@ class MemberRepository(
 
         statement = select(Member).where(
             Member.customer_id.in_(customer_ids),
-            Member.is_deleted.is_(False),
+            Member.deleted_at.is_(None),
         )
         result = await session.execute(statement)
         return result.scalars().all()
@@ -180,7 +180,7 @@ class MemberRepository(
         if not member_ids:
             return set()
         statement = select(Member.id).where(
-            Member.is_deleted.is_(False),
+            Member.deleted_at.is_(None),
             Member.id.in_(member_ids),
         )
         result = await self.session.execute(statement)

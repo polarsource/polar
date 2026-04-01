@@ -233,3 +233,118 @@ class TestListByEmailAndOrganization:
         # Access customer without additional query (eager loaded)
         assert members[0].customer.id == customer.id
         assert members[0].customer.name == "Test Customer"
+
+
+@pytest.mark.asyncio
+class TestGetOwnerByCustomerIdSoftDelete:
+    async def test_excludes_soft_deleted_owner(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that get_owner_by_customer_id does not return a soft-deleted member."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="owner@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            role=MemberRole.owner,
+            deleted_at=utc_now(),  # Soft-deleted
+        )
+        await save_fixture(member)
+
+        repository = MemberRepository.from_session(session)
+        result = await repository.get_owner_by_customer_id(session, customer.id)
+
+        assert result is None
+
+    async def test_returns_active_owner(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that get_owner_by_customer_id returns an active (non-deleted) owner."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="active_owner@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="active_owner@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        repository = MemberRepository.from_session(session)
+        result = await repository.get_owner_by_customer_id(session, customer.id)
+
+        assert result is not None
+        assert result.id == member.id
+
+
+@pytest.mark.asyncio
+class TestGetByCustomerAndEmailCaseInsensitive:
+    async def test_get_by_customer_and_email_case_insensitive(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that get_by_customer_and_email matches email case-insensitively."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="User@Example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="User@Example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        repository = MemberRepository.from_session(session)
+
+        # Query with lowercase — should find the member stored with mixed case
+        result = await repository.get_by_customer_and_email(
+            session, customer, "user@example.com"
+        )
+        assert result is not None
+        assert result.id == member.id
+
+        # Query with uppercase — should also find the member
+        result_upper = await repository.get_by_customer_and_email(
+            session, customer, "USER@EXAMPLE.COM"
+        )
+        assert result_upper is not None
+        assert result_upper.id == member.id
+
+    async def test_get_by_customer_id_and_email_case_insensitive(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that get_by_customer_id_and_email matches email case-insensitively."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="Mixed@Case.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="Mixed@Case.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        repository = MemberRepository.from_session(session)
+
+        # Query with all lowercase — should find the member stored with mixed case
+        result = await repository.get_by_customer_id_and_email(
+            customer.id, "mixed@case.com"
+        )
+        assert result is not None
+        assert result.id == member.id

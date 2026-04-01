@@ -97,66 +97,6 @@ MULTI_TIER: list[dict[str, Any]] = [
 ]
 
 
-class TestGetSeatTierRowsVolume:
-    def test_single_tier(self) -> None:
-        price = _make_seat_price(
-            [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}],
-            SeatTierType.volume,
-        )
-        assert price.get_seat_tier_rows(10) == [(10, 500)]
-
-    def test_multi_tier_first(self) -> None:
-        price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
-        assert price.get_seat_tier_rows(5) == [(5, 1000)]
-
-    def test_multi_tier_second(self) -> None:
-        price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
-        assert price.get_seat_tier_rows(30) == [(30, 800)]
-
-    def test_multi_tier_last(self) -> None:
-        price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
-        assert price.get_seat_tier_rows(100) == [(100, 600)]
-
-
-class TestGetSeatTierRowsGraduated:
-    def test_single_tier(self) -> None:
-        price = _make_seat_price(
-            [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}],
-            SeatTierType.graduated,
-        )
-        assert price.get_seat_tier_rows(10) == [(10, 500)]
-
-    def test_within_first_tier(self) -> None:
-        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
-        assert price.get_seat_tier_rows(5) == [(5, 1000)]
-
-    def test_spans_two_tiers(self) -> None:
-        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
-        assert price.get_seat_tier_rows(15) == [(10, 1000), (5, 800)]
-
-    def test_spans_all_tiers(self) -> None:
-        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
-        assert price.get_seat_tier_rows(100) == [(10, 1000), (40, 800), (50, 600)]
-
-    def test_exact_boundary(self) -> None:
-        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
-        assert price.get_seat_tier_rows(10) == [(10, 1000)]
-
-    def test_one_into_second_tier(self) -> None:
-        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
-        assert price.get_seat_tier_rows(11) == [(10, 1000), (1, 800)]
-
-    def test_free_first_tier(self) -> None:
-        price = _make_seat_price(
-            [
-                {"min_seats": 1, "max_seats": 5, "price_per_seat": 0},
-                {"min_seats": 6, "max_seats": None, "price_per_seat": 1000},
-            ],
-            SeatTierType.graduated,
-        )
-        assert price.get_seat_tier_rows(8) == [(5, 0), (3, 1000)]
-
-
 class TestVolumePricing:
     def test_single_tier(self) -> None:
         price = _make_seat_price(

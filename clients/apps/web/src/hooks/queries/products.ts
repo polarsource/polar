@@ -34,7 +34,7 @@ export const useProducts = (
 
 export const useSelectedProducts = (id: string[], includeArchived = false) =>
   useQuery({
-    queryKey: ['products', { id }],
+    queryKey: ['products', { id, includeArchived }],
     queryFn: async () => {
       const products: schemas['Product'][] = []
       let page = 1

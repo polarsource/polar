@@ -1,6 +1,12 @@
 'use client'
 
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { BundledLanguage } from 'shiki'
 import { createHighlighterCore, HighlighterCore } from 'shiki/core'
 import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
@@ -94,14 +100,17 @@ export const SyntaxHighlighterProvider = ({
     [highlighter],
   )
 
+  const value = useMemo(
+    () => ({
+      highlighter,
+      loadedLanguages,
+      loadLanguage: _loadLanguage,
+    }),
+    [highlighter, loadedLanguages, _loadLanguage],
+  )
+
   return (
-    <SyntaxHighlighterContext.Provider
-      value={{
-        highlighter,
-        loadedLanguages,
-        loadLanguage: _loadLanguage,
-      }}
-    >
+    <SyntaxHighlighterContext.Provider value={value}>
       {children}
     </SyntaxHighlighterContext.Provider>
   )

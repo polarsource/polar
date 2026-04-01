@@ -15,7 +15,13 @@ export const useFiles = (
   options?: { limit?: number },
 ) =>
   useQuery({
-    queryKey: ['user', 'files', JSON.stringify(fileIds)],
+    queryKey: [
+      'user',
+      'files',
+      JSON.stringify(fileIds),
+      organizationId,
+      options?.limit,
+    ],
     queryFn: () =>
       unwrap(
         api.GET('/v1/files/', {

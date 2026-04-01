@@ -4,6 +4,8 @@ import { Client, operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+/* eslint-disable @tanstack/query/exhaustive-deps */
+
 export function useCustomerPortalCustomer(options?: {
   initialData?: schemas['CustomerPortalCustomer']
 }) {

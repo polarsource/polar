@@ -1,5 +1,12 @@
 import { schemas } from '@polar-sh/client'
-import React, { createContext, ReactNode, useContext, useState } from 'react'
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react'
 
 interface PayoutContextType {
   selectedPayout: schemas['Payout'] | null
@@ -19,21 +26,28 @@ export const PayoutProvider: React.FC<{ children: ReactNode }> = ({
   >(null)
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false)
 
-  const openInvoiceModal = () => setIsInvoiceModalOpen(true)
-  const closeInvoiceModal = () => setIsInvoiceModalOpen(false)
+  const openInvoiceModal = useCallback(() => setIsInvoiceModalOpen(true), [])
+  const closeInvoiceModal = useCallback(() => setIsInvoiceModalOpen(false), [])
+
+  const value = useMemo(
+    () => ({
+      selectedPayout,
+      setSelectedPayout,
+      isInvoiceModalOpen,
+      openInvoiceModal,
+      closeInvoiceModal,
+    }),
+    [
+      selectedPayout,
+      setSelectedPayout,
+      isInvoiceModalOpen,
+      openInvoiceModal,
+      closeInvoiceModal,
+    ],
+  )
 
   return (
-    <PayoutContext.Provider
-      value={{
-        selectedPayout,
-        setSelectedPayout,
-        isInvoiceModalOpen,
-        openInvoiceModal,
-        closeInvoiceModal,
-      }}
-    >
-      {children}
-    </PayoutContext.Provider>
+    <PayoutContext.Provider value={value}>{children}</PayoutContext.Provider>
   )
 }
 

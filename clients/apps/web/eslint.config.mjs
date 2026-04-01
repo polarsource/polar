@@ -1,4 +1,5 @@
 import { nextJsConfig } from '@polar-sh/eslint-config/next-js'
+import pluginQuery from '@tanstack/eslint-plugin-query'
 
 // Elements replaced by Orbit primitives — ban raw JSX usage as a warning.
 // const orbitElementRule = (element, replacement) => ({
@@ -16,6 +17,7 @@ import { nextJsConfig } from '@polar-sh/eslint-config/next-js'
 /** @type {import("eslint").Linter.Config} */
 export default [
   ...nextJsConfig,
+  ...pluginQuery.configs['flat/recommended'],
   {
     rules: {
       'react-hooks/set-state-in-effect': 'warn',
@@ -24,6 +26,8 @@ export default [
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/immutability': 'warn',
       'react-hooks/purity': 'warn',
+      'react-hooks/no-deriving-state-in-effects': 'warn',
+      'react-hooks/memoized-effect-dependencies': 'warn',
     },
   },
   {
@@ -32,6 +36,8 @@ export default [
       'react/no-danger': 'error',
       'react/self-closing-comp': 'warn',
       'react/jsx-no-useless-fragment': 'warn',
+      'react/jsx-no-constructed-context-values': 'warn',
+      'react/no-object-type-as-default-prop': 'warn',
       'no-restricted-syntax': [
         'error',
         {
@@ -50,6 +56,18 @@ export default [
             'JSXOpeningElement[name.name="Box"] > JSXAttribute[name.name="style"]',
           message:
             'Do not use style on <Box />. Use design system props instead.',
+        },
+        {
+          selector:
+            'CallExpression[callee.name="useEffect"] CallExpression[callee.name="fetch"]',
+          message:
+            'Do not fetch data inside useEffect. Use TanStack Query (useQuery/useMutation) instead.',
+        },
+        {
+          selector:
+            'CallExpression[callee.name="useEffect"] CallExpression[callee.object.name="api"]',
+          message:
+            'Do not call the API inside useEffect. Use TanStack Query (useQuery/useMutation) instead.',
         },
       ],
       'no-restricted-imports': [

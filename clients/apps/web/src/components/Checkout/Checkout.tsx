@@ -173,6 +173,7 @@ const Checkout = ({
     )
     const distinctId = distinctIdCookie?.split('=')[1]?.trim()
 
+    // eslint-disable-next-line no-restricted-syntax
     fetch(
       getServerURL(`/v1/checkouts/client/${checkout.client_secret}/opened`),
       {

@@ -106,6 +106,7 @@
     "@polar-sh/typescript-config": "workspace:*",
     "@stylexjs/babel-plugin": "^0.18.1",
     "@stylexjs/postcss-plugin": "^0.18.1",
+    "@tanstack/eslint-plugin-query": "^5.94.5",
     "@types/big.js": "^6.2.2",
     "@types/dom-to-image": "^2.6.7",
     "@types/mdx": "^2.0.13",

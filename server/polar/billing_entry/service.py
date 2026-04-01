@@ -195,19 +195,25 @@ class BillingEntryService:
         end = format_date(entry.end_timestamp.date(), locale="en_US")
         amount = entry.amount
 
-        if entry.direction == BillingEntryDirection.credit:
-            label = f"Remaining time on {product.name} — From {start} to {end}"
-            amount = -amount
-        elif entry.direction == BillingEntryDirection.debit:
-            label = f"{product.name} — From {start} to {end}"
-            amount = amount
+        match entry.direction:
+            case BillingEntryDirection.credit:
+                label = f"Remaining time on {product.name} — From {start} to {end}"
+                amount = -amount
+            case BillingEntryDirection.debit:
+                label = f"{product.name} — From {start} to {end}"
+                amount = amount
 
         return StaticLineItem(
             price=price,
             amount=amount,
             currency=entry.currency,
             label=label,
-            proration=entry.type == BillingEntryType.proration,
+            proration=entry.type
+            in (
+                BillingEntryType.proration,
+                BillingEntryType.subscription_seats_increase,
+                BillingEntryType.subscription_seats_decrease,
+            ),
         )
 
     async def _get_metered_line_item(

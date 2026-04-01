@@ -157,7 +157,7 @@ class CustomerEmailUpdateService:
         )
 
         # Sync member email (same pattern as customer/service.py)
-        if old_email is not None:
+        if old_email is not None and customer.type == CustomerType.individual:
             member_repository = MemberRepository.from_session(session)
             member = await member_repository.get_by_customer_and_email(
                 session, customer, old_email

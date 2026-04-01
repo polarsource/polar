@@ -500,7 +500,7 @@ class CustomerService:
                 member = await member_repository.get_owner_by_customer_id(
                     session, updated_customer.id
                 )
-                if member is not None and old_email is not None and member.email == old_email.strip().lower():
+                if member is not None and old_email is not None and member.email.strip().lower() == old_email.strip().lower():
                     new_email = updated_customer.email.strip().lower()
                     await member_repository.update(
                         member, update_dict={"email": new_email}

@@ -490,24 +490,27 @@ class CustomerService:
                 ) from e
             raise
 
-        # Sync member email when the customer email changes.
-        # Only the member whose email matched the old customer email is updated.
-        if email_changed and old_email is not None:
-            member_repository = MemberRepository.from_session(session)
-            member = await member_repository.get_by_customer_and_email(
-                session, updated_customer, old_email
-            )
-            if member is not None:
-                await member_repository.update(
-                    member, update_dict={"email": updated_customer.email}
+        # Sync owner member email when the customer email changes.
+        # Only applies to individual customers (type == individual or type is None).
+        # Team customers can have multiple members with different emails — we don't auto-sync.
+        if email_changed:
+            customer_type = updated_customer.type or CustomerType.individual
+            if customer_type == CustomerType.individual:
+                member_repository = MemberRepository.from_session(session)
+                member = await member_repository.get_owner_by_customer_id(
+                    session, updated_customer.id
                 )
-                log.info(
-                    "customer.update.synced_member_email",
-                    customer_id=updated_customer.id,
-                    member_id=member.id,
-                    old_email=old_email,
-                    new_email=updated_customer.email,
-                )
+                if member is not None:
+                    new_email = updated_customer.email.strip().lower()
+                    await member_repository.update(
+                        member, update_dict={"email": new_email}
+                    )
+                    log.info(
+                        "member.email_sync",
+                        customer_id=updated_customer.id,
+                        member_id=member.id,
+                        new_email=new_email,
+                    )
 
         return updated_customer
 

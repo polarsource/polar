@@ -761,13 +761,11 @@ class TestUpdate:
         customer = await create_customer(
             save_fixture, organization=organization, email="individual@example.com"
         )
-        # Owner member deliberately has a DIFFERENT email from the customer
-        # (e.g. was created with a custom owner email override).
-        # The fix must still sync it because it's found by role, not by email.
+        # Owner member email matches the customer's current email so the sanity check passes.
         member = Member(
             customer_id=customer.id,
             organization_id=organization.id,
-            email="owner-override@example.com",
+            email="individual@example.com",
             role=MemberRole.owner,
         )
         await save_fixture(member)

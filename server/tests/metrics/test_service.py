@@ -74,6 +74,8 @@ class SubscriptionFixture(TypedDict):
     started_at: date
     ended_at: NotRequired[date]
     ends_at: NotRequired[date]
+    trial_start: NotRequired[date]
+    trial_end: NotRequired[date]
     product: str
     discount: NotRequired[str]
 
@@ -202,11 +204,26 @@ async def _create_fixtures(
 
     subscriptions: dict[str, Subscription] = {}
     for key, subscription_fixture in subscription_fixtures.items():
+        trial_start = (
+            _date_to_datetime(subscription_fixture["trial_start"])
+            if "trial_start" in subscription_fixture
+            else None
+        )
+        trial_end = (
+            _date_to_datetime(subscription_fixture["trial_end"])
+            if "trial_end" in subscription_fixture
+            else None
+        )
+        status = (
+            SubscriptionStatus.trialing
+            if trial_end is not None
+            else SubscriptionStatus.active
+        )
         subscription = await create_subscription(
             save_fixture,
             product=products[subscription_fixture["product"]],
             customer=customer,
-            status=SubscriptionStatus.active,
+            status=status,
             started_at=_date_to_datetime(subscription_fixture["started_at"]),
             ended_at=(
                 _date_to_datetime(subscription_fixture["ended_at"])
@@ -218,6 +235,8 @@ async def _create_fixtures(
                 if "ends_at" in subscription_fixture
                 else None
             ),
+            trial_start=trial_start,
+            trial_end=trial_end,
             discount=discounts[subscription_fixture["discount"]]
             if "discount" in subscription_fixture
             else None,
@@ -525,6 +544,14 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 3, 1),
         interval=TimeInterval.month,
         now=datetime(2024, 2, 15, tzinfo=UTC),
+        auth_type="user",
+    ),
+    QueryCase(
+        label="trial_excluded_from_mrr",
+        org_key="trial_excluded_from_mrr",
+        start_date=date(2024, 1, 1),
+        end_date=date(2024, 3, 1),
+        interval=TimeInterval.month,
         auth_type="user",
     ),
     QueryCase(
@@ -1032,6 +1059,39 @@ async def _seed_committed_mrr(
         "subscription_2": {
             "started_at": date(2024, 2, 1),
             "ends_at": date(2024, 3, 1),
+            "product": "monthly_subscription",
+        },
+    }
+    products, subs, orders = await _create_fixtures(
+        save_fixture, customer, organization, PRODUCTS, sub_fixtures, {}
+    )
+    await _append_fixture_events(
+        save_fixture,
+        organization,
+        customer,
+        products,
+        subs,
+        orders,
+        events=events,
+    )
+    return {k: v.id for k, v in products.items()}, {"customer": customer.id}
+
+
+async def _seed_trial_excluded_from_mrr(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    events: list[Event],
+) -> tuple[dict[str, UUID], dict[str, UUID]]:
+    customer = await create_customer(save_fixture, organization=organization)
+    sub_fixtures: dict[str, SubscriptionFixture] = {
+        "active_subscription": {
+            "started_at": date(2024, 1, 1),
+            "product": "monthly_subscription",
+        },
+        "trialing_subscription": {
+            "started_at": date(2024, 1, 1),
+            "trial_start": date(2024, 1, 1),
+            "trial_end": date(2024, 3, 1),
             "product": "monthly_subscription",
         },
     }
@@ -2238,6 +2298,13 @@ async def metrics_harness(
                 organization=cmrr_org, product_ids=p, customer_ids=c
             )
 
+            # --- trial_excluded_from_mrr ---
+            tefm_org = await make_org("trial_excluded_from_mrr")
+            p, c = await _seed_trial_excluded_from_mrr(save_fixture, tefm_org, events)
+            organizations["trial_excluded_from_mrr"] = OrganizationContext(
+                organization=tefm_org, product_ids=p, customer_ids=c
+            )
+
             # --- mrr_forever_discount ---
             mfd_org = await make_org("mrr_forever_discount")
             p, c = await _seed_mrr_forever_discount(save_fixture, mfd_org, events)
@@ -3331,6 +3398,50 @@ class TestGetMetrics:
         mar = metrics.periods[2]
         assert mar.monthly_recurring_revenue == 100_00
         assert mar.committed_monthly_recurring_revenue == 100_00
+
+    async def test_trial_excluded_from_mrr(
+        self,
+        metrics_harness: MetricsHarness,
+        metrics_session: AsyncSession,
+    ) -> None:
+        case = QUERY_CASES_BY_LABEL["trial_excluded_from_mrr"]
+        org_ctx = metrics_harness.organizations[case.org_key]
+        auth_subject = _metrics_auth_subject(
+            metrics_harness.user,
+            metrics_harness.unauthorized_user,
+            org_ctx.organization,
+            case.auth_type,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            metrics_session,
+            auth_subject,
+            start_date=case.start_date,
+            end_date=case.end_date,
+            timezone=ZoneInfo(case.timezone),
+            interval=case.interval,
+            organization_id=[org_ctx.organization.id]
+            if case.organization_id_filter or case.auth_type == "user"
+            else None,
+            product_id=[org_ctx.product_ids[k] for k in case.product_keys] or None,
+            billing_type=list(case.billing_types) or None,
+            customer_id=[org_ctx.customer_ids[k] for k in case.customer_keys] or None,
+            metrics=list(case.metrics) if case.metrics is not None else None,
+            now=case.now,
+        )
+
+        assert len(metrics.periods) == 3
+
+        # Jan & Feb: only the active sub counts; trialing sub excluded
+        jan = metrics.periods[0]
+        assert jan.monthly_recurring_revenue == 100_00
+
+        feb = metrics.periods[1]
+        assert feb.monthly_recurring_revenue == 100_00
+
+        # Mar: trial ends in this bucket so both subs count
+        mar = metrics.periods[2]
+        assert mar.monthly_recurring_revenue == 200_00
 
     async def test_mrr_subscription_forever_discount(
         self,

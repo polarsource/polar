@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Index, String, Uuid, text
+from sqlalchemy import Column, ForeignKey, Index, String, Uuid, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -23,9 +23,9 @@ class Member(RecordModel):
         # Partial unique index: only one active (non-deleted) member per customer+email
         # This allows soft-deleted members to exist without blocking new members
         Index(
-            "members_customer_id_email_active_key",
+            "members_customer_id_email_case_insensitive_active_key",
             "customer_id",
-            "email",
+            func.lower(Column("email")),
             unique=True,
             postgresql_where=text("deleted_at IS NULL"),
         ),

@@ -244,7 +244,7 @@ class MemberService:
                     }
                 ]
             )
-        email = raw_email.strip().lower()
+        email = raw_email.strip()
         name = owner_name or customer.name
         external_id = owner_external_id or customer.external_id
 
@@ -362,9 +362,9 @@ class MemberService:
         Consolidated get-or-create pattern that handles:
         - Returning existing active members
         - Race condition retries on IntegrityError
-        - Email normalization (strip + lowercase)
+        - Email normalization (strip whitespace)
         """
-        email = email.strip().lower()
+        email = email.strip()
 
         repository = MemberRepository.from_session(session)
 
@@ -509,7 +509,7 @@ class MemberService:
         if not member_model and not seat_based:
             raise NotPermitted("Member management is not enabled for this organization")
 
-        email = email.strip().lower()
+        email = email.strip()
 
         repository = MemberRepository.from_session(session)
 

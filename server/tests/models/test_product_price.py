@@ -197,3 +197,114 @@ class TestGraduatedPricing:
         assert price.calculate_amount(5) == 0
         assert price.calculate_amount(8) == 3 * 1000
         assert price.calculate_amount(15) == 10 * 1000
+
+
+class TestVolumePricingLabel:
+    def test_single_tier_no_range_shown(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}],
+            SeatTierType.volume,
+        )
+        amount, label = price.get_amount_and_label(5)
+        assert amount == 2500
+        assert label == "5 seats × $5.00/seat"
+
+    def test_singular_seat(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
+        amount, label = price.get_amount_and_label(1)
+        assert amount == 1000
+        assert label == "1 seat × $10.00/seat (1–10 seats tier)"
+
+    def test_first_tier(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
+        amount, label = price.get_amount_and_label(5)
+        assert amount == 5000
+        assert label == "5 seats × $10.00/seat (1–10 seats tier)"
+
+    def test_second_tier(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
+        amount, label = price.get_amount_and_label(25)
+        assert amount == 20_000
+        assert label == "25 seats × $8.00/seat (11–50 seats tier)"
+
+    def test_open_ended_last_tier(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.volume)
+        amount, label = price.get_amount_and_label(60)
+        assert amount == 36_000
+        assert label == "60 seats × $6.00/seat (51+ seats tier)"
+
+    def test_free_tier(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 0}],
+            SeatTierType.volume,
+        )
+        amount, label = price.get_amount_and_label(10)
+        assert amount == 0
+        assert label == "10 seats × $0.00/seat"
+
+
+class TestGraduatedPricingLabel:
+    def test_single_tier_no_range_shown(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}],
+            SeatTierType.graduated,
+        )
+        amount, label = price.get_amount_and_label(5)
+        assert amount == 2500
+        assert label == "5 seats × $5.00/seat"
+
+    def test_singular_seat(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
+        amount, label = price.get_amount_and_label(1)
+        assert amount == 1000
+        assert label == "1 seat × $10.00/seat (1–10 seats tier)"
+
+    def test_within_first_tier(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
+        amount, label = price.get_amount_and_label(5)
+        assert amount == 5000
+        assert label == "5 seats × $10.00/seat (1–10 seats tier)"
+
+    def test_spans_two_tiers(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
+        amount, label = price.get_amount_and_label(15)
+        assert amount == 10 * 1000 + 5 * 800
+        assert label == (
+            "10 seats × $10.00/seat (1–10 seats tier)\n"
+            "+ 5 seats × $8.00/seat (11–50 seats tier)"
+        )
+
+    def test_spans_all_tiers(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
+        amount, label = price.get_amount_and_label(100)
+        assert amount == 10 * 1000 + 40 * 800 + 50 * 600
+        assert label == (
+            "10 seats × $10.00/seat (1–10 seats tier)\n"
+            "+ 40 seats × $8.00/seat (11–50 seats tier)\n"
+            "+ 50 seats × $6.00/seat (51+ seats tier)"
+        )
+
+    def test_one_seat_into_last_tier(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatTierType.graduated)
+        amount, label = price.get_amount_and_label(51)
+        assert amount == 10 * 1000 + 40 * 800 + 1 * 600
+        assert label == (
+            "10 seats × $10.00/seat (1–10 seats tier)\n"
+            "+ 40 seats × $8.00/seat (11–50 seats tier)\n"
+            "+ 1 seat × $6.00/seat (51+ seats tier)"
+        )
+
+    def test_free_first_tier_then_paid(self) -> None:
+        price = _make_seat_price(
+            [
+                {"min_seats": 1, "max_seats": 5, "price_per_seat": 0},
+                {"min_seats": 6, "max_seats": None, "price_per_seat": 1000},
+            ],
+            SeatTierType.graduated,
+        )
+        amount, label = price.get_amount_and_label(8)
+        assert amount == 3 * 1000
+        assert label == (
+            "5 seats × $0.00/seat (1–5 seats tier)\n"
+            "+ 3 seats × $10.00/seat (6+ seats tier)"
+        )

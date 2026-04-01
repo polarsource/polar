@@ -407,10 +407,17 @@ class InvoiceGenerator(FPDF):
             header.cell("Unit Price")
             header.cell("Amount")
 
+            wrapper = textwrap.TextWrapper(
+                width=90,
+                max_lines=10,
+                placeholder="…",
+            )
+
             # Body
             for item in self.data.items:
                 row = table.row()
-                row.cell(textwrap.shorten(item.description, width=90, placeholder="…"))
+                row.cell(wrapper.fill(item.description))
+                # row.cell(textwrap.shorten(item.description, width=90, placeholder="…"))
                 row.cell(format_number(item.quantity))
                 row.cell(format_currency(item.unit_amount, self.data.currency))
                 row.cell(format_currency(item.amount, self.data.currency))

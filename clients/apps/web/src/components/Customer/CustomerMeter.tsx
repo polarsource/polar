@@ -120,11 +120,13 @@ export const CustomerMeter = ({
           data={quantities as unknown as ParsedMetricPeriod[]}
           interval="day"
           height={250}
-          metric={{
-            slug: 'quantity',
-            display_name: meter.name,
-            type: 'scalar',
-          }}
+          metrics={[
+            {
+              slug: 'quantity',
+              display_name: meter.name,
+              type: 'scalar',
+            },
+          ]}
           showYAxis
           chartType={meter.aggregation.func === 'count' ? 'bar' : 'line'}
         />

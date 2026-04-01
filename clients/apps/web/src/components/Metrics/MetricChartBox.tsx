@@ -36,6 +36,7 @@ interface MetricOption {
 
 interface MetricChartBoxProps {
   metric: keyof schemas['Metrics']
+  metrics?: (keyof schemas['Metrics'])[]
   onMetricChange?: (metric: keyof schemas['Metrics']) => void
   data?: ParsedMetricsResponse
   previousData?: ParsedMetricsResponse
@@ -69,6 +70,7 @@ const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
 const MetricChartBox = ({
   ref,
   metric,
+  metrics: metricsProp,
   onMetricChange,
   data,
   previousData,
@@ -107,6 +109,13 @@ const MetricChartBox = ({
   }, [previousData])
 
   const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric])
+  const resolvedMetrics = useMemo(() => {
+    if (!data) return []
+    const keys = metricsProp ?? [metric]
+    return keys
+      .map((k) => data.metrics[k])
+      .filter((m): m is schemas['Metric'] => m != null)
+  }, [data, metric, metricsProp])
   const [hoveredPeriodIndexLocal, setHoveredPeriodIndexLocal] = React.useState<
     number | null
   >(null)
@@ -344,14 +353,14 @@ const MetricChartBox = ({
             style={{ height }}
             className="flex flex-col items-center justify-center"
           />
-        ) : data && selectedMetric ? (
+        ) : data && resolvedMetrics.length > 0 ? (
           <MetricChart
             height={height}
             width={width}
             data={data.periods}
             previousData={previousData?.periods}
             interval={interval}
-            metric={selectedMetric}
+            metrics={resolvedMetrics}
             onDataIndexHover={handleDataIndexHover}
             simple={simple}
             chartType={chartType}

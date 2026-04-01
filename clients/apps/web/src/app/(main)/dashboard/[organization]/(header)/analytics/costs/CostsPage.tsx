@@ -262,7 +262,7 @@ export default function ClientPage({
     endDate: dateRange.to,
     interval: 'day',
     organization_id: organization.id,
-    metrics: costMetrics as string[],
+    metrics: costMetrics,
     ...(customerIds && customerIds.length > 0
       ? { customer_id: customerIds }
       : {}),

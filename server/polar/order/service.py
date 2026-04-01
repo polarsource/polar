@@ -1067,6 +1067,8 @@ class OrderService:
                         error_code=e.code,
                         error_message=e.user_message,
                     )
+                    if payment_mode == PaymentMode.sync:
+                        await self._mark_intent_as_failed_sync(e)
                     raise PaymentFailed(PaymentFailedReason.card_error) from e
                 except stripe_lib.InvalidRequestError as e:
                     error = e.error
@@ -1092,9 +1094,20 @@ class OrderService:
                             # Mark the payment as failed to trigger dunning
                             await self.handle_payment_failure(session, order)
 
+                            if payment_mode == PaymentMode.sync:
+                                await self._mark_intent_as_failed_sync(e)
                             raise PaymentFailed(PaymentFailedReason.card_error) from e
 
                     raise
+
+    async def _mark_intent_as_failed_sync(self, error: stripe_lib.StripeError) -> None:
+        payment_intent = getattr(error.error, "payment_intent", None)
+        if payment_intent is not None:
+            intent_metadata = payment_intent.metadata or {}
+            intent_metadata["polar_failed_sync_payment"] = "true"
+            await stripe_service.modify_payment_intent(
+                payment_intent.id, metadata=intent_metadata
+            )
 
     async def process_retry_payment(
         self,

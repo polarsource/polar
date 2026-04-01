@@ -1,6 +1,5 @@
 from uuid import UUID
 
-from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
 from polar.kit.extensions.sqlalchemy import sql
@@ -21,6 +20,7 @@ class CustomerEmailVerificationRepository(RepositoryBase[CustomerEmailVerificati
             .where(
                 CustomerEmailVerification.token_hash == token_hash,
                 CustomerEmailVerification.expires_at > utc_now(),
+                CustomerEmailVerification.verified_at.is_(None),
             )
             .options(
                 joinedload(CustomerEmailVerification.customer).joinedload(
@@ -31,11 +31,14 @@ class CustomerEmailVerificationRepository(RepositoryBase[CustomerEmailVerificati
         result = await self.session.execute(statement)
         return result.scalars().unique().one_or_none()
 
-    async def delete_by_customer_id(self, customer_id: UUID) -> None:
-        statement = delete(CustomerEmailVerification).where(
-            CustomerEmailVerification.customer_id == customer_id
+    async def expire_by_customer_id(self, customer_id: UUID) -> None:
+        statement = (
+            sql.update(CustomerEmailVerification)
+            .where(
+                CustomerEmailVerification.customer_id == customer_id,
+                CustomerEmailVerification.expires_at > utc_now(),
+                CustomerEmailVerification.verified_at.is_(None),
+            )
+            .values(expires_at=utc_now())
         )
         await self.session.execute(statement)
-
-    async def delete(self, record: CustomerEmailVerification) -> None:
-        await self.session.delete(record)

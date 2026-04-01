@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "18e67fb1e9fc"
-down_revision = "7b536908d8e5"
+down_revision = "32c17499cb60"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
@@ -25,6 +25,7 @@ def upgrade() -> None:
         sa.Column("email", sa.String(length=320), nullable=False),
         sa.Column("token_hash", sa.String(), nullable=False),
         sa.Column("expires_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("verified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("customer_id", sa.Uuid(), nullable=False),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),

@@ -24,6 +24,9 @@ class CustomerEmailVerification(RecordModel):
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=get_expires_at
     )
+    verified_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
     customer_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False, index=True
     )

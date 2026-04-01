@@ -73,8 +73,8 @@ class CustomerEmailUpdateService:
 
         repository = CustomerEmailVerificationRepository.from_session(session)
 
-        # Cancel any existing pending verification for this customer
-        await repository.delete_by_customer_id(customer.id)
+        # Expire any existing pending verification for this customer
+        await repository.expire_by_customer_id(customer.id)
 
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=TOKEN_PREFIX
@@ -137,7 +137,7 @@ class CustomerEmailUpdateService:
             record.email, record.organization_id
         )
         if existing is not None and existing.id != customer.id:
-            await repository.delete(record)
+            await repository.update(record, update_dict={"expires_at": utc_now()})
             raise PolarRequestValidationError(
                 [
                     {
@@ -180,8 +180,8 @@ class CustomerEmailUpdateService:
                 customer.stripe_customer_id, email=customer.email
             )
 
-        # Delete the verification record
-        await repository.delete(record)
+        # Mark the verification record as verified
+        await repository.update(record, update_dict={"verified_at": utc_now()})
 
         # Send notification to old email
         if old_email is not None:

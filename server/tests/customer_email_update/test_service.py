@@ -102,14 +102,21 @@ class TestRequestEmailUpdate:
             session, customer, "new@example.com"
         )
 
-        # Only the new verification should exist
-        stmt = select(CustomerEmailVerification).where(
-            CustomerEmailVerification.customer_id == customer.id
+        # Both records should exist; old one expired
+        stmt = (
+            select(CustomerEmailVerification)
+            .where(CustomerEmailVerification.customer_id == customer.id)
+            .order_by(CustomerEmailVerification.created_at.asc())
         )
         result = await session.execute(stmt)
-        records = result.scalars().all()
-        assert len(records) == 1
-        assert records[0].email == "new@example.com"
+        records = list(result.scalars().all())
+        assert len(records) == 2
+        # First record (old) should be expired
+        assert records[0].email == "pending@example.com"
+        assert records[0].expires_at <= utc_now()
+        # Second record (new) should be active
+        assert records[1].email == "new@example.com"
+        assert records[1].expires_at > utc_now()
 
     async def test_creates_verification_record(
         self,
@@ -233,12 +240,15 @@ class TestVerify:
         with pytest.raises(PolarRequestValidationError):
             await service.verify(session, token)
 
-        # Verification record should be deleted
+        # Verification record should be expired (not deleted)
         stmt = select(CustomerEmailVerification).where(
             CustomerEmailVerification.customer_id == customer.id
         )
         result = await session.execute(stmt)
-        assert result.scalars().first() is None
+        record = result.scalars().first()
+        assert record is not None
+        assert record.expires_at <= utc_now()
+        assert record.verified_at is None
 
     async def test_happy_path(
         self,
@@ -279,12 +289,15 @@ class TestVerify:
             customer.stripe_customer_id, email="new@example.com"
         )
 
-        # Verification record cleaned up
+        # Verification record should be marked as verified (not deleted)
         stmt = select(CustomerEmailVerification).where(
             CustomerEmailVerification.customer_id == customer.id
         )
         result = await session.execute(stmt)
-        assert result.scalars().first() is None
+        verification = result.scalars().first()
+        assert verification is not None
+        assert verification.verified_at is not None
+        assert verification.email == "new@example.com"
 
     async def test_no_stripe_sync_without_stripe_id(
         self,
@@ -372,3 +385,22 @@ class TestVerify:
 
         # No notification should be sent when there's no old email
         mock_enqueue_email.assert_not_called()
+
+    async def test_verified_token_cannot_be_reused(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email="reuse@example.com"
+        )
+        record, token = await _create_verification(save_fixture, customer)
+
+        # Mark as verified
+        record.verified_at = utc_now()
+        await save_fixture(record)
+
+        service = CustomerEmailUpdateService()
+        with pytest.raises(InvalidCustomerEmailUpdate):
+            await service.verify(session, token)

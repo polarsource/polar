@@ -1,6 +1,6 @@
 """member_email_case_insensitive_index
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: 32c17499cb60
 Revises: 0d5be76ae2b2
 Create Date: 2026-04-01 12:00:00.000000
 
@@ -12,7 +12,7 @@ from alembic import op
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "a1b2c3d4e5f6"
+revision = "32c17499cb60"
 down_revision = "0d5be76ae2b2"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None

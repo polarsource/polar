@@ -5,6 +5,7 @@ import pytest
 
 from polar.config import settings
 from polar.kit.address import Address, CountryAlpha2
+from polar.kit.trial import TrialInterval
 from polar.models import Checkout, Product
 from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.postgres import AsyncSession
@@ -118,3 +119,33 @@ async def test_success_url(
 
     expected = expected_factory(checkout)
     assert checkout.success_url == expected
+
+
+@pytest.mark.asyncio
+async def test_active_trial_interval_none_for_non_recurring_product(
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product_one_time],
+        trial_interval=TrialInterval.day,
+        trial_interval_count=14,
+    )
+
+    assert checkout.active_trial_interval is None
+
+
+@pytest.mark.asyncio
+async def test_active_trial_interval_count_none_for_non_recurring_product(
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product_one_time],
+        trial_interval=TrialInterval.day,
+        trial_interval_count=14,
+    )
+
+    assert checkout.active_trial_interval_count is None

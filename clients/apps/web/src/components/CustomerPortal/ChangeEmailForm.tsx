@@ -89,7 +89,6 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
             id="new-email"
             type="email"
             placeholder="Enter new email address"
-            className="bg-white shadow-xs"
             {...register('email', {
               required: 'Email is required',
             })}

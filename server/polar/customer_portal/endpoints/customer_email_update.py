@@ -106,10 +106,4 @@ async def verify_email_update(
         session, body.token
     )
 
-    log.info(
-        "customer_portal.email_update.verified",
-        customer_id=customer.id,
-        new_email=customer.email,
-    )
-
     return CustomerEmailUpdateVerifyResponse(token=session_token)

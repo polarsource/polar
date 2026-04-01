@@ -106,6 +106,32 @@ Thank you for your business!
         ),
         (
             {
+                "items": [
+                    InvoiceItem(
+                        description=(
+                            "Bacon ipsum dolor amet flank venison swine\n"
+                            "tenderloin ham hock turducken short loin bacon.\n"
+                            "Pork chop cupim turkey short ribs bacon rump picanha ham hock jerky salami\n"
+                            "ground round ham shoulder swine brisket. Ham hock pork chop chislic cow hamburger\n"
+                            "tongue beef. Jerky pastrami biltong pancetta. Ground round chuck meatloaf jowl.\n"
+                            "Tongue short ribs boudin jowl, frankfurter sausage meatloaf short loin tail\n"
+                            "Bacon ipsum dolor amet flank venison swine\n"
+                            "tenderloin ham hock turducken short loin bacon.\n"
+                            "Pork chop cupim turkey short ribs bacon rump picanha ham hock jerky salami\n"
+                            "ground round ham shoulder swine brisket. Ham hock pork chop chislic cow hamburger\n"
+                            "tongue beef. Jerky pastrami biltong pancetta. Ground round chuck meatloaf jowl.\n"
+                            "Tongue short ribs boudin jowl, frankfurter sausage meatloaf short loin tail\n"
+                        ),
+                        quantity=1,
+                        unit_amount=50_00,
+                        amount=50_00,
+                    ),
+                ],
+            },
+            "long_item_description_with_lines",
+        ),
+        (
+            {
                 "customer_name": "Văn bản thử nghiệm tiếng Việt",
                 "customer_address": Address(
                     line1="Số 42, Đồi Mây Trắng",

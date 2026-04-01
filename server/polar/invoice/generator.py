@@ -1,4 +1,3 @@
-import textwrap
 from datetime import date, datetime
 from pathlib import Path
 from typing import ClassVar, Self
@@ -410,7 +409,14 @@ class InvoiceGenerator(FPDF):
             # Body
             for item in self.data.items:
                 row = table.row()
-                row.cell(textwrap.shorten(item.description, width=90, placeholder="…"))
+                row.cell(
+                    "\n".join(
+                        # Fit description within the cell width
+                        self._truncate_text(line, max_width=90)
+                        # Max 10 lines of description to prevent overflow
+                        for line in item.description.splitlines()[:10]
+                    )
+                )
                 row.cell(format_number(item.quantity))
                 row.cell(format_currency(item.unit_amount, self.data.currency))
                 row.cell(format_currency(item.amount, self.data.currency))
@@ -450,6 +456,34 @@ class InvoiceGenerator(FPDF):
         self.set_creator("Polar")
         self.set_author(settings.INVOICES_NAME)
         self.set_creation_date(utc_now())
+
+    def _truncate_text(
+        self, text: str, max_width: float, placeholder: str = "…"
+    ) -> str:
+        """
+        Truncate text to fit within max_width
+
+        Args:
+            text: The text to truncate
+            max_width: The maximum width in user units
+            placeholder: The string to append if truncation is needed (default: "…")
+
+        Returns:
+            The truncated text with placeholder if truncation was needed
+        """
+        if self.get_string_width(text) <= max_width:
+            return text
+
+        lo, hi = 0, len(text)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if self.get_string_width(text[:mid] + placeholder) <= max_width:
+                lo = mid
+            else:
+                hi = mid - 1
+        text = text[:lo]
+
+        return text + placeholder
 
 
 __all__ = ["Invoice", "InvoiceGenerator", "InvoiceItem"]

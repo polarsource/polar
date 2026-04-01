@@ -29,6 +29,7 @@ from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
 from . import auth
+from .metrics import METRICS
 from .schemas import (
     MetricDashboardCreate,
     MetricDashboardSchema,
@@ -37,6 +38,8 @@ from .schemas import (
     MetricsResponse,
 )
 from .service import metrics as metrics_service
+
+VALID_METRIC_SLUGS = {m.slug for m in METRICS}
 
 router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
 
@@ -96,6 +99,21 @@ async def get(
 
     Currency values are output in cents.
     """
+    if metrics is not None:
+        valid_slugs = {m.slug for m in METRICS}
+        invalid_slugs = set(metrics) - valid_slugs
+        if invalid_slugs:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("query", "metrics"),
+                        "msg": f"Invalid metric slugs: {', '.join(sorted(invalid_slugs))}",
+                        "type": "value_error",
+                        "input": metrics,
+                    }
+                ]
+            )
+
     if not is_under_limits(start_date, end_date, interval):
         raise PolarRequestValidationError(
             [

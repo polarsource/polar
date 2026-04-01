@@ -967,3 +967,125 @@ class TestOrganizationRefundsBlocked:
         # Verify refund was created
         assert refund is not None
         assert refund.order_id == order.id
+
+
+@pytest.mark.asyncio
+class TestBenefitRevocationTiming:
+    async def test_pending_refund_does_not_revoke_benefits(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Regression test for #10729: benefits should NOT be revoked when a refund
+        is created in pending state."""
+        order, payment, _transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        enqueue_benefits_mock = mocker.patch(
+            "polar.refund.service.benefit_grant_service.enqueue_benefits_grants"
+        )
+
+        pending_stripe_refund = build_stripe_refund(
+            status="pending", amount=100, charge_id=payment.processor_id
+        )
+        refund = await refund_service.upsert_from_stripe(session, pending_stripe_refund)
+        assert refund.status == RefundStatus.pending
+
+        # Benefits should NOT be enqueued for revocation when refund is pending
+        enqueue_benefits_mock.assert_not_called()
+
+    async def test_succeeded_refund_revokes_benefits(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Benefits SHOULD be revoked when refund is created as succeeded."""
+        order, payment, _transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        enqueue_benefits_mock = mocker.patch(
+            "polar.refund.service.benefit_grant_service.enqueue_benefits_grants"
+        )
+
+        succeeded_stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=100,
+            charge_id=payment.processor_id,
+            metadata={"revoke_benefits": "1"},
+        )
+        refund = await refund_service.create_from_stripe(
+            session, succeeded_stripe_refund
+        )
+        assert refund.status == RefundStatus.succeeded
+
+        # Benefits should NOT be revoked because revoke_benefits defaults to False
+        # for externally created refunds (no revoke_benefits in metadata parsed)
+        enqueue_benefits_mock.assert_not_called()
+
+    async def test_pending_refund_to_succeeded_revokes_benefits(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Benefits SHOULD be revoked when a pending refund transitions to succeeded,
+        if revoke_benefits=True."""
+        from polar.refund.repository import RefundRepository
+
+        order, payment, _transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        enqueue_benefits_mock = mocker.patch(
+            "polar.refund.service.benefit_grant_service.enqueue_benefits_grants"
+        )
+
+        # Create a refund with revoke_benefits=True in pending state
+        refund = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            status="pending",
+            amount=100,
+        )
+        # Manually set revoke_benefits=True
+        refund_repo = RefundRepository.from_session(session)
+        refund = await refund_repo.update(refund, update_dict={"revoke_benefits": True})
+
+        # Transition to succeeded
+        succeeded_stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=100,
+            id=refund.processor_id,
+            charge_id=payment.processor_id,
+        )
+        updated_refund = await refund_service.update_from_stripe(
+            session, refund, succeeded_stripe_refund
+        )
+        assert updated_refund.status == RefundStatus.succeeded
+        assert updated_refund.revoke_benefits is True
+
+        # Benefits should be revoked now that refund succeeded
+        enqueue_benefits_mock.assert_called_once()

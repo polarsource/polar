@@ -344,6 +344,59 @@ class TestRevokeBenefit:
         assert cast(Any, updated_grant.properties) == {"message": "ok"}
         benefit_strategy_mock.revoke.assert_called_once()
 
+    async def test_two_orders_for_same_product_one_refunded_retains_second_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+        product: Product,
+    ) -> None:
+        """Regression test: when a customer has two order-scoped grants and one order is
+        refunded, only that order's grant is revoked. The other grant (from the remaining
+        paid order) stays active, so the customer retains their benefit."""
+        benefit_strategy_mock.should_revoke_individually = True
+        benefit_strategy_mock.revoke.return_value = {"message": "ok"}
+
+        first_order = await create_order(
+            save_fixture, customer=customer, product=product
+        )
+        first_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            order=first_order,
+        )
+
+        second_order = await create_order(
+            save_fixture, customer=customer, product=product
+        )
+        second_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            order=second_order,
+        )
+
+        # Revoke benefits for the first order (simulating a succeeded refund)
+        updated_grant = await benefit_grant_service.revoke_benefit(
+            session, redis, customer, benefit_organization, order=first_order
+        )
+
+        assert updated_grant.id == first_grant.id
+        assert updated_grant.is_revoked
+        # should_revoke_individually=True: the first grant's external resource IS revoked
+        # (e.g., its license key is deactivated)
+        benefit_strategy_mock.revoke.assert_called_once()
+
+        # The second grant must remain active — customer retains access via their other order
+        await session.refresh(second_grant)
+        assert second_grant.is_granted
+
     async def test_action_required_error(
         self,
         session: AsyncSession,

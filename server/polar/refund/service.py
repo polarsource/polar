@@ -430,15 +430,6 @@ class RefundService:
         if refund.succeeded:
             await self._on_succeeded(session, refund)
 
-        if refund.revoke_benefits and order.product is not None:
-            await benefit_grant_service.enqueue_benefits_grants(
-                session,
-                task="revoke",
-                customer=customer,
-                product=order.product,
-                order=order,
-            )
-
     async def _create_refund_transaction(
         self, session: AsyncSession, refund: Refund
     ) -> Transaction | None:
@@ -543,6 +534,15 @@ class RefundService:
             await webhook_service.send(
                 session, order.organization, WebhookEventType.order_refunded, order
             )
+
+            if refund.revoke_benefits and order.product is not None:
+                await benefit_grant_service.enqueue_benefits_grants(
+                    session,
+                    task="revoke",
+                    customer=order.customer,
+                    product=order.product,
+                    order=order,
+                )
 
     async def _on_updated(self, session: AsyncSession, refund: Refund) -> None:
         if refund.organization is not None:

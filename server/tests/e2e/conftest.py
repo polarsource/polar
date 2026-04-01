@@ -8,16 +8,18 @@ Tests are organized by lifecycle phase:
 - lifecycle/     — ongoing subscription events (renewal, retry, cancellation)
 """
 
+from dataclasses import dataclass
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
+from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Organization, User, UserOrganization
+from polar.models import Organization, Product, User, UserOrganization
 from polar.redis import Redis
 from polar.worker import JobQueueManager
 from polar.worker._enqueue import _job_queue_manager
@@ -49,9 +51,84 @@ E2E_AUTH = pytest.mark.auth(
             Scope.checkouts_write,
             Scope.orders_read,
             Scope.subscriptions_read,
+            Scope.subscriptions_write,
         },
     )
 )
+
+BUYER_EMAIL = "buyer@example.com"
+BUYER_NAME = "Test Buyer"
+BILLING_ADDRESS = {
+    "country": "US",
+    "city": "San Francisco",
+    "postal_code": "94105",
+    "line1": "123 Market St",
+    "state": "CA",
+}
+
+
+@dataclass
+class CompletedPurchase:
+    checkout_id: str
+    order_id: str
+    order: dict[str, Any]
+
+
+async def complete_purchase(
+    client: AsyncClient,
+    session: AsyncSession,
+    stripe_sim: StripeSimulator,
+    drain: DrainFn,
+    organization: Organization,
+    product: Product,
+    *,
+    amount: int,
+    seats: int | None = None,
+) -> CompletedPurchase:
+    """Run the full purchase flow: checkout -> confirm -> webhook -> drain."""
+    checkout_body: dict[str, Any] = {"products": [str(product.id)]}
+    if seats is not None:
+        checkout_body["seats"] = seats
+
+    response = await client.post("/v1/checkouts/", json=checkout_body)
+    assert response.status_code == 201, response.text
+    checkout_id = response.json()["id"]
+    client_secret = response.json()["client_secret"]
+    await drain()
+
+    stripe_sim.expect_payment(
+        amount=amount,
+        customer_name=BUYER_NAME,
+        customer_email=BUYER_EMAIL,
+        billing_address=BILLING_ADDRESS,
+    )
+    response = await client.post(
+        f"/v1/checkouts/client/{client_secret}/confirm",
+        json={
+            "confirmation_token_id": "tok_test_confirm",
+            "customer_email": BUYER_EMAIL,
+            "customer_billing_address": BILLING_ADDRESS,
+        },
+    )
+    assert response.status_code == 200, response.text
+    await drain()
+
+    await stripe_sim.send_charge_webhook(
+        session, organization_id=organization.id, checkout_id=checkout_id
+    )
+    await drain()
+
+    response = await client.get("/v1/orders/")
+    assert response.status_code == 200
+    orders = response.json()
+    assert orders["pagination"]["total_count"] >= 1
+    order = orders["items"][0]
+
+    return CompletedPurchase(
+        checkout_id=checkout_id,
+        order_id=order["id"],
+        order=order,
+    )
 
 
 @pytest.fixture(scope="session")

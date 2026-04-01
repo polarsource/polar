@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 import dramatiq
+from dramatiq import Retry
 from dramatiq.middleware.current_message import CurrentMessage
 
 from polar.config import settings
@@ -44,6 +45,9 @@ DEFAULT_IGNORED_ACTORS: frozenset[str] = frozenset(
         "loops.send_event",
         # Tinybird analytics ingestion
         "tinybird.ingest",
+        # Uses Retry for concurrency — AsyncSessionMaker rollback corrupts the
+        # test session.  Safe to skip: in tests there are no concurrent payments.
+        "order.void_pending_orders_for_subscription",
     }
 )
 
@@ -223,6 +227,11 @@ class TaskDrain:
             else:
                 result.executed.append(actor_name)
 
+            # Some tasks use dramatiq group/pipeline which enqueue via
+            # broker.enqueue() directly to the broker's Redis, bypassing
+            # the drain's FakeRedis. Siphon those messages over.
+            await self._siphon_broker_messages()
+
         # Reset JQM context for the next HTTP request
         _job_queue_manager.set(JobQueueManager())
 
@@ -257,6 +266,34 @@ class TaskDrain:
 
         return None
 
+    async def _siphon_broker_messages(self) -> None:
+        """Transfer messages from the broker's Redis to the drain's FakeRedis.
+
+        Tasks that use ``dramatiq.group().run()`` or ``dramatiq.pipeline``
+        call ``broker.enqueue()`` which writes to the broker's own (real)
+        Redis connection, not the drain's FakeRedis.  This method moves
+        those messages so the drain loop can pick them up.
+        """
+        broker = dramatiq.get_broker()
+        broker_redis = getattr(broker, "client", None)
+        if broker_redis is None or broker_redis is self._redis:
+            return
+
+        for queue_name in QUEUE_NAMES:
+            redis_key = f"dramatiq:{queue_name}"
+            msgs_key = f"dramatiq:{queue_name}.msgs"
+            while True:
+                raw_id = broker_redis.lpop(redis_key)
+                if raw_id is None:
+                    break
+                message_id = raw_id.decode() if isinstance(raw_id, bytes) else raw_id
+                encoded = broker_redis.hget(msgs_key, message_id)
+                if encoded is None:
+                    continue
+                broker_redis.hdel(msgs_key, message_id)
+                await self._redis.hset(msgs_key, message_id, encoded)
+                await self._redis.rpush(redis_key, message_id)
+
     async def _execute_task(
         self,
         fn: Any,
@@ -282,6 +319,8 @@ class TaskDrain:
         CurrentMessage._MESSAGE.set(msg)
         try:
             await fn(*args, **kwargs)
+            return None
+        except Retry:
             return None
         except Exception as exc:
             return exc

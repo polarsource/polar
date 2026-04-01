@@ -5,7 +5,6 @@ import structlog
 
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import checkout as checkout_service
-from polar.enums import PaymentMode
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
@@ -160,11 +159,6 @@ async def resolve_order(
             uuid.UUID(order_id), options=order_repository.get_eager_options()
         )
         if order is None:
-            # Ignore missing order if payment mode is sync, as it means the order
-            # was discarded due to the payment failure.
-            if object.metadata.get("payment_mode") == PaymentMode.sync:
-                return None
-
             raise OrderDoesNotExist(order_id)
         return order
 

@@ -189,6 +189,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 CheckoutLinkProduct(product=product, order=i)
                 for i, product in enumerate(products)
             ]
+            if not any(product.is_recurring for product in products):
+                checkout_link.trial_interval = None
+                checkout_link.trial_interval_count = None
 
         if "discount_id" in checkout_link_update.model_fields_set:
             if checkout_link_update.discount_id is None:

@@ -24,7 +24,7 @@ const GetStartedButton = ({
 }: GetStartedButtonProps) => {
   const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-  const [view, setView] = useState<'choose' | 'login'>('choose')
+  const [view, setView] = useState<'choose' | 'signup' | 'login'>('choose')
   const text = _text || 'Get Started'
 
   const onClick = useCallback(() => {
@@ -56,8 +56,34 @@ const GetStartedButton = ({
       mode: 'production',
       source: 'landing_modal',
     })
-    setView('login')
+    setView('signup')
   }
+
+  const modalTitles = {
+    choose: 'Get started',
+    signup: 'Sign up',
+    login: 'Sign in',
+  } as const
+  const modalTitle = modalTitles[view]
+
+  const modalContents = {
+    choose: (
+      <GetStartedChoose
+        onSandbox={handleSandbox}
+        onGetStarted={handleGetStarted}
+        onLogin={() => setView('login')}
+      />
+    ),
+    signup: (
+      <AuthModal
+        returnTo="/onboarding/personal"
+        returnParams={slug ? { slug, auto: 'true' } : {}}
+        signup={{ intent: 'creator' }}
+      />
+    ),
+    login: <AuthModal returnTo="/dashboard" />,
+  }
+  const modalContent = modalContents[view]
 
   return (
     <>
@@ -79,24 +105,10 @@ const GetStartedButton = ({
       </Button>
 
       <Modal
-        title={view === 'choose' ? 'Get started' : 'Sign up'}
+        title={modalTitle}
         isShown={isModalShown}
         hide={hideModal}
-        modalContent={
-          view === 'choose' ? (
-            <GetStartedChoose
-              onSandbox={handleSandbox}
-              onGetStarted={handleGetStarted}
-              onLogin={() => setView('login')}
-            />
-          ) : (
-            <AuthModal
-              returnTo="/onboarding/personal"
-              returnParams={slug ? { slug, auto: 'true' } : {}}
-              signup={{ intent: 'creator' }}
-            />
-          )
-        }
+        modalContent={modalContent}
         className="lg:w-full lg:max-w-[480px]"
       />
     </>

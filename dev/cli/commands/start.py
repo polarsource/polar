@@ -85,30 +85,29 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         web_dir = str(CLIENTS_DIR / "apps" / "web")
         root_dir = str(ROOT_DIR)
 
-        win = f"{SESSION}:0"
+        svc = f"{SESSION}:services"
         commands = [
             # Create session with first window
-            ["tmux", "new-session", "-d", "-s", SESSION, "-c", root_dir],
-            ["tmux", "rename-window", "-t", win, "services"],
+            ["tmux", "new-session", "-d", "-s", SESSION, "-n", "services", "-c", root_dir],
 
             # Split into 4 panes
-            ["tmux", "send-keys", "-t", f"{win}.0", f"cd {server_dir}", "C-m"],
-            ["tmux", "split-window", "-h", "-t", win, "-c", server_dir],
-            ["tmux", "split-window", "-v", "-t", f"{win}.0", "-c", server_dir],
-            ["tmux", "split-window", "-v", "-t", f"{win}.2", "-c", web_dir],
-            ["tmux", "select-layout", "-t", win, "tiled"],
+            ["tmux", "send-keys", "-t", f"{svc}.0", f"cd {server_dir}", "C-m"],
+            ["tmux", "split-window", "-h", "-t", svc, "-c", server_dir],
+            ["tmux", "split-window", "-v", "-t", f"{svc}.0", "-c", server_dir],
+            ["tmux", "split-window", "-v", "-t", f"{svc}.2", "-c", web_dir],
+            ["tmux", "select-layout", "-t", svc, "tiled"],
 
             # Start services in each pane
-            ["tmux", "send-keys", "-t", f"{win}.0", f"{dev_bin} api", "C-m"],
-            ["tmux", "send-keys", "-t", f"{win}.1", f"{dev_bin} worker", "C-m"],
-            ["tmux", "send-keys", "-t", f"{win}.2", f"{dev_bin} web", "C-m"],
-            ["tmux", "send-keys", "-t", f"{win}.3", f"{dev_bin} stripe --listen", "C-m"],
+            ["tmux", "send-keys", "-t", f"{svc}.0", f"{dev_bin} api", "C-m"],
+            ["tmux", "send-keys", "-t", f"{svc}.1", f"{dev_bin} worker", "C-m"],
+            ["tmux", "send-keys", "-t", f"{svc}.2", f"{dev_bin} web", "C-m"],
+            ["tmux", "send-keys", "-t", f"{svc}.3", f"{dev_bin} stripe --listen", "C-m"],
 
             # Create second window for general use
-            ["tmux", "new-window", "-t", f"{SESSION}:1", "-n", "dev", "-c", root_dir],
+            ["tmux", "new-window", "-t", SESSION, "-n", "dev", "-c", root_dir],
 
             # Select the services window
-            ["tmux", "select-window", "-t", win],
+            ["tmux", "select-window", "-t", svc],
         ]
 
         for cmd in commands:

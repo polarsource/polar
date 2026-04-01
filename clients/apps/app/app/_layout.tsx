@@ -2,7 +2,6 @@ import { Box } from '@/components/Shared/Box'
 import theme from '@/design-system/theme'
 import { SessionProvider } from '@/providers/SessionProvider'
 import { ExtensionStorage } from '@bacons/apple-targets'
-import { useReactNavigationDevTools } from '@dev-plugins/react-navigation'
 import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular'
 import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif/400Regular_Italic'
 import { useFonts } from '@expo-google-fonts/instrument-serif/useFonts'
@@ -11,7 +10,7 @@ import * as Sentry from '@sentry/react-native'
 
 import { ThemeProvider } from '@shopify/restyle'
 import { onlineManager } from '@tanstack/react-query'
-import { Slot, useNavigationContainerRef } from 'expo-router'
+import { Slot } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import React, { useCallback, useEffect } from 'react'
 import { AppState } from 'react-native'
@@ -67,11 +66,6 @@ onlineManager.setEventListener((setOnline) => {
 })
 
 export default Sentry.wrap(function RootLayout() {
-  const navigationRef = useNavigationContainerRef()
-
-  // @ts-ignore - Known type mismatch with dev tools
-  useReactNavigationDevTools(navigationRef)
-
   const [fontsLoaded] = useFonts({
     InstrumentSerif_400Regular,
     InstrumentSerif_400Regular_Italic,

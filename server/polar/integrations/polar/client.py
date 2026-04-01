@@ -126,7 +126,14 @@ class PolarSelfClient:
         )
 
 
-client = PolarSelfClient(
-    access_token=settings.POLAR_ACCESS_TOKEN,
-    api_url=settings.POLAR_API_URL,
-)
+_client: PolarSelfClient | None = None
+
+
+def get_client() -> PolarSelfClient:
+    global _client
+    if _client is None:
+        _client = PolarSelfClient(
+            access_token=settings.POLAR_ACCESS_TOKEN,
+            api_url=settings.POLAR_API_URL,
+        )
+    return _client

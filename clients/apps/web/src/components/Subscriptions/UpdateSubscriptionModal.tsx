@@ -214,10 +214,13 @@ const UpdateProduct = ({
                   <FormLabel>Proration behavior</FormLabel>
                 </div>
                 <FormControl>
-                  <ProrationBehavior
-                    value={field.value || 'prorate'}
-                    onValueChange={field.onChange}
-                  />
+                  {organization && (
+                    <ProrationBehavior
+                      organization={organization}
+                      value={field.value || 'prorate'}
+                      onValueChange={field.onChange}
+                    />
+                  )}
                 </FormControl>
                 <FormMessage />
               </FormItem>

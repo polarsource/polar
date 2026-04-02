@@ -9,7 +9,6 @@ import asyncio
 import importlib
 import json
 import logging
-from collections.abc import Awaitable, Coroutine
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -99,7 +98,9 @@ def _discover_task_modules() -> None:
     polar_root = Path(__file__).resolve().parents[2] / "polar"
     for tasks_file in polar_root.rglob("tasks.py"):
         # Skip test files, __pycache__, and hidden directories
-        if any(part.startswith((".", "__")) or part == "tests" for part in tasks_file.parts):
+        if any(
+            part.startswith((".", "__")) or part == "tests" for part in tasks_file.parts
+        ):
             continue
         module_path = (
             str(tasks_file.relative_to(polar_root.parent))
@@ -109,7 +110,9 @@ def _discover_task_modules() -> None:
         try:
             importlib.import_module(module_path)
         except Exception:
-            logger.warning("Failed to import task module %s", module_path, exc_info=True)
+            logger.warning(
+                "Failed to import task module %s", module_path, exc_info=True
+            )
 
 
 def _unwrap_to_coroutine(fn: Any, actor_name: str) -> Any:

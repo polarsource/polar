@@ -63,9 +63,7 @@ async def product_with_custom_benefit(
         description="Welcome note",
         properties={"note": "Thanks for purchasing!"},
     )
-    return await set_product_benefits(
-        save_fixture, product=product, benefits=[benefit]
-    )
+    return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
 @pytest_asyncio.fixture
@@ -91,9 +89,7 @@ async def product_with_license_key(
             "limit_usage": None,
         },
     )
-    return await set_product_benefits(
-        save_fixture, product=product, benefits=[benefit]
-    )
+    return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
 @pytest_asyncio.fixture
@@ -120,9 +116,7 @@ async def product_with_meter_credit(
         description="100 API credits",
         properties={"meter_id": str(meter.id), "units": 100, "rollover": False},
     )
-    return await set_product_benefits(
-        save_fixture, product=product, benefits=[benefit]
-    )
+    return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
 @pytest_asyncio.fixture
@@ -143,9 +137,7 @@ async def product_with_feature_flag(
         description="Pro features",
         properties={},
     )
-    return await set_product_benefits(
-        save_fixture, product=product, benefits=[benefit]
-    )
+    return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
 # ---------------------------------------------------------------------------
@@ -168,8 +160,13 @@ class TestBenefitGrants:
         # Given a product with a custom benefit attached
         # When the customer purchases it
         result = await complete_purchase(
-            client, session, stripe_sim, drain,
-            organization, product_with_custom_benefit, amount=1000,
+            client,
+            session,
+            stripe_sim,
+            drain,
+            organization,
+            product_with_custom_benefit,
+            amount=1000,
         )
 
         # Then the grant is created
@@ -191,8 +188,13 @@ class TestBenefitGrants:
         # Given a product with a license key benefit (prefix "E2E", 5 activations)
         # When the customer purchases it
         result = await complete_purchase(
-            client, session, stripe_sim, drain,
-            organization, product_with_license_key, amount=2000,
+            client,
+            session,
+            stripe_sim,
+            drain,
+            organization,
+            product_with_license_key,
+            amount=2000,
         )
 
         # Then a license key is generated and stored on the grant
@@ -217,8 +219,13 @@ class TestBenefitGrants:
         # Given a product with a meter credit benefit (100 API credits)
         # When the customer purchases it
         result = await complete_purchase(
-            client, session, stripe_sim, drain,
-            organization, product_with_meter_credit, amount=500,
+            client,
+            session,
+            stripe_sim,
+            drain,
+            organization,
+            product_with_meter_credit,
+            amount=500,
         )
 
         # Then 100 credits are applied to the meter
@@ -242,8 +249,13 @@ class TestBenefitGrants:
         # Given a product with a feature flag benefit
         # When the customer purchases it
         result = await complete_purchase(
-            client, session, stripe_sim, drain,
-            organization, product_with_feature_flag, amount=800,
+            client,
+            session,
+            stripe_sim,
+            drain,
+            organization,
+            product_with_feature_flag,
+            amount=800,
         )
 
         # Then the grant exists (presence = access)

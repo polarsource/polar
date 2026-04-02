@@ -30,8 +30,13 @@ class TestSubscriptionFixedPrice:
         # Given a $15/month recurring product
         # When the customer subscribes
         result = await complete_purchase(
-            client, session, stripe_sim, drain,
-            organization, monthly_product, amount=1500,
+            client,
+            session,
+            stripe_sim,
+            drain,
+            organization,
+            monthly_product,
+            amount=1500,
         )
 
         # Then the subscription is active with a matching order

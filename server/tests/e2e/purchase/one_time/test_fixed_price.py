@@ -30,8 +30,13 @@ class TestOneTimeFixedPrice:
         # Given a $25 one-time product
         # When the customer pays
         result = await complete_purchase(
-            client, session, stripe_sim, drain,
-            organization, one_time_product, amount=2500,
+            client,
+            session,
+            stripe_sim,
+            drain,
+            organization,
+            one_time_product,
+            amount=2500,
         )
 
         # Then the checkout succeeds, an order is created, and email is sent

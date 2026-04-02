@@ -59,8 +59,12 @@ class TestWithDiscount:
         # Given a $50 product with a 20% discount
         # When the customer purchases it
         result = await complete_purchase(
-            client, session, stripe_sim, drain,
-            organization, product,
+            client,
+            session,
+            stripe_sim,
+            drain,
+            organization,
+            product,
             amount=4000,  # $50 - 20% = $40
             discount_id=str(discount.id),
         )

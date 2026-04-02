@@ -22,9 +22,7 @@ SEAT_RECIPIENT_EMAIL = "teammate@example.com"
 
 
 @pytest_asyncio.fixture
-async def seat_org(
-    save_fixture: SaveFixture, user: User
-) -> Organization:
+async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
     """Organization with seat-based pricing enabled, linked to the test user."""
     org = await create_organization(
         save_fixture,
@@ -35,9 +33,7 @@ async def seat_org(
 
 
 @pytest_asyncio.fixture
-async def seat_product(
-    save_fixture: SaveFixture, seat_org: Organization
-) -> Product:
+async def seat_product(save_fixture: SaveFixture, seat_org: Organization) -> Product:
     return await create_product(
         save_fixture,
         organization=seat_org,
@@ -61,8 +57,14 @@ class TestSeatClaim:
     ) -> None:
         # Given a completed 3-seat purchase
         result = await complete_purchase(
-            client, session, stripe_sim, drain,
-            seat_org, seat_product, amount=3000, seats=3,
+            client,
+            session,
+            stripe_sim,
+            drain,
+            seat_org,
+            seat_product,
+            amount=3000,
+            seats=3,
         )
 
         # When the buyer assigns a seat to a teammate

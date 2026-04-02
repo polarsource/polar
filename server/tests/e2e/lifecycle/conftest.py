@@ -4,8 +4,6 @@ import uuid
 
 from polar.kit.db.postgres import AsyncSession
 from polar.worker import JobQueueManager
-from polar.worker._enqueue import _job_queue_manager
-
 from tests.e2e.infra import DrainFn, DrainResult
 from tests.e2e.purchase.subscription.conftest import monthly_product  # noqa: F401
 

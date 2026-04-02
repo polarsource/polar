@@ -23,10 +23,9 @@ from polar.worker._enqueue import _job_queue_manager
 from polar.worker._httpx import HTTPXMiddleware
 from polar.worker._redis import RedisMiddleware
 from polar.worker._sqlalchemy import SQLAlchemyMiddleware
-
 from tests.e2e.infra import DrainFn, EmailCapture, StripeSimulator, TaskDrain
 from tests.e2e.infra.email_capture import create_email_sender_mock
-from tests.e2e.infra.external_mocks import *  # noqa: F401,F403 — autouse mock fixtures
+from tests.e2e.infra.external_mocks import *  # noqa: F403 — autouse mock fixtures
 from tests.e2e.infra.task_drain import build_actor_registry
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -64,9 +63,7 @@ def _patch_worker_middlewares(
     session: AsyncSession,
     redis: Redis,
 ) -> None:
-    mocker.patch.object(
-        SQLAlchemyMiddleware, "get_async_session", return_value=session
-    )
+    mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", return_value=session)
     mocker.patch.object(
         SQLAlchemyMiddleware, "get_async_read_session", return_value=session
     )
@@ -88,9 +85,7 @@ def email_capture() -> EmailCapture:
 
 
 @pytest.fixture(autouse=True)
-def mock_email_sender(
-    mocker: MockerFixture, email_capture: EmailCapture
-) -> MagicMock:
+def mock_email_sender(mocker: MockerFixture, email_capture: EmailCapture) -> MagicMock:
     mock = create_email_sender_mock(email_capture)
     mocker.patch("polar.email.tasks.email_sender", new=mock)
     return mock

@@ -56,7 +56,6 @@ def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
     # Safe defaults so flows work without StripeSimulator
     mock.create_customer.return_value = SimpleNamespace(id="cus_e2e_default")
     mock.update_customer.return_value = SimpleNamespace(id="cus_e2e_default")
-    import stripe as stripe_lib
 
     from tests.fixtures.stripe import build_stripe_payment_method
 

@@ -9,53 +9,21 @@ task. After draining, a new order exists with billing_reason=subscription_cycle.
 from datetime import UTC, datetime, timedelta
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
-from polar.auth.scope import Scope
-from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product
 from polar.models.subscription import SubscriptionStatus
 from polar.subscription.service import subscription as subscription_service
+from tests.e2e.conftest import E2E_AUTH
 from tests.e2e.infra import DrainFn
-from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import (
-    create_customer,
-    create_product,
-    create_subscription,
-)
-
-E2E_LIFECYCLE_AUTH = pytest.mark.auth(
-    AuthSubjectFixture(
-        subject="user",
-        scopes={
-            Scope.web_read,
-            Scope.web_write,
-            Scope.orders_read,
-            Scope.subscriptions_read,
-        },
-    )
-)
-
-
-@pytest_asyncio.fixture
-async def monthly_product(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    return await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=SubscriptionRecurringInterval.month,
-        name="E2E Monthly Plan",
-        prices=[(1500, "usd")],
-    )
+from tests.fixtures.random_objects import create_customer, create_subscription
 
 
 @pytest.mark.asyncio
 class TestRenewal:
-    @E2E_LIFECYCLE_AUTH
+    @E2E_AUTH
     async def test_subscription_cycle_creates_order(
         self,
         client: AsyncClient,
@@ -69,7 +37,6 @@ class TestRenewal:
         An active subscription cycles → billing entry created →
         order.create_subscription_order task runs → new order exists.
         """
-        # ── Set up: active subscription with period ending now ────────
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -88,15 +55,12 @@ class TestRenewal:
             current_period_end=now,  # Period ends now → ready for cycle
         )
 
-        # ── Cycle the subscription ───────────────────────────────────
-        # This is what the scheduler calls when current_period_end is reached.
+        # This is what the scheduler calls when current_period_end is reached
         subscription = await subscription_service.cycle(session, subscription)
         await session.flush()
 
         # Processes: order.create_subscription_order → order creation → email
         executed = await drain()
-
-        # ── Verify ───────────────────────────────────────────────────
 
         # Subscription period advanced
         assert subscription.current_period_start == now
@@ -112,5 +76,4 @@ class TestRenewal:
         assert order["amount"] == 1500
         assert order["billing_reason"] == "subscription_cycle"
 
-        # Renewal task ran
         assert "order.create_subscription_order" in executed

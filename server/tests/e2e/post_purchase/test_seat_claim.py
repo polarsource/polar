@@ -10,39 +10,15 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-from polar.auth.scope import Scope
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Organization, Product, User
+from polar.models import Organization, Product, User, UserOrganization
 from tests.e2e.infra import DrainFn, StripeSimulator
-from tests.fixtures.auth import AuthSubjectFixture
+from tests.e2e.post_purchase.conftest import E2E_SEAT_AUTH
+from tests.e2e.purchase.conftest import BILLING_ADDRESS, BUYER_EMAIL, BUYER_NAME
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_organization, create_product
 
-BUYER_EMAIL = "buyer@example.com"
-BUYER_NAME = "Test Buyer"
 SEAT_RECIPIENT_EMAIL = "teammate@example.com"
-BILLING_ADDRESS = {
-    "country": "US",
-    "city": "San Francisco",
-    "postal_code": "94105",
-    "line1": "123 Market St",
-    "state": "CA",
-}
-
-E2E_SEAT_AUTH = pytest.mark.auth(
-    AuthSubjectFixture(
-        subject="user",
-        scopes={
-            Scope.web_read,
-            Scope.web_write,
-            Scope.checkouts_read,
-            Scope.checkouts_write,
-            Scope.orders_read,
-            Scope.customer_seats_read,
-            Scope.customer_seats_write,
-        },
-    )
-)
 
 
 @pytest_asyncio.fixture
@@ -50,8 +26,6 @@ async def seat_org(
     save_fixture: SaveFixture, user: User
 ) -> Organization:
     """Organization with seat-based pricing enabled, linked to the test user."""
-    from polar.models import UserOrganization
-
     org = await create_organization(
         save_fixture,
         feature_settings={"seat_based_pricing_enabled": True},

@@ -1,6 +1,3 @@
-"""
-Fixtures for lifecycle E2E tests.
+"""Fixtures for lifecycle E2E tests."""
 
-These tests start from an active subscription state.
-Fixtures here create that state by driving the purchase flow programmatically.
-"""
+from tests.e2e.purchase.subscription.conftest import monthly_product  # noqa: F401

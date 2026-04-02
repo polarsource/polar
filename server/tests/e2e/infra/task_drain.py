@@ -86,7 +86,7 @@ class TaskDrainError(Exception):
 def _discover_task_modules() -> None:
     """Import all ``tasks.py`` modules under ``polar/`` so actors register with the broker."""
     polar_root = Path(__file__).resolve().parents[2] / "polar"
-    for tasks_file in sorted(polar_root.rglob("tasks.py")):
+    for tasks_file in polar_root.rglob("tasks.py"):
         module_path = (
             str(tasks_file.relative_to(polar_root.parent))
             .replace("/", ".")

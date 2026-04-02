@@ -65,7 +65,7 @@ class TestBenefitLicenseKeyExpirationPropertiesValidation:
 
     def test_boundary_year_invalid(self) -> None:
         with pytest.raises(ValidationError):
-            BenefitLicenseKeyExpirationProperties(ttl=101, timeframe="year")
+            BenefitLicenseKeyExpirationProperties(ttl=458, timeframe="year")
 
     def test_boundary_month_valid(self) -> None:
         props = BenefitLicenseKeyExpirationProperties(ttl=1200, timeframe="month")

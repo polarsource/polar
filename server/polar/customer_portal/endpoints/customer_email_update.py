@@ -12,6 +12,7 @@ from polar.customer_email_update.service import (
 from polar.customer_email_update.service import (
     customer_email_update as customer_email_update_service,
 )
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.openapi import APITag
 from polar.postgres import (
     AsyncReadSession,
@@ -85,14 +86,15 @@ async def check_email_update(
         raise InvalidCustomerEmailUpdate()
 
 
-# No auth required: the verification token serves as proof of email inbox
-# access. A new customer session is returned on success.
 @router.post(
     "/verify",
     summary="Verify Email Change",
+    status_code=200,
     response_model=CustomerEmailUpdateVerifyResponse,
     responses={
-        200: {"description": "Email updated successfully."},
+        200: {
+            "description": "Email updated successfully. Returns a new session token."
+        },
         401: {"description": "Invalid or expired verification token."},
         422: {"description": "Email address is already in use."},
     },
@@ -102,8 +104,12 @@ async def verify_email_update(
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerEmailUpdateVerifyResponse:
     """Verify an email change using the token from the verification email."""
-    customer, session_token = await customer_email_update_service.verify(
-        session, body.token
-    )
+    customer = await customer_email_update_service.verify(session, body.token)
+
+    # Issue a new session token so the customer stays authenticated
+    (
+        session_token,
+        _customer_session,
+    ) = await customer_session_service.create_customer_session(session, customer)
 
     return CustomerEmailUpdateVerifyResponse(token=session_token)

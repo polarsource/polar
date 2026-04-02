@@ -20,6 +20,10 @@ const emitter = new EventEmitter()
 
 const useSSE = (streamURL: string, token?: string): EventEmitter => {
   useEffect(() => {
+    if (!token) {
+      return
+    }
+
     const eventSource = new EventSourcePlus(streamURL, {
       credentials: 'include',
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },

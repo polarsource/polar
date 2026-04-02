@@ -19205,6 +19205,12 @@ export interface components {
       items: components['schemas']['CustomerWallet'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Customer] */
+    ListResource_Customer_: {
+      /** Items */
+      items: components['schemas']['Customer'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Discount] */
     ListResource_Discount_: {
       /** Items */
@@ -19305,6 +19311,12 @@ export interface components {
       items: components['schemas']['Organization'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Payment] */
+    ListResource_Payment_: {
+      /** Items */
+      items: components['schemas']['Payment'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Payout] */
     ListResource_Payout_: {
       /** Items */
@@ -19357,12 +19369,6 @@ export interface components {
     ListResource_WebhookEndpoint_: {
       /** Items */
       items: components['schemas']['WebhookEndpoint'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[] */
-    ListResource__: {
-      /** Items */
-      items: components['schemas']['Customer'][]
       pagination: components['schemas']['Pagination']
     }
     /**
@@ -35733,7 +35739,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource__']
+          'application/json': components['schemas']['ListResource_Customer_']
         }
       }
       /** @description Validation Error */
@@ -36825,7 +36831,7 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Email updated successfully. */
+      /** @description Email updated successfully. Returns a new session token. */
       200: {
         headers: {
           [name: string]: unknown
@@ -41693,7 +41699,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource__']
+          'application/json': components['schemas']['ListResource_Payment_']
         }
       }
       /** @description Validation Error */

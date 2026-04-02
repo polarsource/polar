@@ -22,6 +22,7 @@ from polar.models import Customer, CustomerSession, Member, MemberSession
 from polar.models.customer import CustomerType
 from polar.postgres import AsyncSession
 
+from .repository import CustomerSessionRepository
 from .schemas import CustomerSessionCreate, CustomerSessionCustomerIDCreate
 
 log: Logger = structlog.get_logger()
@@ -248,16 +249,12 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         return result.unique().scalar_one_or_none()
 
     async def delete_expired(self, session: AsyncSession) -> None:
-        from .repository import CustomerSessionRepository
-
         repository = CustomerSessionRepository.from_session(session)
         await repository.delete_expired()
 
     async def delete_customer_sessions(
         self, session: AsyncSession, customer_id: uuid.UUID
     ) -> None:
-        from .repository import CustomerSessionRepository
-
         repository = CustomerSessionRepository.from_session(session)
         await repository.delete_by_customer_id(customer_id)
 

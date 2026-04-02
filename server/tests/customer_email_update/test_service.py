@@ -15,7 +15,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.utils import utc_now
-from polar.models import Customer, CustomerSession, Organization
+from polar.models import Customer, Organization
 from polar.models.customer import CustomerType
 from polar.models.customer_email_verification import CustomerEmailVerification
 from polar.postgres import AsyncSession
@@ -102,21 +102,15 @@ class TestRequestEmailUpdate:
             session, customer, "new@example.com"
         )
 
-        # Both records should exist; old one expired
-        stmt = (
-            select(CustomerEmailVerification)
-            .where(CustomerEmailVerification.customer_id == customer.id)
-            .order_by(CustomerEmailVerification.created_at.asc())
+        # Old record should be deleted, only new one remains
+        stmt = select(CustomerEmailVerification).where(
+            CustomerEmailVerification.customer_id == customer.id
         )
         result = await session.execute(stmt)
         records = list(result.scalars().all())
-        assert len(records) == 2
-        # First record (old) should be expired
-        assert records[0].email == "pending@example.com"
-        assert records[0].expires_at <= utc_now()
-        # Second record (new) should be active
-        assert records[1].email == "new@example.com"
-        assert records[1].expires_at > utc_now()
+        assert len(records) == 1
+        assert records[0].email == "new@example.com"
+        assert records[0].expires_at > utc_now()
 
     async def test_creates_verification_record(
         self,
@@ -190,7 +184,12 @@ class TestVerify:
     async def test_invalid_token_raises(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
     ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
         service = CustomerEmailUpdateService()
         with pytest.raises(InvalidCustomerEmailUpdate):
             await service.verify(session, "polar_cev_bogustoken")
@@ -240,15 +239,12 @@ class TestVerify:
         with pytest.raises(PolarRequestValidationError):
             await service.verify(session, token)
 
-        # Verification record should be expired (not deleted)
+        # Verification record should be deleted
         stmt = select(CustomerEmailVerification).where(
             CustomerEmailVerification.customer_id == customer.id
         )
         result = await session.execute(stmt)
-        record = result.scalars().first()
-        assert record is not None
-        assert record.expires_at <= utc_now()
-        assert record.verified_at is None
+        assert result.scalars().first() is None
 
     async def test_happy_path(
         self,
@@ -269,15 +265,11 @@ class TestVerify:
         )
 
         service = CustomerEmailUpdateService()
-        updated_customer, session_token = await service.verify(session, token)
+        updated_customer = await service.verify(session, token)
 
         # Email updated
         assert updated_customer.email == "new@example.com"
         assert updated_customer.email_verified is True
-
-        # Session token returned
-        assert session_token is not None
-        assert len(session_token) > 0
 
         # Notification sent to old email
         mock_enqueue_email.assert_called_once()
@@ -289,15 +281,12 @@ class TestVerify:
             customer.stripe_customer_id, email="new@example.com"
         )
 
-        # Verification record should be marked as verified (not deleted)
+        # Verification record should be deleted
         stmt = select(CustomerEmailVerification).where(
             CustomerEmailVerification.customer_id == customer.id
         )
         result = await session.execute(stmt)
-        verification = result.scalars().first()
-        assert verification is not None
-        assert verification.verified_at is not None
-        assert verification.email == "new@example.com"
+        assert result.scalars().first() is None
 
     async def test_no_stripe_sync_without_stripe_id(
         self,
@@ -321,43 +310,6 @@ class TestVerify:
         await service.verify(session, token)
 
         stripe_service_mock.update_customer.assert_not_called()
-
-    async def test_invalidates_existing_sessions(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="sessions@example.com",
-        )
-
-        # Create an existing customer session
-        from polar.customer_session.service import (
-            customer_session as customer_session_service,
-        )
-
-        (
-            _old_token,
-            old_session,
-        ) = await customer_session_service.create_customer_session(session, customer)
-
-        _record, token = await _create_verification(
-            save_fixture, customer, "new@example.com"
-        )
-
-        service = CustomerEmailUpdateService()
-        _updated, new_session_token = await service.verify(session, token)
-
-        # Old session should be deleted
-        stmt = select(CustomerSession).where(CustomerSession.id == old_session.id)
-        result = await session.execute(stmt)
-        assert result.scalars().first() is None
-
-        # New session token should be different
-        assert new_session_token != _old_token
 
     async def test_no_notification_when_no_old_email(
         self,
@@ -385,22 +337,3 @@ class TestVerify:
 
         # No notification should be sent when there's no old email
         mock_enqueue_email.assert_not_called()
-
-    async def test_verified_token_cannot_be_reused(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        customer = await create_customer(
-            save_fixture, organization=organization, email="reuse@example.com"
-        )
-        record, token = await _create_verification(save_fixture, customer)
-
-        # Mark as verified
-        record.verified_at = utc_now()
-        await save_fixture(record)
-
-        service = CustomerEmailUpdateService()
-        with pytest.raises(InvalidCustomerEmailUpdate):
-            await service.verify(session, token)

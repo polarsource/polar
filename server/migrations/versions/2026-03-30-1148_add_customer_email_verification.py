@@ -25,7 +25,6 @@ def upgrade() -> None:
         sa.Column("email", sa.String(length=320), nullable=False),
         sa.Column("token_hash", sa.String(), nullable=False),
         sa.Column("expires_at", sa.TIMESTAMP(timezone=True), nullable=False),
-        sa.Column("verified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("customer_id", sa.Uuid(), nullable=False),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),

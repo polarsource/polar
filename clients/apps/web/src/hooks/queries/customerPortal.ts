@@ -82,6 +82,7 @@ export const useCustomerEmailUpdateRequest = () => {
 
 export const useCustomerEmailUpdateVerify = () => {
   const { client } = useCustomerPortalContext()
+  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (data: { token: string }) => {
@@ -108,6 +109,11 @@ export const useCustomerEmailUpdateVerify = () => {
         )
       }
       return result.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['customer-portal', 'customer'],
+      })
     },
   })
 }

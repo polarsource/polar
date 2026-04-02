@@ -4,7 +4,6 @@ import structlog
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
-from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.schemas import (
     CustomerEmailChangedNotificationEmail,
     CustomerEmailChangedNotificationProps,
@@ -73,8 +72,8 @@ class CustomerEmailUpdateService:
 
         repository = CustomerEmailVerificationRepository.from_session(session)
 
-        # Expire any existing pending verification for this customer
-        await repository.expire_by_customer_id(customer.id)
+        # Delete any existing pending verification for this customer
+        await repository.delete_by_customer_id(customer.id)
 
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=TOKEN_PREFIX
@@ -121,7 +120,11 @@ class CustomerEmailUpdateService:
         record = await repository.get_valid_by_token_hash(token_hash)
         return record is not None
 
-    async def verify(self, session: AsyncSession, token: str) -> tuple[Customer, str]:
+    async def verify(
+        self,
+        session: AsyncSession,
+        token: str,
+    ) -> Customer:
         token_hash = get_token_hash(token, secret=settings.SECRET)
         repository = CustomerEmailVerificationRepository.from_session(session)
         record = await repository.get_valid_by_token_hash(token_hash)
@@ -137,7 +140,7 @@ class CustomerEmailUpdateService:
             record.email, record.organization_id
         )
         if existing is not None and existing.id != customer.id:
-            await repository.update(record, update_dict={"expires_at": utc_now()})
+            await session.delete(record)
             raise PolarRequestValidationError(
                 [
                     {
@@ -151,7 +154,6 @@ class CustomerEmailUpdateService:
 
         old_email = customer.email
 
-        # Update customer email
         await customer_repository.update(
             customer, update_dict={"email": record.email, "email_verified": True}
         )
@@ -174,14 +176,13 @@ class CustomerEmailUpdateService:
                     new_email=customer.email,
                 )
 
-        # Sync to Stripe
         if customer.stripe_customer_id is not None and customer.email is not None:
             await stripe_service.update_customer(
                 customer.stripe_customer_id, email=customer.email
             )
 
-        # Mark the verification record as verified
-        await repository.update(record, update_dict={"verified_at": utc_now()})
+        # Delete the verification record
+        await session.delete(record)
 
         # Send notification to old email
         if old_email is not None:
@@ -198,13 +199,6 @@ class CustomerEmailUpdateService:
                 subject="Your email address has been changed",
             )
 
-        # Invalidate all existing sessions and create a new one
-        await customer_session_service.delete_customer_sessions(session, customer.id)
-        (
-            session_token,
-            _customer_session,
-        ) = await customer_session_service.create_customer_session(session, customer)
-
         log.info(
             "customer_email_update.verified",
             customer_id=customer.id,
@@ -212,7 +206,11 @@ class CustomerEmailUpdateService:
             new_email=customer.email,
         )
 
-        return customer, session_token
+        return customer
+
+    async def delete_expired(self, session: AsyncSession) -> None:
+        repository = CustomerEmailVerificationRepository.from_session(session)
+        await repository.delete_expired()
 
 
 customer_email_update = CustomerEmailUpdateService()

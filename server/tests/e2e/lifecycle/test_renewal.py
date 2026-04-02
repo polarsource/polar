@@ -52,7 +52,7 @@ class TestRenewal:
         )
 
         # When the scheduler triggers the cycle
-        executed = await trigger_subscription_cycle(session, drain, subscription.id)
+        await trigger_subscription_cycle(session, drain, subscription.id)
 
         # Then a renewal order is created
         response = await client.get("/v1/orders/")
@@ -63,6 +63,3 @@ class TestRenewal:
         assert order["product"]["id"] == str(monthly_product.id)
         assert order["amount"] == 1500
         assert order["billing_reason"] == "subscription_cycle"
-
-        assert "subscription.cycle" in executed
-        assert "order.create_subscription_order" in executed

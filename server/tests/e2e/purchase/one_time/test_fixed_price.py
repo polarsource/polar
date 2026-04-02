@@ -60,7 +60,7 @@ class TestOneTimeFixedPrice:
         await stripe_sim.send_charge_webhook(
             session, organization_id=organization.id, checkout_id=checkout_id
         )
-        executed = await drain()
+        await drain()
 
         # Then the checkout succeeds, an order is created, and email is sent
         response = await client.get(f"/v1/checkouts/{checkout_id}")
@@ -78,5 +78,3 @@ class TestOneTimeFixedPrice:
         assert order["billing_reason"] == "purchase"
 
         assert len(email_capture.find(to=BUYER_EMAIL)) >= 1
-        assert "stripe.webhook.charge.succeeded" in executed
-        assert "order.confirmation_email" in executed

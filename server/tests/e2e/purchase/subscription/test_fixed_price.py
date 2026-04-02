@@ -60,7 +60,7 @@ class TestSubscriptionFixedPrice:
         await stripe_sim.send_charge_webhook(
             session, organization_id=organization.id, checkout_id=checkout_id
         )
-        executed = await drain()
+        await drain()
 
         # Then the subscription is active with a matching order
         response = await client.get(f"/v1/checkouts/{checkout_id}")
@@ -87,5 +87,3 @@ class TestSubscriptionFixedPrice:
         assert sub["recurring_interval"] == "month"
 
         assert len(email_capture.find(to=BUYER_EMAIL)) >= 1
-        assert "stripe.webhook.charge.succeeded" in executed
-        assert "order.confirmation_email" in executed

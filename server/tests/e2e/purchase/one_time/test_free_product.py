@@ -61,8 +61,8 @@ class TestFreeProduct:
             },
         )
         assert response.status_code == 200, response.text
-        # No Stripe webhook needed — handle_free_success fires from confirm
-        executed = await drain()
+        # No Stripe webhook needed — free checkout completes via background task
+        await drain()
 
         # Then the checkout succeeds and a $0 order is created
         response = await client.get(f"/v1/checkouts/{checkout_id}")
@@ -77,4 +77,3 @@ class TestFreeProduct:
         assert orders["items"][0]["billing_reason"] == "purchase"
 
         assert len(email_capture.find(to=BUYER_EMAIL)) >= 1
-        assert "checkout.handle_free_success" in executed

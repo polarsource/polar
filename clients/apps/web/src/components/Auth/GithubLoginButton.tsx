@@ -3,7 +3,7 @@
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGitHubAuthorizeLoginURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button, { type ButtonProps } from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
@@ -13,12 +13,14 @@ const GithubLoginButton = ({
   signup,
   size,
   fullWidth,
+  variant,
 }: {
   className?: string
   returnTo?: string
   signup?: schemas['UserSignupAttribution']
   size?: 'large' | 'small'
   fullWidth?: boolean
+  variant?: ButtonProps['variant']
 }) => {
   const posthog = usePostHog()
 
@@ -44,6 +46,7 @@ const GithubLoginButton = ({
   return (
     <Link href={authorizeURL} onClick={onClick}>
       <Button
+        variant={variant}
         wrapperClassNames={twMerge(
           size === 'large' ? largeStyle : smallStyle,
           className,

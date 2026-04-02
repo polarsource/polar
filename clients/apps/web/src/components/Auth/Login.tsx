@@ -3,12 +3,16 @@
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { twMerge } from 'tailwind-merge'
 import { useEffect, useMemo } from 'react'
 
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import LoginCodeForm from '../Auth/LoginCodeForm'
 import AppleLoginButton from './AppleLoginButton'
 import GoogleLoginButton from './GoogleLoginButton'
+
+type OAuthProvider = 'github' | 'google' | 'apple'
+const AUTH_PROVIDERS: OAuthProvider[] = ['github', 'google', 'apple']
 
 const Login = ({
   returnTo,
@@ -25,6 +29,11 @@ const Login = ({
 
   const pathname = usePathname()
   const searchParams = useSearchParams()
+
+  const primary =
+    lastLoginMethod === 'github' || lastLoginMethod === 'apple'
+      ? lastLoginMethod
+      : 'google'
 
   const eventName: EventName = signup
     ? 'global:user:signup:view'
@@ -87,15 +96,33 @@ const Login = ({
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex w-full flex-col gap-y-4">
-        <LastUsedWrapper show={lastLoginMethod === 'github'}>
-          <GithubLoginButton size="large" fullWidth {...loginProps} />
-        </LastUsedWrapper>
-        <LastUsedWrapper show={lastLoginMethod === 'google'}>
-          <GoogleLoginButton {...loginProps} />
-        </LastUsedWrapper>
-        <LastUsedWrapper show={lastLoginMethod === 'apple'}>
-          <AppleLoginButton {...loginProps} />
-        </LastUsedWrapper>
+        {AUTH_PROVIDERS.map((provider) => {
+          const isPrimary = provider === primary
+          const variant = isPrimary ? 'default' : 'secondary'
+
+          return (
+            <LastUsedWrapper
+              key={provider}
+              show={lastLoginMethod === provider}
+              className={isPrimary ? 'order-first' : ''}
+            >
+              {provider === 'github' && (
+                <GithubLoginButton
+                  size="large"
+                  fullWidth
+                  variant={variant}
+                  {...loginProps}
+                />
+              )}
+              {provider === 'google' && (
+                <GoogleLoginButton variant={variant} {...loginProps} />
+              )}
+              {provider === 'apple' && (
+                <AppleLoginButton variant={variant} {...loginProps} />
+              )}
+            </LastUsedWrapper>
+          )
+        })}
         <div className="flex w-full flex-row items-center gap-6">
           <div className="dark:border-polar-700 grow border-t border-gray-200" />
           <div className="text-sm text-gray-500">or</div>
@@ -129,11 +156,13 @@ const Login = ({
 const LastUsedWrapper = ({
   show,
   children,
+  className,
 }: {
   show: boolean
   children: React.ReactNode
+  className?: string
 }) => (
-  <div className="relative">
+  <div className={twMerge('relative', className)}>
     {show && (
       <span className="dark:bg-polar-900 dark:border-polar-600 absolute -top-3 -right-2 z-20 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs text-black dark:text-white">
         Last used

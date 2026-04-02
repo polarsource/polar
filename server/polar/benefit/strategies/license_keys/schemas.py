@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from polar.kit.schemas import EmptyStrToNone, Schema
 from polar.models.benefit import BenefitType
@@ -16,6 +16,21 @@ from ..base.schemas import (
 class BenefitLicenseKeyExpirationProperties(Schema):
     ttl: int = Field(gt=0)
     timeframe: Literal["year", "month", "day"]
+
+    @model_validator(mode="after")
+    def validate_ttl_range(self) -> "BenefitLicenseKeyExpirationProperties":
+        max_values: dict[str, int] = {
+            "year": 100,
+            "month": 1200,
+            "day": 36500,
+        }
+        max_val = max_values[self.timeframe]
+        if self.ttl > max_val:
+            raise ValueError(
+                f"ttl value {self.ttl} exceeds the maximum of {max_val} for timeframe "
+                f"'{self.timeframe}'."
+            )
+        return self
 
 
 class BenefitLicenseKeyActivationCreateProperties(Schema):

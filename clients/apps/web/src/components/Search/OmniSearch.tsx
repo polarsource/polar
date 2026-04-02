@@ -1,10 +1,13 @@
 'use client'
 
+import { MetricToolResult } from '@/components/Assistant/MetricToolResult'
 import {
   useGeneralRoutes,
   useOrganizationRoutes,
 } from '@/components/Dashboard/navigation'
+import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
 import { getServerURL } from '@/utils/api'
+import { useChat } from '@ai-sdk/react'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
@@ -15,13 +18,44 @@ import {
   CommandList,
 } from '@polar-sh/ui/components/ui/command'
 import * as Dialog from '@radix-ui/react-dialog'
+import { DefaultChatTransport } from 'ai'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Result } from './components/Result'
 import { getQuickActions } from './quickActions'
 import { SearchResult, SearchResultPage } from './types'
+
+const QUESTION_PREFIXES = [
+  'how',
+  'what',
+  'when',
+  'where',
+  'why',
+  'who',
+  'which',
+  'show',
+  'tell',
+  'did',
+  'do',
+  'does',
+  'is',
+  'are',
+  'was',
+  'were',
+  'can',
+  'could',
+  'will',
+  'would',
+]
+
+function isQuestion(query: string): boolean {
+  const trimmed = query.trim().toLowerCase()
+  if (trimmed.endsWith('?')) return true
+  const firstWord = trimmed.split(/\s/)[0]
+  return QUESTION_PREFIXES.includes(firstWord)
+}
 
 interface OmniSearchProps {
   open: boolean
@@ -39,6 +73,53 @@ export const OmniSearch = ({
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
+
+  const questionDetected = useMemo(() => isQuestion(query), [query])
+  const lastAskedRef = useRef('')
+  const [chatKey, setChatKey] = useState(0)
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null)
+
+  const chatTransport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: `/dashboard/${organization.slug}/assistant`,
+        credentials: 'include',
+        body: { organizationId: organization.id },
+      }),
+    [organization.slug, organization.id],
+  )
+
+  const { messages, sendMessage, status } = useChat({
+    key: `assistant-${chatKey}`,
+    transport: chatTransport,
+  })
+
+  // Send the pending question once the chat is ready after a key change
+  useEffect(() => {
+    if (pendingQuestion && status === 'ready' && messages.length === 0) {
+      sendMessage({ text: pendingQuestion })
+      setPendingQuestion(null)
+    }
+  }, [pendingQuestion, status, messages.length, sendMessage])
+
+  useEffect(() => {
+    if (!questionDetected || !query.trim()) return
+
+    const debounce = setTimeout(() => {
+      const text = query.trim()
+      if (text === lastAskedRef.current) return
+      lastAskedRef.current = text
+      setChatKey((k) => k + 1)
+      setPendingQuestion(text)
+    }, 800)
+
+    return () => clearTimeout(debounce)
+  }, [query, questionDetected])
+
+  const aiMessages = useMemo(
+    () => messages.filter((m) => m.role === 'assistant'),
+    [messages],
+  )
 
   const generalRoutes = useGeneralRoutes(organization)
   const orgRoutes = useOrganizationRoutes(organization)
@@ -252,11 +333,44 @@ export const OmniSearch = ({
     }
   }
 
+  const aiIsActive =
+    questionDetected && (status !== 'ready' || aiMessages.length > 0)
+  const aiIsWaiting = questionDetected && !aiIsActive
+
   const cleanState =
-    !query || (!loading && !hasSearched && combinedResults.length === 0)
+    !query ||
+    (!loading &&
+      !hasSearched &&
+      !questionDetected &&
+      combinedResults.length === 0)
+
+  // Debug: remove after fixing
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (aiMessages.length > 0) {
+      console.log(
+        'All parts:',
+        JSON.stringify(
+          aiMessages.flatMap((m) => m.parts),
+          null,
+          2,
+        ),
+      )
+    }
+  }, [aiMessages])
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(v) => {
+        onOpenChange(v)
+        if (!v) {
+          setChatKey((k) => k + 1)
+          setPendingQuestion(null)
+          lastAskedRef.current = ''
+        }
+      }}
+    >
       <Dialog.Portal>
         <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
         <Dialog.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 dark:bg-polar-950 dark:border-polar-800/80 fixed top-[15%] left-[50%] z-50 w-full max-w-2xl translate-x-[-50%] overflow-hidden rounded-xl border border-gray-200/80 bg-white p-0 shadow-2xl ring-1 ring-black/5 dark:ring-white/5">
@@ -281,7 +395,66 @@ export const OmniSearch = ({
                 cleanState ? 'hidden' : '',
               )}
             >
-              {loading ? (
+              {questionDetected ? (
+                <div className="flex flex-col gap-3 px-5 py-4">
+                  {(aiIsWaiting || (aiIsActive && aiMessages.length === 0)) && (
+                    <div className="flex items-center gap-2 py-4">
+                      <Loader2 className="dark:text-polar-500 h-4 w-4 animate-spin text-gray-500" />
+                      <span className="dark:text-polar-500 text-sm text-gray-500">
+                        Thinking...
+                      </span>
+                    </div>
+                  )}
+                  {aiMessages.flatMap((msg) =>
+                    msg.parts.map((part, i) => {
+                      if (part.type === 'text' && part.text.trim()) {
+                        return (
+                          <div
+                            key={`ai-${msg.id}-${i}`}
+                            className="prose dark:prose-invert prose-sm max-w-none"
+                          >
+                            <MemoizedMarkdown content={part.text} />
+                          </div>
+                        )
+                      }
+                      if (part.type === 'tool-show_metrics') {
+                        const input = (part as any).input as
+                          | {
+                              metrics?: string[]
+                              startDate?: string
+                              endDate?: string
+                              interval?: schemas['TimeInterval']
+                            }
+                          | undefined
+                        if (
+                          !input?.metrics ||
+                          !input.startDate ||
+                          !input.endDate ||
+                          !input.interval
+                        ) {
+                          return null
+                        }
+                        return (
+                          <MetricToolResult
+                            key={`ai-tool-${msg.id}-${i}`}
+                            metrics={input.metrics}
+                            startDate={input.startDate}
+                            endDate={input.endDate}
+                            interval={input.interval}
+                            organizationId={organization.id}
+                          />
+                        )
+                      }
+                      return null
+                    }),
+                  )}
+                  {status !== 'ready' && aiMessages.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="dark:text-polar-500 h-3 w-3 animate-spin text-gray-400" />
+                    </div>
+                  )}
+                </div>
+              ) : loading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="dark:text-polar-500 h-6 w-6 animate-spin text-gray-500" />
                 </div>

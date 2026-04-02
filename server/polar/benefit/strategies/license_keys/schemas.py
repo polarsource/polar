@@ -20,7 +20,7 @@ class BenefitLicenseKeyExpirationProperties(Schema):
     @model_validator(mode="after")
     def validate_ttl_range(self) -> "BenefitLicenseKeyExpirationProperties":
         max_values: dict[str, int] = {
-            "year": 100,
+            "year": 457,
             "month": 1200,
             "day": 36500,
         }

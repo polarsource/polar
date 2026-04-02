@@ -19,7 +19,7 @@ configure_sentry()
 configure_logfire("worker")
 configure_logging(logfire=True)
 
-HEARTBEAT_STALENESS_SECONDS = 30
+HEARTBEAT_STALENESS_SECONDS = 60
 _last_heartbeat: float = 0.0
 
 

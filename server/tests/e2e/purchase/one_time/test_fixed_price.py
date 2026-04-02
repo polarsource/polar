@@ -1,8 +1,7 @@
 """
-E2E: One-time purchase — happy path.
+E2E: One-time purchase — fixed price.
 
-Checkout creation → payment confirmation → Stripe webhook →
-order verified → email delivered.
+Standard paid product: checkout → payment → Stripe webhook → order → email.
 """
 
 import pytest
@@ -16,7 +15,7 @@ from tests.e2e.purchase.conftest import BILLING_ADDRESS, BUYER_EMAIL, BUYER_NAME
 
 
 @pytest.mark.asyncio
-class TestOneTimePurchaseHappyPath:
+class TestOneTimeFixedPrice:
     @E2E_AUTH
     async def test_full_flow(
         self,

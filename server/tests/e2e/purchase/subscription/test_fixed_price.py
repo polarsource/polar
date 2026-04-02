@@ -1,7 +1,7 @@
 """
-E2E: Subscription purchase — happy path.
+E2E: Subscription purchase — fixed price.
 
-Checkout → payment → subscription active + order created.
+Monthly recurring product: checkout → payment → subscription active + order.
 """
 
 import pytest
@@ -15,7 +15,7 @@ from tests.e2e.purchase.conftest import BILLING_ADDRESS, BUYER_EMAIL, BUYER_NAME
 
 
 @pytest.mark.asyncio
-class TestSubscriptionHappyPath:
+class TestSubscriptionFixedPrice:
     @E2E_AUTH
     async def test_full_flow(
         self,

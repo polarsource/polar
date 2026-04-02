@@ -34,6 +34,8 @@ DEFAULT_IGNORED_ACTORS: frozenset[str] = frozenset(
     {
         # Requires Stripe API call to look up charge details for balance transactions
         "order.balance",
+        # Uploads invoice PDF to S3/MinIO
+        "order.invoice",
         # Loops.so CRM integration
         "loops.update_last_order_at",
         "loops.update_contact",

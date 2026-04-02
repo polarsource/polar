@@ -79,7 +79,10 @@ export const useOAuth = () => {
 
   const authenticate = async () => {
     try {
-      const response = await promptAsync({ preferEphemeralSession: true })
+      const response = await promptAsync({
+        preferEphemeralSession: true,
+        createTask: false,
+      })
 
       if (response?.type !== 'success') {
         return

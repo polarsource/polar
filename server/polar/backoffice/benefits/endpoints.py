@@ -220,8 +220,16 @@ async def get(
                 description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
                 BenefitTypeDescriptionListItem("type", "Type"),
                 description_list.DescriptionListAttrItem("description", "Description"),
-                description_list.DescriptionListAttrItem(
-                    "organization_id", "Organization ID", clipboard=True
+                description_list.DescriptionListLinkItem[Benefit](
+                    "organization_id",
+                    "Organization ID",
+                    clipboard=True,
+                    href_getter=lambda r, i: str(
+                        r.url_for(
+                            "organizations:detail",
+                            organization_id=i.organization_id,
+                        )
+                    ),
                 ),
                 description_list.DescriptionListDateTimeItem(
                     "created_at", "Created At"

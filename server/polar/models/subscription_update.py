@@ -6,7 +6,9 @@ from sqlalchemy import TIMESTAMP, ForeignKey, Index, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Integer
 
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import utc_now
 from polar.product.guard import is_recurring_product
 from polar.product.price_set import PriceSet
@@ -37,6 +39,11 @@ class SubscriptionUpdate(RecordModel):
             postgresql_where="applied_at IS NULL AND deleted_at IS NULL",
         ),
     )
+
+    proration_behavior: Mapped[SubscriptionProrationBehavior] = mapped_column(
+        StringEnum(SubscriptionProrationBehavior), nullable=False
+    )
+    """Proration behavior for the subscription update."""
 
     applies_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
@@ -111,6 +118,7 @@ class SubscriptionUpdate(RecordModel):
 
         if self.new_cycle_start is not None:
             subscription.current_period_start = self.new_cycle_start
+            subscription.anchor_day = self.new_cycle_start.day
 
         if self.new_cycle_end is not None:
             subscription.current_period_end = self.new_cycle_end

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from parse import Decimal
 
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.utils import utc_now
 from polar.models import BillingEntry, Product, Subscription, SubscriptionUpdate
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
@@ -146,7 +147,10 @@ def _generate_product_subscription_update(
     assert new_product is not None
     assert is_recurring_product(new_product)
 
-    if subscription_update.is_interval_changed():
+    if (
+        subscription_update.is_interval_changed()
+        or subscription_update.proration_behavior == SubscriptionProrationBehavior.reset
+    ):
         new_cycle_start = subscription_update.applies_at
     else:
         new_cycle_start = subscription.current_period_start
@@ -159,14 +163,18 @@ def _generate_product_subscription_update(
     subscription_update.new_cycle_end = new_cycle_end
 
     billing_entries: list[BillingEntry] = []
-    billing_entries.extend(
-        _generate_product_credit_proration_billing_entries(
-            subscription=subscription,
-            applies_at=subscription_update.applies_at,
-            initial_cycle_start=subscription.current_period_start,
-            initial_cycle_end=subscription.current_period_end,
+
+    # Reset mode doesn't generate proration credits, it just invoices the full amount of the new plan immediately.
+    if subscription_update.proration_behavior != SubscriptionProrationBehavior.reset:
+        billing_entries.extend(
+            _generate_product_credit_proration_billing_entries(
+                subscription=subscription,
+                applies_at=subscription_update.applies_at,
+                initial_cycle_start=subscription.current_period_start,
+                initial_cycle_end=subscription.current_period_end,
+            )
         )
-    )
+
     billing_entries.extend(
         _generate_product_debit_proration_billing_entries(
             subscription=subscription,
@@ -189,18 +197,34 @@ def _generate_seats_subscription_update(
     new_seats = subscription_update.seats
     assert new_seats is not None
 
-    proration_factor = _calculate_time_proration(
-        subscription.current_period_start,
-        subscription.current_period_end,
-        subscription_update.applies_at,
-    )
-
     seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
     assert seat_price is not None
 
     old_base_amount = seat_price.calculate_amount(old_seats)
     new_base_amount = seat_price.calculate_amount(new_seats)
-    base_amount_delta = new_base_amount - old_base_amount
+
+    start_timestamp = subscription_update.applies_at
+    end_timestamp = subscription.current_period_end
+
+    if subscription_update.proration_behavior == SubscriptionProrationBehavior.reset:
+        # In reset mode, we don't prorate the amount, we just charge the full amount of the new seats immediately.
+        proration_factor = Decimal(1)
+        base_amount_delta = new_base_amount
+
+        # Resets the cycle
+        new_cycle_start = subscription_update.applies_at
+        new_cycle_end = subscription.recurring_interval.get_next_period(
+            new_cycle_start, new_cycle_start.day, subscription.recurring_interval_count
+        )
+        subscription_update.new_cycle_start = new_cycle_start
+        subscription_update.new_cycle_end = end_timestamp = new_cycle_end
+    else:
+        proration_factor = _calculate_time_proration(
+            subscription.current_period_start,
+            subscription.current_period_end,
+            subscription_update.applies_at,
+        )
+        base_amount_delta = new_base_amount - old_base_amount
 
     # Calculate discount on the delta amount
     discount_amount = 0
@@ -238,8 +262,8 @@ def _generate_seats_subscription_update(
         prorated_discount_amount = int(Decimal(discount_amount) * proration_factor)
 
     billing_entry = BillingEntry(
-        start_timestamp=subscription_update.applies_at,
-        end_timestamp=subscription.current_period_end,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
         subscription=subscription,
         customer=subscription.customer,
         product_price=seat_price,
@@ -258,13 +282,23 @@ def _generate_seats_subscription_update(
 
 def generate_subscription_update(
     subscription: Subscription,
+    proration_behavior: SubscriptionProrationBehavior,
     *,
     product: Product | None = None,
     seats: int | None = None,
-    applies_at: datetime | None = None,
 ) -> tuple[SubscriptionUpdate, list[BillingEntry]]:
-    applies_at = applies_at or utc_now()
+    match proration_behavior:
+        case (
+            SubscriptionProrationBehavior.invoice
+            | SubscriptionProrationBehavior.reset
+            | SubscriptionProrationBehavior.prorate
+        ):
+            applies_at = utc_now()
+        case SubscriptionProrationBehavior.next_period:
+            applies_at = subscription.current_period_end
+
     subscription_update = SubscriptionUpdate(
+        proration_behavior=proration_behavior,
         applies_at=applies_at,
         subscription=subscription,
         subscription_id=subscription.id,

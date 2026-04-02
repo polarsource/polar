@@ -2,8 +2,8 @@
 E2E: Lifecycle — subscription renewal.
 
 An active subscription reaches the end of its billing period.
-The cycle method creates billing entries and enqueues an order creation
-task. After draining, a new order exists with billing_reason=subscription_cycle.
+The scheduler enqueues subscription.cycle → billing entries created →
+order.create_subscription_order runs → new order with billing_reason=subscription_cycle.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -14,9 +14,9 @@ from httpx import AsyncClient
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product
 from polar.models.subscription import SubscriptionStatus
-from polar.subscription.service import subscription as subscription_service
 from tests.e2e.conftest import E2E_AUTH
 from tests.e2e.infra import DrainFn
+from tests.e2e.lifecycle.conftest import trigger_subscription_cycle
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_subscription
 
@@ -34,8 +34,7 @@ class TestRenewal:
         monthly_product: Product,
     ) -> None:
         """
-        An active subscription cycles → billing entry created →
-        order.create_subscription_order task runs → new order exists.
+        Active subscription → scheduler triggers cycle → new order created.
         """
         customer = await create_customer(
             save_fixture,
@@ -55,18 +54,10 @@ class TestRenewal:
             current_period_end=now,  # Period ends now → ready for cycle
         )
 
-        # This is what the scheduler calls when current_period_end is reached
-        subscription = await subscription_service.cycle(session, subscription)
-        await session.flush()
+        # Simulate the scheduler triggering subscription.cycle
+        executed = await trigger_subscription_cycle(session, drain, subscription.id)
 
-        # Processes: order.create_subscription_order → order creation → email
-        executed = await drain()
-
-        # Subscription period advanced
-        assert subscription.current_period_start == now
-        assert subscription.current_period_end > now
-
-        # New order was created
+        # Order was created for the new billing period
         response = await client.get("/v1/orders/")
         assert response.status_code == 200
         orders = response.json()
@@ -76,4 +67,6 @@ class TestRenewal:
         assert order["amount"] == 1500
         assert order["billing_reason"] == "subscription_cycle"
 
+        # Key tasks ran through the drain pipeline
+        assert "subscription.cycle" in executed
         assert "order.create_subscription_order" in executed

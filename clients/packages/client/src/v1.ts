@@ -19127,6 +19127,12 @@ export interface components {
       items: components['schemas']['CustomerWallet'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Customer] */
+    ListResource_Customer_: {
+      /** Items */
+      items: components['schemas']['Customer'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Discount] */
     ListResource_Discount_: {
       /** Items */
@@ -19227,6 +19233,12 @@ export interface components {
       items: components['schemas']['Organization'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Payment] */
+    ListResource_Payment_: {
+      /** Items */
+      items: components['schemas']['Payment'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Payout] */
     ListResource_Payout_: {
       /** Items */
@@ -19279,12 +19291,6 @@ export interface components {
     ListResource_WebhookEndpoint_: {
       /** Items */
       items: components['schemas']['WebhookEndpoint'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[] */
-    ListResource__: {
-      /** Items */
-      items: components['schemas']['Customer'][]
       pagination: components['schemas']['Pagination']
     }
     /**
@@ -22542,6 +22548,12 @@ export interface components {
        * @description Ordered list of metric slugs shown on the dashboard overview.
        */
       overview_metrics?: string[] | null
+      /**
+       * Reset Proration Behavior Enabled
+       * @description If this organization has access to reset proration behavior.
+       * @default false
+       */
+      reset_proration_behavior_enabled: boolean
     }
     /** OrganizationIndividualLegalEntitySchema */
     OrganizationIndividualLegalEntitySchema: {
@@ -23030,13 +23042,17 @@ export interface components {
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
       allow_multiple_subscriptions: boolean
-      /** Allow Customer Updates */
-      allow_customer_updates: boolean
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @enum {string}
+       */
+      proration_behavior: 'invoice' | 'prorate' | 'next_period'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
       /** Prevent Trial Abuse */
       prevent_trial_abuse: boolean
+      /** Allow Customer Updates */
+      allow_customer_updates: boolean
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {
@@ -26502,7 +26518,11 @@ export interface components {
      * SubscriptionProrationBehavior
      * @enum {string}
      */
-    SubscriptionProrationBehavior: 'invoice' | 'prorate' | 'next_period'
+    SubscriptionProrationBehavior:
+      | 'invoice'
+      | 'prorate'
+      | 'next_period'
+      | 'reset'
     /**
      * SubscriptionRecurringInterval
      * @enum {string}
@@ -35655,7 +35675,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource__']
+          'application/json': components['schemas']['ListResource_Customer_']
         }
       }
       /** @description Validation Error */
@@ -41508,7 +41528,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource__']
+          'application/json': components['schemas']['ListResource_Payment_']
         }
       }
       /** @description Validation Error */
@@ -48030,6 +48050,9 @@ export const organizationStatusValues: ReadonlyArray<
   'denied',
   'active',
 ]
+export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
+> = ['invoice', 'prorate', 'next_period']
 export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationUpdate']['country']
 > = [
@@ -48695,7 +48718,7 @@ export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<
 > = ['subscription.product_updated']
 export const subscriptionProrationBehaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionProrationBehavior']
-> = ['invoice', 'prorate', 'next_period']
+> = ['invoice', 'prorate', 'next_period', 'reset']
 export const subscriptionRecurringIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionRecurringInterval']
 > = ['day', 'week', 'month', 'year']

@@ -138,7 +138,9 @@ export default function Index() {
           }}
         />
 
-        <ProrationBehaviorSelector form={form} />
+        {organization ? (
+          <ProrationBehaviorSelector organization={organization} form={form} />
+        ) : null}
 
         <Box flex={1} gap="spacing-4">
           {productCandidates.length > 0 ? (
@@ -214,11 +216,14 @@ const PRORATION_BEHAVIOR_LABELS: Record<
   invoice: 'Invoice Immediately',
   prorate: 'Prorate next Invoice',
   next_period: 'Apply on Next Period',
+  reset: 'Invoice Immediately without Proration and Reset Cycle',
 }
 
 const ProrationBehaviorSelector = ({
+  organization,
   form,
 }: {
+  organization: schemas['Organization']
   form: UseFormReturn<schemas['SubscriptionUpdateProduct']>
 }) => {
   const { watch, setValue } = form
@@ -233,41 +238,49 @@ const ProrationBehaviorSelector = ({
       padding="spacing-4"
       borderRadius="border-radius-12"
     >
-      {Object.entries(PRORATION_BEHAVIOR_LABELS).map(([key, label]) => (
-        <Touchable
-          key={key}
-          activeOpacity={0.6}
-          style={{ flex: 1 }}
-          onPress={() => {
-            setValue(
-              'proration_behavior',
-              key as schemas['SubscriptionProrationBehavior'],
-              {
-                shouldDirty: true,
-              },
-            )
-          }}
-        >
-          <Box
-            justifyContent="center"
-            alignItems="center"
-            backgroundColor={prorationBehavior === key ? 'background' : 'card'}
-            paddingVertical="spacing-10"
-            paddingHorizontal="spacing-8"
-            borderRadius="border-radius-8"
-            flex={1}
+      {Object.entries(PRORATION_BEHAVIOR_LABELS)
+        .filter(
+          ([key]) =>
+            key !== 'reset' ||
+            organization.feature_settings?.reset_proration_behavior_enabled,
+        )
+        .map(([key, label]) => (
+          <Touchable
+            key={key}
+            activeOpacity={0.6}
+            style={{ flex: 1 }}
+            onPress={() => {
+              setValue(
+                'proration_behavior',
+                key as schemas['SubscriptionProrationBehavior'],
+                {
+                  shouldDirty: true,
+                },
+              )
+            }}
           >
-            <Text
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              textAlign="center"
-              width="100%"
+            <Box
+              justifyContent="center"
+              alignItems="center"
+              backgroundColor={
+                prorationBehavior === key ? 'background' : 'card'
+              }
+              paddingVertical="spacing-10"
+              paddingHorizontal="spacing-8"
+              borderRadius="border-radius-8"
+              flex={1}
             >
-              {label}
-            </Text>
-          </Box>
-        </Touchable>
-      ))}
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                textAlign="center"
+                width="100%"
+              >
+                {label}
+              </Text>
+            </Box>
+          </Touchable>
+        ))}
     </Box>
   )
 }

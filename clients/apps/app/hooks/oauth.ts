@@ -4,6 +4,7 @@ import {
   makeRedirectUri,
   useAuthRequest,
 } from 'expo-auth-session'
+import * as Sentry from '@sentry/react-native'
 import * as WebBrowser from 'expo-web-browser'
 import { useEffect } from 'react'
 
@@ -79,12 +80,13 @@ export const useOAuth = () => {
 
   const authenticate = async () => {
     try {
-      const response = await promptAsync({
-        preferEphemeralSession: true,
-        createTask: false,
-      })
+      const response = await promptAsync({ preferEphemeralSession: true })
 
       if (response?.type !== 'success') {
+        Sentry.captureMessage('[OAuth] auth session failed', {
+          level: 'warning',
+          extra: { responseType: response?.type, response },
+        })
         return
       }
 
@@ -105,6 +107,9 @@ export const useOAuth = () => {
 
       setSession(token.accessToken)
     } catch (error) {
+      Sentry.captureException(error, {
+        extra: { context: 'oauth_authenticate' },
+      })
       console.error('[OAuth] Error:', error)
     }
   }

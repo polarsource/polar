@@ -171,8 +171,9 @@ class StripeSimulator:
                 },
             },
         )
-        # Required for payment.handle_success to identify the object type
+        # Fields required by payment.handle_success
         charge["object"] = "charge"
+        charge["payment_method"] = "pm_e2e_test"
         return charge
 
     async def send_charge_webhook(

@@ -191,7 +191,7 @@ class TaskDrain:
         _job_queue_manager.set(JobQueueManager())
 
         if raise_on_failure and result.failures:
-            raise TaskDrainError(result.failures)
+            raise TaskDrainError(result.failures) from result.failures[0][1]
 
         return result
 

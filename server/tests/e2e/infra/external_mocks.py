@@ -39,12 +39,40 @@ def _block_external_http(mocker: MockerFixture) -> None:
 
 @pytest.fixture(autouse=True)
 def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
-    """Mock the Stripe service globally for E2E tests."""
+    """Mock the Stripe service globally for E2E tests.
+
+    Provides safe defaults so free-product flows work without StripeSimulator.
+    Tests that need payment should call stripe_sim.expect_payment() to override.
+    """
+    from types import SimpleNamespace
+
     from polar.integrations.stripe.service import StripeService
 
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
     mocker.patch("polar.integrations.stripe.payment.stripe_service", new=mock)
+    mocker.patch("polar.payment_method.service.stripe_service", new=mock)
+
+    # Safe defaults so flows work without StripeSimulator
+    mock.create_customer.return_value = SimpleNamespace(id="cus_e2e_default")
+    mock.update_customer.return_value = SimpleNamespace(id="cus_e2e_default")
+    import stripe as stripe_lib
+
+    from tests.fixtures.stripe import build_stripe_payment_method
+
+    mock.get_payment_method.return_value = build_stripe_payment_method(
+        type="card",
+        details={
+            "brand": "visa",
+            "last4": "4242",
+            "exp_month": 12,
+            "exp_year": 2030,
+            "country": "US",
+            "fingerprint": "e2e_fingerprint",
+        },
+        customer="cus_e2e_default",
+    )
+
     return mock
 
 

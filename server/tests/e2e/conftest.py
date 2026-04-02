@@ -1,11 +1,11 @@
 """
 E2E test configuration — fixture wiring only.
 
-Infrastructure lives in dedicated modules:
-- task_drain.py     — TaskDrain class and actor registry
-- email_capture.py  — EmailCapture and mock factory
-- stripe_simulator.py — StripeSimulator and webhook simulation
-- external_mocks.py — autouse fixtures that silence external services
+Infrastructure lives in tests/e2e/infra/.
+Tests are organized by lifecycle phase:
+- purchase/     — buying something (one_time/, subscription/)
+- post_purchase/ — actions after order exists (seat claims, benefits)
+- lifecycle/     — ongoing subscription events (renewal, retry, cancellation)
 """
 
 from unittest.mock import MagicMock
@@ -24,17 +24,15 @@ from polar.worker._httpx import HTTPXMiddleware
 from polar.worker._redis import RedisMiddleware
 from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 
-from tests.e2e.email_capture import EmailCapture, create_email_sender_mock
-from tests.e2e.external_mocks import *  # noqa: F401,F403 — autouse mock fixtures
-from tests.e2e.stripe_simulator import StripeSimulator
-from tests.e2e.task_drain import DrainFn, DrainResult, TaskDrain, build_actor_registry
+from tests.e2e.infra import DrainFn, EmailCapture, StripeSimulator, TaskDrain
+from tests.e2e.infra.email_capture import create_email_sender_mock
+from tests.e2e.infra.external_mocks import *  # noqa: F401,F403 — autouse mock fixtures
+from tests.e2e.infra.task_drain import build_actor_registry
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
-__all__ = ["DrainFn", "DrainResult", "EmailCapture", "StripeSimulator"]
-
 # Auth preset covering the scopes needed by most E2E purchase flows.
-# Use as: @E2E_AUTH on test methods. Override with @pytest.mark.auth(...) when needed.
+# Use as: @E2E_AUTH on test methods.
 E2E_AUTH = pytest.mark.auth(
     AuthSubjectFixture(
         subject="user",
@@ -44,6 +42,7 @@ E2E_AUTH = pytest.mark.auth(
             Scope.checkouts_read,
             Scope.checkouts_write,
             Scope.orders_read,
+            Scope.subscriptions_read,
         },
     )
 )

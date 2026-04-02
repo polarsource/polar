@@ -14,7 +14,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product, User, UserOrganization
 from tests.e2e.infra import DrainFn, StripeSimulator
 from tests.e2e.post_purchase.conftest import E2E_SEAT_AUTH
-from tests.e2e.purchase.conftest import BILLING_ADDRESS, BUYER_EMAIL, BUYER_NAME
+from tests.e2e.purchase.conftest import complete_purchase
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_organization, create_product
 
@@ -60,53 +60,16 @@ class TestSeatClaim:
         seat_product: Product,
     ) -> None:
         # Given a completed 3-seat purchase
-        response = await client.post(
-            "/v1/checkouts/",
-            json={
-                "products": [str(seat_product.id)],
-                "seats": 3,
-            },
+        result = await complete_purchase(
+            client, session, stripe_sim, drain,
+            seat_org, seat_product, amount=3000, seats=3,
         )
-        assert response.status_code == 201, response.text
-        checkout_id = response.json()["id"]
-        client_secret = response.json()["client_secret"]
-        assert response.json()["amount"] == 3000  # 3 seats * $10
-
-        await drain()
-
-        stripe_sim.expect_payment(
-            amount=3000,
-            customer_name=BUYER_NAME,
-            customer_email=BUYER_EMAIL,
-            billing_address=BILLING_ADDRESS,
-        )
-        response = await client.post(
-            f"/v1/checkouts/client/{client_secret}/confirm",
-            json={
-                "confirmation_token_id": "tok_test_confirm",
-                "customer_email": BUYER_EMAIL,
-                "customer_billing_address": BILLING_ADDRESS,
-            },
-        )
-        assert response.status_code == 200, response.text
-        await drain()
-
-        await stripe_sim.send_charge_webhook(
-            session,
-            organization_id=seat_org.id,
-            checkout_id=checkout_id,
-        )
-        await drain()
-
-        response = await client.get("/v1/orders/")
-        assert response.status_code == 200
-        order_id = response.json()["items"][0]["id"]
 
         # When the buyer assigns a seat to a teammate
         response = await client.post(
             "/v1/customer-seats",
             json={
-                "order_id": order_id,
+                "order_id": result.order_id,
                 "email": SEAT_RECIPIENT_EMAIL,
             },
         )
@@ -114,7 +77,6 @@ class TestSeatClaim:
         seat_data = response.json()
         assert seat_data["status"] == "pending"
         seat_id = seat_data["id"]
-
         await drain()
 
         # Retrieve invitation token from DB (not exposed in API for security)
@@ -133,8 +95,8 @@ class TestSeatClaim:
         )
         assert response.status_code == 200, response.text
         claim_data = response.json()
+
+        # Then the seat is claimed
         assert claim_data["seat"]["status"] == "claimed"
         assert claim_data["customer_session_token"] is not None
-
-        # Then the seat is claimed and benefits are triggered
         await drain()

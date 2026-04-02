@@ -16,11 +16,11 @@ from sqlalchemy.orm import joinedload
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product
-from polar.models.benefit import Benefit, BenefitType
+from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
 from tests.e2e.conftest import E2E_AUTH
 from tests.e2e.infra import DrainFn, StripeSimulator
-from tests.e2e.purchase.conftest import BILLING_ADDRESS, BUYER_EMAIL, BUYER_NAME
+from tests.e2e.purchase.conftest import complete_purchase
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
@@ -28,56 +28,6 @@ from tests.fixtures.random_objects import (
     create_product,
     set_product_benefits,
 )
-
-
-async def _purchase_product(
-    client: AsyncClient,
-    session: AsyncSession,
-    stripe_sim: StripeSimulator,
-    drain: DrainFn,
-    organization: Organization,
-    product: Product,
-    amount: int,
-) -> str:
-    """Run the full purchase flow for a product and return the order ID."""
-    response = await client.post(
-        "/v1/checkouts/",
-        json={"products": [str(product.id)]},
-    )
-    assert response.status_code == 201, response.text
-    checkout_id = response.json()["id"]
-    client_secret = response.json()["client_secret"]
-
-    await drain()
-
-    stripe_sim.expect_payment(
-        amount=amount,
-        customer_name=BUYER_NAME,
-        customer_email=BUYER_EMAIL,
-        billing_address=BILLING_ADDRESS,
-    )
-    response = await client.post(
-        f"/v1/checkouts/client/{client_secret}/confirm",
-        json={
-            "confirmation_token_id": "tok_test_confirm",
-            "customer_email": BUYER_EMAIL,
-            "customer_billing_address": BILLING_ADDRESS,
-        },
-    )
-    assert response.status_code == 200, response.text
-
-    await drain()
-
-    await stripe_sim.send_charge_webhook(
-        session, organization_id=organization.id, checkout_id=checkout_id
-    )
-    await drain()
-
-    response = await client.get("/v1/orders/")
-    assert response.status_code == 200
-    orders = response.json()
-    assert orders["pagination"]["total_count"] == 1
-    return orders["items"][0]["id"]
 
 
 async def _get_grants(session: AsyncSession, order_id: str) -> list[BenefitGrant]:
@@ -216,15 +166,14 @@ class TestBenefitGrants:
         product_with_custom_benefit: Product,
     ) -> None:
         # Given a product with a custom benefit attached
-
         # When the customer purchases it
-        order_id = await _purchase_product(
+        result = await complete_purchase(
             client, session, stripe_sim, drain,
-            organization, product_with_custom_benefit, 1000,
+            organization, product_with_custom_benefit, amount=1000,
         )
 
         # Then the grant is created
-        grants = await _get_grants(session, order_id)
+        grants = await _get_grants(session, result.order_id)
         assert len(grants) == 1
         assert grants[0].is_granted
         assert grants[0].benefit.type == BenefitType.custom
@@ -240,15 +189,14 @@ class TestBenefitGrants:
         product_with_license_key: Product,
     ) -> None:
         # Given a product with a license key benefit (prefix "E2E", 5 activations)
-
         # When the customer purchases it
-        order_id = await _purchase_product(
+        result = await complete_purchase(
             client, session, stripe_sim, drain,
-            organization, product_with_license_key, 2000,
+            organization, product_with_license_key, amount=2000,
         )
 
         # Then a license key is generated and stored on the grant
-        grants = await _get_grants(session, order_id)
+        grants = await _get_grants(session, result.order_id)
         assert len(grants) == 1
         grant = grants[0]
         assert grant.is_granted
@@ -267,15 +215,14 @@ class TestBenefitGrants:
         product_with_meter_credit: Product,
     ) -> None:
         # Given a product with a meter credit benefit (100 API credits)
-
         # When the customer purchases it
-        order_id = await _purchase_product(
+        result = await complete_purchase(
             client, session, stripe_sim, drain,
-            organization, product_with_meter_credit, 500,
+            organization, product_with_meter_credit, amount=500,
         )
 
         # Then 100 credits are applied to the meter
-        grants = await _get_grants(session, order_id)
+        grants = await _get_grants(session, result.order_id)
         assert len(grants) == 1
         grant = grants[0]
         assert grant.is_granted
@@ -293,15 +240,14 @@ class TestBenefitGrants:
         product_with_feature_flag: Product,
     ) -> None:
         # Given a product with a feature flag benefit
-
         # When the customer purchases it
-        order_id = await _purchase_product(
+        result = await complete_purchase(
             client, session, stripe_sim, drain,
-            organization, product_with_feature_flag, 800,
+            organization, product_with_feature_flag, amount=800,
         )
 
         # Then the grant exists (presence = access)
-        grants = await _get_grants(session, order_id)
+        grants = await _get_grants(session, result.order_id)
         assert len(grants) == 1
         assert grants[0].is_granted
         assert grants[0].benefit.type == BenefitType.feature_flag

@@ -14,7 +14,7 @@ from polar.models import Organization, Product
 from polar.models.discount import DiscountDuration, DiscountPercentage, DiscountType
 from tests.e2e.conftest import E2E_AUTH
 from tests.e2e.infra import DrainFn, EmailCapture, StripeSimulator
-from tests.e2e.purchase.conftest import BILLING_ADDRESS, BUYER_EMAIL, BUYER_NAME
+from tests.e2e.purchase.conftest import BUYER_EMAIL, complete_purchase
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount, create_product
 
@@ -28,7 +28,7 @@ async def product_with_discount(
         organization=organization,
         recurring_interval=None,
         name="E2E Premium Widget",
-        prices=[(5000, "usd")],  # $50.00
+        prices=[(5000, "usd")],
     )
     discount = await create_discount(
         save_fixture,
@@ -57,52 +57,17 @@ class TestWithDiscount:
         product, discount = product_with_discount
 
         # Given a $50 product with a 20% discount
-        response = await client.post(
-            "/v1/checkouts/",
-            json={
-                "products": [str(product.id)],
-                "discount_id": str(discount.id),
-            },
+        # When the customer purchases it
+        result = await complete_purchase(
+            client, session, stripe_sim, drain,
+            organization, product,
+            amount=4000,  # $50 - 20% = $40
+            discount_id=str(discount.id),
         )
-        assert response.status_code == 201, response.text
-        checkout_data = response.json()
-        checkout_id = checkout_data["id"]
-        client_secret = checkout_data["client_secret"]
-        assert checkout_data["discount"]["id"] == str(discount.id)
-        await drain()
-
-        # When the customer pays the discounted amount ($40)
-        stripe_sim.expect_payment(
-            amount=4000,  # $40 after discount
-            customer_name=BUYER_NAME,
-            customer_email=BUYER_EMAIL,
-            billing_address=BILLING_ADDRESS,
-        )
-        response = await client.post(
-            f"/v1/checkouts/client/{client_secret}/confirm",
-            json={
-                "confirmation_token_id": "tok_test_confirm",
-                "customer_email": BUYER_EMAIL,
-                "customer_billing_address": BILLING_ADDRESS,
-            },
-        )
-        assert response.status_code == 200, response.text
-
-        await drain()
-
-        await stripe_sim.send_charge_webhook(
-            session, organization_id=organization.id, checkout_id=checkout_id
-        )
-        await drain()
 
         # Then the order reflects the discounted price
-        response = await client.get("/v1/orders/")
-        assert response.status_code == 200
-        orders = response.json()
-        assert orders["pagination"]["total_count"] == 1
-        order = orders["items"][0]
-        assert order["product"]["id"] == str(product.id)
-        assert order["amount"] == 4000  # $50 - 20% = $40
-        assert order["discount_amount"] == 1000
+        assert result.order["product"]["id"] == str(product.id)
+        assert result.order["amount"] == 4000
+        assert result.order["discount_amount"] == 1000
 
         assert len(email_capture.find(to=BUYER_EMAIL)) >= 1

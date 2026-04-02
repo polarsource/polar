@@ -24,6 +24,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.config import settings
 from polar.enums import (
     InvoiceNumbering,
+    PublicSubscriptionProrationBehavior,
     SubscriptionProrationBehavior,
     TaxBehaviorOption,
 )
@@ -73,11 +74,11 @@ _default_notification_settings: OrganizationNotificationSettings = {
 
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
-    # Legacy - to be removed separately
-    allow_customer_updates: bool
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: PublicSubscriptionProrationBehavior
     benefit_revocation_grace_period: int
     prevent_trial_abuse: bool
+    # Legacy - to be removed separately
+    allow_customer_updates: bool
 
 
 _default_subscription_settings: OrganizationSubscriptionSettings = {

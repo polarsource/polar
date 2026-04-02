@@ -103,6 +103,10 @@ class OrganizationFeatureSettings(Schema):
         None,
         description="Ordered list of metric slugs shown on the dashboard overview.",
     )
+    reset_proration_behavior_enabled: bool = Field(
+        False,
+        description="If this organization has access to reset proration behavior.",
+    )
 
     @field_validator("overview_metrics", mode="before")
     @classmethod

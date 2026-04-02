@@ -882,6 +882,24 @@ class SubscriptionService:
         *,
         update: SubscriptionUpdate,
     ) -> Subscription:
+        if (
+            isinstance(update, SubscriptionUpdateProduct | SubscriptionUpdateSeats)
+            and update.proration_behavior == SubscriptionProrationBehavior.reset
+        ):
+            organization = subscription.customer.organization
+            if not organization.feature_settings.get(
+                "reset_proration_behavior_enabled"
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "proration_behavior"),
+                            "msg": "The 'reset' proration behavior is not enabled for this organization.",
+                            "input": update.proration_behavior,
+                        }
+                    ]
+                )
         if isinstance(update, SubscriptionUpdateProduct):
             return await self.update_product(
                 session,

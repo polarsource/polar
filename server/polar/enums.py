@@ -92,13 +92,24 @@ class SubscriptionProrationBehavior(StrEnum):
     next_period = "next_period"
     """Don't invoice immediately, and don't add prorations. The new price will be applied at the start of the next period."""
     reset = "reset"
-    """Invoice the full amount of the new plan immediately and reset the billing cycle to now. No proration."""
+    """
+    Invoice the full amount of the new plan immediately and reset the billing cycle to now. No proration.
+
+    **This mode is not globally available and may not be supported in all contexts.**
+    """
 
     def is_immediate(self) -> bool:
         return self in {
             SubscriptionProrationBehavior.invoice,
             SubscriptionProrationBehavior.reset,
         }
+
+
+PublicSubscriptionProrationBehavior = Literal[
+    SubscriptionProrationBehavior.invoice,
+    SubscriptionProrationBehavior.prorate,
+    SubscriptionProrationBehavior.next_period,
+]
 
 
 class InvoiceNumbering(StrEnum):

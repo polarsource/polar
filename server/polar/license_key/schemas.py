@@ -208,13 +208,19 @@ class LicenseKeyCreate(LicenseKeyUpdate):
         cls, ttl: int, timeframe: Literal["year", "month", "day"]
     ) -> datetime:
         now = utc_now()
-        match timeframe:
-            case "year":
-                return now + relativedelta(years=ttl)
-            case "month":
-                return now + relativedelta(months=ttl)
-            case _:
-                return now + relativedelta(days=ttl)
+        try:
+            match timeframe:
+                case "year":
+                    return now + relativedelta(years=ttl)
+                case "month":
+                    return now + relativedelta(months=ttl)
+                case _:
+                    return now + relativedelta(days=ttl)
+        except (ValueError, OverflowError):
+            raise ValueError(
+                f"Expiration date overflows: ttl={ttl} with timeframe='{timeframe}' "
+                f"produces a date beyond year 9999."
+            )
 
     @typing.overload
     @classmethod

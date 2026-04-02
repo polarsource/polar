@@ -1,8 +1,15 @@
 """Test for license key prefix validation fix."""
 
+from datetime import datetime
+
+import pytest
+from pydantic import ValidationError
+
 from polar.benefit.strategies.license_keys.schemas import (
+    BenefitLicenseKeyExpirationProperties,
     BenefitLicenseKeysCreateProperties,
 )
+from polar.license_key.schemas import LicenseKeyCreate
 
 
 class TestLicenseKeyPrefixValidation:
@@ -37,3 +44,63 @@ class TestLicenseKeyPrefixValidation:
         """Test that prefix with leading/trailing whitespace is stripped but preserved."""
         properties = BenefitLicenseKeysCreateProperties(prefix="  MYAPP  ")
         assert properties.prefix == "MYAPP"
+
+
+class TestBenefitLicenseKeyExpirationPropertiesValidation:
+    def test_valid_year(self) -> None:
+        props = BenefitLicenseKeyExpirationProperties(ttl=1, timeframe="year")
+        assert props.ttl == 1
+
+    def test_valid_month(self) -> None:
+        props = BenefitLicenseKeyExpirationProperties(ttl=1, timeframe="month")
+        assert props.ttl == 1
+
+    def test_valid_day(self) -> None:
+        props = BenefitLicenseKeyExpirationProperties(ttl=1, timeframe="day")
+        assert props.ttl == 1
+
+    def test_boundary_year_valid(self) -> None:
+        props = BenefitLicenseKeyExpirationProperties(ttl=100, timeframe="year")
+        assert props.ttl == 100
+
+    def test_boundary_year_invalid(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitLicenseKeyExpirationProperties(ttl=101, timeframe="year")
+
+    def test_boundary_month_valid(self) -> None:
+        props = BenefitLicenseKeyExpirationProperties(ttl=1200, timeframe="month")
+        assert props.ttl == 1200
+
+    def test_boundary_month_invalid(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitLicenseKeyExpirationProperties(ttl=1201, timeframe="month")
+
+    def test_boundary_day_valid(self) -> None:
+        props = BenefitLicenseKeyExpirationProperties(ttl=36500, timeframe="day")
+        assert props.ttl == 36500
+
+    def test_boundary_day_invalid(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitLicenseKeyExpirationProperties(ttl=36501, timeframe="day")
+
+    def test_seconds_confused_as_years(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitLicenseKeyExpirationProperties(ttl=31536000, timeframe="year")
+
+
+class TestGenerateExpirationDt:
+    def test_normal_year(self) -> None:
+        result = LicenseKeyCreate.generate_expiration_dt(ttl=1, timeframe="year")
+        assert isinstance(result, datetime)
+
+    def test_normal_month(self) -> None:
+        result = LicenseKeyCreate.generate_expiration_dt(ttl=1, timeframe="month")
+        assert isinstance(result, datetime)
+
+    def test_normal_day(self) -> None:
+        result = LicenseKeyCreate.generate_expiration_dt(ttl=1, timeframe="day")
+        assert isinstance(result, datetime)
+
+    def test_overflow_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="Expiration date overflows"):
+            LicenseKeyCreate.generate_expiration_dt(ttl=999999999, timeframe="year")

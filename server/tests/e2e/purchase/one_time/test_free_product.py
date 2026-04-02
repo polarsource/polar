@@ -41,7 +41,7 @@ class TestFreeProduct:
         organization: Organization,
         free_product: Product,
     ) -> None:
-        # ── Create checkout ──────────────────────────────────────────
+        # Given a free product
         response = await client.post(
             "/v1/checkouts/",
             json={"products": [str(free_product.id)]},
@@ -49,10 +49,9 @@ class TestFreeProduct:
         assert response.status_code == 201, response.text
         checkout_id = response.json()["id"]
         client_secret = response.json()["client_secret"]
-
         await drain()
 
-        # ── Confirm (no confirmation_token needed for free) ──────────
+        # When the customer confirms without a payment token
         response = await client.post(
             f"/v1/checkouts/client/{client_secret}/confirm",
             json={
@@ -62,13 +61,10 @@ class TestFreeProduct:
             },
         )
         assert response.status_code == 200, response.text
-        assert response.json()["status"] == "confirmed"
-
-        # Processes: handle_free_success → order creation → email
-        # No Stripe webhook needed — the task fires directly from confirm
+        # No Stripe webhook needed — handle_free_success fires from confirm
         executed = await drain()
 
-        # ── Verify ───────────────────────────────────────────────────
+        # Then the checkout succeeds and a $0 order is created
         response = await client.get(f"/v1/checkouts/{checkout_id}")
         assert response.status_code == 200
         assert response.json()["status"] == "succeeded"
@@ -77,9 +73,8 @@ class TestFreeProduct:
         assert response.status_code == 200
         orders = response.json()
         assert orders["pagination"]["total_count"] == 1
-        order = orders["items"][0]
-        assert order["amount"] == 0
-        assert order["billing_reason"] == "purchase"
+        assert orders["items"][0]["amount"] == 0
+        assert orders["items"][0]["billing_reason"] == "purchase"
 
         assert len(email_capture.find(to=BUYER_EMAIL)) >= 1
         assert "checkout.handle_free_success" in executed

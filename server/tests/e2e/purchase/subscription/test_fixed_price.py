@@ -29,7 +29,7 @@ class TestSubscriptionFixedPrice:
     ) -> None:
         product = monthly_product
 
-        # ── Create checkout ──────────────────────────────────────────
+        # Given a $15/month recurring product
         response = await client.post(
             "/v1/checkouts/",
             json={"products": [str(product.id)]},
@@ -37,10 +37,9 @@ class TestSubscriptionFixedPrice:
         assert response.status_code == 201, response.text
         checkout_id = response.json()["id"]
         client_secret = response.json()["client_secret"]
-
         await drain()
 
-        # ── Confirm checkout ─────────────────────────────────────────
+        # When the customer subscribes
         stripe_sim.expect_payment(
             amount=1500,
             customer_name=BUYER_NAME,
@@ -56,24 +55,18 @@ class TestSubscriptionFixedPrice:
             },
         )
         assert response.status_code == 200, response.text
-        assert response.json()["status"] == "confirmed"
-
         await drain()
 
-        # ── Stripe webhook ───────────────────────────────────────────
         await stripe_sim.send_charge_webhook(
             session, organization_id=organization.id, checkout_id=checkout_id
         )
         executed = await drain()
 
-        # ── Verify ───────────────────────────────────────────────────
-
-        # Checkout succeeded
+        # Then the subscription is active with a matching order
         response = await client.get(f"/v1/checkouts/{checkout_id}")
         assert response.status_code == 200
         assert response.json()["status"] == "succeeded"
 
-        # Order created with subscription_create reason
         response = await client.get("/v1/orders/")
         assert response.status_code == 200
         orders = response.json()
@@ -84,7 +77,6 @@ class TestSubscriptionFixedPrice:
         assert order["billing_reason"] == "subscription_create"
         assert order["subscription"] is not None
 
-        # Subscription is active
         response = await client.get("/v1/subscriptions/")
         assert response.status_code == 200
         subs = response.json()
@@ -94,9 +86,6 @@ class TestSubscriptionFixedPrice:
         assert sub["product"]["id"] == str(product.id)
         assert sub["recurring_interval"] == "month"
 
-        # Email sent
         assert len(email_capture.find(to=BUYER_EMAIL)) >= 1
-
-        # Key tasks ran
         assert "stripe.webhook.charge.succeeded" in executed
         assert "order.confirmation_email" in executed

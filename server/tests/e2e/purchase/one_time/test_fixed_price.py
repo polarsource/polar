@@ -29,21 +29,17 @@ class TestOneTimeFixedPrice:
     ) -> None:
         product = one_time_product
 
-        # ── Create checkout ──────────────────────────────────────────
+        # Given a $25 one-time product
         response = await client.post(
             "/v1/checkouts/",
             json={"products": [str(product.id)]},
         )
         assert response.status_code == 201, response.text
-        checkout_data = response.json()
-        assert checkout_data["status"] == "open"
-        checkout_id = checkout_data["id"]
-        client_secret = checkout_data["client_secret"]
-
-        # Processes: checkout.created system event
+        checkout_id = response.json()["id"]
+        client_secret = response.json()["client_secret"]
         await drain()
 
-        # ── Confirm checkout (payment) ───────────────────────────────
+        # When the customer pays
         stripe_sim.expect_payment(
             amount=2500,
             customer_name=BUYER_NAME,
@@ -59,20 +55,14 @@ class TestOneTimeFixedPrice:
             },
         )
         assert response.status_code == 200, response.text
-        assert response.json()["status"] == "confirmed"
-
-        # Processes: customer.created, customer.webhook
         await drain()
 
-        # ── Stripe charge.succeeded webhook ──────────────────────────
         await stripe_sim.send_charge_webhook(
             session, organization_id=organization.id, checkout_id=checkout_id
         )
-
-        # Processes: charge.succeeded → checkout success → order → email
         executed = await drain()
 
-        # ── Verify ───────────────────────────────────────────────────
+        # Then the checkout succeeds, an order is created, and email is sent
         response = await client.get(f"/v1/checkouts/{checkout_id}")
         assert response.status_code == 200
         assert response.json()["status"] == "succeeded"

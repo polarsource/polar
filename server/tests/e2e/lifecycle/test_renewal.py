@@ -33,16 +33,13 @@ class TestRenewal:
         organization: Organization,
         monthly_product: Product,
     ) -> None:
-        """
-        Active subscription → scheduler triggers cycle → new order created.
-        """
+        # Given an active subscription whose billing period just ended
         customer = await create_customer(
             save_fixture,
             organization=organization,
             email="subscriber@example.com",
             stripe_customer_id="cus_e2e_renewal",
         )
-
         now = datetime.now(UTC)
         subscription = await create_subscription(
             save_fixture,
@@ -51,13 +48,13 @@ class TestRenewal:
             status=SubscriptionStatus.active,
             started_at=now - timedelta(days=30),
             current_period_start=now - timedelta(days=30),
-            current_period_end=now,  # Period ends now → ready for cycle
+            current_period_end=now,
         )
 
-        # Simulate the scheduler triggering subscription.cycle
+        # When the scheduler triggers the cycle
         executed = await trigger_subscription_cycle(session, drain, subscription.id)
 
-        # Order was created for the new billing period
+        # Then a renewal order is created
         response = await client.get("/v1/orders/")
         assert response.status_code == 200
         orders = response.json()
@@ -67,6 +64,5 @@ class TestRenewal:
         assert order["amount"] == 1500
         assert order["billing_reason"] == "subscription_cycle"
 
-        # Key tasks ran through the drain pipeline
         assert "subscription.cycle" in executed
         assert "order.create_subscription_order" in executed

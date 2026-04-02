@@ -56,7 +56,7 @@ class TestWithDiscount:
     ) -> None:
         product, discount = product_with_discount
 
-        # ── Create checkout with discount ────────────────────────────
+        # Given a $50 product with a 20% discount
         response = await client.post(
             "/v1/checkouts/",
             json={
@@ -68,12 +68,10 @@ class TestWithDiscount:
         checkout_data = response.json()
         checkout_id = checkout_data["id"]
         client_secret = checkout_data["client_secret"]
-        # 20% off $50 = $10 discount, $40 net
         assert checkout_data["discount"]["id"] == str(discount.id)
-
         await drain()
 
-        # ── Confirm ──────────────────────────────────────────────────
+        # When the customer pays the discounted amount ($40)
         stripe_sim.expect_payment(
             amount=4000,  # $40 after discount
             customer_name=BUYER_NAME,
@@ -92,21 +90,19 @@ class TestWithDiscount:
 
         await drain()
 
-        # ── Webhook ──────────────────────────────────────────────────
         await stripe_sim.send_charge_webhook(
             session, organization_id=organization.id, checkout_id=checkout_id
         )
         await drain()
 
-        # ── Verify ───────────────────────────────────────────────────
+        # Then the order reflects the discounted price
         response = await client.get("/v1/orders/")
         assert response.status_code == 200
         orders = response.json()
         assert orders["pagination"]["total_count"] == 1
         order = orders["items"][0]
         assert order["product"]["id"] == str(product.id)
-        # Net amount = $50 - $10 discount = $40
-        assert order["amount"] == 4000
+        assert order["amount"] == 4000  # $50 - 20% = $40
         assert order["discount_amount"] == 1000
 
         assert len(email_capture.find(to=BUYER_EMAIL)) >= 1

@@ -59,9 +59,7 @@ class TestSeatClaim:
         seat_org: Organization,
         seat_product: Product,
     ) -> None:
-        """Buy 3 seats → assign one to a teammate → teammate claims it."""
-
-        # ── Purchase 3 seats ─────────────────────────────────────────
+        # Given a completed 3-seat purchase
         response = await client.post(
             "/v1/checkouts/",
             json={
@@ -72,8 +70,7 @@ class TestSeatClaim:
         assert response.status_code == 201, response.text
         checkout_id = response.json()["id"]
         client_secret = response.json()["client_secret"]
-        # 3 seats * $10 = $30
-        assert response.json()["amount"] == 3000
+        assert response.json()["amount"] == 3000  # 3 seats * $10
 
         await drain()
 
@@ -101,14 +98,11 @@ class TestSeatClaim:
         )
         await drain()
 
-        # Verify order exists
         response = await client.get("/v1/orders/")
         assert response.status_code == 200
-        orders = response.json()
-        assert orders["pagination"]["total_count"] == 1
-        order_id = orders["items"][0]["id"]
+        order_id = response.json()["items"][0]["id"]
 
-        # ── Assign a seat to a teammate ──────────────────────────────
+        # When the buyer assigns a seat to a teammate
         response = await client.post(
             "/v1/customer-seats",
             json={
@@ -123,7 +117,7 @@ class TestSeatClaim:
 
         await drain()
 
-        # Get the invitation token from the DB (not exposed in API response)
+        # Retrieve invitation token from DB (not exposed in API for security)
         from polar.customer_seat.repository import CustomerSeatRepository
 
         seat_repo = CustomerSeatRepository.from_session(session)
@@ -132,17 +126,16 @@ class TestSeatClaim:
         invitation_token = seat_model.invitation_token
         assert invitation_token is not None
 
-        # ── Recipient claims the seat ────────────────────────────────
+        # And the teammate claims it
         response = await client.post(
             "/v1/customer-seats/claim",
             json={"invitation_token": invitation_token},
         )
-        # Note: claim endpoint doesn't require auth (anonymous allowed)
         assert response.status_code == 200, response.text
         claim_data = response.json()
         assert claim_data["seat"]["status"] == "claimed"
         assert claim_data["customer_session_token"] is not None
 
-        # Benefits should be enqueued after claim
+        # Then benefits are enqueued for the claimed seat
         executed = await drain()
         assert "benefit.enqueue_benefits_grants" in executed

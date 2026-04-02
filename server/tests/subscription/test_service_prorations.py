@@ -618,6 +618,77 @@ class TestUpdateProductProrations:
             assert billing_entry.customer_id == customer.id
             assert billing_entry.product_price_id == new_price.id
 
+    async def test_reset_behavior(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(50_00, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "usd")],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=old_product,
+            customer=customer,
+            current_period_start=datetime(2025, 6, 1, tzinfo=UTC),
+            current_period_end=datetime(2025, 7, 1, tzinfo=UTC),
+        )
+
+        update_time = datetime(2025, 6, 16, tzinfo=UTC)
+        with freezegun.freeze_time(update_time):
+            new_anchor_day = update_time.day
+            new_period_end = subscription.recurring_interval.get_next_period(
+                update_time, new_anchor_day, subscription.recurring_interval_count
+            )
+
+            updated_subscription = await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.reset,
+            )
+
+            create_subscription_update_order_mock.assert_awaited_once_with(
+                session, subscription
+            )
+
+            assert updated_subscription.current_period_start == update_time
+            assert updated_subscription.current_period_end == new_period_end
+            assert updated_subscription.anchor_day == new_anchor_day
+
+            new_price = new_product.prices[0]
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            billing_entries = await billing_entry_repository.get_all_by_subscription(
+                subscription.id
+            )
+            assert len(billing_entries) == 1
+
+            billing_entry = billing_entries[0]
+            assert billing_entry.start_timestamp == update_time
+            assert billing_entry.end_timestamp == new_period_end
+            assert billing_entry.direction == BillingEntryDirection.debit
+            assert billing_entry.amount == 100_00
+            assert billing_entry.currency == new_price.price_currency
+            assert billing_entry.customer_id == customer.id
+            assert billing_entry.product_price_id == new_price.id
+
     @pytest.mark.parametrize(
         "proration_behavior",
         [

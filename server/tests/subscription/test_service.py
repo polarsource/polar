@@ -1460,7 +1460,8 @@ class TestCycle:
             scheduler_locked_at=utc_now(),
         )
         subscription_update, _ = generate_subscription_update(
-            subscription=subscription,
+            subscription,
+            SubscriptionProrationBehavior.prorate,
             product=product_second,
         )
         await save_fixture(subscription_update)
@@ -1531,7 +1532,9 @@ class TestCycle:
             customer=customer,
             seats=5,
         )
-        subscription_update, _ = generate_subscription_update(subscription, seats=10)
+        subscription_update, _ = generate_subscription_update(
+            subscription, SubscriptionProrationBehavior.prorate, seats=10
+        )
         await save_fixture(subscription_update)
         subscription.pending_update = subscription_update
         await save_fixture(subscription)
@@ -1581,9 +1584,9 @@ class TestCycle:
             scheduler_locked_at=utc_now(),
         )
         subscription_update, _ = generate_subscription_update(
-            subscription=subscription,
+            subscription,
+            SubscriptionProrationBehavior.next_period,
             product=annual_product,
-            applies_at=subscription.current_period_end,
         )
         await save_fixture(subscription_update)
         subscription.pending_update = subscription_update
@@ -2664,7 +2667,7 @@ class TestUpdateProduct:
         assert len(subscription.prices) == 1
 
         subscription_update, _ = generate_subscription_update(
-            subscription, product=product
+            subscription, SubscriptionProrationBehavior.prorate, product=product
         )
         await save_fixture(subscription_update)
 
@@ -2725,7 +2728,7 @@ class TestUpdateProduct:
         assert len(subscription.prices) == 1
 
         subscription_update, _ = generate_subscription_update(
-            subscription, product=product
+            subscription, SubscriptionProrationBehavior.prorate, product=product
         )
         await save_fixture(subscription_update)
 
@@ -3846,6 +3849,83 @@ class TestUpdateSeats:
         assert subscription.seats == 5
         assert subscription.amount == 5000
 
+    @pytest.mark.parametrize(
+        ("initial", "new"),
+        [
+            (5, 10),  # Increase seats
+            (10, 5),  # Decrease seats
+        ],
+    )
+    async def test_proration_reset_success(
+        self,
+        initial: int,
+        new: int,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=initial,
+            current_period_start=datetime(2025, 6, 1, tzinfo=UTC),
+            current_period_end=datetime(2025, 7, 1, tzinfo=UTC),
+        )
+
+        # When: Update with reset behavior
+        update_time = datetime(2025, 6, 16, tzinfo=UTC)
+        with freezegun.freeze_time(update_time):
+            new_anchor_day = update_time.day
+            new_period_end = subscription.recurring_interval.get_next_period(
+                update_time, new_anchor_day, subscription.recurring_interval_count
+            )
+
+            updated_subscription = await subscription_service.update_seats(
+                session,
+                subscription,
+                seats=new,
+                proration_behavior=SubscriptionProrationBehavior.reset,
+            )
+            await session.flush()
+
+            # Then: Order created and paid immediately
+            create_subscription_update_order_mock.assert_awaited_once_with(
+                session, subscription
+            )
+
+            # Then: Seats updated and cycle reset
+            assert updated_subscription.seats == new
+            assert updated_subscription.current_period_start == update_time
+            assert updated_subscription.current_period_end == new_period_end
+
+            # Then: only one debit entry for the new period (no proration for reset)
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            billing_entries = await billing_entry_repository.get_all_by_subscription(
+                subscription.id
+            )
+            assert len(billing_entries) == 1
+            billing_entry = billing_entries[0]
+            assert billing_entry.start_timestamp == update_time
+            assert billing_entry.end_timestamp == new_period_end
+            assert billing_entry.direction == BillingEntryDirection.debit
+            assert billing_entry.amount == 1000 * new
+
     async def test_proration_prorate_behavior(
         self,
         session: AsyncSession,
@@ -4070,7 +4150,7 @@ class TestUpdateSeats:
 
         future_time = utc_now() + timedelta(days=15)
         subscription_update, _ = generate_subscription_update(
-            subscription=subscription, seats=8
+            subscription, SubscriptionProrationBehavior.prorate, seats=8
         )
         await save_fixture(subscription_update)
 
@@ -4122,7 +4202,7 @@ class TestUpdateSeats:
         )
 
         subscription_update, _ = generate_subscription_update(
-            subscription=subscription, seats=8
+            subscription, SubscriptionProrationBehavior.prorate, seats=8
         )
         await save_fixture(subscription_update)
 

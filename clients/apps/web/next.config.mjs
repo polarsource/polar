@@ -186,6 +186,10 @@ const nextConfig = {
               source: '/healthz',
               destination: `${apiUrl}/healthz`,
             },
+            {
+              source: '/openapi.json',
+              destination: `${apiUrl}/openapi.json`,
+            },
           ]
         : []),
       {

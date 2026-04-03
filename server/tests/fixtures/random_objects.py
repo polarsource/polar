@@ -2109,7 +2109,6 @@ async def create_account(
     organization: Organization,
     user: User,
     *,
-    status: Account.Status = Account.Status.ACTIVE,
     country: str = "US",
     currency: str = "usd",
     account_type: AccountType = AccountType.stripe,
@@ -2122,7 +2121,6 @@ async def create_account(
     billing_address: Address | None = None,
 ) -> Account:
     account = Account(
-        status=status,
         account_type=account_type,
         admin_id=user.id,
         country=country,

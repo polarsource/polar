@@ -90,7 +90,6 @@ async def create_account_without_stripe(
     session: AsyncSession, old_account: Account
 ) -> Account:
     new_account = Account(
-        status=old_account.status,
         admin_id=old_account.admin_id,
         account_type=old_account.account_type,
         stripe_id=None,
@@ -105,7 +104,6 @@ async def create_account_without_stripe(
         processor_fees_applicable=old_account.processor_fees_applicable,
         _platform_fee_percent=old_account._platform_fee_percent,
         _platform_fee_fixed=old_account._platform_fee_fixed,
-        next_review_threshold=old_account.next_review_threshold,
         campaign_id=old_account.campaign_id,
     )
 

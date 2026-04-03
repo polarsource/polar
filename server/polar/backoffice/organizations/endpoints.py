@@ -1146,7 +1146,6 @@ async def setup_manual_payout(
             is_charges_enabled=True,
             is_payouts_enabled=True,
             processor_fees_applicable=False,  # No processor fees for manual accounts
-            status=Account.Status.ACTIVE,
         )
 
         session.add(account)

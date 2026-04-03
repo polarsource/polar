@@ -7,7 +7,6 @@ from pydantic import BeforeValidator, Field
 from polar.enums import AccountType
 from polar.kit.address import Address, AddressInput
 from polar.kit.schemas import Schema
-from polar.models.account import Account as AccountModel
 from polar.organization.schemas import Organization
 from polar.user.schemas import UserBase
 
@@ -145,7 +144,6 @@ class AccountCreateForOrganization(Schema):
 class Account(Schema):
     id: UUID
     account_type: AccountType
-    status: AccountModel.Status
     stripe_id: str | None
     is_details_submitted: bool
     is_charges_enabled: bool

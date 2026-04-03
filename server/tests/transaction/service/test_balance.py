@@ -31,7 +31,6 @@ class TestCreateBalance:
         self, session: AsyncSession, save_fixture: SaveFixture, user: User
     ) -> None:
         account = Account(
-            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             admin_id=user.id,
             country="FR",
@@ -74,7 +73,6 @@ class TestCreateBalance:
 class TestCreateBalanceFromCharge:
     async def test_not_existing_charge(self, session: AsyncSession, user: User) -> None:
         account = Account(
-            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             admin_id=user.id,
             country="FR",
@@ -105,7 +103,6 @@ class TestCreateBalanceFromCharge:
         stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
-            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             admin_id=user.id,
             country="FR",
@@ -156,7 +153,6 @@ class TestCreateBalanceFromPaymentIntent:
         stripe_service_mock: MagicMock,
     ) -> None:
         account = Account(
-            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             admin_id=user.id,
             country="FR",
@@ -260,7 +256,6 @@ class TestCreateReversalBalance:
         self, session: AsyncSession, save_fixture: SaveFixture, user: User
     ) -> None:
         account = Account(
-            status=Account.Status.ACTIVE,
             account_type=AccountType.stripe,
             admin_id=user.id,
             country="US",

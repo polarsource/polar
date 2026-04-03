@@ -10,12 +10,9 @@ def generate_account(
     *,
     stripe_id: str | None = "acct_test",
     is_payouts_enabled: bool = True,
-    status: Account.Status = Account.Status.ACTIVE,
 ) -> Account:
     account = Account(
         account_type=AccountType.stripe,
-        status=status,
-        next_review_threshold=1000,
         admin_id=user.id,
         country="US",
         currency="usd",
@@ -40,10 +37,6 @@ class TestIsPayoutReady:
 
     def test_payouts_disabled(self, user: User) -> None:
         account = generate_account(user, is_payouts_enabled=False)
-        assert account.is_payout_ready() is False
-
-    def test_under_review(self, user: User) -> None:
-        account = generate_account(user, status=Account.Status.UNDER_REVIEW)
         assert account.is_payout_ready() is False
 
     def test_disconnected_and_payouts_disabled(self, user: User) -> None:

@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "2026-03-27T09:24:05.953188Z"
+exclude-newer = "2026-03-27T12:02:53.223874Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -2058,6 +2058,7 @@ dependencies = [
     { name = "aiocsv" },
     { name = "alembic" },
     { name = "alembic-utils" },
+    { name = "anyio" },
     { name = "apscheduler" },
     { name = "asgi-ratelimit" },
     { name = "asyncpg" },
@@ -2146,6 +2147,7 @@ requires-dist = [
     { name = "aiocsv", specifier = ">=1.4.0" },
     { name = "alembic", specifier = ">=1.9.2" },
     { name = "alembic-utils", specifier = ">=0.8.8" },
+    { name = "anyio", specifier = ">=4.12.1" },
     { name = "apscheduler", specifier = ">=3.10.4" },
     { name = "asgi-ratelimit", specifier = ">=0.10.0" },
     { name = "asyncpg", specifier = ">=0.29.0" },

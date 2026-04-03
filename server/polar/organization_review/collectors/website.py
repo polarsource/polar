@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import ipaddress
 import re
-import socket
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
 
@@ -14,6 +12,7 @@ from playwright.async_api import Browser, Page, Playwright, Route, async_playwri
 from pydantic_ai import Agent, RunContext
 
 from polar.config import settings
+from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 
 from ..schemas import UsageInfo, WebsiteData, WebsitePage
 
@@ -24,36 +23,6 @@ MAX_PAGES = 5
 MAX_CHARS_PER_PAGE = 15_000
 PAGE_TIMEOUT_MS = 15_000
 MAX_REDIRECTS = 10
-
-
-class SSRFBlockedError(Exception):
-    """Raised when a request targets a private/reserved IP address."""
-
-
-async def _resolve_and_validate_ip(hostname: str) -> None:
-    """Resolve *hostname* and raise `SSRFBlockedError` if any IP is private/reserved."""
-    loop = asyncio.get_running_loop()
-    try:
-        infos = await loop.run_in_executor(
-            None,
-            lambda: socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP),
-        )
-    except socket.gaierror as exc:
-        raise SSRFBlockedError(f"DNS resolution failed for {hostname}") from exc
-
-    for info in infos:
-        addr = ipaddress.ip_address(info[4][0])
-        if (
-            addr.is_private
-            or addr.is_loopback
-            or addr.is_reserved
-            or addr.is_link_local
-            or addr.is_multicast
-            or addr.is_unspecified
-        ):
-            raise SSRFBlockedError(
-                f"Blocked request to {hostname}: resolves to private/reserved IP {addr}"
-            )
 
 
 # Realistic Chrome user-agent to avoid bot detection by CDNs (Cloudflare, Vercel, etc.)
@@ -200,7 +169,7 @@ class WebsiteDeps:
             hostname = parsed.hostname
             if hostname:
                 try:
-                    await _resolve_and_validate_ip(hostname)
+                    await resolve_and_validate_ip(hostname)
                 except SSRFBlockedError:
                     log.info(
                         "website_collector.playwright_blocked_ssrf",
@@ -337,7 +306,7 @@ with server-side rendering. Use this by default."""
     initial_host = urlparse(url).hostname
     if initial_host:
         try:
-            await _resolve_and_validate_ip(initial_host)
+            await resolve_and_validate_ip(initial_host)
         except SSRFBlockedError as e:
             return f"Error: {e}"
 
@@ -363,7 +332,7 @@ with server-side rendering. Use this by default."""
 
             redirect_host = urlparse(redirect_url).hostname
             if redirect_host:
-                await _resolve_and_validate_ip(redirect_host)
+                await resolve_and_validate_ip(redirect_host)
 
             current_url = redirect_url
         else:
@@ -422,7 +391,7 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
     initial_host = urlparse(url).hostname
     if initial_host:
         try:
-            await _resolve_and_validate_ip(initial_host)
+            await resolve_and_validate_ip(initial_host)
         except SSRFBlockedError as e:
             return f"Error: {e}"
 

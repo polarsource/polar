@@ -1,11 +1,73 @@
+import ipaddress
+import socket
 from typing import Annotated
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+import anyio
 from fastapi import Depends, Query
-from pydantic import AfterValidator, HttpUrl, PlainSerializer
+from pydantic import AfterValidator, HttpUrl, PlainSerializer, ValidationError
 from safe_redirect_url import url_has_allowed_host_and_scheme
 
 from polar.config import settings
+
+
+class SSRFBlockedError(Exception):
+    """Raised when a request targets a private/reserved IP address."""
+
+
+async def resolve_and_validate_ip(hostname: str) -> None:
+    """Resolve *hostname* and raise `SSRFBlockedError` if any IP is private/reserved."""
+    try:
+        infos = await anyio.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+    except OSError as exc:
+        raise SSRFBlockedError(f"DNS resolution failed for {hostname}") from exc
+
+    for _family, _type, _proto, _canonname, sockaddr in infos:
+        addr = ipaddress.ip_address(sockaddr[0])
+        if (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_reserved
+            or addr.is_link_local
+            or addr.is_multicast
+            or addr.is_unspecified
+        ):
+            raise SSRFBlockedError(
+                f"Blocked request to {hostname}: resolves to private/reserved IP {addr}"
+            )
+
+
+class UnsafeCrawlableUrl(Exception):
+    """A URL that may point to private/reserved IPs, which we will validate manually."""
+
+
+async def validate_crawlable_url(url: HttpUrl | str) -> HttpUrl:
+    """
+    Validate that the URL is crawlable (not private/reserved).
+
+    Args:
+        url: The URL to validate.
+
+    Returns:
+        The original URL if it's valid.
+
+    Raises:
+        UnsafeCrawlableUrl: If the URL is invalid or points to a private/reserved
+    """
+    if not isinstance(url, HttpUrl):
+        try:
+            url = HttpUrl(url)
+        except ValidationError as e:
+            raise UnsafeCrawlableUrl(f"Invalid URL: {e}") from e
+
+    if url.host is None:
+        raise UnsafeCrawlableUrl("URL must have a host")
+
+    try:
+        await resolve_and_validate_ip(url.host)
+    except SSRFBlockedError as e:
+        raise UnsafeCrawlableUrl(str(e)) from e
+    return url
 
 
 def _unescape_checkout_id_placeholder(url: HttpUrl) -> str:

@@ -511,3 +511,17 @@ class OrganizationDeletionResponse(Schema):
         default_factory=list,
         description="Reasons why immediate deletion is blocked",
     )
+
+
+class OrganizationValidateWebsiteRequest(Schema):
+    url: HttpUrl = Field(description="The URL to validate.")
+
+
+class OrganizationValidateWebsiteResponse(Schema):
+    reachable: bool = Field(description="Whether the URL is reachable.")
+    status: int | None = Field(
+        default=None, description="HTTP status code returned by the URL."
+    )
+    error: str | None = Field(
+        default=None, description="Error message if the URL is not reachable."
+    )

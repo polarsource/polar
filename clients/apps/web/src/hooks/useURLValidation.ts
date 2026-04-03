@@ -1,3 +1,6 @@
+'use client'
+
+import { api } from '@/utils/client'
 import { useCallback, useRef, useState } from 'react'
 
 export type URLValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid'
@@ -8,7 +11,7 @@ interface URLValidationResult {
 }
 
 interface UseURLValidationOptions {
-  organizationSlug: string
+  organizationId: string
 }
 
 interface UseURLValidationReturn {
@@ -19,7 +22,7 @@ interface UseURLValidationReturn {
 }
 
 export function useURLValidation({
-  organizationSlug,
+  organizationId,
 }: UseURLValidationOptions): UseURLValidationReturn {
   const [result, setResult] = useState<URLValidationResult>({ status: 'idle' })
   const cacheRef = useRef<Map<string, URLValidationResult>>(new Map())
@@ -55,21 +58,27 @@ export function useURLValidation({
       setResult({ status: 'validating' })
 
       try {
-        const response = await fetch(
-          `/dashboard/${organizationSlug}/settings/validate-website`,
+        const { data, error } = await api.POST(
+          '/v1/organizations/{id}/validate-website',
           {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
+            params: { path: { id: organizationId } },
+            body: { url },
             signal: abortControllerRef.current.signal,
           },
         )
 
-        const data = await response.json()
+        if (error) {
+          const newResult: URLValidationResult = {
+            status: 'invalid',
+            error: 'Failed to validate URL',
+          }
+          setResult(newResult)
+          return
+        }
 
         const newResult: URLValidationResult = {
           status: data.reachable ? 'valid' : 'invalid',
-          error: data.error,
+          error: data.error ?? undefined,
         }
 
         // Cache the result
@@ -88,7 +97,7 @@ export function useURLValidation({
         setResult(newResult)
       }
     },
-    [organizationSlug],
+    [organizationId],
   )
 
   const reset = useCallback(() => {

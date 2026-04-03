@@ -5,6 +5,7 @@ import httpx
 import structlog
 from playwright.async_api import async_playwright
 
+from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 from polar.models.checkout_link import CheckoutLink
 from polar.models.webhook_endpoint import WebhookEndpoint
 
@@ -19,7 +20,6 @@ from ..schemas import (
     UrlRedirectInfo,
     WebhookEndpointData,
 )
-from .website import SSRFBlockedError, _resolve_and_validate_ip
 
 log = structlog.get_logger(__name__)
 
@@ -65,7 +65,7 @@ async def _validate_url_host(url: str) -> None:
     parsed = urlparse(url)
     hostname = parsed.hostname
     if hostname:
-        await _resolve_and_validate_ip(hostname)
+        await resolve_and_validate_ip(hostname)
 
 
 async def _resolve_redirect(
@@ -173,7 +173,7 @@ async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
             hostname = parsed.hostname
             if hostname:
                 try:
-                    await _resolve_and_validate_ip(hostname)
+                    await resolve_and_validate_ip(hostname)
                 except SSRFBlockedError:
                     await route.abort("blockedbyclient")
                     return

@@ -29,6 +29,7 @@ TAILSCALE_TAGS="${TAILSCALE_TAGS:-tag:preview}"
 read -rp "Vercel bypass secret (from Vercel project settings): " VERCEL_BYPASS_SECRET
 read -rp "Stripe test-mode secret key (sk_test_...): " STRIPE_SECRET_KEY
 read -rp "Stripe test-mode webhook secret (whsec_...): " STRIPE_WEBHOOK_SECRET
+read -rp "Pydantic AI gateway API key: " PYDANTIC_AI_GATEWAY_API_KEY
 
 echo ""
 echo "=== Setting up preview VM ==="
@@ -95,7 +96,11 @@ ENVFILE
 POLAR_STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
 POLAR_STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
 ENVFILE
+    cat > /etc/preview-secrets/pydantic_ai.env <<ENVFILE
+POLAR_PYDANTIC_AI_GATEWAY_API_KEY=${PYDANTIC_AI_GATEWAY_API_KEY}
+ENVFILE
     chmod 600 /etc/preview-secrets/stripe.env
+    chmod 600 /etc/preview-secrets/pydantic_ai.env
     chmod 600 /etc/caddy/env
     echo ""
     echo "Generated preview access token: ${PREVIEW_ACCESS_TOKEN}"
@@ -114,6 +119,13 @@ POLAR_STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
 POLAR_STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
 ENVFILE
     chmod 600 /etc/preview-secrets/stripe.env
+fi
+
+if [[ ! -f /etc/preview-secrets/pydantic_ai.env ]]; then
+    cat > /etc/preview-secrets/pydantic_ai.env <<ENVFILE
+POLAR_PYDANTIC_AI_GATEWAY_API_KEY=${PYDANTIC_AI_GATEWAY_API_KEY}
+ENVFILE
+    chmod 600 /etc/preview-secrets/pydantic_ai.env
 fi
 
 cat > /etc/caddy/Caddyfile <<'CADDYFILE'

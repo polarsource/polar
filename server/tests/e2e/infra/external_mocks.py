@@ -53,10 +53,18 @@ def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
     mocker.patch("polar.integrations.stripe.payment.stripe_service", new=mock)
     mocker.patch("polar.payment_method.service.stripe_service", new=mock)
+    mocker.patch("polar.order.service.stripe_service", new=mock)
 
     # Safe defaults so flows work without StripeSimulator
     mock.create_customer.return_value = SimpleNamespace(id="cus_e2e_default")
     mock.update_customer.return_value = SimpleNamespace(id="cus_e2e_default")
+    # Renewal payment flow calls create_payment_intent for background charges
+    mock.create_payment_intent.return_value = SimpleNamespace(
+        id="pi_e2e_default",
+        client_secret="pi_e2e_default_secret",
+        status="succeeded",
+        payment_method="pm_e2e_default",
+    )
 
     from tests.fixtures.stripe import build_stripe_payment_method
 

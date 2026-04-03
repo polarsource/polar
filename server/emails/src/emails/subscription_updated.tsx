@@ -15,17 +15,22 @@ export function SubscriptionUpdated({
   subscription,
   order,
   url,
+  proration_behavior,
 }: schemas['SubscriptionUpdatedProps']) {
   return (
     <WrapperOrganization organization={organization}>
       <Preview>You&rsquo;re now subscribed to {product.name}</Preview>
       <Intro headline={`You're now subscribed to ${product.name}`}>
-        This change is effective immediately and you'll be billed at your new
-        rate going forward.{' '}
-        {order ? (
-          <>The invoice for this change is attached.</>
+        {proration_behavior === 'reset' ? (
+          "This change is effective immediately. You've been billed the full amount for the new plan and your billing cycle has been reset to today."
+        ) : order ? (
+          <>
+            This change is effective immediately and you&rsquo;ll be billed at
+            your new rate going forward.{' '}
+            The invoice for this change is attached.
+          </>
         ) : (
-          'Any difference in price will be reflected on your next billing cycle.'
+          "This change is effective immediately and you'll be billed at your new rate going forward. Any difference in price will be reflected on your next billing cycle."
         )}
       </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}

@@ -1144,7 +1144,14 @@ class SubscriptionService:
             if (
                 proration_behavior.is_immediate() or interval_changed
             ) and billing_entries:
-                await self._create_subscription_update_order(session, subscription)
+                await self._create_subscription_update_order(
+                    session,
+                    subscription,
+                    skip_confirmation_email=(
+                        proration_behavior
+                        == SubscriptionProrationBehavior.reset
+                    ),
+                )
 
             await self.enqueue_benefits_grants(session, subscription)
 
@@ -2242,6 +2249,7 @@ class SubscriptionService:
             template_name="subscription_updated",
             extra_context={
                 "order": None,
+                "proration_behavior": proration_behavior.value,
             },
         )
 
@@ -2457,7 +2465,11 @@ class SubscriptionService:
         return await repository.update(subscription)
 
     async def _create_subscription_update_order(
-        self, session: AsyncSession, subscription: Subscription
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        skip_confirmation_email: bool = False,
     ) -> Order:
         from polar.order.service import order as order_service
 
@@ -2466,6 +2478,7 @@ class SubscriptionService:
             subscription,
             OrderBillingReasonInternal.subscription_update,
             payment_mode=PaymentMode.sync,
+            skip_confirmation_email=skip_confirmation_email,
         )
 
 

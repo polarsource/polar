@@ -331,6 +331,7 @@ class SubscriptionUncanceledEmail(BaseModel):
 
 class SubscriptionUpdatedProps(SubscriptionPropsBase):
     order: OrderEmail | None
+    proration_behavior: str | None = None
 
 
 class SubscriptionUpdatedEmail(BaseModel):

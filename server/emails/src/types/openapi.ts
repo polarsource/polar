@@ -1957,6 +1957,8 @@ export interface components {
       /** Url */
       url: string
       order: components['schemas']['OrderEmail'] | null
+      /** Proration Behavior */
+      proration_behavior?: string | null
     }
     /**
      * TrialInterval

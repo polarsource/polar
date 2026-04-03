@@ -15,3 +15,21 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+  - package-ecosystem: "pnpm"
+    directory: "/server/emails"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "pnpm"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "pnpm"
+    directory: "/handbook"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7

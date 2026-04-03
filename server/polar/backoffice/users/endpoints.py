@@ -604,9 +604,6 @@ async def get(
                 ),
                 datatable.DatatableAttrColumn("country", "Country"),
                 datatable.DatatableAttrColumn("currency", "Currency"),
-                datatable.DatatableAttrColumn(
-                    "next_review_threshold", "Next Review Threshold"
-                ),
                 datatable.DatatableActionsColumn(
                     "",
                     datatable.DatatableActionHTMX[Account](

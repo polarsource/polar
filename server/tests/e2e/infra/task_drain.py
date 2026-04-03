@@ -268,7 +268,7 @@ class TaskDrain:
         options = message.get("options", {})
 
         # Mirrors CurrentMessage.before_process_message behavior
-        msg = dramatiq.Message(
+        msg: dramatiq.Message[Any] = dramatiq.Message(
             queue_name=message.get("_queue_name", "default"),
             actor_name=message["actor_name"],
             args=args,

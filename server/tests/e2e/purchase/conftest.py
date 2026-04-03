@@ -1,6 +1,7 @@
 """Shared constants and helpers for purchase E2E tests."""
 
 from dataclasses import dataclass
+from typing import Any
 
 from httpx import AsyncClient
 
@@ -25,7 +26,7 @@ class CompletedPurchase:
 
     checkout_id: str
     order_id: str
-    order: dict  # Full order JSON from API
+    order: dict[str, Any]  # Full order JSON from API
 
 
 async def complete_purchase(
@@ -46,7 +47,7 @@ async def complete_purchase(
     Returns a CompletedPurchase with checkout_id, order_id, and the full
     order JSON. Use this to avoid duplicating the 4-step ceremony in tests.
     """
-    checkout_body: dict = {"products": [str(product.id)]}
+    checkout_body: dict[str, Any] = {"products": [str(product.id)]}
     if discount_id is not None:
         checkout_body["discount_id"] = discount_id
     if seats is not None:

@@ -5,6 +5,8 @@ Verifies that tax is calculated, added to the charge amount, and
 recorded on the order. Uses exclusive tax (added on top of price).
 """
 
+from unittest.mock import MagicMock
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -44,7 +46,7 @@ class TestWithTax:
         email_capture: EmailCapture,
         drain: DrainFn,
         organization: Organization,
-        mock_tax_calculation,
+        mock_tax_calculation: MagicMock,
         taxed_product: Product,
     ) -> None:
         # Given a $50 product with 10% exclusive tax

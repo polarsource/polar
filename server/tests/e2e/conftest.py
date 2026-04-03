@@ -8,6 +8,7 @@ Tests are organized by lifecycle phase:
 - lifecycle/     — ongoing subscription events (renewal, retry, cancellation)
 """
 
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -48,7 +49,7 @@ E2E_AUTH = pytest.mark.auth(
 
 
 @pytest.fixture(scope="session")
-def actor_registry() -> dict:
+def actor_registry() -> dict[str, Any]:
     return build_actor_registry()
 
 
@@ -97,7 +98,9 @@ def stripe_sim(mock_stripe_service: MagicMock) -> StripeSimulator:
 
 
 @pytest_asyncio.fixture
-async def drain(session: AsyncSession, redis: Redis, actor_registry: dict) -> DrainFn:
+async def drain(
+    session: AsyncSession, redis: Redis, actor_registry: dict[str, Any]
+) -> DrainFn:
     """
     Returns a callable that drains all enqueued background tasks.
 

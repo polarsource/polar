@@ -6,6 +6,7 @@ real network calls. All fixtures are ``autouse`` — they apply to every
 test in the ``tests/e2e/`` directory automatically.
 """
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
@@ -25,7 +26,7 @@ def _block_external_http(mocker: MockerFixture) -> None:
     _original_send = httpx.AsyncClient.send
 
     async def _guarded_send(
-        self: httpx.AsyncClient, request: httpx.Request, **kwargs: object
+        self: httpx.AsyncClient, request: httpx.Request, **kwargs: Any
     ) -> httpx.Response:
         if request.url.host not in ALLOWED_HOSTS:
             raise RuntimeError(

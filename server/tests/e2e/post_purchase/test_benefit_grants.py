@@ -7,6 +7,7 @@ strategy that executes during the grant task.
 """
 
 import uuid
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -203,8 +204,9 @@ class TestBenefitGrants:
         grant = grants[0]
         assert grant.is_granted
         assert grant.benefit.type == BenefitType.license_keys
-        assert grant.properties["license_key_id"] is not None
-        assert grant.properties["display_key"] is not None
+        props: dict[str, Any] = grant.properties  # type: ignore[assignment]
+        assert props["license_key_id"] is not None
+        assert props["display_key"] is not None
 
     @E2E_AUTH
     async def test_meter_credit_applied(
@@ -234,7 +236,8 @@ class TestBenefitGrants:
         grant = grants[0]
         assert grant.is_granted
         assert grant.benefit.type == BenefitType.meter_credit
-        assert grant.properties["last_credited_units"] == 100
+        props: dict[str, Any] = grant.properties  # type: ignore[assignment]
+        assert props["last_credited_units"] == 100
 
     @E2E_AUTH
     async def test_feature_flag_granted(

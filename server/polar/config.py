@@ -227,7 +227,7 @@ class Settings(BaseSettings):
     RISK_CURRENCY_CODES: list[str] = []
 
     # Pydantic AI Gateway
-    PYDANTIC_AI_GATEWAY_API_KEY: str = ""
+    PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
     PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.2-2025-12-11"
 
     # Stripe

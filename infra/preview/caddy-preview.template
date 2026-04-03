@@ -11,6 +11,10 @@ handle /pr-__PR_NUM__/healthz {
 	uri strip_prefix /pr-__PR_NUM__
 	reverse_proxy 127.0.0.1:__API_PORT__
 }
+handle /pr-__PR_NUM__/openapi.json {
+	uri strip_prefix /pr-__PR_NUM__
+	reverse_proxy 127.0.0.1:__API_PORT__
+}
 handle_path /pr-__PR_NUM__/_logs/* {
 	rewrite * /pr-__PR_NUM__{path}
 	reverse_proxy 127.0.0.1:9999

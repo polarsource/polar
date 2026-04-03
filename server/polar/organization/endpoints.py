@@ -13,7 +13,10 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceNotFound,
 )
-from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
+from polar.kit.http import (
+    UnsafeCrawlableUrl,
+    validate_crawlable_url,
+)
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
@@ -669,25 +672,15 @@ async def validate_website(
     if organization is None:
         raise ResourceNotFound()
 
-    url = str(body.url)
-    hostname = body.url.host
-
-    if hostname is None:
-        return OrganizationValidateWebsiteResponse(
-            reachable=False, error="Invalid URL: missing hostname"
-        )
-
     try:
-        await resolve_and_validate_ip(hostname)
-    except SSRFBlockedError as e:
+        validated_url = await validate_crawlable_url(body.url)
+    except UnsafeCrawlableUrl as e:
         return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
 
     async def _check_redirect(response: httpx.Response) -> None:
         if response.is_redirect:
             location = response.headers.get("location", "")
-            redirect_host = httpx.URL(location).host
-            if redirect_host:
-                await resolve_and_validate_ip(redirect_host)
+            await validate_crawlable_url(location)
 
     try:
         async with httpx.AsyncClient(
@@ -696,13 +689,13 @@ async def validate_website(
             headers={"User-Agent": "Polar URL Validator/1.0"},
             event_hooks={"response": [_check_redirect]},
         ) as client:
-            response = await client.head(url)
+            response = await client.head(str(validated_url))
 
         reachable = 200 <= response.status_code < 400
         return OrganizationValidateWebsiteResponse(
             reachable=reachable, status=response.status_code
         )
-    except SSRFBlockedError as e:
+    except UnsafeCrawlableUrl as e:
         return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
     except httpx.TimeoutException:
         return OrganizationValidateWebsiteResponse(

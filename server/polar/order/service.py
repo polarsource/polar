@@ -630,7 +630,6 @@ class OrderService:
         billing_reason: OrderBillingReasonInternal,
         *,
         payment_mode: PaymentMode = PaymentMode.background,
-        skip_confirmation_email: bool = False,
     ) -> Order:
         """
         Create an order for a subscription based on its pending billing entries.
@@ -824,7 +823,6 @@ class OrderService:
             await self._on_order_created(
                 session,
                 order,
-                skip_confirmation_email=skip_confirmation_email,
             )
 
             return order
@@ -1933,12 +1931,9 @@ class OrderService:
         self,
         session: AsyncSession,
         order: Order,
-        *,
-        skip_confirmation_email: bool = False,
     ) -> None:
         enqueue_job("order.created", order.id)
-        if not skip_confirmation_email:
-            enqueue_job("order.confirmation_email", order.id)
+        enqueue_job("order.confirmation_email", order.id)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:

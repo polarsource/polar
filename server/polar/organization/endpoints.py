@@ -682,11 +682,19 @@ async def validate_website(
     except SSRFBlockedError as e:
         return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
 
+    async def _check_redirect(response: httpx.Response) -> None:
+        if response.is_redirect:
+            location = response.headers.get("location", "")
+            redirect_host = httpx.URL(location).host
+            if redirect_host:
+                await resolve_and_validate_ip(redirect_host)
+
     try:
         async with httpx.AsyncClient(
             follow_redirects=True,
             timeout=5.0,
             headers={"User-Agent": "Polar URL Validator/1.0"},
+            event_hooks={"response": [_check_redirect]},
         ) as client:
             response = await client.head(url)
 
@@ -694,6 +702,8 @@ async def validate_website(
         return OrganizationValidateWebsiteResponse(
             reachable=reachable, status=response.status_code
         )
+    except SSRFBlockedError as e:
+        return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
     except httpx.TimeoutException:
         return OrganizationValidateWebsiteResponse(
             reachable=False, error="Request timed out"

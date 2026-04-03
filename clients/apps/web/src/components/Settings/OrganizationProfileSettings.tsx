@@ -231,7 +231,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
   const { name, avatar_url: avatarURL } = useWatch({ control })
 
   const { status: urlStatus, validateURL } = useURLValidation({
-    organizationSlug: organization.slug,
+    organizationId: organization.id,
   })
 
   const onFilesUpdated = useCallback(

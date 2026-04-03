@@ -929,6 +929,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/validate-website': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Validate Website URL
+     * @description Validate that a website URL is reachable and not targeting a private network.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:validate_website']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -23348,6 +23370,33 @@ export interface components {
       /** @description Default tax behavior applied on products. */
       default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
     }
+    /** OrganizationValidateWebsiteRequest */
+    OrganizationValidateWebsiteRequest: {
+      /**
+       * Url
+       * Format: uri
+       * @description The URL to validate.
+       */
+      url: string
+    }
+    /** OrganizationValidateWebsiteResponse */
+    OrganizationValidateWebsiteResponse: {
+      /**
+       * Reachable
+       * @description Whether the URL is reachable.
+       */
+      reachable: boolean
+      /**
+       * Status
+       * @description HTTP status code returned by the URL.
+       */
+      status?: number | null
+      /**
+       * Error
+       * @description Error message if the URL is not reachable.
+       */
+      error?: string | null
+    }
     /** Pagination */
     Pagination: {
       /** Total Count */
@@ -31060,6 +31109,50 @@ export interface operations {
       }
     }
   }
+  'organizations:validate_website': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationValidateWebsiteRequest']
+      }
+    }
+    responses: {
+      /** @description Website validation result. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationValidateWebsiteResponse']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'subscriptions:list': {
     parameters: {
       query?: {
@@ -34349,6 +34442,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -39533,6 +39627,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
@@ -40176,6 +40271,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -41220,6 +41316,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -43743,6 +43840,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/by-property']['get']['parameters']['query']['timezone']
@@ -44345,6 +44443,7 @@ export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -44947,6 +45046,7 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/meters/{id}/quantities']['get']['parameters']['query']['timezone']
@@ -45549,6 +45649,7 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AccountType']

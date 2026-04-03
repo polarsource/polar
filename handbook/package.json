@@ -14,7 +14,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
-    "mintlify": "^4.2.384"
+    "mintlify": "^4.2.457"
   },
   "devDependencies": {
     "@scalar/openapi-parser": "^0.23.13",

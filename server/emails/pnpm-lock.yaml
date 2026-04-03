@@ -12,8 +12,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@react-email/render':
-        specifier: ^2.0.0
-        version: 2.0.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: ^2.0.4
+        version: 2.0.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       commander:
         specifier: ^14.0.2
         version: 14.0.2
@@ -1045,6 +1045,13 @@ packages:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
       react-dom: ^18.0 || ^19.0 || ^19.0.0-rc
 
+  '@react-email/render@2.0.4':
+    resolution: {integrity: sha512-kht2oTFQ1SwrLpd882ahTvUtNa9s53CERHstiTbzhm6aR2Hbykp/mQ4tpPvsBGkKAEvKRlDEoooh60Uk6nHK1g==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      react: ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: ^18.0 || ^19.0 || ^19.0.0-rc
+
   '@react-email/row@0.0.12':
     resolution: {integrity: sha512-HkCdnEjvK3o+n0y0tZKXYhIXUNPDx+2vq1dJTmqappVHXS5tXS6W5JOPZr5j+eoZ8gY3PShI2LWj5rWF7ZEtIQ==}
     engines: {node: '>=18.0.0'}
@@ -2048,8 +2055,8 @@ packages:
     deprecated: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
     hasBin: true
 
-  prettier@3.7.4:
-    resolution: {integrity: sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA==}
+  prettier@3.8.1:
+    resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -2295,6 +2302,7 @@ packages:
   tar@7.5.13:
     resolution: {integrity: sha512-tOG/7GyXpFevhXVh8jOPJrmtRpOTsYqUIkVdVooZYJS/z8WhfQUX8RJILmeuJNinGAMSu1veBr4asSHFt5/hng==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   teex@1.0.1:
     resolution: {integrity: sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg==}
@@ -3098,7 +3106,14 @@ snapshots:
   '@react-email/render@2.0.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       html-to-text: 9.0.5
-      prettier: 3.7.4
+      prettier: 3.8.1
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
+  '@react-email/render@2.0.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      html-to-text: 9.0.5
+      prettier: 3.8.1
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
@@ -4080,7 +4095,7 @@ snapshots:
       tar-fs: 2.1.4
       tunnel-agent: 0.6.0
 
-  prettier@3.7.4: {}
+  prettier@3.8.1: {}
 
   prismjs@1.30.0: {}
 

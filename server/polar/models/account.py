@@ -62,12 +62,6 @@ class Account(RecordModel):
         String(255), nullable=True, default=None
     )
 
-    status: Mapped[str] = mapped_column(
-        String(), nullable=False, default="created", deferred=True
-    )
-    next_review_threshold: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=0, deferred=True
-    )
     campaign_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("campaigns.id", ondelete="set null"),

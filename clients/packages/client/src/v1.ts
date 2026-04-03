@@ -5199,7 +5199,6 @@ export interface components {
        */
       id: string
       account_type: components['schemas']['AccountType']
-      status: components['schemas']['Status']
       /** Stripe Id */
       stripe_id: string | null
       /** Is Details Submitted */
@@ -25527,16 +25526,6 @@ export interface components {
       stats: components['schemas']['EventStatistics'][]
     }
     /**
-     * Status
-     * @enum {string}
-     */
-    Status:
-      | 'created'
-      | 'onboarding_started'
-      | 'under_review'
-      | 'denied'
-      | 'active'
-    /**
      * StripeAccountCountry
      * @enum {string}
      */
@@ -27555,17 +27544,6 @@ export interface components {
        * @constant
        */
       error: 'Unauthorized'
-      /** Detail */
-      detail: string
-    }
-    /** UnderReviewAccount */
-    UnderReviewAccount: {
-      /**
-       * Error
-       * @example UnderReviewAccount
-       * @constant
-       */
-      error: 'UnderReviewAccount'
       /** Detail */
       detail: string
     }
@@ -34442,7 +34420,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -39627,7 +39604,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
@@ -40271,7 +40247,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -41316,7 +41291,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -41783,15 +41757,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['InsufficientBalance']
-        }
-      }
-      /** @description The account is under review or not ready. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['UnderReviewAccount']
         }
       }
       /** @description Account not found. */
@@ -43840,7 +43805,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/by-property']['get']['parameters']['query']['timezone']
@@ -44443,7 +44407,6 @@ export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -45046,7 +45009,6 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/meters/{id}/quantities']['get']['parameters']['query']['timezone']
@@ -45649,7 +45611,6 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AccountType']
@@ -48674,9 +48635,6 @@ export const seatStatusValues: ReadonlyArray<
 export const seatTierTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatTierType']
 > = ['volume', 'graduated']
-export const statusValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['Status']
-> = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
 export const stripeAccountCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [

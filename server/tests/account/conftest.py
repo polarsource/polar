@@ -7,13 +7,9 @@ async def create_account(
     save_fixture: SaveFixture,
     *,
     admin: User,
-    status: Account.Status,
-    next_review_threshold: int = 0,
 ) -> Account:
     account = Account(
         account_type=AccountType.stripe,
-        status=status,
-        next_review_threshold=next_review_threshold,
         admin_id=admin.id,
         country="US",
         currency="usd",

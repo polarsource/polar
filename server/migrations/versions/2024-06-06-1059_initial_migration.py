@@ -58,7 +58,7 @@ def upgrade() -> None:
         sa.Column("platform_pledge_fee_percent", sa.Integer(), nullable=True),
         sa.Column("platform_subscription_fee_percent", sa.Integer(), nullable=True),
         sa.Column("business_type", sa.String(length=255), nullable=True),
-        sa.Column("status", StringEnum(Account.Status), nullable=False),
+        sa.Column("status", sa.String(), nullable=False),
         sa.Column("next_review_threshold", sa.Integer(), nullable=True),
         sa.Column("data", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.Column("id", sa.UUID(), nullable=False),

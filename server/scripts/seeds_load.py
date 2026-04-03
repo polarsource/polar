@@ -652,7 +652,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 is_details_submitted=True,
                 is_charges_enabled=True,
                 is_payouts_enabled=True,
-                status=Account.Status.ACTIVE,
                 email=org_data["email"],
                 processor_fees_applicable=True,
             )

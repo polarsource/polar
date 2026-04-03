@@ -69,9 +69,7 @@ class TestChangeAdmin:
         )
 
         # Create account with current admin (no Stripe ID)
-        account = await create_account(
-            save_fixture, admin=user, status=Account.Status.ACTIVE
-        )
+        account = await create_account(save_fixture, admin=user)
         account.stripe_id = None
         await save_fixture(account)
 
@@ -104,9 +102,7 @@ class TestChangeAdmin:
         )
 
         # Create account with Stripe ID
-        account = await create_account(
-            save_fixture, admin=user, status=Account.Status.ACTIVE
-        )
+        account = await create_account(save_fixture, admin=user)
         account.stripe_id = "acct_123456789"
         await save_fixture(account)
 
@@ -149,9 +145,7 @@ class TestChangeAdmin:
         )
 
         # Create account without Stripe ID
-        account = await create_account(
-            save_fixture, admin=user, status=Account.Status.ACTIVE
-        )
+        account = await create_account(save_fixture, admin=user)
         account.stripe_id = None
         await save_fixture(account)
 
@@ -182,9 +176,7 @@ class TestChangeAdmin:
         )
 
         # Create account
-        account = await create_account(
-            save_fixture, admin=user, status=Account.Status.ACTIVE
-        )
+        account = await create_account(save_fixture, admin=user)
         account.stripe_id = None
         await save_fixture(account)
 
@@ -211,9 +203,7 @@ class TestChangeAdmin:
         )
 
         # Create account
-        account = await create_account(
-            save_fixture, admin=user, status=Account.Status.ACTIVE
-        )
+        account = await create_account(save_fixture, admin=user)
         account.stripe_id = None
         await save_fixture(account)
 
@@ -236,9 +226,7 @@ class TestGet:
         organization: Organization,
     ) -> None:
         # Create account with user as admin
-        account = await create_account(
-            save_fixture, admin=user, status=Account.Status.ACTIVE
-        )
+        account = await create_account(save_fixture, admin=user)
 
         # Associate the existing organization with the account
         organization.account_id = account.id

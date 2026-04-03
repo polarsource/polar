@@ -1,4 +1,3 @@
-from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -25,22 +24,6 @@ type Fees = tuple[FeeBasisPoints, FeeFixedCents]
 
 
 class Account(RecordModel):
-    class Status(StrEnum):
-        CREATED = "created"
-        ONBOARDING_STARTED = "onboarding_started"
-        UNDER_REVIEW = "under_review"
-        DENIED = "denied"
-        ACTIVE = "active"
-
-        def get_display_name(self) -> str:
-            return {
-                Account.Status.CREATED: "Created",
-                Account.Status.ONBOARDING_STARTED: "Onboarding Started",
-                Account.Status.UNDER_REVIEW: "Under Review",
-                Account.Status.DENIED: "Denied",
-                Account.Status.ACTIVE: "Active",
-            }[self]
-
     __tablename__ = "accounts"
 
     account_type: Mapped[AccountType] = mapped_column(
@@ -79,11 +62,11 @@ class Account(RecordModel):
         String(255), nullable=True, default=None
     )
 
-    status: Mapped[Status] = mapped_column(
-        StringEnum(Status), nullable=False, default=Status.CREATED
+    status: Mapped[str] = mapped_column(
+        String(), nullable=False, default="created", deferred=True
     )
     next_review_threshold: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=0
+        Integer, nullable=True, default=0, deferred=True
     )
     campaign_id: Mapped[UUID | None] = mapped_column(
         Uuid,
@@ -140,20 +123,13 @@ class Account(RecordModel):
     def credits(cls) -> Mapped[list["AccountCredit"]]:
         return relationship("AccountCredit", lazy="raise", back_populates="account")
 
-    def is_active(self) -> bool:
-        return self.status == Account.Status.ACTIVE
-
-    def is_under_review(self) -> bool:
-        return self.status == Account.Status.UNDER_REVIEW
-
     def is_payout_ready(self) -> bool:
-        return self.is_active() and (
-            # For Stripe accounts, check if payouts are enabled
-            # and that a Stripe account is actually connected.
-            # After a disconnect, stripe_id is cleared but the account
-            # may still be active with is_payouts_enabled=True.
-            self.account_type != AccountType.stripe
-            or (self.is_payouts_enabled and self.stripe_id is not None)
+        # For Stripe accounts, check if payouts are enabled
+        # and that a Stripe account is actually connected.
+        # After a disconnect, stripe_id is cleared but the account
+        # may still be active with is_payouts_enabled=True.
+        return self.account_type != AccountType.stripe or (
+            self.is_payouts_enabled and self.stripe_id is not None
         )
 
     def get_associations_names(self) -> list[str]:

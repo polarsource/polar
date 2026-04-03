@@ -6,7 +6,6 @@ from uuid import UUID
 
 import structlog
 from pydantic import BaseModel, Field
-from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -716,7 +715,6 @@ class OrganizationService:
                 else OrganizationStatus.INITIAL_REVIEW
             )
             organization.status_updated_at = datetime.now(UTC)
-            await self._sync_account_status(session, organization)
             session.add(organization)
 
             enqueue_job("organization.under_review", organization_id=organization.id)
@@ -738,7 +736,6 @@ class OrganizationService:
             organization.initially_reviewed_at = datetime.now(UTC)
             initial_review = True
 
-        await self._sync_account_status(session, organization)
         session.add(organization)
 
         # If there's an appeal, mark it as approved (handles both pending and previously rejected appeals)
@@ -800,7 +797,6 @@ class OrganizationService:
     ) -> Organization:
         organization.status = OrganizationStatus.DENIED
         organization.status_updated_at = datetime.now(UTC)
-        await self._sync_account_status(session, organization)
         session.add(organization)
 
         # If there's a pending appeal, mark it as rejected
@@ -822,7 +818,6 @@ class OrganizationService:
     ) -> Organization:
         organization.status = OrganizationStatus.ONGOING_REVIEW
         organization.status_updated_at = datetime.now(UTC)
-        await self._sync_account_status(session, organization)
         session.add(organization)
 
         # Record a human ESCALATE decision so the agent knows not to auto-act
@@ -865,32 +860,7 @@ class OrganizationService:
                 organization.status = OrganizationStatus.ACTIVE
                 organization.status_updated_at = datetime.now(UTC)
 
-            await self._sync_account_status(session, organization)
             session.add(organization)
-
-    async def _sync_account_status(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        """Sync organization status to the related account."""
-        if not organization.account_id:
-            return
-
-        # Map organization status to account status
-        status_mapping = {
-            OrganizationStatus.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
-            OrganizationStatus.ACTIVE: Account.Status.ACTIVE,
-            OrganizationStatus.INITIAL_REVIEW: Account.Status.UNDER_REVIEW,
-            OrganizationStatus.ONGOING_REVIEW: Account.Status.UNDER_REVIEW,
-            OrganizationStatus.DENIED: Account.Status.DENIED,
-        }
-
-        if organization.status in status_mapping:
-            account_status = status_mapping[organization.status]
-            await session.execute(
-                sqlalchemy_update(Account)
-                .where(Account.id == organization.account_id)
-                .values(status=account_status)
-            )
 
     async def get_payment_status(
         self,
@@ -1032,8 +1002,6 @@ class OrganizationService:
         organization.status_updated_at = datetime.now(UTC)
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)
-
-        await self._sync_account_status(session, organization)
 
         session.add(organization)
         session.add(review)

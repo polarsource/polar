@@ -107,13 +107,6 @@ class PayoutAmountTooLarge(PayoutError):
         super().__init__(message, 400)
 
 
-class UnderReviewAccount(PayoutError):
-    def __init__(self, account: Account) -> None:
-        self.account = account
-        message = "Your account is under review and can't receive payouts."
-        super().__init__(message, 403)
-
-
 class NotReadyAccount(PayoutError):
     def __init__(self, account: Account) -> None:
         self.account = account
@@ -243,8 +236,6 @@ class PayoutService:
     async def estimate(
         self, session: AsyncSession, *, account: Account
     ) -> PayoutEstimate:
-        if account.is_under_review():
-            raise UnderReviewAccount(account)
         if not account.is_payout_ready():
             raise NotReadyAccount(account)
 
@@ -279,8 +270,6 @@ class PayoutService:
             raise PendingPayoutCreation(account)
 
         async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
-            if account.is_under_review():
-                raise UnderReviewAccount(account)
             if not account.is_payout_ready():
                 raise NotReadyAccount(account)
 

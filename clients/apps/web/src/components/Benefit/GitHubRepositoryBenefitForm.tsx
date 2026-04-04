@@ -6,6 +6,7 @@ import { defaultApiUrl } from '@/utils/domain'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import {
   Select,
   SelectContent,
@@ -109,6 +110,22 @@ export const GitHubRepositoryBenefitForm = ({
       } as GitHubInvitesBenefitRepositoryWithKey
     })
   }, [repositories])
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const filteredRepos = useMemo(() => {
+    if (!searchQuery) {
+      return repos
+    }
+
+    const normalizedQuery = searchQuery.toLowerCase()
+
+    return repos.filter((r) => {
+      return (
+        r.repository_name.toLowerCase().includes(normalizedQuery) ||
+        r.repository_owner.toLowerCase().includes(normalizedQuery)
+      )
+    })
+  }, [repos, searchQuery])
 
   const [selectedRepository, setSelectedRepository] = useState<
     GitHubInvitesBenefitRepositoryWithKey | undefined
@@ -251,32 +268,47 @@ export const GitHubRepositoryBenefitForm = ({
                   </FormControl>
                 ) : (
                   <FormControl>
-                    <Select
-                      onValueChange={(key) =>
-                        onRepositoryChange(key, field.onChange)
+                    <Combobox
+                      items={filteredRepos}
+                      value={field.value}
+                      selectedItem={selectedRepository ?? null}
+                      isLoading={isFetchingRepositories}
+                      onQueryChange={setSearchQuery}
+                      onChange={(key) =>
+                        onRepositoryChange(key ?? '', field.onChange)
                       }
-                      defaultValue={selectedRepository?.key}
-                      disabled={repos.length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            update && defaultValues && defaultValues.properties
-                              ? `${defaultValues?.properties?.repository_owner}/${defaultValues?.properties?.repository_name}`
-                              : isFetchingRepositories
-                                ? 'Loading repositories'
-                                : 'Select a GitHub repository'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {repos.map((r) => (
-                          <SelectItem key={r.key} value={r.key}>
-                            {r.repository_owner}/{r.repository_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      getItemValue={(
+                        r: GitHubInvitesBenefitRepositoryWithKey,
+                      ) => r.key}
+                      getItemLabel={(
+                        r: GitHubInvitesBenefitRepositoryWithKey,
+                      ) => r.key}
+                      renderItem={(
+                        r: GitHubInvitesBenefitRepositoryWithKey,
+                      ) => (
+                        <div className="flex items-center gap-x-2">
+                          <span className="text-muted-foreground">
+                            {r.repository_owner}
+                          </span>
+                          <span className="text-polar-500">/</span>
+                          <span className="font-medium">
+                            {r.repository_name}
+                          </span>
+                        </div>
+                      )}
+                      placeholder={
+                        update && defaultValues?.properties
+                          ? `${defaultValues.properties.repository_owner}/${defaultValues.properties.repository_name}`
+                          : 'Select a GitHub repository'
+                      }
+                      searchPlaceholder="Search repositories..."
+                      emptyLabel={
+                        isFetchingRepositories
+                          ? 'Loading...'
+                          : 'No repositories found'
+                      }
+                      className="w-full"
+                    />
                   </FormControl>
                 )}
                 <Button

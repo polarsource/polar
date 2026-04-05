@@ -30,7 +30,7 @@
         "groups": [
           {
             "group": "Bootup",
-            "pages": ["introduction", "migrate"]
+            "pages": ["introduction", "migrate", "faq"]
           },
           {
             "group": "Features",

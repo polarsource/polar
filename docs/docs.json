@@ -109,6 +109,7 @@
                 "group": "Integrations",
                 "pages": [
                   "features/integrations/affonso",
+                  "features/integrations/evendeals",
                   "features/integrations/fernand",
                   "features/integrations/framer",
                   "features/integrations/paritydeals",

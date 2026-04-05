@@ -13,6 +13,13 @@ import {
 } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { SegmentedControl } from '@polar-sh/orbit'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Settings2 } from 'lucide-react'
 import React from 'react'
@@ -61,20 +68,45 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
         <h2 className="text-2xl font-medium text-gray-900 dark:text-white">
           Overview
         </h2>
-        <div className="flex items-center gap-x-4">
-          <SegmentedControl
-            options={(
-              Object.entries(CHART_RANGES) as [ChartRange, string][]
-            ).map(([value, label]) => ({ value, label }))}
-            value={range}
-            onChange={setRange}
-          />
+        <div className="flex w-full items-center justify-between gap-x-4 md:w-auto md:justify-start">
+          <div className="md:hidden">
+            <Select
+              value={range}
+              onValueChange={(value) => setRange(value as ChartRange)}
+            >
+              <SelectTrigger className="w-36 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(CHART_RANGES) as [ChartRange, string][]).map(
+                  ([value, label]) => (
+                    <SelectItem
+                      key={value}
+                      value={value}
+                      className="pr-8 pl-2 [&>span]:right-2 [&>span]:left-auto"
+                    >
+                      {label}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="hidden md:block">
+            <SegmentedControl
+              options={(
+                Object.entries(CHART_RANGES) as [ChartRange, string][]
+              ).map(([value, label]) => ({ value, label }))}
+              value={range}
+              onChange={setRange}
+            />
+          </div>
           <Button
             type="button"
             onClick={show}
             variant="secondary"
             size="sm"
-            wrapperClassNames="gap-x-2"
+            wrapperClassNames="gap-x-2 whitespace-nowrap"
           >
             <Settings2 className="h-3.5 w-3.5" />
             Customize

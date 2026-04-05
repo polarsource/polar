@@ -1,6 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import UsagePage from './UsagePage'
 
 export async function generateMetadata(props: {
@@ -61,6 +62,17 @@ export default async function Page(props: {
     params.organization,
     searchParams,
   )
+
+  const { response: customerResponse } = await api.GET(
+    '/v1/customer-portal/customers/me',
+    { cache: 'no-store' },
+  )
+
+  if (customerResponse.status === 401) {
+    redirect(
+      `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+    )
+  }
 
   return (
     <UsagePage

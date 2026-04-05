@@ -1,3 +1,5 @@
+import { CustomerEmailChangedNotification } from "./customer_email_changed_notification";
+import { CustomerEmailUpdateVerification } from "./customer_email_update_verification";
 import { CustomerSessionCode } from "./customer_session_code";
 import { EmailUpdate } from "./email_update";
 import { LoginCode } from "./login_code";
@@ -30,6 +32,8 @@ import { WebhookEndpointDisabled } from "./webhook_endpoint_disabled";
 
 const TEMPLATES: Record<string, React.FC<any>> = {
   login_code: LoginCode,
+  customer_email_changed_notification: CustomerEmailChangedNotification,
+  customer_email_update_verification: CustomerEmailUpdateVerification,
   customer_session_code: CustomerSessionCode,
   email_update: EmailUpdate,
   oauth2_leaked_client: OAuth2LeakedClient,

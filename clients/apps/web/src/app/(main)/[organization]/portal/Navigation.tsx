@@ -158,10 +158,11 @@ export const Navigation = ({
   const currentPath = usePathname()
   const searchParams = useSearchParams()
 
-  // Hide navigation on routes where portal access is being requested or authenticated
+  // Hide navigation on routes where portal access is being requested, authenticated, or verified
   if (
     currentPath.endsWith('/portal/request') ||
-    currentPath.endsWith('/portal/authenticate')
+    currentPath.endsWith('/portal/authenticate') ||
+    currentPath.endsWith('/portal/verify-email')
   ) {
     return null
   }

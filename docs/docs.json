@@ -113,6 +113,7 @@
                   "features/integrations/fernand",
                   "features/integrations/framer",
                   "features/integrations/paritydeals",
+                  "features/integrations/refgrow",
                   "features/integrations/raycast",
                   "features/integrations/zapier"
                 ]

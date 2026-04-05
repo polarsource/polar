@@ -162,7 +162,8 @@
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -327,7 +328,8 @@
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -492,7 +494,8 @@
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -657,7 +660,8 @@
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -822,7 +826,8 @@
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -979,7 +984,8 @@
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1136,7 +1142,8 @@
     "checkout.productDescription.readLess": "Read less",
     "benefitTypes.feature_flag": "Feature flag",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1293,7 +1300,8 @@
     "checkout.pricing.everyInterval.year.=2": "Every other year",
     "checkout.pricing.everyInterval.year.other": "Every # years",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1450,7 +1458,8 @@
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1607,6 +1616,7 @@
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
     "checkout.productSwitcher.fromPrefix": "From",
-    "checkout.footer.buyerTermsLink": "Buyer Terms"
+    "checkout.footer.buyerTermsLink": "Buyer Terms",
+    "checkout.pricing.inclTax": "Taxes (included)"
   }
 }

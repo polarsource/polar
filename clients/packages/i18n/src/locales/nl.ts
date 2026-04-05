@@ -88,6 +88,7 @@ export default {
           _mode: 'plural',
         },
       },
+      inclTax: 'Btw (inbegrepen)',
     },
     trial: {
       ends: 'Proefperiode eindigt op {endDate}',

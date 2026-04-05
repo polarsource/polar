@@ -88,6 +88,7 @@ export default {
           _mode: 'plural',
         },
       },
+      inclTax: '부가세 (포함)',
     },
     trial: {
       ends: '체험 종료일: {endDate}',

@@ -88,6 +88,7 @@ export default {
           _mode: 'plural',
         },
       },
+      inclTax: 'MwSt. (inklusive)',
     },
     trial: {
       ends: 'Testphase endet am {endDate}',

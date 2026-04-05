@@ -88,6 +88,7 @@ export default {
         },
         until: 'Fino al {date}',
       },
+      inclTax: 'IVA (inclusa)',
     },
     trial: {
       ends: 'La prova termina il {endDate}',

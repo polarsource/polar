@@ -88,6 +88,7 @@ export default {
           _mode: 'plural',
         },
       },
+      inclTax: 'IVA (incluído)',
     },
     trial: {
       ends: 'Teste termina a {endDate}',

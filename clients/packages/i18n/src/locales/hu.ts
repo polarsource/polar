@@ -88,6 +88,7 @@ export default {
           _mode: 'plural',
         },
       },
+      inclTax: 'ÁFA (tartalmazza)',
     },
     trial: {
       ends: 'A próbaidőszak ekkor jár le: {endDate}',

@@ -7,6 +7,14 @@ const PREVIEW_BUILD = process.env.POLAR_PREVIEW_BUILD === '1'
 
 // Vercel preview: compute basePath and API URL from PR number + Tailscale hostname
 let previewBasePath = ''
+console.log(
+  '[next.config] VERCEL_GIT_PULL_REQUEST_ID:',
+  process.env.VERCEL_GIT_PULL_REQUEST_ID || '(unset)',
+)
+console.log(
+  '[next.config] POLAR_PREVIEW_BACKEND_HOST:',
+  process.env.POLAR_PREVIEW_BACKEND_HOST || '(unset)',
+)
 if (
   process.env.VERCEL_GIT_PULL_REQUEST_ID &&
   process.env.POLAR_PREVIEW_BACKEND_HOST

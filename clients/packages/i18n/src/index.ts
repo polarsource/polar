@@ -6,7 +6,7 @@ export type { TranslateFn, TranslationKey, Translations } from './types'
 
 import type { AcceptedLocale, SupportedLocale } from './config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config'
-import type { LocaleShape, TranslateFn, Translations } from './types'
+import type { PartialLocaleShape, TranslateFn, Translations } from './types'
 
 export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {
   if (SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
@@ -40,7 +40,10 @@ import ptPT from './locales/pt-PT'
 import sv from './locales/sv'
 import ko from './locales/ko'
 
-const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
+const translations: Record<
+  SupportedLocale,
+  PartialLocaleShape<Translations>
+> = {
   en,
   nl,
   sv,
@@ -65,14 +68,19 @@ export function getTranslations(
 export const useTranslations = (locale: AcceptedLocale): TranslateFn => {
   return useCallback(
     ((key: string, interpolations?: Record<string, unknown>) => {
-      const translations = getTranslations(locale)
+      const localeTranslations = getTranslations(locale)
+      const fallbackTranslations = getTranslations(DEFAULT_LOCALE)
 
-      const value = key
-        .split('.')
-        .reduce<unknown>(
-          (obj, k) => (obj as Record<string, unknown>)[k],
-          translations,
+      const resolve = (obj: unknown, path: string[]): unknown =>
+        path.reduce<unknown>(
+          (o, k) => (o != null ? (o as Record<string, unknown>)[k] : undefined),
+          obj,
         )
+
+      const parts = key.split('.')
+      const value =
+        resolve(localeTranslations, parts) ??
+        resolve(fallbackTranslations, parts)
 
       // Handle plural objects
       if (

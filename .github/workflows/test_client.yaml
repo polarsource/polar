@@ -81,5 +81,8 @@ jobs:
       - name: "🧪 Test: @polar-sh/checkout"
         run: pnpm --filter @polar-sh/checkout test
 
+      - name: "🌐 Validate translations"
+        run: pnpm --filter @polar-sh/i18n validate
+
       - name: 🛠️ Build
         run: pnpm build

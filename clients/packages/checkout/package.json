@@ -87,7 +87,7 @@
     "event-source-plus": "^0.1.15",
     "eventemitter3": "^5.0.4",
     "markdown-to-jsx": "^8.0.0",
-    "react-hook-form": "~7.72.0"
+    "react-hook-form": "~7.72.1"
   },
   "dependencies": {
     "date-fns": "^4.1.0"

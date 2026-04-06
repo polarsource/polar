@@ -55,7 +55,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.577.0",
     "react-day-picker": "^9.14.0",
-    "react-hook-form": "~7.72.0",
+    "react-hook-form": "~7.72.1",
     "react-timeago": "^8.3.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0"

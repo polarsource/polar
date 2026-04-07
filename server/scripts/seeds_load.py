@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
+from polar.auth.scope import Scope
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.strategies.custom.schemas import BenefitCustomCreate
 from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesCreate
@@ -18,6 +19,7 @@ from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesC
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
+from polar.config import settings
 from polar.customer.schemas.customer import CustomerIndividualCreate
 from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
@@ -28,6 +30,7 @@ from polar.enums import (
     TaxBehaviorOption,
 )
 from polar.event.repository import EventRepository
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
@@ -40,8 +43,14 @@ from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
-from polar.models.organization import OrganizationDetails, OrganizationStatus
+from polar.models.organization import (
+    Organization,
+    OrganizationDetails,
+    OrganizationStatus,
+)
 from polar.models.organization_review import OrganizationReview
+from polar.models.personal_access_token import PersonalAccessToken
+from polar.models.product import Product
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceSeatUnit,
@@ -49,6 +58,7 @@ from polar.models.product_price import (
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.models.user import IdentityVerificationStatus
+from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, create_async_engine
@@ -68,7 +78,7 @@ from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
 
-cli = typer.Typer()
+cli = typer.Typer(invoke_without_command=True)
 
 
 class SeatBasedCustomerDict(TypedDict):
@@ -1082,9 +1092,25 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     print("Created 3 organizations with users, products, benefits, and customers")
 
 
-@cli.command()
-def seeds_load() -> None:
+POLAR_ORG_SLUG = "polar"
+PAT_COMMENT = "Polar self-integration (dev seed)"
+PAT_SCOPES = " ".join(
+    [
+        Scope.customers_read,
+        Scope.customers_write,
+        Scope.subscriptions_write,
+        Scope.events_write,
+        Scope.members_read,
+        Scope.members_write,
+    ]
+)
+
+
+@cli.callback()
+def seeds_load(ctx: typer.Context) -> None:
     """Load sample/test data into the database."""
+    if ctx.invoked_subcommand is not None:
+        return
 
     async def run() -> None:
         redis = create_redis("app")
@@ -1093,6 +1119,82 @@ def seeds_load() -> None:
             sessionmaker = create_async_sessionmaker(engine)
             async with sessionmaker() as session:
                 await create_seed_data(session, redis)
+
+    asyncio.run(run())
+
+
+@cli.command(name="polar-self-env")
+def polar_self_env() -> None:
+    """Output Polar self-integration env vars for the seeded Polar org."""
+
+    async def run() -> None:
+        engine = create_async_engine("script")
+        sessionmaker = create_async_sessionmaker(engine)
+        async with sessionmaker() as session:
+            org = (
+                await session.execute(
+                    select(Organization).where(Organization.slug == POLAR_ORG_SLUG)
+                )
+            ).scalar_one_or_none()
+            if org is None:
+                raise typer.Exit(1)
+
+            product = (
+                await session.execute(
+                    select(Product).where(
+                        Product.organization_id == org.id,
+                        Product.name == "Polar Default",
+                    )
+                )
+            ).scalar_one_or_none()
+            if product is None:
+                raise typer.Exit(1)
+
+            user_org = (
+                await session.execute(
+                    select(UserOrganization).where(
+                        UserOrganization.organization_id == org.id
+                    )
+                )
+            ).scalar_one_or_none()
+            if user_org is None:
+                raise typer.Exit(1)
+
+            # Delete any existing dev seed PAT
+            existing = (
+                (
+                    await session.execute(
+                        select(PersonalAccessToken).where(
+                            PersonalAccessToken.user_id == user_org.user_id,
+                            PersonalAccessToken.comment == PAT_COMMENT,
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            for pat in existing:
+                await session.delete(pat)
+
+            token, token_hash = generate_token_hash_pair(
+                secret=settings.SECRET,
+                prefix="polar_pat_",
+            )
+            pat = PersonalAccessToken(
+                user_id=user_org.user_id,
+                token=token_hash,
+                scope=PAT_SCOPES,
+                comment=PAT_COMMENT,
+            )
+            session.add(pat)
+            await session.commit()
+
+            print(f"POLAR_POLAR_ORGANIZATION_ID={org.id}")
+            print(f"POLAR_POLAR_FREE_PRODUCT_ID={product.id}")
+            print(f"POLAR_POLAR_ACCESS_TOKEN={token}")
+            print("POLAR_POLAR_API_URL=http://127.0.0.1:8000")
+
+        await engine.dispose()
 
     asyncio.run(run())
 

@@ -38,8 +38,17 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         console.print("\n[bold blue]Resetting database[/bold blue]\n")
 
         result = run_command(["uv", "run", "task", "db_recreate"], cwd=SERVER_DIR, capture=False)
-        if result and result.returncode == 0:
-            console.print("\n[green]✓[/green] Database reset complete")
-        else:
+        if not result or result.returncode != 0:
             console.print("\n[red]✗[/red] Database reset failed")
             raise typer.Exit(1)
+        console.print("[green]✓[/green] Database reset")
+
+        result = run_command(
+            ["docker", "compose", "exec", "redis", "redis-cli", "FLUSHALL"],
+            cwd=SERVER_DIR,
+            capture=True,
+        )
+        if result and result.returncode == 0:
+            console.print("[green]✓[/green] Redis flushed")
+        else:
+            console.print("[yellow]⚠[/yellow] Could not flush Redis")

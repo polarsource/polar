@@ -12,7 +12,7 @@ interface UseSettingsActionsOptions {
   organizations: schemas['Organization'][]
   setOrganization: (organization: schemas['Organization']) => void
   refetch: () => Promise<unknown>
-  userEmail: string | undefined
+  userEmail: string | null | undefined
 }
 
 export const useSettingsActions = ({

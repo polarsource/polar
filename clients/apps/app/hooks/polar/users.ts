@@ -1,18 +1,9 @@
 import { useSession } from '@/providers/SessionProvider'
+import { schemas } from '@polar-sh/client'
 import { useMutation, UseMutationResult } from '@tanstack/react-query'
 
-export interface UserDeletionResponse {
-  deleted: boolean
-  blocked_reasons: string[]
-  blocking_organizations: {
-    id: string
-    slug: string
-    name: string
-  }[]
-}
-
 export const useDeleteUser = (): UseMutationResult<
-  { data?: UserDeletionResponse; error?: { detail: string } },
+  { data?: schemas['UserDeletionResponse']; error?: { detail: string } },
   Error,
   void
 > => {

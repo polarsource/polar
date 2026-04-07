@@ -1,13 +1,9 @@
 import { useSession } from '@/providers/SessionProvider'
+import { schemas } from '@polar-sh/client'
 import { useQuery } from '@tanstack/react-query'
 import { createContext, PropsWithChildren, useContext } from 'react'
 
-export interface User {
-  sub: string
-  email: string
-  name?: string
-  picture?: string
-}
+export type User = schemas['UserInfoUser']
 
 interface UserContextValue {
   user: User | undefined

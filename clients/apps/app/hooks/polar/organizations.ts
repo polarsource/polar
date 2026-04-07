@@ -10,12 +10,6 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-interface OrganizationDeletionResponse {
-  deleted: boolean
-  requires_support: boolean
-  blocked_reasons: string[]
-}
-
 export const useOrganizations = (
   {
     enabled = true,
@@ -119,7 +113,10 @@ export const useUpdateOrganization = () => {
 }
 
 export const useDeleteOrganization = (): UseMutationResult<
-  { data?: OrganizationDeletionResponse; error?: { detail: string } },
+  {
+    data?: schemas['OrganizationDeletionResponse']
+    error?: { detail: string }
+  },
   Error,
   string
 > => {

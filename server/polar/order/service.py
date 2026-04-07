@@ -1926,7 +1926,17 @@ class OrderService:
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.created", order.id)
-        enqueue_job("order.confirmation_email", order.id)
+
+        # Defer confirmation email for renewal orders until payment succeeds.
+        # The email will be sent from _on_order_paid instead.
+        # This prevents sending both "renewed" and "past due" emails when
+        # payment fails immediately after renewal.
+        if order.billing_reason not in (
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        ):
+            enqueue_job("order.confirmation_email", order.id)
+
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:
@@ -1955,6 +1965,14 @@ class OrderService:
 
     async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
         assert order.paid
+
+        # Send deferred confirmation email for renewal orders
+        # (was skipped in _on_order_created while the order was still pending)
+        if order.billing_reason in (
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        ):
+            enqueue_job("order.confirmation_email", order.id)
 
         await self.send_webhook(session, order, WebhookEventType.order_paid)
 

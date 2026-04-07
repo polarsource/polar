@@ -2441,14 +2441,16 @@ async def make_admin(
     """Make a user an admin of the organization."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    organization = await repository.get_by_id(
+        organization_id,
+        include_blocked=True,
+        options=(joinedload(Organization.account),),
+    )
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
     # Change the admin user
     try:
-        from polar.account.service import account as account_service
-
         if not organization.account:
             raise HTTPException(status_code=400, detail="Organization has no account")
 

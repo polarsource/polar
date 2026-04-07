@@ -335,7 +335,29 @@ class TestBuildPromptPriorFeedback:
         prompt = self._build(_make_snapshot(prior_feedback=feedback))
 
         assert "## Prior Review Decisions" in prompt
-        assert "do NOT re-raise the same concerns" in prompt
+        # With a prior human approval, the prompt surfaces a strong trust signal
+        # and instructs the agent not to re-raise resolved concerns.
+        assert "APPROVED BY A HUMAN REVIEWER" in prompt
+        assert "Do NOT re-raise the same concerns" in prompt
+
+    def test_feedback_without_human_approval_renders_default_warning(self) -> None:
+        feedback = PriorFeedbackData(
+            entries=[
+                PriorFeedbackEntry(
+                    actor_type="agent",
+                    decision="DENY",
+                    review_context="submission",
+                    created_at=datetime(2026, 1, 10, tzinfo=UTC),
+                )
+            ]
+        )
+        prompt = self._build(_make_snapshot(prior_feedback=feedback))
+
+        assert "## Prior Review Decisions" in prompt
+        # No prior human approval → default "do not re-raise" guidance,
+        # without the human-approval trust banner.
+        assert "APPROVED BY A HUMAN REVIEWER" not in prompt
+        assert "Do NOT re-raise the same concerns" in prompt
 
     def test_feedback_renders_entry_details(self) -> None:
         feedback = PriorFeedbackData(

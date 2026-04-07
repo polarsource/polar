@@ -771,6 +771,14 @@ class ReviewAnalyzer:
                     "redirects, domain mismatches, etc). Re-flagging resolved concerns "
                     "wastes reviewer time and degrades trust in the agent."
                 )
+            else:
+                parts.append(
+                    "The following previous review decisions exist for this "
+                    "organization. Do NOT re-raise the same concerns unless you have "
+                    "new, concrete evidence that was not available during the prior "
+                    "review. Focus your analysis on what has CHANGED since the last "
+                    "review."
+                )
             for entry in prior_feedback.entries:
                 date_str = (
                     entry.created_at.strftime("%Y-%m-%d")

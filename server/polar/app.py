@@ -8,6 +8,7 @@ from fastapi.routing import APIRoute
 
 from polar import worker  # noqa
 from polar.api import router
+from polar.audit.middlewares import AuditLogMiddleware
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.backoffice import app as backoffice_app
 from polar.checkout import ip_geolocation
@@ -210,6 +211,9 @@ def create_app() -> FastAPI:
     app.add_middleware(LogCorrelationIdMiddleware)
     if not settings.is_testing():
         app.add_middleware(HttpMetricsMiddleware)
+
+    if not settings.is_testing():
+        app.add_middleware(AuditLogMiddleware)
 
     configure_cors(app)
 

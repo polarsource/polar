@@ -46,7 +46,7 @@ export default function Finance() {
     isRefetchingAccount || isRefetchingSummary || isRefetchingPayouts
 
   const canWithdraw =
-    account?.status === 'active' &&
+    account?.is_payouts_enabled &&
     summary?.balance?.amount &&
     summary.balance.amount >= 1000
 
@@ -122,7 +122,7 @@ export default function Finance() {
         <Text variant="headlineLarge">
           {formatCurrency('accounting')(
             summary?.balance.amount ?? 0,
-            summary.payout.account_currency,
+            summary.balance.currency,
           )}
         </Text>
       </Box>

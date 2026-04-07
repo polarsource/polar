@@ -2751,6 +2751,67 @@ class TestUpdateProduct:
         )
         assert updated_subscription_update is None
 
+    async def test_next_period_behavior_changed_current_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        current_period_start = utc_now()
+        # Period end different than the real one, simulates a manual change of the subscription period end
+        current_period_end = current_period_start + timedelta(days=10)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="usd",
+            current_period_start=current_period_start,
+            current_period_end=current_period_end,
+        )
+        assert len(subscription.prices) == 1
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+
+        assert updated_subscription.product == product_recurring_multiple_currencies
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product.id)
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.next_period
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert subscription_update is not None
+        assert subscription_update.product_id == product.id
+        assert subscription_update.applied_at is None
+        assert subscription_update.applies_at == subscription.current_period_end
+        assert subscription_update.new_cycle_start == current_period_start
+        assert subscription_update.new_cycle_end == current_period_end
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:

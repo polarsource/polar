@@ -152,12 +152,13 @@ def _generate_product_subscription_update(
         or subscription_update.proration_behavior == SubscriptionProrationBehavior.reset
     ):
         new_cycle_start = subscription_update.applies_at
+        new_cycle_end = new_product.recurring_interval.get_next_period(
+            new_cycle_start, new_cycle_start.day, new_product.recurring_interval_count
+        )
     else:
+        # Don't change the cycle if we're just changing to a different product with the same interval or if the proration behavior is not reset
         new_cycle_start = subscription.current_period_start
-
-    new_cycle_end = new_product.recurring_interval.get_next_period(
-        new_cycle_start, new_cycle_start.day, new_product.recurring_interval_count
-    )
+        new_cycle_end = subscription.current_period_end
 
     subscription_update.new_cycle_start = new_cycle_start
     subscription_update.new_cycle_end = new_cycle_end

@@ -1,19 +1,25 @@
+import json
 import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BeforeValidator
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import UUID4, BeforeValidator
 from sqlalchemy import func, or_, select
 from tagflow import classes, tag, text
 
+from polar.email.react import render_from_json
 from polar.email.repository import EmailLogRepository
 from polar.kit.pagination import PaginationParamsQuery
+from polar.logging import Logger
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.postgres import AsyncSession, get_db_read_session
 
-from ..components import button, datatable, input
+from ..components import button, datatable, description_list, input
 from ..layout import layout
+
+log: Logger = structlog.get_logger()
 
 router = APIRouter()
 
@@ -126,7 +132,9 @@ async def list_email_logs(
                 with button(type="submit"):
                     text("Search")
             with datatable.Datatable[EmailLog, Any](
-                datatable.DatatableAttrColumn("id", "ID", clipboard=True),
+                datatable.DatatableAttrColumn(
+                    "id", "ID", clipboard=True, href_route_name="email_logs:get"
+                ),
                 StatusColumn(),
                 datatable.DatatableAttrColumn("to_email_addr", "To"),
                 datatable.DatatableAttrColumn("subject", "Subject"),
@@ -137,3 +145,139 @@ async def list_email_logs(
                 pass
             with datatable.pagination(request, pagination, count):
                 pass
+
+
+@router.get("/{id}", name="email_logs:get")
+async def get_email_log(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_read_session),
+) -> None:
+    repository = EmailLogRepository.from_session(session)
+    email_log = await repository.get_by_id(id)
+
+    if email_log is None:
+        raise HTTPException(status_code=404)
+
+    rendered_html: str | None = None
+    if email_log.email_template is not None:
+        try:
+            rendered_html = render_from_json(
+                email_log.email_template,
+                json.dumps(email_log.email_props, default=str),
+            )
+        except Exception:
+            log.warning(
+                "email_log.render_failed",
+                email_log_id=str(id),
+                template=email_log.email_template,
+            )
+
+    with layout(
+        request,
+        [
+            (str(email_log.id), str(request.url)),
+            ("Email Logs", str(request.url_for("email_logs:list"))),
+        ],
+        "email_logs:list",
+    ):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.h1(classes="text-4xl"):
+                text(email_log.subject)
+
+            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with tag.div(classes="flex flex-col gap-4"):
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
+                            with tag.h2(classes="card-title"):
+                                text("Details")
+                            with description_list.DescriptionList[EmailLog](
+                                description_list.DescriptionListAttrItem(
+                                    "id", "ID", clipboard=True
+                                ),
+                                StatusItem(),
+                                description_list.DescriptionListAttrItem(
+                                    "to_email_addr", "To", clipboard=True
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "from_email_addr", "From"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "from_name", "From Name"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "subject", "Subject"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "processor", "Processor"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "processor_id",
+                                    "Processor ID",
+                                    clipboard=True,
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "email_template", "Template"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "error", "Error"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "organization_id",
+                                    "Organization ID",
+                                    clipboard=True,
+                                ),
+                                description_list.DescriptionListDateTimeItem(
+                                    "created_at", "Created At"
+                                ),
+                            ).render(request, email_log):
+                                pass
+
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
+                            with tag.h2(classes="card-title"):
+                                text("Template Props")
+                            if email_log.email_props:
+                                with tag.pre(
+                                    classes="bg-base-200 rounded-box p-4 overflow-x-auto text-sm"
+                                ):
+                                    text(
+                                        json.dumps(
+                                            email_log.email_props,
+                                            indent=2,
+                                            default=str,
+                                        )
+                                    )
+                            else:
+                                with tag.p(classes="text-gray-500"):
+                                    text("No props")
+
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Rendered Email")
+                        if rendered_html is not None:
+                            with tag.iframe(
+                                srcdoc=rendered_html,
+                                sandbox="",
+                                classes="w-full border-0 rounded-box",
+                                style="min-height: 800px;",
+                            ):
+                                pass
+                        else:
+                            with tag.p(classes="text-gray-500"):
+                                text("No template to render")
+
+
+class StatusItem(description_list.DescriptionListItem[EmailLog]):
+    def __init__(self) -> None:
+        super().__init__("Status")
+
+    def render(self, request: Request, item: EmailLog) -> Generator[None] | None:
+        with tag.div(classes="badge"):
+            if item.status == EmailLogStatus.sent:
+                classes("badge-success")
+            elif item.status == EmailLogStatus.failed:
+                classes("badge-error")
+            text(str(item.status))
+        return None

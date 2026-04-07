@@ -4,7 +4,7 @@ from uuid import UUID
 import structlog
 
 from polar.enums import EmailSender
-from polar.kit.repository import RepositoryBase
+from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.logging import Logger
 from polar.models.email_log import (
     EmailLog,
@@ -29,7 +29,7 @@ def _extract_organization_id(
     return None
 
 
-class EmailLogRepository(RepositoryBase[EmailLog]):
+class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, UUID]):
     model = EmailLog
 
     async def create_log(

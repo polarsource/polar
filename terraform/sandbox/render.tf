@@ -189,6 +189,7 @@ module "sandbox" {
     discord_client_secret    = var.backend_discord_client_secret_sandbox
     discord_proxy_url        = var.backend_discord_proxy_url
     resend_api_key           = var.backend_resend_api_key_sandbox
+    resend_webhook_secret    = var.backend_resend_webhook_secret
     logo_dev_publishable_key = var.backend_logo_dev_publishable_key_sandbox
     secret                   = var.backend_secret_sandbox
     sentry_dsn               = var.backend_sentry_dsn_sandbox

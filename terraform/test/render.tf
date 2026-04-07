@@ -214,6 +214,7 @@ module "test" {
     discord_client_id        = var.backend_discord_client_id
     discord_client_secret    = var.backend_discord_client_secret
     resend_api_key           = var.backend_resend_api_key
+    resend_webhook_secret    = var.backend_resend_webhook_secret
     logo_dev_publishable_key = var.backend_logo_dev_publishable_key
     secret                   = var.backend_secret
     sentry_dsn               = var.backend_sentry_dsn

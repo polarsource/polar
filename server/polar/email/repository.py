@@ -32,6 +32,21 @@ def _extract_organization_id(
 class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, UUID]):
     model = EmailLog
 
+    async def get_by_processor_id(self, processor_id: str) -> EmailLog | None:
+        statement = self.get_base_statement().where(
+            EmailLog.processor_id == processor_id
+        )
+        return await self.get_one_or_none(statement)
+
+    async def mark_failed(self, email_log: EmailLog, error: str) -> EmailLog:
+        return await self.update(
+            email_log,
+            update_dict={
+                "status": EmailLogStatus.failed,
+                "error": error,
+            },
+        )
+
     async def create_log(
         self,
         *,

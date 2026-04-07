@@ -58,6 +58,7 @@ resource "render_env_group" "backend" {
       POLAR_DISCORD_CLIENT_SECRET      = { value = var.backend_secrets.discord_client_secret }
       POLAR_DISCORD_PROXY_URL          = { value = var.backend_secrets.discord_proxy_url }
       POLAR_RESEND_API_KEY             = { value = var.backend_secrets.resend_api_key }
+      POLAR_RESEND_WEBHOOK_SECRET      = { value = var.backend_secrets.resend_webhook_secret }
       POLAR_LOGO_DEV_PUBLISHABLE_KEY   = { value = var.backend_secrets.logo_dev_publishable_key }
       POLAR_SECRET                     = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                 = { value = var.backend_secrets.sentry_dsn }

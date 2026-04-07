@@ -63,9 +63,16 @@ variable "backend_discord_client_secret" {
 }
 
 variable "backend_resend_api_key" {
-  description = "Resend API Key for production"
+  description = "Resend API Key for test"
   type        = string
   sensitive   = true
+}
+
+variable "backend_resend_webhook_secret" {
+  description = "Resend Webhook Secret for test"
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "backend_logo_dev_publishable_key" {

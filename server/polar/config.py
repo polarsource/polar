@@ -185,6 +185,7 @@ class Settings(BaseSettings):
     EMAIL_SENDER: EmailSender = EmailSender.logger
     RESEND_API_KEY: str = ""
     RESEND_API_BASE_URL: str = "https://api.resend.com"
+    RESEND_WEBHOOK_SECRET: str = ""
     EMAIL_FROM_NAME: str = "Polar"
     EMAIL_FROM_DOMAIN: str = "notifications.polar.sh"
     EMAIL_FROM_LOCAL: str = "mail"

@@ -75,6 +75,13 @@ variable "backend_resend_api_key_sandbox" {
   sensitive   = true
 }
 
+variable "backend_resend_webhook_secret" {
+  description = "Resend Webhook Secret for sandbox"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "backend_logo_dev_publishable_key_sandbox" {
   description = "Logo.dev Publishable Key for sandbox"
   type        = string

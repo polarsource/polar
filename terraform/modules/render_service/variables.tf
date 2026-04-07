@@ -144,6 +144,7 @@ variable "backend_secrets" {
     loops_api_key                  = optional(string, "")
     posthog_project_api_key        = optional(string, "")
     resend_api_key                 = string
+    resend_webhook_secret          = optional(string, "")
     logo_dev_publishable_key       = optional(string, "")
     secret                         = string
     sentry_dsn                     = string

@@ -116,6 +116,14 @@ resource "tfe_variable" "backend_resend_api_key_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "backend_resend_webhook_secret_production" {
+  key             = "backend_resend_webhook_secret"
+  category        = "terraform"
+  description     = "Resend Webhook Secret for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "backend_logo_dev_publishable_key_production" {
   key             = "backend_logo_dev_publishable_key_production"
   category        = "terraform"

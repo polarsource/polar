@@ -81,6 +81,7 @@ class Scope(StrEnum):
     payments_read = "payments:read"
 
     metrics_read = "metrics:read"
+    metrics_write = "metrics:write"
 
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"
@@ -166,6 +167,7 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.refunds_write: "Create or modify refunds",
     Scope.payments_read: "Read payments made on your organizations",
     Scope.metrics_read: "Read metrics",
+    Scope.metrics_write: "Create or modify metric definitions",
     Scope.webhooks_read: "Read webhooks",
     Scope.webhooks_write: "Create or modify webhooks",
     Scope.license_keys_read: "Read license keys",

@@ -52,15 +52,33 @@ Polar needs a [Python 3](https://www.python.org/downloads/) and [Node.js 24](htt
 >
 > [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/polarsource/polar?machine=standardLinux32gb)
 
-> [!TIP]
-> **New: `dev` CLI (beta)** - A single command to set up everything automatically.
->
-> ```sh
-> ./dev/cli/install   # One-time setup to add the 'dev' alias
-> dev up              # Sets up the entire environment
-> ```
->
-> It handles Docker, Node.js, dependencies, migrations, and more. See [dev/cli/README.md](dev/cli/README.md) for all commands.
+### Quick start with `dev`
+
+We have an internal tool in place called `dev` for an easy setup:
+
+```sh
+./dev/cli/install   # One-time setup to add the 'dev' alias (restart your terminal after)
+dev up              # Sets up the entire environment
+```
+
+The `dev up` command will:
+
+- Install missing prerequisites (Homebrew, Docker, uv, pnpm, Node.js)
+- Generate environment files and starts infrastructure (PostgreSQL, Redis, MinIO)
+- Install Python and JS dependencies, builds packages
+- Walk you through GitHub App and Stripe setup interactively
+- Run database migrations and builds email templates and backoffice
+
+After `dev up` completes, start the services you need:
+
+```sh
+dev api              # Start backend API server (http://127.0.0.1:8000)
+dev worker           # Start background job worker
+dev web              # Start frontend Next.js dev server (http://127.0.0.1:3000)
+dev stripe           # Start Stripe webhook listener
+```
+
+Running `dev up` after pulling new code is also recommended to make sure dependencies and DB migrations are up-to-date.
 
 ### Setup environment variables
 

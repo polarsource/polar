@@ -2,6 +2,7 @@ import Login from '@/components/Auth/Login'
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { CONFIG } from '@/utils/config'
 import { Metadata } from 'next'
+import { cookies } from 'next/headers'
 
 export const metadata: Metadata = {
   title: 'Log in to Polar',
@@ -16,6 +17,10 @@ export default async function Page(props: {
   const searchParams = await props.searchParams
 
   const { return_to, ...rest } = searchParams
+
+  const cookieStore = await cookies()
+  const lastLoginMethod =
+    cookieStore.get('polar_last_login_method')?.value ?? null
 
   return (
     <div className="flex h-screen w-full grow items-center justify-center">
@@ -40,7 +45,11 @@ export default async function Page(props: {
             </span>
           </div>
         </div>
-        <Login returnTo={return_to} returnParams={rest} />
+        <Login
+          returnTo={return_to}
+          returnParams={rest}
+          lastLoginMethod={lastLoginMethod}
+        />
       </div>
     </div>
   )

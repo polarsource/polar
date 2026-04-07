@@ -7,7 +7,12 @@ import httpx
 import pytest
 import respx
 
-from polar.integrations.tinybird.client import TinybirdClient, TinybirdRequestError
+from polar.integrations.tinybird.client import (
+    MAX_RETRIES,
+    TinybirdClient,
+    TinybirdOperationalError,
+    TinybirdRequestError,
+)
 from polar.integrations.tinybird.service import (
     DATASOURCE_EVENTS,
     TinybirdEventsQuery,
@@ -415,6 +420,111 @@ class TestTinybirdDelete:
 
 
 @pytest.mark.asyncio
+class TestRequestWithRetry:
+    async def test_retries_on_timeout(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        call_count = 0
+
+        def side_effect(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
+                raise httpx.ReadTimeout("timed out", request=request)
+            return httpx.Response(200, json={"data": []})
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                side_effect=side_effect
+            )
+            result = await client.endpoint("metrics")
+
+        assert result == []
+        assert call_count == 3
+
+    async def test_raises_after_all_retries_exhausted_on_timeout(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        def side_effect(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectTimeout("connect timed out", request=request)
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                side_effect=side_effect
+            )
+            with pytest.raises(TinybirdOperationalError):
+                await client.endpoint("metrics")
+
+    async def test_retries_on_connection_error(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        call_count = 0
+
+        def side_effect(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise httpx.ConnectError("connection refused", request=request)
+            return httpx.Response(200, json={"data": []})
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                side_effect=side_effect
+            )
+            result = await client.endpoint("metrics")
+
+        assert result == []
+        assert call_count == 2
+
+    async def test_total_attempts_is_max_retries_plus_one(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        call_count = 0
+
+        def side_effect(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.ReadTimeout("timed out", request=request)
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                side_effect=side_effect
+            )
+            with pytest.raises(TinybirdOperationalError):
+                await client.endpoint("metrics")
+
+        assert call_count == MAX_RETRIES + 1
+
+
+@pytest.mark.asyncio
 class TestTinybirdRequestError:
     async def test_endpoint_400_raises_request_error_with_body(self) -> None:
         error_response = {
@@ -443,7 +553,7 @@ class TestTinybirdRequestError:
             assert error.error_body == error_response
             assert "Illegal type UUID" in str(error)
 
-    async def test_endpoint_500_raises_request_error(self) -> None:
+    async def test_endpoint_500_raises_operational_error(self) -> None:
         client = TinybirdClient(
             api_url="https://api.tinybird.co",
             clickhouse_url="https://clickhouse.tinybird.co",
@@ -458,9 +568,5 @@ class TestTinybirdRequestError:
                 return_value=httpx.Response(500, text="Internal Server Error")
             )
 
-            with pytest.raises(TinybirdRequestError) as exc_info:
+            with pytest.raises(TinybirdOperationalError, match="500"):
                 await client.endpoint("metrics")
-
-            error = exc_info.value
-            assert error.status_code == 500
-            assert error.endpoint == "metrics"

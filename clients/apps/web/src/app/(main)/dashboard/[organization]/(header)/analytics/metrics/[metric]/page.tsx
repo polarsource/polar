@@ -1,14 +1,18 @@
+import ClientPage from '@/components/Metrics/dashboards/ClientPage'
+import DashboardDetailClientPage from '@/components/Metrics/dashboards/DashboardDetailClientPage'
 import { getServerSideAPI } from '@/utils/client/serverside'
+import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { unwrap } from '@polar-sh/client'
-import { notFound } from 'next/navigation'
-import { isValidMetricType, MetricType } from '../components/metrics-config'
-import ClientPage from './ClientPage'
-
-import { fromISODate, toISODate } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { endOfDay, max, subMonths } from 'date-fns'
-import { redirect, RedirectType } from 'next/navigation'
+import { notFound, redirect, RedirectType } from 'next/navigation'
+
+const METRIC_GROUP_SLUGS = new Set(
+  METRIC_GROUPS.map((g) => g.category.toLowerCase().replace(/\s+/g, '-')),
+)
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default async function Page(props: {
   params: Promise<{ organization: string; metric: string }>
@@ -22,15 +26,31 @@ export default async function Page(props: {
   const { organization: organizationSlug, metric } = await props.params
   const searchParams = await props.searchParams
 
-  if (!isValidMetricType(metric)) {
-    notFound()
-  }
-
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     organizationSlug,
   )
+
+  // Handle custom user-created dashboards (UUID slugs)
+  if (UUID_REGEX.test(metric)) {
+    const result = await api.GET('/v1/metrics/dashboards/{id}', {
+      params: { path: { id: metric } },
+    })
+    if (result.error || !result.data) {
+      notFound()
+    }
+    return (
+      <DashboardDetailClientPage
+        organization={organization}
+        dashboard={result.data}
+      />
+    )
+  }
+
+  if (!METRIC_GROUP_SLUGS.has(metric)) {
+    notFound()
+  }
 
   const redirectPath = `/dashboard/${organizationSlug}/analytics/metrics/${metric}`
 
@@ -119,31 +139,5 @@ export default async function Page(props: {
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 
-  const products = await unwrap(
-    api.GET('/v1/products/', {
-      params: {
-        query: {
-          organization_id: organization.id,
-          limit: 100,
-          is_archived: false,
-        },
-      },
-    }),
-  )
-
-  const relevantProducts = productId
-    ? products.items.filter((p) => productId.includes(p.id))
-    : products.items
-
-  const hasRecurringProducts = relevantProducts.some((p) => p.is_recurring)
-  const hasOneTimeProducts = relevantProducts.some((p) => !p.is_recurring)
-
-  return (
-    <ClientPage
-      metric={metric as MetricType}
-      organizationId={organization.id}
-      hasRecurringProducts={hasRecurringProducts}
-      hasOneTimeProducts={hasOneTimeProducts}
-    />
-  )
+  return <ClientPage metric={metric} organizationId={organization.id} />
 }

@@ -11,3 +11,9 @@ _MetricsRead = Authenticator(
     allowed_subjects={User, Organization},
 )
 MetricsRead = Annotated[AuthSubject[User | Organization], Depends(_MetricsRead)]
+
+_MetricsWrite = Authenticator(
+    required_scopes={Scope.web_write, Scope.metrics_write},
+    allowed_subjects={User, Organization},
+)
+MetricsWrite = Annotated[AuthSubject[User | Organization], Depends(_MetricsWrite)]

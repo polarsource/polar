@@ -81,6 +81,7 @@ def _save_stripe_keys(secret_key: str, publishable_key: str, webhook_secret: str
     _update_secrets_file("POLAR_STRIPE_PUBLISHABLE_KEY", publishable_key)
     if webhook_secret:
         _update_secrets_file("POLAR_STRIPE_WEBHOOK_SECRET", webhook_secret)
+        _update_secrets_file("POLAR_STRIPE_CONNECT_WEBHOOK_SECRET", webhook_secret)
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
@@ -93,11 +94,14 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         if not _is_stripe_cli_installed():
             step_status(False, "Stripe CLI", "not installed")
-            console.print("\n  Install with: [bold]brew install stripe/stripe-cli/stripe[/bold]")
-            console.print("  Or visit: [link=https://stripe.com/docs/stripe-cli]https://stripe.com/docs/stripe-cli[/link]\n")
-            typer.prompt("Press Enter when installed", default="")
-            if not _is_stripe_cli_installed():
-                console.print("[red]Stripe CLI still not found. Please install it and try again.[/red]")
+            if typer.confirm("\n  Install Stripe CLI via Homebrew now?", default=True):
+                console.print()
+                result = run_command(["brew", "install", "stripe/stripe-cli/stripe"], capture=False)
+                if not result or result.returncode != 0 or not _is_stripe_cli_installed():
+                    console.print("[red]Installation failed. Install manually: brew install stripe/stripe-cli/stripe[/red]")
+                    raise typer.Exit(1)
+            else:
+                console.print("[yellow]Stripe CLI is required. Install it and re-run dev stripe.[/yellow]")
                 raise typer.Exit(1)
         step_status(True, "Stripe CLI", "installed")
 
@@ -116,13 +120,8 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         if _is_stripe_configured():
             step_status(True, "Stripe API keys", "configured")
-            if not typer.confirm("\nStripe is already configured. Reconfigure?", default=False):
-                if listen:
-                    _start_webhook_listener()
-                else:
-                    console.print("\n[bold]To start webhook forwarding:[/bold]")
-                    console.print("  [bold]dev stripe --listen[/bold]\n")
-                return
+            _start_webhook_listener()
+            return
 
         console.print("\n[bold]Fetching API keys from Stripe CLI...[/bold]")
         secret_key, publishable_key = _get_stripe_keys_from_cli()
@@ -141,7 +140,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         webhook_secret = ""
         if result and result.returncode == 0:
             webhook_secret = result.stdout.strip()
-            console.print(f"[green]✓ Webhook secret obtained[/green]")
+            console.print("[green]✓ Webhook secret obtained[/green]")
         else:
             console.print("[yellow]Could not get webhook secret automatically.[/yellow]")
             webhook_secret = typer.prompt("Enter webhook secret manually (whsec_...), or press Enter to skip", default="")
@@ -165,9 +164,14 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 def _start_webhook_listener() -> None:
     """Start Stripe webhook forwarding."""
     console.print("\n[bold]Starting Stripe webhook forwarding...[/bold]")
-    console.print("[dim]Forwarding to: http://127.0.0.1:8000/v1/integrations/stripe/webhook[/dim]")
+    console.print("[dim]Forwarding to:         http://127.0.0.1:8000/v1/integrations/stripe/webhook[/dim]")
+    console.print("[dim]Connect forwarding to: http://127.0.0.1:8000/v1/integrations/stripe/webhook-connect[/dim]")
     console.print("[dim]Press Ctrl+C to stop[/dim]\n")
     run_command(
-        ["stripe", "listen", "--forward-to", "http://127.0.0.1:8000/v1/integrations/stripe/webhook"],
+        [
+            "stripe", "listen",
+            "--forward-to", "http://127.0.0.1:8000/v1/integrations/stripe/webhook",
+            "--forward-connect-to", "http://127.0.0.1:8000/v1/integrations/stripe/webhook-connect",
+        ],
         capture=False,
     )

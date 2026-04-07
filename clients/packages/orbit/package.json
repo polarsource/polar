@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@stylexjs/stylex": "^0.18.1",
+    "@stylexjs/stylex": "^0.18.2",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "framer-motion": "^12.38.0",

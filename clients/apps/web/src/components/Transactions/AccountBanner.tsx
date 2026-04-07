@@ -30,7 +30,7 @@ const GenericAccountBanner: React.FC<{
     )
   }
 
-  if (account && account.status === 'onboarding_started') {
+  if (account && !account.is_payouts_enabled) {
     const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
     return (
       <Banner

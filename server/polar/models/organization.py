@@ -24,6 +24,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.config import settings
 from polar.enums import (
     InvoiceNumbering,
+    PublicSubscriptionProrationBehavior,
     SubscriptionProrationBehavior,
     TaxBehaviorOption,
 )
@@ -73,11 +74,11 @@ _default_notification_settings: OrganizationNotificationSettings = {
 
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
-    # Legacy - to be removed separately
-    allow_customer_updates: bool
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: PublicSubscriptionProrationBehavior
     benefit_revocation_grace_period: int
     prevent_trial_abuse: bool
+    # Legacy - to be removed separately
+    allow_customer_updates: bool
 
 
 _default_subscription_settings: OrganizationSubscriptionSettings = {
@@ -260,7 +261,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=OrganizationStatus.CREATED,
     )
     next_review_threshold: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
+        Integer, nullable=False, default=1000
     )
     status_updated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
@@ -350,7 +351,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
         String(3), nullable=False, default="usd"
     )
     default_tax_behavior: Mapped[TaxBehaviorOption] = mapped_column(
-        StringEnum(TaxBehaviorOption), nullable=True
+        StringEnum(TaxBehaviorOption),
+        nullable=False,
+        default=TaxBehaviorOption.location,
     )
 
     #

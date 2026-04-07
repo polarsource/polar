@@ -80,5 +80,5 @@ async def authenticate_login_code(
         await loops_service.user_update(session, user, emailLogin=True)
 
     return await auth_service.get_login_response(
-        session, request, user, return_to=return_to
+        session, request, user, return_to=return_to, login_method="email"
     )

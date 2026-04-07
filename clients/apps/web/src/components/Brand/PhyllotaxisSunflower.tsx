@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { useTheme } from 'next-themes'

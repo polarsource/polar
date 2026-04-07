@@ -20,7 +20,7 @@ from pydantic_core import core_schema as cs
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
 from polar.checkout.schemas import Checkout as CheckoutSchema
-from polar.customer.schemas.customer import Customer as CustomerSchema
+from polar.customer.schemas.customer import CustomerResponse as CustomerSchema
 from polar.customer.schemas.state import CustomerState as CustomerStateSchema
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.exceptions import PolarError
@@ -400,7 +400,12 @@ class WebhookOrderPayloadBase(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.description},
             {"name": "Amount", "value": amount_display},
-            {"name": "Customer", "value": self.data.customer.email},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
         ]
         if self.data.subscription is not None:
             fields.append({"name": "Subscription", "value": "Yes"})
@@ -429,7 +434,10 @@ class WebhookOrderPayloadBase(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.description}"},
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.customer.email}"},
+            {
+                "type": "mrkdwn",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
+            },
         ]
         if self.data.subscription is not None:
             fields.append({"type": "mrkdwn", "text": "*Subscription*\nYes"})
@@ -519,7 +527,12 @@ class WebhookOrderRefundedPayload(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.description},
             {"name": "Refunded", "value": amount_display},
-            {"name": "Customer", "value": self.data.customer.email},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
         ]
         if self.data.subscription is not None:
             fields.append({"name": "Subscription", "value": "Yes"})
@@ -551,7 +564,10 @@ class WebhookOrderRefundedPayload(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.description}"},
             {"type": "mrkdwn", "text": f"*Refunded*\n{amount_display}"},
-            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.customer.email}"},
+            {
+                "type": "mrkdwn",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
+            },
         ]
         if self.data.subscription is not None:
             fields.append({"type": "mrkdwn", "text": "*Subscription*\nYes"})
@@ -599,7 +615,12 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.product.name},
             {"name": "Amount", "value": amount_display},
-            {"name": "Customer", "value": self.data.user.email},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
         ]
         payload: DiscordPayload = {
             "content": "New Subscription",
@@ -625,7 +646,10 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
+            {
+                "type": "mrkdwn",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
+            },
         ]
         payload: SlackPayload = get_branded_slack_payload(
             {
@@ -859,7 +883,12 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         fields: list[DiscordEmbedField] = [
             {"name": "Product", "value": self.data.product.name},
             {"name": "Amount", "value": amount_display},
-            {"name": "Customer", "value": self.data.user.email},
+            {
+                "name": "Customer",
+                "value": self.data.customer.email
+                or self.data.customer.name
+                or "Team Customer",
+            },
             {"name": "Status", "value": self.data.status},
         ]
         return fields
@@ -869,7 +898,10 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         fields: list[SlackText] = [
             {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
             {"type": "mrkdwn", "text": f"*Amount*\n{amount_display}"},
-            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
+            {
+                "type": "mrkdwn",
+                "text": f"*Customer*\n{self.data.customer.email or self.data.customer.name or 'Team Customer'}",
+            },
             {"type": "mrkdwn", "text": f"*Status*\n{self.data.status}"},
         ]
         return fields

@@ -1,10 +1,11 @@
 """Run database migrations."""
 
 from shared import (
-    Context,
     SERVER_DIR,
+    Context,
     console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -13,7 +14,7 @@ NAME = "Running database migrations"
 
 def run(ctx: Context) -> bool:
     """Apply database migrations."""
-    with console.status("[bold]Applying migrations...[/bold]"):
+    with step_spinner("Applying migrations..."):
         result = run_command(
             ["uv", "run", "task", "db_migrate"], cwd=SERVER_DIR, capture=True
         )

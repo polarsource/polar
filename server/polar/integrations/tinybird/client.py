@@ -36,6 +36,28 @@ class TinybirdPayloadTooLargeError(TinybirdError):
         super().__init__(f"Payload size {size} bytes exceeds maximum {max_size} bytes")
 
 
+class TinybirdOperationalError(TinybirdError):
+    """Raised for transient network/server errors (e.g. 502, 503, 504, timeouts)."""
+
+    @classmethod
+    def from_response(
+        cls, response: httpx.Response, endpoint: str | None = None
+    ) -> "TinybirdOperationalError":
+        message = f"{response.status_code} {response.reason_phrase}"
+        if endpoint:
+            message = f"{message} (endpoint: {endpoint})"
+        return cls(message)
+
+    @classmethod
+    def from_request_error(
+        cls, exc: httpx.RequestError, endpoint: str | None = None
+    ) -> "TinybirdOperationalError":
+        message = f"{type(exc).__name__}: {exc}"
+        if endpoint:
+            message = f"{message} (endpoint: {endpoint})"
+        return cls(message)
+
+
 class TinybirdRequestError(TinybirdError):
     """Raised when a Tinybird API request fails."""
 
@@ -98,7 +120,7 @@ class TinybirdClient:
         self._write_client = httpx.AsyncClient(
             base_url=api_url,
             headers={"Authorization": f"Bearer {api_token}"} if api_token else {},
-            timeout=httpx.Timeout(60.0, connect=15.0),
+            timeout=httpx.Timeout(25.0, connect=10.0),
             transport=(
                 httpx.MockTransport(lambda _: httpx.Response(200))
                 if api_token is None
@@ -109,7 +131,7 @@ class TinybirdClient:
         self._read_client = httpx.AsyncClient(
             base_url=api_url,
             headers={"Authorization": f"Bearer {read_token}"} if read_token else {},
-            timeout=httpx.Timeout(30.0, connect=15.0),
+            timeout=httpx.Timeout(25.0, connect=10.0),
             transport=(
                 httpx.MockTransport(lambda _: httpx.Response(200, json={"data": []}))
                 if read_token is None
@@ -145,32 +167,48 @@ class TinybirdClient:
     ) -> httpx.Response:
         last_response: httpx.Response | None = None
         for attempt in range(MAX_RETRIES + 1):
-            response = await client.request(method, url, **kwargs)
-            if response.is_success:
-                return response
-            if response.status_code not in RETRYABLE_STATUS_CODES:
-                return response
-            last_response = response
-            if attempt < MAX_RETRIES:
+            retry_delay: float | None = None
+            try:
+                response = await client.request(method, url, **kwargs)
+            except httpx.RequestError as exc:
+                if attempt >= MAX_RETRIES:
+                    raise TinybirdOperationalError.from_request_error(
+                        exc, endpoint=endpoint_name
+                    ) from exc
+                retry_delay = RETRY_BACKOFF_SECONDS[attempt]
+                log.warning(
+                    "tinybird.retry.request_error",
+                    error=str(exc),
+                    error_type=type(exc).__name__,
+                    attempt=attempt + 1,
+                    delay=retry_delay,
+                    endpoint=endpoint_name,
+                )
+            else:
+                if response.is_success:
+                    return response
+                if response.status_code not in RETRYABLE_STATUS_CODES:
+                    return response
+                last_response = response
+                if attempt >= MAX_RETRIES:
+                    break
+                retry_delay = RETRY_BACKOFF_SECONDS[attempt]
                 if response.status_code == 429:
                     retry_after = response.headers.get("Retry-After")
                     if retry_after:
                         try:
-                            delay = min(float(retry_after), 1.0)
+                            retry_delay = min(float(retry_after), 1.0)
                         except ValueError:
-                            delay = RETRY_BACKOFF_SECONDS[attempt]
-                    else:
-                        delay = RETRY_BACKOFF_SECONDS[attempt]
-                else:
-                    delay = RETRY_BACKOFF_SECONDS[attempt]
+                            pass
                 log.debug(
                     "tinybird.retry",
                     status_code=response.status_code,
                     attempt=attempt + 1,
-                    delay=delay,
+                    delay=retry_delay,
                     endpoint=endpoint_name,
                 )
-                await asyncio.sleep(delay)
+
+            await asyncio.sleep(retry_delay)
         assert last_response is not None
         return last_response
 
@@ -193,6 +231,10 @@ class TinybirdClient:
                 params=params,
             )
             if not response.is_success:
+                if response.is_server_error:
+                    raise TinybirdOperationalError.from_response(
+                        response, endpoint=endpoint_name
+                    )
                 raise TinybirdRequestError.from_response(
                     response, endpoint=endpoint_name
                 )
@@ -236,6 +278,10 @@ class TinybirdClient:
                 headers={"Content-Type": "application/x-ndjson"},
             )
             if not response.is_success:
+                if response.is_server_error:
+                    raise TinybirdOperationalError.from_response(
+                        response, endpoint=datasource
+                    )
                 raise TinybirdRequestError.from_response(response, endpoint=datasource)
 
     async def query(
@@ -275,6 +321,10 @@ class TinybirdClient:
                 data={"delete_condition": delete_condition},
             )
             if not response.is_success:
+                if response.is_server_error:
+                    raise TinybirdOperationalError.from_response(
+                        response, endpoint=datasource
+                    )
                 raise TinybirdRequestError.from_response(response, endpoint=datasource)
             return response.json()
 
@@ -286,6 +336,8 @@ class TinybirdClient:
             endpoint_name="jobs",
         )
         if not response.is_success:
+            if response.is_server_error:
+                raise TinybirdOperationalError.from_response(response, endpoint="jobs")
             raise TinybirdRequestError.from_response(response, endpoint="jobs")
         return response.json()
 
@@ -302,6 +354,7 @@ client = TinybirdClient(
 __all__ = [
     "TinybirdError",
     "TinybirdEvent",
+    "TinybirdOperationalError",
     "TinybirdPayloadTooLargeError",
     "TinybirdRequestError",
     "client",

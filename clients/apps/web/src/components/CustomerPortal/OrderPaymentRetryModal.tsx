@@ -131,7 +131,7 @@ export const OrderPaymentRetryModal = ({
                   options={{
                     locale: 'en',
                     mode: 'payment',
-                    amount: order.total_amount,
+                    amount: order.due_amount,
                     currency: order.currency,
                     setupFutureUsage: 'off_session',
                     paymentMethodCreation: 'manual',

@@ -1,10 +1,11 @@
 """Start Docker infrastructure (PostgreSQL, Redis, Minio)."""
 
 from shared import (
-    Context,
     SERVER_DIR,
+    Context,
     console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -39,7 +40,7 @@ def run(ctx: Context) -> bool:
         step_status(True, "Docker containers", "already running")
         return True
 
-    with console.status("[bold]Starting PostgreSQL, Redis, Minio...[/bold]"):
+    with step_spinner("Starting PostgreSQL, Redis, Minio..."):
         result = run_command(
             ["docker", "compose", "up", "-d"],
             cwd=SERVER_DIR,

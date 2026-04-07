@@ -2,8 +2,6 @@ import asyncio
 
 import structlog
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 
@@ -86,6 +84,13 @@ Additionally, validate domain consistency: checkout return URL domains and webho
 domains should match the organization's website domain. If they don't match (and are \
 not known service domains), this is a MEDIUM risk concern — it suggests the integration \
 may point to an unrelated or suspicious destination.
+
+**Redirect detection (CRITICAL):** We follow redirects on checkout success and return \
+URLs. If any URL redirects to a DIFFERENT domain than the original, this is a HIGH risk \
+signal. Scammers use their own API endpoints as success URLs that then redirect users \
+to prohibited content (adult sites, gambling, etc.). Any cross-domain redirect from a \
+checkout URL is a strong red flag and should be treated as HIGH risk unless the final \
+destination is a known service domain.
 
 ## Verdict Guidelines
 
@@ -243,6 +248,9 @@ Important information to check (assess under SETUP_READINESS):
 the organization's website domain. If they don't match (and are not known service domains), \
 this is a MEDIUM risk concern. Domains marked '(known service)' are legitimate third-party \
 integration platforms and should NOT be flagged.
+- **Redirect detection (CRITICAL)**: If any checkout success or return URL redirects to a \
+different domain, this is a HIGH risk signal. Scammers use their own API endpoints that \
+302-redirect users to prohibited content. Any cross-domain redirect is a strong red flag.
 
 Known integration platform domains:
 {known_domains_for_prompt()}
@@ -296,6 +304,9 @@ organizations. Re-creating an organization after denial is grounds for automatic
 the organization's website domain. If they don't match (and are not known service domains), \
 this is a MEDIUM risk concern. Domains marked '(known service)' are legitimate third-party \
 integration platforms and should NOT be flagged.
+  - **Redirect detection (CRITICAL)**: If any checkout success or return URL redirects to a \
+different domain, this is a HIGH risk signal. Scammers use their own API endpoints that \
+302-redirect users to prohibited content. Any cross-domain redirect is a strong red flag.
 
 Known integration platform domains:
 {known_domains_for_prompt()}
@@ -316,22 +327,27 @@ def _annotate_domains(domains: list[str]) -> str:
 
 
 class ReviewAnalyzer:
-    def __init__(self) -> None:
-        provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-        self.model = OpenAIChatModel(settings.OPENAI_MODEL, provider=provider)
+    def __init__(self, model: str | None = None) -> None:
+        model_instance, model_provider, model_name = (
+            settings.get_pydantic_gateway_model(model)
+        )
         self.agent = Agent(
-            self.model,
+            model_instance,
             output_type=ReviewAgentReport,
             system_prompt=SYSTEM_PROMPT,
+            model_settings={"temperature": 0},
         )
+        self.model_provider = model_provider
+        self.model_name = model_name
 
     async def analyze(
         self,
         snapshot: DataSnapshot,
         context: ReviewContext = ReviewContext.THRESHOLD,
         timeout_seconds: int = 60,
+        policy_override: str | None = None,
     ) -> tuple[ReviewAgentReport, UsageInfo]:
-        policy_content = await fetch_policy_content()
+        policy_content = policy_override or fetch_policy_content()
 
         prompt = self._build_prompt(snapshot, policy_content)
 
@@ -346,7 +362,9 @@ class ReviewAnalyzer:
                 self.agent.run(prompt, instructions=instructions),
                 timeout=timeout_seconds,
             )
-            usage = UsageInfo.from_agent_usage(result.usage(), self.model.model_name)
+            usage = UsageInfo.from_agent_usage(
+                result.usage(), self.model_provider, self.model_name
+            )
             return result.output, usage
         except TimeoutError:
             log.warning(
@@ -427,6 +445,22 @@ class ReviewAnalyzer:
                 parts.append(
                     f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
                 )
+                if setup.checkout_success_urls.redirect_results:
+                    redirected = [
+                        r
+                        for r in setup.checkout_success_urls.redirect_results
+                        if r.redirected
+                    ]
+                    if redirected:
+                        parts.append(
+                            "⚠️ SUCCESS URL REDIRECT DETECTED — these URLs redirect "
+                            "to a DIFFERENT domain:"
+                        )
+                        for r in redirected:
+                            parts.append(
+                                f"  - {r.original_url} → REDIRECTS TO: "
+                                f"{r.final_url} (domain: {r.final_domain})"
+                            )
             else:
                 parts.append("No custom checkout success URLs configured.")
 
@@ -439,6 +473,22 @@ class ReviewAnalyzer:
                 parts.append(
                     f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
                 )
+                if setup.checkout_return_urls.redirect_results:
+                    redirected = [
+                        r
+                        for r in setup.checkout_return_urls.redirect_results
+                        if r.redirected
+                    ]
+                    if redirected:
+                        parts.append(
+                            "⚠️ RETURN URL REDIRECT DETECTED — these URLs redirect "
+                            "to a DIFFERENT domain:"
+                        )
+                        for r in redirected:
+                            parts.append(
+                                f"  - {r.original_url} → REDIRECTS TO: "
+                                f"{r.final_url} (domain: {r.final_domain})"
+                            )
             else:
                 parts.append("No custom checkout return URLs configured.")
 

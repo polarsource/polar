@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
@@ -112,7 +111,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       contextView={
         <CustomerContextView
           organization={organization}
-          customer={order.customer as schemas['Customer']}
+          customer={order.customer}
         />
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
@@ -370,7 +369,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               ),
             },
           ]}
-          data={payments?.items ?? []}
+          data={(payments?.items ?? []) as unknown as schemas['Payment'][]}
         />
       </div>
 
@@ -519,7 +518,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <h3 className="text-lg">Customer</h3>
         <CustomerContextView
           organization={organization}
-          customer={order.customer as schemas['Customer']}
+          customer={order.customer}
         />
       </div>
 

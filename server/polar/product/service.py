@@ -625,6 +625,18 @@ class ProductService:
                     continue
                 currency_meters.add(metered_price.meter_id)
 
+            # Check that all prices in the same currency have the same tax_behavior
+            tax_behaviors = {p.tax_behavior for p, _ in currency_prices}
+            if len(tax_behaviors) > 1:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": error_prefix,
+                        "msg": "All prices for the same currency must have the same tax behavior.",
+                        "input": prices_schema,
+                    }
+                )
+
             # Record the structure: (static_count, metered_count)
             price_structure_per_currency[currency] = (
                 len(static_prices),

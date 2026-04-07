@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 import stripe as stripe_lib
 
+from polar.enums import TaxBehavior
 from polar.kit.address import Address, CountryAlpha2
 from polar.tax.calculation import TaxCalculationTechnicalError, TaxCode
 from polar.tax.calculation.stripe import stripe_tax_service
@@ -44,6 +45,7 @@ class TestStripeCalculateTax:
                 identifier=uuid.uuid4(),
                 currency="usd",
                 amount=1000,
+                tax_behavior=TaxBehavior.exclusive,
                 tax_code=TaxCode.general_electronically_supplied_services,
                 address=sample_address,
                 tax_ids=[],
@@ -55,6 +57,7 @@ class TestStripeCalculateTax:
             assert result["tax_rate"] is None
             assert result["processor_id"] is not None
             assert result["processor_id"].startswith("taxcalc_sandbox_")
+            assert result["tax_behavior"] == TaxBehavior.exclusive
 
     async def test_rate_limit_raised_in_production(
         self, sample_address: Address
@@ -78,6 +81,7 @@ class TestStripeCalculateTax:
                     identifier=uuid.uuid4(),
                     currency="usd",
                     amount=1000,
+                    tax_behavior=TaxBehavior.exclusive,
                     tax_code=TaxCode.general_electronically_supplied_services,
                     address=sample_address,
                     tax_ids=[],

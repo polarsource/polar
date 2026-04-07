@@ -19,7 +19,7 @@ from polar.benefit.strategies.license_keys.properties import (
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitGrantMeterCreditProperties,
 )
-from polar.customer.schemas.customer import Customer
+from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
     ClassName,
     MergeJSONSchema,

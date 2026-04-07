@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
@@ -9,8 +8,6 @@ import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
-
 import {
   Form,
   FormControl,
@@ -20,10 +17,11 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { CurrencySelector } from '../../CurrencySelector'
+import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -34,7 +32,6 @@ interface FormSchema {
   defaultCurrency: string
   businessCountry: string
   registeredBusinessName: string
-  terms: boolean
 }
 
 function FormSync() {
@@ -80,53 +77,6 @@ function OrgNameSync({
   return null
 }
 
-function SlugPreview({
-  editingSlug,
-  setEditingSlug,
-  onEditSlug,
-}: {
-  editingSlug: boolean
-  setEditingSlug: (v: boolean) => void
-  onEditSlug: () => void
-}) {
-  const { setValue } = useFormContext<FormSchema>()
-  const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
-
-  return (
-    <span className="dark:text-polar-500 flex items-center gap-1 text-xs text-gray-400">
-      <span>polar.sh/</span>
-      {editingSlug ? (
-        <input
-          value={orgSlug}
-          onChange={(e) => {
-            setValue(
-              'orgSlug',
-              slugify(e.target.value, {
-                lower: true,
-                trim: false,
-                strict: true,
-              }),
-            )
-            onEditSlug()
-          }}
-          onBlur={() => setEditingSlug(false)}
-          className="dark:text-polar-300 rounded border-none bg-transparent p-0 text-xs text-gray-600 outline-none"
-          style={{ width: `${Math.max(orgSlug.length, 8)}ch` }}
-          autoFocus
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setEditingSlug(true)}
-          className="dark:text-polar-300 dark:hover:text-polar-200 text-gray-600 underline decoration-dotted hover:text-gray-800"
-        >
-          {orgSlug || 'your-slug'}
-        </button>
-      )}
-    </span>
-  )
-}
-
 function CompanyFields({
   onEditBusinessName,
 }: {
@@ -166,68 +116,102 @@ function CurrencyAndCountryFields() {
   const organizationType = useWatch<FormSchema, 'organizationType'>({
     name: 'organizationType',
   })
+  const businessCountry = useWatch<FormSchema, 'businessCountry'>({
+    name: 'businessCountry',
+  })
+
+  const isUnsupportedCountry =
+    businessCountry !== '' &&
+    !SUPPORTED_PAYOUT_COUNTRIES.includes(businessCountry)
+
+  const countryDisplayName = useMemo(() => {
+    if (!businessCountry) return ''
+    return (
+      new Intl.DisplayNames([], { type: 'region' }).of(businessCountry) ??
+      businessCountry
+    )
+  }, [businessCountry])
 
   return (
-    <Box
-      display="grid"
-      gap="m"
-      gridTemplateColumns={
-        organizationType === 'company'
-          ? 'repeat(2, minmax(0, 1fr))'
-          : 'repeat(1, minmax(0, 1fr))'
-      }
-    >
-      <FormField
-        name="defaultCurrency"
-        rules={{ required: 'Currency is required' }}
-        render={({ field }) => (
-          <FormItem className="w-full">
-            <FormLabel>Default Payment Currency</FormLabel>
-            <FormControl>
-              <CurrencySelector
-                value={field.value as schemas['PresentmentCurrency']}
-                onChange={field.onChange}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {organizationType === 'company' && (
+    <div className="flex flex-col gap-y-2">
+      <Box
+        display="grid"
+        gap="m"
+        gridTemplateColumns={
+          organizationType === 'company'
+            ? 'repeat(2, minmax(0, 1fr))'
+            : 'repeat(1, minmax(0, 1fr))'
+        }
+      >
         <FormField
-          name="businessCountry"
-          rules={{ required: 'Business country is required' }}
+          name="defaultCurrency"
+          rules={{ required: 'Currency is required' }}
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel>Business Country</FormLabel>
+              <FormLabel>Default Payment Currency</FormLabel>
               <FormControl>
-                <CountryPicker
-                  allowedCountries={enums.addressInputCountryValues}
-                  value={field.value}
+                <CurrencySelector
+                  value={field.value as schemas['PresentmentCurrency']}
                   onChange={field.onChange}
-                  placeholder="Select country"
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {organizationType === 'company' && (
+          <FormField
+            name="businessCountry"
+            rules={{ required: 'Business country is required' }}
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Business Country</FormLabel>
+                <FormControl>
+                  <CountryPicker
+                    allowedCountries={enums.addressInputCountryValues}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select country"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </Box>
+
+      {organizationType === 'company' && isUnsupportedCountry && (
+        <Box
+          display="flex"
+          flexDirection="column"
+          rowGap="m"
+          borderRadius="md"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-warning"
+          backgroundColor="background-warning"
+          padding="l"
+        >
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            Payouts are not available in {countryDisplayName}&nbsp;yet. You can
+            still continue and we&rsquo;ll notify you when support is added.
+          </p>
+        </Box>
       )}
-    </Box>
+    </div>
   )
 }
 
 function SubmitButton({ loading }: { loading: boolean }) {
   const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
   const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
-  const terms = useWatch<FormSchema, 'terms'>({ name: 'terms' })
-
   return (
     <Button
       type="submit"
       loading={loading}
-      disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
+      disabled={orgName.length === 0 || orgSlug.length === 0}
       fullWidth
     >
       Continue
@@ -243,9 +227,14 @@ export function BusinessDetailsStep() {
   const [submitting, setSubmitting] = useState(false)
 
   trackStepViewed('business')
-  const [editingSlug, setEditingSlug] = useState(false)
-  const [editedSlug, setEditedSlug] = useState(false)
-  const [editedBusinessName, setEditedBusinessName] = useState(false)
+  const [editedSlug, setEditedSlug] = useState(
+    () =>
+      (data.orgSlug ?? '') !==
+      slugify(data.orgName ?? '', { lower: true, strict: true }),
+  )
+  const [editedBusinessName, setEditedBusinessName] = useState(
+    () => (data.registeredBusinessName ?? '') !== (data.orgName ?? ''),
+  )
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -255,14 +244,12 @@ export function BusinessDetailsStep() {
       defaultCurrency: data.defaultCurrency || 'usd',
       businessCountry: data.businessCountry || '',
       registeredBusinessName: data.registeredBusinessName || '',
-      terms: false,
     },
   })
 
   const { handleSubmit, setValue } = form
 
   const onSubmit = async (formData: FormSchema) => {
-    if (!formData.terms) return
     setSubmitting(true)
     setApiLoading(true)
 
@@ -334,90 +321,56 @@ export function BusinessDetailsStep() {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="orgName"
-            rules={{ required: 'Organization name is required' }}
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Organization Name</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Acme Inc." />
-                </FormControl>
-                <FormMessage />
-                <SlugPreview
-                  editingSlug={editingSlug}
-                  setEditingSlug={setEditingSlug}
-                  onEditSlug={() => setEditedSlug(true)}
-                />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="orgName"
+              rules={{ required: 'Organization name is required' }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Organization Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Acme Inc." />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="orgSlug"
+              rules={{ required: 'Slug is required' }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Organization Slug</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="acme-inc"
+                      onChange={(e) => {
+                        field.onChange(
+                          slugify(e.target.value, {
+                            lower: true,
+                            trim: false,
+                            strict: true,
+                          }),
+                        )
+                        setEditedSlug(true)
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <CompanyFields
             onEditBusinessName={() => setEditedBusinessName(true)}
           />
-          <CurrencyAndCountryFields />
 
-          <FormField
-            control={form.control}
-            name="terms"
-            rules={{ required: 'You must accept the terms to continue' }}
-            render={({ field }) => (
-              <FormItem>
-                <Box
-                  display="flex"
-                  flexDirection="row"
-                  alignItems="start"
-                  columnGap="m"
-                >
-                  <Checkbox
-                    id="terms"
-                    checked={field.value}
-                    onCheckedChange={(checked) => {
-                      setValue('terms', checked ? true : false)
-                    }}
-                    className="mt-0.5"
-                  />
-                  <div className="flex flex-col gap-y-1 text-sm">
-                    <label
-                      htmlFor="terms"
-                      className="cursor-pointer leading-snug font-medium"
-                    >
-                      I agree to Polar&apos;s{' '}
-                      <a
-                        href="https://polar.sh/legal/terms"
-                        className="text-gray-900 underline dark:text-white"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Terms
-                      </a>
-                      ,{' '}
-                      <a
-                        href="https://polar.sh/legal/privacy"
-                        className="text-gray-900 underline dark:text-white"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Privacy Policy
-                      </a>{' '}
-                      &amp;{' '}
-                      <a
-                        href="https://polar.sh/docs/merchant-of-record/account-reviews"
-                        className="text-gray-900 underline dark:text-white"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        AUP
-                      </a>
-                    </label>
-                  </div>
-                </Box>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <CurrencyAndCountryFields />
 
           <SubmitButton loading={submitting} />
         </form>

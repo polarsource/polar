@@ -4,6 +4,7 @@ import pytest
 
 from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
+from polar.models.product import Product
 from polar.models.user import User
 from polar.organization_review.report import (
     AgentReportV2,
@@ -29,6 +30,8 @@ from polar.organization_review.schemas import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_checkout,
+    create_checkout_link,
     create_customer,
     create_order,
     create_payment,
@@ -851,3 +854,219 @@ class TestGetRefundStats:
         count, refund_amount = await repo.get_refund_stats(organization.id)
         assert count == 0
         assert refund_amount == 0
+
+
+@pytest.mark.asyncio
+class TestGetCheckoutSuccessUrls:
+    async def test_returns_distinct_success_urls(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thanks",
+        )
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            success_url="https://other.com/done",
+        )
+        # Duplicate — should be deduplicated
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thanks",
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        urls = await repo.get_checkout_success_urls(organization.id)
+
+        assert set(urls) == {"https://example.com/thanks", "https://other.com/done"}
+
+    async def test_excludes_null_success_urls(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        # Checkout without success_url (default is None)
+        await create_checkout(save_fixture, products=[product])
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thanks",
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        urls = await repo.get_checkout_success_urls(organization.id)
+
+        assert urls == ["https://example.com/thanks"]
+
+    async def test_empty_when_no_checkouts(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        urls = await repo.get_checkout_success_urls(organization.id)
+        assert urls == []
+
+    async def test_excludes_deleted_checkouts(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thanks",
+        )
+        checkout.deleted_at = datetime.now(UTC)
+        await save_fixture(checkout)
+
+        repo = OrganizationReviewRepository.from_session(session)
+        urls = await repo.get_checkout_success_urls(organization.id)
+        assert urls == []
+
+    async def test_excludes_old_checkouts(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        # Recent checkout
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            success_url="https://recent.com/thanks",
+        )
+        # Old checkout (> 3 months)
+        old_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            success_url="https://old.com/thanks",
+        )
+        old_checkout.created_at = datetime(2020, 1, 1, tzinfo=UTC)
+        await save_fixture(old_checkout)
+
+        repo = OrganizationReviewRepository.from_session(session)
+        urls = await repo.get_checkout_success_urls(organization.id)
+        assert urls == ["https://recent.com/thanks"]
+
+
+@pytest.mark.asyncio
+class TestGetCheckoutReturnUrls:
+    async def test_returns_distinct_return_urls(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            return_url="https://example.com/return",
+        )
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            return_url="https://other.com/back",
+        )
+        # Duplicate
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            return_url="https://example.com/return",
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        urls = await repo.get_checkout_return_urls(organization.id)
+
+        assert set(urls) == {"https://example.com/return", "https://other.com/back"}
+
+    async def test_excludes_null_return_urls(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        await create_checkout(save_fixture, products=[product])
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            return_url="https://example.com/return",
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        urls = await repo.get_checkout_return_urls(organization.id)
+
+        assert urls == ["https://example.com/return"]
+
+    async def test_empty_when_no_checkouts(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        urls = await repo.get_checkout_return_urls(organization.id)
+        assert urls == []
+
+
+@pytest.mark.asyncio
+class TestGetCheckoutLinksWithBenefits:
+    async def test_returns_checkout_links(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        await create_checkout_link(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thanks",
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        links = await repo.get_checkout_links_with_benefits(organization.id)
+
+        assert len(links) == 1
+        assert links[0].success_url == "https://example.com/thanks"
+
+    async def test_excludes_deleted_links(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        link = await create_checkout_link(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thanks",
+        )
+        link.deleted_at = datetime.now(UTC)
+        await save_fixture(link)
+
+        repo = OrganizationReviewRepository.from_session(session)
+        links = await repo.get_checkout_links_with_benefits(organization.id)
+        assert links == []
+
+    async def test_empty_when_no_links(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        links = await repo.get_checkout_links_with_benefits(organization.id)
+        assert links == []

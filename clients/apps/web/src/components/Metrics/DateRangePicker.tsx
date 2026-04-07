@@ -113,6 +113,7 @@ interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined
   onDateChange: (v: DateRange) => void
   minDate?: Date
+  additionalIntervals?: DateRangeInterval[]
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
@@ -120,6 +121,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   date,
   onDateChange,
   minDate,
+  additionalIntervals,
 }) => {
   const { organization } = useContext(OrganizationContext)
   const interval = date ? dateToInterval(date, organization) : undefined
@@ -172,6 +174,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <PopoverContent className="p-2">
           <DateRangeIntervals
             interval={interval}
+            additionalIntervals={additionalIntervals}
             onIntervalChange={(int) => {
               onDateChange({
                 from: int.value[0],
@@ -185,18 +188,20 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   )
 }
 
-interface DateRangeInterval {
-  slug:
-    | 'today'
-    | 'yesterday'
-    | 'thisWeek'
-    | 'lastWeek'
-    | 'thisMonth'
-    | 'lastMonth'
-    | 'last3Months'
-    | 'thisYear'
-    | 'lastYear'
-    | 'allTime'
+export type DateRangeIntervalSlug =
+  | 'today'
+  | 'yesterday'
+  | 'thisWeek'
+  | 'thisMonth'
+  | 'lastMonth'
+  | 'last3Months'
+  | 'thisYear'
+  | 'lastYear'
+  | 'allTime'
+  | (string & {})
+
+export interface DateRangeInterval {
+  slug: DateRangeIntervalSlug
   label: string
   value: [Date, Date]
 }
@@ -204,17 +209,23 @@ interface DateRangeInterval {
 interface DateRangeIntervalProps {
   interval: DateRangeInterval | undefined
   onIntervalChange: (interval: DateRangeInterval) => void
+  additionalIntervals?: DateRangeInterval[]
 }
 
 const DateRangeIntervals = ({
   interval,
   onIntervalChange,
+  additionalIntervals,
 }: DateRangeIntervalProps) => {
   const { organization } = useContext(OrganizationContext)
+  const allIntervals = [
+    ...(additionalIntervals ?? []),
+    ...intervals(organization),
+  ]
 
   return (
     <div className="flex w-full flex-col gap-1">
-      {intervals(organization).map((int) => (
+      {allIntervals.map((int) => (
         <div
           key={int.slug}
           onClick={() => onIntervalChange(int)}

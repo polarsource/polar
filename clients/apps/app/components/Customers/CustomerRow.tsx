@@ -8,7 +8,10 @@ import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 
 export interface CustomerRowProps {
-  customer: schemas['Customer']
+  customer:
+    | schemas['Customer']
+    | schemas['OrderCustomer']
+    | schemas['SubscriptionCustomer']
 }
 
 export const CustomerRow = ({ customer }: CustomerRowProps) => {
@@ -28,11 +31,15 @@ export const CustomerRow = ({ customer }: CustomerRowProps) => {
       asChild
     >
       <Touchable>
-        <Avatar image={customer.avatar_url} name={customer.email} size={40} />
+        <Avatar
+          image={customer.avatar_url}
+          name={customer.email ?? customer.name ?? '—'}
+          size={40}
+        />
         <Box flex={1} flexDirection="column" gap="spacing-2">
           <Text variant="bodyMedium">{customer.name ?? '—'}</Text>
           <Box flexDirection="row" gap="spacing-4">
-            <Text color="subtext">{customer.email}</Text>
+            <Text color="subtext">{customer.email ?? '—'}</Text>
           </Box>
         </Box>
       </Touchable>

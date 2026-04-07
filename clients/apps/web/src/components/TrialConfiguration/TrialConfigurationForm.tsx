@@ -75,16 +75,18 @@ export const TrialConfigurationForm = ({
   }, [count])
 
   return (
-    <label htmlFor="trial-enable">
+    <div>
       <div className="flex flex-col gap-4">
-        <FormItem className="flex-1">
-          <div className="flex flex-row items-center justify-between gap-x-4 whitespace-nowrap">
+        <FormItem>
+          <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
             <FormLabel htmlFor="trial-enable">Free trial period</FormLabel>
-            <Switch
-              id="trial-enable"
-              checked={trialEnabled}
-              onCheckedChange={onTrialToggle}
-            />
+            <FormControl>
+              <Switch
+                id="trial-enable"
+                checked={trialEnabled}
+                onCheckedChange={onTrialToggle}
+              />
+            </FormControl>
           </div>
         </FormItem>
         {trialEnabled && (
@@ -148,6 +150,6 @@ export const TrialConfigurationForm = ({
           <FormDescription>{bottomText}</FormDescription>
         </div>
       )}
-    </label>
+    </div>
   )
 }

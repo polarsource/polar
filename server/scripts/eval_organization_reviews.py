@@ -16,7 +16,7 @@ Usage:
     uv run python -m scripts.eval_organization_reviews run
 
     # Run eval with a different model
-    uv run python -m scripts.eval_organization_reviews run --model gpt-4o
+    uv run python -m scripts.eval_organization_reviews run --dataset eval_dataset.json --model openai:gpt-4o
 
     # Optimize the system prompt with GEPA
     uv run python -m scripts.eval_organization_reviews optimize --max-evals 50
@@ -43,8 +43,6 @@ from polar.organization_review.eval.dataset import (
     extract_dataset,
 )
 from polar.organization_review.eval.evaluators import (
-    NotFalseNegative,
-    NotFalsePositive,
     VerdictMatch,
 )
 from polar.organization_review.eval.optimize import run_optimization
@@ -138,6 +136,12 @@ async def run(
         "-m",
         help="Model override (default: settings.OPENAI_MODEL)",
     ),
+    policy: str | None = typer.Option(
+        None,
+        "--policy",
+        "-p",
+        help="Policy source: 'default' (read from disk), or path to a .txt file",
+    ),
     concurrency: int = typer.Option(
         5, "--concurrency", "-c", help="Max parallel API calls"
     ),
@@ -150,11 +154,21 @@ async def run(
     Re-runs the analyzer on each case and checks whether the
     verdict matches the expected output.
     """
+    from polar.organization_review.policy import fetch_policy_content
+
+    policy_override: str | None = None
+    if policy == "default":
+        policy_override = fetch_policy_content()
+        typer.echo("Using DEFAULT (disk) policy")
+    elif policy is not None:
+        policy_override = Path(policy).read_text()
+        typer.echo(f"Using policy from file: {policy}")
+
     dataset: EvalDataset = EvalDataset.from_file(dataset_path)
     typer.echo(f"Loaded {len(dataset.cases)} cases from {dataset_path}")
 
-    dataset.evaluators = [VerdictMatch(), NotFalseNegative(), NotFalsePositive()]
-    task = create_review_task(model=model)
+    dataset.evaluators = [VerdictMatch()]
+    task = create_review_task(model=model, policy_override=policy_override)
 
     report = await dataset.evaluate(task, max_concurrency=concurrency)
 

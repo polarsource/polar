@@ -64,7 +64,7 @@ const LoginCodeForm = ({ returnTo, signup }: LoginCodeFormProps) => {
             return (
               <FormItem>
                 <FormControl className="w-full">
-                  <div className="flex w-full flex-row gap-2">
+                  <div className="flex w-full flex-col gap-2">
                     <Input
                       type="email"
                       required
@@ -76,10 +76,11 @@ const LoginCodeForm = ({ returnTo, signup }: LoginCodeFormProps) => {
                     <Button
                       type="submit"
                       variant="secondary"
+                      fullWidth
                       loading={loading}
                       disabled={loading}
                     >
-                      {signup ? 'Sign up' : 'Log in'}
+                      {signup ? 'Sign up with email' : 'Sign in with email'}
                     </Button>
                   </div>
                 </FormControl>

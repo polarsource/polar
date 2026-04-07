@@ -77,13 +77,25 @@ def resize_image(
         return None
 
     if width and height:
-        img.thumbnail((width, height), Resampling.LANCZOS)
+        target_w, target_h = width, height
     elif width:
         ratio = width / orig_w
-        img = img.resize((width, int(orig_h * ratio)), Resampling.LANCZOS)
-    elif height:
+        target_w, target_h = width, int(orig_h * ratio)
+    else:
+        assert height is not None
         ratio = height / orig_h
-        img = img.resize((int(orig_w * ratio), height), Resampling.LANCZOS)
+        target_w, target_h = int(orig_w * ratio), height
+
+    if orig_w * orig_h > 25_000_000:
+        if orig_format in ("JPEG", "MPO"):
+            img.draft(img.mode, (target_w, target_h))
+        else:
+            return None
+
+    if width and height:
+        img.thumbnail((target_w, target_h), Resampling.LANCZOS)
+    else:
+        img = img.resize((target_w, target_h), Resampling.LANCZOS)
 
     buf = io.BytesIO()
     fmt = orig_format or "JPEG"
@@ -106,6 +118,12 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     querystring: str = request.get("querystring", "")
 
     logger.info("uri=%s querystring=%s", uri, querystring)
+
+    # Normalize URI: re-encode the path to ensure spaces are %20, not literal spaces.
+    # CloudFront may decode %20 to a literal space before passing to Lambda@Edge,
+    # and Lambda@Edge will reject a response containing a literal space in the URI.
+    uri = quote(unquote(urlparse(uri).path), safe="/")
+    request["uri"] = uri
 
     if not querystring or not is_image(uri):
         return request

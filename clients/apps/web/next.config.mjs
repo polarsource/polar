@@ -95,6 +95,12 @@ const nextConfig = {
     eslint: { ignoreDuringBuilds: true },
   }),
 
+  outputFileTracingIncludes: {
+    '/onboarding/validate-description': [
+      './src/app/(main)/onboarding/validate-description/acceptable-use-policy.mdx',
+    ],
+  },
+
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 
@@ -173,6 +179,10 @@ const nextConfig = {
               source: '/healthz',
               destination: `${apiUrl}/healthz`,
             },
+            {
+              source: '/openapi.json',
+              destination: `${apiUrl}/openapi.json`,
+            },
           ]
         : []),
       {
@@ -218,6 +228,16 @@ const nextConfig = {
       {
         source: '/careers',
         destination: 'https://polar.sh/company',
+        permanent: false,
+      },
+      {
+        source: '/legal/terms',
+        destination: 'https://polar.sh/legal/master-services-terms',
+        permanent: false,
+      },
+      {
+        source: '/legal/privacy',
+        destination: 'https://polar.sh/legal/privacy-policy',
         permanent: false,
       },
       {
@@ -523,7 +543,6 @@ const createConfig = async () => {
     options: {
       remarkPlugins: ['remark-frontmatter', 'remark-gfm'],
       rehypePlugins: [
-        'rehype-mdx-import-media',
         'rehype-slug',
         [
           '@shikijs/rehype',

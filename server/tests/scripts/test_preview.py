@@ -304,6 +304,122 @@ class TestPreviewCLI:
             'preview_postgres_env_json={"POLAR_POSTGRES_DATABASE":"preview_pr_123","POLAR_POSTGRES_HOST":"db.internal","POLAR_POSTGRES_PORT":"5432","POLAR_POSTGRES_PWD":"db-pass","POLAR_POSTGRES_USER":"preview_pr_123_app"}',
         ]
 
+    def test_postgres_provision_with_template_transfers_ownership(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        github_output = tmp_path / "github-output.txt"
+        cursor = FakeCursor()
+        connection = FakeConnection(cursor)
+        grant_calls: list[tuple[str, str, str]] = []
+
+        def fake_connect(
+            config: preview_script.PreviewPostgresAdminConfig,
+        ) -> FakeConnection:
+            connection.autocommit = True
+            return connection
+
+        def fake_grant(
+            config: preview_script.PreviewPostgresAdminConfig,
+            database_name: str,
+            role_name: str,
+        ) -> None:
+            grant_calls.append((config.admin_dsn, database_name, role_name))
+
+        monkeypatch.setenv(
+            "POLAR_PREVIEW_POSTGRES_ADMIN_DSN",
+            "postgresql://admin:secret@db.internal:5432/postgres",
+        )
+        monkeypatch.setenv("POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE", "polar_template")
+        monkeypatch.setattr(
+            preview_script, "generate_preview_password", lambda: "db-pass"
+        )
+        monkeypatch.setattr(
+            preview_script, "connect_preview_postgres_admin", fake_connect
+        )
+        monkeypatch.setattr(preview_script, "grant_template_objects", fake_grant)
+
+        result = runner.invoke(
+            cli,
+            [
+                "postgres-provision",
+                "--preview-id",
+                "pr-123",
+                "--github-output",
+                str(github_output),
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert grant_calls == [
+            (
+                "postgresql://admin:secret@db.internal:5432/postgres",
+                "preview_pr_123",
+                "preview_pr_123_app",
+            )
+        ]
+        create_db_sql = next(
+            sql for sql, _ in cursor.executed if "CREATE DATABASE" in sql
+        )
+        assert "TEMPLATE polar_template" in create_db_sql
+
+    def test_postgres_provision_reuses_database_with_template(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        github_output = tmp_path / "github-output.txt"
+        cursor = FakeCursor(role_exists=True, database_exists=True)
+        connection = FakeConnection(cursor)
+        grant_calls: list[tuple[str, str, str]] = []
+
+        def fake_connect(
+            config: preview_script.PreviewPostgresAdminConfig,
+        ) -> FakeConnection:
+            connection.autocommit = True
+            return connection
+
+        def fake_grant(
+            config: preview_script.PreviewPostgresAdminConfig,
+            database_name: str,
+            role_name: str,
+        ) -> None:
+            grant_calls.append((config.admin_dsn, database_name, role_name))
+
+        monkeypatch.setenv(
+            "POLAR_PREVIEW_POSTGRES_ADMIN_DSN",
+            "postgresql://admin:secret@db.internal:5432/postgres",
+        )
+        monkeypatch.setenv("POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE", "polar_template")
+        monkeypatch.setattr(
+            preview_script, "generate_preview_password", lambda: "rotated-pass"
+        )
+        monkeypatch.setattr(
+            preview_script, "connect_preview_postgres_admin", fake_connect
+        )
+        monkeypatch.setattr(preview_script, "grant_template_objects", fake_grant)
+
+        result = runner.invoke(
+            cli,
+            [
+                "postgres-provision",
+                "--preview-id",
+                "pr-123",
+                "--github-output",
+                str(github_output),
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert grant_calls == [
+            (
+                "postgresql://admin:secret@db.internal:5432/postgres",
+                "preview_pr_123",
+                "preview_pr_123_app",
+            )
+        ]
+
     def test_postgres_provision_reuses_existing_database_and_user(
         self,
         monkeypatch: pytest.MonkeyPatch,

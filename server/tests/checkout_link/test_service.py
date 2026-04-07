@@ -309,6 +309,38 @@ class TestUpdate:
 
         assert checkout_link.products == [product]
 
+    @pytest.mark.auth
+    async def test_products_to_one_time_clears_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product: Product,
+        product_one_time: Product,
+    ) -> None:
+        from polar.kit.trial import TrialInterval
+
+        checkout_link_with_trial = await create_checkout_link(
+            save_fixture,
+            products=[product],
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        assert checkout_link_with_trial.trial_interval is not None
+        assert checkout_link_with_trial.trial_interval_count is not None
+
+        updated = await checkout_link_service.update(
+            session,
+            checkout_link_with_trial,
+            CheckoutLinkUpdate(products=[product_one_time.id]),
+            auth_subject,
+        )
+
+        assert updated.trial_interval is None
+        assert updated.trial_interval_count is None
+
 
 @pytest.mark.asyncio
 class TestDelete:

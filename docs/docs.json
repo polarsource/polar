@@ -91,6 +91,7 @@
               "features/seat-based-pricing",
               "features/custom-fields",
               "features/discounts",
+              "features/tax-inclusive-pricing",
               "features/orders",
               "features/refunds",
               "features/analytics",
@@ -883,6 +884,10 @@
       "destination": "/merchant-of-record/acceptable-use"
     },
     {
+      "source": "/merchant-of-record/acceptable-use",
+      "destination": "https://polar.sh/legal/acceptable-use-policy"
+    },
+    {
       "source": "/documentation/polar-as-merchant-of-record/account-reviews",
       "destination": "/merchant-of-record/account-reviews"
     },
@@ -1009,6 +1014,14 @@
     {
       "source": "/docs/features/customers",
       "destination": "/features/customer-management"
+    },
+    {
+      "source": "/features/integrations/evendeals",
+      "destination": "https://www.evendeals.com/integrations/polar"
+    },
+    {
+      "source": "/features/integrations/refgrow",
+      "destination": "https://refgrow.com/polar-affiliate-software"
     }
   ]
 }

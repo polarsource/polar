@@ -136,7 +136,6 @@ class AccountService:
         old_stripe_id = account.stripe_id
 
         archive_account = Account(
-            status=account.status,
             admin_id=account.admin_id,
             account_type=account.account_type,
             stripe_id=old_stripe_id,
@@ -151,7 +150,6 @@ class AccountService:
             processor_fees_applicable=account.processor_fees_applicable,
             _platform_fee_percent=account._platform_fee_percent,
             _platform_fee_fixed=account._platform_fee_fixed,
-            next_review_threshold=account.next_review_threshold,
             campaign_id=account.campaign_id,
         )
         archive_account.set_deleted_at()
@@ -290,7 +288,6 @@ class AccountService:
                 raise AccountServiceError("An unexpected Stripe error happened") from e
 
         account = Account(
-            status=Account.Status.ONBOARDING_STARTED,
             admin_id=admin.id,
             account_type=account_create.account_type,
             stripe_id=stripe_account.id,

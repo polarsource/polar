@@ -1,16 +1,32 @@
 import { CONFIG } from '@/utils/config'
-import { openai } from '@ai-sdk/openai'
+import { createOpenAI } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { AUP_FALLBACK } from './aup-fallback'
 import * as Sentry from '@sentry/nextjs'
 
 const MAX_DESCRIPTION_LENGTH = 3000
 const MAX_HISTORY_LENGTH = 5
 const MAX_CATEGORY_LENGTH = 100
 const MAX_CATEGORIES = 10
+
+const openai = createOpenAI({
+  apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
+  baseURL: 'https://gateway-us.pydantic.dev/proxy/chat/',
+})
+
+// Loaded from the local copy of the canonical MDX file.
+// The file is created by `scripts/copy-aup.mjs` (run via `prebuild`).
+const aupContent = readFileSync(
+  join(
+    process.cwd(),
+    'src/app/(main)/onboarding/validate-description/acceptable-use-policy.mdx',
+  ),
+  'utf-8',
+)
 
 const requestSchema = z.object({
   product_description: z.string().max(MAX_DESCRIPTION_LENGTH),
@@ -38,7 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.PYDANTIC_AI_GATEWAY_API_KEY) {
     return NextResponse.json({ verdict: 'APPROVE', confidence: 1 })
   }
 
@@ -56,18 +72,6 @@ export async function POST(req: Request) {
 
   const { product_description, selling_categories, pricing_models, history } =
     parsed.data
-
-  let aupContent = AUP_FALLBACK
-  try {
-    const aupRes = await fetch('https://polar.sh/legal/acceptable-use-policy', {
-      next: { revalidate: 86400 },
-    })
-    if (aupRes.ok) {
-      aupContent = await aupRes.text()
-    }
-  } catch {
-    // Use fallback
-  }
 
   try {
     const { output } = await generateText({

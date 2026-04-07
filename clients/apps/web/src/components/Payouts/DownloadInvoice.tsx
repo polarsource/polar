@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { enums, type schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'

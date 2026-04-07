@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useDeleteFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'

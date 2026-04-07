@@ -18,11 +18,16 @@ from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesC
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
-from polar.customer.schemas.customer import CustomerCreate
+from polar.customer.schemas.customer import CustomerIndividualCreate
 from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
 from polar.discount.service import discount as discount_service
-from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
+from polar.enums import (
+    AccountType,
+    PaymentProcessor,
+    SubscriptionRecurringInterval,
+    TaxBehaviorOption,
+)
 from polar.event.repository import EventRepository
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
@@ -39,7 +44,10 @@ from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationDetails, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
-from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceSeatUnit,
+)
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.models.user import IdentityVerificationStatus
@@ -644,7 +652,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 is_details_submitted=True,
                 is_charges_enabled=True,
                 is_payouts_enabled=True,
-                status=Account.Status.ACTIVE,
                 email=org_data["email"],
                 processor_fees_applicable=True,
             )
@@ -730,6 +737,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 price_create = ProductPriceMeteredUnitCreate(
                     amount_type=ProductPriceAmountType.metered_unit,
                     price_currency=PresentmentCurrency.usd,
+                    tax_behavior=TaxBehaviorOption.exclusive,
                     unit_amount=Decimal(str(product_data["unit_amount"])),
                     meter_id=coldmail_meter.id,
                     cap_amount=product_data.get("cap_amount"),
@@ -740,6 +748,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 price_create = ProductPriceSeatBasedCreate(
                     amount_type=ProductPriceAmountType.seat_based,
                     price_currency=PresentmentCurrency.usd,
+                    tax_behavior=TaxBehaviorOption.exclusive,
                     seat_tiers=ProductPriceSeatTiers(
                         tiers=[
                             ProductPriceSeatTier(
@@ -754,6 +763,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 # Create fixed price for product
                 price_create = ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
+                    tax_behavior=TaxBehaviorOption.exclusive,
                     price_amount=product_data["price"],
                     price_currency=PresentmentCurrency.usd,
                 )
@@ -856,7 +866,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             customer_email = f"customer_{org_data['slug']}_{i + 1}@polar.sh"
             customer = await customer_service.create(
                 session=session,
-                customer_create=CustomerCreate(
+                customer_create=CustomerIndividualCreate(
                     email=customer_email,
                     name=f"Customer {i + 1}",
                     organization_id=organization.id,
@@ -916,7 +926,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 # Create the customer
                 seat_customer = await customer_service.create(
                     session=session,
-                    customer_create=CustomerCreate(
+                    customer_create=CustomerIndividualCreate(
                         email=customer_data["email"],
                         name=customer_data["name"],
                         organization_id=organization.id,
@@ -933,6 +943,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     amount=amount,
                     net_amount=amount,
                     currency=seat_based_price.price_currency,
+                    tax_behavior=organization.default_tax_behavior,
                     recurring_interval=seat_based_product.recurring_interval,
                     recurring_interval_count=1,
                     status=SubscriptionStatus.active,
@@ -943,6 +954,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     customer_id=seat_customer.id,
                     product_id=seat_based_product.id,
                     seats=seats_purchased,
+                    anchor_day=utc_now().day,
                 )
                 session.add(subscription)
                 await session.flush()
@@ -1005,7 +1017,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                             )
                             seat_holder_customer = await customer_service.create(
                                 session=session,
-                                customer_create=CustomerCreate(
+                                customer_create=CustomerIndividualCreate(
                                     email=seat_holder_email,
                                     name=f"Seat Holder {i + 1}",
                                     organization_id=organization.id,

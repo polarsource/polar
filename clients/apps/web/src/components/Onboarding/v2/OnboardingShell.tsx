@@ -1,12 +1,15 @@
 'use client'
 
+import { useAuth } from '@/hooks'
+import { CONFIG } from '@/utils/config'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import LogoIcon from '../../Brand/logos/LogoIcon'
-import { APIPreview } from './APIPreview'
+import { type APIPreviewStep, APIPreview } from './APIPreview'
 
 const STEPS = ['personal', 'business', 'product'] as const
 const STEP_ROUTES = [
@@ -18,7 +21,8 @@ const STEP_ROUTES = [
 interface OnboardingShellProps {
   title: string
   subtitle?: string
-  step: 'personal' | 'business' | 'product'
+  step?: 'personal' | 'business' | 'product'
+  apiStep?: APIPreviewStep
   children: ReactNode
 }
 
@@ -26,10 +30,13 @@ export function OnboardingShell({
   title,
   subtitle,
   step,
+  apiStep,
   children,
 }: OnboardingShellProps) {
   const router = useRouter()
-  const currentIndex = STEPS.indexOf(step)
+  const { userOrganizations } = useAuth()
+  const [hadOrgs] = useState(() => userOrganizations.length > 0)
+  const currentIndex = step ? STEPS.indexOf(step) : -1
 
   return (
     <Box
@@ -38,7 +45,22 @@ export function OnboardingShell({
       justifyContent="center"
       backgroundColor="background-primary"
       overflowX="hidden"
+      position="relative"
     >
+      <div className="dark:text-polar-500 absolute bottom-6 left-6 flex gap-4 text-sm text-gray-400">
+        <Link
+          href="/dashboard/account/preferences"
+          className="dark:hover:text-polar-200 hover:text-gray-900"
+        >
+          User settings
+        </Link>
+        <a
+          href={`${CONFIG.BASE_URL}/v1/auth/logout`}
+          className="dark:hover:text-polar-200 hover:text-gray-900"
+        >
+          Log out
+        </a>
+      </div>
       <Box display="flex" width="100%" maxWidth="60rem">
         {/* Left: form */}
         <Box
@@ -51,7 +73,7 @@ export function OnboardingShell({
           paddingHorizontal={{ base: 'l', lg: 'none' }}
         >
           <motion.div
-            key={step}
+            key={step ?? 'default'}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -64,44 +86,56 @@ export function OnboardingShell({
               flexDirection="column"
               rowGap="xl"
             >
-              <Box display="flex" alignItems="center" justifyContent="center">
-                {currentIndex > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => router.push(STEP_ROUTES[currentIndex - 1])}
-                    className="dark:text-polar-400 dark:hover:text-polar-200 absolute left-0 text-gray-400 hover:text-gray-900"
-                  >
-                    <ArrowLeft size={20} />
-                  </button>
-                )}
-                <LogoIcon size={36} />
-              </Box>
-              <Box display="flex" width="100%" alignItems="center" gap="s">
-                {STEPS.map((s, i) => (
-                  <Box key={s} display="flex" flex={1}>
-                    <div
-                      className={`h-0.5 w-full rounded-full transition-colors ${
-                        i <= currentIndex
-                          ? 'dark:bg-polar-50 bg-gray-900'
-                          : 'dark:bg-polar-700 bg-gray-200'
-                      }`}
-                    />
+              <Box display="flex" flexDirection="column" rowGap="xl">
+                <Box display="flex" alignItems="center" justifyContent="center">
+                  {currentIndex > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => router.push(STEP_ROUTES[currentIndex - 1])}
+                      className="dark:text-polar-400 dark:hover:text-polar-200 absolute left-0 text-gray-400 hover:text-gray-900"
+                    >
+                      <ArrowLeft size={20} />
+                    </button>
+                  )}
+                  <LogoIcon size={36} />
+                </Box>
+                {step && (
+                  <Box display="flex" width="100%" alignItems="center" gap="s">
+                    {STEPS.map((s, i) => (
+                      <Box key={s} display="flex" flex={1}>
+                        <div
+                          className={`h-0.5 w-full rounded-full transition-colors ${
+                            i <= currentIndex
+                              ? 'dark:bg-polar-50 bg-gray-900'
+                              : 'dark:bg-polar-700 bg-gray-200'
+                          }`}
+                        />
+                      </Box>
+                    ))}
                   </Box>
-                ))}
+                )}
               </Box>
-            </Box>
 
-            <Box display="flex" flexDirection="column" rowGap="m">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {title}
-              </h1>
-              {subtitle && (
-                <p className="dark:text-polar-400 text-sm text-gray-500">
-                  {subtitle}
-                </p>
+              <Box display="flex" flexDirection="column" rowGap="m">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {title}
+                </h1>
+                {subtitle && (
+                  <p className="dark:text-polar-400 text-sm text-gray-500">
+                    {subtitle}
+                  </p>
+                )}
+              </Box>
+              {children}
+              {hadOrgs && (
+                <Link
+                  href="/dashboard"
+                  className="dark:text-polar-400 dark:hover:text-polar-200 text-center text-sm text-gray-500 hover:text-gray-900"
+                >
+                  Back to dashboard
+                </Link>
               )}
             </Box>
-            {children}
           </motion.div>
         </Box>
 
@@ -125,7 +159,7 @@ export function OnboardingShell({
             backgroundColor="background-secondary"
           />
           <Box position="sticky" top={150} zIndex={1}>
-            <APIPreview step={step} />
+            {(apiStep ?? step) && <APIPreview step={(apiStep ?? step)!} />}
           </Box>
         </Box>
       </Box>

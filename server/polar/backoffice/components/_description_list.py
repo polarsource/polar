@@ -174,10 +174,11 @@ class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
         attr: str,
         label: str | None = None,
         *,
+        clipboard: bool = False,
         external: bool = False,
         href_getter: Callable[[Request, M], str | URL | None] | None = None,
     ) -> None:
-        super().__init__(attr, label, clipboard=False)
+        super().__init__(attr, label, clipboard=clipboard)
         self.external = external
 
         if href_getter is None:
@@ -209,6 +210,9 @@ class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
                     if self.external:
                         with tag.div(classes="icon-external-link"):
                             pass
+                if self.clipboard:
+                    with clipboard_button(str(value)):
+                        pass
             else:
                 text("—")
         return None

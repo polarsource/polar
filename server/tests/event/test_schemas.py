@@ -1,10 +1,13 @@
 import uuid
-from typing import Any
+from typing import Any, get_args, get_type_hints
 
 import pytest
 from pydantic import ValidationError
 
 from polar.event.schemas import EventCreateCustomer, EventCreateExternalCustomer
+from polar.event.schemas import SystemEvent as SystemEventUnion
+from polar.event.system import SYSTEM_EVENT_LABELS
+from polar.event.system import SystemEvent as SystemEventEnum
 
 
 @pytest.mark.parametrize(
@@ -134,3 +137,34 @@ class TestMemberFields:
             }
         )
         assert event.member_id is None
+
+
+def _get_schema_union_event_names() -> set[str]:
+    """Extract all event name literals covered by the SystemEvent schema union."""
+    union_type = get_args(SystemEventUnion)[0]
+    names: set[str] = set()
+    for cls in get_args(union_type):
+        hints = get_type_hints(cls, include_extras=True)
+        name_hint = hints["name"]
+        literal_args = get_args(name_hint)
+        if not literal_args:
+            literal_args = get_args(get_args(name_hint)[0])
+        names.add(literal_args[0])
+    return names
+
+
+class TestSystemEventCoverage:
+    def test_all_enum_values_in_schema_union(self) -> None:
+        covered = _get_schema_union_event_names()
+        all_events = {e.value for e in SystemEventEnum}
+        missing = all_events - covered
+        assert not missing, (
+            f"SystemEvent enum values missing from schema union: {missing}"
+        )
+
+    def test_all_enum_values_in_labels(self) -> None:
+        all_events = {e.value for e in SystemEventEnum}
+        missing = all_events - set(SYSTEM_EVENT_LABELS.keys())
+        assert not missing, (
+            f"SystemEvent enum values missing from SYSTEM_EVENT_LABELS: {missing}"
+        )

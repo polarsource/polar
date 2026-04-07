@@ -1,3 +1,3 @@
-from .schemas import Member, MemberCreate, OwnerCreate
+from .schemas import Member, MemberCreate, MemberOwnerCreate
 
-__all__ = ["Member", "MemberCreate", "OwnerCreate"]
+__all__ = ["Member", "MemberCreate", "MemberOwnerCreate"]

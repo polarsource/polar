@@ -4,6 +4,7 @@ import { operations, schemas, unwrap } from '@polar-sh/client'
 import {
   useInfiniteQuery,
   useMutation,
+  useQueries,
   useQuery,
   UseQueryResult,
 } from '@tanstack/react-query'
@@ -129,6 +130,53 @@ export const useMeterQuantities = (
       }
     },
     retry: defaultRetry,
+  })
+}
+
+export const useMultipleMeterQuantities = (
+  meters: { id: string; customer_id?: string }[],
+  parameters?: Omit<
+    NonNullable<operations['meters:quantities']['parameters']['query']>,
+    'id' | 'customer_id'
+  >,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['meters:quantities']['parameters']['query']['timezone']
+
+  return useQueries({
+    queries: meters.map(({ id, customer_id }) => ({
+      queryKey: [
+        'meters',
+        'quantities',
+        { id, timezone, customer_id, ...(parameters || {}) },
+      ],
+      queryFn: async (): Promise<ParsedMeterQuantities> => {
+        const { start_timestamp, end_timestamp, interval } = parameters || {}
+        const result = await unwrap(
+          api.GET('/v1/meters/{id}/quantities', {
+            params: {
+              path: { id },
+              query: {
+                start_timestamp: start_timestamp ?? '',
+                end_timestamp: end_timestamp ?? '',
+                interval: interval as schemas['TimeInterval'],
+                timezone,
+                customer_id,
+                ...(parameters || {}),
+              },
+            },
+          }),
+        )
+        return {
+          ...result,
+          quantities: result.quantities.map((quantity) => ({
+            ...quantity,
+            timestamp: new Date(quantity.timestamp),
+          })) as ParsedMeterQuantities['quantities'],
+        }
+      },
+      retry: defaultRetry,
+    })),
   })
 }
 

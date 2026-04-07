@@ -17,14 +17,20 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
 )
-from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email_template
-from polar.enums import PaymentMode, PaymentProcessor, TaxProcessor
+from polar.enums import (
+    PaymentMode,
+    PaymentProcessor,
+    TaxBehavior,
+    TaxBehaviorOption,
+    TaxProcessor,
+)
 from polar.event.service import event as event_service
 from polar.event.system import (
     BalanceCreditOrderMetadata,
@@ -249,10 +255,13 @@ class TaxCalculationChangedAfterPayment(OrderError):
 class OrderService:
     @asynccontextmanager
     async def acquire_payment_lock(
-        self, session: AsyncSession, order: Order, *, release_on_success: bool = True
+        self, session: AsyncSession, order: Order
     ) -> AsyncIterator[None]:
         """
-        Context manager to acquire and release a payment lock for an order.
+        Context manager to acquire a payment lock for an order.
+        The lock is held after a successful operation and must be released
+        by the webhook handler (e.g., handle_payment or handle_payment_failure).
+        The lock is released automatically if an exception occurs.
         """
 
         repository = OrderRepository.from_session(session)
@@ -267,9 +276,6 @@ class OrderService:
         except Exception:
             await repository.release_payment_lock(order, flush=True)
             raise
-        else:
-            if release_on_success:
-                await repository.release_payment_lock(order, flush=True)
 
     async def list(
         self,
@@ -561,6 +567,7 @@ class OrderService:
                 billing_address=customer.billing_address,
                 tax_id=customer.tax_id,
                 taxability_reason=checkout.taxability_reason,
+                tax_behavior=checkout.tax_behavior,
                 tax_rate=checkout.tax_rate,
                 invoice_number=invoice_number,
                 customer=customer,
@@ -590,18 +597,15 @@ class OrderService:
         # Record tax transaction
         if checkout.tax_processor_id is not None:
             assert checkout.tax_processor is not None
+            assert checkout.tax_behavior is not None
             assert order.billing_address is not None
             assert order.product is not None
             transaction_id, tax_processor = await tax_calculation_service.record(
                 checkout.tax_processor,
-                calculation={
-                    "processor_id": checkout.tax_processor_id,
-                    "amount": checkout.tax_amount or 0,
-                    "currency": checkout.currency,
-                    "tax_rate": checkout.tax_rate,
-                    "taxability_reason": checkout.taxability_reason,
-                },
+                checkout.tax_processor_id,
                 amount=checkout.net_amount,
+                tax_amount=checkout.tax_amount or 0,
+                currency=checkout.currency,
                 address=order.billing_address,
                 tax_code=order.product.tax_code,
                 reference=str(order.id),
@@ -672,9 +676,15 @@ class OrderService:
             tax_id = customer.tax_id
             product = subscription.product
 
+            tax_behavior_option = (
+                subscription.tax_behavior.to_option()
+                if subscription.tax_behavior is not None
+                else customer.organization.default_tax_behavior
+            )
             # Calculate tax
             (
                 tax_processor,
+                tax_behavior,
                 tax_calculation_processor_id,
                 tax_amount,
                 taxability_reason,
@@ -682,6 +692,7 @@ class OrderService:
             ) = await self._calculate_subscription_order_tax(
                 reference=str(order_id),
                 taxable_amount=subtotal_amount - discount_amount,
+                tax_behavior_option=tax_behavior_option,
                 currency=subscription.currency,
                 customer=customer,
                 product=product,
@@ -692,7 +703,12 @@ class OrderService:
                 session, subscription.organization, customer
             )
 
-            total_amount = subtotal_amount - discount_amount + tax_amount
+            net_amount = (
+                subtotal_amount
+                - discount_amount
+                - (tax_amount if tax_behavior == TaxBehavior.inclusive else 0)
+            )
+            total_amount = net_amount + tax_amount
             customer_balance = await wallet_service.get_billing_wallet_balance(
                 session, customer, subscription.currency
             )
@@ -719,13 +735,14 @@ class OrderService:
                     subtotal_amount=subtotal_amount,
                     discount_amount=discount_amount,
                     tax_amount=tax_amount,
-                    net_amount=subtotal_amount - discount_amount,
+                    net_amount=net_amount,
                     applied_balance_amount=applied_balance_amount,
                     currency=subscription.currency,
                     billing_reason=billing_reason,
                     billing_name=customer.billing_name,
                     billing_address=billing_address,
                     taxability_reason=taxability_reason,
+                    tax_behavior=tax_behavior,
                     tax_id=tax_id,
                     tax_rate=tax_rate,
                     tax_processor=tax_processor,
@@ -938,14 +955,10 @@ class OrderService:
             assert order.billing_address is not None
             transaction_id, tax_processor = await tax_calculation_service.record(
                 wallet_transaction.tax_processor,
-                calculation={
-                    "processor_id": wallet_transaction.tax_calculation_processor_id,
-                    "amount": wallet_transaction.tax_amount or 0,
-                    "currency": wallet_transaction.currency,
-                    "tax_rate": wallet_transaction.tax_rate,
-                    "taxability_reason": wallet_transaction.taxability_reason,
-                },
+                wallet_transaction.tax_calculation_processor_id,
                 amount=order.net_amount,
+                tax_amount=order.tax_amount,
+                currency=order.currency,
                 address=order.billing_address,
                 tax_code=TaxCode.general_electronically_supplied_services,
                 reference=str(order.id),
@@ -1017,7 +1030,7 @@ class OrderService:
             await self._on_order_updated(session, order, previous_status)
             return
 
-        async with self.acquire_payment_lock(session, order, release_on_success=False):
+        async with self.acquire_payment_lock(session, order):
             if payment_method.processor == PaymentProcessor.stripe:
                 metadata: dict[str, Any] = {
                     "organization_id": str(order.organization.id),
@@ -1054,6 +1067,8 @@ class OrderService:
                         error_code=e.code,
                         error_message=e.user_message,
                     )
+                    if payment_mode == PaymentMode.sync:
+                        await self._mark_intent_as_failed_sync(e)
                     raise PaymentFailed(PaymentFailedReason.card_error) from e
                 except stripe_lib.InvalidRequestError as e:
                     error = e.error
@@ -1062,7 +1077,7 @@ class OrderService:
                         if (
                             "requires a mandate" in message
                             or "detached from a customer" in message
-                            or "does not belong to the customer"
+                            or "does not belong to the customer" in message
                         ):
                             log.info(
                                 "Invalid or expired payment method",
@@ -1079,9 +1094,20 @@ class OrderService:
                             # Mark the payment as failed to trigger dunning
                             await self.handle_payment_failure(session, order)
 
+                            if payment_mode == PaymentMode.sync:
+                                await self._mark_intent_as_failed_sync(e)
                             raise PaymentFailed(PaymentFailedReason.card_error) from e
 
                     raise
+
+    async def _mark_intent_as_failed_sync(self, error: stripe_lib.StripeError) -> None:
+        payment_intent = getattr(error.error, "payment_intent", None)
+        if payment_intent is not None:
+            intent_metadata = payment_intent.metadata or {}
+            intent_metadata["polar_failed_sync_payment"] = "true"
+            await stripe_service.modify_payment_intent(
+                payment_intent.id, metadata=intent_metadata
+            )
 
     async def process_retry_payment(
         self,
@@ -1168,13 +1194,11 @@ class OrderService:
             metadata["tax_state"] = order.tax_rate["state"]
 
         try:
-            async with self.acquire_payment_lock(
-                session, order, release_on_success=True
-            ):
+            async with self.acquire_payment_lock(session, order):
                 if saved_payment_method is not None:
                     # Using saved payment method
                     payment_intent = await stripe_service.create_payment_intent(
-                        amount=order.total_amount,
+                        amount=order.due_amount,
                         currency=order.currency,
                         payment_method=saved_payment_method.processor_id,
                         customer=customer.stripe_customer_id,
@@ -1191,7 +1215,7 @@ class OrderService:
                     # Using confirmation token (new payment method)
                     assert confirmation_token_id is not None
                     payment_intent = await stripe_service.create_payment_intent(
-                        amount=order.total_amount,
+                        amount=order.due_amount,
                         currency=order.currency,
                         automatic_payment_methods={
                             "enabled": True,
@@ -1327,19 +1351,16 @@ class OrderService:
         ):
             tax_processor: TaxProcessor | None = None
             assert order.tax_processor is not None
+            assert order.tax_behavior is not None
             assert order.billing_address is not None
             assert order.product is not None
             try:
                 transaction_id, tax_processor = await tax_calculation_service.record(
                     order.tax_processor,
-                    calculation={
-                        "processor_id": order.tax_calculation_processor_id,
-                        "amount": order.tax_amount or 0,
-                        "currency": order.currency,
-                        "tax_rate": order.tax_rate,
-                        "taxability_reason": order.taxability_reason,
-                    },
+                    order.tax_calculation_processor_id,
                     amount=order.net_amount,
+                    tax_amount=order.tax_amount,
+                    currency=order.currency,
                     address=order.billing_address,
                     tax_code=order.product.tax_code,
                     reference=str(order.id),
@@ -1362,6 +1383,7 @@ class OrderService:
                 assert product is not None
                 (
                     tax_processor,
+                    tax_behavior,
                     tax_calculation_processor_id,
                     tax_amount,
                     taxability_reason,
@@ -1372,12 +1394,14 @@ class OrderService:
                     currency=order.currency,
                     customer=customer,
                     product=product,
+                    tax_behavior_option=order.tax_behavior.to_option(),
                     tax_exempted=tax_exempted,
                 )
                 update_dict = {
                     **update_dict,
                     "tax_calculation_processor_id": tax_calculation_processor_id,
                     "tax_amount": tax_amount,
+                    "tax_behavior": tax_behavior,
                     "taxability_reason": taxability_reason,
                     "tax_rate": tax_rate,
                 }
@@ -1393,14 +1417,10 @@ class OrderService:
                         tax_processor,
                     ) = await tax_calculation_service.record(
                         tax_processor,
-                        calculation={
-                            "processor_id": tax_calculation_processor_id,
-                            "amount": tax_amount,
-                            "currency": order.currency,
-                            "tax_rate": tax_rate,
-                            "taxability_reason": taxability_reason,
-                        },
+                        tax_calculation_processor_id,
                         amount=order.net_amount,
+                        tax_amount=tax_amount,
+                        currency=order.currency,
                         address=order.billing_address,
                         tax_code=order.product.tax_code,
                         reference=str(order.id),
@@ -1457,9 +1477,7 @@ class OrderService:
                     type=NotificationType.maintainer_new_product_sale,
                     payload=MaintainerNewProductSaleNotificationPayload(
                         customer_email=customer.email,
-                        customer_name=customer.name
-                        or order.billing_name
-                        or customer.email,
+                        customer_name=customer.display_name,
                         billing_address_country=billing_address.country
                         if billing_address
                         else None,
@@ -1582,48 +1600,22 @@ class OrderService:
         product = order.product
         customer = order.customer
         subscription = order.subscription
-        token, _ = await customer_session_service.create_customer_session(
-            session, customer
-        )
 
-        # Build query parameters with proper URL encoding
-        params = {
-            key: value.format(
-                token=token,
-                order=order.id,
-                subscription=subscription.id if subscription else "",
-                email=customer.email,
-            )
-            for key, value in url_params.items()
-        }
-        query_string = urlencode(params)
-        url_path = url_path_template.format(organization=organization.slug)
-        url = settings.generate_frontend_url(f"{url_path}?{query_string}")
+        recipients = await customer_service.get_email_recipients(session, customer)
+        if not recipients:
+            return
+
         subject = subject_template.format(description=order.description)
-        email = EmailAdapter.validate_python(
-            {
-                "template": template_name,
-                "props": {
-                    "email": customer.email,
-                    "organization": organization,
-                    "product": product,
-                    "order": order,
-                    "subscription": subscription,
-                    "url": url,
-                },
-            }
-        )
 
         # Generate invoice to attach to the email
         invoice_path: str | None = None
-        if invoice_path is None:
-            if order.billing_name is None or order.billing_address is None:
-                log.warning(
-                    "Cannot generate invoice, missing billing info", order_id=order.id
-                )
-            else:
-                order = await self.generate_invoice(session, order)
-                invoice_path = order.invoice_path
+        if order.billing_name is not None and order.billing_address is not None:
+            order = await self.generate_invoice(session, order)
+            invoice_path = order.invoice_path
+        else:
+            log.warning(
+                "Cannot generate invoice, missing billing info", order_id=order.id
+            )
 
         attachments: list[Attachment] = []
         if invoice_path is not None:
@@ -1632,13 +1624,47 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
-        enqueue_email_template(
-            email,
-            **organization.email_from_reply,
-            to_email_addr=customer.email,
-            subject=subject,
-            attachments=attachments,
-        )
+        for recipient_email in recipients:
+            token = await customer_service.create_session_token_for_recipient(
+                session, customer, recipient_email
+            )
+            if token is None:
+                continue
+
+            # Build query parameters with per-recipient email
+            params = {
+                key: value.format(
+                    token=token,
+                    order=order.id,
+                    subscription=subscription.id if subscription else "",
+                    email=recipient_email,
+                )
+                for key, value in url_params.items()
+            }
+            query_string = urlencode(params)
+            url_path = url_path_template.format(organization=organization.slug)
+            url = settings.generate_frontend_url(f"{url_path}?{query_string}")
+            email = EmailAdapter.validate_python(
+                {
+                    "template": template_name,
+                    "props": {
+                        "email": recipient_email,
+                        "organization": organization,
+                        "product": product,
+                        "order": order,
+                        "subscription": subscription,
+                        "url": url,
+                    },
+                }
+            )
+
+            enqueue_email_template(
+                email,
+                **organization.email_from_reply,
+                to_email_addr=recipient_email,
+                subject=subject,
+                attachments=attachments,
+            )
 
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product
@@ -1825,6 +1851,7 @@ class OrderService:
             await event_service.create_event(session, balance_order_event)
         except Exception as e:
             log.error("Could not save balance.order event", error=str(e))
+            raise
 
     async def send_webhook(
         self,
@@ -1851,6 +1878,8 @@ class OrderService:
 
     async def void(self, session: AsyncSession, order: Order) -> Order:
         """Mark an order as void, indicating payment cannot be recovered."""
+        if order.payment_lock_acquired_at is not None:
+            raise PaymentAlreadyInProgress(order)
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
@@ -2007,6 +2036,7 @@ class OrderService:
             await event_service.create_event(session, credit_event)
         except Exception as e:
             log.error("Could not save balance.credit_order event", error=str(e))
+            raise
 
     async def handle_payment_failure(
         self, session: AsyncSession, order: Order, *, skip_dunning: bool = False
@@ -2148,12 +2178,14 @@ class OrderService:
         *,
         reference: str,
         taxable_amount: int,
+        tax_behavior_option: TaxBehaviorOption,
         currency: str,
         customer: Customer,
         product: Product,
         tax_exempted: bool,
     ) -> tuple[
         TaxProcessor | None,
+        TaxBehavior | None,
         str | None,
         int,
         TaxabilityReason | None,
@@ -2163,6 +2195,7 @@ class OrderService:
         tax_id = customer.tax_id
 
         tax_processor: TaxProcessor | None = None
+        tax_behavior: TaxBehavior | None = None
         tax_calculation: TaxCalculation | None = None
         tax_amount = 0
         taxability_reason: TaxabilityReason | None = None
@@ -2183,6 +2216,7 @@ class OrderService:
                     currency,
                     # Stripe doesn't support calculating negative tax amounts
                     taxable_amount if taxable_amount >= 0 else -taxable_amount,
+                    tax_behavior_option,
                     product.tax_code,
                     billing_address,
                     [tax_id] if tax_id is not None else [],
@@ -2209,11 +2243,13 @@ class OrderService:
                     tax_amount = -tax_calculation["amount"]
 
             if tax_calculation is not None:
+                tax_behavior = tax_calculation["tax_behavior"]
                 taxability_reason = tax_calculation["taxability_reason"]
                 tax_rate = tax_calculation["tax_rate"]
 
         return (
             tax_processor,
+            tax_behavior,
             tax_calculation_processor_id,
             tax_amount,
             taxability_reason,

@@ -14,7 +14,7 @@ from polar.models import (
 )
 from polar.models.customer_seat import SeatStatus
 from polar.models.product import ProductVisibility
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -101,6 +101,152 @@ class TestListSubscriptions:
 
         json = response.json()
         assert json["pagination"]["total_count"] == 2
+
+    @pytest.mark.auth
+    async def test_customer_cancellation_reason(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        sub1 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub1.customer_cancellation_reason = CustomerCancellationReason.too_expensive
+        await save_fixture(sub1)
+
+        sub2 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub2.customer_cancellation_reason = CustomerCancellationReason.other
+        sub2.customer_cancellation_comment = "Not useful"
+        await save_fixture(sub2)
+
+        sub3 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub3.customer_cancellation_reason = CustomerCancellationReason.unused
+        await save_fixture(sub3)
+
+        # Filter by single reason
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={"customer_cancellation_reason": "too_expensive"},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+
+        # Filter by multiple reasons
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={"customer_cancellation_reason": ["too_expensive", "other"]},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
+    @pytest.mark.auth
+    async def test_canceled_at_date_range(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        sub1 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub1.canceled_at = datetime(2024, 3, 15, tzinfo=UTC)
+        await save_fixture(sub1)
+
+        sub2 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub2.canceled_at = datetime(2024, 6, 15, tzinfo=UTC)
+        await save_fixture(sub2)
+
+        sub3 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub3.canceled_at = datetime(2024, 9, 15, tzinfo=UTC)
+        await save_fixture(sub3)
+
+        # Filter by date range
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={
+                "canceled_at_after": "2024-03-01T00:00:00Z",
+                "canceled_at_before": "2024-07-01T00:00:00Z",
+            },
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
+    @pytest.mark.auth
+    async def test_cancellation_reason_with_date_range(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        sub1 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub1.customer_cancellation_reason = CustomerCancellationReason.too_expensive
+        sub1.canceled_at = datetime(2024, 3, 15, tzinfo=UTC)
+        await save_fixture(sub1)
+
+        sub2 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub2.customer_cancellation_reason = CustomerCancellationReason.too_expensive
+        sub2.canceled_at = datetime(2024, 9, 15, tzinfo=UTC)
+        await save_fixture(sub2)
+
+        sub3 = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        sub3.customer_cancellation_reason = CustomerCancellationReason.unused
+        sub3.canceled_at = datetime(2024, 3, 15, tzinfo=UTC)
+        await save_fixture(sub3)
+
+        # Combine reason + date range
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={
+                "customer_cancellation_reason": "too_expensive",
+                "canceled_at_after": "2024-01-01T00:00:00Z",
+                "canceled_at_before": "2024-06-01T00:00:00Z",
+            },
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
 
 
 @pytest.mark.asyncio

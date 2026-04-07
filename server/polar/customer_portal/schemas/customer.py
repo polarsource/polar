@@ -24,7 +24,7 @@ class CustomerPortalOAuthAccount(Schema):
 
 
 class CustomerPortalCustomer(IDSchema, TimestampedSchema):
-    email: str
+    email: str | None
     email_verified: bool
     name: str | None
     billing_name: str | None

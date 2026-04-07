@@ -36,9 +36,11 @@ class MemberRepository(
             Member if found, None otherwise
         """
         email = email or customer.email
+        if email is None:
+            return None
         statement = select(Member).where(
             Member.customer_id == customer.id,
-            Member.email == email,
+            func.lower(Member.email) == email.lower(),
             Member.is_deleted.is_(False),
         )
         result = await session.execute(statement)
@@ -57,7 +59,7 @@ class MemberRepository(
         """
         statement = select(Member).where(
             Member.customer_id == customer_id,
-            Member.email == email,
+            func.lower(Member.email) == email.lower(),
             Member.is_deleted.is_(False),
         )
         return await self.get_one_or_none(statement)

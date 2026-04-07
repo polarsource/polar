@@ -40,6 +40,7 @@ from polar.enums import (
     AccountType,
     PaymentProcessor,
     SubscriptionRecurringInterval,
+    TaxBehavior,
     TaxProcessor,
 )
 from polar.event.repository import EventRepository
@@ -146,7 +147,16 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
             "processor_id": "TAX_PROCESSOR_ID",
             "amount": 0,
             "taxability_reason": TaxabilityReason.standard_rated,
-            "tax_rate": {},
+            "tax_behavior": TaxBehavior.exclusive,
+            "tax_rate": {
+                "rate_type": "percentage",
+                "basis_points": 2000,
+                "amount": None,
+                "amount_currency": None,
+                "display_name": "Tax",
+                "country": "US",
+                "state": None,
+            },
         },
         TaxProcessor.numeral,
     )
@@ -958,40 +968,74 @@ class TestCreate:
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "US"
 
+    @pytest.mark.parametrize(
+        ("tax_behavior", "amount", "tax_amount", "expected_net_amount"),
+        [
+            (TaxBehavior.exclusive, 1000, 100, 1000),
+            (TaxBehavior.inclusive, 1000, 100, 900),
+        ],
+    )
     async def test_valid_calculate_tax(
         self,
+        tax_behavior: TaxBehavior,
+        amount: int,
+        tax_amount: int,
+        expected_net_amount: int,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User | Organization],
         calculate_tax_mock: AsyncMock,
-        user_organization: UserOrganization,
-        product_one_time: Product,
+        organization: Organization,
     ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(amount, "usd")],
+        )
         calculate_tax_mock.return_value = (
             {
                 "processor_id": "TAX_PROCESSOR_ID",
-                "amount": 100,
+                "amount": tax_amount,
                 "taxability_reason": TaxabilityReason.standard_rated,
-                "tax_rate": {},
+                "tax_behavior": tax_behavior,
+                "tax_rate": {
+                    "rate_type": "percentage",
+                    "basis_points": 2000,
+                    "amount": None,
+                    "amount_currency": None,
+                    "display_name": "Tax",
+                    "country": "US",
+                    "state": None,
+                },
             },
             TaxProcessor.numeral,
         )
 
-        price = product_one_time.prices[0]
-        assert isinstance(price, ProductPriceFixed)
-
         checkout = await checkout_service.create(
             session,
-            CheckoutPriceCreate(
-                product_price_id=price.id,
+            CheckoutProductsCreate(
+                products=[product.id],
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
             auth_subject,
         )
 
-        assert checkout.tax_amount == 100
+        assert checkout.tax_amount == tax_amount
+        assert checkout.net_amount == expected_net_amount
+        assert checkout.total_amount == expected_net_amount + tax_amount
+        assert checkout.tax_behavior == tax_behavior
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
         assert checkout.taxability_reason == TaxabilityReason.standard_rated
-        assert checkout.tax_rate == {}  # type: ignore
+        assert checkout.tax_rate == {
+            "rate_type": "percentage",
+            "basis_points": 2000,
+            "amount": None,
+            "amount_currency": None,
+            "display_name": "Tax",
+            "country": "US",
+            "state": None,
+        }
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 
@@ -2915,34 +2959,73 @@ class TestUpdate:
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "US"
 
+    @pytest.mark.parametrize(
+        ("tax_behavior", "amount", "tax_amount", "expected_net_amount"),
+        [
+            (TaxBehavior.exclusive, 1000, 100, 1000),
+            (TaxBehavior.inclusive, 1000, 100, 900),
+        ],
+    )
     async def test_valid_calculate_tax(
         self,
+        tax_behavior: TaxBehavior,
+        amount: int,
+        tax_amount: int,
+        expected_net_amount: int,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         calculate_tax_mock: AsyncMock,
-        checkout_one_time_fixed: Checkout,
+        organization: Organization,
     ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(amount, "usd")],
+        )
+        checkout = await create_checkout(save_fixture, products=[product])
         calculate_tax_mock.return_value = (
             {
                 "processor_id": "TAX_PROCESSOR_ID",
-                "amount": 100,
+                "amount": tax_amount,
                 "taxability_reason": TaxabilityReason.standard_rated,
-                "tax_rate": {},
+                "tax_behavior": tax_behavior,
+                "tax_rate": {
+                    "rate_type": "percentage",
+                    "basis_points": 2000,
+                    "amount": None,
+                    "amount_currency": None,
+                    "display_name": "Tax",
+                    "country": "US",
+                    "state": None,
+                },
             },
             TaxProcessor.numeral,
         )
 
         checkout = await checkout_service.update(
             session,
-            checkout_one_time_fixed,
+            checkout,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
         )
 
-        assert checkout.tax_amount == 100
+        assert checkout.tax_amount == tax_amount
+        assert checkout.net_amount == expected_net_amount
+        assert checkout.total_amount == expected_net_amount + tax_amount
+        assert checkout.tax_behavior == tax_behavior
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
         assert checkout.taxability_reason == TaxabilityReason.standard_rated
-        assert checkout.tax_rate == {}  # type: ignore
+        assert checkout.tax_rate == {
+            "rate_type": "percentage",
+            "basis_points": 2000,
+            "amount": None,
+            "amount_currency": None,
+            "display_name": "Tax",
+            "country": "US",
+            "state": None,
+        }
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 
@@ -4637,6 +4720,7 @@ class TestConfirm:
         existing_customer = await create_customer(
             save_fixture, organization=organization, email="customer@example.com"
         )
+        assert existing_customer.email is not None
         await create_trial_redemption(
             save_fixture,
             customer=existing_customer,

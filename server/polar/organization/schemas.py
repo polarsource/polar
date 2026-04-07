@@ -16,7 +16,7 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
 from polar.config import settings
-from polar.enums import SubscriptionProrationBehavior
+from polar.enums import SubscriptionProrationBehavior, TaxBehaviorOption
 from polar.kit.address import CountryAlpha2, CountryAlpha2Input
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
@@ -102,6 +102,10 @@ class OrganizationFeatureSettings(Schema):
     overview_metrics: list[str] | None = Field(
         None,
         description="Ordered list of metric slugs shown on the dashboard overview.",
+    )
+    reset_proration_behavior_enabled: bool = Field(
+        False,
+        description="If this organization has access to reset proration behavior.",
     )
 
     @field_validator("overview_metrics", mode="before")
@@ -330,7 +334,9 @@ class Organization(OrganizationBase):
             "if the customer's local currency is not available."
         )
     )
-
+    default_tax_behavior: TaxBehaviorOption = Field(
+        description="Default tax behavior applied on products."
+    )
     feature_settings: OrganizationFeatureSettings | None = Field(
         description="Organization feature settings",
     )
@@ -404,6 +410,10 @@ class OrganizationCreate(Schema):
         PresentmentCurrency.usd,
         description="Default presentment currency for the organization",
     )
+    default_tax_behavior: TaxBehaviorOption = Field(
+        default=TaxBehaviorOption.location,
+        description="Default tax behavior applied on products.",
+    )
 
 
 class OrganizationUpdate(Schema):
@@ -433,20 +443,15 @@ class OrganizationUpdate(Schema):
     default_presentment_currency: PresentmentCurrency | None = Field(
         None, description="Default presentment currency for the organization"
     )
-
-
-class OrganizationPaymentStep(Schema):
-    id: str = Field(description="Step identifier")
-    title: str = Field(description="Step title")
-    description: str = Field(description="Step description")
-    completed: bool = Field(description="Whether the step is completed")
+    default_tax_behavior: TaxBehaviorOption | None = Field(
+        None, description="Default tax behavior applied on products."
+    )
 
 
 class OrganizationPaymentStatus(Schema):
     payment_ready: bool = Field(
         description="Whether the organization is ready to accept payments"
     )
-    steps: list[OrganizationPaymentStep] = Field(description="List of onboarding steps")
     organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )
@@ -505,4 +510,18 @@ class OrganizationDeletionResponse(Schema):
     blocked_reasons: list[OrganizationDeletionBlockedReason] = Field(
         default_factory=list,
         description="Reasons why immediate deletion is blocked",
+    )
+
+
+class OrganizationValidateWebsiteRequest(Schema):
+    url: HttpUrl = Field(description="The URL to validate.")
+
+
+class OrganizationValidateWebsiteResponse(Schema):
+    reachable: bool = Field(description="Whether the URL is reachable.")
+    status: int | None = Field(
+        default=None, description="HTTP status code returned by the URL."
+    )
+    error: str | None = Field(
+        default=None, description="Error message if the URL is not reachable."
     )

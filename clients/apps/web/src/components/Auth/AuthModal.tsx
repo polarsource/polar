@@ -13,7 +13,12 @@ export const AuthModal = ({
   signup,
 }: AuthModalProps) => {
   const isSignup = signup !== undefined
-  const title = isSignup ? 'Sign Up' : 'Log In'
+  const title = isSignup ? 'Sign Up' : 'Sign in'
+
+  const lastLoginMethod =
+    typeof document !== 'undefined'
+      ? (document.cookie.match(/polar_last_login_method=(\w+)/)?.[1] ?? null)
+      : null
 
   const copy = isSignup ? (
     <p className="dark:text-polar-500 text-xl text-gray-500">
@@ -34,6 +39,7 @@ export const AuthModal = ({
             returnTo={returnTo}
             returnParams={returnParams}
             signup={signup}
+            lastLoginMethod={lastLoginMethod}
           />
         </div>
       </div>

@@ -6,6 +6,8 @@ import { parseAsString, useQueryState } from 'nuqs'
 import { Events } from '../Events/Events'
 import EventSelect from '../Events/EventSelect'
 import MeterSelector from '../Meter/MeterSelector'
+import { EmptyState } from '../CustomerPortal/EmptyState'
+import ShortTextOutlined from '@mui/icons-material/ShortTextOutlined'
 
 export const CustomerEventsView = ({
   customer,
@@ -65,12 +67,11 @@ export const CustomerEventsView = ({
         />
       </div>
       {events?.pages.flatMap((page) => page.items).length === 0 ? (
-        <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
-          <h1 className="text-2xl font-normal">No Events Found</h1>
-          <p className="dark:text-polar-500 text-gray-500">
-            There are no events matching your current filters
-          </p>
-        </div>
+        <EmptyState
+          icon={<ShortTextOutlined fontSize="medium" />}
+          title="No events found"
+          description="There are no events matching the current filters"
+        />
       ) : (
         <Events
           events={events?.pages.flatMap((page) => page.items) ?? []}

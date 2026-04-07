@@ -135,11 +135,20 @@ class User(RecordModel):
     def oauth_accounts(cls) -> Mapped[list[OAuthAccount]]:
         return relationship(OAuthAccount, lazy="joined", back_populates="user")
 
-    accepted_terms_of_service: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
+    accepted_terms_of_service_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
     )
+    accepted_terms_of_service_ip: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+        default=None,
+    )
+
+    @hybrid_property
+    def accepted_terms_of_service(self) -> bool:
+        return self.accepted_terms_of_service_at is not None
 
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=True
@@ -173,6 +182,11 @@ class User(RecordModel):
     date_of_birth: Mapped[date | None] = mapped_column(
         Date, nullable=True, default=None
     )
+
+    @property
+    def full_name(self) -> str | None:
+        parts = [p for p in (self.first_name, self.last_name) if p]
+        return " ".join(parts) if parts else None
 
     @hybrid_property
     def can_authenticate(self) -> bool:

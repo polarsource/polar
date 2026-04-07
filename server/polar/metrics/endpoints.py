@@ -1,11 +1,13 @@
 from datetime import date
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, Query
+from fastapi import Depends, Path, Query
+from pydantic import UUID4
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import (
     MAX_INTERVAL_DAYS,
@@ -17,16 +19,31 @@ from polar.kit.time_queries import (
 from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncReadSession, get_db_read_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
 from . import auth
 from .metrics import METRICS
-from .schemas import MetricsLimits, MetricsResponse
+from .schemas import (
+    MetricDashboardCreate,
+    MetricDashboardSchema,
+    MetricDashboardUpdate,
+    MetricsLimits,
+    MetricsResponse,
+)
 from .service import metrics as metrics_service
 
+VALID_METRIC_SLUGS = {m.slug for m in METRICS}
+
 router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
+
+MetricDashboardID = Annotated[UUID4, Path(description="The metric dashboard ID.")]
 
 
 @router.get(
@@ -82,21 +99,6 @@ async def get(
 
     Currency values are output in cents.
     """
-    if not is_under_limits(start_date, end_date, interval):
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("query",),
-                    "msg": (
-                        "The interval is too big. "
-                        "Try to change the interval or reduce the date range."
-                    ),
-                    "type": "value_error",
-                    "input": (start_date, end_date, interval),
-                }
-            ]
-        )
-
     if metrics is not None:
         valid_slugs = {m.slug for m in METRICS}
         invalid_slugs = set(metrics) - valid_slugs
@@ -111,6 +113,21 @@ async def get(
                     }
                 ]
             )
+
+    if not is_under_limits(start_date, end_date, interval):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query",),
+                    "msg": (
+                        "The interval is too big. "
+                        "Try to change the interval or reduce the date range."
+                    ),
+                    "type": "value_error",
+                    "input": (start_date, end_date, interval),
+                }
+            ]
+        )
 
     return await metrics_service.get_metrics(
         session,
@@ -142,3 +159,93 @@ async def limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
             },
         }
     )
+
+
+@router.get(
+    "/dashboards",
+    summary="List Metric Dashboards",
+    response_model=list[MetricDashboardSchema],
+)
+async def list_dashboards(
+    auth_subject: auth.MetricsRead,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> list[MetricDashboardSchema]:
+    """List user-defined metric dashboards."""
+    dashboards = await metrics_service.list_dashboards(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+    )
+    return [MetricDashboardSchema.model_validate(d) for d in dashboards]
+
+
+@router.post(
+    "/dashboards",
+    summary="Create Metric Dashboard",
+    response_model=MetricDashboardSchema,
+    status_code=201,
+)
+async def create_dashboard(
+    auth_subject: auth.MetricsWrite,
+    body: MetricDashboardCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> MetricDashboardSchema:
+    """Create a user-defined metric dashboard."""
+    dashboard = await metrics_service.create_dashboard(session, auth_subject, body)
+    return MetricDashboardSchema.model_validate(dashboard)
+
+
+@router.get(
+    "/dashboards/{id}",
+    summary="Get Metric Dashboard",
+    response_model=MetricDashboardSchema,
+)
+async def get_dashboard(
+    auth_subject: auth.MetricsRead,
+    id: MetricDashboardID,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> MetricDashboardSchema:
+    """Get a user-defined metric dashboard by ID."""
+    dashboard = await metrics_service.get_dashboard(session, auth_subject, id)
+    if dashboard is None:
+        raise ResourceNotFound()
+    return MetricDashboardSchema.model_validate(dashboard)
+
+
+@router.patch(
+    "/dashboards/{id}",
+    summary="Update Metric Dashboard",
+    response_model=MetricDashboardSchema,
+)
+async def update_dashboard(
+    auth_subject: auth.MetricsWrite,
+    id: MetricDashboardID,
+    body: MetricDashboardUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> MetricDashboardSchema:
+    """Update a user-defined metric dashboard."""
+    dashboard = await metrics_service.get_dashboard(session, auth_subject, id)
+    if dashboard is None:
+        raise ResourceNotFound()
+    updated = await metrics_service.update_dashboard(session, dashboard, body)
+    return MetricDashboardSchema.model_validate(updated)
+
+
+@router.delete(
+    "/dashboards/{id}",
+    summary="Delete Metric Dashboard",
+    status_code=204,
+)
+async def delete_dashboard(
+    auth_subject: auth.MetricsWrite,
+    id: MetricDashboardID,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Delete a user-defined metric dashboard."""
+    dashboard = await metrics_service.get_dashboard(session, auth_subject, id)
+    if dashboard is None:
+        raise ResourceNotFound()
+    await metrics_service.delete_dashboard(session, dashboard)

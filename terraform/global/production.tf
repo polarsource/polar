@@ -36,6 +36,14 @@ resource "tfe_variable" "openai_api_key_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "pydantic_ai_gateway_api_key_production" {
+  key             = "pydantic_ai_gateway_api_key_production"
+  category        = "terraform"
+  description     = "Pydantic AI Gateway API Key for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "backend_current_jwk_kid_production" {
   key             = "backend_current_jwk_kid_production"
   category        = "terraform"
@@ -351,6 +359,44 @@ resource "tfe_variable" "tinybird_read_token_production" {
   description     = "Tinybird Read Token for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "polar_access_token_production" {
+  key             = "polar_access_token"
+  category        = "terraform"
+  description     = "Polar API access token"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "polar_webhook_secret_production" {
+  key             = "polar_webhook_secret"
+  category        = "terraform"
+  description     = "Polar webhook secret"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "polar_organization_id_production" {
+  key             = "polar_organization_id"
+  category        = "terraform"
+  description     = "Polar organization ID"
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "polar_free_product_id_production" {
+  key             = "polar_free_product_id"
+  category        = "terraform"
+  description     = "Polar free-tier product ID"
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tailscale_authkey_production" {

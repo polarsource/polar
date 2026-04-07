@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, Field
 
-from polar.customer.schemas.customer import Customer
+from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     METER_ID_EXAMPLE,

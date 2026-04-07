@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import CheckoutStatus from '@/components/CheckoutStatus/CheckoutStatus'

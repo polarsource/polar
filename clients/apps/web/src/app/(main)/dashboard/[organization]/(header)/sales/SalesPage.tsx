@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -140,10 +139,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <Avatar
               className="h-8 w-8"
               avatar_url={customer.avatar_url}
-              name={customer.name || customer.email}
+              name={customer.email ?? customer.name ?? '—'}
             />
             <div className="fw-medium overflow-hidden text-ellipsis">
-              {customer.email}
+              {customer.email ?? '—'}
             </div>
           </div>
         )

@@ -12,6 +12,7 @@ class TaskQueue(StrEnum):
     MEDIUM_PRIORITY = "medium_priority"
     LOW_PRIORITY = "low_priority"
     WEBHOOKS = "webhooks"
+    TINYBIRD = "tinybird"
 
 
 __all__ = [

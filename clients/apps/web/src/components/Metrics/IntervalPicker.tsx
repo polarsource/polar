@@ -9,9 +9,9 @@ import {
 import { differenceInDays } from 'date-fns'
 import { useMemo } from 'react'
 
-const MAX_INTERVAL_DAYS: Record<schemas['TimeInterval'], number> = {
+export const MAX_INTERVAL_DAYS: Record<schemas['TimeInterval'], number> = {
   hour: 7,
-  day: 366,
+  day: 365,
   week: 365,
   month: 365 * 4,
   year: 365 * 10,

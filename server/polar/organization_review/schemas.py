@@ -44,12 +44,12 @@ class UsageInfo(Schema):
         )
 
     @classmethod
-    def from_agent_usage(cls, usage: Usage, model_name: str) -> UsageInfo:
+    def from_agent_usage(cls, usage: Usage, provider: str, model: str) -> UsageInfo:
         import genai_prices
 
         estimated_cost: float | None = None
         try:
-            price = genai_prices.calc_price(usage, model_name, provider_id="openai")
+            price = genai_prices.calc_price(usage, model, provider_id=provider)
             estimated_cost = float(price.total_price)
         except Exception:
             pass
@@ -151,14 +151,26 @@ class HistoryData(Schema):
     has_blocked_orgs: bool = False
 
 
+class UrlRedirectInfo(Schema):
+    """Tracks where a URL ultimately redirects to."""
+
+    original_url: str
+    final_url: str | None = None
+    final_domain: str | None = None
+    redirected: bool = False
+    error: str | None = None
+
+
 class CheckoutSuccessUrlData(Schema):
     unique_urls: list[str] = Field(default_factory=list)
     domains: list[str] = Field(default_factory=list)
+    redirect_results: list[UrlRedirectInfo] = Field(default_factory=list)
 
 
 class CheckoutReturnUrlData(Schema):
     unique_urls: list[str] = Field(default_factory=list)
     domains: list[str] = Field(default_factory=list)
+    redirect_results: list[UrlRedirectInfo] = Field(default_factory=list)
 
 
 class CheckoutLinkBenefitData(Schema):

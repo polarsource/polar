@@ -274,6 +274,7 @@ class DisputeTransactionService(BaseTransactionService):
                     )
             except Exception as e:
                 log.error("Could not save balance.dispute transaction", error=str(e))
+                raise
 
         return dispute_transaction, dispute_reversal_transaction
 

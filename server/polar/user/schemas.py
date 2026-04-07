@@ -57,6 +57,7 @@ class UserUpdate(Schema):
     last_name: str | None = None
     country: CountryAlpha2Input | None = None
     date_of_birth: date | None = None
+    accepted_terms_of_service: bool | None = None
 
 
 class UserIdentityVerification(Schema):

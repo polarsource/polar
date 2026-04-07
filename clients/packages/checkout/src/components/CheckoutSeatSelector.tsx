@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { type schemas } from '@polar-sh/client'

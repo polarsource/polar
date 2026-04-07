@@ -9,6 +9,7 @@ from .accounts.endpoints import router as accounts_router
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
+from .email_logs.endpoints import router as email_logs_router
 from .external_events.endpoints import router as external_events_router
 from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
@@ -52,6 +53,7 @@ app.include_router(customers_router, prefix="/customers")
 app.include_router(benefits_router, prefix="/benefits")
 app.include_router(products_router, prefix="/products")
 app.include_router(accounts_router, prefix="/accounts")
+app.include_router(email_logs_router, prefix="/email-logs")
 app.include_router(external_events_router, prefix="/external-events")
 app.include_router(tasks_router, prefix="/tasks")
 app.include_router(pledges_router, prefix="/pledges")

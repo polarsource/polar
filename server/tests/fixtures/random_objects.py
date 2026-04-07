@@ -15,6 +15,7 @@ from polar.enums import (
     AccountType,
     PaymentProcessor,
     SubscriptionRecurringInterval,
+    TaxBehavior,
     TaxProcessor,
 )
 from polar.kit.address import Address
@@ -112,7 +113,10 @@ from polar.models.payment import PaymentStatus
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
-from polar.models.product_price import ProductPriceAmountType, ProductPriceType
+from polar.models.product_price import (
+    ProductPriceAmountType,
+    ProductPriceType,
+)
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
@@ -490,11 +494,13 @@ async def create_product_price_fixed(
     product: Product,
     amount: int = 1000,
     currency: str = "usd",
+    tax_behavior: TaxBehavior | None = None,
     is_archived: bool = False,
 ) -> ProductPriceFixed:
     price = ProductPriceFixed(
         price_amount=amount,
         price_currency=currency,
+        tax_behavior=tax_behavior,
         product=product,
         is_archived=is_archived,
     )
@@ -510,9 +516,11 @@ async def create_product_price_custom(
     maximum_amount: int | None = None,
     preset_amount: int | None = None,
     currency: str = "usd",
+    tax_behavior: TaxBehavior | None = None,
 ) -> ProductPriceCustom:
     price = ProductPriceCustom(
         price_currency=currency,
+        tax_behavior=tax_behavior,
         minimum_amount=minimum_amount,
         maximum_amount=maximum_amount,
         preset_amount=preset_amount,
@@ -531,6 +539,7 @@ async def create_product_price_free(
     price = ProductPriceFree(
         product=product,
         price_currency=currency,
+        tax_behavior=None,
     )
     await save_fixture(price)
     return price
@@ -544,9 +553,11 @@ async def create_product_price_metered_unit(
     unit_amount: Decimal = Decimal(100),
     cap_amount: int | None = None,
     currency: str = "usd",
+    tax_behavior: TaxBehavior | None = None,
 ) -> ProductPriceMeteredUnit:
     price = ProductPriceMeteredUnit(
         price_currency=currency,
+        tax_behavior=tax_behavior,
         unit_amount=unit_amount,
         cap_amount=cap_amount,
         meter=meter,
@@ -565,6 +576,7 @@ async def create_product_price_seat_unit(
     minimum_seats: int = 1,
     maximum_seats: int | None = None,
     currency: str = "usd",
+    tax_behavior: TaxBehavior | None = TaxBehavior.exclusive,
 ) -> ProductPriceSeatUnit:
     """Create a seat-based price with a single tier.
 
@@ -585,6 +597,7 @@ async def create_product_price_seat_unit(
 
     price = ProductPriceSeatUnit(
         price_currency=currency,
+        tax_behavior=tax_behavior,
         seat_tiers=seat_tiers,
         product=product,
     )
@@ -651,12 +664,14 @@ async def create_legacy_recurring_product_price(
         product_price = LegacyRecurringProductPriceFixed(
             price_amount=amount,
             price_currency=PresentmentCurrency.usd,
+            tax_behavior=None,
             product=product,
             is_archived=False,
         )
     elif amount_type == ProductPriceAmountType.custom:
         product_price = LegacyRecurringProductPriceCustom(
             price_currency=PresentmentCurrency.usd,
+            tax_behavior=None,
             minimum_amount=minimum_amount,
             maximum_amount=maximum_amount,
             preset_amount=preset_amount,
@@ -666,6 +681,7 @@ async def create_legacy_recurring_product_price(
     elif amount_type == ProductPriceAmountType.free:
         product_price = LegacyRecurringProductPriceFree(
             product=product,
+            tax_behavior=None,
             is_archived=False,
         )
     else:
@@ -852,6 +868,7 @@ async def create_order(
     refunded_tax_amount: int = 0,
     applied_balance_amount: int = 0,
     currency: str = "usd",
+    tax_behavior: TaxBehavior | None = None,
     order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
     billing_reason: OrderBillingReasonInternal = OrderBillingReasonInternal.purchase,
@@ -881,7 +898,9 @@ async def create_order(
         created_at=created_at or utc_now(),
         status=status,
         subtotal_amount=subtotal_amount,
-        net_amount=subtotal_amount - discount_amount,
+        net_amount=subtotal_amount
+        - discount_amount
+        - (tax_amount if tax_behavior == TaxBehavior.inclusive else 0),
         tax_amount=tax_amount,
         discount_amount=discount_amount,
         refunded_amount=refunded_amount,
@@ -889,6 +908,7 @@ async def create_order(
         applied_balance_amount=applied_balance_amount,
         items=order_items,
         currency=currency,
+        tax_behavior=tax_behavior,
         billing_reason=billing_reason,
         billing_name=billing_name,
         billing_address=billing_address,
@@ -1008,6 +1028,7 @@ async def create_subscription(
     customer: Customer,
     payment_method: PaymentMethod | None = None,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
+    tax_behavior: TaxBehavior | None = TaxBehavior.exclusive,
     tax_exempted: bool = False,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
@@ -1040,9 +1061,12 @@ async def create_subscription(
     now = datetime.now(UTC)
     if not current_period_start:
         current_period_start = now
+
+    anchor_day = current_period_start.day
+
     if not current_period_end:
         current_period_end = recurring_interval.get_next_period(
-            current_period_start, recurring_interval_count
+            current_period_start, anchor_day, recurring_interval_count
         )
 
     canceled_at = None
@@ -1060,9 +1084,11 @@ async def create_subscription(
         recurring_interval=recurring_interval,
         recurring_interval_count=recurring_interval_count,
         status=status,
+        tax_behavior=tax_behavior,
         tax_exempted=tax_exempted,
         current_period_start=current_period_start,
         current_period_end=current_period_end,
+        anchor_day=anchor_day,
         trial_start=trial_start,
         trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
@@ -1141,6 +1167,7 @@ async def create_active_subscription(
     customer: Customer,
     payment_method: PaymentMethod | None = None,
     tax_exempted: bool = False,
+    tax_behavior: TaxBehavior | None = TaxBehavior.exclusive,
     discount: Discount | None = None,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
@@ -1157,6 +1184,7 @@ async def create_active_subscription(
         currency=currency,
         customer=customer,
         tax_exempted=tax_exempted,
+        tax_behavior=tax_behavior,
         discount=discount,
         payment_method=payment_method,
         status=SubscriptionStatus.active,
@@ -1426,6 +1454,7 @@ async def create_checkout(
     analytics_metadata: CheckoutAnalyticsMetadata | None = None,
     amount: int | None = None,
     tax_amount: int | None = None,
+    tax_behavior: TaxBehavior | None = None,
     currency: str | None = None,
     customer: Customer | None = None,
     subscription: Subscription | None = None,
@@ -1438,6 +1467,8 @@ async def create_checkout(
     require_billing_address: bool = False,
     customer_billing_address: Address | None = None,
     created_at: datetime | None = None,
+    success_url: str | None = None,
+    return_url: str | None = None,
 ) -> Checkout:
     product = product or products[0]
     currency = currency or product.organization.default_presentment_currency
@@ -1476,6 +1507,7 @@ async def create_checkout(
         amount=amount,
         net_amount=amount,
         tax_amount=tax_amount,
+        tax_behavior=tax_behavior,
         currency=currency,
         organization=product.organization,
         product_price=price,
@@ -1502,6 +1534,10 @@ async def create_checkout(
         checkout.analytics_metadata = analytics_metadata
     if created_at is not None:
         checkout.created_at = created_at
+    if success_url is not None:
+        checkout.success_url = success_url
+    if return_url is not None:
+        checkout.return_url = return_url
     await save_fixture(checkout)
     return checkout
 
@@ -2073,7 +2109,6 @@ async def create_account(
     organization: Organization,
     user: User,
     *,
-    status: Account.Status = Account.Status.ACTIVE,
     country: str = "US",
     currency: str = "usd",
     account_type: AccountType = AccountType.stripe,
@@ -2086,7 +2121,6 @@ async def create_account(
     billing_address: Address | None = None,
 ) -> Account:
     account = Account(
-        status=status,
         account_type=account_type,
         admin_id=user.id,
         country=country,

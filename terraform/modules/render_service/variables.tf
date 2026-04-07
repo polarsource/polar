@@ -97,6 +97,14 @@ variable "openai_secrets" {
   sensitive = true
 }
 
+variable "pydantic_ai_gateway_secrets" {
+  description = "Pydantic AI Gateway secrets (sensitive)"
+  type = object({
+    api_key = string
+  })
+  sensitive = true
+}
+
 variable "backend_config" {
   description = "Backend environment configuration (non-sensitive)"
   type = object({
@@ -248,6 +256,18 @@ variable "memory_profile_config" {
     interval       = optional(number, 300)
   })
   default = null
+}
+
+variable "polar_self_config" {
+  description = "Polar self-billing integration"
+  type = object({
+    access_token    = string
+    webhook_secret  = string
+    organization_id = string
+    free_product_id = string
+  })
+  default   = null
+  sensitive = true
 }
 
 variable "cron_jobs" {

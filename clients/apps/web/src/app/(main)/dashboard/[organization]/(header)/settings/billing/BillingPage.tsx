@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import OrganizationCurrencySettings from '@/components/Settings/OrganizationCurrencySettings'
+import OrganizationPaymentSettings from '@/components/Settings/OrganizationPaymentSettings'
 import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
 import OrganizationCustomerPortalSettings from '@/components/Settings/OrganizationCustomerPortalSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
@@ -16,9 +16,9 @@ export default function BillingPage({
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-sm)!" title="Billing">
       <div className="flex flex-col gap-y-12">
-        <Section id="currency">
-          <SectionDescription title="Currency" />
-          <OrganizationCurrencySettings organization={organization} />
+        <Section id="payments">
+          <SectionDescription title="Payments" />
+          <OrganizationPaymentSettings organization={organization} />
         </Section>
 
         <Section id="subscriptions">

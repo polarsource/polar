@@ -1,12 +1,10 @@
-from typing import cast
-
+import httpx
 from fastapi import Depends, Query, Response, status
 from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
-from polar.auth.models import is_anonymous, is_user
-from polar.auth.scope import Scope
+from polar.auth.models import is_user
 from polar.config import settings
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
 from polar.email.sender import enqueue_email_template
@@ -14,7 +12,10 @@ from polar.exceptions import (
     NotPermitted,
     PolarRequestValidationError,
     ResourceNotFound,
-    Unauthorized,
+)
+from polar.kit.http import (
+    UnsafeCrawlableUrl,
+    validate_crawlable_url,
 )
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
@@ -43,9 +44,10 @@ from .schemas import (
     OrganizationID,
     OrganizationKYC,
     OrganizationPaymentStatus,
-    OrganizationPaymentStep,
     OrganizationReviewStatus,
     OrganizationUpdate,
+    OrganizationValidateWebsiteRequest,
+    OrganizationValidateWebsiteResponse,
 )
 from .service import organization as organization_service
 
@@ -271,53 +273,25 @@ async def get_account(
 )
 async def get_payment_status(
     id: OrganizationID,
-    auth_subject: auth.OrganizationsReadOrAnonymous,
     session: AsyncReadSession = Depends(get_db_read_session),
-    account_verification_only: bool = Query(
-        False,
-        description="Only perform account verification checks, skip product and integration checks",
-    ),
 ) -> OrganizationPaymentStatus:
     """Get payment status and onboarding steps for an organization."""
-    # Handle authentication based on account_verification_only flag
-    if is_anonymous(auth_subject) and not account_verification_only:
-        raise Unauthorized()
-    elif is_anonymous(auth_subject):
-        organization = await organization_service.get_anonymous(
-            session,
-            id,
-            options=(joinedload(Organization.account).joinedload(Account.admin),),
-        )
-    else:
-        # For authenticated users, check proper scopes (need at least one of these)
-        required_scopes = {
-            Scope.web_read,
-            Scope.web_write,
-            Scope.organizations_read,
-            Scope.organizations_write,
-        }
-        if not (auth_subject.scopes & required_scopes):
-            raise ResourceNotFound()
-        organization = await organization_service.get(
-            session,
-            cast(auth.OrganizationsRead, auth_subject),
-            id,
-            options=(joinedload(Organization.account).joinedload(Account.admin),),
-        )
+    organization = await organization_service.get_anonymous(
+        session,
+        id,
+        options=(joinedload(Organization.account).joinedload(Account.admin),),
+    )
 
     if organization is None:
         raise ResourceNotFound()
 
     payment_status = await organization_service.get_payment_status(
-        session, organization, account_verification_only=account_verification_only
+        session,
+        organization,
     )
 
     return OrganizationPaymentStatus(
         payment_ready=payment_status.payment_ready,
-        steps=[
-            OrganizationPaymentStep(**step.model_dump())
-            for step in payment_status.steps
-        ],
         organization_status=payment_status.organization_status,
     )
 
@@ -674,3 +648,60 @@ async def get_review_status(
         appeal_decision=review.appeal_decision,
         appeal_reviewed_at=review.appeal_reviewed_at,
     )
+
+
+@router.post(
+    "/{id}/validate-website",
+    response_model=OrganizationValidateWebsiteResponse,
+    summary="Validate Website URL",
+    responses={
+        200: {"description": "Website validation result."},
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def validate_website(
+    id: OrganizationID,
+    body: OrganizationValidateWebsiteRequest,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> OrganizationValidateWebsiteResponse:
+    """Validate that a website URL is reachable and not targeting a private network."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    try:
+        validated_url = await validate_crawlable_url(body.url)
+    except UnsafeCrawlableUrl as e:
+        return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
+
+    async def _check_redirect(response: httpx.Response) -> None:
+        if response.is_redirect:
+            location = response.headers.get("location", "")
+            await validate_crawlable_url(location)
+
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=5.0,
+            headers={"User-Agent": "Polar URL Validator/1.0"},
+            event_hooks={"response": [_check_redirect]},
+        ) as client:
+            response = await client.head(str(validated_url))
+
+        reachable = 200 <= response.status_code < 400
+        return OrganizationValidateWebsiteResponse(
+            reachable=reachable, status=response.status_code
+        )
+    except UnsafeCrawlableUrl as e:
+        return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
+    except httpx.TimeoutException:
+        return OrganizationValidateWebsiteResponse(
+            reachable=False, error="Request timed out"
+        )
+    except httpx.HTTPError:
+        return OrganizationValidateWebsiteResponse(
+            reachable=False, error="Unable to reach URL"
+        )

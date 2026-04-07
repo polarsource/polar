@@ -19,7 +19,7 @@ import typer
 
 import polar.tasks  # noqa: F401 - Import tasks to register all dramatiq actors
 from polar.auth.models import AuthSubject
-from polar.customer.schemas.customer import CustomerCreate
+from polar.customer.schemas.customer import CustomerIndividualCreate
 from polar.customer.service import customer as customer_service
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
@@ -73,7 +73,7 @@ async def create_loadtest_data(
         external_id = f"loadtest-{run_id}-{i + 1}"
         customer = await customer_service.create(
             session=session,
-            customer_create=CustomerCreate(
+            customer_create=CustomerIndividualCreate(
                 email=f"{external_id}@polar.sh",
                 name=f"Load Test Customer {i + 1}",
                 external_id=external_id,

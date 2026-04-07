@@ -63,7 +63,7 @@ export const useOrganizationAccount = (
     queryKey: ['finance', 'account', organizationId],
     queryFn: () =>
       fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/organizations/${organizationId}/account`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/organizations/${organizationId}/account`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export const useTransactionsSummary = (
     queryKey: ['finance', accountId, 'transactions', 'summary'],
     queryFn: () =>
       fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/transactions/summary?account_id=${accountId}`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/transactions/summary?account_id=${accountId}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -174,75 +174,16 @@ export const useTransactionsSummary = (
   })
 }
 
-export interface PayoutEstimate {
-  account_id: string
-  gross_amount: number
-  fees_amount: number
-  net_amount: number
-}
-
-export enum PayoutStatus {
-  PENDING = 'pending',
-  IN_TRANSIT = 'in_transit',
-  SUCCEEDED = 'succeeded',
-}
-
-export enum TransactionType {
-  PAYMENT = 'payment',
-  PROCESSOR_FEE = 'processor_fee',
-  REFUND = 'refund',
-  REFUND_REVERSAL = 'refund_reversal',
-  DISPUTE = 'dispute',
-  DISPUTE_REVERSAL = 'dispute_reversal',
-  BALANCE = 'balance',
-  PAYOUT = 'payout',
-}
-
-export interface TransactionEmbedded {
-  id: string
-  createdAt: Date
-  type: TransactionType
-  processor?: string
-  currency: string
-  amount: number
-  account_currency: string
-  account_amount: number
-  platform_fee_type?: PlatformFeeType
-  pledge_id?: string
-  issue_reward_id?: string
-  order_id?: string
-  payout_transaction_id?: string
-  incurred_by_transaction_id?: string
-}
-
-export interface Payout {
-  id: string
-  processor: string
-  status: PayoutStatus
-  currency: string
-  amount: number
-  fees_amount: number
-  gross_amount: number
-  account_currency: string
-  account_amount: number
-  account_id: string
-  invoice_number: string | null
-  is_invoice_generated: boolean
-  transaction_id: string
-  fees_transactions: TransactionEmbedded[]
-  created_at: string
-}
-
 export const usePayoutEstimate = (
   accountId?: string,
-): UseQueryResult<PayoutEstimate> => {
+): UseQueryResult<schemas['PayoutEstimate']> => {
   const { session } = useSession()
 
   return useQuery({
     queryKey: ['finance', accountId, 'payouts', 'estimate'],
     queryFn: () =>
       fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/payouts/estimate?account_id=${accountId}`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/estimate?account_id=${accountId}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -264,21 +205,24 @@ export const usePayoutEstimate = (
 
 export const useCreatePayout = (
   accountId?: string,
-): UseMutationResult<Payout> => {
+): UseMutationResult<schemas['Payout']> => {
   const { session } = useSession()
 
   return useMutation({
     mutationFn: () =>
-      fetch(`${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/payouts/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session}`,
+      fetch(
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session}`,
+          },
+          method: 'POST',
+          body: JSON.stringify({
+            account_id: accountId,
+          }),
         },
-        method: 'POST',
-        body: JSON.stringify({
-          account_id: accountId,
-        }),
-      })
+      )
         .then((res) => res.json())
         .then((data) => {
           if ('error' in data && 'error_description' in data) {
@@ -295,13 +239,13 @@ export const useCreatePayout = (
 
 export const usePayout = (
   payoutId?: string,
-): UseQueryResult<Payout | undefined> => {
+): UseQueryResult<schemas['Payout'] | undefined> => {
   return useQuery({
     queryKey: ['finance', 'payouts', payoutId],
     queryFn: () =>
       queryClient
         .getQueryData<{
-          items: Payout[]
+          items: schemas['Payout'][]
           pagination: schemas['Pagination']
         }>(['finance', 'payouts'])
         ?.items.find((payout) => payout.id === payoutId),
@@ -310,7 +254,7 @@ export const usePayout = (
 }
 
 export const usePayouts = (): UseQueryResult<{
-  items: Payout[]
+  items: schemas['Payout'][]
   pagination: schemas['Pagination']
 }> => {
   const { session } = useSession()
@@ -318,12 +262,15 @@ export const usePayouts = (): UseQueryResult<{
   return useQuery({
     queryKey: ['finance', 'payouts'],
     queryFn: () =>
-      fetch(`${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/payouts/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session}`,
+      fetch(
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session}`,
+          },
         },
-      })
+      )
         .then((res) => res.json())
         .then((data) => {
           if ('error' in data && 'error_description' in data) {

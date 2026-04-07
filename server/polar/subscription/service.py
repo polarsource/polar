@@ -18,9 +18,9 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_seat.service import seat_service
-from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.email.schemas import EmailAdapter
@@ -29,6 +29,7 @@ from polar.enums import (
     PaymentMode,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
+    TaxBehavior,
 )
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -243,6 +244,10 @@ class SubscriptionService:
         discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         cancel_at_period_end: bool | None = None,
+        customer_cancellation_reason: Sequence[CustomerCancellationReason]
+        | None = None,
+        canceled_at_after: datetime | None = None,
+        canceled_at_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SubscriptionSortProperty]] = [
@@ -282,6 +287,19 @@ class SubscriptionService:
             statement = statement.where(
                 Subscription.cancel_at_period_end.is_(cancel_at_period_end)
             )
+
+        if customer_cancellation_reason is not None:
+            statement = statement.where(
+                Subscription.customer_cancellation_reason.in_(
+                    customer_cancellation_reason
+                )
+            )
+
+        if canceled_at_after is not None:
+            statement = statement.where(Subscription.canceled_at >= canceled_at_after)
+
+        if canceled_at_before is not None:
+            statement = statement.where(Subscription.canceled_at <= canceled_at_before)
 
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)
@@ -435,12 +453,14 @@ class SubscriptionService:
 
         current_period_start = utc_now()
         current_period_end = recurring_interval.get_next_period(
-            current_period_start, recurring_interval_count
+            current_period_start, current_period_start.day, recurring_interval_count
         )
+        anchor_day = current_period_start.day
 
         subscription = Subscription(
             status=SubscriptionStatus.active,
             started_at=current_period_start,
+            anchor_day=anchor_day,
             current_period_start=current_period_start,
             current_period_end=current_period_end,
             cancel_at_period_end=False,
@@ -536,7 +556,7 @@ class SubscriptionService:
             current_period_end = trial_end
         else:
             current_period_end = recurring_interval.get_next_period(
-                current_period_start, recurring_interval_count
+                current_period_start, current_period_start.day, recurring_interval_count
             )
 
         # New subscription
@@ -555,6 +575,7 @@ class SubscriptionService:
         subscription.current_period_end = current_period_end
         subscription.trial_start = trial_start
         subscription.trial_end = trial_end
+        subscription.anchor_day = current_period_start.day
 
         subscription.recurring_interval = recurring_interval
         subscription.recurring_interval_count = recurring_interval_count
@@ -563,6 +584,7 @@ class SubscriptionService:
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
         subscription.currency = currency
+        subscription.tax_behavior = checkout.tax_behavior
         subscription.discount = checkout.discount
         # For non-trial checkouts with a discount, the discount is applied immediately
         # (the first payment at checkout includes the discount)
@@ -650,6 +672,7 @@ class SubscriptionService:
             # Apply any pending subscription update (product change, seats change)
             # scheduled for the beginning of this new cycle
             pending_update = subscription.pending_update
+            pending_update_changed_interval = False
             if pending_update is not None:
                 pending_update.subscription = subscription
                 if pending_update.product_id is not None:
@@ -660,6 +683,8 @@ class SubscriptionService:
                     )
                 else:
                     pending_update.product = None
+                # Check before apply_update() changes subscription.product
+                pending_update_changed_interval = pending_update.is_interval_changed()
                 pending_update.apply_update()
                 subscription_update_repository = (
                     SubscriptionUpdateRepository.from_session(session)
@@ -667,12 +692,14 @@ class SubscriptionService:
                 await subscription_update_repository.update(pending_update)
                 subscription.pending_update = None
 
-            if update_cycle_dates:
+            if update_cycle_dates and not pending_update_changed_interval:
                 current_period_end = subscription.current_period_end
                 subscription.current_period_start = current_period_end
                 subscription.current_period_end = (
                     subscription.recurring_interval.get_next_period(
-                        current_period_end, subscription.recurring_interval_count
+                        current_period_end,
+                        subscription.anchor_day,
+                        subscription.recurring_interval_count,
                     )
                 )
 
@@ -855,6 +882,24 @@ class SubscriptionService:
         *,
         update: SubscriptionUpdate,
     ) -> Subscription:
+        if (
+            isinstance(update, SubscriptionUpdateProduct | SubscriptionUpdateSeats)
+            and update.proration_behavior == SubscriptionProrationBehavior.reset
+        ):
+            organization = subscription.customer.organization
+            if not organization.feature_settings.get(
+                "reset_proration_behavior_enabled"
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "proration_behavior"),
+                            "msg": "The 'reset' proration behavior is not enabled for this organization.",
+                            "input": update.proration_behavior,
+                        }
+                    ]
+                )
         if isinstance(update, SubscriptionUpdateProduct):
             return await self.update_product(
                 session,
@@ -1071,12 +1116,10 @@ class SubscriptionService:
             session
         )
 
+        subscription_update, billing_entries = generate_subscription_update(
+            subscription, proration_behavior, product=product
+        )
         if proration_behavior == SubscriptionProrationBehavior.next_period:
-            subscription_update, _ = generate_subscription_update(
-                subscription,
-                product=product,
-                applies_at=subscription.current_period_end,
-            )
             subscription.pending_update = await subscription_update_repository.upsert(
                 subscription_update
             )
@@ -1088,9 +1131,6 @@ class SubscriptionService:
             )
             subscription.pending_update = None
 
-            subscription_update, billing_entries = generate_subscription_update(
-                subscription, product=product
-            )
             for entry in billing_entries:
                 entry.event = event
                 session.add(entry)
@@ -1100,15 +1140,11 @@ class SubscriptionService:
             session.add(subscription)
             await session.flush()
 
+            # Invoice and attempt to pay immediately
             if (
-                proration_behavior == SubscriptionProrationBehavior.invoice
-                or interval_changed
-            ):
-                # Invoice and attempt to pay immediately
+                proration_behavior.is_immediate() or interval_changed
+            ) and billing_entries:
                 await self._create_subscription_update_order(session, subscription)
-            elif proration_behavior == SubscriptionProrationBehavior.prorate:
-                # Add prorations to next invoice
-                pass
 
             await self.enqueue_benefits_grants(session, subscription)
 
@@ -1371,7 +1407,7 @@ class SubscriptionService:
         )
 
         subscription_update, billing_entries = generate_subscription_update(
-            subscription, seats=seats
+            subscription, proration_behavior, seats=seats
         )
 
         previous_status = subscription.status
@@ -1381,9 +1417,6 @@ class SubscriptionService:
             session
         )
         if proration_behavior == SubscriptionProrationBehavior.next_period:
-            subscription_update, _ = generate_subscription_update(
-                subscription, seats=seats, applies_at=subscription.current_period_end
-            )
             subscription.pending_update = await subscription_update_repository.upsert(
                 subscription_update
             )
@@ -1395,9 +1428,6 @@ class SubscriptionService:
             )
             subscription.pending_update = None
 
-            subscription_update, billing_entries = generate_subscription_update(
-                subscription, seats=seats
-            )
             # Skip proration for trialing subscriptions - no billing during trial
             if not subscription.trialing:
                 for entry in billing_entries:
@@ -1418,8 +1448,9 @@ class SubscriptionService:
             )
 
             if (
-                proration_behavior == SubscriptionProrationBehavior.invoice
+                proration_behavior.is_immediate()
                 and not subscription.trialing
+                and billing_entries
             ):
                 # Invoice and attempt to pay immediately
                 await self._create_subscription_update_order(session, subscription)
@@ -1469,6 +1500,7 @@ class SubscriptionService:
         old_period_end = subscription.current_period_end
 
         subscription.current_period_end = new_period_end
+        subscription.anchor_day = new_period_end.day
 
         await event_service.create_event(
             session,
@@ -1733,20 +1765,22 @@ class SubscriptionService:
                 subtotal_amount, subscription.currency
             )
 
-        taxable_amount = subtotal_amount - discount_amount
-
+        net_amount = subtotal_amount - discount_amount
         tax_amount = 0
 
         if (
-            taxable_amount > 0
+            net_amount > 0
             and subscription.product.is_tax_applicable
+            and subscription.tax_behavior
             and subscription.customer.billing_address is not None
         ):
+            tax_behavior = subscription.tax_behavior.to_option()
             try:
                 tax, _ = await tax_calculation_service.calculate(
                     subscription.id,
                     subscription.currency,
-                    taxable_amount,
+                    net_amount,
+                    tax_behavior,
                     subscription.product.tax_code,
                     subscription.customer.billing_address,
                     [subscription.customer.tax_id]
@@ -1763,8 +1797,10 @@ class SubscriptionService:
                 tax_amount = 0
             else:
                 tax_amount = tax["amount"]
+                if subscription.tax_behavior == TaxBehavior.inclusive:
+                    net_amount -= tax_amount
 
-        total = taxable_amount + tax_amount
+        total = net_amount + tax_amount
 
         # Make sure nothing is saved to DB
         await session.rollback()
@@ -1774,6 +1810,7 @@ class SubscriptionService:
             metered_amount=metered_amount,
             subtotal_amount=subtotal_amount,
             discount_amount=discount_amount,
+            net_amount=net_amount,
             tax_amount=tax_amount,
             total_amount=total,
         )
@@ -1980,7 +2017,7 @@ class SubscriptionService:
                 notif=PartialNotification(
                     type=NotificationType.maintainer_new_paid_subscription,
                     payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                        subscriber_name=subscription.customer.email,
+                        subscriber_name=subscription.customer.display_name,
                         tier_name=product.name,
                         tier_price_amount=subscription.amount,
                         tier_price_recurring_interval=subscription.recurring_interval,
@@ -2284,44 +2321,54 @@ class SubscriptionService:
             return
 
         customer = subscription.customer
-        token, _ = await customer_session_service.create_customer_session(
-            session, customer
-        )
 
-        # Build query parameters with proper URL encoding
-        query_string = urlencode(
-            {
-                "customer_session_token": token,
-                "id": str(subscription.id),
-                "email": customer.email,
-            }
-        )
-        portal_url = settings.generate_frontend_url(
-            f"/{organization.slug}/portal?{query_string}"
-        )
-
-        email = EmailAdapter.validate_python(
-            {
-                "template": template_name,
-                "props": {
-                    "email": subscription.customer.email,
-                    "organization": organization,
-                    "product": product,
-                    "subscription": subscription,
-                    "url": portal_url,
-                    **(extra_context or {}),
-                },
-            }
-        )
+        recipients = await customer_service.get_email_recipients(session, customer)
+        if not recipients:
+            return
 
         subject = subject_template.format(product=product)
 
-        enqueue_email_template(
-            email,
-            **organization.email_from_reply,
-            to_email_addr=subscription.customer.email,
-            subject=subject,
-        )
+        async def send_to_recipients(recipients: Sequence[str]) -> None:
+            for recipient_email in recipients:
+                token = await customer_service.create_session_token_for_recipient(
+                    session, customer, recipient_email
+                )
+                if token is None:
+                    continue
+
+                query_string = urlencode(
+                    {
+                        "customer_session_token": token,
+                        "id": str(subscription.id),
+                        "email": recipient_email,
+                    }
+                )
+                portal_url = settings.generate_frontend_url(
+                    f"/{organization.slug}/portal?{query_string}"
+                )
+
+                email = EmailAdapter.validate_python(
+                    {
+                        "template": template_name,
+                        "props": {
+                            "email": recipient_email,
+                            "organization": organization,
+                            "product": product,
+                            "subscription": subscription,
+                            "url": portal_url,
+                            **(extra_context or {}),
+                        },
+                    }
+                )
+
+                enqueue_email_template(
+                    email,
+                    **organization.email_from_reply,
+                    to_email_addr=recipient_email,
+                    subject=subject,
+                )
+
+        await send_to_recipients(recipients)
 
     async def _get_outdated_grants(
         self,

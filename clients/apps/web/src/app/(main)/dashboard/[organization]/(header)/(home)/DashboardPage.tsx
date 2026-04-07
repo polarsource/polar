@@ -7,6 +7,7 @@ import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { useOrganizationPaymentStatus } from '@/hooks/queries'
+import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ConstructionIcon } from 'lucide-react'
@@ -27,7 +28,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   return (
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-12" title={null}>
       <IOSAppBanner />
-      {!paymentStatus?.payment_ready && !isLoading && (
+      {!CONFIG.IS_SANDBOX && !paymentStatus?.payment_ready && !isLoading && (
         <div className="dark:bg-polar-800 flex flex-col justify-between gap-4 rounded-2xl bg-gray-100 p-4 md:flex-row md:p-6">
           <div className="flex flex-col gap-y-2 text-sm">
             <div className="flex flex-row items-center gap-x-3">

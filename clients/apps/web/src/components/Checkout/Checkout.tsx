@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { UploadImage } from '@/components/Image/Image'
@@ -102,16 +101,12 @@ const TruncatedDescription = ({
 }
 
 const PaymentNotReadyBanner = ({
-  shouldBlockCheckout,
   organizationStatus,
   organizationName,
 }: {
-  shouldBlockCheckout: boolean
   organizationStatus: string | undefined
   organizationName: string
 }) => {
-  if (!shouldBlockCheckout) return null
-
   const isDenied = organizationStatus === 'denied'
 
   return (
@@ -192,16 +187,16 @@ const Checkout = ({
 
   const themePreset = getThemePreset(theme)
 
-  // Check organization payment readiness (account verification only for checkout)
   const { data: paymentStatus } = useOrganizationPaymentStatus(
     checkout.organization.id,
-    true, // enabled
-    true, // accountVerificationOnly - avoid unnecessary product/token checks in checkout
   )
 
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
   const isPaymentRequired = checkout.is_payment_required
-  const shouldBlockCheckout = !isPaymentReady && isPaymentRequired
+  const shouldBlockCheckout =
+    // Always show when organization is denied, regardless of payment required or not
+    paymentStatus?.organization_status === 'denied' ||
+    (isPaymentRequired && !isPaymentReady)
 
   // Track payment not ready state
   useEffect(() => {
@@ -291,11 +286,12 @@ const Checkout = ({
   if (embed) {
     return (
       <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
-        <PaymentNotReadyBanner
-          shouldBlockCheckout={shouldBlockCheckout}
-          organizationStatus={paymentStatus?.organization_status}
-          organizationName={checkout.organization.name}
-        />
+        {shouldBlockCheckout && (
+          <PaymentNotReadyBanner
+            organizationStatus={paymentStatus?.organization_status}
+            organizationName={checkout.organization.name}
+          />
+        )}
         {hasProductCheckout(checkout) && (
           <>
             <CheckoutProductSwitcher
@@ -343,6 +339,13 @@ const Checkout = ({
                     compact
                   />
                 )}
+                {checkout.active_trial_interval &&
+                  checkout.active_trial_interval_count && (
+                    <>
+                      <CheckoutHeroPrice checkout={checkout} locale={locale} />
+                      <hr className="dark:border-polar-700 border-gray-200" />
+                    </>
+                  )}
                 <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
                 <CheckoutDiscountInput
                   checkout={checkout}
@@ -392,7 +395,14 @@ const Checkout = ({
             {hasProductCheckout(checkout) && (
               <>
                 <div className="flex flex-col gap-y-2">
-                  <div className="flex flex-row items-start gap-x-3">
+                  <div
+                    className={twMerge(
+                      'flex flex-row gap-x-3',
+                      checkout.product.description
+                        ? 'items-start'
+                        : 'items-center',
+                    )}
+                  >
                     {hasMedia && checkout.product.medias[0]?.public_url && (
                       <Dialog>
                         <DialogTrigger
@@ -510,11 +520,12 @@ const Checkout = ({
       </div>
       <div className="dark:md:bg-polar-900 md:bg-white">
         <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-4 md:pl-12">
-          <PaymentNotReadyBanner
-            shouldBlockCheckout={shouldBlockCheckout}
-            organizationStatus={paymentStatus?.organization_status}
-            organizationName={checkout.organization.name}
-          />
+          {shouldBlockCheckout && (
+            <PaymentNotReadyBanner
+              organizationStatus={paymentStatus?.organization_status}
+              organizationName={checkout.organization.name}
+            />
+          )}
           <CheckoutForm
             form={form}
             checkout={checkout}

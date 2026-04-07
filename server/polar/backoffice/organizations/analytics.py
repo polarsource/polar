@@ -20,6 +20,7 @@ from polar.models import (
 )
 from polar.models.dispute import DisputeStatus
 from polar.models.payment import PaymentStatus
+from polar.models.refund import RefundStatus
 from polar.models.transaction import TransactionType
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession
@@ -90,7 +91,10 @@ class PaymentAnalyticsService:
                 onclause=(Transaction.refund_id == Refund.id)
                 & (Transaction.type == TransactionType.refund),
             )
-            .where(Customer.organization_id == organization_id)
+            .where(
+                Customer.organization_id == organization_id,
+                Refund.status == RefundStatus.succeeded,
+            )
         )
         result_row = result.first()
         if result_row:
@@ -245,6 +249,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(Product.id)).where(
                 Product.organization_id == organization_id,
+                Product.is_archived.is_(False),
                 Product.is_deleted.is_(False),
             )
         )

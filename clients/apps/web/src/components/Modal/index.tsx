@@ -13,7 +13,7 @@ import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
 
 export interface ModalProps {
-  title: string
+  title: string | JSX.Element
   isShown: boolean
   hide: () => void
   modalContent: JSX.Element

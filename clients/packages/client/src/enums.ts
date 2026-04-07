@@ -11,6 +11,7 @@ export {
   propertyAggregationFuncValues,
   refundReasonValues,
   stripeAccountCountryValues,
+  taxBehaviorOptionValues,
   timeIntervalValues,
   trialIntervalValues,
   uniqueAggregationFuncValues,

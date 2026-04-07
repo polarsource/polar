@@ -17,7 +17,10 @@ import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerCreateForm = Omit<schemas['CustomerCreate'], 'metadata'> & {
+export type CustomerCreateForm = Omit<
+  schemas['CustomerIndividualCreate'],
+  'metadata'
+> & {
   metadata: { key: string; value: string | number | boolean }[]
 }
 
@@ -41,7 +44,7 @@ export const CreateCustomerModal = ({
       ...customerCreate,
       metadata: customerCreate.metadata?.reduce(
         (acc, { key, value }) => ({ ...acc, [key]: value }),
-        {},
+        {} as Record<string, string | number | boolean>,
       ),
     }
 
@@ -54,7 +57,7 @@ export const CreateCustomerModal = ({
       }
       toast({
         title: 'Customer Created',
-        description: `Customer ${customer.email} created successfully`,
+        description: `Customer ${customer.email ?? customer.name ?? 'customer'} created successfully`,
       })
       revalidate(`customer:${customer.id}`)
       onClose()

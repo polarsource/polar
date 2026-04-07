@@ -18,10 +18,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import gepa
 import structlog
+from pydantic_ai import Agent
 
-from polar.organization_review.schemas import DataSnapshot, ReviewContext
+from polar.config import settings
+from polar.organization_review.analyzer import SYSTEM_PROMPT, ReviewAnalyzer
+from polar.organization_review.schemas import (
+    DataSnapshot,
+    ReviewAgentReport,
+    ReviewContext,
+)
 
+from .dataset import EvalDataset
 from .task import CONTEXT_MAP
 
 log = structlog.get_logger(__name__)
@@ -93,23 +102,12 @@ class ReviewAdapter:
         self.total_cost = 0.0
 
     def _get_analyzer(self, prompt: str) -> Any:
-        from pydantic_ai import Agent
-        from pydantic_ai.models.openai import OpenAIChatModel
-        from pydantic_ai.providers.openai import OpenAIProvider
-
-        from polar.config import settings
-        from polar.organization_review.analyzer import ReviewAnalyzer
-        from polar.organization_review.schemas import ReviewAgentReport
-
         key = hash(prompt)
         if key not in self._analyzers:
-            analyzer = ReviewAnalyzer()
-            provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-            analyzer.model = OpenAIChatModel(
-                self._model or settings.OPENAI_MODEL, provider=provider
-            )
+            analyzer = ReviewAnalyzer(self._model)
+            # Override the agent to use the candidate system prompt
             analyzer.agent = Agent(
-                analyzer.model,
+                analyzer.agent.model,
                 output_type=ReviewAgentReport,
                 system_prompt=prompt,
             )
@@ -284,12 +282,6 @@ def run_optimization(
         concurrency: Max concurrent LLM calls per evaluation batch.
         output_dir: Directory to save optimized prompt and report.
     """
-    import gepa
-
-    from polar.config import settings
-    from polar.organization_review.analyzer import SYSTEM_PROMPT
-
-    from .dataset import EvalDataset
 
     # 1. Load and split dataset
     dataset = EvalDataset.from_file(dataset_path)
@@ -305,9 +297,12 @@ def run_optimization(
         val=len(val),
     )
 
-    # 2. Resolve reflection LM and set OPENAI_API_KEY for litellm
-    effective_reflection_lm = reflection_lm or f"openai/{settings.OPENAI_MODEL}"
-    os.environ.setdefault("OPENAI_API_KEY", settings.OPENAI_API_KEY)
+    # 2. Resolve reflection LM and set API key for litellm
+    # PYDANTIC_AI_GATEWAY_MODEL uses "provider:model" format; litellm expects "provider/model"
+    effective_reflection_lm = (
+        reflection_lm or settings.PYDANTIC_AI_GATEWAY_MODEL.replace(":", "/", 1)
+    )
+    os.environ.setdefault("OPENAI_API_KEY", settings.PYDANTIC_AI_GATEWAY_API_KEY)
 
     # 3. Run GEPA
     adapter = ReviewAdapter(model=model, concurrency=concurrency)

@@ -223,6 +223,7 @@ class TestExportOrders:
         order = orders[0]
         data_row = csv_lines[1]
         assert order.product is not None
+        assert order.customer.email is not None
         assert order.customer.email in data_row
         assert order.description in data_row
         assert order.currency in data_row

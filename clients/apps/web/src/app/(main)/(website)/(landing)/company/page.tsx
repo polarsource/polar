@@ -10,18 +10,6 @@ const JOBS = [
     category: 'Product & Engineering',
     roles: [
       {
-        role: 'Senior Compliance & Risk Engineer',
-        location: 'Remote, Europe',
-        experience: '5+ Years',
-        link: 'https://jobs.ashbyhq.com/polar/c65b092e-0a5b-4e7f-a2ca-ab5bf559765f',
-      },
-      {
-        role: 'Senior Payments Engineer',
-        location: 'Remote, Europe',
-        experience: '5-8+ Years',
-        link: 'https://jobs.ashbyhq.com/polar/d193753e-ffa6-46bb-90da-d735cb8428f3',
-      },
-      {
         role: 'Senior Platform Engineer',
         location: 'Remote, Europe',
         experience: '5-8+ Years',
@@ -34,14 +22,9 @@ const JOBS = [
         link: 'https://jobs.ashbyhq.com/polar/955c6935-6d03-46e5-b649-a8b958a52962',
       },
       {
-        role: 'Technical Support Lead',
+        role: 'Part-time Support Engineer',
         location: 'Remote, Europe',
-        link: 'https://jobs.ashbyhq.com/polar/4adb9a30-28d1-4db1-a7bf-80a07bfea337',
-      },
-      {
-        role: 'Risk Analyst',
-        location: 'Remote, Europe',
-        link: 'https://jobs.ashbyhq.com/polar/cfca47be-734f-4d42-8644-31b2d6220534',
+        link: 'https://jobs.ashbyhq.com/polar/a47a0dc9-078f-4f80-9bce-29d74bab329b',
       },
     ],
   },

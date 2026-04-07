@@ -89,7 +89,7 @@ export function PolarOrganizationProvider({ children }: PropsWithChildren) {
   }
 
   if (organizations.length === 0 && pathname !== '/onboarding') {
-    return <Redirect href="/onboarding" />
+    return <Redirect href="/onboarding?from=signup" />
   }
 
   return (

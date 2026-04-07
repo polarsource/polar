@@ -7,7 +7,7 @@ import logfire
 from fastapi import FastAPI
 from logfire.sampling import SpanLevel
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.sdk.trace import SpanProcessor
+from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import (
     ALWAYS_OFF,
@@ -117,7 +117,30 @@ def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
     # Don't scrub auth subject in log messages
     if match.path == ("attributes", "subject"):
         return match.value
+    # Don't scrub thread stacks from the event loop watchdog — they contain
+    # "session" via SQLAlchemy frames which triggers the default scrubber,
+    # but these are stack traces, not secrets.
+    if match.path == ("attributes", "thread_stacks"):
+        return match.value
+    if match.path == ("attributes", "event_loop_stack"):
+        return match.value
+    if match.path == ("attributes", "asyncio_tasks"):
+        return match.value
     return None
+
+
+class PidSpanProcessor(SpanProcessor):
+    def on_start(self, span: Span, parent_context: "Context | None" = None) -> None:
+        span.set_attribute("process.pid", os.getpid())
+
+    def on_end(self, span: ReadableSpan) -> None:
+        pass
+
+    def shutdown(self) -> None:
+        pass
+
+    def force_flush(self, timeout_millis: int = 30000) -> bool:
+        return True
 
 
 def configure_logfire(service_name: Literal["server", "worker"]) -> None:
@@ -125,7 +148,15 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         "SERVICE_NAME", os.environ.get("RENDER_SERVICE_NAME", service_name)
     )
 
-    additional_span_processors: list[SpanProcessor] = []
+    render_instance_id = os.environ.get("RENDER_INSTANCE_ID")
+    if render_instance_id:
+        existing = os.environ.get("OTEL_RESOURCE_ATTRIBUTES", "")
+        attr = f"service.instance.id={render_instance_id}"
+        os.environ["OTEL_RESOURCE_ATTRIBUTES"] = (
+            f"{existing},{attr}" if existing else attr
+        )
+
+    additional_span_processors: list[SpanProcessor] = [PidSpanProcessor()]
     if settings.S3_LOGS_BUCKET_NAME is not None:
         additional_span_processors.append(
             BatchSpanProcessor(
@@ -160,6 +191,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         environment=settings.ENV,
         service_name=resolved_service_name,
         service_version=os.environ.get("RELEASE_VERSION", "development"),
+        inspect_arguments=False,
         code_source=logfire.CodeSource(
             repository="https://github.com/polarsource/polar",
             revision=os.environ.get("RELEASE_VERSION", "main"),

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import Spinner from '@/components/Shared/Spinner'
@@ -255,7 +254,11 @@ const MetricChartBox = ({
               )}
             </div>
           )}
-          <h2 className={compact ? 'text-base' : 'text-5xl font-light'}>
+          <h2
+            className={
+              compact ? 'text-base' : 'text-3xl xl:text-5xl xl:font-light'
+            }
+          >
             {metricValue}
           </h2>
           {!compact && (

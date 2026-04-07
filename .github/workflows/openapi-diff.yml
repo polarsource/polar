@@ -20,6 +20,7 @@ jobs:
 
     env:
       POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
+      POLAR_PYDANTIC_AI_GATEWAY_API_KEY: "POLAR_PYDANTIC_AI_GATEWAY_API_KEY"
 
     steps:
       - name: Checkout PR (head)

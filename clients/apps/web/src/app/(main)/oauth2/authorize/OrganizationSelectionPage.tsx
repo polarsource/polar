@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import revalidate from '@/app/actions'
@@ -31,7 +30,7 @@ import SharedLayout from './components/SharedLayout'
 
 type FormSchema = Pick<
   schemas['OrganizationCreate'],
-  'name' | 'slug' | 'default_presentment_currency'
+  'name' | 'slug' | 'default_presentment_currency' | 'default_tax_behavior'
 > & {
   terms: boolean
 }
@@ -268,7 +267,7 @@ const OrganizationSelectionPage = ({
                           </li>
                           <li>
                             <a
-                              href="https://polar.sh/legal/terms"
+                              href="https://polar.sh/legal/master-services-terms"
                               className="text-blue-600 hover:underline dark:text-blue-400"
                               target="_blank"
                               rel="noreferrer"
@@ -278,7 +277,7 @@ const OrganizationSelectionPage = ({
                           </li>
                           <li>
                             <a
-                              href="https://polar.sh/legal/privacy"
+                              href="https://polar.sh/legal/privacy-policy"
                               className="text-blue-600 hover:underline dark:text-blue-400"
                               target="_blank"
                               rel="noreferrer"

@@ -9,28 +9,27 @@ import { useSettingsActions } from '@/hooks/useSettingsActions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
 import Constants from 'expo-constants'
+import { useUpdates } from 'expo-updates'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useState } from 'react'
-import {
-  Linking,
-  Platform,
-  PlatformOSType,
-  RefreshControl,
-  ScrollView,
-} from 'react-native'
+import { Linking, RefreshControl, ScrollView } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-const PLATFORM_DISPLAY_NAME: Record<PlatformOSType, string> = {
-  ios: 'iOS',
-  android: 'Android',
-  web: 'Web',
-  macos: 'macOS',
-  windows: 'Windows',
-  native: 'Native',
-}
+const APP_VERSION = Constants.expoConfig?.version ?? 'Unknown'
 
-const BUILD_VERSION = Constants.expoConfig?.version ?? 'Unknown'
+function UpdateId() {
+  const { currentlyRunning } = useUpdates()
+  const updateId = currentlyRunning.updateId
+
+  if (!updateId) return null
+
+  return (
+    <Text variant="caption" color="subtext" textAlign="center">
+      {updateId.slice(0, 8)}
+    </Text>
+  )
+}
 
 export default function Index() {
   const {
@@ -104,12 +103,16 @@ export default function Index() {
           <SettingsItem
             title="Privacy Policy"
             variant="link"
-            onPress={() => Linking.openURL('https://polar.sh/legal/privacy')}
+            onPress={() =>
+              Linking.openURL('https://polar.sh/legal/privacy-policy')
+            }
           />
           <SettingsItem
             title="Terms of Service"
             variant="link"
-            onPress={() => Linking.openURL('https://polar.sh/legal/terms')}
+            onPress={() =>
+              Linking.openURL('https://polar.sh/legal/master-services-terms')
+            }
           />
           <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
           <SettingsItem
@@ -119,10 +122,16 @@ export default function Index() {
           />
           <SettingsItem title="Logout" variant="navigate" onPress={logout} />
         </Box>
-        <Box justifyContent="center" flexDirection="row">
+        <Box
+          justifyContent="center"
+          flexDirection="column"
+          alignItems="center"
+          gap="spacing-4"
+        >
           <Text variant="body" color="subtext" textAlign="center">
-            {`Polar for ${PLATFORM_DISPLAY_NAME[Platform.OS as keyof typeof PLATFORM_DISPLAY_NAME]} ${BUILD_VERSION}`}
+            {`Polar (${APP_VERSION})`}
           </Text>
+          <UpdateId />
         </Box>
       </ScrollView>
 

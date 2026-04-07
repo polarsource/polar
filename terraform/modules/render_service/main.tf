@@ -24,6 +24,14 @@ resource "render_env_group" "openai" {
   }
 }
 
+resource "render_env_group" "pydantic_ai_gateway" {
+  environment_id = var.render_environment_id
+  name           = "pydantic-ai-gateway-${var.environment}"
+  env_vars = {
+    POLAR_PYDANTIC_AI_GATEWAY_API_KEY = { value = var.pydantic_ai_gateway_secrets.api_key }
+  }
+}
+
 resource "render_env_group" "backend" {
   environment_id = var.render_environment_id
   name           = "backend-${var.environment}"
@@ -197,6 +205,18 @@ resource "render_env_group" "tinybird" {
     POLAR_TINYBIRD_CLICKHOUSE_USERNAME = { value = var.tinybird_config.clickhouse_username }
     POLAR_TINYBIRD_CLICKHOUSE_TOKEN    = { value = var.tinybird_config.clickhouse_token }
     POLAR_TINYBIRD_WORKSPACE           = { value = var.tinybird_config.workspace }
+  }
+}
+
+resource "render_env_group" "polar_self" {
+  count          = var.polar_self_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "polar-self-${var.environment}"
+  env_vars = {
+    POLAR_POLAR_ACCESS_TOKEN    = { value = var.polar_self_config.access_token }
+    POLAR_POLAR_WEBHOOK_SECRET  = { value = var.polar_self_config.webhook_secret }
+    POLAR_POLAR_ORGANIZATION_ID = { value = var.polar_self_config.organization_id }
+    POLAR_POLAR_FREE_PRODUCT_ID = { value = var.polar_self_config.free_product_id }
   }
 }
 
@@ -406,6 +426,11 @@ resource "render_env_group_link" "openai" {
   service_ids  = local.all_service_ids
 }
 
+resource "render_env_group_link" "pydantic_ai_gateway" {
+  env_group_id = render_env_group.pydantic_ai_gateway.id
+  service_ids  = local.all_service_ids
+}
+
 resource "render_env_group_link" "apple" {
   env_group_id = render_env_group.apple.id
   service_ids  = [render_web_service.api.id]
@@ -426,6 +451,12 @@ resource "render_env_group_link" "slo_report" {
 resource "render_env_group_link" "tinybird" {
   count        = var.tinybird_config != null ? 1 : 0
   env_group_id = render_env_group.tinybird[0].id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "polar_self" {
+  count        = var.polar_self_config != null ? 1 : 0
+  env_group_id = render_env_group.polar_self[0].id
   service_ids  = local.all_service_ids
 }
 

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { StatisticCard } from '@/components/Shared/StatisticCard'
@@ -22,7 +21,10 @@ import { EditCustomerModal } from './EditCustomerModal'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
-  customer: schemas['Customer']
+  customer:
+    | schemas['Customer']
+    | schemas['OrderCustomer']
+    | schemas['SubscriptionCustomer']
 }
 
 export const CustomerContextView = ({
@@ -38,11 +40,13 @@ export const CustomerContextView = ({
   const [customerSession, setCustomerSession] = useState<
     schemas['CustomerSession'] | null
   >(null)
+  const memberModelEnabled =
+    !!organization.feature_settings?.member_model_enabled
   const createCustomerSession = useCallback(async () => {
     setCustomerSessionLoading(true)
 
     let memberId: string | undefined
-    if (customer.type === 'team') {
+    if (memberModelEnabled && customer.type === 'team') {
       const { data: membersData } = await api.GET('/v1/members/', {
         params: {
           query: { customer_id: customer.id, role: 'owner', limit: 1 },
@@ -71,7 +75,7 @@ export const CustomerContextView = ({
       return
     }
     setCustomerSession(session)
-  }, [customer])
+  }, [customer, memberModelEnabled])
 
   const metrics = useMetrics({
     startDate: new Date(customer.created_at),
@@ -90,7 +94,7 @@ export const CustomerContextView = ({
         >
           <Avatar
             avatar_url={customer.avatar_url}
-            name={customer.name || customer.email}
+            name={customer.name || customer.email || '—'}
             className="size-12 text-sm"
           />
           <div className="flex flex-col">

@@ -34,6 +34,12 @@ variable "openai_api_key_production" {
   sensitive   = true
 }
 
+# Pydantic AI Gateway
+variable "pydantic_ai_gateway_api_key_production" {
+  description = "Pydantic AI Gateway API Key for production"
+  type        = string
+  sensitive   = true
+}
 
 # Backend - Production
 variable "backend_current_jwk_kid_production" {
@@ -349,6 +355,29 @@ variable "tinybird_read_token" {
   description = "Tinybird Read Token"
   type        = string
   sensitive   = true
+}
+
+# Polar
+variable "polar_access_token" {
+  description = "Polar API access token"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_webhook_secret" {
+  description = "Polar webhook secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_organization_id" {
+  description = "Polar organization ID"
+  type        = string
+}
+
+variable "polar_free_product_id" {
+  description = "Polar free-tier product ID"
+  type        = string
 }
 
 # Tailscale

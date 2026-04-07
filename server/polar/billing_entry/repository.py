@@ -3,7 +3,7 @@ from datetime import datetime
 from itertools import batched
 from uuid import UUID
 
-from sqlalchemy import Select, func, update
+from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.config import settings
@@ -37,6 +37,14 @@ class BillingEntryRepository(
                 .values(order_item_id=order_item_id)
             )
             await self.session.execute(statement)
+
+    async def get_all_by_subscription(
+        self, subscription_id: UUID
+    ) -> Sequence[BillingEntry]:
+        statement = select(self.model).where(
+            self.model.subscription_id == subscription_id
+        )
+        return await self.get_all(statement)
 
     async def get_pending_by_subscription(
         self, subscription_id: UUID, *, options: Options = ()
@@ -126,6 +134,22 @@ class BillingEntryRepository(
         )
         results = await self.session.execute(statement)
         return results.scalars().unique().all()
+
+    async def lock_pending_by_subscription(self, subscription_id: UUID) -> None:
+        """
+        Acquire FOR UPDATE locks on all pending billing entries for a subscription.
+
+        This prevents concurrent order creation from reading the same pending
+        entries. With READ COMMITTED isolation, a blocked transaction will
+        re-evaluate the WHERE clause after acquiring the lock and see that
+        the entries are no longer pending.
+        """
+        statement = (
+            self.get_pending_by_subscription_statement(subscription_id)
+            .with_only_columns(BillingEntry.id)
+            .with_for_update()
+        )
+        await self.session.execute(statement)
 
     def get_pending_by_subscription_statement(
         self, subscription_id: UUID, *, options: Options = ()

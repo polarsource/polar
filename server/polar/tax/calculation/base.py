@@ -3,6 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal, Protocol, TypedDict, overload
 
+from polar.enums import TaxBehavior
 from polar.exceptions import PolarError
 from polar.kit.address import Address
 
@@ -125,6 +126,7 @@ class TaxCalculation(TypedDict):
     processor_id: str | None
     amount: int
     currency: str
+    tax_behavior: TaxBehavior
     taxability_reason: TaxabilityReason | None
     tax_rate: TaxRate | None
 
@@ -135,6 +137,7 @@ class TaxServiceProtocol(Protocol):
         identifier: uuid.UUID | str,
         currency: str,
         amount: int,
+        tax_behavior: TaxBehavior,
         tax_code: TaxCode,
         address: Address,
         tax_ids: list[TaxID],
@@ -145,7 +148,11 @@ class TaxServiceProtocol(Protocol):
 
     @overload
     async def revert(
-        self, transaction_id: str, reference: str, total_amount: int, tax_amount: int
+        self,
+        transaction_id: str,
+        reference: str,
+        reverted_amount: int,
+        reverted_tax_amount: int,
     ) -> str: ...
 
     @overload
@@ -155,14 +162,15 @@ class TaxServiceProtocol(Protocol):
         self,
         transaction_id: str,
         reference: str,
-        total_amount: int | None = None,
-        tax_amount: int | None = None,
+        reverted_amount: int | None = None,
+        reverted_tax_amount: int | None = None,
     ) -> str: ...
 
     async def backfill(
         self,
-        calculation: TaxCalculation,
         amount: int,
+        tax_amount: int,
+        currency: str,
         address: Address,
         tax_code: TaxCode,
         reference: str,

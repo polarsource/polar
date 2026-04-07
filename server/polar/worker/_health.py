@@ -32,6 +32,13 @@ log: Logger = structlog.get_logger()
 HTTP_HOST = os.getenv("dramatiq_prom_host", "0.0.0.0")
 HTTP_PORT = int(os.getenv("dramatiq_prom_port", "9191"))
 
+_heartbeat_checker: Callable[[], bool] | None = None
+
+
+def set_heartbeat_checker(checker: Callable[[], bool]) -> None:
+    global _heartbeat_checker
+    _heartbeat_checker = checker
+
 
 class HealthMiddleware(Middleware):
     @property
@@ -45,6 +52,9 @@ async def health(request: Request) -> JSONResponse:
         await redis.ping()
     except RedisError as e:
         raise HTTPException(status_code=503, detail="Redis is not available") from e
+
+    if _heartbeat_checker is not None and not _heartbeat_checker():
+        raise HTTPException(status_code=503, detail="Scheduler heartbeat is stale")
 
     return JSONResponse({"status": "ok"})
 

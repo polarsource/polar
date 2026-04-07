@@ -7,6 +7,7 @@ from polar.enums import PaymentProcessor
 from polar.kit.schemas import (
     CHECKOUT_ID_EXAMPLE,
     ORGANIZATION_ID_EXAMPLE,
+    ClassName,
     IDSchema,
     Schema,
     SetSchemaReference,
@@ -83,6 +84,10 @@ class CardPayment(PaymentBase):
     )
 
 
-Payment = Annotated[CardPayment | GenericPayment, SetSchemaReference("Payment")]
+Payment = Annotated[
+    CardPayment | GenericPayment,
+    SetSchemaReference("Payment"),
+    ClassName("Payment"),
+]
 
 PaymentAdapter: TypeAdapter[Payment] = TypeAdapter(Payment)

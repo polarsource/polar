@@ -358,8 +358,13 @@ async def get(
                         with tag.h2(classes="card-title"):
                             text("Customer")
                         with description_list.DescriptionList[Order](
-                            description_list.DescriptionListAttrItem(
-                                "customer.id", "ID", clipboard=True
+                            description_list.DescriptionListLinkItem[Order](
+                                "customer.id",
+                                "ID",
+                                clipboard=True,
+                                href_getter=lambda r, i: str(
+                                    r.url_for("customers:get", id=i.customer.id)
+                                ),
                             ),
                             description_list.DescriptionListAttrItem(
                                 "customer.email", "Email", clipboard=True
@@ -376,8 +381,15 @@ async def get(
                         with tag.h2(classes="card-title"):
                             text("Product")
                         with description_list.DescriptionList[Order](
-                            description_list.DescriptionListAttrItem(
-                                "product.id", "ID", clipboard=True
+                            description_list.DescriptionListLinkItem[Order](
+                                "product.id",
+                                "ID",
+                                clipboard=True,
+                                href_getter=lambda r, i: (
+                                    str(r.url_for("products:get", id=i.product.id))
+                                    if i.product is not None
+                                    else None
+                                ),
                             ),
                             description_list.DescriptionListAttrItem(
                                 "product.name", "Name"

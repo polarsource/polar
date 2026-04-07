@@ -56,8 +56,10 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.product_updated": "Subscription Product Updated",
     "order.paid": "Order Paid",
     "order.refunded": "Order Refunded",
+    "order.voided": "Order Voided",
     "checkout.created": "Checkout Created",
     "subscription.seats_updated": "Subscription Seats Updated",
+    "subscription.billing_period_updated": "Subscription Billing Period Updated",
     "customer.created": "Customer Created",
     "customer.updated": "Customer Updated",
     "customer.deleted": "Customer Deleted",
@@ -66,6 +68,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "balance.order": "Balance Order",
     "balance.credit_order": "Balance Credit Order",
     "balance.refund": "Balance Refund",
+    "balance.refund_reversal": "Balance Refund Reversal",
     "balance.dispute": "Balance Dispute",
     "balance.dispute_reversal": "Balance Dispute Reversal",
 }
@@ -132,7 +135,7 @@ class BenefitRevokedEvent(Event):
 
 class CustomerCreatedMetadata(TypedDict):
     customer_id: str
-    customer_email: str
+    customer_email: str | None
     customer_name: str | None
     customer_external_id: str | None
 
@@ -154,7 +157,7 @@ class CustomerUpdatedFields(TypedDict):
 
 class CustomerUpdatedMetadata(TypedDict):
     customer_id: str
-    customer_email: str
+    customer_email: str | None
     customer_name: str | None
     customer_external_id: str | None
     updated_fields: CustomerUpdatedFields
@@ -169,7 +172,7 @@ class CustomerUpdatedEvent(Event):
 
 class CustomerDeletedMetadata(TypedDict):
     customer_id: str
-    customer_email: str
+    customer_email: str | None
     customer_name: str | None
     customer_external_id: str | None
 

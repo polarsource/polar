@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useCustomerPortalCustomer } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, type schemas } from '@polar-sh/client'
@@ -92,7 +91,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           <FormControl>
             <Input
               type="email"
-              value={customer.email}
+              value={customer.email ?? ''}
               disabled
               readOnly
               className="bg-white shadow-xs"

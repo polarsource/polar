@@ -67,12 +67,7 @@ const Footer = () => {
               <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
                 Brand Assets
               </FooterLink>
-              <FooterLink href="https://polar.sh/legal/terms">
-                Terms of Service
-              </FooterLink>
-              <FooterLink href="https://polar.sh/legal/privacy">
-                Privacy Policy
-              </FooterLink>
+              <FooterLink href="https://polar.sh/legal">Legal</FooterLink>
               <CookiePreferencesButton />
             </div>
           </div>

@@ -1,7 +1,7 @@
 """Start the frontend web dev server."""
 
 import os
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
@@ -18,7 +18,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def web(
         port: Annotated[
-            Optional[int], typer.Option("--port", "-p", help="Port to run on")
+            int | None, typer.Option("--port", "-p", help="Port to run on")
         ] = None,
     ) -> None:
         """Start the frontend web dev server."""

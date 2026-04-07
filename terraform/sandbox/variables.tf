@@ -32,6 +32,12 @@ variable "openai_api_key_sandbox" {
   sensitive   = true
 }
 
+variable "pydantic_ai_gateway_api_key_sandbox" {
+  description = "Pydantic AI Gateway API Key for sandbox"
+  type        = string
+  sensitive   = true
+}
+
 # Backend - Sandbox
 variable "backend_current_jwk_kid_sandbox" {
   description = "Current JWK KID for sandbox"
@@ -209,6 +215,29 @@ variable "apple_key_value" {
   description = "Apple Key Value"
   type        = string
   sensitive   = true
+}
+
+# Polar
+variable "polar_access_token" {
+  description = "Polar API access token"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_webhook_secret" {
+  description = "Polar webhook secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_organization_id" {
+  description = "Polar organization ID"
+  type        = string
+}
+
+variable "polar_free_product_id" {
+  description = "Polar free-tier product ID"
+  type        = string
 }
 
 variable "grafana_cloud_prometheus_url" {

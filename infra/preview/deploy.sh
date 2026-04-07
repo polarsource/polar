@@ -72,12 +72,19 @@ deploy() {
     # --- Git checkout ---
     if [[ -d "${PREVIEW_DIR}/.git" ]]; then
         log "Updating existing checkout"
-        git -C "$PREVIEW_DIR" fetch origin "$BRANCH"
+        if ! git -C "$PREVIEW_DIR" fetch origin "$BRANCH" 2>/dev/null; then
+            log "Branch no longer exists on remote (PR likely merged), skipping deploy"
+            exit 0
+        fi
         git -C "$PREVIEW_DIR" checkout -f "$SHA"
     else
         log "Cloning fresh"
         mkdir -p "$PREVIEW_DIR"
-        git clone --depth 50 -b "$BRANCH" "$REPO_URL" "$PREVIEW_DIR"
+        if ! git clone --depth 50 -b "$BRANCH" "$REPO_URL" "$PREVIEW_DIR" 2>/dev/null; then
+            rm -rf "$PREVIEW_DIR"
+            log "Branch no longer exists on remote (PR likely merged), skipping deploy"
+            exit 0
+        fi
         git -C "$PREVIEW_DIR" checkout -f "$SHA"
     fi
 

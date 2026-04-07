@@ -79,11 +79,11 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
             <div className="flex flex-row items-center gap-x-2 font-sans">
               <Avatar
                 className="size-6 shrink-0"
-                name={event.customer.name ?? event.customer.email}
+                name={event.customer.name ?? event.customer.email ?? '—'}
                 avatar_url={event.customer.avatar_url ?? null}
               />
               <div className="dark:text-polar-200 flex flex-row items-baseline gap-x-2 text-sm whitespace-nowrap text-gray-700">
-                {event.customer.name ?? event.customer.email}
+                {event.customer.name ?? event.customer.email ?? '—'}
               </div>
             </div>
           </div>
@@ -97,12 +97,12 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
           <div className="flex flex-row items-center gap-x-2 font-sans">
             <Avatar
               className="size-10 shrink-0"
-              name={event.customer.name ?? event.customer.email}
+              name={event.customer.name ?? event.customer.email ?? '—'}
               avatar_url={event.customer.avatar_url ?? null}
             />
             <div className="flex flex-col gap-0.5">
               <span className="text-sm/4 font-medium whitespace-nowrap text-gray-700 dark:text-white">
-                {event.customer.name ?? event.customer.email}
+                {event.customer.name ?? event.customer.email ?? '—'}
               </span>
               <span className="dark:text-polar-500 pr-2 font-mono text-xs whitespace-nowrap text-gray-500">
                 {event.external_customer_id}

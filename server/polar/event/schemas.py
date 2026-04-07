@@ -14,7 +14,7 @@ from pydantic import (
 from pydantic.type_adapter import TypeAdapter
 from typing_extensions import TypedDict
 
-from polar.customer.schemas.customer import Customer
+from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.event.system import (
     BalanceCreditOrderMetadata,
     BalanceDisputeMetadata,
@@ -29,6 +29,7 @@ from polar.event.system import (
     MeterResetMetadata,
     OrderPaidMetadata,
     OrderRefundedMetadata,
+    OrderVoidedMetadata,
     SubscriptionBillingPeriodUpdatedMetadata,
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
@@ -140,7 +141,7 @@ class EventCreateBase(Schema):
         default_factory=default_timestamp_factory,
         description="The timestamp of the event.",
     )
-    name: str = Field(..., description="The name of the event.")
+    name: str = Field(..., max_length=128, description="The name of the event.")
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -450,6 +451,15 @@ class OrderRefundedEvent(SystemEventBase):
     )
 
 
+class OrderVoidedEvent(SystemEventBase):
+    """An event created by Polar when an order is voided."""
+
+    name: Literal[SystemEventEnum.order_voided] = Field(description=_NAME_DESCRIPTION)
+    metadata: OrderVoidedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class CheckoutCreatedEvent(SystemEventBase):
     """An event created by Polar when a checkout is created."""
 
@@ -563,6 +573,7 @@ SystemEvent = Annotated[
     | SubscriptionBillingPeriodUpdatedEvent
     | OrderPaidEvent
     | OrderRefundedEvent
+    | OrderVoidedEvent
     | CheckoutCreatedEvent
     | CustomerCreatedEvent
     | CustomerUpdatedEvent

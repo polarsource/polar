@@ -78,7 +78,7 @@ async def delete_stripe(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     repository = AccountRepository.from_session(session)
-    account = await repository.get_by_id(id)
+    account = await repository.get_by_id(id, include_deleted=True)
 
     if account is None:
         raise HTTPException(status_code=404)

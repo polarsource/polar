@@ -41,7 +41,7 @@ class SubscriptionUser(Schema):
             "id",
         )
     )
-    email: str
+    email: str | None = None
     public_name: str = Field(
         validation_alias=AliasChoices(
             # Validate from ORM model
@@ -414,5 +414,6 @@ class SubscriptionChargePreview(Schema):
         description="Subtotal amount in cents (base + metered, before discount and tax)"
     )
     discount_amount: int = Field(description="Discount amount in cents")
+    net_amount: int = Field(description="Net amount in cents before taxes")
     tax_amount: int = Field(description="Tax amount in cents")
     total_amount: int = Field(description="Total amount in cents (final charge amount)")

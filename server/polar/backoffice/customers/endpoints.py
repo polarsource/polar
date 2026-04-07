@@ -173,7 +173,7 @@ async def get(
     with layout(
         request,
         [
-            (customer.email, str(request.url)),
+            (customer.display_name, str(request.url)),
             ("Customers", str(request.url_for("customers:list"))),
         ],
         "customers:get",
@@ -181,7 +181,7 @@ async def get(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.div(classes="flex justify-between items-center"):
                 with tag.h1(classes="text-4xl"):
-                    text(customer.email)
+                    text(customer.display_name)
                 with button(
                     hx_get=str(
                         request.url_for(
@@ -514,7 +514,7 @@ async def revoke_benefits(
 
         await add_toast(
             request,
-            f"Benefit revocation task enqueued for {customer.email}.",
+            f"Benefit revocation task enqueued for {customer.display_name}.",
             "success",
         )
 
@@ -527,7 +527,7 @@ async def revoke_benefits(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p():
                 text(
-                    f"Are you sure you want to revoke all benefits for {customer.email}? "
+                    f"Are you sure you want to revoke all benefits for {customer.display_name}? "
                     "This will revoke all currently granted benefits for this customer."
                 )
 

@@ -7,8 +7,8 @@ import urllib.request
 from shared import (
     SERVER_DIR,
     Context,
-    console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -99,21 +99,21 @@ def _update_env_var(key: str, value: str) -> None:
 
 def run(ctx: Context) -> bool:
     """Wait for PostgreSQL, Redis, and Tinybird to be ready."""
-    with console.status("[bold]Waiting for PostgreSQL...[/bold]"):
+    with step_spinner("Waiting for PostgreSQL..."):
         if wait_for_postgres(timeout=60):
             step_status(True, "PostgreSQL", "ready")
         else:
             step_status(False, "PostgreSQL", "timeout after 60s")
             return False
 
-    with console.status("[bold]Waiting for Redis...[/bold]"):
+    with step_spinner("Waiting for Redis..."):
         if wait_for_redis(timeout=60):
             step_status(True, "Redis", "ready")
         else:
             step_status(False, "Redis", "timeout after 60s")
             return False
 
-    with console.status("[bold]Waiting for Tinybird...[/bold]"):
+    with step_spinner("Waiting for Tinybird..."):
         token = wait_for_tinybird_and_get_token(timeout=90)
         if token:
             _update_env_var("POLAR_TINYBIRD_API_TOKEN", token)

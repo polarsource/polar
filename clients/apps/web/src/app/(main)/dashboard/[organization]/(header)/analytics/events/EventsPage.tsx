@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
@@ -122,7 +121,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       sorting: [sorting] as ['-timestamp' | 'timestamp'],
       start_timestamp: startDate.toISOString(),
       end_timestamp: endDate.toISOString(),
-      query: debouncedQuery ?? null,
+      query:
+        debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null,
       metadata: debouncedMetadata ?? null,
       cursor_pagination: false,
     }
@@ -140,6 +140,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     data: eventsData,
     fetchNextPage,
     hasNextPage,
+    isFetching,
   } = useInfiniteEvents(organization.id, eventParameters)
 
   const events = useMemo(() => {
@@ -228,13 +229,22 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             )}
             onScroll={handleScroll}
           >
-            <div className="flex flex-row items-center gap-3">
-              <Input
-                placeholder="Search Events"
-                value={query ?? undefined}
-                onChange={(e) => setQuery(e.target.value)}
-                preSlot={<Search fontSize="small" />}
-              />
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-row items-center gap-3">
+                <Input
+                  placeholder="Search Events"
+                  value={query ?? undefined}
+                  onChange={(e) => setQuery(e.target.value)}
+                  preSlot={<Search fontSize="small" />}
+                />
+              </div>
+              {debouncedQuery &&
+                debouncedQuery.length > 0 &&
+                debouncedQuery.length < 3 && (
+                  <p className="dark:text-polar-500 text-xs text-gray-400">
+                    Type at least 3 characters to search
+                  </p>
+                )}
             </div>
             <div className="flex h-full grow flex-col gap-y-6">
               <div className="flex flex-col gap-y-2">
@@ -354,7 +364,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       wide
     >
       <div className="flex h-full flex-col gap-y-4">
-        {events.length === 0 ? (
+        {events.length === 0 && !isFetching ? (
           <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
             <h1 className="text-2xl font-normal">No Events Found</h1>
             <p className="dark:text-polar-500 text-gray-500">

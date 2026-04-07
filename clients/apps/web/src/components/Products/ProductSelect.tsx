@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useProducts, useSelectedProducts } from '@/hooks/queries'
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import { operations, schemas } from '@polar-sh/client'

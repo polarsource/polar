@@ -13,13 +13,18 @@ import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { GeistMono } from 'geist/font/mono'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
-import { Metadata } from 'next/types'
+import { Metadata, Viewport } from 'next/types'
 import {
   NavigationHistoryProvider,
   PolarNuqsProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
 } from './providers'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseMetadata: Metadata = {

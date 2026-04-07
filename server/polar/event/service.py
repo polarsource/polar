@@ -21,7 +21,7 @@ from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.tinybird.service import (
     TinybirdTimeseriesStats,
-    ingest_events,
+    events_to_tinybird,
 )
 from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams
@@ -523,6 +523,7 @@ class EventService:
         start_date: date,
         end_date: date,
         timezone: ZoneInfo,
+        organization_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         aggregate_fields: Sequence[str] = ("_cost.amount",),
@@ -536,10 +537,26 @@ class EventService:
         )
 
         organization_ids = await self._get_readable_organization_ids(
-            session, auth_subject, None
+            session, auth_subject, organization_id
         )
         if not organization_ids:
             return ListPropertyGroupStats(items=[])
+
+        customer_repository = CustomerRepository.from_session(session)
+        all_customer_ids: list[uuid.UUID] = list(customer_id or [])
+        all_external_ids: list[str] = list(external_customer_id or [])
+        if customer_id is not None:
+            all_external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    auth_subject, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            all_customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    auth_subject, external_customer_id
+                )
+            )
 
         tinybird_event_repository = TinybirdEventRepository()
         rows = await tinybird_event_repository.get_property_group_stats(
@@ -548,8 +565,8 @@ class EventService:
             aggregate_fields=tuple(aggregate_fields),
             start_timestamp=start_timestamp,
             end_timestamp=end_timestamp,
-            customer_id=list(customer_id or []),
-            external_customer_id=list(external_customer_id or []),
+            customer_id=all_customer_ids,
+            external_customer_id=all_external_ids,
             limit=limit,
         )
 
@@ -824,6 +841,18 @@ class EventService:
                     if parent_event is not None:
                         event_dict["parent_id"] = parent_event.id
                         event_dict["root_id"] = parent_event.root_id or parent_event.id
+                        if (
+                            not event_dict.get("customer_id")
+                            and parent_event.customer_id
+                        ):
+                            event_dict["customer_id"] = parent_event.customer_id
+                        if (
+                            not event_dict.get("external_customer_id")
+                            and parent_event.external_customer_id
+                        ):
+                            event_dict["external_customer_id"] = (
+                                parent_event.external_customer_id
+                            )
                     elif parent_id_in_batch is not None:
                         event_dict["parent_id"] = parent_id_in_batch
                         # Parent was already processed, look it up
@@ -832,6 +861,16 @@ class EventService:
                             event_dict["root_id"] = parent_dict.get(
                                 "root_id", parent_id_in_batch
                             )
+                            if not event_dict.get("customer_id") and parent_dict.get(
+                                "customer_id"
+                            ):
+                                event_dict["customer_id"] = parent_dict["customer_id"]
+                            if not event_dict.get(
+                                "external_customer_id"
+                            ) and parent_dict.get("external_customer_id"):
+                                event_dict["external_customer_id"] = parent_dict[
+                                    "external_customer_id"
+                                ]
 
                     events.append(event_dict)
                     if event_dict.get("id"):
@@ -918,7 +957,9 @@ class EventService:
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
 
-        await ingest_events(events, ancestors_by_event)
+        if events:
+            tinybird_events = events_to_tinybird(events, ancestors_by_event)
+            enqueue_job("tinybird.ingest", tinybird_events)
 
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)

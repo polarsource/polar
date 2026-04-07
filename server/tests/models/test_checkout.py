@@ -1,9 +1,12 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 import pytest
 
+from polar.config import settings
 from polar.kit.address import Address, CountryAlpha2
-from polar.models import Product
+from polar.kit.trial import TrialInterval
+from polar.models import Checkout, Product
 from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -75,3 +78,74 @@ async def test_billing_address_fields(
         checkout.billing_address_fields["country"] == BillingAddressFieldMode.required
     )
     assert checkout.billing_address_fields["state"] == expected_state_mode
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("success_url_input", "expected_factory"),
+    [
+        pytest.param(
+            "https://example.com/success?checkout_id={CHECKOUT_ID}",
+            lambda checkout: f"https://example.com/success?checkout_id={checkout.id}",
+            id="checkout_id_replacement",
+        ),
+        pytest.param(
+            "https://example.com/success",
+            lambda checkout: "https://example.com/success",
+            id="no_placeholder",
+        ),
+        pytest.param(
+            'https://example.com/callback?data={"key":"value"}',
+            lambda checkout: 'https://example.com/callback?data={"key":"value"}',
+            id="literal_brace",
+        ),
+        pytest.param(
+            None,
+            lambda checkout: settings.generate_frontend_url(
+                f"/checkout/{checkout.client_secret}/confirmation"
+            ),
+            id="none_url",
+        ),
+    ],
+)
+async def test_success_url(
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+    success_url_input: str | None,
+    expected_factory: Callable[[Checkout], str],
+) -> None:
+    checkout = await create_checkout(save_fixture, products=[product_one_time])
+    checkout._success_url = success_url_input
+
+    expected = expected_factory(checkout)
+    assert checkout.success_url == expected
+
+
+@pytest.mark.asyncio
+async def test_active_trial_interval_none_for_non_recurring_product(
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product_one_time],
+        trial_interval=TrialInterval.day,
+        trial_interval_count=14,
+    )
+
+    assert checkout.active_trial_interval is None
+
+
+@pytest.mark.asyncio
+async def test_active_trial_interval_count_none_for_non_recurring_product(
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product_one_time],
+        trial_interval=TrialInterval.day,
+        trial_interval_count=14,
+    )
+
+    assert checkout.active_trial_interval_count is None

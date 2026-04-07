@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { useAuth } from '@/hooks'
@@ -26,10 +25,12 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
+import { TermsCheckbox } from './TermsCheckbox'
 
 const MONTH_NAMES = [
   'January',
@@ -53,6 +54,7 @@ interface FormSchema {
   dobYear: string
   dobMonth: string
   dobDay: string
+  terms: boolean
 }
 
 function FormSync() {
@@ -75,12 +77,33 @@ function FormSync() {
   return null
 }
 
+function SubmitButton({ loading }: { loading: boolean }) {
+  const { firstName, lastName, country, dobYear, dobMonth, dobDay, terms } =
+    useWatch<FormSchema>()
+
+  const disabled =
+    !firstName ||
+    !lastName ||
+    !country ||
+    !dobYear ||
+    !dobMonth ||
+    !dobDay ||
+    !terms
+
+  return (
+    <Button type="submit" loading={loading} disabled={disabled} fullWidth>
+      Continue
+    </Button>
+  )
+}
+
 export function PersonalDetailsStep() {
   const router = useRouter()
-  const { currentUser } = useAuth()
+  const { currentUser, reloadUser } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
+  const showTerms = useRef(!currentUser?.accepted_terms_of_service)
   const updateUser = useUpdateUser()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(false)
@@ -98,10 +121,20 @@ export function PersonalDetailsStep() {
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
       dobDay: parsedDob[2] ? String(Number(parsedDob[2])) : '',
+      terms: currentUser?.accepted_terms_of_service ?? false,
     },
   })
 
-  const { control, handleSubmit } = form
+  const { control, handleSubmit, watch, setValue } = form
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const country = watch('country')
+  const isUnsupportedCountry =
+    country !== '' && !SUPPORTED_PAYOUT_COUNTRIES.includes(country)
+  const countryDisplayName = useMemo(() => {
+    if (!country) return ''
+    return new Intl.DisplayNames([], { type: 'region' }).of(country) ?? country
+  }, [country])
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 100 }, (_, i) =>
@@ -131,6 +164,7 @@ export function PersonalDetailsStep() {
         last_name: formData.lastName,
         country: formData.country as schemas['CountryAlpha2Input'],
         date_of_birth: dateOfBirth,
+        ...(formData.terms ? { accepted_terms_of_service: true } : {}),
       })
 
       if (error) {
@@ -149,6 +183,7 @@ export function PersonalDetailsStep() {
 
     trackStepCompleted('personal')
     await showApiResponse(201, 'Created')
+    reloadUser()
     router.push('/onboarding/business')
   }
 
@@ -199,25 +234,47 @@ export function PersonalDetailsStep() {
             />
           </Box>
 
-          <FormField
-            control={control}
-            name="country"
-            rules={{ required: 'Country is required' }}
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Country</FormLabel>
-                <FormControl>
-                  <CountryPicker
-                    allowedCountries={enums.addressInputCountryValues}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select country"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="flex flex-col gap-y-2">
+            <FormField
+              control={control}
+              name="country"
+              rules={{ required: 'Country is required' }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Country</FormLabel>
+                  <FormControl>
+                    <CountryPicker
+                      allowedCountries={enums.addressInputCountryValues}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select country"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {isUnsupportedCountry && (
+              <Box
+                display="flex"
+                flexDirection="column"
+                rowGap="m"
+                borderRadius="md"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-warning"
+                backgroundColor="background-warning"
+                padding="l"
+              >
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  Payouts are not available in {countryDisplayName}&nbsp;yet.
+                  You can still continue and we&rsquo;ll notify you when support
+                  is added.
+                </p>
+              </Box>
             )}
-          />
+          </div>
 
           <Box display="flex" flexDirection="column" rowGap="s">
             <FormLabel>Date of Birth</FormLabel>
@@ -227,7 +284,7 @@ export function PersonalDetailsStep() {
                 name="dobMonth"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -245,7 +302,7 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
@@ -254,7 +311,7 @@ export function PersonalDetailsStep() {
                 name="dobDay"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -272,7 +329,7 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
@@ -281,7 +338,7 @@ export function PersonalDetailsStep() {
                 name="dobYear"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -299,17 +356,19 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
             </Box>
           </Box>
 
+          {showTerms.current && (
+            <TermsCheckbox control={control} name="terms" setValue={setValue} />
+          )}
+
           <div className="flex flex-col gap-y-2">
-            <Button type="submit" loading={submitting} fullWidth>
-              Continue
-            </Button>
+            <SubmitButton loading={submitting} />
             {submitError && (
               <p className="text-sm text-red-500 dark:text-red-500">
                 Something went wrong, please try again.

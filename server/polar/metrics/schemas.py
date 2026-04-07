@@ -1,9 +1,10 @@
 from datetime import date
 from typing import TYPE_CHECKING
 
-from pydantic import AwareDatetime, Field, create_model
+from pydantic import UUID4, AwareDatetime, Field, create_model
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.organization.schemas import OrganizationID
 
 from .metrics import METRICS, MetricType
 
@@ -26,9 +27,10 @@ if TYPE_CHECKING:
         def __getattr__(self, name: str) -> Metric | None: ...
 
 else:
-    # Metrics fields are optional to support metrics filtering
     Metrics = create_model(
-        "Metrics", **{m.slug: (Metric | None, None) for m in METRICS}, __base__=Schema
+        "Metrics",
+        **{m.slug: (Metric | None, None) for m in METRICS},
+        __base__=Schema,
     )
 
 
@@ -110,3 +112,49 @@ class MetricsLimits(Schema):
 
     min_date: date = Field(description="Minimum date to get metrics.")
     intervals: MetricsIntervalsLimits = Field(description="Limits for each interval.")
+
+
+# MetricDashboard schemas
+
+
+class MetricDashboardCreate(Schema):
+    """Schema for creating a metrics dashboard."""
+
+    name: str = Field(..., description="Display name for the dashboard.", min_length=1)
+    metrics: list[str] = Field(
+        default_factory=list,
+        description="List of metric slugs to display in this dashboard.",
+        max_length=10,
+    )
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization owning this dashboard. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+
+
+class MetricDashboardUpdate(Schema):
+    """Schema for updating a metrics dashboard."""
+
+    name: str | None = Field(
+        default=None, description="Display name for the dashboard.", min_length=1
+    )
+    metrics: list[str] | None = Field(
+        default=None,
+        description="List of metric slugs to display in this dashboard.",
+        max_length=10,
+    )
+
+
+class MetricDashboardSchema(IDSchema, TimestampedSchema):
+    """A user-defined metrics dashboard."""
+
+    name: str = Field(description="Display name for the dashboard.")
+    metrics: list[str] = Field(
+        description="List of metric slugs displayed in this dashboard."
+    )
+    organization_id: UUID4 = Field(
+        description="The ID of the organization owning this dashboard."
+    )

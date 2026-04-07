@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
@@ -26,7 +25,7 @@ import { NavPopover, NavPopoverSection } from './NavPopover'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="dark:bg-polar-950 relative flex flex-col bg-white px-0 md:w-full md:flex-1 md:items-center md:px-4">
+    <div className="dark:bg-polar-950 relative flex flex-col overflow-x-hidden bg-white px-0 md:w-full md:flex-1 md:items-center md:px-4">
       <div className="flex flex-col gap-y-2 md:w-full">
         <LandingPageDesktopNavigation />
         <SidebarProvider className="absolute inset-0 flex flex-col items-start md:hidden">
@@ -160,7 +159,7 @@ const LandingPageMobileNavigation = () => {
         </SidebarContent>
       </Sidebar>
       <Modal
-        title="Login"
+        title="Sign in"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={<AuthModal />}
@@ -321,13 +320,13 @@ const LandingPageDesktopNavigation = () => {
             variant="ghost"
             className="rounded-full"
           >
-            Log In
+            Sign in
           </Button>
           <GetStartedButton size="default" />
         </div>
       </div>
       <Modal
-        title="Login"
+        title="Sign in"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={<AuthModal />}

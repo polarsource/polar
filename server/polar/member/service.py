@@ -232,7 +232,19 @@ class MemberService:
 
         repository = MemberRepository.from_session(session)
 
-        email = (owner_email or customer.email).strip().lower()
+        raw_email = owner_email or customer.email
+        if raw_email is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "An email is required to create an owner member.",
+                        "input": None,
+                    }
+                ]
+            )
+        email = raw_email.strip()
         name = owner_name or customer.name
         external_id = owner_external_id or customer.external_id
 
@@ -321,6 +333,9 @@ class MemberService:
         if not member_model and not seat_based:
             return None
 
+        if customer.email is None:
+            return None
+
         return await self.get_or_create_by_email(
             session,
             customer_id=customer.id,
@@ -347,9 +362,9 @@ class MemberService:
         Consolidated get-or-create pattern that handles:
         - Returning existing active members
         - Race condition retries on IntegrityError
-        - Email normalization (strip + lowercase)
+        - Email normalization (strip whitespace)
         """
-        email = email.strip().lower()
+        email = email.strip()
 
         repository = MemberRepository.from_session(session)
 
@@ -494,7 +509,7 @@ class MemberService:
         if not member_model and not seat_based:
             raise NotPermitted("Member management is not enabled for this organization")
 
-        email = email.strip().lower()
+        email = email.strip()
 
         repository = MemberRepository.from_session(session)
 

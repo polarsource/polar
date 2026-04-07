@@ -1,7 +1,8 @@
 import functools
 import operator
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
+from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Self, TypeVar
 from uuid import UUID
@@ -12,6 +13,7 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     Integer,
+    SmallInteger,
     String,
     Text,
     Uuid,
@@ -146,6 +148,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     status: Mapped[SubscriptionStatus] = mapped_column(
         StringEnum(SubscriptionStatus), nullable=False
     )
+    anchor_day: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=None)
     current_period_start: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
@@ -393,14 +396,6 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             and self.status in SubscriptionStatus.billable_statuses()
         )
 
-    def set_started_at(self) -> None:
-        """
-        Stores the starting date when the subscription
-        becomes active for the first time.
-        """
-        if self.active and self.started_at is None:
-            self.started_at = datetime.now(UTC)
-
     def update_amount_and_currency(
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"
     ) -> None:
@@ -425,7 +420,14 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 next(sm for sm in subscription_meters if sm.meter == price_meter)
             except StopIteration:
                 # If it doesn't, create a new SubscriptionMeter
-                subscription_meters.append(SubscriptionMeter(meter=price_meter))
+                subscription_meters.append(
+                    SubscriptionMeter(
+                        meter=price_meter,
+                        amount=0,
+                        consumed_units=Decimal(0),
+                        credited_units=0,
+                    )
+                )
 
         # Remove old ones
         for subscription_meter in subscription_meters:

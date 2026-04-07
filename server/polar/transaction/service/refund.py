@@ -174,6 +174,7 @@ class RefundTransactionService(BaseTransactionService):
                 await event_service.create_event(session, balance_refund_event)
         except Exception as e:
             log.error("Could not save balance.refund transaction", error=str(e))
+            raise
 
         return refund_transaction
 
@@ -274,6 +275,7 @@ class RefundTransactionService(BaseTransactionService):
             log.error(
                 "Could not save balance.refund_reversal transaction", error=str(e)
             )
+            raise
 
         # Create reversal balances if it was already balanced
         await self._create_revert_reversal_balances(

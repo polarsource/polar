@@ -19,6 +19,8 @@ MAX_POSTGRES_IDENTIFIER_LENGTH = 63
 DEFAULT_POSTGRES_PORT = 5432
 PREVIEW_POSTGRES_DROP_RETRIES = 5
 PREVIEW_POSTGRES_DROP_RETRY_DELAY_SECONDS = 1.0
+PREVIEW_POSTGRES_TEMPLATE_RETRIES = 10
+PREVIEW_POSTGRES_TEMPLATE_RETRY_DELAY_SECONDS = 2.0
 
 cli = typer.Typer()
 
@@ -692,6 +694,44 @@ def drop_preview_database(cursor: Any, database_name: str) -> None:
     ) from last_error
 
 
+def grant_template_objects(
+    config: PreviewPostgresAdminConfig,
+    database_name: str,
+    role_name: str,
+) -> None:
+    parsed = urlparse(config.admin_dsn)
+    db_dsn = parsed._replace(path=f"/{database_name}").geturl()
+    db_connection = psycopg2.connect(db_dsn)
+    db_connection.autocommit = True
+    try:
+        db_cursor = db_connection.cursor()
+        try:
+            db_cursor.execute(
+                f"GRANT ALL ON ALL TABLES IN SCHEMA public TO {role_name}"
+            )
+            db_cursor.execute(
+                f"GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO {role_name}"
+            )
+            db_cursor.execute(f"GRANT USAGE ON SCHEMA public TO {role_name}")
+            db_cursor.execute(
+                f"""
+                DO $$DECLARE r RECORD;
+                BEGIN
+                    FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+                        EXECUTE format('ALTER TABLE public.%I OWNER TO {role_name}', r.tablename);
+                    END LOOP;
+                    FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP
+                        EXECUTE format('ALTER SEQUENCE public.%I OWNER TO {role_name}', r.sequencename);
+                    END LOOP;
+                END $$;
+                """
+            )
+        finally:
+            db_cursor.close()
+    finally:
+        db_connection.close()
+
+
 def provision_preview_postgres(
     preview_id: str,
     *,
@@ -746,16 +786,29 @@ def provision_preview_postgres(
                         f"CREATE DATABASE {database_name} WITH OWNER {role_name}"
                     )
                 else:
-                    cursor.execute(
-                        " ".join(
-                            [
-                                f"CREATE DATABASE {database_name}",
-                                f"WITH OWNER {role_name}",
-                                f"TEMPLATE {config.template_database}",
-                            ]
-                        )
+                    create_from_template_sql = " ".join(
+                        [
+                            f"CREATE DATABASE {database_name}",
+                            f"WITH OWNER {role_name}",
+                            f"TEMPLATE {config.template_database}",
+                        ]
                     )
+                    for attempt in range(PREVIEW_POSTGRES_TEMPLATE_RETRIES):
+                        try:
+                            cursor.execute(create_from_template_sql)
+                            break
+                        except psycopg2.errors.ObjectInUse:
+                            if attempt == PREVIEW_POSTGRES_TEMPLATE_RETRIES - 1:
+                                raise
+                            log_preview(
+                                f"Template {config.template_database} is in use, "
+                                f"retrying ({attempt + 1}/{PREVIEW_POSTGRES_TEMPLATE_RETRIES})"
+                            )
+                            connection.rollback()
+                            time.sleep(PREVIEW_POSTGRES_TEMPLATE_RETRY_DELAY_SECONDS)
                 database_created = True
+                if config.template_database is not None:
+                    grant_template_objects(config, database_name, role_name)
                 log_preview(
                     "Created preview Postgres database "
                     f"{database_name}"
@@ -766,6 +819,8 @@ def provision_preview_postgres(
                     )
                 )
             else:
+                if config.template_database is not None:
+                    grant_template_objects(config, database_name, role_name)
                 log_preview(f"Reusing preview Postgres database {database_name}")
 
             cursor.execute(f"REVOKE ALL ON DATABASE {database_name} FROM PUBLIC")

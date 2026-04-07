@@ -157,6 +157,18 @@ async def list(
             ]
         )
 
+    if query is not None and len(query) < 3:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "query",
+                    "msg": "Query must be at least 3 characters.",
+                    "loc": ("query", "query"),
+                    "input": query,
+                }
+            ]
+        )
+
     result = await event_service.list(
         session,
         auth_subject,
@@ -213,6 +225,9 @@ async def get_statistics_by_property(
         default="UTC",
         description="Timezone to use for the dates. Default is UTC.",
     ),
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
@@ -240,6 +255,7 @@ async def get_statistics_by_property(
         start_date=start_date,
         end_date=end_date,
         timezone=ZoneInfo(timezone),
+        organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
         aggregate_fields=tuple(aggregate_fields),
@@ -346,6 +362,18 @@ async def list_statistics_timeseries(
                 {
                     "type": "query",
                     "msg": "Query is only supported when organization_id is provided.",
+                }
+            ]
+        )
+
+    if query is not None and len(query) < 3:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "query",
+                    "msg": "Query must be at least 3 characters.",
+                    "loc": ("query", "query"),
+                    "input": query,
                 }
             ]
         )

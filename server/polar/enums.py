@@ -1,3 +1,4 @@
+import calendar
 from datetime import datetime
 from enum import StrEnum
 from typing import Literal
@@ -63,16 +64,24 @@ class SubscriptionRecurringInterval(StrEnum):
     def as_literal(self) -> Literal["day", "week", "month", "year"]:
         return self.value
 
-    def get_next_period(self, d: datetime, leap: int = 1) -> datetime:
+    def get_next_period(self, d: datetime, anchor_day: int, leap: int = 1) -> datetime:
         match self:
             case SubscriptionRecurringInterval.day:
                 return d + relativedelta(days=leap)
             case SubscriptionRecurringInterval.week:
                 return d + relativedelta(weeks=leap)
             case SubscriptionRecurringInterval.month:
-                return d + relativedelta(months=leap)
+                next = d + relativedelta(months=leap)
+                if next.day != anchor_day:
+                    _, max_month_day = calendar.monthrange(next.year, next.month)
+                    next = next.replace(day=min(anchor_day, max_month_day))
+                return next
             case SubscriptionRecurringInterval.year:
-                return d + relativedelta(years=leap)
+                next = d + relativedelta(years=leap)
+                if next.day != anchor_day:
+                    _, max_month_day = calendar.monthrange(next.year, next.month)
+                    next = next.replace(day=min(anchor_day, max_month_day))
+                return next
 
 
 class SubscriptionProrationBehavior(StrEnum):
@@ -82,6 +91,25 @@ class SubscriptionProrationBehavior(StrEnum):
     """Don't invoice immediately, but add prorations to the next invoice."""
     next_period = "next_period"
     """Don't invoice immediately, and don't add prorations. The new price will be applied at the start of the next period."""
+    reset = "reset"
+    """
+    Invoice the full amount of the new plan immediately and reset the billing cycle to now. No proration.
+
+    **This mode is not globally available and may not be supported in all contexts.**
+    """
+
+    def is_immediate(self) -> bool:
+        return self in {
+            SubscriptionProrationBehavior.invoice,
+            SubscriptionProrationBehavior.reset,
+        }
+
+
+PublicSubscriptionProrationBehavior = Literal[
+    SubscriptionProrationBehavior.invoice,
+    SubscriptionProrationBehavior.prorate,
+    SubscriptionProrationBehavior.next_period,
+]
 
 
 class InvoiceNumbering(StrEnum):
@@ -104,6 +132,7 @@ class TokenType(StrEnum):
 class EmailSender(StrEnum):
     logger = "logger"
     resend = "resend"
+    plain = "plain"
 
 
 class RateLimitGroup(StrEnum):

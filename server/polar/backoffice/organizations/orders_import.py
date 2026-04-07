@@ -17,6 +17,7 @@ from polar import tasks  # noqa: F401
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarError
 from polar.kit.address import SUPPORTED_COUNTRIES, Address, CountryAlpha2
 from polar.license_key.repository import LicenseKeyRepository
@@ -163,14 +164,12 @@ async def orders_import(
                     city=_getter(row, "city"),
                     country=CountryAlpha2(country),
                 )
-            customer = await customer_repository.create(
-                Customer(
-                    email=email,
-                    name=name,
-                    billing_address=billing_address,
-                    organization=organization,
-                ),
-                flush=True,
+            customer = await customer_service.create_for_organization(
+                session,
+                organization,
+                email=email,
+                name=name,
+                billing_address=billing_address,
             )
         customer_map[email] = customer
 
@@ -229,6 +228,26 @@ async def orders_import(
             "order_number",
             default="".join(random.choices(string.ascii_uppercase, k=6)),
         )
+        invoice_number = (
+            f"{invoice_number_prefix}{organization.slug.upper()}-{order_number}"
+        )
+
+        existing_invoice_statement = order_repository.get_base_statement().where(
+            Order.invoice_number == invoice_number,
+        )
+        existing_invoice_order = await order_repository.get_one_or_none(
+            existing_invoice_statement
+        )
+        if existing_invoice_order is not None:
+            errors.append(
+                RowError(
+                    i + 1,
+                    f"Order with invoice number {invoice_number} already exists — skipping row {i + 1}",
+                )
+            )
+            yield i, total_rows
+            continue
+
         order = await order_repository.create(
             Order(
                 created_at=created_at,
@@ -246,7 +265,7 @@ async def orders_import(
                 tax_id=None,
                 tax_rate=None,
                 tax_calculation_processor_id=None,
-                invoice_number=f"{invoice_number_prefix}{organization.slug.upper()}-{order_number}",
+                invoice_number=invoice_number,
                 customer=customer,
                 product=product,
                 discount=None,

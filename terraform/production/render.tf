@@ -126,6 +126,7 @@ locals {
     worker-medium-priority = "srv-d4k62svpm1nc73af5e3g"
     worker-high-priority   = "srv-d3hrh1j3fgac73a1t4r0"
     worker-webhook         = "srv-d5l0oekhg0os73clofm0"
+    worker-tinybird        = "srv-d733djuuk2gs73e98h1g"
   }
 }
 
@@ -209,6 +210,12 @@ module "production" {
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }
+    "worker-tinybird" = {
+      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 32 --queues tinybird"
+      image_url          = data.render_web_service.production_worker["worker-tinybird"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker-tinybird"].runtime_source.image.digest
+      dramatiq_prom_port = "10002"
+    }
   }
 
   cron_jobs = {
@@ -227,6 +234,10 @@ module "production" {
 
   openai_secrets = {
     api_key = var.openai_api_key_production
+  }
+
+  pydantic_ai_gateway_secrets = {
+    api_key = var.pydantic_ai_gateway_api_key_production
   }
 
   backend_config = {
@@ -331,6 +342,13 @@ module "production" {
 
   memory_profile_config = {
     s3_bucket_name = "polar-production-logs"
+  }
+
+  polar_self_config = {
+    access_token    = var.polar_access_token
+    webhook_secret  = var.polar_webhook_secret
+    organization_id = var.polar_organization_id
+    free_product_id = var.polar_free_product_id
   }
 
   tinybird_config = {

@@ -1,10 +1,10 @@
 """Generate environment files."""
 
 from shared import (
-    Context,
     CLIENTS_DIR,
     ROOT_DIR,
     SERVER_DIR,
+    Context,
     check_env_file_exists,
     run_command,
     step_status,

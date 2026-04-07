@@ -10,7 +10,7 @@ import {
 import { FlashList } from '@shopify/flash-list'
 import { setBadgeCountAsync } from 'expo-notifications'
 import { Stack } from 'expo-router'
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { RefreshControl } from 'react-native'
 
 const groupNotificationsByDate = (notifications: PolarNotification[]) => {
@@ -49,15 +49,20 @@ export default function Notifications() {
     isLoading,
   } = useListNotifications()
   const markNotificationAsRead = useNotificationsMarkRead()
+  const markedIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (notifications?.notifications.length) {
-      markNotificationAsRead.mutateAsync({
-        notificationId: notifications.notifications[0].id,
-      })
+    if (!notifications?.notifications.length) return
 
-      setBadgeCountAsync(0)
+    const latestId = notifications.notifications[0].id
+    const isUnread = latestId !== notifications.last_read_notification_id
+
+    if (isUnread && markedIdRef.current !== latestId) {
+      markedIdRef.current = latestId
+      markNotificationAsRead.mutate({ notificationId: latestId })
     }
+
+    setBadgeCountAsync(0)
   }, [notifications, markNotificationAsRead])
 
   return (

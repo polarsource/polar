@@ -1,10 +1,11 @@
 """Install Python dependencies using uv."""
 
 from shared import (
-    Context,
     SERVER_DIR,
+    Context,
     console,
     run_command,
+    step_spinner,
     step_status,
 )
 
@@ -13,7 +14,7 @@ NAME = "Installing Python dependencies"
 
 def run(ctx: Context) -> bool:
     """Run uv sync to install Python dependencies."""
-    with console.status("[bold]Running uv sync...[/bold]"):
+    with step_spinner("Running uv sync..."):
         result = run_command(["uv", "sync"], cwd=SERVER_DIR, capture=True)
         if result and result.returncode == 0:
             step_status(True, "uv sync", "complete")

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import revalidate from '@/app/actions'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
@@ -188,6 +187,7 @@ export const useOrganizationAccessTokens = (
           params: {
             query: {
               organization_id,
+              limit: 100,
               ...(params || {}),
             },
           },
@@ -262,26 +262,19 @@ export const useDeleteOrganizationAccessToken = () =>
     },
   })
 
-export const useOrganizationPaymentStatus = (
-  id: string,
-  enabled: boolean = true,
-  accountVerificationOnly: boolean = false,
-) =>
+export const useOrganizationPaymentStatus = (id: string) =>
   useQuery({
-    queryKey: ['organizations', 'payment-status', id, accountVerificationOnly],
+    queryKey: ['organizations', 'payment-status', id],
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/payment-status', {
           params: {
             path: { id },
-            query: accountVerificationOnly
-              ? { account_verification_only: true }
-              : {},
           },
         }),
       ),
     retry: defaultRetry,
-    enabled: enabled && !!id,
+    enabled: !!id,
   })
 
 export const useOrganizationAppeal = (id: string) =>

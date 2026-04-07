@@ -16,9 +16,8 @@ from polar.benefit.strategies.base.service import BenefitActionRequiredError
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.exceptions import PolarError
+from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.discord.oauth import user_client as discord_user_client
-from polar.integrations.github.client import Forbidden
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.member.repository import MemberRepository
@@ -127,7 +126,7 @@ async def callback(
             type="customer_oauth",
         )
     except jwt.DecodeError as e:
-        raise Forbidden("Invalid state") from e
+        raise NotPermitted("Invalid state") from e
 
     customer_repository = CustomerRepository.from_session(session)
     customer_id = uuid.UUID(state_data.get("customer_id"))
@@ -149,7 +148,7 @@ async def callback(
         customer = await customer_repository.get_by_id(customer_id)
 
     if customer is None:
-        raise Forbidden("Invalid customer")
+        raise NotPermitted("Invalid customer")
 
     return_to = state_data["return_to"]
     platform = CustomerOAuthPlatform(state_data["platform"])

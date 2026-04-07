@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         'This order is processed by our online reseller & Merchant of Record, Polar, who also handles order-related inquiries and returns.',
       mandateSubscriptionTrial:
-        'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel. You may cancel at any time before the end of your trial to avoid being charged.',
+        'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel, and agree to the {buyerTermsLink}. You may cancel at any time before the end of your trial to avoid being charged.',
       mandateSubscription:
-        'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.',
+        'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel, and agree to the {buyerTermsLink}.',
       mandateOneTime:
-        'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.',
+        'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above, and agree to the {buyerTermsLink}. This is a one-time charge.',
+      buyerTermsLink: 'Buyer Terms',
     },
     form: {
       email: 'Email',
@@ -185,6 +186,7 @@ export default {
     productSwitcher: {
       billedRecurring: 'Billed {frequency}',
       oneTimePurchase: 'One-time purchase',
+      fromPrefix: 'From',
     },
     productDescription: {
       readMore: 'Read more',

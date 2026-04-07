@@ -94,7 +94,10 @@ FlagRow.displayName = 'FlagRow'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export const ProductGrantsFeed = () => {
-  const [sub, setSub] = useState(() => nextSubscription())
+  const [sub, setSub] = useState<{
+    plan: (typeof PLANS)[number]
+    user: string
+  }>({ plan: PLANS[0], user: USERS[0] })
   const [grantedKeys, setGrantedKeys] = useState<Record<string, boolean>>({})
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
@@ -134,8 +137,6 @@ export const ProductGrantsFeed = () => {
     return () => clearInterval(interval)
   }, [])
 
-  const { plan, user } = sub
-
   return (
     <motion.div
       className="relative flex h-full flex-1 flex-col"
@@ -157,7 +158,7 @@ export const ProductGrantsFeed = () => {
           {/* Subscription event */}
           <AnimatePresence mode="wait">
             <motion.div
-              key={user + plan.id}
+              key={sub.user + sub.plan.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -166,19 +167,19 @@ export const ProductGrantsFeed = () => {
             >
               <div className="dark:bg-polar-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-200">
                 <span className="font-mono text-[9px] text-gray-500 dark:text-gray-400">
-                  {user.slice(-2)}
+                  {sub.user.slice(-2)}
                 </span>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
-                <span className="font-mono text-sm">{user}</span>
+                <span className="font-mono text-sm">{sub.user}</span>
                 <span className="dark:text-polar-500 font-mono text-sm text-gray-400">
                   Subscribed
                 </span>
               </div>
               <span
-                className={`text-xxs shrink-0 rounded-md px-2 py-1 font-mono font-medium tracking-wider ${plan.color} ${plan.pill}`}
+                className={`text-xxs shrink-0 rounded-md px-2 py-1 font-mono font-medium tracking-wider ${sub.plan.color} ${sub.plan.pill}`}
               >
-                {plan.name.toUpperCase()}
+                {sub.plan.name.toUpperCase()}
               </span>
             </motion.div>
           </AnimatePresence>

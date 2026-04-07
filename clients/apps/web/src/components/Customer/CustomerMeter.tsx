@@ -11,7 +11,7 @@ import MetricChart from '../Metrics/MetricChart'
 
 export const CustomerMeter = ({
   customerMeter,
-  data: { quantities, total },
+  data: { quantities },
 }: {
   customerMeter: schemas['CustomerMeter'] & {
     subscription: schemas['Subscription'] | null
@@ -44,96 +44,78 @@ export const CustomerMeter = ({
     return overageCost
   }, [customerMeter.balance, unitPrice])
 
+  const creditProgress = useMemo(() => {
+    if (customerMeter.credited_units <= 0) return null
+    const pct = Math.min(
+      1,
+      customerMeter.consumed_units / customerMeter.credited_units,
+    )
+    return { pct }
+  }, [customerMeter.consumed_units, customerMeter.credited_units])
+
   return (
-    <ShadowBox className="dark:bg-polar-800 flex flex-col p-2">
-      <div className="mb-2 flex flex-row items-center justify-between gap-x-2 p-6">
-        <h2 className="text-xl">{meter.name}</h2>
-        <span className="text-xl">
-          <FormattedUnits value={total} />
-        </span>
-      </div>
-      <div className="-mt-2 mb-6 flex flex-row justify-between px-6">
-        {customerMeter.subscription && (
-          <div className="flex flex-row items-start gap-x-8 gap-y-2 rounded-2xl">
-            <div className="flex flex-col">
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                Subscription
-              </span>
-              <h3 className="text-lg">
-                {customerMeter.subscription.product.name}
-              </h3>
-            </div>
-            <div className="flex flex-col">
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                Current billing period
-              </span>
-              <h3 className="text-lg">
-                {customerMeter.subscription.current_period_end ? (
-                  <FormattedInterval
-                    startDatetime={
-                      customerMeter.subscription.current_period_start
-                    }
-                    endDatetime={customerMeter.subscription.current_period_end}
+    <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 p-8">
+      <div className="flex flex-row items-start justify-between gap-x-4">
+        <div className="flex flex-col gap-y-1">
+          {customerMeter.subscription && (
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              {customerMeter.subscription.product.name}
+            </span>
+          )}
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            {meter.name}
+          </h2>
+          {customerMeter.subscription && (
+            <span className="dark:text-polar-400 text-sm text-gray-500">
+              {customerMeter.subscription.current_period_end ? (
+                <FormattedInterval
+                  startDatetime={
+                    customerMeter.subscription.current_period_start
+                  }
+                  endDatetime={customerMeter.subscription.current_period_end}
+                />
+              ) : (
+                <>
+                  <FormattedDateTime
+                    datetime={customerMeter.subscription.current_period_start}
                   />
-                ) : (
-                  <>
-                    <FormattedDateTime
-                      datetime={customerMeter.subscription.current_period_start}
-                    />
-                    until upgrade
-                  </>
-                )}
-              </h3>
-            </div>
-            <div className="flex flex-col">
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                Current overages
-              </span>
-              <h3 className="text-lg">
-                {unitPrice &&
-                  formatCurrency('compact')(
-                    overages || 0,
-                    unitPrice.price_currency,
-                  )}
-              </h3>
-            </div>
-          </div>
-        )}
-        {(customerMeter.subscription || customerMeter.credited_units > 0) && (
-          <div className="ml-auto flex flex-row items-start gap-x-8 gap-y-2 rounded-2xl">
-            <div className="flex flex-col">
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                Total
-              </span>
-              <h3 className="text-lg">
-                <FormattedUnits value={customerMeter.consumed_units} />
-              </h3>
-            </div>
-            <div className="flex flex-col">
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                Credited
-              </span>
-              <h3 className="text-lg">
-                <FormattedUnits value={customerMeter.credited_units} />
-              </h3>
-            </div>
-            <div className="flex flex-col">
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                Balance
-              </span>
-              <h3 className="text-lg">
-                <FormattedUnits value={Math.abs(customerMeter.balance)} />
-                {customerMeter.balance > 0 && (
-                  <span className="dark:text-polar-500 ml-1 text-xs text-gray-500">
-                    credits remaining
-                  </span>
-                )}
-              </h3>
-            </div>
+                  {' until upgrade'}
+                </>
+              )}
+            </span>
+          )}
+        </div>
+        {unitPrice && (
+          <div className="flex flex-col items-end gap-y-1">
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              Overages
+            </span>
+            <span className="text-2xl font-semibold text-gray-900 dark:text-white">
+              {formatCurrency('compact')(
+                overages || 0,
+                unitPrice.price_currency,
+              )}
+            </span>
           </div>
         )}
       </div>
-      <div className="dark:bg-polar-900 rounded-3xl bg-white p-4">
+
+      {creditProgress && (
+        <div className="flex flex-col gap-y-2">
+          <div className="relative h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-white/10">
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-blue-500"
+              style={{ width: `${creditProgress.pct * 100}%` }}
+            />
+          </div>
+          <span className="dark:text-polar-400 text-right text-sm text-gray-500">
+            <FormattedUnits value={customerMeter.consumed_units} /> of{' '}
+            <FormattedUnits value={customerMeter.credited_units} /> credits used
+          </span>
+        </div>
+      )}
+
+      <div className="dark:bg-polar-900 -mx-2 rounded-3xl bg-white p-4">
         <MetricChart
           data={quantities as unknown as ParsedMetricPeriod[]}
           interval="day"

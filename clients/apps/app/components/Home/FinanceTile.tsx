@@ -22,7 +22,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
   const router = useRouter()
 
   const canWithdraw =
-    account?.status === 'active' &&
+    account?.is_payouts_enabled &&
     summary?.balance?.amount &&
     summary.balance.amount >= 1000
 
@@ -39,7 +39,10 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
             loading={loading}
             placeholderText="$1,234"
           >
-            {formatCurrency('compact')(summary?.balance.amount ?? 0, 'usd')}
+            {formatCurrency('compact')(
+              summary?.balance.amount ?? 0,
+              summary?.balance.currency ?? 'usd',
+            )}
           </Text>
         </Box>
         <Box flexDirection="row" justifyContent="flex-start">

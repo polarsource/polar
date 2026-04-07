@@ -8,56 +8,9 @@ import {
   UseQueryResult,
 } from '@tanstack/react-query'
 
-export enum AccountStatus {
-  CREATED = 'created',
-  ONBOARDING_STARTED = 'onboarding_started',
-  UNDER_REVIEW = 'under_review',
-  DENIED = 'denied',
-  ACTIVE = 'active',
-}
-
-export enum AccountType {
-  STRIPE = 'stripe',
-}
-
-export interface User {
-  email: string
-  avatar_url: string | null
-  account_id: string | null
-}
-
-export interface Address {
-  line1: string | null
-  line2: string | null
-  postal_code: string | null
-  city: string | null
-  state: string | null
-  country: string // Two letter country code
-}
-
-export interface OrganizationAccount {
-  id: string // UUID as string
-  account_type: AccountType
-  status: AccountStatus
-  stripe_id: string | null
-  open_collective_slug: string | null
-  is_details_submitted: boolean
-  is_charges_enabled: boolean
-  is_payouts_enabled: boolean
-  country: string // Two letter country code
-
-  billing_name: string | null
-  billing_address: Address | null
-  billing_additional_info: string | null
-  billing_notes: string | null
-
-  users: User[]
-  organizations: schemas['Organization'][]
-}
-
 export const useOrganizationAccount = (
   organizationId?: string,
-): UseQueryResult<OrganizationAccount> => {
+): UseQueryResult<schemas['Account']> => {
   const { session } = useSession()
   return useQuery({
     queryKey: ['finance', 'account', organizationId],
@@ -83,71 +36,9 @@ export const useOrganizationAccount = (
   })
 }
 
-export enum PlatformFeeType {
-  /**
-   * Fee applied to a payment. This is the base fee applied to all payments.
-   */
-  Payment = 'payment',
-
-  /**
-   * Fee applied to an international payment, i.e. the payment method is not from the US.
-   */
-  InternationalPayment = 'international_payment',
-
-  /**
-   * Fee applied to a recurring subscription.
-   */
-  Subscription = 'subscription',
-
-  /**
-   * Fee applied to an issued invoice.
-   */
-  Invoice = 'invoice',
-
-  /**
-   * Fee applied by the payment processor when money is transferred
-   * to a different country than Polar's.
-   */
-  CrossBorderTransfer = 'cross_border_transfer',
-
-  /**
-   * Fee applied by the payment processor when money
-   * is paid out to the user's bank account.
-   */
-  Payout = 'payout',
-
-  /**
-   * Fee applied recurrently by the payment processor to an active account.
-   */
-  Account = 'account',
-
-  /**
-   * Fee applied when a dispute was opened on a payment.
-   */
-  Dispute = 'dispute',
-
-  /**
-   * Polar platform fee.
-   * @deprecated We no longer have a generic platform fee. They're always associated with a specific reason.
-   */
-  Platform = 'platform',
-}
-
-export interface TransactionsBalance {
-  currency: string
-  amount: number
-  account_currency: string
-  account_amount: number
-}
-
-export interface TransactionsSummary {
-  balance: TransactionsBalance
-  payout: TransactionsBalance
-}
-
 export const useTransactionsSummary = (
   accountId?: string,
-): UseQueryResult<TransactionsSummary> => {
+): UseQueryResult<schemas['TransactionsSummary']> => {
   const { session } = useSession()
 
   return useQuery({

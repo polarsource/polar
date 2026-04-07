@@ -14,10 +14,13 @@ async def trigger_subscription_cycle(
     subscription_id: uuid.UUID,
 ) -> DrainResult:
     """
-    Simulate the scheduler triggering a subscription cycle.
+    Directly enqueue a subscription cycle — bypasses the scheduler picker.
 
-    Enqueues the ``subscription.cycle`` task the same way APScheduler does,
-    then drains all resulting tasks (cycle → billing entries → order creation).
+    Use ``SchedulerSimulator.trigger_due_cycles()`` instead when you want to
+    exercise the full scheduler query (with freezegun time control).
+
+    This helper is kept for cases where you need to force-cycle a specific
+    subscription regardless of its period dates.
     """
     await session.flush()
     jqm = JobQueueManager.set()

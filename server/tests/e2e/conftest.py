@@ -24,7 +24,13 @@ from polar.worker._enqueue import _job_queue_manager
 from polar.worker._httpx import HTTPXMiddleware
 from polar.worker._redis import RedisMiddleware
 from polar.worker._sqlalchemy import SQLAlchemyMiddleware
-from tests.e2e.infra import DrainFn, EmailCapture, StripeSimulator, TaskDrain
+from tests.e2e.infra import (
+    DrainFn,
+    EmailCapture,
+    SchedulerSimulator,
+    StripeSimulator,
+    TaskDrain,
+)
 from tests.e2e.infra.email_capture import create_email_sender_mock
 from tests.e2e.infra.external_mocks import *  # noqa: F403 — autouse mock fixtures
 from tests.e2e.infra.task_drain import build_actor_registry
@@ -95,6 +101,12 @@ def mock_email_sender(mocker: MockerFixture, email_capture: EmailCapture) -> Mag
 @pytest.fixture
 def stripe_sim(mock_stripe_service: MagicMock) -> StripeSimulator:
     return StripeSimulator(mock=mock_stripe_service)
+
+
+@pytest.fixture
+def scheduler_sim(session: AsyncSession) -> SchedulerSimulator:
+    """Scheduler simulator for testing subscription job picking."""
+    return SchedulerSimulator(session)
 
 
 @pytest_asyncio.fixture

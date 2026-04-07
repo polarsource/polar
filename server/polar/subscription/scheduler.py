@@ -35,7 +35,7 @@ class SubscriptionJobStore(BaseJobStore):
         return None
 
     def get_due_jobs(self, now: datetime.datetime) -> list[Job]:
-        statement = self._get_base_statement().where(
+        statement = self.scheduling_statement().where(
             Subscription.current_period_end <= now,
         )
         jobs = self._list_jobs_from_statement(statement)
@@ -44,7 +44,7 @@ class SubscriptionJobStore(BaseJobStore):
 
     def get_next_run_time(self) -> datetime.datetime | None:
         statement = (
-            self._get_base_statement()
+            self.scheduling_statement()
             .with_only_columns(Subscription.current_period_end)
             .limit(1)
         )
@@ -55,7 +55,7 @@ class SubscriptionJobStore(BaseJobStore):
             return next_run_time
 
     def get_all_jobs(self) -> list[Job]:
-        statement = self._get_base_statement()
+        statement = self.scheduling_statement()
         jobs = self._list_jobs_from_statement(statement)
         log.debug("All jobs", count=len(jobs))
         return jobs
@@ -110,7 +110,14 @@ class SubscriptionJobStore(BaseJobStore):
                 jobs.append(job)
         return jobs
 
-    def _get_base_statement(self) -> Select[tuple[Subscription]]:
+    @staticmethod
+    def scheduling_statement() -> Select[tuple[Subscription]]:
+        """Base query for subscriptions eligible for scheduler processing.
+
+        Returns an engine-agnostic ``Select`` — safe to execute via either
+        a sync ``Session`` (production APScheduler) or an async ``AsyncSession``
+        (E2E tests).
+        """
         return (
             select(Subscription)
             .join(Customer, onclause=Customer.id == Subscription.customer_id)

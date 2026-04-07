@@ -49,6 +49,13 @@ if TYPE_CHECKING:
     from .wallet import Wallet
 
 
+class PaymentTrigger(StrEnum):
+    purchase = "purchase"
+    retry_dunning = "retry_dunning"
+    retry_customer = "retry_customer"
+    retry_payment_method_update = "retry_payment_method_update"
+
+
 class PaymentStatus(StrEnum):
     pending = "pending"
     succeeded = "succeeded"
@@ -89,6 +96,10 @@ class Payment(RecordModel):
 
     decline_reason: Mapped[str | None] = mapped_column(String, nullable=True)
     decline_message: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    trigger: Mapped[PaymentTrigger | None] = mapped_column(
+        StrEnumType(PaymentTrigger), nullable=True
+    )
 
     risk_level: Mapped[str | None] = mapped_column(String, nullable=True)
     risk_score: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)

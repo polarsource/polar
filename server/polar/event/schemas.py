@@ -141,7 +141,7 @@ class EventCreateBase(Schema):
         default_factory=default_timestamp_factory,
         description="The timestamp of the event.",
     )
-    name: str = Field(..., description="The name of the event.")
+    name: str = Field(..., max_length=128, description="The name of the event.")
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(

@@ -95,14 +95,7 @@ const nextConfig = {
     eslint: { ignoreDuringBuilds: true },
   }),
 
-  outputFileTracingExcludes: {
-    '/api/cover': ['**/*'],
-  },
   outputFileTracingIncludes: {
-    '/api/cover': [
-      './src/app/(main)/(website)/(landing)/(mdx)/blog/(header)/_posts/**/*',
-      './src/app/(main)/(website)/(landing)/customers/(stories)/**/*',
-    ],
     '/onboarding/validate-description': [
       './src/app/(main)/onboarding/validate-description/acceptable-use-policy.mdx',
     ],
@@ -550,7 +543,6 @@ const createConfig = async () => {
     options: {
       remarkPlugins: ['remark-frontmatter', 'remark-gfm'],
       rehypePlugins: [
-        'rehype-mdx-import-media',
         'rehype-slug',
         [
           '@shikijs/rehype',

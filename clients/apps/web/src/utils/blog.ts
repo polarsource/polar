@@ -49,6 +49,8 @@ const STORIES_DIR = path.join(
   'src/app/(main)/(website)/(landing)/customers/(stories)',
 )
 
+const PUBLIC_POSTS_DIR = path.join(process.cwd(), 'public/posts')
+
 function readPostsFromDir(
   dir: string,
   type: 'blog' | 'story',
@@ -67,15 +69,13 @@ function readPostsFromDir(
       const postDir = path.join(dir, slug)
       const content = fs.readFileSync(path.join(postDir, 'page.mdx'), 'utf-8')
       const fm = parseFrontmatter(content)
-      const imageFile = findCoverImage(postDir)
+      const imageFile = findCoverImage(path.join(PUBLIC_POSTS_DIR, type, slug))
       return {
         slug,
         title: fm.title ?? slug,
         description: fm.description ?? '',
         date: fm.created_at ?? '',
-        image: imageFile
-          ? `/api/cover?type=${type}&slug=${encodeURIComponent(slug)}&file=${encodeURIComponent(imageFile)}`
-          : null,
+        image: imageFile ? `/posts/${type}/${slug}/${imageFile}` : null,
         type,
         href: `${hrefPrefix}/${slug}`,
       }

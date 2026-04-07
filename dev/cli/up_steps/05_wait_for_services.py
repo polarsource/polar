@@ -5,6 +5,8 @@ import time
 import urllib.request
 
 from shared import (
+    ROOT_DIR,
+    SECRETS_FILE,
     SERVER_DIR,
     Context,
     run_command,
@@ -76,25 +78,25 @@ def wait_for_tinybird_and_get_token(timeout: int = 90) -> str | None:
     return None
 
 
-def _update_env_var(key: str, value: str) -> None:
-    """Set an env var in server/.env, adding or updating as needed."""
-    env_file = SERVER_DIR / ".env"
-    if not env_file.exists():
-        return
+def _update_secrets_file(key: str, value: str) -> None:
+    """Update a key in the central secrets file."""
+    SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-    lines = env_file.read_text().splitlines()
-    found = False
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if stripped.startswith(f"{key}=") or stripped.startswith(f"# {key}="):
-            lines[i] = f'{key}="{value}"'
-            found = True
-            break
+    existing = {}
+    if SECRETS_FILE.exists():
+        for line in SECRETS_FILE.read_text().split("\n"):
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                existing[k.strip()] = v.strip().strip("\"'")
 
-    if not found:
-        lines.append(f'{key}="{value}"')
+    existing[key] = value
 
-    env_file.write_text("\n".join(lines) + "\n")
+    with open(SECRETS_FILE, "w") as f:
+        f.write("# Polar Development Secrets\n")
+        f.write("# Shared across Git worktrees\n\n")
+        for k, v in existing.items():
+            delimiter = "'" if '"' in v else '"'
+            f.write(f"{k}={delimiter}{v}{delimiter}\n")
 
 
 def run(ctx: Context) -> bool:
@@ -116,9 +118,10 @@ def run(ctx: Context) -> bool:
     with step_spinner("Waiting for Tinybird..."):
         token = wait_for_tinybird_and_get_token(timeout=90)
         if token:
-            _update_env_var("POLAR_TINYBIRD_API_TOKEN", token)
-            _update_env_var("POLAR_TINYBIRD_READ_TOKEN", token)
-            _update_env_var("POLAR_TINYBIRD_CLICKHOUSE_TOKEN", token)
+            _update_secrets_file("POLAR_TINYBIRD_API_TOKEN", token)
+            _update_secrets_file("POLAR_TINYBIRD_READ_TOKEN", token)
+            _update_secrets_file("POLAR_TINYBIRD_CLICKHOUSE_TOKEN", token)
+            run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
             step_status(True, "Tinybird", "ready (token configured)")
         else:
             step_status(False, "Tinybird", "timeout - continuing without it")

@@ -5,7 +5,7 @@
   "scripts": {
     "copy-aup": "cp \"src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx\" \"src/app/(main)/onboarding/validate-description/acceptable-use-policy.mdx\"",
     "prebuild": "pnpm copy-aup",
-    "dev": "pnpm copy-aup && next dev --port 3000 --turbopack",
+    "dev": "pnpm copy-aup && next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
     "format": "oxfmt ./src",

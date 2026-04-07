@@ -40,5 +40,5 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         web_app_dir = CLIENTS_DIR / "apps" / "web"
         os.chdir(web_app_dir)
 
-        cmd = ["pnpm", "next", "dev", "--port", str(target_port), "--turbopack"]
+        cmd = ["pnpm", "dev", "--port", str(target_port)]
         os.execvp(cmd[0], cmd)

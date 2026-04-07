@@ -2,7 +2,7 @@ import pytest
 
 from polar.enums import PaymentProcessor
 from polar.models import Customer, Organization, Product
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.wallet import WalletType
 from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncSession
@@ -242,6 +242,60 @@ class TestUpsertFromStripeCharge:
             == "This payment was declined due to suspected fraud"
         )
 
+    async def test_trigger_is_persisted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that the trigger parameter is correctly stored on the payment."""
+        checkout = await create_checkout(save_fixture, products=[product])
+        charge = build_stripe_charge(
+            amount=1000,
+            status="succeeded",
+            metadata={"checkout_id": str(checkout.id)},
+            payment_method_details={"card": {"brand": "visa"}, "type": "card"},
+            billing_details={"email": "test@example.com"},
+        )
+
+        payment = await payment_service.upsert_from_stripe_charge(
+            session,
+            charge,
+            organization,
+            checkout,
+            None,
+            None,
+            trigger=PaymentTrigger.purchase,
+        )
+
+        assert payment.trigger == PaymentTrigger.purchase
+
+    async def test_trigger_defaults_to_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Backward compat: when no trigger is passed, it should be None."""
+        checkout = await create_checkout(save_fixture, products=[product])
+        charge = build_stripe_charge(
+            amount=1000,
+            status="succeeded",
+            metadata={"checkout_id": str(checkout.id)},
+            payment_method_details={"card": {"brand": "visa"}, "type": "card"},
+            billing_details={"email": "test@example.com"},
+        )
+
+        payment = await payment_service.upsert_from_stripe_charge(
+            session, charge, organization, checkout, None, None
+        )
+
+        assert payment.trigger is None
+
 
 @pytest.mark.asyncio
 class TestUpsertFromStripePaymentIntent:
@@ -469,3 +523,86 @@ class TestUpsertFromStripePaymentIntent:
         assert payment.processor == PaymentProcessor.stripe
         assert payment.decline_reason is None
         assert payment.decline_message == "Generic error"
+
+    async def test_trigger_is_persisted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that the trigger parameter is correctly stored on the payment."""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_trigger_test",
+            amount=1000,
+            currency="usd",
+            receipt_email="test@example.com",
+            metadata={"order_id": str(order.id)},
+            latest_charge=None,
+            last_payment_error={
+                "code": "card_declined",
+                "message": "declined",
+                "payment_method": {
+                    "id": "pm_1",
+                    "type": "card",
+                    "card": {"brand": "visa", "last4": "4242"},
+                },
+            },
+        )
+
+        payment = await payment_service.upsert_from_stripe_payment_intent(
+            session,
+            payment_intent,
+            organization,
+            None,
+            order,
+            trigger=PaymentTrigger.retry_customer,
+        )
+
+        assert payment.trigger == PaymentTrigger.retry_customer
+
+    async def test_trigger_defaults_to_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Backward compat: pre-deployment payment intents should have trigger=None."""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_no_trigger",
+            amount=1000,
+            currency="usd",
+            receipt_email="test@example.com",
+            metadata={"order_id": str(order.id)},
+            latest_charge=None,
+            last_payment_error={
+                "code": "card_declined",
+                "message": "declined",
+                "payment_method": {
+                    "id": "pm_1",
+                    "type": "card",
+                    "card": {"brand": "visa", "last4": "4242"},
+                },
+            },
+        )
+
+        payment = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, organization, None, order
+        )
+
+        assert payment.trigger is None

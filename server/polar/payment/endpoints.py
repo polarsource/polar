@@ -5,7 +5,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Payment
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session
@@ -48,6 +48,9 @@ async def list(
     customer_email: MultipleQueryFilter[str] | None = Query(
         None, title="CustomerEmail Filter", description="Filter by customer email."
     ),
+    trigger: MultipleQueryFilter[PaymentTrigger] | None = Query(
+        None, title="Trigger Filter", description="Filter by payment trigger."
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[PaymentSchema]:
     """List payments."""
@@ -60,6 +63,7 @@ async def list(
         status=status,
         method=method,
         customer_email=customer_email,
+        trigger=trigger,
         pagination=pagination,
         sorting=sorting,
     )

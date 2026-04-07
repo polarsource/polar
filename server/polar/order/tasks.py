@@ -106,7 +106,11 @@ async def create_subscription_order(
 
 
 @actor(actor_name="order.trigger_payment", priority=TaskPriority.LOW)
-async def trigger_payment(order_id: uuid.UUID, payment_method_id: uuid.UUID) -> None:
+async def trigger_payment(
+    order_id: uuid.UUID,
+    payment_method_id: uuid.UUID,
+    payment_trigger: str | None = None,
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -129,7 +133,9 @@ async def trigger_payment(order_id: uuid.UUID, payment_method_id: uuid.UUID) -> 
             return
 
         try:
-            await order_service.trigger_payment(session, order, payment_method)
+            await order_service.trigger_payment(
+                session, order, payment_method, payment_trigger=payment_trigger
+            )
         except PaymentFailed:
             # Payment failures should not be retried - they will be handled by the dunning process
             # Log the failure but don't retry the task

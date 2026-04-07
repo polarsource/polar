@@ -13,7 +13,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 
 PaymentID = Annotated[UUID4, Path(description="The payment ID.")]
 
@@ -50,6 +50,10 @@ class PaymentBase(IDSchema, TimestampedSchema):
     order_id: UUID4 | None = Field(
         description="The ID of the order associated with this payment.",
         examples=[CHECKOUT_ID_EXAMPLE],
+    )
+    trigger: PaymentTrigger | None = Field(
+        description="What triggered this payment attempt.",
+        examples=[PaymentTrigger.purchase],
     )
     processor_metadata: dict[str, Any] = Field(
         description="Additional metadata from the payment processor for internal use.",

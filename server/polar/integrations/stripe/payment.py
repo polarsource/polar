@@ -18,6 +18,7 @@ from polar.models import (
     WalletTransaction,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.models.payment import PaymentTrigger
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
@@ -187,6 +188,21 @@ async def resolve_order(
     return None
 
 
+def _resolve_trigger(
+    object: stripe_lib.Charge | stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
+) -> PaymentTrigger | None:
+    if object.metadata is not None:
+        raw = object.metadata.get("payment_trigger")
+        if raw is not None:
+            try:
+                return PaymentTrigger(raw)
+            except ValueError:
+                pass
+    if object.metadata is not None and object.metadata.get("checkout_id") is not None:
+        return PaymentTrigger.purchase
+    return None
+
+
 async def handle_success(
     session: AsyncSession, object: stripe_lib.Charge | stripe_lib.SetupIntent
 ) -> None:
@@ -195,10 +211,12 @@ async def handle_success(
     wallet, wallet_transaction = await resolve_wallet(session, object)
     order = await resolve_order(session, object, checkout)
 
+    trigger = _resolve_trigger(object)
+
     payment: Payment | None = None
     if object.OBJECT_NAME == "charge":
         payment = await payment_service.upsert_from_stripe_charge(
-            session, object, organization, checkout, wallet, order
+            session, object, organization, checkout, wallet, order, trigger=trigger
         )
 
     if checkout is not None:
@@ -251,14 +269,16 @@ async def handle_failure(
     wallet, _ = await resolve_wallet(session, object)
     order = await resolve_order(session, object, checkout)
 
+    trigger = _resolve_trigger(object)
+
     payment: Payment | None = None
     if object.OBJECT_NAME == "charge":
         payment = await payment_service.upsert_from_stripe_charge(
-            session, object, organization, checkout, wallet, order
+            session, object, organization, checkout, wallet, order, trigger=trigger
         )
     elif object.OBJECT_NAME == "payment_intent":
         payment = await payment_service.upsert_from_stripe_payment_intent(
-            session, object, organization, checkout, order
+            session, object, organization, checkout, order, trigger=trigger
         )
 
     if checkout is not None:

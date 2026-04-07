@@ -804,7 +804,11 @@ class OrderService:
                 )
                 assert payment_method is not None
                 await self.trigger_payment(
-                    session, order, payment_method, payment_mode=payment_mode
+                    session,
+                    order,
+                    payment_method,
+                    payment_mode=payment_mode,
+                    payment_trigger="purchase",
                 )
             # Async mode, allow payment to fail and be retried later
             else:
@@ -818,6 +822,7 @@ class OrderService:
                         "order.trigger_payment",
                         order_id=order.id,
                         payment_method_id=payment_method_id,
+                        payment_trigger="purchase",
                     )
 
             await self._on_order_created(session, order)
@@ -983,6 +988,7 @@ class OrderService:
         payment_method: PaymentMethod,
         *,
         payment_mode: PaymentMode = PaymentMode.background,
+        payment_trigger: str | None = None,
     ) -> None:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
@@ -1037,6 +1043,8 @@ class OrderService:
                     "order_id": str(order.id),
                     "payment_mode": payment_mode,
                 }
+                if payment_trigger is not None:
+                    metadata["payment_trigger"] = payment_trigger
 
                 if order.tax_rate is not None:
                     metadata["tax_amount"] = order.tax_amount
@@ -1187,6 +1195,7 @@ class OrderService:
             "organization_id": str(order.organization.id),
             "order_id": str(order.id),
             "manual_retry": "true",  # Flag to skip dunning progression on failure
+            "payment_trigger": "retry_customer",
         }
         if order.tax_rate is not None:
             metadata["tax_amount"] = str(order.tax_amount)
@@ -2283,13 +2292,15 @@ class OrderService:
                 payment_method_id=payment_method.id,
             )
 
-            await repository.update(
-                order,
-                update_dict={"next_payment_attempt_at": utc_now()},
-                flush=True,
-            )
-
             order.subscription.payment_method_id = payment_method.id
+            await session.flush()
+
+            enqueue_job(
+                "order.trigger_payment",
+                order_id=order.id,
+                payment_method_id=payment_method.id,
+                payment_trigger="retry_payment_method_update",
+            )
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""
@@ -2340,6 +2351,7 @@ class OrderService:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=order.subscription.payment_method_id,
+            payment_trigger="retry_dunning",
         )
 
         return order

@@ -269,6 +269,7 @@ class TestProcessDunningOrder:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=subscription.payment_method_id,
+            payment_trigger="retry_dunning",
         )
 
     async def test_payment_retry_success_clears_dunning_and_reactivates_subscription(
@@ -572,3 +573,66 @@ class TestTriggerPayment:
         updated_order = await order_repository.get_by_id(order.id)
         assert updated_order is not None
         assert updated_order.next_payment_attempt_at is not None
+
+    async def test_trigger_payment_passes_payment_trigger(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that payment_trigger is passed through to order_service.trigger_payment."""
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+            return_value=None,
+        )
+
+        # When
+        await trigger_payment(
+            order.id, payment_method.id, payment_trigger="retry_dunning"
+        )
+
+        # Then — verify payment_trigger is in the PI metadata
+        mock_create_payment_intent.assert_called_once()
+        call_kwargs = mock_create_payment_intent.call_args[1]
+        assert call_kwargs["metadata"]["payment_trigger"] == "retry_dunning"
+
+    async def test_trigger_payment_without_payment_trigger(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """Backward compat: pre-existing enqueued messages won't have payment_trigger.
+        The task should still work with payment_trigger=None."""
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+            return_value=None,
+        )
+
+        # When — called without payment_trigger (default None)
+        await trigger_payment(order.id, payment_method.id)
+
+        # Then — payment_trigger should NOT be in metadata
+        mock_create_payment_intent.assert_called_once()
+        call_kwargs = mock_create_payment_intent.call_args[1]
+        assert "payment_trigger" not in call_kwargs["metadata"]

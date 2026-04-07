@@ -1016,11 +1016,11 @@
       "destination": "/features/customer-management"
     },
     {
-      "source": "/features/integrations/evendeals",
+      "source": "/docs/features/integrations/evendeals",
       "destination": "https://www.evendeals.com/integrations/polar"
     },
     {
-      "source": "/features/integrations/refgrow",
+      "source": "/docs/features/integrations/refgrow",
       "destination": "https://refgrow.com/polar-affiliate-software"
     }
   ]

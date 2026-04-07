@@ -39,8 +39,6 @@ UNRECOVERABLE_DECLINE_CODES: set[str] = {
     "security_violation",
     "stolen_card",
     "stop_payment_order",
-    "highest_risk_level",
-    "elevated_risk_level",
     "blocklist",
 }
 

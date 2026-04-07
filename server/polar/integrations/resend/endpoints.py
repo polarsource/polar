@@ -19,7 +19,7 @@ router = APIRouter(
     include_in_schema=False,
 )
 
-HANDLED_EVENTS = {"email.failed", "email.suppressed"}
+HANDLED_EVENTS = {"email.bounced", "email.failed", "email.suppressed"}
 
 # Resend sends svix-* headers, but StandardWebhook expects webhook-*
 _SVIX_TO_STANDARD = {
@@ -45,15 +45,14 @@ def _verify_webhook(raw_body: bytes, headers: dict[str, str]) -> Any:
     try:
         wh = StandardWebhook(secret)
         return wh.verify(raw_body, _remap_svix_headers(headers))
-    except Exception as e:
-        log.warning("resend.webhook.verification_failed", error=str(e))
-        raise HTTPException(status_code=401) from e
+    except Exception:
+        return None
 
 
 def _extract_error(event_type: str, data: dict[str, Any]) -> str:
     parts = [event_type]
 
-    if event_type == "email.failed":
+    if event_type in ("email.bounced", "email.failed"):
         bounce = data.get("bounce", {})
         if bounce:
             parts.append(f"type={bounce.get('type', 'unknown')}")
@@ -73,6 +72,8 @@ async def webhook(
 ) -> None:
     raw_body = await request.body()
     event = _verify_webhook(raw_body, dict(request.headers))
+    if event is None:
+        return
 
     event_type = event.get("type", "")
     if event_type not in HANDLED_EVENTS:

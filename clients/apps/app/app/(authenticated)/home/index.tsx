@@ -5,7 +5,6 @@ import { OrganizationTile } from '@/components/Home/OrganizationTile'
 import { RevenueTile } from '@/components/Home/RevenueTile'
 import { OrderRow } from '@/components/Orders/OrderRow'
 import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
-import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { EmptyState } from '@/components/Shared/EmptyState'
@@ -26,12 +25,6 @@ import {
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { Link, Stack } from 'expo-router'
-import {
-  checkForUpdateAsync,
-  fetchUpdateAsync,
-  reloadAsync,
-  useUpdates,
-} from 'expo-updates'
 import React, {
   useCallback,
   useContext,
@@ -56,8 +49,6 @@ function HomeContent() {
   const theme = useTheme()
   const { scrollHandler, scrollViewRef } = useAnimatedScroll()
   const { grossHeaderHeight } = useHomeHeaderHeight()
-
-  const { isDownloading, isRestarting, isUpdateAvailable } = useUpdates()
 
   const {
     data: orders,
@@ -107,11 +98,6 @@ function HomeContent() {
       refetchCustomers(),
       refetchSubscriptions(),
     ])
-    try {
-      await checkForUpdateAsync()
-    } catch {
-      // checkForUpdateAsync is not supported on simulator/emulator
-    }
   }, [refetchOrders, refetchCustomers, refetchSubscriptions])
 
   const { expoPushToken } = useNotifications()
@@ -135,17 +121,6 @@ function HomeContent() {
       return () => clearTimeout(timer)
     }
   }, [shouldShow, flatOrders.length, requestReview])
-
-  async function onFetchUpdateAsync() {
-    try {
-      if (isUpdateAvailable) {
-        await fetchUpdateAsync()
-        await reloadAsync()
-      }
-    } catch (error) {
-      alert(`Error fetching latest update: ${error}`)
-    }
-  }
 
   const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
 
@@ -178,19 +153,6 @@ function HomeContent() {
             flex={1}
             flexDirection="column"
           >
-            {isUpdateAvailable ? (
-              <Banner
-                title="New Update Available"
-                description="Update to the latest version to get the latest features and bug fixes"
-              >
-                <Button
-                  onPress={onFetchUpdateAsync}
-                  loading={isDownloading || isRestarting}
-                >
-                  Update
-                </Button>
-              </Banner>
-            ) : null}
             <Box gap="spacing-16">
               <Box flexDirection="row" gap="spacing-16">
                 <Box flex={1}>

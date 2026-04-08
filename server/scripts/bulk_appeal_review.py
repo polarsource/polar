@@ -67,6 +67,7 @@ from polar.organization.service import (  # noqa: E402
 from polar.postgres import create_async_engine  # noqa: E402
 
 from .appeal_review import AppealAction, run_appeal_review_with_deps  # noqa: E402
+from .helper import configure_script_console_logging  # noqa: E402
 
 log = structlog.get_logger(__name__)
 
@@ -434,12 +435,14 @@ async def process_appeals(
                     else:
                         log.info("Snoozed thread", thread_id=thread_id)
 
-                except Exception:
+                except Exception as e:
                     errors += 1
                     log.error(
                         "Failed to process thread",
                         slug=slug,
                         thread_id=thread_id,
+                        error_type=type(e).__name__,
+                        error_message=str(e),
                         exc_info=True,
                     )
 
@@ -489,13 +492,7 @@ def main() -> None:
 
     dry_run = not args.execute
 
-    structlog.configure(
-        processors=[
-            structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.dev.ConsoleRenderer(),
-        ]
-    )
+    configure_script_console_logging()
 
     if dry_run:
         log.info("Running in DRY-RUN mode (no changes will be made)")
@@ -526,7 +523,12 @@ def main() -> None:
         log.info("Interrupted by user")
         sys.exit(1)
     except Exception as e:
-        log.error("Script failed", error=str(e), exc_info=True)
+        log.error(
+            "Script failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
         sys.exit(1)
 
 

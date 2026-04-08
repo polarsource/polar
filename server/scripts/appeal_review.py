@@ -57,6 +57,8 @@ from polar.organization_review.report import parse_agent_report
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.postgres import create_async_engine
 
+from .helper import configure_script_console_logging
+
 log = structlog.get_logger(__name__)
 
 
@@ -1205,13 +1207,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    structlog.configure(
-        processors=[
-            structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.dev.ConsoleRenderer(),
-        ]
-    )
+    configure_script_console_logging()
 
     try:
         asyncio.run(
@@ -1228,7 +1224,12 @@ def main() -> None:
         log.info("Interrupted by user")
         sys.exit(1)
     except Exception as e:
-        log.error("Script failed", error=str(e), exc_info=True)
+        log.error(
+            "Script failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
         sys.exit(1)
 
 

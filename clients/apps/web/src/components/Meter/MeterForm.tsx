@@ -3,6 +3,7 @@
 import MeterFilterInput from '@/components/Meter/MeterFilterInput'
 import MeterFilterReadOnlyConfiguration from '@/components/Meter/MeterFilterReadOnlyConfiguration'
 import MeterFormAggregation from '@/components/Meter/MeterFormAggregation'
+import MeterFormUnit from '@/components/Meter/MeterFormUnit'
 import { schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -78,7 +79,10 @@ const MeterForm = ({
             <FormMessage />
           </FormItem>
 
-          <MeterFormAggregation />
+          <div className="grid grid-cols-2 gap-4">
+            <MeterFormAggregation />
+            <MeterFormUnit />
+          </div>
         </>
       )}
     </>

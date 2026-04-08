@@ -22,7 +22,7 @@ const AccountCreateModal = ({
   forOrganizationId: string
   returnPath: string
 }) => {
-  const form = useForm<schemas['AccountCreateForOrganization']>({
+  const form = useForm<schemas['PayoutAccountCreate']>({
     defaultValues: {
       country: 'US',
     },
@@ -37,13 +37,13 @@ const AccountCreateModal = ({
   const [loading, setLoading] = useState(false)
 
   const goToOnboarding = useCallback(
-    async (account: schemas['Account']) => {
+    async (payoutAccount: schemas['PayoutAccount']) => {
       setLoading(true)
       const { data, error } = await api.POST(
-        '/v1/accounts/{id}/onboarding_link',
+        '/v1/payout-accounts/{id}/onboarding-link',
         {
           params: {
-            path: { id: account.id },
+            path: { id: payoutAccount.id },
             query: { return_path: returnPath },
           },
         },
@@ -61,16 +61,19 @@ const AccountCreateModal = ({
   )
 
   const onSubmit = useCallback(
-    async (data: schemas['AccountCreateForOrganization']) => {
+    async (data: schemas['PayoutAccountCreate']) => {
       setLoading(true)
 
-      const { data: account, error } = await api.POST('/v1/accounts', {
-        body: {
-          account_type: 'stripe',
-          country: data.country,
-          organization_id: forOrganizationId,
+      const { data: payoutAccount, error } = await api.POST(
+        '/v1/payout-accounts/',
+        {
+          body: {
+            type: 'stripe',
+            country: data.country,
+            organization_id: forOrganizationId,
+          },
         },
-      })
+      )
 
       if (error) {
         if (isValidationError(error.detail)) {
@@ -83,7 +86,7 @@ const AccountCreateModal = ({
       }
 
       setLoading(false)
-      await goToOnboarding(account)
+      await goToOnboarding(payoutAccount)
     },
     [setLoading, forOrganizationId, goToOnboarding, setError],
   )
@@ -118,7 +121,7 @@ const AccountCreateModal = ({
 }
 
 const AccountCountry = () => {
-  const { control } = useFormContext<schemas['AccountCreateForOrganization']>()
+  const { control } = useFormContext<schemas['PayoutAccountCreate']>()
 
   return (
     <FormField

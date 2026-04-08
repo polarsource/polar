@@ -107,7 +107,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
         </WellFooter>
       </Well>
       <WithdrawModal
-        account={account}
         organization={organization}
         isShown={isPayoutConfirmModalShown}
         hide={hidePayoutConfirmModal}

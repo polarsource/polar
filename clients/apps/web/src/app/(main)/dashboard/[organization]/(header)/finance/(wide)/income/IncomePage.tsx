@@ -2,7 +2,6 @@
 
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import AccountBalance from '@/components/Payouts/AccountBalance'
-import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
 import {
@@ -86,7 +85,6 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-8">
-      <AccountBanner organization={organization} />
       {account && (
         <AccountBalance
           account={account}

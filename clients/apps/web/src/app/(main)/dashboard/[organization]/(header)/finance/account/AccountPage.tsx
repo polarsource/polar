@@ -1,23 +1,18 @@
 'use client'
 
-import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
-import AccountStep from '@/components/Finance/Steps/AccountStep'
+import PayoutAccountStep from '@/components/Finance/Steps/PayoutAccountStep'
 import IdentityStep from '@/components/Finance/Steps/IdentityStep'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Modal } from '@/components/Modal'
-import { useModal } from '@/components/Modal/useModal'
+
 import AIValidationResult from '@/components/Organization/AIValidationResult'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { toast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks'
-import {
-  useCreateIdentityVerification,
-  useOrganizationAccount,
-} from '@/hooks/queries'
+import { useCreateIdentityVerification } from '@/hooks/queries'
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
-import { api } from '@/utils/client'
-import { ClientResponseError, schemas, unwrap } from '@polar-sh/client'
+import { usePayoutAccount } from '@/hooks/queries/payout_accounts'
+import { schemas } from '@polar-sh/client'
 import { loadStripe } from '@stripe/stripe-js'
 import { BanIcon, CheckIcon } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
@@ -28,23 +23,15 @@ export default function ClientPage({
   organization: schemas['Organization']
 }) {
   const { currentUser, reloadUser } = useAuth()
-  const {
-    isShown: isShownSetupModal,
-    show: showSetupModal,
-    hide: hideSetupModal,
-  } = useModal()
 
   const identityVerificationStatus = currentUser?.identity_verification_status
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollingInitialStatusRef = useRef<string | undefined | null>(null)
 
-  const { data: organizationAccount, error: accountError } =
-    useOrganizationAccount(organization.id)
+  const { data: payoutAccount } = usePayoutAccount(
+    organization.payout_account_id || undefined,
+  )
   const { data: reviewStatus } = useOrganizationReviewStatus(organization.id)
-
-  const isNotAdmin =
-    accountError &&
-    (accountError as ClientResponseError)?.response?.status === 403
 
   const isGrandfathered =
     reviewStatus?.verdict === 'PASS' &&
@@ -162,26 +149,6 @@ export default function ClientPage({
     }
   }, [])
 
-  const handleStartAccountSetup = useCallback(async () => {
-    if (!organizationAccount || !organizationAccount.stripe_id) {
-      showSetupModal()
-    } else {
-      const link = await unwrap(
-        api.POST('/v1/accounts/{id}/onboarding_link', {
-          params: {
-            path: {
-              id: organizationAccount.id,
-            },
-            query: {
-              return_path: `/dashboard/${organization.slug}/finance/account`,
-            },
-          },
-        }),
-      )
-      window.location.href = link.url
-    }
-  }, [organization.slug, organizationAccount, showSetupModal])
-
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-sm)!">
       <div className="flex flex-col gap-y-12">
@@ -236,15 +203,10 @@ export default function ClientPage({
               />
               {!isApproved ? (
                 <InfoCard>Please go through account review first</InfoCard>
-              ) : isNotAdmin ? (
-                <InfoCard>
-                  This can only be done by the organization admin
-                </InfoCard>
               ) : (
-                <AccountStep
-                  organizationAccount={organizationAccount}
-                  isNotAdmin={false}
-                  onStartAccountSetup={handleStartAccountSetup}
+                <PayoutAccountStep
+                  organization={organization}
+                  payoutAccount={payoutAccount}
                 />
               )}
             </Section>
@@ -265,19 +227,6 @@ export default function ClientPage({
             </Section>
           </>
         )}
-
-        <Modal
-          title="Create Payout Account"
-          isShown={isShownSetupModal}
-          className="min-w-[400px]"
-          hide={hideSetupModal}
-          modalContent={
-            <AccountCreateModal
-              forOrganizationId={organization.id}
-              returnPath={`/dashboard/${organization.slug}/finance/account`}
-            />
-          }
-        />
       </div>
     </DashboardBody>
   )

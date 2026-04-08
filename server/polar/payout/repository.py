@@ -66,6 +66,7 @@ class PayoutRepository(
 
     def get_eager_options(self) -> Options:
         return (
+            joinedload(Payout.account),
             joinedload(Payout.payout_account),
             joinedload(Payout.transactions).selectinload(
                 Transaction.incurred_transactions

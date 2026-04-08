@@ -6,9 +6,9 @@ description: "Complete guide to implementing team products with seat-based prici
 
 Seat-based pricing lets you sell products where one person buys seats and assigns them to their team. Each seat holder gets their own benefits — license keys, Discord roles, file downloads, or anything else you offer.
 
-<Warning>
-Seat-based pricing is currently in **private beta**. Contact our support team to enable it for your organization.
-</Warning>
+<Info>
+  Seat-based pricing is currently in beta. You can enable it under Settings → General → Features.
+</Info>
 
 ## Understanding the model
 
@@ -61,7 +61,8 @@ Purchase → Assign seats → Members claim → Benefits granted
 ## Implementation
 
 <Info>
-This guide covers both **subscription** and **one-time purchase** seat-based products. The flow is the same — the only difference is in scaling and billing.
+  This guide covers both **subscription** and **one-time purchase** seat-based products. The flow is
+  the same — the only difference is in scaling and billing.
 </Info>
 
 ### Step 1: Create a seat-based product
@@ -88,6 +89,7 @@ This guide covers both **subscription** and **one-time purchase** seat-based pro
     | 1    | 4         | $10/month      |
     | 2    | 9         | $9/month       |
     | 3    | Unlimited | $8/month       |
+
   </Step>
 
   <Step title="Add benefits">
@@ -102,7 +104,7 @@ const checkout = await polar.checkouts.create({
   products: ["prod_123"],
   seats: 5,
   success_url: "https://your-app.com/success",
-  customer_email: "billing@company.com"
+  customer_email: "billing@company.com",
 });
 
 // Redirect to checkout.url
@@ -122,7 +124,8 @@ After purchase, the billing manager can assign and manage seats directly from th
 Polar automatically sends invitation emails to assigned team members with a secure claim link. Once a member claims their seat, benefits are granted immediately.
 
 <Info>
-Invitation emails are sent automatically when seats are assigned. The claim flow is fully managed by Polar — members click the link, claim their seat, and get immediate access to benefits.
+  Invitation emails are sent automatically when seats are assigned. The claim flow is fully managed
+  by Polar — members click the link, claim their seat, and get immediate access to benefits.
 </Info>
 
 #### API-driven seat assignment
@@ -133,12 +136,14 @@ If you want to manage seat assignment programmatically (e.g., auto-assigning sea
 const seat = await polar.customerSeats.assign({
   subscription_id: subscriptionId,
   email: "engineer@company.com",
-  immediate_claim: true  // Skip invitation email, grant benefits immediately
+  immediate_claim: true, // Skip invitation email, grant benefits immediately
 });
 ```
 
 <Info>
-Use `immediate_claim: true` when you manage your own user authentication and want to bypass the email invitation flow. Benefits are granted immediately without the member needing to click a claim link.
+  Use `immediate_claim: true` when you manage your own user authentication and want to bypass the
+  email invitation flow. Benefits are granted immediately without the member needing to click a
+  claim link.
 </Info>
 
 ### Step 4: Handle benefit grants
@@ -146,21 +151,22 @@ Use `immediate_claim: true` when you manage your own user authentication and wan
 Listen for benefit webhooks to sync access in your system. Remember: use `grant.member` to identify the recipient, not `grant.customer_id` (which is the buyer).
 
 <Warning>
-Always [verify webhook signatures](/integrate/webhooks/endpoints#verify-signature) before processing events. The example below omits verification for brevity.
+  Always [verify webhook signatures](/integrate/webhooks/endpoints#verify-signature) before
+  processing events. The example below omits verification for brevity.
 </Warning>
 
 ```typescript
-app.post('/webhooks/polar', async (req, res) => {
+app.post("/webhooks/polar", async (req, res) => {
   // Verify webhook signature first — see webhook docs
   const event = req.body;
 
-  if (event.type === 'benefit_grant.created') {
+  if (event.type === "benefit_grant.created") {
     const grant = event.data;
     const recipient = grant.member;
     await grantAccess(recipient.id, recipient.email, grant.benefit);
   }
 
-  if (event.type === 'benefit_grant.revoked') {
+  if (event.type === "benefit_grant.revoked") {
     const grant = event.data;
     await revokeAccess(grant.member.id, grant.benefit);
   }
@@ -176,12 +182,13 @@ app.post('/webhooks/polar', async (req, res) => {
 ```typescript
 await polar.subscriptions.update({
   id: subscriptionId,
-  seats: newTotal  // Cannot be less than currently assigned seats (pending + claimed)
+  seats: newTotal, // Cannot be less than currently assigned seats (pending + claimed)
 });
 ```
 
 <Warning>
-You cannot reduce seats below the number of currently assigned seats (both pending and claimed). Revoke seats first before reducing the count.
+  You cannot reduce seats below the number of currently assigned seats (both pending and claimed).
+  Revoke seats first before reducing the count.
 </Warning>
 
 **One-time purchases** — buy a new order:
@@ -190,7 +197,7 @@ You cannot reduce seats below the number of currently assigned seats (both pendi
 const checkout = await polar.checkouts.create({
   products: [productId],
   seats: additionalSeats,
-  success_url: "https://your-app.com/success"
+  success_url: "https://your-app.com/success",
 });
 // Each order has its own independent seat pool
 ```
@@ -202,7 +209,7 @@ To give a member access to the customer portal, create a customer session with a
 ```typescript
 const session = await polar.customerSessions.create({
   customer_id: "cust_123",
-  member_id: "mem_789"
+  member_id: "mem_789",
 });
 // Redirect to session.customer_portal_url
 ```
@@ -212,18 +219,19 @@ const session = await polar.customerSessions.create({
 
 ## Webhook events
 
-| Event | When | Key fields |
-|---|---|---|
-| `order.paid` | Customer completes purchase | `customer_id`, `product` |
-| `subscription.updated` | Seat count changes | `customer_id`, `seats` |
+| Event                    | When                           | Key fields                             |
+| ------------------------ | ------------------------------ | -------------------------------------- |
+| `order.paid`             | Customer completes purchase    | `customer_id`, `product`               |
+| `subscription.updated`   | Seat count changes             | `customer_id`, `seats`                 |
 | `customer_seat.assigned` | Seat assigned, invitation sent | `member`, `email`, `status: "pending"` |
-| `customer_seat.claimed` | Member claims their seat | `member`, `status: "claimed"` |
-| `benefit_grant.created` | Benefit granted to member | `member`, `customer_id` (buyer) |
-| `customer_seat.revoked` | Seat revoked | `member`, `status: "revoked"` |
-| `benefit_grant.revoked` | Benefit removed from member | `member`, `customer_id` (buyer) |
+| `customer_seat.claimed`  | Member claims their seat       | `member`, `status: "claimed"`          |
+| `benefit_grant.created`  | Benefit granted to member      | `member`, `customer_id` (buyer)        |
+| `customer_seat.revoked`  | Seat revoked                   | `member`, `status: "revoked"`          |
+| `benefit_grant.revoked`  | Benefit removed from member    | `member`, `customer_id` (buyer)        |
 
 <Info>
-On subscription cancellation, each seat is revoked individually. A subscription with 5 seats and 3 benefits produces 1 + 5 + 15 = 21 webhook events. Make sure your handlers are idempotent.
+  On subscription cancellation, each seat is revoked individually. A subscription with 5 seats and 3
+  benefits produces 1 + 5 + 15 = 21 webhook events. Make sure your handlers are idempotent.
 </Info>
 
 ## Best practices
@@ -234,19 +242,19 @@ On subscription cancellation, each seat is revoked individually. A subscription 
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---|---|
-| Cannot reduce seats | Revoke assigned seats first. You can't go below the combined pending + claimed count. |
-| Claim link expired | Tokens expire after 24 hours. Resend via the portal or API: `polar.customerSeats.resend({ seat_id })` |
+| Problem             | Solution                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| Cannot reduce seats | Revoke assigned seats first. You can't go below the combined pending + claimed count.                 |
+| Claim link expired  | Tokens expire after 24 hours. Resend via the portal or API: `polar.customerSeats.resend({ seat_id })` |
 
 ## Subscriptions vs one-time purchases
 
-| | Subscriptions | One-Time Purchases |
-|---|---|---|
-| **Payment** | Recurring (monthly/yearly) | Single payment |
-| **Seat duration** | While subscribed | Perpetual |
-| **Adding seats** | Modify subscription | Purchase new order |
-| **Benefits** | While subscription active | Forever after claim |
+|                   | Subscriptions              | One-Time Purchases  |
+| ----------------- | -------------------------- | ------------------- |
+| **Payment**       | Recurring (monthly/yearly) | Single payment      |
+| **Seat duration** | While subscribed           | Perpetual           |
+| **Adding seats**  | Modify subscription        | Purchase new order  |
+| **Benefits**      | While subscription active  | Forever after claim |
 
 ## Limitations
 

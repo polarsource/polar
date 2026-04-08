@@ -12,13 +12,11 @@ Seat-based pricing allows you to sell products where a billing manager purchases
 - Perpetual team licenses with one-time payment
 - Organizational licenses with per-seat pricing
 - Products with flat, graduated, or volume-discounted seat pricing
-</Info>
+  </Info>
 
 ## Feature Flag
 
-<Warning>
-Seat-based pricing is currently in **private beta**. Contact our support team to enable it for your organization.
-</Warning>
+Seat-based pricing is currently in beta. You can enable it under Settings → General → Features.
 
 ## How it works
 
@@ -33,15 +31,16 @@ Team members receive an invitation email with a claim link. Once they claim thei
 
 ### Subscriptions vs One-Time Purchases
 
-| Feature | Subscriptions | One-Time Purchases |
-|---------|--------------|-------------------|
-| **Payment** | Recurring (monthly/yearly) | Single payment |
-| **Seat Duration** | Active while subscribed | Perpetual (never expire) |
-| **Adding Seats** | Modify subscription | Purchase new order |
-| **Benefits** | While subscription active | Forever after claim |
+| Feature           | Subscriptions              | One-Time Purchases       |
+| ----------------- | -------------------------- | ------------------------ |
+| **Payment**       | Recurring (monthly/yearly) | Single payment           |
+| **Seat Duration** | Active while subscribed    | Perpetual (never expire) |
+| **Adding Seats**  | Modify subscription        | Purchase new order       |
+| **Benefits**      | While subscription active  | Forever after claim      |
 
 <Tip>
-Use **subscriptions** for ongoing team access. Use **one-time purchases** for perpetual team licenses.
+  Use **subscriptions** for ongoing team access. Use **one-time purchases** for perpetual team
+  licenses.
 </Tip>
 
 ## Creating a seat-based product
@@ -75,6 +74,7 @@ Use **subscriptions** for ongoing team access. Use **one-time purchases** for pe
     **Example** with tiers at 1–10 seats: $10/seat and 11+ seats: $8/seat:
     - Graduated: 14 seats = 10 × $10 + 4 × $8 = $132 — each range is billed at its own rate
     - Volume discounts: 14 seats = 14 × $8 = $112 — all seats use the lowest matching rate
+
   </Step>
   <Step title="Add benefits">
     Configure the benefits that seat holders will receive. These are only granted when a seat is claimed, not when purchased.
@@ -82,7 +82,10 @@ Use **subscriptions** for ongoing team access. Use **one-time purchases** for pe
 </Steps>
 
 <Info>
-Unlike standard subscriptions, seat-based products **do not grant benefits to the billing manager**. Benefits are only granted to team members who claim their assigned seats. The billing manager can assign a seat to themselves if they also want to receive benefits — this counts toward the purchased seat total.
+  Unlike standard subscriptions, seat-based products **do not grant benefits to the billing
+  manager**. Benefits are only granted to team members who claim their assigned seats. The billing
+  manager can assign a seat to themselves if they also want to receive benefits — this counts toward
+  the purchased seat total.
 </Info>
 
 ## Managing seats
@@ -109,6 +112,7 @@ After purchase, the billing manager can assign and manage seats from the **Custo
 - **Reducing the seat count** changes the subscription quantity itself, which results in a prorated credit for the remainder of the billing period.
 
 To stop paying for an unused seat, you must reduce the seat count — not just revoke the assignment.
+
 </Warning>
 
 ### Proration and billing adjustments
@@ -119,7 +123,8 @@ When the seat count on a subscription changes mid-billing cycle, charges are pro
 - **Reducing seat count**: A prorated credit is applied for the removed seats, covering the unused portion of the current billing period.
 
 <Tip>
-Proration ensures billing managers only pay for seats during the time they are active. Encourage customers to adjust their seat count rather than leaving unused seats idle.
+  Proration ensures billing managers only pay for seats during the time they are active. Encourage
+  customers to adjust their seat count rather than leaving unused seats idle.
 </Tip>
 
 ## Limitations

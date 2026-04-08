@@ -28,19 +28,19 @@ function formatShortDate(date: Date, locale: AcceptedLocale): string {
   })
 }
 
-function intervalToMonths(interval: string, count: number | null): number {
+function addInterval(date: Date, interval: string, count: number | null): Date {
   const c = count ?? 1
   switch (interval) {
     case 'day':
-      return c / 30
+      return addDays(date, c)
     case 'week':
-      return (c * 7) / 30
+      return addWeeks(date, c)
     case 'month':
-      return c
+      return addMonths(date, c)
     case 'year':
-      return c * 12
+      return addYears(date, c)
     default:
-      return 0
+      return addMonths(date, c)
   }
 }
 
@@ -51,19 +51,9 @@ function getDiscountEndDate(
   intervalCount: number | null,
 ): Date {
   if (discount.duration === 'once') {
-    const count = intervalCount ?? 1
-    switch (interval) {
-      case 'day':
-        return addDays(baseDate, count)
-      case 'week':
-        return addWeeks(baseDate, count)
-      case 'month':
-        return addMonths(baseDate, count)
-      case 'year':
-        return addYears(baseDate, count)
-      default:
-        return addMonths(baseDate, count)
-    }
+    return interval
+      ? addInterval(baseDate, interval, intervalCount)
+      : addMonths(baseDate, intervalCount ?? 1)
   }
   if (
     'duration_in_months' in discount &&
@@ -110,19 +100,23 @@ const CheckoutPricingBreakdown = ({
       return ''
     }
 
+    const baseDate = checkout.trial_end
+      ? new Date(checkout.trial_end)
+      : new Date()
+
     if (
       'duration_in_months' in checkout.discount &&
       typeof checkout.discount.duration_in_months === 'number'
     ) {
-      const billingMonths = intervalToMonths(interval, intervalCount)
-      if (checkout.discount.duration_in_months <= billingMonths) {
+      const discountEnd = addMonths(
+        baseDate,
+        checkout.discount.duration_in_months,
+      )
+      const nextCycle = addInterval(baseDate, interval, intervalCount)
+      if (discountEnd <= nextCycle) {
         return ''
       }
     }
-
-    const baseDate = checkout.trial_end
-      ? new Date(checkout.trial_end)
-      : new Date()
 
     const endDate = getDiscountEndDate(
       baseDate,

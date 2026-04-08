@@ -16,10 +16,12 @@ function getRowValue(label: string): string {
 
 function createDiscountedCheckout({
   interval,
+  intervalCount,
   discount,
   trial,
 }: {
   interval: 'day' | 'week' | 'month' | 'year' | null
+  intervalCount?: number
   discount: schemas['CheckoutPublic']['discount']
   trial?: boolean
 }) {
@@ -33,7 +35,7 @@ function createDiscountedCheckout({
         product: {
           ...createCheckout().product,
           recurring_interval: interval,
-          recurring_interval_count: 1,
+          recurring_interval_count: intervalCount ?? 1,
           is_recurring: true,
         },
         discount,
@@ -495,6 +497,36 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows "Until" for daily billing with 1mo discount', () => {
       const checkout = createDiscountedCheckout({
         interval: 'day',
+        discount: repeatingDiscount(1),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+    })
+
+    it('hides "Until" for every-30-days billing with 1mo discount', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'day',
+        intervalCount: 30,
+        discount: repeatingDiscount(1),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.queryByText(/Until/i)).not.toBeInTheDocument()
+    })
+
+    it('shows "Until" for every-4-weeks billing with 1mo discount', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'week',
+        intervalCount: 4,
+        discount: repeatingDiscount(1),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+    })
+
+    it('shows "Until" for every-2-weeks billing with 1mo discount', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'week',
+        intervalCount: 2,
         discount: repeatingDiscount(1),
       })
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)

@@ -34,9 +34,6 @@ export default function ClientPage({
     hide: hideSetupModal,
   } = useModal()
 
-  const [requireDetails, setRequireDetails] = useState(
-    !organization.details_submitted_at,
-  )
   const identityVerificationStatus = currentUser?.identity_verification_status
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollingInitialStatusRef = useRef<string | undefined | null>(null)
@@ -49,15 +46,33 @@ export default function ClientPage({
     accountError &&
     (accountError as ClientResponseError)?.response?.status === 403
 
+  const isGrandfathered =
+    reviewStatus?.verdict === 'PASS' &&
+    reviewStatus?.reason === 'Grandfathered organization'
+
   const isDenied = organization.status === 'denied'
+
+  const isActive = ['active', 'initial_review', 'ongoing_review'].includes(
+    organization.status,
+  )
+
+  const [hasSubmittedDetails, setHasSubmittedDetails] = useState(false)
+
+  const handleDetailsSubmitted = useCallback(() => {
+    setHasSubmittedDetails(true)
+  }, [])
+
+  const requireDetails =
+    !hasSubmittedDetails &&
+    (isGrandfathered
+      ? !isActive && !isDenied && !organization.details_submitted_at
+      : !organization.details_submitted_at)
 
   const isApproved = isDenied
     ? false // Explicit denial always takes precedence, if not, fall back to checking for approval conditions
     : reviewStatus?.verdict === 'PASS' ||
       reviewStatus?.appeal_decision === 'approved' ||
-      ['active', 'initial_review', 'ongoing_review'].includes(
-        organization.status,
-      )
+      isActive
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
   const createIdentityVerification = useCreateIdentityVerification()
@@ -147,10 +162,6 @@ export default function ClientPage({
     }
   }, [])
 
-  const handleDetailsSubmitted = useCallback(() => {
-    setRequireDetails(false)
-  }, [])
-
   const handleStartAccountSetup = useCallback(async () => {
     if (!organizationAccount || !organizationAccount.stripe_id) {
       showSetupModal()
@@ -179,7 +190,7 @@ export default function ClientPage({
             title="Account Review"
             description={
               requireDetails
-                ? 'Tell us about your organization so we can review the usecase.'
+                ? 'Tell us about your organization so we can review your usecase.'
                 : 'Your submitted organization details and compliance status.'
             }
           />

@@ -56,7 +56,9 @@ export default function ClientPage({
     organization.status,
   )
 
-  const [hasSubmittedDetails, setHasSubmittedDetails] = useState(false)
+  const [hasSubmittedDetails, setHasSubmittedDetails] = useState(
+    !!organization.details_submitted_at,
+  )
 
   const handleDetailsSubmitted = useCallback(() => {
     setHasSubmittedDetails(true)
@@ -64,9 +66,7 @@ export default function ClientPage({
 
   const requireDetails =
     !hasSubmittedDetails &&
-    (isGrandfathered
-      ? !isActive && !isDenied && !organization.details_submitted_at
-      : !organization.details_submitted_at)
+    (!isGrandfathered || (isGrandfathered && !isActive && !isDenied))
 
   const isApproved = isDenied
     ? false // Explicit denial always takes precedence, if not, fall back to checking for approval conditions

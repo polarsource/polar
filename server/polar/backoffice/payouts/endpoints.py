@@ -342,11 +342,11 @@ async def get(
             with tag.div(classes="card card-border w-full shadow-sm"):
                 with tag.div(classes="card-body"):
                     with tag.h2(classes="card-title"):
-                        text("Account Details")
+                        text("Payout Account Details")
 
                     with description_list.DescriptionList[Payout](
                         description_list.DescriptionListAttrItem(
-                            "account.account_type", "Account Processor"
+                            "payout_account.type", "Payout Account Processor"
                         ),
                         PayoutAccountProcessorIdListItem(),
                     ).render(request, payout):
@@ -528,6 +528,7 @@ async def cancel(
         id,
         options=(
             joinedload(Payout.account),
+            joinedload(Payout.payout_account),
             joinedload(Payout.transactions).options(
                 joinedload(Transaction.account),
                 joinedload(Transaction.payout),
@@ -582,7 +583,9 @@ async def refresh(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     repository = PayoutRepository.from_session(session)
-    payout = await repository.get_by_id(id, options=(joinedload(Payout.account),))
+    payout = await repository.get_by_id(
+        id, options=(joinedload(Payout.account), joinedload(Payout.payout_account))
+    )
 
     if payout is None:
         raise HTTPException(status_code=404)

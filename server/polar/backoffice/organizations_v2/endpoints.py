@@ -10,16 +10,16 @@ This module provides a modern, three-column layout with:
 
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import stripe as stripe_lib
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import UUID4, ValidationError
+from pydantic import UUID4, BaseModel, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
 from sqlalchemy import and_, func, or_, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
 
@@ -34,8 +34,6 @@ from polar.backoffice.organizations.analytics import (
 )
 from polar.backoffice.organizations.forms import (
     AddPaymentMethodDomainForm,
-    DeleteStripeAccountForm,
-    DisconnectStripeAccountForm,
     OrganizationOrdersImportForm,
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
@@ -48,12 +46,19 @@ from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.sorting import Sorting
-from polar.models import AccountCredit, Organization, User, UserOrganization
+from polar.models import (
+    AccountCredit,
+    Organization,
+    PayoutAccount,
+    User,
+    UserOrganization,
+)
 from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
 from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_agent_review import OrganizationAgentReview
+from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
@@ -62,8 +67,10 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import ReviewAgentReport
+from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
@@ -74,11 +81,12 @@ from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import OrganizationListView
-from .views.modals import DeleteStripeModal, DisconnectStripeModal
+from .views.modals import DeletePayoutAccountModal
 from .views.sections._shared import RISK_LEVEL_BADGE, VERDICT_BADGE
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
+from .views.sections.payout_account_section import PayoutAccountSection
 from .views.sections.reviews_section import ReviewsSection
 from .views.sections.settings_section import SettingsSection
 from .views.sections.team_section import TeamSection
@@ -86,6 +94,21 @@ from .views.sections.team_section import TeamSection
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 logger = structlog.getLogger(__name__)
+
+
+class DeletePayoutAccountForm(BaseModel):
+    reason: str
+
+    @field_validator("reason")
+    @classmethod
+    def reason_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Reason is required")
+        return v
+
+    @classmethod
+    def model_validate_form(cls, data: Any) -> "DeletePayoutAccountForm":
+        return cls.model_validate(dict(data))
 
 
 async def count_test_sales(
@@ -161,12 +184,6 @@ async def list_organizations(
     - Advanced filters: country, risk, transfers, payments, appeals
     - Column sorting
     """
-    from datetime import UTC, datetime, timedelta
-
-    from polar.models import Account
-    from polar.models.organization_review import OrganizationReview
-
-    repository = OrganizationRepository(session)
     list_view = OrganizationListView(session)
 
     # Convert empty strings to None and parse numbers
@@ -191,9 +208,14 @@ async def list_organizations(
         status_filter = OrganizationStatus.ONBOARDING_STARTED
 
     # Build query
-    stmt = select(Organization).options(
-        joinedload(Organization.account),
-        joinedload(Organization.review),
+    stmt = (
+        select(Organization)
+        .join(Organization.payout_account, isouter=True)
+        .options(
+            contains_eager(Organization.payout_account),
+            joinedload(Organization.account),
+            joinedload(Organization.review),
+        )
     )
 
     # Apply filters
@@ -218,7 +240,7 @@ async def list_organizations(
 
     # Country filter
     if country:
-        stmt = stmt.join(Organization.account).where(Account.country == country)
+        stmt = stmt.where(PayoutAccount.country == country)
 
     # Risk level filter
     if risk_level:
@@ -280,11 +302,11 @@ async def list_organizations(
         )
     elif sort == "country":
         country_order = (
-            Account.country.desc().nullslast()
+            PayoutAccount.country.desc().nullslast()
             if is_desc
-            else Account.country.asc().nullslast()
+            else PayoutAccount.country.asc().nullslast()
         )
-        stmt = stmt.join(Organization.account).order_by(country_order)
+        stmt = stmt.order_by(country_order)
     elif sort == "created":
         stmt = stmt.order_by(
             Organization.created_at.desc() if is_desc else Organization.created_at.asc()
@@ -403,6 +425,7 @@ async def get_organization_detail(
         select(Organization)
         .options(
             joinedload(Organization.account),
+            joinedload(Organization.payout_account),
             joinedload(Organization.review),
         )
         .where(Organization.id == organization_id)
@@ -642,8 +665,12 @@ async def get_organization_detail(
                     organization,
                     credits=account_credits,
                 )
-                with account_section.render(request):
-                    pass
+                payout_account_section = PayoutAccountSection(organization)
+                with tag.div(classes="space-y-6"):
+                    with account_section.render(request):
+                        pass
+                    with payout_account_section.render(request):
+                        pass
             elif section == "files":
                 # Fetch downloadable files from repository with pagination
                 file_sorting: list[Sorting[FileSortProperty]] = [
@@ -2589,13 +2616,26 @@ async def setup_account(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if request.method == "POST":
-        # TODO: Implement manual account creation
-        # This would need to create an Account record and associate it with the organization
-        raise HTTPException(
-            status_code=501, detail="Manual account creation not yet implemented"
+        data = await request.form()
+        country = str(data.get("country", "US")).upper()
+
+        user_repository = UserRepository.from_session(session)
+        users = await user_repository.get_all_by_organization(organization.id)
+        if not users:
+            raise HTTPException(status_code=400, detail="Organization has no users")
+
+        admin_user = users[0]
+
+        await payout_account_service.create_manual_account(
+            session, organization, admin_user, country=country, currency="usd"
         )
 
-        # Redirect back to account section
+        await add_toast(
+            request,
+            f"Manual payout account created for {organization.name}",
+            "success",
+        )
+
         redirect_url = (
             str(
                 request.url_for("organizations:detail", organization_id=organization_id)
@@ -2605,10 +2645,18 @@ async def setup_account(
         return HXRedirectResponse(request, redirect_url, 303)
 
     # GET - Show modal
+    form_action = str(
+        request.url_for("organizations:setup_account", organization_id=organization_id)
+    )
     with modal("Setup Manual Account", open=True):
-        with tag.div(classes="space-y-4"):
+        with tag.form(
+            method="post",
+            hx_post=form_action,
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
             with tag.p(classes="text-sm text-base-content/60"):
-                text("This will create a manual payment account for this organization.")
+                text("This will create a manual payout account for this organization.")
 
             with tag.div(classes="alert alert-warning"):
                 with tag.span(classes="text-sm"):
@@ -2616,20 +2664,26 @@ async def setup_account(
                         "Manual accounts require manual payout processing and do not integrate with Stripe."
                     )
 
-            # Action buttons
+            with tag.div(classes="form-control w-full"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text font-semibold"):
+                        text("Country")
+                with tag.input(
+                    type="text",
+                    name="country",
+                    value="US",
+                    placeholder="2-letter country code (e.g. US, FR, GB)",
+                    maxlength="2",
+                    classes="input input-bordered w-full uppercase",
+                    required=True,
+                ):
+                    pass
+
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with button(
-                    variant="primary",
-                    hx_post=str(
-                        request.url_for(
-                            "organizations:setup_account",
-                            organization_id=organization_id,
-                        )
-                    ),
-                ):
+                with button(variant="primary", type="submit"):
                     text("Create Manual Account")
 
     return None
@@ -2647,31 +2701,35 @@ async def resync_stripe_account(
     user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     repository = OrganizationRepository(session)
-    organization = await repository.get_by_id_with_account(organization_id)
+    organization = await repository.get_by_id_with_payout_account(organization_id)
 
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
+    payout_account = organization.payout_account
 
-    if organization.account.account_type != PayoutAccountType.stripe:
-        raise HTTPException(status_code=400, detail="Account is not a Stripe account")
+    if payout_account is None:
+        raise HTTPException(
+            status_code=400, detail="Organization has no payout account"
+        )
 
-    if not organization.account.stripe_id:
-        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
+    if (
+        payout_account.type != PayoutAccountType.stripe
+        or payout_account.stripe_id is None
+    ):
+        raise HTTPException(
+            status_code=400, detail="Payout account is not a Stripe account"
+        )
 
-    stripe_account = await stripe_lib.Account.retrieve_async(
-        organization.account.stripe_id
-    )
-    await account_service.update_account_from_stripe(
+    stripe_account = await stripe_lib.Account.retrieve_async(payout_account.stripe_id)
+    await payout_account_service.update_account_from_stripe(
         session, stripe_account=stripe_account
     )
 
     logger.info(
         "Stripe account resynced from backoffice",
         organization_id=str(organization_id),
-        stripe_id=organization.account.stripe_id,
+        stripe_id=payout_account.stripe_id,
         admin_user_id=str(user_session.user_id),
     )
 
@@ -2685,169 +2743,49 @@ async def resync_stripe_account(
 
 
 @router.api_route(
-    "/{organization_id}/disconnect-stripe-account",
-    name="organizations:disconnect_stripe_account",
+    "/{organization_id}/delete-payout-account",
+    name="organizations:delete_payout_account",
     methods=["GET", "POST"],
     response_model=None,
 )
-async def disconnect_stripe_account(
+async def delete_payout_account(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
+    """Show modal to confirm and process payout account deletion."""
     repository = OrganizationRepository(session)
-    organization = await repository.get_by_id_with_account(organization_id)
+    organization = await repository.get_by_id_with_payout_account(organization_id)
 
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
-
-    if organization.account.account_type != PayoutAccountType.stripe:
-        raise HTTPException(status_code=400, detail="Account is not a Stripe account")
-
-    if not organization.account.stripe_id:
-        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
-
-    account = organization.account
-    validation_error = None
-
-    if request.method == "POST":
-        data = await request.form()
-        try:
-            form = DisconnectStripeAccountForm.model_validate_form(data)
-
-            if form.stripe_account_id != account.stripe_id:
-                raise ValidationError.from_exception_data(
-                    title="StripeAccountIdMismatch",
-                    line_errors=[
-                        {
-                            "loc": ("stripe_account_id",),
-                            "type": PydanticCustomError(
-                                "StripeAccountIdMismatch",
-                                "Stripe Account ID does not match.",
-                            ),
-                            "input": form.stripe_account_id,
-                        }
-                    ],
-                )
-
-            old_stripe_id = account.stripe_id
-            archive_account = await account_service.disconnect_stripe(session, account)
-
-            timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
-            disconnect_note = (
-                f"[{timestamp}] Stripe account disconnected.\n"
-                f"Previous Stripe ID: {old_stripe_id}\n"
-                f"Archive Account ID: {archive_account.id}\n"
-                f"Reason: {form.reason.strip()}"
-            )
-            if organization.internal_notes:
-                organization.internal_notes = (
-                    f"{organization.internal_notes}\n\n{disconnect_note}"
-                )
-            else:
-                organization.internal_notes = disconnect_note
-
-            session.add(organization)
-
-            is_ready = await organization_service.is_organization_ready_for_payment(
-                session, organization
-            )
-
-            logger.info(
-                "Stripe account disconnected from organization",
-                organization_id=str(organization_id),
-                old_stripe_id=old_stripe_id,
-                archive_account_id=str(archive_account.id),
-                payment_ready=is_ready,
-            )
-
-            redirect_url = (
-                str(
-                    request.url_for(
-                        "organizations:detail", organization_id=organization_id
-                    )
-                )
-                + "?section=account"
-            )
-            return HXRedirectResponse(request, redirect_url, 303)
-
-        except ValidationError as e:
-            validation_error = e
-
-    form_action = str(
-        request.url_for(
-            "organizations:disconnect_stripe_account",
-            organization_id=organization_id,
+    if not organization.payout_account:
+        raise HTTPException(
+            status_code=400, detail="Organization has no payout account"
         )
-    )
-    modal_view = DisconnectStripeModal(account, form_action, validation_error)
-    with modal_view.render():
-        pass
 
-    return None
-
-
-@router.api_route(
-    "/{organization_id}/delete-stripe-account",
-    name="organizations:delete_stripe_account",
-    methods=["GET", "POST"],
-    response_model=None,
-)
-async def delete_stripe_account(
-    request: Request,
-    organization_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> HXRedirectResponse | None:
-    repository = OrganizationRepository(session)
-    organization = await repository.get_by_id_with_account(organization_id)
-
-    if not organization:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
-
-    if organization.account.account_type != PayoutAccountType.stripe:
-        raise HTTPException(status_code=400, detail="Account is not a Stripe account")
-
-    if not organization.account.stripe_id:
-        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
-
-    account = organization.account
+    payout_account = organization.payout_account
     validation_error = None
 
     if request.method == "POST":
         data = await request.form()
         try:
-            form = DeleteStripeAccountForm.model_validate_form(data)
+            form = DeletePayoutAccountForm.model_validate_form(data)
 
-            if form.stripe_account_id != account.stripe_id:
-                raise ValidationError.from_exception_data(
-                    title="StripeAccountIdMismatch",
-                    line_errors=[
-                        {
-                            "loc": ("stripe_account_id",),
-                            "type": PydanticCustomError(
-                                "StripeAccountIdMismatch",
-                                "Stripe Account ID does not match.",
-                            ),
-                            "input": form.stripe_account_id,
-                        }
-                    ],
-                )
+            account_type = payout_account.type
+            stripe_id = payout_account.stripe_id
 
-            old_stripe_id = account.stripe_id
-            await account_service.delete_stripe_account(session, account)
+            await payout_account_service.delete(session, payout_account)
 
             timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
             delete_note = (
-                f"[{timestamp}] Stripe account deleted.\n"
-                f"Deleted Stripe ID: {old_stripe_id}\n"
-                f"Reason: {form.reason.strip()}"
+                f"[{timestamp}] Payout account deleted.\nType: {account_type.value}\n"
             )
+            if account_type == PayoutAccountType.stripe and stripe_id:
+                delete_note += f"Stripe ID: {stripe_id}\n"
+            delete_note += f"Reason: {form.reason.strip()}"
+
             if organization.internal_notes:
                 organization.internal_notes = (
                     f"{organization.internal_notes}\n\n{delete_note}"
@@ -2858,9 +2796,9 @@ async def delete_stripe_account(
             session.add(organization)
 
             logger.info(
-                "Stripe account deleted from organization",
+                "Payout account deleted from organization",
                 organization_id=str(organization_id),
-                deleted_stripe_id=old_stripe_id,
+                account_type=account_type.value,
             )
 
             redirect_url = (
@@ -2878,11 +2816,11 @@ async def delete_stripe_account(
 
     form_action = str(
         request.url_for(
-            "organizations:delete_stripe_account",
+            "organizations:delete_payout_account",
             organization_id=organization_id,
         )
     )
-    modal_view = DeleteStripeModal(account, form_action, validation_error)
+    modal_view = DeletePayoutAccountModal(payout_account, form_action, validation_error)
     with modal_view.render():
         pass
 

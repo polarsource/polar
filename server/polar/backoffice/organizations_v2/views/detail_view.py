@@ -174,12 +174,12 @@ class OrganizationDetailView:
                                 text(f"{days} days")
 
                     # Country
-                    if self.org.account and self.org.account.country:
+                    if self.org.payout_account:
                         with tag.div():
                             with tag.dt(classes="text-base-content/60 mb-1"):
                                 text("Country")
                             with tag.dd(classes="font-semibold"):
-                                text(self.org.account.country)
+                                text(self.org.payout_account.country)
 
             # Impersonate
             if self.impersonate_user:
@@ -549,7 +549,10 @@ class OrganizationDetailView:
                                     hx_target="#modal",
                                 ):
                                     text("Add Domain to Allowlist")
-                            if self.org.account and self.org.account.stripe_id:
+                            if (
+                                self.org.payout_account
+                                and self.org.payout_account.type == "stripe"
+                            ):
                                 with tag.li():
                                     with tag.a(
                                         hx_post=str(

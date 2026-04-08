@@ -351,25 +351,25 @@ class OverviewSection(ChecklistMixin):
             yield
 
     # ------------------------------------------------------------------
-    # Account-level risk flags (e.g. Morocco, MAD currency)
+    # Account-level risk flags
     # ------------------------------------------------------------------
 
     def _render_risk_flags(self) -> None:
         """Render account-level risk flags above metrics."""
-        account = self.org.account
-        if not account:
+        payout_account = self.org.payout_account
+        if not payout_account:
             return
 
         flags: list[str] = []
         risk_countries = settings.RISK_COUNTRY_CODES
-        if account.country and account.country in risk_countries:
-            country_obj = pycountry.countries.get(alpha_2=account.country)
-            country_name = country_obj.name if country_obj else account.country
-            flags.append(f"Account country: {account.country} ({country_name})")
-        if account.currency and account.currency.lower() in {
+        if payout_account.country in risk_countries:
+            country_obj = pycountry.countries.get(alpha_2=payout_account.country)
+            country_name = country_obj.name if country_obj else payout_account.country
+            flags.append(f"Account country: {payout_account.country} ({country_name})")
+        if payout_account.currency.lower() in {
             c.lower() for c in settings.RISK_CURRENCY_CODES
         }:
-            flags.append(f"Payout currency: {account.currency.upper()}")
+            flags.append(f"Payout currency: {payout_account.currency.upper()}")
 
         if not flags:
             return

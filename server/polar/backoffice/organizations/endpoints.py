@@ -3,7 +3,7 @@ import contextlib
 import uuid
 from collections.abc import Generator
 from datetime import UTC, datetime
-from typing import Annotated, Any, Literal, cast, override
+from typing import Annotated, Any, Literal, override
 
 import stripe as stripe_lib
 import structlog
@@ -16,7 +16,6 @@ from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import classes, document, tag, text
 
-from polar.enums import PayoutAccountType
 from polar.file.repository import FileRepository
 from polar.file.service import file as file_service
 from polar.file.sorting import FileSortProperty
@@ -45,7 +44,6 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.organization_review.repository import OrganizationReviewRepository
-from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
@@ -158,26 +156,6 @@ class DaysInStatusColumn(
             text(f"{days} days in review")
         else:
             text(f"{days} days since review")
-        return None
-
-
-class AccountTypeDescriptionListAttrItem(
-    description_list.DescriptionListAttrItem[Account]
-):
-    def render(self, request: Request, item: Account) -> Generator[None] | None:
-        account_type = item.account_type
-        if account_type == PayoutAccountType.stripe:
-            with tag.a(
-                href=f"https://dashboard.stripe.com/connect/accounts/{item.stripe_id}",
-                classes="link flex flex-row gap-1",
-                target="_blank",
-                rel="noopener noreferrer",
-            ):
-                text(account_type.get_display_name())
-                with tag.div(classes="icon-external-link"):
-                    pass
-        else:
-            text(account_type.get_display_name())
         return None
 
 
@@ -886,263 +864,6 @@ async def remove_member(
         )
 
 
-@router.get(
-    "/{id}/confirm_change_admin/{user_id}",
-    name="organizations-classic:confirm_change_admin",
-)
-async def confirm_change_admin(
-    request: Request,
-    id: UUID4,
-    user_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    """Show confirmation modal for changing account admin."""
-
-    # Get organization and account
-    org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(
-        id,
-        include_deleted=True,
-        options=(joinedload(Organization.account),),
-    )
-
-    if not organization or not organization.account:
-        raise HTTPException(status_code=404, detail="Organization or account not found")
-
-    # Get current admin
-    current_admin = await org_repo.get_admin_user(session, organization)
-
-    # Get new admin user info
-    user_repo = UserRepository.from_session(session)
-    new_admin = await user_repo.get_by_id(user_id)
-
-    if not new_admin:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Check all the conditions that might prevent changing admin
-    has_stripe_account = bool(organization.account.stripe_id)
-    user_not_verified = (
-        new_admin.identity_verification_status != IdentityVerificationStatus.verified
-    )
-    not_enough_users = (
-        len(await user_repo.get_all_by_organization(organization.id)) <= 1
-    )
-
-    # Determine if admin change is blocked and why
-    is_blocked = has_stripe_account or user_not_verified or not_enough_users
-
-    with modal("Change Account Admin", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            # Show appropriate alert based on blocking conditions
-            if is_blocked:
-                with tag.div(classes="alert alert-error"):
-                    with tag.div():
-                        with tag.h3(classes="font-bold"):
-                            text("Cannot Change Admin")
-                        if has_stripe_account:
-                            with tag.p():
-                                text(
-                                    "To change account admin, first delete the Stripe account using backoffice account management."
-                                )
-                        elif user_not_verified:
-                            with tag.p():
-                                text(
-                                    "The selected user must be verified in Stripe before they can become an admin. Please ensure they complete identity verification first."
-                                )
-                        elif not_enough_users:
-                            with tag.p():
-                                text(
-                                    "Need at least 2 team members to change account admin."
-                                )
-            else:
-                with tag.div(classes="alert alert-success"):
-                    with tag.div():
-                        with tag.h3(classes="font-bold"):
-                            text("Change Account Administrator")
-                        with tag.p():
-                            text(
-                                "Account admin can now be changed. This will change who has admin control over the account."
-                            )
-
-            with tag.div(classes="space-y-4"):
-                with tag.div():
-                    with tag.h4(classes="font-semibold text-sm"):
-                        text("Current Admin:")
-                    with tag.p(classes="text-gray-600"):
-                        if current_admin:
-                            text(current_admin.email)
-                        else:
-                            text("No current admin found")
-
-                with tag.div():
-                    with tag.h4(classes="font-semibold text-sm"):
-                        text("New Admin:")
-                    with tag.p(classes="text-gray-600"):
-                        text(new_admin.email)
-
-                # Show verification status
-                with tag.div():
-                    with tag.h4(classes="font-semibold text-sm"):
-                        text("Identity Verification Status:")
-                    verification_status = new_admin.identity_verification_status
-                    if verification_status == IdentityVerificationStatus.verified:
-                        with tag.p(classes="text-green-600 font-medium"):
-                            text("✅ Verified")
-                    else:
-                        with tag.p(classes="text-red-600 font-medium"):
-                            text(f"❌ {verification_status.get_display_name()}")
-
-            # Show warning if user is not verified
-            if (
-                new_admin.identity_verification_status
-                != IdentityVerificationStatus.verified
-            ):
-                with tag.div(classes="alert alert-error"):
-                    with tag.div():
-                        with tag.h3(classes="font-bold"):
-                            text("Cannot Change Admin")
-                        with tag.p():
-                            text(
-                                "The selected user must be verified in Stripe before they can become an admin. Please ensure they complete identity verification first."
-                            )
-
-        # Action buttons
-        with tag.div(classes="modal-action"):
-            with tag.form(method="dialog"):
-                with button(ghost=True):
-                    text("Cancel")
-
-            # Show button based on blocking conditions
-            if is_blocked:
-                # Show disabled button with appropriate message
-                with button(variant="primary", disabled=True):
-                    if has_stripe_account:
-                        text("Change Admin (Delete Stripe Account First)")
-                    elif user_not_verified:
-                        text("Change Admin (Requires Verification)")
-                    elif not_enough_users:
-                        text("Change Admin (Need More Members)")
-            else:
-                # All conditions met - show active button
-                with tag.form(method="dialog"):
-                    with button(
-                        variant="primary",
-                        hx_post=str(
-                            request.url_for(
-                                "organizations-classic:change_admin",
-                                id=id,
-                                user_id=user_id,
-                            )
-                        ),
-                        hx_target="#modal",
-                    ):
-                        text("Change Admin")
-
-
-@router.api_route(
-    "/{id}/setup_manual_payout",
-    name="organizations-classic:setup_manual_payout",
-    methods=["GET", "POST"],
-)
-async def setup_manual_payout(
-    request: Request,
-    id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id, include_deleted=True)
-    if not organization:
-        raise HTTPException(status_code=404)
-
-    # Check if organization already has a payout account
-    if organization.payout_account is not None:
-        raise HTTPException(
-            status_code=400, detail="Organization already has a payout account"
-        )
-
-    if request.method == "POST":
-        # Create a manual account for the organization
-        # Get country from form data
-        data = await request.form()
-        country = cast(str, data.get("country", "US"))
-
-        # Get the first user of the organization as admin
-        user_repository = UserRepository.from_session(session)
-        users = await user_repository.get_all_by_organization(organization.id)
-        if not users:
-            raise HTTPException(status_code=400, detail="Organization has no users")
-
-        admin_user = users[0]  # Use first user as admin
-
-        await payout_account_service.create_manual_account(
-            session, organization, admin_user, country=country, currency="usd"
-        )
-
-        await add_toast(
-            request,
-            f"Manual payout account created for {organization.name}",
-            "success",
-        )
-
-        return HXRedirectResponse(
-            request, str(request.url_for("organizations-classic:get", id=id)), 303
-        )
-
-    with modal("Setup Manual Payout", open=True):
-        with tag.form(method="POST", action=str(request.url), classes="flex flex-col"):
-            # Warning message
-            with tag.div(classes="alert alert-warning"):
-                with tag.svg(
-                    classes="stroke-current shrink-0 h-6 w-6",
-                    fill="none",
-                    viewBox="0 0 24 24",
-                ):
-                    with tag.path(
-                        stroke_linecap="round",
-                        stroke_linejoin="round",
-                        stroke_width="2",
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
-                    ):
-                        pass
-                with tag.span(classes="font-semibold"):
-                    text(
-                        "Should only be enabled by Birk at this stage since its manual and reserved for a few customers in alpha"
-                    )
-
-            with tag.p():
-                text("This will create a manual payout account for this organization.")
-
-            # Country selection
-            with tag.div(classes="form-control w-full"):
-                with tag.label(classes="label"):
-                    with tag.span(classes="label-text"):
-                        text("Country Code")
-                with tag.input(
-                    type="text",
-                    name="country",
-                    required=True,
-                    maxlength="2",
-                    minlength="2",
-                    pattern="[A-Z]{2}",
-                    placeholder="US",
-                    classes="input input-bordered w-full",
-                    title="Enter a 2-letter country code (e.g., US, GB, CA)",
-                ):
-                    pass
-                with tag.p(classes="text-xs text-gray-500 mt-1"):
-                    text("Enter a 2-letter ISO country code (e.g., US, GB, CA)")
-
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
-                with button(
-                    type="submit",
-                    variant="primary",
-                ):
-                    text("Create Manual Account")
-
-
 @router.post(
     "/{id}/create_plain_thread",
     name="organizations-classic:create_plain_thread",
@@ -1630,75 +1351,6 @@ async def get(
                                                             ):
                                                                 text("Impersonate")
 
-                                                        # More actions dropdown menu
-                                                        if not is_admin:
-                                                            # Check if we can show Change Admin button
-                                                            can_change_admin = (
-                                                                account  # Has account
-                                                                and not account.stripe_id  # Stripe account deleted
-                                                                and len(users)
-                                                                > 1  # More than one user
-                                                                and user.identity_verification_status
-                                                                == IdentityVerificationStatus.verified  # User must be verified
-                                                            )
-
-                                                            with tag.div(
-                                                                classes="dropdown dropdown-end"
-                                                            ):
-                                                                with tag.div(
-                                                                    classes="btn btn-ghost btn-sm",
-                                                                    tabindex="0",
-                                                                    role="button",
-                                                                ):
-                                                                    # Three dots icon
-                                                                    with tag.svg(
-                                                                        classes="w-4 h-4",
-                                                                        fill="currentColor",
-                                                                        viewBox="0 0 20 20",
-                                                                    ):
-                                                                        with tag.path(
-                                                                            d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"
-                                                                        ):
-                                                                            pass
-
-                                                                with tag.ul(
-                                                                    classes="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow",
-                                                                    tabindex="0",
-                                                                ):
-                                                                    # Make Admin option (always show, handle restrictions in modal)
-                                                                    with tag.li():
-                                                                        with tag.a(
-                                                                            hx_get=str(
-                                                                                request.url_for(
-                                                                                    "organizations-classic:confirm_change_admin",
-                                                                                    id=organization.id,
-                                                                                    user_id=user.id,
-                                                                                )
-                                                                            ),
-                                                                            hx_target="#modal",
-                                                                            classes="text-warning hover:bg-warning hover:text-warning-content",
-                                                                        ):
-                                                                            text(
-                                                                                "Make Admin"
-                                                                            )
-
-                                                                    # Remove option
-                                                                    with tag.li():
-                                                                        with tag.a(
-                                                                            hx_get=str(
-                                                                                request.url_for(
-                                                                                    "organizations-classic:confirm_remove_member",
-                                                                                    id=organization.id,
-                                                                                    user_id=user.id,
-                                                                                )
-                                                                            ),
-                                                                            hx_target="#modal",
-                                                                            classes="text-error hover:bg-error hover:text-error-content",
-                                                                        ):
-                                                                            text(
-                                                                                "Remove Member"
-                                                                            )
-
                         else:
                             # Empty state
                             with tag.div(classes="text-center py-8"):
@@ -1706,54 +1358,6 @@ async def get(
                                     text("👥")
                                 with tag.p(classes="text-gray-600"):
                                     text("No team members yet")
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Account Status")
-                        if account:
-                            with description_list.DescriptionList[Account](
-                                description_list.DescriptionListAttrItem(
-                                    "id", "Account Id", clipboard=True
-                                ),
-                                AccountTypeDescriptionListAttrItem(
-                                    "account_type", "Account Type"
-                                ),
-                                description_list.DescriptionListAttrItem(
-                                    "country", "Country"
-                                ),
-                                description_list.DescriptionListAttrItem(
-                                    "currency", "Currency"
-                                ),
-                            ).render(request, account):
-                                pass
-
-                            # Show admin change status
-                            if account and len(users) <= 1:
-                                with tag.div(
-                                    classes="mt-4 p-3 bg-gray-50 border border-gray-200 rounded"
-                                ):
-                                    with tag.p(classes="text-sm text-gray-600"):
-                                        text(
-                                            "ℹ️ Need at least 2 team members to change account admin."
-                                        )
-                        else:
-                            with tag.div(classes="text-center py-8"):
-                                with tag.p(classes="text-gray-600 mb-4"):
-                                    text(
-                                        "No account has been set up for this organization"
-                                    )
-                                with button(
-                                    hx_get=str(
-                                        request.url_for(
-                                            "organizations-classic:setup_manual_payout",
-                                            id=organization.id,
-                                        )
-                                    ),
-                                    hx_target="#modal",
-                                    variant="primary",
-                                ):
-                                    text("Setup Manual Account")
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):

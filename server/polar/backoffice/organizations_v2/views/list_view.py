@@ -9,7 +9,7 @@ from fastapi import Request
 from sqlalchemy import func, select
 from tagflow import tag, text
 
-from polar.models import Account, Organization
+from polar.models import Organization, PayoutAccount
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 
@@ -39,13 +39,12 @@ class OrganizationListView:
         return {row.status: row.count for row in result}  # type: ignore[misc]
 
     async def get_distinct_countries(self) -> list[str]:
-        """Get list of distinct countries from organizations with accounts."""
+        """Get list of distinct countries from organizations with payout accounts."""
         stmt = (
-            select(Account.country)
-            .join(Organization, Organization.account_id == Account.id)
-            .where(Account.country.is_not(None))
+            select(PayoutAccount.country)
+            .join(Organization, Organization.payout_account_id == PayoutAccount.id)
             .distinct()
-            .order_by(Account.country)
+            .order_by(PayoutAccount.country)
         )
         result = await self.session.execute(stmt)
         return [row[0] for row in result.all()]
@@ -186,8 +185,8 @@ class OrganizationListView:
 
             # Country
             with tag.td(classes="text-sm"):
-                if org.account and org.account.country:
-                    text(org.account.country)
+                if org.payout_account:
+                    text(org.payout_account.country)
                 else:
                     with tag.span(classes="text-base-content/40"):
                         text("—")

@@ -1,4 +1,4 @@
-"""Account section with payment account details."""
+"""Account section showing the pure Account entity (financial: fees, credits, balance)."""
 
 import contextlib
 from collections.abc import Generator, Sequence
@@ -7,7 +7,6 @@ from datetime import UTC, datetime
 from fastapi import Request
 from tagflow import tag, text
 
-from polar.enums import PayoutAccountType
 from polar.models import AccountCredit, Organization
 
 from ....components import button, card
@@ -39,7 +38,7 @@ def _format_date(dt: datetime | None) -> str:
 
 
 class AccountSection:
-    """Render the account section with payment details."""
+    """Render the account section showing the pure Account entity."""
 
     def __init__(
         self,
@@ -59,188 +58,72 @@ class AccountSection:
         with tag.div(classes="space-y-6"):
             # Account details card
             with card(bordered=True):
-                with tag.h2(classes="text-lg font-bold mb-4"):
-                    text("Payment Account")
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Account")
+                    if self.org.account:
+                        with tag.a(
+                            href=f"{request.url_for('payouts:list')}?query={self.org.account.id}",
+                            classes="btn btn-secondary btn-sm",
+                        ):
+                            text("View Payouts →")
 
                 if self.org.account:
                     account = self.org.account
+                    basis_points, fixed_cents = account.platform_fee
 
-                    # Account type and status
                     with tag.div(classes="space-y-4"):
+                        # Top row: ID + currency
                         with tag.div(classes="grid grid-cols-2 gap-4"):
                             with tag.div():
                                 with tag.div(
                                     classes="text-sm text-base-content/60 mb-1"
                                 ):
                                     text("Account ID")
-                                with tag.div(classes="font-mono text-sm"):
+                                with tag.div(classes="font-mono text-sm break-all"):
                                     text(str(account.id))
 
                             with tag.div():
                                 with tag.div(
                                     classes="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Type")
-                                with tag.div(classes="font-semibold"):
-                                    if account.account_type == PayoutAccountType.stripe:
-                                        with tag.span(classes="badge badge-primary"):
-                                            text("Stripe")
-                                    else:
-                                        with tag.span(classes="badge badge-secondary"):
-                                            text(account.account_type.value.title())
-
-                            with tag.div():
-                                with tag.div(
-                                    classes="text-sm text-base-content/60 mb-1"
-                                ):
-                                    text("Country")
-                                with tag.div(classes="font-semibold"):
-                                    text(account.country or "N/A")
-
-                            with tag.div():
-                                with tag.div(
-                                    classes="text-sm text-base-content/60 mb-1"
-                                ):
                                     text("Currency")
-                                with tag.div(classes="font-semibold"):
+                                with tag.div(classes="font-semibold uppercase"):
                                     text(account.currency or "N/A")
 
-                        # Stripe-specific info
-                        if (
-                            account.account_type == PayoutAccountType.stripe
-                            and account.stripe_id
-                        ):
-                            with tag.div(classes="pt-4 border-t border-base-300"):
-                                with tag.div(
-                                    classes="flex items-center justify-between"
-                                ):
-                                    with tag.div():
-                                        with tag.div(
-                                            classes="text-sm text-base-content/60 mb-1"
-                                        ):
-                                            text("Stripe Account ID")
-                                        with tag.div(classes="font-mono text-sm"):
-                                            text(account.stripe_id)
-
-                                    with tag.a(
-                                        href=f"https://dashboard.stripe.com/connect/accounts/{account.stripe_id}",
-                                        target="_blank",
-                                        classes="btn btn-secondary btn-sm",
-                                    ):
-                                        text("Open in Stripe →")
-
-                        # Account status
+                        # Fees row
                         with tag.div(classes="pt-4 border-t border-base-300"):
                             with tag.div(classes="text-sm font-semibold mb-3"):
-                                text("Account Status")
+                                text("Platform Fees")
 
-                            with tag.div(classes="grid grid-cols-2 gap-3"):
-                                # Charges enabled
-                                charges_enabled = account.is_charges_enabled
-                                with tag.div(classes="flex items-center gap-2"):
-                                    icon = "Yes" if charges_enabled else "No"
-                                    color = (
-                                        "text-success"
-                                        if charges_enabled
-                                        else "text-error"
-                                    )
-                                    with tag.span(classes=color):
-                                        text(icon)
-                                    text("Charges Enabled")
-
-                                # Payouts enabled
-                                payouts_enabled = account.is_payouts_enabled
-                                with tag.div(classes="flex items-center gap-2"):
-                                    icon = "Yes" if payouts_enabled else "No"
-                                    color = (
-                                        "text-success"
-                                        if payouts_enabled
-                                        else "text-error"
-                                    )
-                                    with tag.span(classes=color):
-                                        text(icon)
-                                    text("Payouts Enabled")
-
-                        if (
-                            account.account_type == PayoutAccountType.stripe
-                            and account.stripe_id
-                        ):
-                            with tag.div(classes="pt-4 border-t border-base-300"):
-                                with tag.div(classes="text-sm font-semibold mb-3"):
-                                    text("Account Actions")
-
-                                with tag.div(classes="flex flex-wrap gap-2"):
-                                    with button(
-                                        variant="warning",
-                                        size="sm",
-                                        hx_get=str(
-                                            request.url_for(
-                                                "organizations:disconnect_stripe_account",
-                                                organization_id=self.org.id,
-                                            )
-                                        ),
-                                        hx_target="#modal",
+                            with tag.div(classes="grid grid-cols-2 gap-4"):
+                                with tag.div():
+                                    with tag.div(
+                                        classes="text-sm text-base-content/60 mb-1"
                                     ):
-                                        text("Disconnect")
+                                        text("Processor Fees Applicable")
+                                    if account.processor_fees_applicable:
+                                        with tag.span(classes="badge badge-success"):
+                                            text("Yes")
+                                    else:
+                                        with tag.span(classes="badge badge-neutral"):
+                                            text("No")
 
-                                    with button(
-                                        variant="error",
-                                        size="sm",
-                                        hx_get=str(
-                                            request.url_for(
-                                                "organizations:delete_stripe_account",
-                                                organization_id=self.org.id,
-                                            )
-                                        ),
-                                        hx_target="#modal",
+                                with tag.div():
+                                    with tag.div(
+                                        classes="text-sm text-base-content/60 mb-1"
                                     ):
-                                        text("Delete")
-
-                                    with tag.a(
-                                        href=f"{request.url_for('payouts:list')}?query={account.id}",
-                                        classes="btn btn-secondary btn-sm",
-                                    ):
-                                        text("View Payouts")
+                                        text("Platform Fee Rate")
+                                    with tag.div(classes="font-semibold"):
+                                        text(
+                                            f"{basis_points / 100:.2f}% + {_format_cents(fixed_cents)}"
+                                        )
 
                 else:
                     # No account
                     with tag.div(classes="text-center py-8"):
-                        with tag.div(classes="text-base-content/60 mb-4"):
-                            text("No payment account configured")
-
-                        with button(
-                            variant="primary",
-                            hx_get=str(
-                                request.url_for(
-                                    "organizations:setup_account",
-                                    organization_id=self.org.id,
-                                )
-                            ),
-                            hx_target="#modal",
-                        ):
-                            text("Setup Manual Account")
-
-            # Payout settings (if manual account)
-            if (
-                self.org.account
-                and self.org.account.account_type != PayoutAccountType.stripe
-            ):
-                with card(bordered=True):
-                    with tag.h3(classes="text-md font-bold mb-4"):
-                        text("Manual Payout Settings")
-
-                    with tag.div(classes="space-y-3 text-sm"):
-                        with tag.div():
-                            with tag.span(classes="text-base-content/60"):
-                                text("Processor Fees: ")
-                            with tag.span(classes="font-semibold"):
-                                text("None (Manual)")
-
-                        with tag.div():
-                            with tag.span(classes="text-base-content/60"):
-                                text("Payout Schedule: ")
-                            with tag.span(classes="font-semibold"):
-                                text("Manual processing required")
+                        with tag.div(classes="text-base-content/60 mb-2"):
+                            text("No account configured")
 
             # Fee Credits section (only if account exists)
             if self.org.account:
@@ -345,6 +228,3 @@ class AccountSection:
                             text("No credits granted yet")
 
             yield
-
-
-__all__ = ["AccountSection"]

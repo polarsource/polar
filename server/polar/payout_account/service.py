@@ -120,6 +120,9 @@ class PayoutAccountService:
         repository = PayoutAccountRepository.from_session(session)
         await repository.soft_delete(payout_account)
 
+        organization_repository = OrganizationRepository.from_session(session)
+        await organization_repository.delete_payout_account(payout_account.id)
+
     async def update_account_from_stripe(
         self, session: AsyncSession, *, stripe_account: stripe_lib.Account
     ) -> PayoutAccount:
@@ -157,6 +160,9 @@ class PayoutAccountService:
                 admin=admin,
                 country=country,
                 currency=currency,
+                is_details_submitted=True,
+                is_charges_enabled=True,
+                is_payouts_enabled=True,
             )
         )
 

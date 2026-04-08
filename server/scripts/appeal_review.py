@@ -689,15 +689,11 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
         async with deps.sessionmaker() as session:
             # Get org with account
             org_repo = OrganizationRepository.from_session(session)
-            org = await org_repo.get_by_id_with_account(deps._organization_id)
+            org = await org_repo.get_by_id_with_payout_account(deps._organization_id)
             if org is None:
                 return "Organization not found."
 
-            review_repo = OrganizationReviewRepository.from_session(session)
-            payout_account = None
-            if org.account_id:
-                payout_account = await review_repo.get_payout_account_with_admin(org.id)
-
+            payout_account = org.payout_account
             payout_account_data = collect_payout_account_data(payout_account)
             identity_data = await collect_identity_data(
                 payout_account.admin if payout_account else None

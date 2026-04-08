@@ -1,6 +1,7 @@
 'use client'
 
 import { enums, schemas } from '@polar-sh/client'
+import { METER_UNIT_DISPLAY_NAMES } from '@polar-sh/ui/lib/meterUnit'
 import {
   Select,
   SelectContent,
@@ -17,14 +18,6 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useFormContext } from 'react-hook-form'
-
-type MeterUnit = (typeof enums.meterUnitValues)[number]
-
-const UNIT_LABELS: Record<MeterUnit, string> = {
-  scalar: 'Scalar',
-  tokens: 'Tokens',
-  bytes: 'Bytes',
-}
 
 const MeterFormUnit = () => {
   const { control } = useFormContext<schemas['MeterCreate']>()
@@ -50,7 +43,7 @@ const MeterFormUnit = () => {
               <SelectContent>
                 {enums.meterUnitValues.map((unit) => (
                   <SelectItem key={unit} value={unit}>
-                    {UNIT_LABELS[unit]}
+                    {METER_UNIT_DISPLAY_NAMES[unit]}
                   </SelectItem>
                 ))}
               </SelectContent>

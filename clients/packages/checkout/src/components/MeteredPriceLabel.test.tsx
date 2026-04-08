@@ -124,4 +124,33 @@ describe('MeteredPriceLabel', () => {
     })
   })
 
+  describe('seconds unit', () => {
+    it('scales price to per hour', () => {
+      // $2.50 / hour → unit_amount = 250/3600 ≈ 0.0694 cents/second
+      const price = createMeteredPrice({
+        unit_amount: String(250 / 3600),
+        meter: { id: 'meter_1', name: 'Compute', unit: 'seconds' },
+      })
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$2.50')
+      expect(container.textContent).toContain('/ hour')
+    })
+
+    it('shows hour label', () => {
+      const price = createMeteredPrice({
+        unit_amount: String(100 / 3600),
+        meter: { id: 'meter_1', name: 'Compute', unit: 'seconds' },
+      })
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('/ hour')
+    })
+  })
 })

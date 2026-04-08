@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getMeterUnitFormat, type MeterUnit } from './meterUnit'
+import { getMeterUnitFormat, type MeterUnit } from '@polar-sh/ui/lib/meterUnit'
 
 describe('getMeterUnitFormat', () => {
   describe('scalar', () => {
@@ -63,8 +63,31 @@ describe('getMeterUnitFormat', () => {
     })
   })
 
+  describe('seconds', () => {
+    it('returns scale of 3_600', () => {
+      expect(getMeterUnitFormat('seconds').scale).toBe(3_600)
+    })
+
+    it('returns label "hour"', () => {
+      expect(getMeterUnitFormat('seconds').label).toBe('hour')
+    })
+
+    it('scales $2.50/hour correctly', () => {
+      // $2.50/hr → unit_amount = 250/3600 ≈ 0.06944 cents/second
+      const { scale } = getMeterUnitFormat('seconds')
+      const unitAmountCents = 250 / 3600
+      expect(unitAmountCents * scale).toBeCloseTo(250) // 250 cents = $2.50
+    })
+
+    it('scales $0.50/hour correctly', () => {
+      const { scale } = getMeterUnitFormat('seconds')
+      const unitAmountCents = 50 / 3600
+      expect(unitAmountCents * scale).toBeCloseTo(50) // 50 cents = $0.50
+    })
+  })
+
   describe('all units', () => {
-    const allUnits: MeterUnit[] = ['scalar', 'tokens', 'bytes']
+    const allUnits: MeterUnit[] = ['scalar', 'tokens', 'bytes', 'seconds']
 
     it.each(allUnits)('%s returns a positive scale', (unit) => {
       expect(getMeterUnitFormat(unit).scale).toBeGreaterThan(0)

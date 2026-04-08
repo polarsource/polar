@@ -1,7 +1,7 @@
 import type { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { DEFAULT_LOCALE, type AcceptedLocale } from '@polar-sh/i18n'
-import { getMeterUnitFormat } from '../utils/meterUnit'
+import { getMeterUnitFormat } from '@polar-sh/ui/lib/meterUnit'
 
 interface MeteredPriceLabelProps {
   price: schemas['ProductPriceMeteredUnit']

@@ -24,6 +24,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { METER_UNIT_DISPLAY_NAMES } from '@polar-sh/ui/lib/meterUnit'
 
 interface MeterListSidebarProps {
   organization: schemas['Organization']
@@ -190,7 +191,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
                   <div className="truncate text-sm">{meter.name}</div>
                 </div>
                 <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500 capitalize">
-                  {meter.aggregation.func}
+                  {METER_UNIT_DISPLAY_NAMES[meter.unit]}
                 </div>
               </div>
             </Link>

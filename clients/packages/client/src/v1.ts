@@ -19936,7 +19936,7 @@ export interface components {
      * MeterUnit
      * @enum {string}
      */
-    MeterUnit: 'scalar' | 'tokens' | 'bytes'
+    MeterUnit: 'scalar' | 'tokens' | 'bytes' | 'seconds'
     /** MeterUpdate */
     MeterUpdate: {
       /**
@@ -47586,7 +47586,7 @@ export const meterSortPropertyValues: ReadonlyArray<
 > = ['created_at', '-created_at', 'name', '-name']
 export const meterUnitValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterUnit']
-> = ['scalar', 'tokens', 'bytes']
+> = ['scalar', 'tokens', 'bytes', 'seconds']
 export const metricTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MetricType']
 > = ['scalar', 'currency', 'currency_sub_cent', 'percentage']

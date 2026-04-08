@@ -79,10 +79,8 @@ const MeterForm = ({
             <FormMessage />
           </FormItem>
 
-          <div className="grid grid-cols-2 gap-4">
-            <MeterFormAggregation />
-            <MeterFormUnit />
-          </div>
+          <MeterFormAggregation />
+          <MeterFormUnit />
         </>
       )}
     </>

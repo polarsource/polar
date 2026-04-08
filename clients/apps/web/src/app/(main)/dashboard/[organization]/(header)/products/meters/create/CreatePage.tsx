@@ -91,32 +91,15 @@ export default function ClientPage({ organization }: ClientPageProps) {
         </div>
       }
       className="flex h-full"
-      wrapperClassName="w-full! max-w-(--breakpoint-2xl)!"
+      wrapperClassName="max-w-2xl!"
     >
       <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-6 pb-8 xl:flex-row"
         >
-          <div className="dark:xl:border-polar-700 flex h-full flex-1 flex-col gap-y-6 xl:w-1/2 xl:border-r xl:border-gray-100 xl:pr-12">
+          <div className="flex flex-1 flex-col gap-y-6">
             <MeterForm organizationId={organization.id} />
-            <Button
-              className="self-start"
-              onClick={updatePreview}
-              loading={isPreviewLoading}
-            >
-              Preview
-            </Button>
-          </div>
-          <div className="flex h-full flex-1 flex-col gap-y-6 xl:w-1/2 xl:pl-12">
-            <div className="flex flex-col gap-y-4">
-              <h2 className="text-xl">Preview</h2>
-              <p className="dark:text-polar-500 text-gray-500">
-                Preview the meter with the filter you created. Showing the
-                latest 10 events.
-              </p>
-            </div>
-            <Events events={events?.items ?? []} organization={organization} />
           </div>
           <div className="flex flex-row gap-x-4 md:hidden">
             <Button

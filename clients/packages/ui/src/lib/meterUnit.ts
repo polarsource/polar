@@ -1,4 +1,4 @@
-export type MeterUnit = 'scalar' | 'tokens' | 'bytes'
+export type MeterUnit = 'scalar' | 'tokens' | 'bytes' | 'seconds'
 
 export interface MeterUnitFormat {
   /**
@@ -15,6 +15,7 @@ const UNIT_FORMATS: Record<MeterUnit, MeterUnitFormat> = {
   scalar: { scale: 1, label: 'unit' },
   tokens: { scale: 1_000_000, label: '1M tokens' },
   bytes: { scale: 1_000_000_000, label: 'GB' },
+  seconds: { scale: 3_600, label: 'hour' },
 }
 
 /**
@@ -29,7 +30,19 @@ const UNIT_FORMATS: Record<MeterUnit, MeterUnitFormat> = {
  * // Bytes: $0.023 / GB
  * const { scale, label } = getMeterUnitFormat('bytes')
  * const displayAmount = unitAmountCents * scale  // 0.0000000023 * 1e9 = 2.3 cents = $0.023
+ *
+ * @example
+ * // Seconds: $2.50 / hour
+ * const { scale, label } = getMeterUnitFormat('seconds')
+ * const displayAmount = unitAmountCents * scale  // (250/3600) * 3600 = 250 cents = $2.50
  */
 export function getMeterUnitFormat(unit: MeterUnit): MeterUnitFormat {
   return UNIT_FORMATS[unit] ?? UNIT_FORMATS.scalar
+}
+
+export const METER_UNIT_DISPLAY_NAMES: Record<MeterUnit, string> = {
+  scalar: 'Scalar',
+  tokens: 'Tokens',
+  bytes: 'Bytes',
+  seconds: 'Seconds',
 }

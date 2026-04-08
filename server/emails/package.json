@@ -28,7 +28,7 @@
     "@types/react-dom": "^19.2.3",
     "@yao-pkg/pkg": "^6.14.1",
     "openapi-typescript": "^7.13.0",
-    "oxfmt": "^0.42.0",
+    "oxfmt": "^0.43.0",
     "react-email": "^5.2.10",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"

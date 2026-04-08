@@ -11,6 +11,7 @@ from polar.kit.metadata import (
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
+from polar.meter.unit import MeterUnit
 from polar.organization.schemas import OrganizationID
 
 NAME_DESCRIPTION = (
@@ -26,6 +27,10 @@ _aggregation_description = (
 
 class MeterCreate(Schema, MetadataInputMixin):
     name: str = Field(..., description=NAME_DESCRIPTION, min_length=3)
+    unit: MeterUnit = Field(
+        default=MeterUnit.scalar,
+        description="The unit of the meter.",
+    )
     filter: Filter = Field(..., description=_filter_description)
     aggregation: Aggregation = Field(..., description=_aggregation_description)
     organization_id: OrganizationID | None = Field(
@@ -39,6 +44,7 @@ class MeterCreate(Schema, MetadataInputMixin):
 
 class MeterUpdate(Schema, MetadataInputMixin):
     name: str | None = Field(None, description=NAME_DESCRIPTION, min_length=3)
+    unit: MeterUnit | None = Field(None, description="The unit of the meter.")
     filter: Filter | None = Field(None, description=_filter_description)
     aggregation: Aggregation | None = Field(None, description=_aggregation_description)
     is_archived: bool | None = Field(
@@ -52,6 +58,7 @@ class MeterUpdate(Schema, MetadataInputMixin):
 
 class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin):
     name: str = Field(..., description=NAME_DESCRIPTION)
+    unit: MeterUnit = Field(..., description="The unit of the meter.")
     filter: Filter = Field(..., description=_filter_description)
     aggregation: Aggregation = Field(..., description=_aggregation_description)
     organization_id: UUID4 = Field(

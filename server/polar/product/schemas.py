@@ -61,6 +61,7 @@ from polar.models.product_price import (
 from polar.models.product_price import (
     ProductPriceSeatUnit as ProductPriceSeatUnitModel,
 )
+from polar.meter.unit import MeterUnit
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
@@ -792,6 +793,7 @@ class ProductPriceMeter(IDSchema):
     """
 
     name: str = Field(description="The name of the meter.")
+    unit: MeterUnit = Field(description="The unit of the meter.")
 
 
 class ProductPriceMeteredUnit(ProductPriceBase):

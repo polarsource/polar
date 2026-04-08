@@ -8,7 +8,7 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
-import { addMonths, addYears } from 'date-fns'
+import { addDays, addMonths, addWeeks, addYears } from 'date-fns'
 import { useMemo } from 'react'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { getSeatRows } from '../utils/seats'
@@ -28,6 +28,22 @@ function formatShortDate(date: Date, locale: AcceptedLocale): string {
   })
 }
 
+function intervalToMonths(interval: string, count: number | null): number {
+  const c = count ?? 1
+  switch (interval) {
+    case 'day':
+      return c / 30
+    case 'week':
+      return (c * 7) / 30
+    case 'month':
+      return c
+    case 'year':
+      return c * 12
+    default:
+      return 0
+  }
+}
+
 function getDiscountEndDate(
   baseDate: Date,
   discount: NonNullable<schemas['CheckoutPublic']['discount']>,
@@ -36,9 +52,18 @@ function getDiscountEndDate(
 ): Date {
   if (discount.duration === 'once') {
     const count = intervalCount ?? 1
-    return interval === 'year'
-      ? addYears(baseDate, count)
-      : addMonths(baseDate, count)
+    switch (interval) {
+      case 'day':
+        return addDays(baseDate, count)
+      case 'week':
+        return addWeeks(baseDate, count)
+      case 'month':
+        return addMonths(baseDate, count)
+      case 'year':
+        return addYears(baseDate, count)
+      default:
+        return addMonths(baseDate, count)
+    }
   }
   if (
     'duration_in_months' in discount &&
@@ -79,6 +104,20 @@ const CheckoutPricingBreakdown = ({
   const discountEndLabel = useMemo(() => {
     if (!checkout.discount || checkout.discount.duration === 'forever') {
       return ''
+    }
+
+    if (!interval) {
+      return ''
+    }
+
+    if (
+      'duration_in_months' in checkout.discount &&
+      typeof checkout.discount.duration_in_months === 'number'
+    ) {
+      const billingMonths = intervalToMonths(interval, intervalCount)
+      if (checkout.discount.duration_in_months <= billingMonths) {
+        return ''
+      }
     }
 
     const baseDate = checkout.trial_end

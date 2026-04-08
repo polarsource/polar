@@ -24,7 +24,9 @@ class Meter(RecordModel, MetadataMixin):
     unit: Mapped[MeterUnit] = mapped_column(
         StringEnum(MeterUnit), nullable=False, default=MeterUnit.scalar
     )
-    custom_label: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    custom_label: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     custom_multiplier: Mapped[int | None] = mapped_column(nullable=True, default=None)
     filter: Mapped[Filter] = mapped_column(FilterType, nullable=False)
     aggregation: Mapped[Aggregation] = mapped_column(AggregationType, nullable=False)

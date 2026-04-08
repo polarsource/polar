@@ -9,11 +9,16 @@ from .client import get_client
 async def create_customer(
     external_id: str, email: str, name: str, organization_id: str, product_id: str
 ) -> None:
-    await get_client().create_customer(
+    client = get_client()
+    await client.create_customer(
         external_id=external_id,
         email=email,
         name=name,
         organization_id=organization_id,
+    )
+    await client.create_free_subscription(
+        external_customer_id=external_id,
+        product_id=product_id,
     )
 
 

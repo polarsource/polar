@@ -1,5 +1,7 @@
 'use client'
 
+import { useAuth } from '@/hooks'
+import { useCreateOrganization } from '@/hooks/queries'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -222,9 +224,11 @@ function SubmitButton({ loading }: { loading: boolean }) {
 
 export function BusinessDetailsStep() {
   const router = useRouter()
+  const { setUserOrganizations } = useAuth()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
+  const createOrganization = useCreateOrganization()
   const [submitting, setSubmitting] = useState(false)
 
   trackStepViewed('business')
@@ -248,7 +252,7 @@ export function BusinessDetailsStep() {
     },
   })
 
-  const { handleSubmit, setValue } = form
+  const { handleSubmit, setError, setValue } = form
 
   const onSubmit = async (formData: FormSchema) => {
     setSubmitting(true)
@@ -263,8 +267,46 @@ export function BusinessDetailsStep() {
       registeredBusinessName: formData.registeredBusinessName,
     })
 
-    trackStepCompleted('business')
-    await showApiResponse(200, 'OK')
+    const { data: organization, error } = await createOrganization.mutateAsync({
+      name: formData.orgName,
+      slug: formData.orgSlug,
+      default_presentment_currency:
+        formData.defaultCurrency as schemas['PresentmentCurrency'],
+      country: (formData.businessCountry || undefined) as
+        | schemas['OrganizationCreate']['country']
+        | undefined,
+      default_tax_behavior: 'location',
+      legal_entity:
+        formData.organizationType === 'company'
+          ? {
+              type: 'company' as const,
+              registered_name: formData.registeredBusinessName,
+            }
+          : { type: 'individual' as const },
+    })
+
+    if (error) {
+      setSubmitting(false)
+      setError('root', {
+        message:
+          typeof error.detail === 'string'
+            ? error.detail
+            : Array.isArray(error.detail)
+              ? (error.detail[0]?.msg ?? 'Failed to create organization')
+              : 'Failed to create organization',
+      })
+      await showApiResponse(400, 'Failed to create organization')
+      return
+    }
+
+    setUserOrganizations((previous) => [...previous, organization])
+    updateData({
+      organizationId: organization.id,
+      orgSlug: organization.slug,
+    })
+
+    trackStepCompleted('business', { organization_id: organization.id })
+    await showApiResponse(201, 'Created')
     router.push('/onboarding/product')
   }
 
@@ -387,6 +429,12 @@ export function BusinessDetailsStep() {
           />
 
           <CurrencyAndCountryFields />
+
+          {form.formState.errors.root && (
+            <p className="text-sm text-red-500 dark:text-red-500">
+              {form.formState.errors.root.message}
+            </p>
+          )}
 
           <SubmitButton loading={submitting} />
         </Box>

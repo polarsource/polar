@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
@@ -24,9 +23,9 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models import (
-    Account,
     Customer,
     Organization,
+    PayoutAccount,
     User,
     UserOrganization,
 )
@@ -868,18 +867,18 @@ class OrganizationService:
             return False
 
         # Must have an active payout account
-        if organization.account_id is None:
+        if organization.payout_account_id is None:
             return False
 
-        account_repository = AccountRepository.from_session(session)
-        account = await account_repository.get_by_id(
-            organization.account_id, options=(joinedload(Account.admin),)
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_id(
+            organization.payout_account_id, options=(joinedload(PayoutAccount.admin),)
         )
-        if not account:
+        if not payout_account:
             return False
 
         # Check admin identity verification status
-        admin = account.admin
+        admin = payout_account.admin
         if not admin or admin.identity_verification_status not in [
             IdentityVerificationStatus.verified,
             IdentityVerificationStatus.pending,

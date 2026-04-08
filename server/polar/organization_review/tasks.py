@@ -222,3 +222,7 @@ async def run_review_agent(
                     slug=organization.slug,
                     verdict=report.verdict.value,
                 )
+            elif report.verdict == ReviewVerdict.APPROVE:
+                organization.status = OrganizationStatus.ACTIVE
+                organization.status_updated_at = datetime.now(UTC)
+                session.add(organization)

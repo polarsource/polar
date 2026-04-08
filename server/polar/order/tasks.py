@@ -7,6 +7,7 @@ from dramatiq import Retry
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.payment import PaymentTrigger
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -132,9 +133,11 @@ async def trigger_payment(
             await order_service.handle_payment_failure(session, order)
             return
 
+        trigger = PaymentTrigger(payment_trigger) if payment_trigger else None
+
         try:
             await order_service.trigger_payment(
-                session, order, payment_method, payment_trigger=payment_trigger
+                session, order, payment_method, payment_trigger=trigger
             )
         except PaymentFailed:
             # Payment failures should not be retried - they will be handled by the dunning process

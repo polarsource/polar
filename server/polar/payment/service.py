@@ -52,7 +52,6 @@ class PaymentService:
         status: Sequence[PaymentStatus] | None = None,
         method: Sequence[str] | None = None,
         customer_email: Sequence[str] | None = None,
-        trigger: Sequence[PaymentTrigger] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[PaymentSortProperty]] = [
             (PaymentSortProperty.created_at, True)
@@ -78,9 +77,6 @@ class PaymentService:
 
         if customer_email is not None:
             statement = statement.where(Payment.customer_email.in_(customer_email))
-
-        if trigger is not None:
-            statement = statement.where(Payment.trigger.in_(trigger))
 
         statement = repository.apply_sorting(statement, sorting)
 

@@ -191,14 +191,19 @@ async def resolve_order(
 def _resolve_trigger(
     object: stripe_lib.Charge | stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
 ) -> PaymentTrigger | None:
-    if object.metadata is not None:
-        raw = object.metadata.get("payment_trigger")
-        if raw is not None:
-            try:
-                return PaymentTrigger(raw)
-            except ValueError:
-                pass
-    if object.metadata is not None and object.metadata.get("checkout_id") is not None:
+    if object.metadata is None:
+        return None
+    raw = object.metadata.get("payment_trigger")
+    if raw is not None:
+        try:
+            return PaymentTrigger(raw)
+        except ValueError:
+            log.warning(
+                "Unknown payment_trigger value in Stripe metadata",
+                object_id=object.id,
+                raw_trigger=raw,
+            )
+    if object.metadata.get("checkout_id") is not None:
         return PaymentTrigger.purchase
     return None
 

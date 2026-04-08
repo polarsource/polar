@@ -68,6 +68,7 @@ from polar.models import (
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
+from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -808,7 +809,7 @@ class OrderService:
                     order,
                     payment_method,
                     payment_mode=payment_mode,
-                    payment_trigger="purchase",
+                    payment_trigger=PaymentTrigger.purchase,
                 )
             # Async mode, allow payment to fail and be retried later
             else:
@@ -822,7 +823,7 @@ class OrderService:
                         "order.trigger_payment",
                         order_id=order.id,
                         payment_method_id=payment_method_id,
-                        payment_trigger="purchase",
+                        payment_trigger=PaymentTrigger.purchase,
                     )
 
             await self._on_order_created(session, order)
@@ -988,7 +989,7 @@ class OrderService:
         payment_method: PaymentMethod,
         *,
         payment_mode: PaymentMode = PaymentMode.background,
-        payment_trigger: str | None = None,
+        payment_trigger: PaymentTrigger | None = None,
     ) -> None:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
@@ -1195,7 +1196,7 @@ class OrderService:
             "organization_id": str(order.organization.id),
             "order_id": str(order.id),
             "manual_retry": "true",  # Flag to skip dunning progression on failure
-            "payment_trigger": "retry_customer",
+            "payment_trigger": PaymentTrigger.retry_customer,
         }
         if order.tax_rate is not None:
             metadata["tax_amount"] = str(order.tax_amount)
@@ -2299,7 +2300,7 @@ class OrderService:
                 "order.trigger_payment",
                 order_id=order.id,
                 payment_method_id=payment_method.id,
-                payment_trigger="retry_payment_method_update",
+                payment_trigger=PaymentTrigger.retry_payment_method_update,
             )
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
@@ -2351,7 +2352,7 @@ class OrderService:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=order.subscription.payment_method_id,
-            payment_trigger="retry_dunning",
+            payment_trigger=PaymentTrigger.retry_dunning,
         )
 
         return order

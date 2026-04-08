@@ -592,6 +592,45 @@
         "pages": ["changelog/recent", "changelog/api"]
       },
       {
+        "tab": "Help Center",
+        "icon": "circle-question",
+        "groups": [
+          {
+            "group": "Help Center",
+            "pages": ["help-center/introduction"]
+          },
+          {
+            "group": "Topics",
+            "pages": [
+              "help-center/subscriptions",
+              "help-center/customer-portal",
+              "help-center/checkout"
+            ]
+          },
+          {
+            "group": "Subscriptions",
+            "pages": [
+              "help-center/articles/subscription-cancel-for-customer",
+              "help-center/articles/subscription-billing-details-buyer"
+            ]
+          },
+          {
+            "group": "Customer portal",
+            "pages": [
+              "help-center/articles/customer-portal-share-access",
+              "help-center/articles/customer-portal-retry-subscription"
+            ]
+          },
+          {
+            "group": "Checkout",
+            "pages": [
+              "help-center/articles/checkout-create-share-link",
+              "help-center/articles/checkout-complete-purchase"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Support",
         "icon": "square-question",
         "pages": ["support"]

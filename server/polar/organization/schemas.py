@@ -356,6 +356,9 @@ class Organization(OrganizationBase):
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
 
+    account_id: UUID4 | None = Field(description="ID of the transactions account.")
+    payout_account_id: UUID4 | None = Field(description="ID of the payout account.")
+
 
 class OrganizationKYC(Organization):
     """Organization with compliance/KYC details. Only returned from the dedicated KYC endpoint."""

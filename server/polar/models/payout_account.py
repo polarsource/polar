@@ -48,6 +48,7 @@ class PayoutAccount(RecordModel):
             "User", lazy="raise", foreign_keys="[PayoutAccount.admin_id]"
         )
 
+    @property
     def is_payout_ready(self) -> bool:
         # For Stripe accounts, check if payouts are enabled
         # and that a Stripe account is actually connected.

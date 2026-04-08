@@ -9,6 +9,8 @@ class Account(TimestampedSchema, IDSchema):
     billing_address: Address | None
     billing_additional_info: str | None
     billing_notes: str | None
+    currency: str
+    credit_balance: int
 
 
 class AccountUpdate(Schema):

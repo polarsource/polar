@@ -546,6 +546,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
             PayoutAccountNotReady: If the payout account does not exist or is not ready to receive payouts.
         """
 
-        if self.payout_account is not None and self.payout_account.is_payout_ready():
+        if self.payout_account is not None and self.payout_account.is_payout_ready:
             return self.payout_account
         raise PayoutAccountNotReady(self)

@@ -538,7 +538,7 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows additional metered usage row', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',
-        meter: { id: 'meter_1', name: 'API Calls' },
+        meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' as const },
       })
       const checkout = createCheckout({
         amount: 999,

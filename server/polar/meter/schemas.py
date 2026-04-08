@@ -38,12 +38,12 @@ class MeterCreate(Schema, MetadataInputMixin):
             "Required when unit is 'custom'."
         ),
     )
-    custom_multiplier: int = Field(
-        1,
+    custom_multiplier: int | None = Field(
+        None,
         description=(
             "The multiplier to convert from the base unit to display scale, "
             "e.g. 1000 to display per 1000 units. "
-            "Defaults to 1 when unit is 'custom'."
+            "Defaults to 1 when not provided."
         ),
         gt=0,
     )

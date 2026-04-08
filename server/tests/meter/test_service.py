@@ -149,6 +149,7 @@ class TestCreate:
             MeterCreate(
                 name="Meter",
                 unit=unit,
+                custom_label="gigabyte" if unit == MeterUnit.custom else None,
                 filter=Filter(
                     conjunction=FilterConjunction.and_,
                     clauses=[

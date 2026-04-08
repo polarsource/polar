@@ -19738,10 +19738,9 @@ export interface components {
       custom_label?: string | null
       /**
        * Custom Multiplier
-       * @description The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1.
-       * @default 1
+       * @description The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided.
        */
-      custom_multiplier?: number
+      custom_multiplier?: number | null
       /** @description The filter to apply on events that'll be used to calculate the meter. */
       filter: components['schemas']['Filter']
       /**

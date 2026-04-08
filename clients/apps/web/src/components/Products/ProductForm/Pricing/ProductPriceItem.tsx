@@ -67,14 +67,11 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       <input type="hidden" {...register(`prices.${index}.id`)} />
       {hasOtherStaticPrice ? (
         <div className="flex flex-row items-center justify-between">
-          <h4 className="dark:text-polar-500 text-sm font-medium text-gray-500">
-            Metered price
-          </h4>
+          <h4 className="text-sm font-medium">Metered price</h4>
           {canRemove && (
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
-              className="dark:text-polar-500 dark:bg-polar-900 dark:hover:bg-polar-700 dark:hover:border-polar-600 bg-white/80 text-gray-500 hover:bg-white"
               onClick={() => {
                 onRemove(index)
               }}
@@ -130,7 +127,7 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                     <Button
                       size="icon"
                       className="aspect-square h-10 w-10"
-                      variant="secondary"
+                      variant="ghost"
                       onClick={() => {
                         onRemove(index)
                       }}
@@ -146,7 +143,7 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         />
       )}
       {amountType && amountType !== 'free' && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {amountType === 'fixed' && (
             <ProductPriceFixedItem index={index} currency={currency} />
           )}

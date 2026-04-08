@@ -1,0 +1,114 @@
+'use client'
+
+import { enums, schemas } from '@polar-sh/client'
+import { METER_UNIT_DISPLAY_NAMES } from '@polar-sh/ui/lib/meterUnit'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@polar-sh/ui/components/ui/form'
+import { useFormContext } from 'react-hook-form'
+
+const MeterFormUnit = () => {
+  const { control, watch } = useFormContext<schemas['MeterCreate']>()
+  const unit = watch('unit')
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name="unit"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Unit</FormLabel>
+            <FormDescription>
+              Determines what the aggregated value represents.
+            </FormDescription>
+            <FormControl>
+              <Select
+                value={field.value ?? 'scalar'}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {enums.meterUnitValues.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {METER_UNIT_DISPLAY_NAMES[u]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {unit === 'custom' && (
+        <div className="grid grid-cols-2 gap-x-3">
+          <FormField
+            control={control}
+            name="custom_label"
+            rules={{ required: 'Required for custom unit' }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Unit label</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    placeholder="gigabyte"
+                    autoComplete="off"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="custom_multiplier"
+            rules={{
+              required: 'Required for custom unit',
+              min: { value: 1, message: 'Must be at least 1' },
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Unit Multiplier</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={field.value ?? 1}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? Number(e.target.value) : 1,
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      )}
+    </>
+  )
+}
+
+export default MeterFormUnit

@@ -19503,6 +19503,8 @@ export interface components {
     MaintainerNewPaidSubscriptionNotificationPayload: {
       /** Subscriber Name */
       subscriber_name: string
+      /** Subscriber Email */
+      subscriber_email?: string | null
       /** Tier Name */
       tier_name: string
       /** Tier Price Amount */

@@ -2018,6 +2018,7 @@ class SubscriptionService:
                     type=NotificationType.maintainer_new_paid_subscription,
                     payload=MaintainerNewPaidSubscriptionNotificationPayload(
                         subscriber_name=subscription.customer.display_name,
+                        subscriber_email=subscription.customer.email,
                         tier_name=product.name,
                         tier_price_amount=subscription.amount,
                         tier_price_recurring_interval=subscription.recurring_interval,

@@ -62,6 +62,7 @@ class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
 
 class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     subscriber_name: str
+    subscriber_email: str | None = None
     tier_name: str
     tier_price_amount: int | None
     tier_price_recurring_interval: str

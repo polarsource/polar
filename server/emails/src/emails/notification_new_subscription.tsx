@@ -6,17 +6,22 @@ import type { schemas } from '../types'
 
 export function NotificationNewSubscription({
   subscriber_name,
+  subscriber_email,
   formatted_price_amount,
   tier_name,
   tier_price_amount,
   tier_price_recurring_interval,
   tier_organization_name,
 }: schemas['MaintainerNewPaidSubscriptionNotificationPayload']) {
+  const formattedName = subscriber_email ?
+    <><strong>{subscriber_name}</strong> ({subscriber_email})</> :
+    <strong>{subscriber_name}</strong>
+
   return (
     <WrapperPolar>
       <Preview>New {tier_name} subscriber</Preview>
       <Intro headline="Congratulations!">
-        {subscriber_name} is now subscribing to <strong>{tier_name}</strong> for{' '}
+        {formattedName} is now subscribing to <strong>{tier_name}</strong> for{' '}
         {tier_price_amount ? formatted_price_amount : 'free'}/
         {tier_price_recurring_interval}.
       </Intro>
@@ -27,6 +32,7 @@ export function NotificationNewSubscription({
 
 NotificationNewSubscription.PreviewProps = {
   subscriber_name: 'John Doe',
+  subscriber_email: 'john.doe@acme.com',
   formatted_price_amount: '$12.95',
   tier_name: 'Pro',
   tier_price_amount: 1295,

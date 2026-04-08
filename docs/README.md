@@ -34,7 +34,7 @@ The script is run automatically by the CI pipeline every day and opens a PR if t
 
 ## Help Center (`help-center/`)
 
-End-user Q&A lives under `help-center/`. The [introduction](help-center/introduction.mdx) links to **topic** pages (for example `help-center/subscriptions.mdx`). Each topic page uses **As a merchant** and **As a buyer** headings and lists links to **articles** in `help-center/articles/`.
+End-user Q&A lives under `help-center/`. The [introduction](help-center/introduction.mdx) links to **topic** pages (for example `help-center/subscriptions.mdx`). Each topic page uses **As a merchant** and **As a buyer** headings and **Card** groups linking to **articles** in `help-center/articles/`.
 
 ### Article frontmatter and audience
 

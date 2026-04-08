@@ -611,21 +611,27 @@
             "group": "Subscriptions",
             "pages": [
               "help-center/articles/subscription-cancel-for-customer",
-              "help-center/articles/subscription-billing-details-buyer"
+              "help-center/articles/subscription-upgrade-downgrade-merchant",
+              "help-center/articles/subscription-billing-details-buyer",
+              "help-center/articles/subscription-cancel-my-subscription-buyer"
             ]
           },
           {
             "group": "Customer portal",
             "pages": [
               "help-center/articles/customer-portal-share-access",
-              "help-center/articles/customer-portal-retry-subscription"
+              "help-center/articles/customer-portal-generate-session-merchant",
+              "help-center/articles/customer-portal-retry-subscription",
+              "help-center/articles/customer-portal-orders-invoices-buyer"
             ]
           },
           {
             "group": "Checkout",
             "pages": [
               "help-center/articles/checkout-create-share-link",
-              "help-center/articles/checkout-complete-purchase"
+              "help-center/articles/checkout-sandbox-testing-merchant",
+              "help-center/articles/checkout-complete-purchase",
+              "help-center/articles/checkout-apply-discount-buyer"
             ]
           }
         ]

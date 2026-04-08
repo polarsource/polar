@@ -153,6 +153,7 @@ server/.tinyb
 
 .turbo
 .claude/worktrees
+.superset/
 
 # Eval artifacts (generated, may contain PII)
 server/polar/organization_review/eval/fixtures/

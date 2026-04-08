@@ -161,7 +161,29 @@ async def run_review_agent(
 
             org_review_repository = OrgReviewRepository.from_session(session)
             existing = await org_review_repository.get_by_organization(organization_id)
-            if existing is None:
+
+            is_grandfathered = (
+                existing is not None
+                and existing.verdict == OrganizationReview.Verdict.PASS
+                and existing.reason == "Grandfathered organization"
+            )
+
+            if is_grandfathered:
+                assert existing is not None
+                existing.verdict = OrganizationReview.Verdict(mapped_verdict)
+                existing.risk_score = report.overall_risk_score
+                existing.violated_sections = report.violated_sections
+                existing.reason = report.merchant_summary
+                existing.timed_out = result.timed_out
+                existing.organization_details_snapshot = {
+                    "name": organization.name,
+                    "website": organization.website,
+                    "details": organization.details,
+                    "socials": organization.socials,
+                }
+                existing.model_used = result.model_used
+                session.add(existing)
+            elif existing is None:
                 org_review = OrganizationReview(
                     organization_id=organization_id,
                     verdict=mapped_verdict,

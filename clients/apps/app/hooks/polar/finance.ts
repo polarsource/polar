@@ -94,15 +94,15 @@ export const useTransactionsSummary = (
 }
 
 export const usePayoutEstimate = (
-  accountId?: string,
+  organizationId?: string,
 ): UseQueryResult<schemas['PayoutEstimate']> => {
   const { session } = useSession()
 
   return useQuery({
-    queryKey: ['finance', accountId, 'payouts', 'estimate'],
+    queryKey: ['finance', organizationId, 'payouts', 'estimate'],
     queryFn: () =>
       fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/estimate?account_id=${accountId}`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/estimate?organization_id=${organizationId}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -118,12 +118,12 @@ export const usePayoutEstimate = (
 
           return data
         }),
-    enabled: !!accountId,
+    enabled: !!organizationId,
   })
 }
 
 export const useCreatePayout = (
-  accountId?: string,
+  organizationId?: string,
 ): UseMutationResult<schemas['Payout']> => {
   const { session } = useSession()
 
@@ -138,7 +138,7 @@ export const useCreatePayout = (
           },
           method: 'POST',
           body: JSON.stringify({
-            account_id: accountId,
+            organization_id: organizationId,
           }),
         },
       )

@@ -46,8 +46,9 @@ const MeterFormUnit = () => {
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     Controls how prices are formatted for display. For example,
-                    selecting &ldquo;Token&rdquo; shows prices as $20&thinsp;/&thinsp;1M tokens
-                    instead of a raw per-unit amount.
+                    selecting &ldquo;Token&rdquo; shows prices as
+                    $20&thinsp;/&thinsp;1M tokens instead of a raw per-token
+                    amount.
                   </TooltipContent>
                 </Tooltip>
               </span>
@@ -93,7 +94,8 @@ const MeterFormUnit = () => {
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         The singular name shown after the price, e.g.
-                        &ldquo;gigabyte&rdquo; displays as $0.023&thinsp;/&thinsp;gigabyte.
+                        &ldquo;gigabyte&rdquo; displays as
+                        $0.023&thinsp;/&thinsp;gigabyte.
                       </TooltipContent>
                     </Tooltip>
                   </span>
@@ -128,8 +130,8 @@ const MeterFormUnit = () => {
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         Scales how the price is displayed. For example, a
-                        multiplier of 1&thinsp;000 shows the price per 1&thinsp;000
-                        units rather than per single unit.
+                        multiplier of 1&thinsp;000 shows the price per
+                        1&thinsp;000 units rather than per single unit.
                       </TooltipContent>
                     </Tooltip>
                   </span>

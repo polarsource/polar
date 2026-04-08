@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import pytest_asyncio
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -166,6 +167,29 @@ class TestCreate:
         )
 
         assert meter.unit == unit
+
+    @pytest.mark.parametrize("unit", [MeterUnit.scalar, MeterUnit.tokens])
+    async def test_custom_fields_rejected_on_non_custom_unit(
+        self,
+        unit: MeterUnit,
+    ) -> None:
+        with pytest.raises(ValidationError):
+            MeterCreate(
+                name="Meter",
+                unit=unit,
+                custom_label="gigabyte",
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="test.event",
+                        )
+                    ],
+                ),
+                aggregation=CountAggregation(),
+            )
 
 
 @pytest.mark.asyncio

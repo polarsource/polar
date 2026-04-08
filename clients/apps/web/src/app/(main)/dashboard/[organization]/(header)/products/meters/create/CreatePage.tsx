@@ -1,17 +1,15 @@
 'use client'
 
-import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MeterForm from '@/components/Meter/MeterForm'
 import { toast } from '@/components/Toast/use-toast'
-import { useEvents } from '@/hooks/queries/events'
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 
 export interface ClientPageProps {
@@ -41,24 +39,10 @@ export default function ClientPage({ organization }: ClientPageProps) {
       },
     },
   })
-  const { handleSubmit, setError, getValues } = form
+  const { handleSubmit, setError } = form
   const createMeter = useCreateMeter(organization.id)
 
   const router = useRouter()
-
-  const [previewFilter, setPreviewFilter] = useState<string | null>(null)
-  const { data: events, isLoading: isPreviewLoading } = useEvents(
-    organization.id,
-    {
-      filter: previewFilter,
-    },
-    previewFilter !== null,
-  )
-
-  const updatePreview = useCallback(() => {
-    const filter = getValues('filter')
-    setPreviewFilter(filter ? JSON.stringify(filter) : null)
-  }, [getValues])
 
   const onSubmit = useCallback(
     async (body: schemas['MeterCreate']) => {

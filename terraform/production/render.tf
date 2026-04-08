@@ -220,7 +220,7 @@ module "production" {
 
   cron_jobs = {
     "bulk-appeal-review" = {
-      schedule      = "0 8 * * *" # 8:00 UTC = 9:00 CET
+      schedule      = "0 */6 * * *" # Every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
       start_command = "uv run python -m scripts.bulk_appeal_review --execute --limit 0"
       image_url     = "ghcr.io/polarsource/polar-playwright"
       plan          = "standard"

@@ -3,8 +3,5 @@ from enum import StrEnum
 
 class MeterUnit(StrEnum):
     scalar = "scalar"
-    tokens = "tokens"
-    bytes = "bytes"
-    seconds = "seconds"
+    tokens = "token"
     custom = "custom"
-

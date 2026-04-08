@@ -34,6 +34,15 @@ def upgrade() -> None:
     )
     op.add_column("meters", sa.Column("custom_label", sa.String(), nullable=True))
     op.add_column("meters", sa.Column("custom_multiplier", sa.Integer(), nullable=True))
+
+    # Backfill: set unit to 'tokens' for meters whose name contains "token" or "tokens"
+    op.execute(
+        """
+        UPDATE meters
+        SET unit = 'token'
+        WHERE lower(name) ~ '\\mtokens?\\M'
+        """
+    )
     # ### end Alembic commands ###
 
 

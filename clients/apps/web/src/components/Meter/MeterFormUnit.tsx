@@ -37,7 +37,21 @@ const MeterFormUnit = () => {
         name="unit"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Unit</FormLabel>
+            <FormLabel>
+              <span className="flex items-center gap-x-1.5">
+                Unit
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="dark:text-polar-400 h-3.5 w-3.5 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    Controls how prices are formatted for display. For example,
+                    selecting &ldquo;Token&rdquo; shows prices as $20&thinsp;/&thinsp;1M tokens
+                    instead of a raw per-unit amount.
+                  </TooltipContent>
+                </Tooltip>
+              </span>
+            </FormLabel>
             <FormDescription>
               Determines what the aggregated value represents.
             </FormDescription>
@@ -70,7 +84,20 @@ const MeterFormUnit = () => {
             rules={{ required: 'Required for custom unit' }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Unit label</FormLabel>
+                <FormLabel>
+                  <span className="flex items-center gap-x-1.5">
+                    Unit label
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoIcon className="dark:text-polar-400 h-3.5 w-3.5 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        The singular name shown after the price, e.g.
+                        &ldquo;gigabyte&rdquo; displays as $0.023&thinsp;/&thinsp;gigabyte.
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                </FormLabel>
                 <FormControl>
                   <Input
                     {...field}

@@ -88,7 +88,7 @@ class AccountService:
         organization_id: uuid.UUID,
         new_admin_user: User,
     ) -> None:
-        if not settings.POLAR_ACCESS_TOKEN or not settings.POLAR_ORGANIZATION_ID:
+        if not settings.POLAR_SELF_ENABLED:
             return
 
         polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)

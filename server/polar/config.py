@@ -330,6 +330,16 @@ class Settings(BaseSettings):
     POLAR_FREE_PRODUCT_ID: str = ""
     POLAR_API_URL: str = "https://api.polar.sh"
 
+    @property
+    def POLAR_SELF_ENABLED(self) -> bool:
+        return all(
+            [
+                self.POLAR_ACCESS_TOKEN,
+                self.POLAR_ORGANIZATION_ID,
+                self.POLAR_FREE_PRODUCT_ID,
+            ]
+        )
+
     # Invoices
     S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"
     S3_PAYOUT_INVOICES_BUCKET_NAME: str = "polar-payout-invoices"

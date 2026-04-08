@@ -9,7 +9,7 @@ class PolarSelfService:
 
     @property
     def is_configured(self) -> bool:
-        return bool(settings.POLAR_ACCESS_TOKEN)
+        return settings.POLAR_SELF_ENABLED
 
     def enqueue_create_customer(
         self, *, organization_id: uuid.UUID, email: str, name: str

@@ -37,6 +37,13 @@ if TYPE_CHECKING:
     from polar.account.schemas import AccountCreateForOrganization
     from polar.models import User
 
+#: Stripe PaymentIntent metadata key carrying the
+#: :class:`polar.models.payment.PaymentTrigger`. Producers (in
+#: ``polar.order.service``) and the consumer in ``polar.integrations.stripe.payment``
+#: must agree on this string.
+STRIPE_METADATA_PAYMENT_TRIGGER = "payment_trigger"
+
+
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 stripe_lib.api_version = "2026-01-28.clover"
 

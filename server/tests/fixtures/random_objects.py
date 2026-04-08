@@ -109,7 +109,7 @@ from polar.models.event import EventSource
 from polar.models.member import MemberRole
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -2164,6 +2164,7 @@ async def create_payment(
     decline_message: str | None = None,
     risk_level: str | None = None,
     risk_score: int | None = None,
+    trigger: PaymentTrigger | None = None,
     checkout: Checkout | None = None,
     order: Order | None = None,
 ) -> Payment:
@@ -2180,6 +2181,7 @@ async def create_payment(
         decline_message=decline_message,
         risk_level=risk_level,
         risk_score=risk_score,
+        trigger=trigger,
         organization=organization,
         checkout=checkout,
         order=order,

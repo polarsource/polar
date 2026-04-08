@@ -6,7 +6,12 @@ import structlog
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarError
-from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.service import (
+    STRIPE_METADATA_PAYMENT_TRIGGER,
+)
+from polar.integrations.stripe.service import (
+    stripe as stripe_service,
+)
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -18,7 +23,7 @@ from polar.models import (
     WalletTransaction,
 )
 from polar.models.checkout import CheckoutStatus
-from polar.models.payment import PaymentTrigger
+from polar.models.payment import DUNNING_COUNTING_TRIGGERS, PaymentTrigger
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
@@ -193,7 +198,7 @@ def _resolve_trigger(
 ) -> PaymentTrigger | None:
     if object.metadata is None:
         return None
-    raw = object.metadata.get("payment_trigger")
+    raw = object.metadata.get(STRIPE_METADATA_PAYMENT_TRIGGER)
     if raw is not None:
         try:
             return PaymentTrigger(raw)
@@ -290,12 +295,13 @@ async def handle_failure(
         await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
-        # Check if this is a manual retry - skip dunning progression if so
-        skip_dunning = (
-            hasattr(object, "metadata")
-            and object.metadata is not None
-            and object.metadata.get("manual_retry") == "true"
-        )
+        # Failures from triggers that don't count toward the dunning ceiling
+        # also shouldn't progress the dunning state machine — otherwise a
+        # one-shot recovery attempt (manual portal retry, post-card-update
+        # retry) could push the next scheduled retry around without ever
+        # being recorded as a real attempt. A NULL trigger (legacy / unknown
+        # call site) is treated as countable, so it follows the normal flow.
+        skip_dunning = trigger is not None and trigger not in DUNNING_COUNTING_TRIGGERS
         await order_service.handle_payment_failure(
             session, order, skip_dunning=skip_dunning
         )

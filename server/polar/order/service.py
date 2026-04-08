@@ -43,7 +43,12 @@ from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.file.s3 import S3_SERVICES
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.service import (
+    STRIPE_METADATA_PAYMENT_TRIGGER,
+)
+from polar.integrations.stripe.service import (
+    stripe as stripe_service,
+)
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
@@ -1045,7 +1050,7 @@ class OrderService:
                     "payment_mode": payment_mode,
                 }
                 if payment_trigger is not None:
-                    metadata["payment_trigger"] = payment_trigger
+                    metadata[STRIPE_METADATA_PAYMENT_TRIGGER] = payment_trigger
 
                 if order.tax_rate is not None:
                     metadata["tax_amount"] = order.tax_amount
@@ -1195,8 +1200,7 @@ class OrderService:
         metadata: dict[str, Any] = {
             "organization_id": str(order.organization.id),
             "order_id": str(order.id),
-            "manual_retry": "true",  # Flag to skip dunning progression on failure
-            "payment_trigger": PaymentTrigger.retry_customer,
+            STRIPE_METADATA_PAYMENT_TRIGGER: PaymentTrigger.retry_customer,
         }
         if order.tax_rate is not None:
             metadata["tax_amount"] = str(order.tax_amount)

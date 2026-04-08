@@ -10,7 +10,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Organization, Product
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
@@ -357,6 +357,7 @@ class TestProcessDunningOrder:
             save_fixture,
             organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -408,6 +409,7 @@ class TestProcessDunningOrder:
                 save_fixture,
                 organization,
                 status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
                 order=order,
             )
 

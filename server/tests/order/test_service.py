@@ -57,7 +57,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
@@ -2621,6 +2621,7 @@ class TestHandlePaymentFailure:
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -2670,12 +2671,14 @@ class TestHandlePaymentFailure:
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
         await create_payment(
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -2726,6 +2729,7 @@ class TestHandlePaymentFailure:
                 save_fixture,
                 order.organization,
                 status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
                 order=order,
             )
 
@@ -2775,6 +2779,7 @@ class TestHandlePaymentFailure:
                 save_fixture,
                 order.organization,
                 status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
                 order=order,
             )
 
@@ -2822,6 +2827,7 @@ class TestHandlePaymentFailure:
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
         await create_payment(
@@ -2957,6 +2963,7 @@ class TestHandlePaymentFailure:
             order.organization,
             status=PaymentStatus.failed,
             decline_reason="stolen_card",
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -3018,6 +3025,7 @@ class TestHandlePaymentFailure:
             order.organization,
             status=PaymentStatus.failed,
             decline_reason="insufficient_funds",
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -3071,6 +3079,7 @@ class TestHandlePaymentFailure:
             order.organization,
             status=PaymentStatus.failed,
             decline_reason="stolen_card",
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 

@@ -351,6 +351,77 @@ class TestUpdateOrganization:
         assert settings["customer"]["allow_email_change"] is True
 
 
+    async def test_submit_for_review_requires_relevant_fields(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "details": {
+                    "product_description": "Too short",
+                    "selling_categories": ["Software / SaaS"],
+                    "pricing_models": ["Subscription"],
+                    "switching": False,
+                }
+            },
+        )
+        assert update_response.status_code == 200
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/submit-review"
+        )
+
+        assert response.status_code == 422
+        error_locations = {tuple(error["loc"]) for error in response.json()["detail"]}
+        assert ("body", "website") in error_locations
+        assert ("body", "email") in error_locations
+        assert ("body", "socials") in error_locations
+        assert ("body", "details", "product_description") in error_locations
+
+    @pytest.mark.auth
+    async def test_submit_for_review_valid(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        update_response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "website": "https://example.com",
+                "email": "support@example.com",
+                "socials": [{"platform": "x", "url": "https://x.com/polar"}],
+                "details": {
+                    "product_description": "Subscription SaaS for software teams and agencies.",
+                    "selling_categories": ["Software / SaaS"],
+                    "pricing_models": ["Subscription"],
+                    "switching": False,
+                },
+            },
+        )
+        assert update_response.status_code == 200
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/submit-review"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["details_submitted_at"] is not None
+        enqueue_job_mock.assert_called_once()
+
+    @pytest.mark.auth
+    async def test_submit_for_review_not_existing(self, client: AsyncClient) -> None:
+        response = await client.post(f"/v1/organizations/{uuid.uuid4()}/submit-review")
+
+        assert response.status_code == 404
+
+
 @pytest.mark.asyncio
 class TestInviteOrganization:
     @pytest.mark.auth

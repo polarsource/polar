@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks'
 import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useUpdateOrganization } from '@/hooks/queries'
+import { api } from '@/utils/client'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -651,13 +652,59 @@ const OrganizationProfileSettings: React.FC<
       return
     }
 
-    reset({
-      ...data,
-      default_presentment_currency:
-        data.default_presentment_currency as schemas['PresentmentCurrency'],
-      country: data.country as schemas['CountryAlpha2Input'] | undefined,
-      socials: [...(data.socials || []), ...emptySocials],
-    })
+    if (inKYCMode) {
+      const submitReviewResult = await api.POST(
+        '/v1/organizations/{id}/submit-review',
+        {
+          params: { path: { id: organization.id } },
+        },
+      )
+      const { data: submittedOrganization, error: submitError } =
+        submitReviewResult
+
+      if (submitError) {
+        const errorMessage = Array.isArray(submitError.detail)
+          ? submitError.detail[0]?.msg ||
+            'An error occurred while submitting the organization for review'
+          : typeof submitError.detail === 'string'
+            ? submitError.detail
+            : 'An error occurred while submitting the organization for review'
+
+        if (isValidationError(submitError.detail)) {
+          setValidationErrors(submitError.detail, setError)
+        } else {
+          setError('root', { message: errorMessage })
+        }
+
+        toast({
+          title: 'Review Submission Failed',
+          description: errorMessage,
+        })
+
+        return
+      }
+
+      reset({
+        ...submittedOrganization,
+        default_presentment_currency:
+          submittedOrganization.default_presentment_currency as schemas['PresentmentCurrency'],
+        country: submittedOrganization.country as
+          | schemas['CountryAlpha2Input']
+          | undefined,
+        socials: [...(submittedOrganization.socials || []), ...emptySocials],
+        details: cleanedBody.details,
+      })
+    }
+
+    if (!inKYCMode) {
+      reset({
+        ...data,
+        default_presentment_currency:
+          data.default_presentment_currency as schemas['PresentmentCurrency'],
+        country: data.country as schemas['CountryAlpha2Input'] | undefined,
+        socials: [...(data.socials || []), ...emptySocials],
+      })
+    }
 
     // Refresh the router to get the updated organization data from the server
     router.refresh()

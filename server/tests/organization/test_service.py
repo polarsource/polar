@@ -1,7 +1,8 @@
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 import pytest
-from pydantic import ValidationError
+from pydantic import HttpUrl, ValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -26,12 +27,15 @@ from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import (
     OrganizationCreate,
+    OrganizationDetails,
     OrganizationFeatureSettings,
+    OrganizationSocialLink,
+    OrganizationSocialPlatforms,
     OrganizationUpdate,
 )
 from polar.organization.service import OrganizationError
 from polar.organization.service import organization as organization_service
-from polar.organization_review.schemas import ReviewVerdict
+from polar.organization_review.schemas import ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -204,6 +208,107 @@ class TestCreate:
         )
 
         assert organization.subscription_settings is not None
+
+
+@pytest.mark.asyncio
+class TestUpdateReviewSubmission:
+    @pytest.mark.auth
+    async def test_update_details_does_not_submit_for_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                details=OrganizationDetails(
+                    product_description="Subscription SaaS for software teams.",
+                    selling_categories=["Software / SaaS"],
+                    pricing_models=["Subscription"],
+                    switching=False,
+                )
+            ),
+        )
+
+        assert result.details is not None
+        assert (
+            result.details["product_description"]
+            == "Subscription SaaS for software teams."
+        )
+        assert result.details["selling_categories"] == ["Software / SaaS"]
+        assert result.details["pricing_models"] == ["Subscription"]
+        assert result.details["switching"] is False
+        assert result.details_submitted_at is None
+        enqueue_job_mock.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_update_with_submit_for_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                website=cast(HttpUrl, "https://example.com"),
+                email="support@example.com",
+                socials=[
+                    OrganizationSocialLink(
+                        platform=cast(OrganizationSocialPlatforms, "x"),
+                        url=cast(HttpUrl, "https://x.com/polar"),
+                    )
+                ],
+                details=OrganizationDetails(
+                    product_description="Subscription SaaS for software teams and agencies.",
+                    selling_categories=["Software / SaaS"],
+                    pricing_models=["Subscription"],
+                    switching=False,
+                ),
+            ),
+        )
+        result = await organization_service.submit_for_review(session, organization)
+
+        assert result.details_submitted_at is not None
+        enqueue_job_mock.assert_called_once_with(
+            "organization_review.run_agent",
+            organization_id=organization.id,
+            context=ReviewContext.SUBMISSION,
+        )
+
+    @pytest.mark.auth
+    async def test_update_with_submit_for_review_requires_relevant_fields(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                details=OrganizationDetails(
+                    product_description="Too short",
+                    selling_categories=["Software / SaaS"],
+                    pricing_models=["Subscription"],
+                    switching=False,
+                ),
+            ),
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await organization_service.submit_for_review(session, organization)
+
+        error_locations = {tuple(error["loc"]) for error in exc_info.value.errors()}
+        assert ("body", "website") in error_locations
+        assert ("body", "email") in error_locations
+        assert ("body", "socials") in error_locations
+        assert ("body", "details", "product_description") in error_locations
 
 
 @pytest.mark.asyncio

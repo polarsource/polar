@@ -260,6 +260,30 @@ async def update(
     return await organization_service.update(session, organization, organization_update)
 
 
+@router.post(
+    "/{id}/submit-review",
+    response_model=OrganizationSchema,
+    summary="Submit Organization for Review",
+    responses={
+        200: {"description": "Organization submitted for review."},
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def submit_review(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Submit an organization's saved details for review."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    return await organization_service.submit_for_review(session, organization)
+
+
 @router.delete(
     "/{id}",
     response_model=OrganizationDeletionResponse,

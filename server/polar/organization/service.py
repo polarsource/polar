@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
@@ -15,7 +16,11 @@ from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import (
+    PolarError,
+    PolarRequestValidationError,
+    ValidationError,
+)
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.integrations.polar.service import polar_self as polar_self_service
@@ -398,15 +403,88 @@ class OrganizationService:
             },
         )
 
-        # Only store details once to avoid API overrides later w/o review
-        # We do allow initial details being set upon creation that will still require review,
-        # so upon creation we set details but not details_submitted_at
-        # so details_submitted_at effectively doubles as a "submit for review"
-        # timestamp, for now. We'll revisit this soon enough. @pieterbeulque
-        if not organization.details_submitted_at and update_schema.details:
+        if update_schema.details:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
             )
+
+        organization = await repository.update(organization, update_dict=update_dict)
+
+        await self._after_update(session, organization)
+        return organization
+
+    def _validate_review_submission(
+        self, organization: Organization
+    ) -> builtins.list[ValidationError]:
+        errors: builtins.list[ValidationError] = []
+
+        if not organization.name or not organization.name.strip():
+            errors.append(
+                {
+                    "loc": ("body", "name"),
+                    "msg": "Organization name is required.",
+                    "type": "value_error",
+                    "input": organization.name,
+                }
+            )
+
+        if not organization.website:
+            errors.append(
+                {
+                    "loc": ("body", "website"),
+                    "msg": "Website is required.",
+                    "type": "value_error",
+                    "input": organization.website,
+                }
+            )
+
+        if not organization.email:
+            errors.append(
+                {
+                    "loc": ("body", "email"),
+                    "msg": "Support email is required.",
+                    "type": "value_error",
+                    "input": organization.email,
+                }
+            )
+
+        if not any(
+            social.get("url", "").strip() for social in (organization.socials or [])
+        ):
+            errors.append(
+                {
+                    "loc": ("body", "socials"),
+                    "msg": "At least one social media link is required.",
+                    "type": "value_error",
+                    "input": organization.socials,
+                }
+            )
+
+        product_description = (organization.details or {}).get("product_description")
+        if (
+            not isinstance(product_description, str)
+            or len(product_description.strip()) < 30
+        ):
+            errors.append(
+                {
+                    "loc": ("body", "details", "product_description"),
+                    "msg": "Please provide at least 30 characters.",
+                    "type": "value_error",
+                    "input": product_description,
+                }
+            )
+
+        return errors
+
+    async def submit_for_review(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        errors = self._validate_review_submission(organization)
+
+        if errors:
+            raise PolarRequestValidationError(errors)
+
+        if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)
             enqueue_job(
                 "organization_review.run_agent",
@@ -414,7 +492,7 @@ class OrganizationService:
                 context=ReviewContext.SUBMISSION,
             )
 
-        organization = await repository.update(organization, update_dict=update_dict)
+        session.add(organization)
 
         await self._after_update(session, organization)
         return organization
@@ -1064,8 +1142,8 @@ class OrganizationService:
     ) -> OrganizationReview | None:
         """Get the existing AI review for an organization, if any.
 
-        The actual AI review is now triggered asynchronously via a background
-        task when organization details are first submitted (see update()).
+        The actual AI review is triggered asynchronously via a background
+        task when organization details are submitted for review.
         """
         repository = OrganizationReviewRepository.from_session(session)
         return await repository.get_by_organization(organization.id)

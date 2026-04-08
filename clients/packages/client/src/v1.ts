@@ -692,6 +692,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/submit-review': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Submit Organization for Review
+     * @description Submit an organization's saved details for review.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:submit_review']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/payment-status': {
     parameters: {
       query?: never
@@ -31377,6 +31399,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationKYC']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:submit_review': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Organization submitted for review. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Organization']
         }
       }
       /** @description Organization not found. */

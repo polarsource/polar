@@ -36,6 +36,34 @@ export const useOrganizationAccount = (
   })
 }
 
+export const usePayoutAccount = (
+  payoutAccountId?: string,
+): UseQueryResult<schemas['PayoutAccount']> => {
+  const { session } = useSession()
+  return useQuery({
+    queryKey: ['finance', 'payoutAccount', payoutAccountId],
+    queryFn: () =>
+      fetch(
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payout-accounts/${payoutAccountId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session}`,
+          },
+        },
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if ('error' in data && 'error_description' in data) {
+            throw new Error(data.error_description as string)
+          }
+
+          return data
+        }),
+    enabled: !!payoutAccountId,
+  })
+}
+
 export const useTransactionsSummary = (
   accountId?: string,
 ): UseQueryResult<schemas['TransactionsSummary']> => {

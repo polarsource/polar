@@ -1,6 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import {
   useOrganizationAccount,
+  usePayoutAccount,
   useTransactionsSummary,
 } from '@/hooks/polar/finance'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -18,11 +19,15 @@ export interface FinanceTileProps {
 export const FinanceTile = ({ loading }: FinanceTileProps) => {
   const { organization } = useContext(OrganizationContext)
   const { data: account } = useOrganizationAccount(organization?.id)
+  const { data: payoutAccount } = usePayoutAccount(
+    organization?.payout_account_id || undefined,
+  )
   const { data: summary } = useTransactionsSummary(account?.id)
   const router = useRouter()
 
   const canWithdraw =
-    account?.is_payouts_enabled &&
+    payoutAccount &&
+    payoutAccount.is_payout_ready &&
     summary?.balance?.amount &&
     summary.balance.amount >= 1000
 

@@ -19,7 +19,7 @@ import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { api } from '@/utils/client'
 import { ClientResponseError, schemas, unwrap } from '@polar-sh/client'
 import { loadStripe } from '@stripe/stripe-js'
-import { CheckIcon } from 'lucide-react'
+import { BanIcon, CheckIcon } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 export default function ClientPage({
@@ -203,7 +203,7 @@ export default function ClientPage({
           ) : isDenied ? (
             <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
               <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                <CheckIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
+                <BanIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
               </span>
               <h4 className="mb-2 font-medium">Account denied</h4>
               <p className="dark:text-polar-400 mx-auto max-w-sm text-sm text-balance text-gray-600">
@@ -227,38 +227,44 @@ export default function ClientPage({
           )}
         </Section>
 
-        <Section>
-          <SectionDescription
-            title="Payout Account"
-            description="Set up your payout account to receive payouts."
-          />
-          {!isApproved ? (
-            <InfoCard>Please go through account review first</InfoCard>
-          ) : isNotAdmin ? (
-            <InfoCard>This can only be done by the organization admin</InfoCard>
-          ) : (
-            <AccountStep
-              organizationAccount={organizationAccount}
-              isNotAdmin={false}
-              onStartAccountSetup={handleStartAccountSetup}
-            />
-          )}
-        </Section>
+        {!isDenied && (
+          <>
+            <Section>
+              <SectionDescription
+                title="Payout Account"
+                description="Set up your payout account to receive payouts."
+              />
+              {!isApproved ? (
+                <InfoCard>Please go through account review first</InfoCard>
+              ) : isNotAdmin ? (
+                <InfoCard>
+                  This can only be done by the organization admin
+                </InfoCard>
+              ) : (
+                <AccountStep
+                  organizationAccount={organizationAccount}
+                  isNotAdmin={false}
+                  onStartAccountSetup={handleStartAccountSetup}
+                />
+              )}
+            </Section>
 
-        <Section>
-          <SectionDescription
-            title="Identity Verification"
-            description="Verify your identity to comply with financial regulations."
-          />
-          {isApproved ? (
-            <IdentityStep
-              identityVerificationStatus={identityVerificationStatus}
-              onStartIdentityVerification={startIdentityVerification}
-            />
-          ) : (
-            <InfoCard>Please go through account review first</InfoCard>
-          )}
-        </Section>
+            <Section>
+              <SectionDescription
+                title="Identity Verification"
+                description="Verify your identity to comply with financial regulations."
+              />
+              {isApproved ? (
+                <IdentityStep
+                  identityVerificationStatus={identityVerificationStatus}
+                  onStartIdentityVerification={startIdentityVerification}
+                />
+              ) : (
+                <InfoCard>Please go through account review first</InfoCard>
+              )}
+            </Section>
+          </>
+        )}
 
         <Modal
           title="Create Payout Account"

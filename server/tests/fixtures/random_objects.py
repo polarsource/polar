@@ -2083,7 +2083,6 @@ async def create_account(
     organization: Organization,
     user: User,
     *,
-    country: str = "US",
     currency: str = "usd",
     processor_fees_applicable: bool = True,
     fee_basis_points: int | None = None,
@@ -2099,12 +2098,6 @@ async def create_account(
         _platform_fee_fixed=fee_fixed,
         billing_name=billing_name,
         billing_address=billing_address,
-        # Fields to remove
-        account_type=PayoutAccountType.stripe,
-        country=country,
-        is_details_submitted=True,
-        is_charges_enabled=True,
-        is_payouts_enabled=True,
     )
     await save_fixture(account)
     organization.account = account

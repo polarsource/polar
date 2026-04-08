@@ -6,7 +6,6 @@ from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
-from polar.enums import PayoutAccountType
 from polar.exceptions import PolarError
 from polar.models import Account, Organization, User
 from polar.models.user import IdentityVerificationStatus
@@ -66,12 +65,6 @@ class AccountService:
             Account(
                 currency="usd",  # FIXME: main Polar currency
                 admin=admin,
-                # Fields to remove
-                account_type=PayoutAccountType.manual,
-                country="XX",
-                is_details_submitted=True,
-                is_charges_enabled=True,
-                is_payouts_enabled=True,
             )
         )
 

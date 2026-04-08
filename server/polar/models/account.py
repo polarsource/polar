@@ -1,8 +1,7 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Uuid
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -24,30 +23,7 @@ type Fees = tuple[FeeBasisPoints, FeeFixedCents]
 class Account(RecordModel):
     __tablename__ = "accounts"
 
-    account_type: Mapped[Any] = mapped_column(String(), nullable=False, deferred=True)
-    stripe_id: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, default=None, deferred=True
-    )
-    open_collective_slug: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None, deferred=True
-    )
-
-    email: Mapped[str | None] = mapped_column(
-        String(254), nullable=True, default=None, deferred=True
-    )
-
-    country: Mapped[str] = mapped_column(String(2), nullable=False, deferred=True)
     currency: Mapped[str] = mapped_column(String(3))
-
-    is_details_submitted: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, deferred=True
-    )
-    is_charges_enabled: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, deferred=True
-    )
-    is_payouts_enabled: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, deferred=True
-    )
 
     processor_fees_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
@@ -59,19 +35,11 @@ class Account(RecordModel):
         Integer, name="platform_fee_fixed", nullable=True, default=None
     )
 
-    business_type: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None, deferred=True
-    )
-
     campaign_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("campaigns.id", ondelete="set null"),
         default=None,
         index=True,
-    )
-
-    data: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict, deferred=True
     )
 
     billing_name: Mapped[str | None] = mapped_column(

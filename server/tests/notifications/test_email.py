@@ -39,6 +39,23 @@ async def check_diff(notification: NotificationPayloadBase) -> None:
 async def test_MaintainerNewPaidSubscriptionNotification() -> None:
     n = MaintainerNewPaidSubscriptionNotificationPayload(
         subscriber_name="John Doe",
+        subscriber_email="john@example.com",
+        tier_name="My Paid Tier",
+        tier_price_amount=500,
+        tier_organization_name="myorg",
+        tier_organization_slug="myorg",
+        tier_price_recurring_interval="month",
+        subscription_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    )
+
+    await check_diff(n)
+
+
+@pytest.mark.asyncio
+async def test_MaintainerNewPaidSubscriptionNotification_no_email() -> None:
+    n = MaintainerNewPaidSubscriptionNotificationPayload(
+        subscriber_name="John Doe",
+        subscriber_email=None,
         tier_name="My Paid Tier",
         tier_price_amount=500,
         tier_organization_name="myorg",

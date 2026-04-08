@@ -1,11 +1,39 @@
 import pytest
 
 from polar.models import Customer, Organization, Product
-from polar.models.payment import PaymentStatus, PaymentTrigger
+from polar.models.payment import (
+    DUNNING_COUNTING_TRIGGERS,
+    DUNNING_NON_COUNTING_TRIGGERS,
+    PaymentStatus,
+    PaymentTrigger,
+)
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order, create_payment
+
+
+def test_every_payment_trigger_is_classified() -> None:
+    """Force a deliberate decision when a new ``PaymentTrigger`` is added.
+
+    Adding a new value without also updating ``DUNNING_COUNTING_TRIGGERS``
+    or ``DUNNING_NON_COUNTING_TRIGGERS`` would silently default the new
+    trigger to "not counted toward the dunning ceiling" — which has bitten
+    us before. Fail loudly instead.
+    """
+    classified = DUNNING_COUNTING_TRIGGERS | DUNNING_NON_COUNTING_TRIGGERS
+    missing = set(PaymentTrigger) - classified
+    overlap = DUNNING_COUNTING_TRIGGERS & DUNNING_NON_COUNTING_TRIGGERS
+
+    assert not missing, (
+        f"Unclassified PaymentTrigger value(s): {sorted(t.value for t in missing)}. "
+        f"Add to DUNNING_COUNTING_TRIGGERS (if it consumes the retry budget) "
+        f"or DUNNING_NON_COUNTING_TRIGGERS (if it's a one-shot recovery)."
+    )
+    assert not overlap, (
+        f"PaymentTrigger value(s) in both sets: {sorted(t.value for t in overlap)}. "
+        f"A trigger must either count toward dunning or not — pick one."
+    )
 
 
 @pytest.mark.asyncio

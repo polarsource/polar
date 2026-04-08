@@ -1,7 +1,7 @@
 """add_meter_unit_type
 
 Revision ID: 2807c21e5dea
-Revises: 6faf4c067fee
+Revises: 05d61ed2c4ee
 Create Date: 2026-04-08 15:02:59.015229
 
 """
@@ -16,7 +16,7 @@ from polar.meter.unit import MeterUnit
 
 # revision identifiers, used by Alembic.
 revision = "2807c21e5dea"
-down_revision = "6faf4c067fee"
+down_revision = "05d61ed2c4ee"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

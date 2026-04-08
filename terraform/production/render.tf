@@ -157,7 +157,7 @@ module "production" {
     image_url       = data.render_web_service.production_api.runtime_source.image.image_url
     image_digest    = data.render_web_service.production_api.runtime_source.image.digest
     plan            = "pro_plus"
-    web_concurrency = "4"
+    web_concurrency = "6"
   }
 
   postgres_config = {

@@ -137,7 +137,7 @@ class TestCreate:
         assert meter.unit == MeterUnit.scalar
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    @pytest.mark.parametrize("unit", [MeterUnit.tokens, MeterUnit.bytes, MeterUnit.seconds])
+    @pytest.mark.parametrize("unit", [MeterUnit.tokens, MeterUnit.custom])
     async def test_custom_unit(
         self,
         unit: MeterUnit,
@@ -274,7 +274,7 @@ class TestUpdate:
 
     @pytest.mark.parametrize(
         "unit",
-        [MeterUnit.scalar, MeterUnit.tokens, MeterUnit.bytes, MeterUnit.seconds],
+        [MeterUnit.scalar, MeterUnit.tokens, MeterUnit.custom],
     )
     async def test_update_unit(
         self,

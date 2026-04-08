@@ -64,12 +64,12 @@ describe('MeteredPriceLabel', () => {
     })
   })
 
-  describe('tokens unit', () => {
+  describe('token unit', () => {
     it('scales price to per 1M tokens', () => {
       // $10 / 1M tokens → unit_amount = 0.001 cents/token
       const price = createMeteredPrice({
         unit_amount: '0.001',
-        meter: { id: 'meter_1', name: 'LLM Tokens', unit: 'tokens' },
+        meter: { id: 'meter_1', name: 'LLM Tokens', unit: 'token' },
       })
 
       const { container } = render(
@@ -84,7 +84,7 @@ describe('MeteredPriceLabel', () => {
       // $0.50 / 1M tokens → unit_amount = 0.0000005 cents/token
       const price = createMeteredPrice({
         unit_amount: '0.0000005',
-        meter: { id: 'meter_1', name: 'LLM Tokens', unit: 'tokens' },
+        meter: { id: 'meter_1', name: 'LLM Tokens', unit: 'token' },
       })
 
       const { container } = render(
@@ -92,35 +92,6 @@ describe('MeteredPriceLabel', () => {
       )
 
       expect(container.textContent).toContain('/ 1M tokens')
-    })
-  })
-
-  describe('bytes unit', () => {
-    it('scales price to per GB', () => {
-      // $0.023 / GB → unit_amount = 2.3e-9 cents/byte
-      const price = createMeteredPrice({
-        unit_amount: '0.0000000023',
-        meter: { id: 'meter_1', name: 'Bandwidth', unit: 'bytes' },
-      })
-
-      const { container } = render(
-        <MeteredPriceLabel price={price} locale="en" />,
-      )
-
-      expect(container.textContent).toContain('/ GB')
-    })
-
-    it('shows GB label', () => {
-      const price = createMeteredPrice({
-        unit_amount: '0.000000001',
-        meter: { id: 'meter_1', name: 'Storage', unit: 'bytes' },
-      })
-
-      const { container } = render(
-        <MeteredPriceLabel price={price} locale="en" />,
-      )
-
-      expect(container.textContent).toContain('/ GB')
     })
   })
 
@@ -163,36 +134,6 @@ describe('MeteredPriceLabel', () => {
       )
 
       expect(container.textContent).toContain('/ unit')
-    })
-  })
-
-  describe('seconds unit', () => {
-    it('scales price to per hour', () => {
-      // $2.50 / hour → unit_amount = 250/3600 ≈ 0.0694 cents/second
-      const price = createMeteredPrice({
-        unit_amount: String(250 / 3600),
-        meter: { id: 'meter_1', name: 'Compute', unit: 'seconds' },
-      })
-
-      const { container } = render(
-        <MeteredPriceLabel price={price} locale="en" />,
-      )
-
-      expect(container.textContent).toContain('$2.50')
-      expect(container.textContent).toContain('/ hour')
-    })
-
-    it('shows hour label', () => {
-      const price = createMeteredPrice({
-        unit_amount: String(100 / 3600),
-        meter: { id: 'meter_1', name: 'Compute', unit: 'seconds' },
-      })
-
-      const { container } = render(
-        <MeteredPriceLabel price={price} locale="en" />,
-      )
-
-      expect(container.textContent).toContain('/ hour')
     })
   })
 })

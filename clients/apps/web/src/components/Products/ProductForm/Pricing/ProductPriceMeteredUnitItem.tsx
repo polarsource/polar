@@ -165,9 +165,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                       }}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Displayed as {pricePreview}
-                  </FormDescription>
+                  <FormDescription>Displayed as {pricePreview}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )

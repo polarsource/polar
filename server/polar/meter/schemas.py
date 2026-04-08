@@ -61,9 +61,7 @@ class MeterCreate(Schema, MetadataInputMixin):
     def validate_custom_unit_fields(self) -> "MeterCreate":
         if self.unit == MeterUnit.custom:
             if self.custom_label is None:
-                raise ValueError(
-                    "custom_label is required when unit is 'custom'."
-                )
+                raise ValueError("custom_label is required when unit is 'custom'.")
         else:
             if self.custom_label is not None:
                 raise ValueError(
@@ -77,10 +75,7 @@ class MeterUpdate(Schema, MetadataInputMixin):
     unit: MeterUnit | None = Field(None, description="The unit of the meter.")
     custom_label: str | None = Field(
         None,
-        description=(
-            "The label for the custom unit. "
-            "Required when unit is 'custom'."
-        ),
+        description=("The label for the custom unit. Required when unit is 'custom'."),
     )
     custom_multiplier: int | None = Field(
         None,

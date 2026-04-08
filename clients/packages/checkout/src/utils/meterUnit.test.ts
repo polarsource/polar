@@ -17,72 +17,26 @@ describe('getMeterUnitFormat', () => {
     })
   })
 
-  describe('tokens', () => {
+  describe('token', () => {
     it('returns scale of 1_000_000', () => {
-      expect(getMeterUnitFormat('tokens').scale).toBe(1_000_000)
+      expect(getMeterUnitFormat('token').scale).toBe(1_000_000)
     })
 
     it('returns label "1M tokens"', () => {
-      expect(getMeterUnitFormat('tokens').label).toBe('1M tokens')
+      expect(getMeterUnitFormat('token').label).toBe('1M tokens')
     })
 
     it('scales $10/1M tokens correctly', () => {
       // $10/1M tokens → unit_amount = 0.001 cents/token
-      const { scale } = getMeterUnitFormat('tokens')
+      const { scale } = getMeterUnitFormat('token')
       const unitAmountCents = 0.001
       expect(unitAmountCents * scale).toBe(1000) // 1000 cents = $10
     })
 
     it('scales $0.50/1M tokens correctly', () => {
-      const { scale } = getMeterUnitFormat('tokens')
+      const { scale } = getMeterUnitFormat('token')
       const unitAmountCents = 0.0000005
       expect(unitAmountCents * scale).toBeCloseTo(0.5) // 0.5 cents = $0.005
-    })
-  })
-
-  describe('bytes', () => {
-    it('returns scale of 1_000_000_000', () => {
-      expect(getMeterUnitFormat('bytes').scale).toBe(1_000_000_000)
-    })
-
-    it('returns label "GB"', () => {
-      expect(getMeterUnitFormat('bytes').label).toBe('GB')
-    })
-
-    it('scales $0.023/GB correctly', () => {
-      // $0.023/GB → unit_amount = 0.023/1e9 * 100 = 2.3e-9 cents/byte
-      const { scale } = getMeterUnitFormat('bytes')
-      const unitAmountCents = 2.3e-9
-      expect(unitAmountCents * scale).toBeCloseTo(2.3) // 2.3 cents = $0.023
-    })
-
-    it('scales $0.10/GB correctly', () => {
-      const { scale } = getMeterUnitFormat('bytes')
-      const unitAmountCents = 1e-10
-      expect(unitAmountCents * scale).toBeCloseTo(0.1)
-    })
-  })
-
-  describe('seconds', () => {
-    it('returns scale of 3_600', () => {
-      expect(getMeterUnitFormat('seconds').scale).toBe(3_600)
-    })
-
-    it('returns label "hour"', () => {
-      expect(getMeterUnitFormat('seconds').label).toBe('hour')
-    })
-
-    it('scales $2.50/hour correctly', () => {
-      // $2.50/hr → unit_amount = 250/3600 ≈ 0.06944 cents/second
-      const { scale } = getMeterUnitFormat('seconds')
-      const unitAmountCents = 250 / 3600
-      expect(unitAmountCents * scale).toBeCloseTo(250) // 250 cents = $2.50
-    })
-
-    it('scales $0.50/hour correctly', () => {
-      const { scale } = getMeterUnitFormat('seconds')
-      const unitAmountCents = 50 / 3600
-      expect(unitAmountCents * scale).toBeCloseTo(50) // 50 cents = $0.50
     })
   })
 
@@ -137,7 +91,7 @@ describe('getMeterUnitFormat', () => {
   })
 
   describe('all units', () => {
-    const allUnits: MeterUnit[] = ['scalar', 'tokens', 'bytes', 'seconds', 'custom']
+    const allUnits: MeterUnit[] = ['scalar', 'token', 'custom']
 
     it.each(allUnits)('%s returns a positive scale', (unit) => {
       expect(getMeterUnitFormat(unit).scale).toBeGreaterThan(0)

@@ -1,9 +1,9 @@
-export type MeterUnit = 'scalar' | 'tokens' | 'bytes' | 'seconds' | 'custom'
+export type MeterUnit = 'scalar' | 'token' | 'custom'
 
 export interface MeterUnitFormat {
   /**
    * Factor to multiply unit_amount (in cents) by to get the price at display
-   * scale. For example, tokens uses 1_000_000 so "$0.00001/token" becomes
+   * scale. For example, token uses 1_000_000 so "$0.00001/token" becomes
    * "$10 / 1M tokens".
    */
   scale: number
@@ -13,9 +13,7 @@ export interface MeterUnitFormat {
 
 const UNIT_FORMATS: Record<Exclude<MeterUnit, 'custom'>, MeterUnitFormat> = {
   scalar: { scale: 1, label: 'unit' },
-  tokens: { scale: 1_000_000, label: '1M tokens' },
-  bytes: { scale: 1_000_000_000, label: 'GB' },
-  seconds: { scale: 3_600, label: 'hour' },
+  token: { scale: 1_000_000, label: '1M tokens' },
 }
 
 /**
@@ -25,8 +23,8 @@ const UNIT_FORMATS: Record<Exclude<MeterUnit, 'custom'>, MeterUnitFormat> = {
  * defaults. Without them, custom units fall back to scalar (scale=1, label="unit").
  *
  * @example
- * // Tokens: $10 / 1M tokens
- * const { scale, label } = getMeterUnitFormat('tokens')
+ * // Token: $10 / 1M tokens
+ * const { scale, label } = getMeterUnitFormat('token')
  * const displayAmount = unitAmountCents * scale  // 0.001 * 1_000_000 = 1000 cents = $10
  *
  * @example
@@ -49,8 +47,6 @@ export function getMeterUnitFormat(
 
 export const METER_UNIT_DISPLAY_NAMES: Record<MeterUnit, string> = {
   scalar: 'Scalar',
-  tokens: 'Tokens',
-  bytes: 'Bytes',
-  seconds: 'Seconds',
+  token: 'Token',
   custom: 'Custom',
 }

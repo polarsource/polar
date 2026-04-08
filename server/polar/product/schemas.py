@@ -39,6 +39,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
+from polar.meter.unit import MeterUnit
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -61,7 +62,6 @@ from polar.models.product_price import (
 from polar.models.product_price import (
     ProductPriceSeatUnit as ProductPriceSeatUnitModel,
 )
-from polar.meter.unit import MeterUnit
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
@@ -794,9 +794,7 @@ class ProductPriceMeter(IDSchema):
 
     name: str = Field(description="The name of the meter.")
     unit: MeterUnit = Field(description="The unit of the meter.")
-    custom_label: str | None = Field(
-        None, description="The label for the custom unit."
-    )
+    custom_label: str | None = Field(None, description="The label for the custom unit.")
     custom_multiplier: int | None = Field(
         None, description="The multiplier to convert from base unit to display scale."
     )

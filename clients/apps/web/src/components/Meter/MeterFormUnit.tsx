@@ -18,6 +18,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
+import { InfoIcon } from 'lucide-react'
 import { useFormContext } from 'react-hook-form'
 
 const MeterFormUnit = () => {
@@ -86,7 +92,21 @@ const MeterFormUnit = () => {
             }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Unit Multiplier</FormLabel>
+                <FormLabel>
+                  <span className="flex items-center gap-x-1.5">
+                    Unit Multiplier
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <InfoIcon className="dark:text-polar-400 h-3.5 w-3.5 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        Scales how the price is displayed. For example, a
+                        multiplier of 1&thinsp;000 shows the price per 1&thinsp;000
+                        units rather than per single unit.
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                </FormLabel>
                 <FormControl>
                   <Input
                     {...field}

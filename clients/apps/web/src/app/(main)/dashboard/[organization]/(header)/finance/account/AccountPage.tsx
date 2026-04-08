@@ -49,14 +49,15 @@ export default function ClientPage({
     accountError &&
     (accountError as ClientResponseError)?.response?.status === 403
 
-  const isApproved =
-    organization.status === 'denied'
-      ? false // Explicit denial always takes precedence, if not, fall back to checking for approval conditions
-      : reviewStatus?.verdict === 'PASS' ||
-        reviewStatus?.appeal_decision === 'approved' ||
-        ['active', 'initial_review', 'ongoing_review'].includes(
-          organization.status,
-        )
+  const isDenied = organization.status === 'denied'
+
+  const isApproved = isDenied
+    ? false // Explicit denial always takes precedence, if not, fall back to checking for approval conditions
+    : reviewStatus?.verdict === 'PASS' ||
+      reviewStatus?.appeal_decision === 'approved' ||
+      ['active', 'initial_review', 'ongoing_review'].includes(
+        organization.status,
+      )
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
   const createIdentityVerification = useCreateIdentityVerification()
@@ -188,6 +189,17 @@ export default function ClientPage({
               kyc={true}
               onSubmitted={handleDetailsSubmitted}
             />
+          ) : isDenied ? (
+            <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
+              <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                <CheckIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
+              </span>
+              <h4 className="mb-2 font-medium">Account denied</h4>
+              <p className="dark:text-polar-400 mx-auto max-w-sm text-sm text-balance text-gray-600">
+                You have been denied access to Polar. If you believe this is a
+                mistake, please contact support for further assistance.
+              </p>
+            </div>
           ) : isApproved ? (
             <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
               <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">

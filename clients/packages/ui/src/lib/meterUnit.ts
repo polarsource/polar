@@ -1,4 +1,4 @@
-export type MeterUnit = 'scalar' | 'tokens' | 'bytes' | 'seconds'
+export type MeterUnit = 'scalar' | 'tokens' | 'bytes' | 'seconds' | 'custom'
 
 export interface MeterUnitFormat {
   /**
@@ -11,7 +11,7 @@ export interface MeterUnitFormat {
   label: string
 }
 
-const UNIT_FORMATS: Record<MeterUnit, MeterUnitFormat> = {
+const UNIT_FORMATS: Record<Exclude<MeterUnit, 'custom'>, MeterUnitFormat> = {
   scalar: { scale: 1, label: 'unit' },
   tokens: { scale: 1_000_000, label: '1M tokens' },
   bytes: { scale: 1_000_000_000, label: 'GB' },
@@ -21,22 +21,29 @@ const UNIT_FORMATS: Record<MeterUnit, MeterUnitFormat> = {
 /**
  * Returns the display scale and unit label for a given meter unit.
  *
+ * For custom units, pass `customLabel` and `customMultiplier` to override the
+ * defaults. Without them, custom units fall back to scalar (scale=1, label="unit").
+ *
  * @example
  * // Tokens: $10 / 1M tokens
  * const { scale, label } = getMeterUnitFormat('tokens')
  * const displayAmount = unitAmountCents * scale  // 0.001 * 1_000_000 = 1000 cents = $10
  *
  * @example
- * // Bytes: $0.023 / GB
- * const { scale, label } = getMeterUnitFormat('bytes')
- * const displayAmount = unitAmountCents * scale  // 0.0000000023 * 1e9 = 2.3 cents = $0.023
- *
- * @example
- * // Seconds: $2.50 / hour
- * const { scale, label } = getMeterUnitFormat('seconds')
- * const displayAmount = unitAmountCents * scale  // (250/3600) * 3600 = 250 cents = $2.50
+ * // Custom: $5 / 1000 requests
+ * const { scale, label } = getMeterUnitFormat('custom', { customLabel: 'requests', customMultiplier: 1000 })
+ * const displayAmount = unitAmountCents * scale  // 0.5 * 1000 = 500 cents = $5
  */
-export function getMeterUnitFormat(unit: MeterUnit): MeterUnitFormat {
+export function getMeterUnitFormat(
+  unit: MeterUnit,
+  options?: { customLabel?: string | null; customMultiplier?: number | null },
+): MeterUnitFormat {
+  if (unit === 'custom') {
+    return {
+      scale: options?.customMultiplier ?? 1,
+      label: options?.customLabel ?? 'unit',
+    }
+  }
   return UNIT_FORMATS[unit] ?? UNIT_FORMATS.scalar
 }
 
@@ -45,4 +52,5 @@ export const METER_UNIT_DISPLAY_NAMES: Record<MeterUnit, string> = {
   tokens: 'Tokens',
   bytes: 'Bytes',
   seconds: 'Seconds',
+  custom: 'Custom',
 }

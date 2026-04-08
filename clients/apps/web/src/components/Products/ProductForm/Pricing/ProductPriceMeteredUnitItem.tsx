@@ -54,7 +54,13 @@ export const ProductPriceMeteredUnitItem: React.FC<
     const selectedMeter = meters?.items.find(
       (m: schemas['Meter']) => m.id === meterId,
     )
-    const { scale, label } = getMeterUnitFormat(selectedMeter?.unit ?? 'scalar')
+    const { scale, label } = getMeterUnitFormat(
+      selectedMeter?.unit ?? 'scalar',
+      {
+        customLabel: selectedMeter?.custom_label,
+        customMultiplier: selectedMeter?.custom_multiplier,
+      },
+    )
     const cents = Number.parseFloat(String(unitAmount || '0'))
     const scaled = cents * scale
     const formatted = formatCurrency('subcent')(scaled, currency)

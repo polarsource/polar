@@ -794,6 +794,12 @@ class ProductPriceMeter(IDSchema):
 
     name: str = Field(description="The name of the meter.")
     unit: MeterUnit = Field(description="The unit of the meter.")
+    custom_label: str | None = Field(
+        None, description="The label for the custom unit."
+    )
+    custom_multiplier: int | None = Field(
+        None, description="The multiplier to convert from base unit to display scale."
+    )
 
 
 class ProductPriceMeteredUnit(ProductPriceBase):

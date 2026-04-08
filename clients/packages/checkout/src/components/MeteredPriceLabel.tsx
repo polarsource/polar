@@ -12,7 +12,10 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
   price,
   locale = DEFAULT_LOCALE,
 }) => {
-  const { scale, label } = getMeterUnitFormat(price.meter.unit ?? 'scalar')
+  const { scale, label } = getMeterUnitFormat(price.meter.unit ?? 'scalar', {
+    customLabel: price.meter.custom_label,
+    customMultiplier: price.meter.custom_multiplier,
+  })
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">
@@ -20,7 +23,7 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
         Number.parseFloat(price.unit_amount) * scale,
         price.price_currency,
       )}
-      <span className="dark:text-polar-400 text-[max(12px,0.5em)] text-gray-500">
+      <span className="dark:text-polar-400 text-[max(12px,0.5em)] text-gray-500 lowercase">
         / {label}
       </span>
     </div>

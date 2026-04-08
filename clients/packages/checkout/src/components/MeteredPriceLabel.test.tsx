@@ -124,6 +124,48 @@ describe('MeteredPriceLabel', () => {
     })
   })
 
+  describe('custom unit', () => {
+    it('uses customMultiplier as scale and customLabel as label', () => {
+      // $5 / 1000 requests → unit_amount = 0.5 cents/request
+      const price = createMeteredPrice({
+        unit_amount: '0.5',
+        meter: {
+          id: 'meter_1',
+          name: 'API Calls',
+          unit: 'custom',
+          custom_label: 'request',
+          custom_multiplier: 1000,
+        },
+      })
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$5')
+      expect(container.textContent).toContain('/ request')
+    })
+
+    it('falls back to "unit" label when custom_label is null', () => {
+      const price = createMeteredPrice({
+        unit_amount: '1',
+        meter: {
+          id: 'meter_1',
+          name: 'Events',
+          unit: 'custom',
+          custom_label: null,
+          custom_multiplier: 100,
+        },
+      })
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('/ unit')
+    })
+  })
+
   describe('seconds unit', () => {
     it('scales price to per hour', () => {
       // $2.50 / hour → unit_amount = 250/3600 ≈ 0.0694 cents/second

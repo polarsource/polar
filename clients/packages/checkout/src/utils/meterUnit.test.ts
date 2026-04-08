@@ -86,8 +86,58 @@ describe('getMeterUnitFormat', () => {
     })
   })
 
+  describe('custom', () => {
+    it('returns customMultiplier as scale', () => {
+      const { scale } = getMeterUnitFormat('custom', {
+        customLabel: 'request',
+        customMultiplier: 1000,
+      })
+      expect(scale).toBe(1000)
+    })
+
+    it('returns customLabel as label', () => {
+      const { label } = getMeterUnitFormat('custom', {
+        customLabel: 'request',
+        customMultiplier: 1000,
+      })
+      expect(label).toBe('request')
+    })
+
+    it('scales $5/1000 requests correctly', () => {
+      // $5/1000 requests → unit_amount = 500/1000 = 0.5 cents/request
+      const { scale } = getMeterUnitFormat('custom', {
+        customLabel: 'request',
+        customMultiplier: 1000,
+      })
+      const unitAmountCents = 0.5
+      expect(unitAmountCents * scale).toBe(500) // 500 cents = $5
+    })
+
+    it('falls back to scale=1 and label="unit" when options are missing', () => {
+      const { scale, label } = getMeterUnitFormat('custom')
+      expect(scale).toBe(1)
+      expect(label).toBe('unit')
+    })
+
+    it('falls back to scale=1 when customMultiplier is null', () => {
+      const { scale } = getMeterUnitFormat('custom', {
+        customLabel: 'request',
+        customMultiplier: null,
+      })
+      expect(scale).toBe(1)
+    })
+
+    it('falls back to label="unit" when customLabel is null', () => {
+      const { label } = getMeterUnitFormat('custom', {
+        customLabel: null,
+        customMultiplier: 1000,
+      })
+      expect(label).toBe('unit')
+    })
+  })
+
   describe('all units', () => {
-    const allUnits: MeterUnit[] = ['scalar', 'tokens', 'bytes', 'seconds']
+    const allUnits: MeterUnit[] = ['scalar', 'tokens', 'bytes', 'seconds', 'custom']
 
     it.each(allUnits)('%s returns a positive scale', (unit) => {
       expect(getMeterUnitFormat(unit).scale).toBeGreaterThan(0)

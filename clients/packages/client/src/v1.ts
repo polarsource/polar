@@ -19670,6 +19670,16 @@ export interface components {
       name: string
       /** @description The unit of the meter. */
       unit: components['schemas']['MeterUnit']
+      /**
+       * Custom Label
+       * @description The label for the custom unit.
+       */
+      custom_label?: string | null
+      /**
+       * Custom Multiplier
+       * @description The multiplier to convert from base unit to display scale.
+       */
+      custom_multiplier?: number | null
       /** @description The filter to apply on events that'll be used to calculate the meter. */
       filter: components['schemas']['Filter']
       /**
@@ -19721,6 +19731,17 @@ export interface components {
        * @default scalar
        */
       unit: components['schemas']['MeterUnit']
+      /**
+       * Custom Label
+       * @description The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.
+       */
+      custom_label?: string | null
+      /**
+       * Custom Multiplier
+       * @description The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1.
+       * @default 1
+       */
+      custom_multiplier?: number
       /** @description The filter to apply on events that'll be used to calculate the meter. */
       filter: components['schemas']['Filter']
       /**
@@ -19936,7 +19957,7 @@ export interface components {
      * MeterUnit
      * @enum {string}
      */
-    MeterUnit: 'scalar' | 'tokens' | 'bytes' | 'seconds'
+    MeterUnit: 'scalar' | 'tokens' | 'bytes' | 'seconds' | 'custom'
     /** MeterUpdate */
     MeterUpdate: {
       /**
@@ -19963,6 +19984,16 @@ export interface components {
       name?: string | null
       /** @description The unit of the meter. */
       unit?: components['schemas']['MeterUnit'] | null
+      /**
+       * Custom Label
+       * @description The label for the custom unit. Required when unit is 'custom'.
+       */
+      custom_label?: string | null
+      /**
+       * Custom Multiplier
+       * @description The multiplier to convert from base unit to display scale. Required when unit is 'custom'.
+       */
+      custom_multiplier?: number | null
       /** @description The filter to apply on events that'll be used to calculate the meter. */
       filter?: components['schemas']['Filter'] | null
       /**
@@ -24543,6 +24574,16 @@ export interface components {
       name: string
       /** @description The unit of the meter. */
       unit: components['schemas']['MeterUnit']
+      /**
+       * Custom Label
+       * @description The label for the custom unit.
+       */
+      custom_label?: string | null
+      /**
+       * Custom Multiplier
+       * @description The multiplier to convert from base unit to display scale.
+       */
+      custom_multiplier?: number | null
     }
     /**
      * ProductPriceMeteredUnit
@@ -47586,7 +47627,7 @@ export const meterSortPropertyValues: ReadonlyArray<
 > = ['created_at', '-created_at', 'name', '-name']
 export const meterUnitValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterUnit']
-> = ['scalar', 'tokens', 'bytes', 'seconds']
+> = ['scalar', 'tokens', 'bytes', 'seconds', 'custom']
 export const metricTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MetricType']
 > = ['scalar', 'currency', 'currency_sub_cent', 'percentage']

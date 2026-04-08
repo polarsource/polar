@@ -14,7 +14,6 @@ from polar.organization_review.report import (
 )
 from polar.organization_review.schemas import (
     RISK_LEVEL_SCORES,
-    AccountData,
     AgentReviewResult,
     DataSnapshot,
     DimensionAssessment,
@@ -22,6 +21,7 @@ from polar.organization_review.schemas import (
     IdentityData,
     OrganizationData,
     PaymentMetrics,
+    PayoutAccountData,
     ProductsData,
     ReviewAgentReport,
     ReviewContext,
@@ -64,7 +64,7 @@ def _make_data_snapshot() -> DataSnapshot:
         organization=OrganizationData(name="Test Org", slug="test-org"),
         products=ProductsData(),
         identity=IdentityData(),
-        account=AccountData(),
+        account=PayoutAccountData(),
         metrics=PaymentMetrics(),
         history=HistoryData(),
         collected_at=datetime(2026, 1, 1, tzinfo=UTC),

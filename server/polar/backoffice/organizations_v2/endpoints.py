@@ -43,7 +43,7 @@ from polar.backoffice.organizations.forms import (
     UpdateOrganizationSocialsForm,
 )
 from polar.backoffice.organizations.orders_import import orders_import_sse
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -2655,7 +2655,7 @@ async def resync_stripe_account(
     if not organization.account:
         raise HTTPException(status_code=400, detail="Organization has no account")
 
-    if organization.account.account_type != AccountType.stripe:
+    if organization.account.account_type != PayoutAccountType.stripe:
         raise HTTPException(status_code=400, detail="Account is not a Stripe account")
 
     if not organization.account.stripe_id:
@@ -2704,7 +2704,7 @@ async def disconnect_stripe_account(
     if not organization.account:
         raise HTTPException(status_code=400, detail="Organization has no account")
 
-    if organization.account.account_type != AccountType.stripe:
+    if organization.account.account_type != PayoutAccountType.stripe:
         raise HTTPException(status_code=400, detail="Account is not a Stripe account")
 
     if not organization.account.stripe_id:
@@ -2810,7 +2810,7 @@ async def delete_stripe_account(
     if not organization.account:
         raise HTTPException(status_code=400, detail="Organization has no account")
 
-    if organization.account.account_type != AccountType.stripe:
+    if organization.account.account_type != PayoutAccountType.stripe:
         raise HTTPException(status_code=400, detail="Account is not a Stripe account")
 
     if not organization.account.stripe_id:

@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.kit.utils import generate_uuid
 from polar.models import Payout, Transaction
 from polar.models.transaction import Processor, TransactionType
@@ -48,9 +48,9 @@ class PayoutTransactionService(BaseTransactionService):
             await balance_transaction_repository.get_all_unpaid_by_account(account.id)
         )
 
-        if account.account_type == AccountType.stripe:
+        if payout.processor == PayoutAccountType.stripe:
             transaction.processor = Processor.stripe
-        elif account.account_type == AccountType.manual:
+        elif payout.processor == PayoutAccountType.manual:
             transaction.processor = Processor.manual
 
         for balance_transaction in unpaid_balance_transactions:

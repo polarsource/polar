@@ -2,7 +2,15 @@ from functools import partial
 
 import pytest
 
-from polar.models import Account, Organization, Payout, Transaction, User
+from polar.enums import PayoutAccountType
+from polar.models import (
+    Account,
+    Organization,
+    Payout,
+    PayoutAccount,
+    Transaction,
+    User,
+)
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.payout import (
@@ -14,7 +22,7 @@ from polar.transaction.service.platform_fee import (
 from polar.transaction.service.transaction import transaction as transaction_service
 from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_account
+from tests.fixtures.random_objects import create_account, create_payout_account
 from tests.fixtures.random_objects import create_payout as _create_payout
 
 create_payment_transaction = partial(ro.create_payment_transaction, amount=10000)
@@ -26,17 +34,22 @@ async def create_payout(
     save_fixture: SaveFixture,
     session: AsyncSession,
     account: Account,
+    payout_account: PayoutAccount,
 ) -> tuple[Payout, list[tuple[Transaction, Transaction]]]:
     balance_amount = await transaction_service.get_transactions_sum(session, account.id)
     (
         balance_amount_after_fees,
         payout_fees_balances,
     ) = await platform_fee_transaction_service.create_payout_fees_balances(
-        session, account=account, balance_amount=balance_amount
+        session,
+        account=account,
+        payout_account=payout_account,
+        balance_amount=balance_amount,
     )
 
     payout = await _create_payout(
         save_fixture,
+        payout_account=payout_account,
         account=account,
         amount=balance_amount_after_fees,
         account_amount=balance_amount_after_fees,
@@ -56,6 +69,9 @@ class TestCreate:
         user: User,
     ) -> None:
         account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
 
         payment_transaction_1 = await create_payment_transaction(save_fixture)
         balance_transaction_1 = await create_balance_transaction(
@@ -67,7 +83,9 @@ class TestCreate:
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
 
-        payout, fees = await create_payout(save_fixture, session, account=account)
+        payout, fees = await create_payout(
+            save_fixture, session, account=account, payout_account=payout_account
+        )
 
         transaction = await payout_transaction_service.create(session, payout, fees)
 
@@ -104,6 +122,9 @@ class TestReverse:
         user: User,
     ) -> None:
         account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
 
         payment_transaction_1 = await create_payment_transaction(save_fixture)
         balance_transaction_1 = await create_balance_transaction(
@@ -114,7 +135,9 @@ class TestReverse:
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
 
-        payout, _ = await create_payout(save_fixture, session, account=account)
+        payout, _ = await create_payout(
+            save_fixture, session, account=account, payout_account=payout_account
+        )
 
         payout_transaction = Transaction(
             type=TransactionType.payout,

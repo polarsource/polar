@@ -8,12 +8,14 @@ import structlog
 
 from polar.models.organization import Organization
 from polar.organization.repository import OrganizationRepository
+from polar.organization_review.collectors.payout_account import (
+    collect_payout_account_data,
+)
 from polar.postgres import AsyncSession
 from polar.worker import AsyncReadSessionMaker
 
 from .analyzer import review_analyzer
 from .collectors import (
-    collect_account_data,
     collect_feedback_data,
     collect_history_data,
     collect_identity_data,
@@ -26,12 +28,12 @@ from .collectors import (
 from .collectors.setup import resolve_url_redirects
 from .repository import OrganizationReviewRepository
 from .schemas import (
-    AccountData,
     AgentReviewResult,
     DataSnapshot,
     HistoryData,
     IdentityData,
     PaymentMetrics,
+    PayoutAccountData,
     PriorFeedbackData,
     ProductsData,
     ReviewContext,
@@ -205,20 +207,18 @@ async def _collect_history(organization: Organization) -> HistoryData:
 
 async def _collect_account_identity(
     organization: Organization, context: ReviewContext
-) -> tuple[AccountData, IdentityData]:
+) -> tuple[PayoutAccountData, IdentityData]:
     if context == ReviewContext.SUBMISSION:
-        return AccountData(), IdentityData()
+        return PayoutAccountData(), IdentityData()
 
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
-        account = (
-            await repo.get_account_with_admin(organization.account_id)
-            if organization.account_id
-            else None
-        )
-    account_data = collect_account_data(account)
-    identity_data = await collect_identity_data(account)
-    return account_data, identity_data
+        payout_account = await repo.get_payout_account_with_admin(organization.id)
+    payout_account_data = collect_payout_account_data(payout_account)
+    identity_data = await collect_identity_data(
+        payout_account.admin if payout_account is not None else None
+    )
+    return payout_account_data, identity_data
 
 
 async def _collect_website(organization: Organization) -> WebsiteData | None:
@@ -271,7 +271,7 @@ async def _collect_data(
             SetupData,
             PaymentMetrics,
             HistoryData,
-            tuple[AccountData, IdentityData],
+            tuple[PayoutAccountData, IdentityData],
             WebsiteData | None,
             PriorFeedbackData,
         ],

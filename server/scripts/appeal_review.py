@@ -43,12 +43,14 @@ from polar.kit.schemas import Schema
 from polar.models.organization import Organization
 from polar.models.user_organization import UserOrganization
 from polar.organization.repository import OrganizationRepository
-from polar.organization_review.collectors.account import collect_account_data
 from polar.organization_review.collectors.feedback import collect_feedback_data
 from polar.organization_review.collectors.history import collect_history_data
 from polar.organization_review.collectors.identity import collect_identity_data
 from polar.organization_review.collectors.metrics import collect_metrics_data
 from polar.organization_review.collectors.organization import collect_organization_data
+from polar.organization_review.collectors.payout_account import (
+    collect_payout_account_data,
+)
 from polar.organization_review.collectors.products import collect_products_data
 from polar.organization_review.collectors.setup import collect_setup_data
 from polar.organization_review.collectors.website import collect_website_data
@@ -692,31 +694,38 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
                 return "Organization not found."
 
             review_repo = OrganizationReviewRepository.from_session(session)
-            account = None
+            payout_account = None
             if org.account_id:
-                account = await review_repo.get_account_with_admin(org.account_id)
+                payout_account = await review_repo.get_payout_account_with_admin(org.id)
 
-            account_data = collect_account_data(account)
-            identity_data = await collect_identity_data(account)
+            payout_account_data = collect_payout_account_data(payout_account)
+            identity_data = await collect_identity_data(
+                payout_account.admin if payout_account else None
+            )
 
-            parts = ["## Stripe Account"]
-            parts.append(f"Country: {account_data.country or 'unknown'}")
-            parts.append(f"Business Type: {account_data.business_type or 'unknown'}")
-            parts.append(f"Details Submitted: {account_data.is_details_submitted}")
-            parts.append(f"Charges Enabled: {account_data.is_charges_enabled}")
-            parts.append(f"Payouts Enabled: {account_data.is_payouts_enabled}")
-            if account_data.business_name:
-                parts.append(f"Business Name: {account_data.business_name}")
-            if account_data.business_url:
-                parts.append(f"Business URL: {account_data.business_url}")
-            if account_data.requirements_disabled_reason:
+            parts = ["## Payout Account"]
+            parts.append(f"Type: {payout_account_data.type or 'unknown'}")
+            parts.append(f"Country: {payout_account_data.country or 'unknown'}")
+            parts.append(
+                f"Business Type: {payout_account_data.business_type or 'unknown'}"
+            )
+            parts.append(
+                f"Details Submitted: {payout_account_data.is_details_submitted}"
+            )
+            parts.append(f"Charges Enabled: {payout_account_data.is_charges_enabled}")
+            parts.append(f"Payouts Enabled: {payout_account_data.is_payouts_enabled}")
+            if payout_account_data.business_name:
+                parts.append(f"Business Name: {payout_account_data.business_name}")
+            if payout_account_data.business_url:
+                parts.append(f"Business URL: {payout_account_data.business_url}")
+            if payout_account_data.requirements_disabled_reason:
                 parts.append(
-                    f"WARNING — Disabled Reason: {account_data.requirements_disabled_reason}"
+                    f"WARNING — Disabled Reason: {payout_account_data.requirements_disabled_reason}"
                 )
-            if account_data.requirements_errors:
+            if payout_account_data.requirements_errors:
                 error_strs = [
                     f"{e['code']}: {e['reason']}"
-                    for e in account_data.requirements_errors
+                    for e in payout_account_data.requirements_errors
                 ]
                 parts.append(f"WARNING — Errors: {'; '.join(error_strs)}")
 

@@ -1,7 +1,7 @@
 import time
 from datetime import date, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -28,9 +28,6 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.schemas import Schema
 
 from .account import Account
-
-if TYPE_CHECKING:
-    pass
 
 
 class OAuthPlatform(StrEnum):

@@ -34,7 +34,6 @@ if TYPE_CHECKING:
         TransactionCreateReversalParams,
     )
 
-    from polar.account.schemas import AccountCreateForOrganization
     from polar.models import User
 
 #: Stripe PaymentIntent metadata key carrying the
@@ -74,15 +73,11 @@ class StripeService:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
     async def create_account(
-        self, account: "AccountCreateForOrganization", name: str | None
+        self, country: str, name: str | None
     ) -> stripe_lib.Account:
-        log.info(
-            "stripe.account.create",
-            country=account.country,
-            name=name,
-        )
+        log.info("stripe.account.create", country=country, name=name)
         create_params: AccountCreateParams = {
-            "country": account.country,
+            "country": country,
             "type": "express",
             "capabilities": {"transfers": {"requested": True}},
             "settings": {
@@ -93,7 +88,7 @@ class StripeService:
         if name:
             create_params["business_profile"] = {"name": name}
 
-        if account.country != "US":
+        if country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
 
         return await stripe_lib.Account.create_async(**create_params)

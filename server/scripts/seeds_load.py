@@ -23,7 +23,6 @@ from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
 from polar.discount.service import discount as discount_service
 from polar.enums import (
-    AccountType,
     PaymentProcessor,
     SubscriptionRecurringInterval,
     TaxBehaviorOption,
@@ -36,7 +35,6 @@ from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.schemas import MeterCreate
 from polar.meter.service import meter as meter_service
-from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
@@ -640,27 +638,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 organization_details_snapshot=org_data.get("details", {}),
             )
             session.add(organization_review)
-
-        # Create an Account for all organizations except Widget Industries
-        if org_data["slug"] != "widget-industries":
-            account = Account(
-                account_type=AccountType.stripe,
-                admin_id=user.id,
-                stripe_id=f"acct_{organization.slug}_test",  # Test Stripe account ID
-                country="US",
-                currency="USD",
-                is_details_submitted=True,
-                is_charges_enabled=True,
-                is_payouts_enabled=True,
-                email=org_data["email"],
-                processor_fees_applicable=True,
-            )
-            session.add(account)
-            await session.flush()
-
-            # Link the account to the organization
-            organization.account_id = account.id
-            session.add(organization)
 
         # Create benefits for organization
         org_benefits = {}

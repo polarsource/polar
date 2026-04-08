@@ -2,28 +2,28 @@ import stripe as stripe_lib
 import structlog
 
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.models.account import Account
+from polar.models import User
 
 from ..schemas import IdentityData
 
 log = structlog.get_logger(__name__)
 
 
-async def collect_identity_data(account: Account | None) -> IdentityData:
-    if account is None or account.admin is None:
+async def collect_identity_data(user: User | None) -> IdentityData:
+    if user is None:
         return IdentityData()
 
-    verification_status = account.admin.identity_verification_status.value
+    verification_status = user.identity_verification_status.value
     verification_error_code = None
     verified_first_name = None
     verified_last_name = None
     verified_address_country = None
     verified_dob = None
 
-    if account.admin.identity_verification_id is not None:
+    if user.identity_verification_id is not None:
         try:
             vs = await stripe_service.get_verification_session(
-                account.admin.identity_verification_id,
+                user.identity_verification_id,
                 expand=["verified_outputs"],
             )
             if vs.last_error and vs.last_error.code:
@@ -41,7 +41,7 @@ async def collect_identity_data(account: Account | None) -> IdentityData:
         except stripe_lib.StripeError:
             log.warning(
                 "collect_identity_data.verification_session_fetch_failed",
-                identity_verification_id=account.admin.identity_verification_id,
+                identity_verification_id=user.identity_verification_id,
             )
 
     return IdentityData(

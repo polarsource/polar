@@ -3,7 +3,7 @@ import contextlib
 import uuid
 from collections.abc import Generator
 from datetime import UTC, datetime
-from typing import Annotated, Any, Literal, override
+from typing import Annotated, Any, Literal, cast, override
 
 import stripe as stripe_lib
 import structlog
@@ -16,12 +16,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import classes, document, tag, text
 
-from polar.account.service import (
-    CannotChangeAdminError,
-    UserNotOrganizationMemberError,
-)
-from polar.account.service import account as account_service
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.file.repository import FileRepository
 from polar.file.service import file as file_service
 from polar.file.sorting import FileSortProperty
@@ -50,6 +45,7 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.organization_review.repository import OrganizationReviewRepository
+from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
@@ -170,7 +166,7 @@ class AccountTypeDescriptionListAttrItem(
 ):
     def render(self, request: Request, item: Account) -> Generator[None] | None:
         account_type = item.account_type
-        if account_type == AccountType.stripe:
+        if account_type == PayoutAccountType.stripe:
             with tag.a(
                 href=f"https://dashboard.stripe.com/connect/accounts/{item.stripe_id}",
                 classes="link flex flex-row gap-1",
@@ -1044,64 +1040,6 @@ async def confirm_change_admin(
 
 
 @router.api_route(
-    "/{id}/change_admin/{user_id}",
-    name="organizations-classic:change_admin",
-    methods=["POST"],
-)
-async def change_admin(
-    request: Request,
-    id: UUID4,
-    user_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    """Change account admin endpoint."""
-
-    try:
-        # Get organization and account
-        org_repo = OrganizationRepository.from_session(session)
-        organization = await org_repo.get_by_id(
-            id, include_deleted=True, options=(joinedload(Organization.account),)
-        )
-
-        if not organization or not organization.account:
-            raise HTTPException(
-                status_code=404, detail="Organization or account not found"
-            )
-
-        # Get user info for better error messages
-        user_repo = UserRepository.from_session(session)
-        user = await user_repo.get_by_id(user_id)
-        user_email = user.email if user else str(user_id)
-
-        # Change the admin
-        await account_service.change_admin(
-            session, organization.account, user_id, organization.id
-        )
-
-        # Add success toast and redirect
-        await add_toast(
-            request,
-            f"Account admin changed to {user_email}",
-            "success",
-        )
-
-        return HXRedirectResponse(
-            request, request.url_for("organizations-classic:get", id=id), 303
-        )
-
-    except CannotChangeAdminError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    except UserNotOrganizationMemberError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    except Exception:
-        raise HTTPException(
-            status_code=500, detail="An error occurred while changing the admin"
-        )
-
-
-@router.api_route(
     "/{id}/setup_manual_payout",
     name="organizations-classic:setup_manual_payout",
     methods=["GET", "POST"],
@@ -1116,17 +1054,17 @@ async def setup_manual_payout(
     if not organization:
         raise HTTPException(status_code=404)
 
-    # Check if organization already has an account
-    if organization.account_id is not None:
+    # Check if organization already has a payout account
+    if organization.payout_account is not None:
         raise HTTPException(
-            status_code=400, detail="Organization already has an account"
+            status_code=400, detail="Organization already has a payout account"
         )
 
     if request.method == "POST":
         # Create a manual account for the organization
         # Get country from form data
         data = await request.form()
-        country = data.get("country", "US")
+        country = cast(str, data.get("country", "US"))
 
         # Get the first user of the organization as admin
         user_repository = UserRepository.from_session(session)
@@ -1136,24 +1074,8 @@ async def setup_manual_payout(
 
         admin_user = users[0]  # Use first user as admin
 
-        # Create manual account
-        account = Account(
-            account_type=AccountType.manual,
-            admin_id=admin_user.id,
-            country=country,
-            currency="usd",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            processor_fees_applicable=False,  # No processor fees for manual accounts
-        )
-
-        session.add(account)
-        await session.flush()
-
-        # Associate account with organization
-        organization = await org_repo.update(
-            organization, update_dict={"account_id": account.id}
+        await payout_account_service.create_manual_account(
+            session, organization, admin_user, country=country, currency="usd"
         )
 
         await add_toast(

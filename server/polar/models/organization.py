@@ -28,6 +28,7 @@ from polar.enums import (
     SubscriptionProrationBehavior,
     TaxBehaviorOption,
 )
+from polar.exceptions import PolarError
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
@@ -40,7 +41,15 @@ if TYPE_CHECKING:
     from .organization_agent_review import OrganizationAgentReview
     from .organization_review import OrganizationReview
     from .organization_review_feedback import OrganizationReviewFeedback
+    from .payout_account import PayoutAccount
     from .product import Product
+
+
+class PayoutAccountNotReady(PolarError):
+    def __init__(self, organization: "Organization") -> None:
+        self.organization = organization
+        message = "Your payout account is not ready yet. Complete the setup to receive payouts."
+        super().__init__(message, 403)
 
 
 class OrganizationSocials(TypedDict):
@@ -252,9 +261,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         Integer, nullable=False, default=1
     )
 
-    account_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
-    )
     status: Mapped[OrganizationStatus] = mapped_column(
         StringEnum(OrganizationStatus),
         nullable=False,
@@ -276,9 +282,25 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    account_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
+    )
+
     @declared_attr
     def account(cls) -> Mapped[Account | None]:
         return relationship(Account, lazy="raise", back_populates="organizations")
+
+    payout_account_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("payout_accounts.id", ondelete="set null"),
+        default=None,
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def payout_account(cls) -> Mapped["PayoutAccount | None"]:
+        return relationship("PayoutAccount", lazy="raise")
 
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     ai_onboarding_completed_at: Mapped[datetime | None] = mapped_column(
@@ -512,3 +534,18 @@ class Organization(RateLimitGroupMixin, RecordModel):
             "reply_to_email_addr": self.email
             or settings.EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         }
+
+    def get_ready_payout_account(self) -> "PayoutAccount":
+        """
+        Return the payout account if it's ready to receive payouts.
+
+        Returns:
+            The payout account if it exists and is ready to receive payouts.
+
+        Raises:
+            PayoutAccountNotReady: If the payout account does not exist or is not ready to receive payouts.
+        """
+
+        if self.payout_account is not None and self.payout_account.is_payout_ready():
+            return self.payout_account
+        raise PayoutAccountNotReady(self)

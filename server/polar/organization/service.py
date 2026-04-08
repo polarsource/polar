@@ -39,6 +39,8 @@ from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
 from polar.organization_review.schemas import ReviewContext, ReviewVerdict
+from polar.payout_account.repository import PayoutAccountRepository
+from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
@@ -194,7 +196,9 @@ class OrganizationService:
             )
         )
         await self.add_user(session, organization, auth_subject.subject)
-
+        organization.account = await account_service.create(
+            session, auth_subject.subject
+        )
         enqueue_job("organization.created", organization_id=organization.id)
 
         posthog.auth_subject_event(
@@ -480,31 +484,28 @@ class OrganizationService:
             )
             return check_result
 
-        # Organization is eligible for deletion
-        # If it has an account, try to delete it first
-        if organization.account_id is not None:
-            try:
-                await self._delete_account(session, organization)
-            except Exception as e:
-                log.error(
-                    "organization.deletion.stripe_account_deletion_failed",
-                    organization_id=organization.id,
-                    error=str(e),
-                )
-                # Stripe deletion failed, create support ticket
-                check_result = OrganizationDeletionCheckResult(
-                    can_delete_immediately=False,
-                    blocked_reasons=[
-                        OrganizationDeletionBlockedReason.STRIPE_ACCOUNT_DELETION_FAILED
-                    ],
-                )
-                enqueue_job(
-                    "organization.deletion_requested",
-                    organization_id=organization.id,
-                    user_id=auth_subject.subject.id,
-                    blocked_reasons=[r.value for r in check_result.blocked_reasons],
-                )
-                return check_result
+        try:
+            await self._delete_payout_account(session, organization)
+        except Exception as e:
+            log.error(
+                "organization.deletion.stripe_account_deletion_failed",
+                organization_id=organization.id,
+                error=str(e),
+            )
+            # Stripe deletion failed, create support ticket
+            check_result = OrganizationDeletionCheckResult(
+                can_delete_immediately=False,
+                blocked_reasons=[
+                    OrganizationDeletionBlockedReason.STRIPE_ACCOUNT_DELETION_FAILED
+                ],
+            )
+            enqueue_job(
+                "organization.deletion_requested",
+                organization_id=organization.id,
+                user_id=auth_subject.subject.id,
+                blocked_reasons=[r.value for r in check_result.blocked_reasons],
+            )
+            return check_result
 
         # Soft delete the organization
         await self.soft_delete_organization(session, organization)
@@ -561,34 +562,21 @@ class OrganizationService:
 
         return organization
 
-    async def _delete_account(
-        self,
-        session: AsyncSession,
-        organization: Organization,
+    async def _delete_payout_account(
+        self, session: AsyncSession, organization: Organization
     ) -> None:
-        """Delete the Stripe account linked to an organization."""
-        if organization.account_id is None:
+        if organization.payout_account_id is None:
             return
 
-        account_repository = AccountRepository.from_session(session)
-        account = await account_repository.get_by_id(organization.account_id)
-
-        if account is None:
-            return
-
-        if account.stripe_id:
-            await account_service.delete_stripe_account(session, account)
-
-        organization.account_id = None
-        session.add(organization)
-
-        await account_service.delete(session, account)
-
-        log.info(
-            "organization.account_deleted",
-            organization_id=organization.id,
-            account_id=account.id,
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_id(
+            organization.payout_account_id
         )
+
+        if payout_account is None:
+            return
+
+        await payout_account_service.delete(session, payout_account)
 
     async def add_user(
         self,
@@ -834,34 +822,6 @@ class OrganizationService:
             enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
 
-    async def update_status_from_stripe_account(
-        self, session: AsyncSession, account: Account
-    ) -> None:
-        """Update organization status based on Stripe account capabilities."""
-        repository = OrganizationRepository.from_session(session)
-        organizations = await repository.get_all_by_account(account.id)
-
-        for organization in organizations:
-            # Don't override organizations that are denied
-            if organization.status == OrganizationStatus.DENIED:
-                continue
-
-            # If account is fully set up, set organization to ACTIVE
-            if all(
-                (
-                    not organization.is_under_review,
-                    not organization.is_active(),
-                    account.currency is not None,
-                    account.is_details_submitted,
-                    account.is_charges_enabled,
-                    account.is_payouts_enabled,
-                )
-            ):
-                organization.status = OrganizationStatus.ACTIVE
-                organization.status_updated_at = datetime.now(UTC)
-
-            session.add(organization)
-
     async def get_payment_status(
         self,
         session: AsyncReadSession,
@@ -873,22 +833,6 @@ class OrganizationService:
                 session, organization
             ),
             organization_status=organization.status,
-        )
-
-    def _is_account_setup_complete(self, organization: Organization) -> bool:
-        """Check if the organization's account setup is complete."""
-        if not organization.account_id:
-            return False
-
-        account = organization.account
-        if not account:
-            return False
-
-        admin = account.admin
-        return (
-            organization.details_submitted_at is not None
-            and account.is_details_submitted
-            and (admin.identity_verification_status in ["verified", "pending"])
         )
 
     async def is_organization_ready_for_payment(

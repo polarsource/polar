@@ -489,7 +489,7 @@ class ReviewAnalyzer:
         org = snapshot.organization
         products = snapshot.products
         identity = snapshot.identity
-        account = snapshot.account
+        payout_account = snapshot.account
         metrics = snapshot.metrics
         history = snapshot.history
 
@@ -660,45 +660,47 @@ class ReviewAnalyzer:
             parts.append(f"Verified Date of Birth: {identity.verified_dob}")
 
         # Stripe Connect Account (payout account)
-        parts.append("\n## Stripe Connect Account")
-        if account.country:
-            parts.append(f"Account Country: {account.country}")
-        if account.business_type:
-            parts.append(f"Business Type: {account.business_type}")
-        parts.append(f"Details Submitted: {account.is_details_submitted}")
-        parts.append(f"Charges Enabled: {account.is_charges_enabled}")
-        parts.append(f"Payouts Enabled: {account.is_payouts_enabled}")
-        if account.business_name:
-            parts.append(f"Business Name: {account.business_name}")
-        if account.business_url:
-            parts.append(f"Business URL: {account.business_url}")
-        if account.business_support_address_country:
+        parts.append("\n## Payout Account")
+        parts.append(f"Account Type: {payout_account.type}")
+        if payout_account.country:
+            parts.append(f"Account Country: {payout_account.country}")
+        if payout_account.business_type:
+            parts.append(f"Business Type: {payout_account.business_type}")
+        parts.append(f"Details Submitted: {payout_account.is_details_submitted}")
+        parts.append(f"Charges Enabled: {payout_account.is_charges_enabled}")
+        parts.append(f"Payouts Enabled: {payout_account.is_payouts_enabled}")
+        if payout_account.business_name:
+            parts.append(f"Business Name: {payout_account.business_name}")
+        if payout_account.business_url:
+            parts.append(f"Business URL: {payout_account.business_url}")
+        if payout_account.business_support_address_country:
             parts.append(
-                f"Support Address Country: {account.business_support_address_country}"
+                f"Support Address Country: {payout_account.business_support_address_country}"
             )
-        if account.capabilities:
-            cap_strs = [f"{k}={v}" for k, v in account.capabilities.items()]
+        if payout_account.capabilities:
+            cap_strs = [f"{k}={v}" for k, v in payout_account.capabilities.items()]
             parts.append(f"Capabilities: {', '.join(cap_strs)}")
-        if account.requirements_disabled_reason:
+        if payout_account.requirements_disabled_reason:
             parts.append(
-                f"WARNING — Disabled Reason: {account.requirements_disabled_reason}"
+                f"WARNING — Disabled Reason: {payout_account.requirements_disabled_reason}"
             )
-        if account.requirements_errors:
+        if payout_account.requirements_errors:
             error_strs = [
-                f"{e['code']}: {e['reason']}" for e in account.requirements_errors
+                f"{e['code']}: {e['reason']}"
+                for e in payout_account.requirements_errors
             ]
             parts.append(f"WARNING — Verification Errors: {'; '.join(error_strs)}")
-        if account.requirements_past_due:
+        if payout_account.requirements_past_due:
             parts.append(
-                f"Requirements Past Due: {', '.join(account.requirements_past_due)}"
+                f"Requirements Past Due: {', '.join(payout_account.requirements_past_due)}"
             )
-        if account.requirements_currently_due:
+        if payout_account.requirements_currently_due:
             parts.append(
-                f"Requirements Currently Due: {', '.join(account.requirements_currently_due)}"
+                f"Requirements Currently Due: {', '.join(payout_account.requirements_currently_due)}"
             )
-        if account.requirements_pending_verification:
+        if payout_account.requirements_pending_verification:
             parts.append(
-                f"Requirements Pending Verification: {', '.join(account.requirements_pending_verification)}"
+                f"Requirements Pending Verification: {', '.join(payout_account.requirements_pending_verification)}"
             )
 
         # Payment Metrics

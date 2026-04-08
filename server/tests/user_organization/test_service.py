@@ -67,7 +67,7 @@ class TestRemoveMemberSafe:
     async def test_remove_member_cannot_remove_admin(
         self,
         session: Any,
-        organization_account: Account,
+        account: Account,
         organization: Organization,
         user: User,
         save_fixture: Any,
@@ -96,7 +96,7 @@ class TestRemoveMemberSafe:
     async def test_remove_member_non_admin_with_account(
         self,
         session: Any,
-        organization_account: Account,
+        account: Account,
         organization: Organization,
         user_second: User,
         save_fixture: Any,

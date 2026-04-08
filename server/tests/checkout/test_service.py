@@ -37,7 +37,6 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.enums import (
-    AccountType,
     PaymentProcessor,
     SubscriptionRecurringInterval,
     TaxBehavior,
@@ -5113,15 +5112,6 @@ class TestConfirm:
         # Setup user verification first
         user.identity_verification_status = IdentityVerificationStatus.verified
         await save_fixture(user)
-
-        # Set up account with details submitted
-        account.account_type = AccountType.stripe
-        account.admin_id = user.id
-        account.is_details_submitted = True
-        await save_fixture(account)
-
-        organization.account = account
-        await save_fixture(organization)
 
         # Setup Stripe mocks
         confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)

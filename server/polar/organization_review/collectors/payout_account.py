@@ -1,15 +1,15 @@
 import structlog
 
-from polar.models.account import Account
+from polar.models import PayoutAccount
 
-from ..schemas import AccountData
+from ..schemas import PayoutAccountData
 
 log = structlog.get_logger(__name__)
 
 
-def collect_account_data(account: Account | None) -> AccountData:
+def collect_payout_account_data(account: PayoutAccount | None) -> PayoutAccountData:
     if account is None:
-        return AccountData()
+        return PayoutAccountData()
 
     data = account.data or {}
 
@@ -23,7 +23,8 @@ def collect_account_data(account: Account | None) -> AccountData:
     business_profile = data.get("business_profile") or {}
     support_address = business_profile.get("support_address") or {}
 
-    return AccountData(
+    return PayoutAccountData(
+        type=account.type,
         country=account.country,
         currency=account.currency,
         business_type=data.get("business_type") or "unknown",

@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BigInteger
 
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.models.transaction import TransactionType
@@ -21,6 +21,7 @@ from .payout_attempt import PayoutAttempt, PayoutAttemptStatus
 
 if TYPE_CHECKING:
     from .account import Account
+    from .payout_account import PayoutAccount
     from .transaction import Transaction
 
 
@@ -40,8 +41,8 @@ class Payout(RecordModel):
     __tablename__ = "payouts"
     __table_args__ = (UniqueConstraint("account_id", "invoice_number"),)
 
-    processor: Mapped[AccountType] = mapped_column(
-        StringEnum(AccountType), nullable=False
+    processor: Mapped[PayoutAccountType] = mapped_column(
+        StringEnum(PayoutAccountType), nullable=False
     )
     """Payment processor used for this payout."""
     status: Mapped[PayoutStatus] = mapped_column(
@@ -71,6 +72,14 @@ class Payout(RecordModel):
     )
     """ID of the `Account` concerned by this payout."""
     account: Mapped["Account"] = relationship("Account", lazy="raise")
+
+    payout_account_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("payout_accounts.id", ondelete="restrict"), nullable=False
+    )
+    """ID of the `PayoutAccount` concerned by this payout."""
+    payout_account: Mapped["PayoutAccount"] = relationship(
+        "PayoutAccount", lazy="raise"
+    )
 
     invoice_number: Mapped[str] = mapped_column(String, nullable=False)
     """Reverse invoice number for this payout."""

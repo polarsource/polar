@@ -9,7 +9,7 @@ import structlog
 
 from polar.auth.models import AuthSubject, User
 from polar.config import settings
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -22,7 +22,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.locker import Locker
 from polar.logging import Logger
-from polar.models import Account, Payout, PayoutAttempt
+from polar.models import Account, Organization, Payout, PayoutAttempt
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.organization.repository import OrganizationRepository
@@ -107,11 +107,11 @@ class PayoutAmountTooLarge(PayoutError):
         super().__init__(message, 400)
 
 
-class NotReadyAccount(PayoutError):
-    def __init__(self, account: Account) -> None:
-        self.account = account
-        message = "Your payout account is not ready yet. Complete the setup to receive payouts."
-        super().__init__(message, 403)
+class PayoutAccountInsufficientBalance(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = f"The payout account for payout {payout.id} doesn't have enough balance to make the payout yet."
+        super().__init__(message, 400)
 
 
 class PendingPayoutCreation(PayoutError):
@@ -234,15 +234,18 @@ class PayoutService:
         return await repository.get_one_or_none(statement)
 
     async def estimate(
-        self, session: AsyncSession, *, account: Account
+        self, session: AsyncSession, organization: Organization
     ) -> PayoutEstimate:
-        if not account.is_payout_ready():
-            raise NotReadyAccount(account)
+        account = organization.account
+        assert account is not None
+        payout_account = organization.get_ready_payout_account()
 
         balance_amount = await transaction_service.get_transactions_sum(
             session, account.id
         )
-        minimum_amount = settings.get_minimum_payout_for_currency(account.currency)
+        minimum_amount = settings.get_minimum_payout_for_currency(
+            payout_account.currency
+        )
         if balance_amount < minimum_amount:
             raise InsufficientBalance(
                 account, balance_amount, minimum_amount=minimum_amount
@@ -250,33 +253,41 @@ class PayoutService:
 
         try:
             payout_fees = await platform_fee_transaction_service.get_payout_fees(
-                session, account=account, balance_amount=balance_amount
+                session,
+                account=account,
+                payout_account=payout_account,
+                balance_amount=balance_amount,
             )
         except PayoutAmountTooLow as e:
             raise InsufficientBalance(account, balance_amount) from e
 
         return PayoutEstimate(
             account_id=account.id,
+            payout_account_id=payout_account.id,
             gross_amount=balance_amount,
             fees_amount=sum(fee for _, fee in payout_fees),
             net_amount=balance_amount - sum(fee for _, fee in payout_fees),
         )
 
     async def create(
-        self, session: AsyncSession, locker: Locker, *, account: Account
+        self, session: AsyncSession, locker: Locker, organization: Organization
     ) -> Payout:
+        account = organization.account
+        assert account is not None
+
         lock_name = f"payout:{account.id}"
         if await locker.is_locked(lock_name):
             raise PendingPayoutCreation(account)
 
         async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
-            if not account.is_payout_ready():
-                raise NotReadyAccount(account)
+            payout_account = organization.get_ready_payout_account()
 
             balance_amount = await transaction_service.get_transactions_sum(
                 session, account.id
             )
-            minimum_amount = settings.get_minimum_payout_for_currency(account.currency)
+            minimum_amount = settings.get_minimum_payout_for_currency(
+                payout_account.currency
+            )
             if balance_amount < minimum_amount:
                 raise InsufficientBalance(
                     account, balance_amount, minimum_amount=minimum_amount
@@ -287,7 +298,10 @@ class PayoutService:
                     balance_amount_after_fees,
                     payout_fees_balances,
                 ) = await platform_fee_transaction_service.create_payout_fees_balances(
-                    session, account=account, balance_amount=balance_amount
+                    session,
+                    account=account,
+                    payout_account=payout_account,
+                    balance_amount=balance_amount,
                 )
             except PayoutAmountTooLow as e:
                 raise InsufficientBalance(account, balance_amount) from e
@@ -295,13 +309,14 @@ class PayoutService:
             repository = PayoutRepository.from_session(session)
             payout = await repository.create(
                 Payout(
-                    processor=account.account_type,
+                    processor=payout_account.type,
                     currency="usd",  # FIXME: Main Polar currency
                     amount=balance_amount_after_fees,
                     fees_amount=balance_amount - balance_amount_after_fees,
-                    account_currency=account.currency,
+                    account_currency=payout_account.currency,
                     account_amount=balance_amount_after_fees,
                     account=account,
+                    payout_account=payout_account,
                     invoice_number=await self._get_next_invoice_number(
                         session, account
                     ),
@@ -332,8 +347,8 @@ class PayoutService:
 
         This function performs the first step.
         """
-        account = payout.account
-        assert account.stripe_id is not None
+        payout_account = payout.payout_account
+        assert payout_account.stripe_id is not None
 
         payout_transaction_repository = PayoutTransactionRepository.from_session(
             session
@@ -342,7 +357,7 @@ class PayoutService:
         assert transaction is not None
 
         stripe_transfer = await stripe_service.transfer(
-            account.stripe_id,
+            payout_account.stripe_id,
             payout.amount,
             metadata={
                 "payout_id": str(payout.id),
@@ -359,30 +374,30 @@ class PayoutService:
             assert stripe_transfer.destination_payment is not None
             stripe_destination_charge = await stripe_service.get_charge(
                 get_expandable_id(stripe_transfer.destination_payment),
-                stripe_account=account.stripe_id,
+                stripe_account=payout_account.stripe_id,
                 expand=["balance_transaction"],
             )
             # Case where the charge don't lead to a balance transaction,
             # e.g. when the converted amount is 0
             if stripe_destination_charge.balance_transaction is None:
-                account_amount = 0
+                original_account_amount = 0
             else:
                 stripe_destination_balance_transaction = cast(
                     stripe_lib.BalanceTransaction,
                     stripe_destination_charge.balance_transaction,
                 )
-                account_amount = stripe_destination_balance_transaction.amount
+                original_account_amount = stripe_destination_balance_transaction.amount
 
             # For zero-decimal payout currencies (ISK, HUF, TWD, UGX), adjust
             # the amount to be payable by Stripe (rounded down to nearest 100)
             account_amount, remainder = _adjust_payout_amount_for_zero_decimal_currency(
-                account_amount, transaction.account_currency
+                original_account_amount, transaction.account_currency
             )
             if remainder > 0:
                 log.info(
                     "Adjusted transfer amount for zero-decimal currency",
                     payout_id=str(payout.id),
-                    original_amount=stripe_destination_balance_transaction.amount,
+                    original_amount=original_account_amount,
                     adjusted_amount=account_amount,
                     remainder=remainder,
                     currency=transaction.account_currency,
@@ -410,7 +425,7 @@ class PayoutService:
         attempt_repository = PayoutAttemptRepository.from_session(session)
 
         attempt = await attempt_repository.get_by_processor_id(
-            AccountType.stripe, stripe_payout.id
+            PayoutAccountType.stripe, stripe_payout.id
         )
         if attempt is None:
             raise PayoutAttemptDoesNotExist(stripe_payout.id)
@@ -452,13 +467,13 @@ class PayoutService:
         if latest_attempt is None:
             raise NoSyncableAttempt(payout)
 
-        if latest_attempt.processor == AccountType.stripe:
-            account = payout.account
-            assert account.stripe_id is not None
+        if latest_attempt.processor == PayoutAccountType.stripe:
+            payout_account = payout.payout_account
+            assert payout_account.stripe_id is not None
             assert latest_attempt.processor_id is not None
             stripe_payout = await stripe_service.get_payout(
                 payout_id=latest_attempt.processor_id,
-                stripe_account=account.stripe_id,
+                stripe_account=payout_account.stripe_id,
             )
             return await self.update_from_stripe(session, stripe_payout)
 
@@ -491,8 +506,8 @@ class PayoutService:
         This is useful for cases where Stripe refuses to pay out the full amount,
         because it's too large for the given currency.
         """
-        account = payout.account
-        assert account.stripe_id is not None
+        payout_account = payout.payout_account
+        assert payout_account.stripe_id is not None
 
         if account_amount is not None:
             if account_amount > payout.account_amount:
@@ -500,23 +515,23 @@ class PayoutService:
         else:
             account_amount = payout.account_amount
 
-        _, balance = await stripe_service.retrieve_balance(account.stripe_id)
+        _, balance = await stripe_service.retrieve_balance(payout_account.stripe_id)
         if balance < account_amount:
             log.info(
                 "The Stripe Connect account doesn't have enough balance to make the payout yet",
                 payout_id=str(payout.id),
-                account_id=str(account.id),
+                payout_account_id=str(payout_account.id),
                 balance=balance,
                 payout_amount=account_amount,
             )
-            raise InsufficientBalance(account, balance)
+            raise PayoutAccountInsufficientBalance(payout)
 
         # Create a new payout attempt
         attempt_repository = PayoutAttemptRepository.from_session(session)
         attempt = await attempt_repository.create(
             PayoutAttempt(
                 payout=payout,
-                processor=account.account_type,
+                processor=payout_account.type,
                 amount=account_amount,
                 currency=payout.account_currency,
                 status=PayoutAttemptStatus.pending,
@@ -527,7 +542,7 @@ class PayoutService:
         # Trigger a payout on the Stripe Connect account
         try:
             stripe_payout = await stripe_service.create_payout(
-                stripe_account=account.stripe_id,
+                stripe_account=payout_account.stripe_id,
                 amount=account_amount,
                 currency=payout.account_currency,
                 metadata={
@@ -566,7 +581,7 @@ class PayoutService:
         )
 
         if (
-            payout.processor == AccountType.stripe
+            payout.processor == PayoutAccountType.stripe
             and payout_transaction.transfer_id is not None
         ):
             stripe_reversal = await stripe_service.reverse_transfer(

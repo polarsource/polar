@@ -7,10 +7,8 @@ import typer
 from sqlalchemy import select
 
 import polar.tasks  # noqa: F401
-from polar.enums import AccountType
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
-from polar.models.account import Account
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
@@ -60,28 +58,6 @@ def enable_payments(slug: str) -> None:
                     },
                 )
                 typer.echo(f"Verified identity for user {user.email}")
-
-                if organization.account_id is not None:
-                    typer.echo(
-                        "Organization already has an account, skipping account creation."
-                    )
-                else:
-                    account = Account(
-                        account_type=AccountType.stripe,
-                        admin_id=user.id,
-                        stripe_id=f"acct_{slug}_dev",
-                        country="US",
-                        currency="USD",
-                        is_details_submitted=True,
-                        is_charges_enabled=True,
-                        is_payouts_enabled=True,
-                        email=user.email,
-                        processor_fees_applicable=True,
-                    )
-                    session.add(account)
-                    await session.flush()
-                    organization.account_id = account.id
-                    typer.echo(f"Created account {account.stripe_id}")
 
                 if not organization.details:
                     organization.details = {

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import Field, computed_field
 
+from polar.enums import PayoutAccountType
 from polar.kit.schemas import Schema
 
 if TYPE_CHECKING:
@@ -104,7 +105,8 @@ class IdentityData(Schema):
     verified_dob: str | None = None
 
 
-class AccountData(Schema):
+class PayoutAccountData(Schema):
+    type: PayoutAccountType | None = None
     country: str | None = None
     currency: str | None = None
     business_type: str | None = None
@@ -290,7 +292,7 @@ class DataSnapshot(Schema):
     organization: OrganizationData
     products: ProductsData
     identity: IdentityData = Field(default_factory=IdentityData)
-    account: AccountData
+    account: PayoutAccountData
     metrics: PaymentMetrics
     history: HistoryData
     setup: SetupData = Field(default_factory=SetupData)

@@ -12,13 +12,13 @@ from polar.organization_review.report import (
 )
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
-    AccountData,
     DataSnapshot,
     DimensionAssessment,
     HistoryData,
     IdentityData,
     OrganizationData,
     PaymentMetrics,
+    PayoutAccountData,
     ProductsData,
     ReviewAgentReport,
     ReviewContext,
@@ -70,7 +70,7 @@ def _make_typed_report(
             organization=OrganizationData(name="Test", slug="test"),
             products=ProductsData(),
             identity=IdentityData(),
-            account=AccountData(),
+            account=PayoutAccountData(),
             metrics=PaymentMetrics(),
             history=HistoryData(),
             collected_at=datetime(2026, 1, 1, tzinfo=UTC),

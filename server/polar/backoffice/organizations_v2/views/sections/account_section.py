@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from fastapi import Request
 from tagflow import tag, text
 
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.models import AccountCredit, Organization
 
 from ....components import button, card
@@ -82,7 +82,7 @@ class AccountSection:
                                 ):
                                     text("Type")
                                 with tag.div(classes="font-semibold"):
-                                    if account.account_type == AccountType.stripe:
+                                    if account.account_type == PayoutAccountType.stripe:
                                         with tag.span(classes="badge badge-primary"):
                                             text("Stripe")
                                     else:
@@ -107,7 +107,7 @@ class AccountSection:
 
                         # Stripe-specific info
                         if (
-                            account.account_type == AccountType.stripe
+                            account.account_type == PayoutAccountType.stripe
                             and account.stripe_id
                         ):
                             with tag.div(classes="pt-4 border-t border-base-300"):
@@ -162,7 +162,7 @@ class AccountSection:
                                     text("Payouts Enabled")
 
                         if (
-                            account.account_type == AccountType.stripe
+                            account.account_type == PayoutAccountType.stripe
                             and account.stripe_id
                         ):
                             with tag.div(classes="pt-4 border-t border-base-300"):
@@ -221,7 +221,10 @@ class AccountSection:
                             text("Setup Manual Account")
 
             # Payout settings (if manual account)
-            if self.org.account and self.org.account.account_type != AccountType.stripe:
+            if (
+                self.org.account
+                and self.org.account.account_type != PayoutAccountType.stripe
+            ):
                 with card(bordered=True):
                     with tag.h3(classes="text-md font-bold mb-4"):
                         text("Manual Payout Settings")

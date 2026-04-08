@@ -12,8 +12,8 @@ import pytest_asyncio
 from typing_extensions import TypeIs
 
 from polar.enums import (
-    AccountType,
     PaymentProcessor,
+    PayoutAccountType,
     SubscriptionRecurringInterval,
     TaxBehavior,
     TaxProcessor,
@@ -52,6 +52,7 @@ from polar.models import (
     Payment,
     PaymentMethod,
     Payout,
+    PayoutAccount,
     PayoutAttempt,
     Product,
     ProductBenefit,
@@ -151,6 +152,8 @@ async def create_organization(
         slug=name,
         customer_invoice_prefix=name.upper(),
         avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
+        account=None,
+        payout_account=None,
         **kwargs,
     )
     await save_fixture(organization)
@@ -170,11 +173,6 @@ async def organization_second(save_fixture: SaveFixture) -> Organization:
 @pytest_asyncio.fixture
 async def second_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
-
-
-@pytest_asyncio.fixture
-async def pledging_organization(save_fixture: SaveFixture) -> Organization:
-    return await create_organization(save_fixture, name_prefix="pledging_org")
 
 
 async def create_oauth_account(
@@ -273,17 +271,6 @@ async def create_pledge(
     )
     await save_fixture(pledge)
     return pledge
-
-
-@pytest_asyncio.fixture
-async def pledge(
-    save_fixture: SaveFixture,
-    organization: Organization,
-    pledging_organization: Organization,
-) -> Pledge:
-    return await create_pledge(
-        save_fixture, organization, pledging_organization=pledging_organization
-    )
 
 
 @pytest_asyncio.fixture
@@ -1609,26 +1596,6 @@ async def benefits(
 
 
 @pytest_asyncio.fixture
-async def organization_account(
-    save_fixture: SaveFixture, organization: Organization, user: User
-) -> Account:
-    account = Account(
-        account_type=AccountType.stripe,
-        admin_id=user.id,
-        country="US",
-        currency="USD",
-        is_details_submitted=True,
-        is_charges_enabled=True,
-        is_payouts_enabled=True,
-        stripe_id="STRIPE_ACCOUNT_ID",
-    )
-    await save_fixture(account)
-    organization.account = account
-    await save_fixture(organization)
-    return account
-
-
-@pytest_asyncio.fixture
 async def organization_second_members(
     save_fixture: SaveFixture, organization_second: Organization
 ) -> list[User]:
@@ -2063,6 +2030,7 @@ async def create_notification_recipient(
 async def create_payout(
     save_fixture: SaveFixture,
     *,
+    payout_account: PayoutAccount,
     account: Account,
     transaction: Transaction | None = None,
     amount: int = 1000,
@@ -2078,8 +2046,9 @@ async def create_payout(
     payout = Payout(
         created_at=created_at,
         account=account,
+        payout_account=payout_account,
         status=PayoutStatus(attempts[-1]) if attempts else status,
-        processor=account.account_type,
+        processor=payout_account.type,
         currency=currency,
         amount=amount,
         fees_amount=fees_amount,
@@ -2090,7 +2059,7 @@ async def create_payout(
         attempts=[
             PayoutAttempt(
                 processor_id=rstr("PAYOUT_ATTEMPT_PROCESSOR_ID"),
-                processor=account.account_type,
+                processor=payout_account.type,
                 status=status,
                 amount=amount,
                 currency=currency,
@@ -2111,29 +2080,26 @@ async def create_account(
     *,
     country: str = "US",
     currency: str = "usd",
-    account_type: AccountType = AccountType.stripe,
-    stripe_id: str | None = "STRIPE_ID",
     processor_fees_applicable: bool = True,
     fee_basis_points: int | None = None,
     fee_fixed: int | None = None,
-    is_payouts_enabled: bool = True,
     billing_name: str | None = None,
     billing_address: Address | None = None,
 ) -> Account:
     account = Account(
-        account_type=account_type,
         admin_id=user.id,
-        country=country,
         currency=currency,
-        is_details_submitted=True,
-        is_charges_enabled=True,
-        is_payouts_enabled=is_payouts_enabled,
         processor_fees_applicable=processor_fees_applicable,
-        stripe_id=stripe_id,
         _platform_fee_percent=fee_basis_points,
         _platform_fee_fixed=fee_fixed,
         billing_name=billing_name,
         billing_address=billing_address,
+        # Fields to remove
+        account_type=PayoutAccountType.stripe,
+        country=country,
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=True,
     )
     await save_fixture(account)
     organization.account = account
@@ -2146,6 +2112,51 @@ async def account(
     save_fixture: SaveFixture, organization: Organization, user: User
 ) -> Account:
     return await create_account(save_fixture, organization, user)
+
+
+async def create_payout_account(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user: User,
+    *,
+    type: PayoutAccountType = PayoutAccountType.stripe,
+    stripe_id: str | None = "STRIPE_ID",
+    country: str = "US",
+    currency: str = "usd",
+    is_payouts_enabled: bool = True,
+) -> PayoutAccount:
+    payout_account = PayoutAccount(
+        type=type,
+        admin=user,
+        stripe_id=stripe_id,
+        country=country,
+        currency=currency,
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=is_payouts_enabled,
+    )
+    await save_fixture(payout_account)
+    organization.payout_account = payout_account
+    await save_fixture(organization)
+    return payout_account
+
+
+@pytest_asyncio.fixture
+async def stripe_payout_account(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user: User,
+) -> PayoutAccount:
+    return await create_payout_account(
+        save_fixture,
+        organization,
+        user,
+        type=PayoutAccountType.stripe,
+        stripe_id=rstr("STRIPE_ID"),
+        country="US",
+        currency="usd",
+        is_payouts_enabled=True,
+    )
 
 
 async def create_payment(

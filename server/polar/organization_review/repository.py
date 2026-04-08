@@ -10,7 +10,6 @@ from polar.kit.repository.base import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
-from polar.models.account import Account
 from polar.models.checkout import Checkout
 from polar.models.checkout_link import CheckoutLink
 from polar.models.checkout_link_product import CheckoutLinkProduct
@@ -21,6 +20,7 @@ from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.models.payment import Payment, PaymentStatus
+from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
 from polar.models.refund import Refund, RefundStatus
 from polar.models.user import User
@@ -96,11 +96,19 @@ class OrganizationReviewRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().unique().all())
 
-    async def get_account_with_admin(self, account_id: UUID) -> Account | None:
+    async def get_payout_account_with_admin(
+        self, organization_id: UUID
+    ) -> PayoutAccount | None:
         statement = (
-            select(Account)
-            .where(Account.id == account_id, Account.is_deleted.is_(False))
-            .options(joinedload(Account.admin))
+            select(PayoutAccount)
+            .join(
+                Organization,
+                onclause=Organization.payout_account_id == PayoutAccount.id,
+            )
+            .where(
+                Organization.id == organization_id, PayoutAccount.is_deleted.is_(False)
+            )
+            .options(joinedload(PayoutAccount.admin))
         )
         result = await self.session.execute(statement)
         return result.unique().scalar_one_or_none()

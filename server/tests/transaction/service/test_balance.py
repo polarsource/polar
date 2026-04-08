@@ -5,7 +5,6 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
-from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Account, Transaction, User
 from polar.models.transaction import TransactionType
@@ -28,19 +27,12 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.mark.asyncio
 class TestCreateBalance:
     async def test_valid(
-        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        account: Account,
     ) -> None:
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="FR",
-            currency="eur",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
         payment_transaction = await create_payment_transaction(save_fixture)
 
         # then
@@ -71,20 +63,9 @@ class TestCreateBalance:
 
 @pytest.mark.asyncio
 class TestCreateBalanceFromCharge:
-    async def test_not_existing_charge(self, session: AsyncSession, user: User) -> None:
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="FR",
-            currency="eur",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-
-        # then
-        session.expunge_all()
+    async def test_not_existing_charge(
+        self, session: AsyncSession, user: User, account: Account
+    ) -> None:
 
         with pytest.raises(PaymentTransactionForChargeDoesNotExist):
             await balance_transaction_service.create_balance_from_charge(
@@ -101,18 +82,8 @@ class TestCreateBalanceFromCharge:
         save_fixture: SaveFixture,
         user: User,
         stripe_service_mock: MagicMock,
+        account: Account,
     ) -> None:
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="FR",
-            currency="eur",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
         payment_transaction = await create_payment_transaction(save_fixture)
 
         stripe_service_mock.get_charge.return_value = SimpleNamespace(
@@ -121,9 +92,6 @@ class TestCreateBalanceFromCharge:
                 amount=900, currency="eur", exchange_rate=0.9
             ),
         )
-
-        # then
-        session.expunge_all()
 
         (
             incoming,
@@ -151,18 +119,8 @@ class TestCreateBalanceFromPaymentIntent:
         save_fixture: SaveFixture,
         user: User,
         stripe_service_mock: MagicMock,
+        account: Account,
     ) -> None:
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="FR",
-            currency="eur",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
         payment_transaction = await create_payment_transaction(save_fixture)
 
         stripe_service_mock.get_charge.return_value = SimpleNamespace(
@@ -174,9 +132,6 @@ class TestCreateBalanceFromPaymentIntent:
         stripe_service_mock.retrieve_intent.return_value = SimpleNamespace(
             id="STRIPE_PAYMENT_INTENT_ID", latest_charge="STRIPE_CHARGE_ID"
         )
-
-        # then
-        session.expunge_all()
 
         (
             incoming,
@@ -253,26 +208,16 @@ async def load_balance_transactions(
 @pytest.mark.asyncio
 class TestCreateReversalBalance:
     async def test_valid(
-        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        account: Account,
     ) -> None:
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="usd",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
 
         balance_transactions = await create_balance_transactions(
             save_fixture, destination_account=account
         )
-
-        # then
-        session.expunge_all()
 
         balance_transactions = await load_balance_transactions(
             session, balance_transactions

@@ -9,18 +9,15 @@ from polar.organization_review.collectors.identity import collect_identity_data
 from polar.organization_review.schemas import IdentityData
 
 
-def _build_account(
+def _build_user(
     *,
     verification_status: IdentityVerificationStatus = IdentityVerificationStatus.verified,
     verification_id: str | None = "vs_test_123",
 ) -> MagicMock:
-    admin = MagicMock()
-    admin.identity_verification_status = verification_status
-    admin.identity_verification_id = verification_id
-
-    account = MagicMock()
-    account.admin = admin
-    return account
+    user = MagicMock()
+    user.identity_verification_status = verification_status
+    user.identity_verification_id = verification_id
+    return user
 
 
 def _build_verification_session(
@@ -31,25 +28,19 @@ def _build_verification_session(
 
 @pytest.mark.asyncio
 class TestCollectIdentityData:
-    async def test_none_account(self) -> None:
+    async def test_none(self) -> None:
         result = await collect_identity_data(None)
         assert result == IdentityData()
 
-    async def test_account_without_admin(self) -> None:
-        account = MagicMock()
-        account.admin = None
-        result = await collect_identity_data(account)
-        assert result == IdentityData()
-
     async def test_no_verification_id(self) -> None:
-        account = _build_account(verification_id=None)
-        result = await collect_identity_data(account)
+        user = _build_user(verification_id=None)
+        result = await collect_identity_data(user)
         assert result.verification_status == "verified"
         assert result.verified_first_name is None
 
     async def test_verified_outputs_missing(self, mocker: MockerFixture) -> None:
         """Regression test for SERVER-44D: verified_outputs absent from Stripe response."""
-        account = _build_account()
+        user = _build_user()
         vs = _build_verification_session(
             {
                 "id": "vs_test_123",
@@ -64,7 +55,7 @@ class TestCollectIdentityData:
             return_value=vs,
         )
 
-        result = await collect_identity_data(account)
+        result = await collect_identity_data(user)
 
         assert result.verification_status == "verified"
         assert result.verification_error_code is None
@@ -74,7 +65,7 @@ class TestCollectIdentityData:
         assert result.verified_dob is None
 
     async def test_verified_outputs_present(self, mocker: MockerFixture) -> None:
-        account = _build_account()
+        user = _build_user()
         vs = _build_verification_session(
             {
                 "id": "vs_test_123",
@@ -94,7 +85,7 @@ class TestCollectIdentityData:
             return_value=vs,
         )
 
-        result = await collect_identity_data(account)
+        result = await collect_identity_data(user)
 
         assert result.verification_status == "verified"
         assert result.verified_first_name == "Jane"
@@ -105,7 +96,7 @@ class TestCollectIdentityData:
     async def test_verified_outputs_without_address_or_dob(
         self, mocker: MockerFixture
     ) -> None:
-        account = _build_account()
+        user = _build_user()
         vs = _build_verification_session(
             {
                 "id": "vs_test_123",
@@ -125,7 +116,7 @@ class TestCollectIdentityData:
             return_value=vs,
         )
 
-        result = await collect_identity_data(account)
+        result = await collect_identity_data(user)
 
         assert result.verified_first_name == "Jane"
         assert result.verified_last_name == "Doe"
@@ -133,7 +124,7 @@ class TestCollectIdentityData:
         assert result.verified_dob is None
 
     async def test_last_error_present(self, mocker: MockerFixture) -> None:
-        account = _build_account(verification_status=IdentityVerificationStatus.failed)
+        user = _build_user(verification_status=IdentityVerificationStatus.failed)
         vs = _build_verification_session(
             {
                 "id": "vs_test_123",
@@ -150,19 +141,19 @@ class TestCollectIdentityData:
             return_value=vs,
         )
 
-        result = await collect_identity_data(account)
+        result = await collect_identity_data(user)
 
         assert result.verification_status == "failed"
         assert result.verification_error_code == "document_expired"
 
     async def test_stripe_error_handled(self, mocker: MockerFixture) -> None:
-        account = _build_account()
+        user = _build_user()
         mocker.patch(
             "polar.organization_review.collectors.identity.stripe_service.get_verification_session",
             side_effect=stripe_lib.StripeError("API error"),
         )
 
-        result = await collect_identity_data(account)
+        result = await collect_identity_data(user)
 
         assert result.verification_status == "verified"
         assert result.verified_first_name is None

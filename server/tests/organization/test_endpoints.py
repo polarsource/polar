@@ -5,12 +5,12 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.enums import AccountType
 from polar.models import Product, User
 from polar.models.account import Account
 from polar.models.organization import Organization
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import UserOrganization
+from polar.payout_account.service import PayoutAccountServiceError
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -18,6 +18,7 @@ from polar.user_organization.service import (
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_customer,
     create_order,
     create_subscription,
@@ -423,119 +424,6 @@ class TestGetPaymentStatus:
 
 
 @pytest.mark.asyncio
-class TestGetAccount:
-    async def test_anonymous(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
-        response = await client.get(f"/v1/organizations/{organization.id}/account")
-
-        assert response.status_code == 401
-
-    @pytest.mark.auth
-    async def test_not_member(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
-        response = await client.get(f"/v1/organizations/{organization.id}/account")
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_organization_not_found(self, client: AsyncClient) -> None:
-        response = await client.get(f"/v1/organizations/{uuid.uuid4()}/account")
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_no_account_set(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        save_fixture: SaveFixture,
-    ) -> None:
-        organization.account_id = None
-        await save_fixture(organization)
-
-        response = await client.get(f"/v1/organizations/{organization.id}/account")
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_not_account_admin(
-        self,
-        client: AsyncClient,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        user: User,
-    ) -> None:
-        # Create an account with a different admin (not the current user)
-        other_user = User(
-            email="other@example.com",
-        )
-        await save_fixture(other_user)
-
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=other_user.id,  # Different admin than the current user
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-        )
-        await save_fixture(account)
-
-        # Link account to organization
-        organization.account_id = account.id
-        await save_fixture(organization)
-
-        response = await client.get(f"/v1/organizations/{organization.id}/account")
-
-        assert response.status_code == 403
-        json = response.json()
-        assert json["detail"] == "You are not the admin of this account"
-
-    @pytest.mark.auth
-    async def test_valid_account_admin(
-        self,
-        client: AsyncClient,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        user: User,
-    ) -> None:
-        # Create an account with the current user as admin
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,  # Current user is the admin
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-        )
-        await save_fixture(account)
-
-        # Link account to organization
-        organization.account_id = account.id
-        await save_fixture(organization)
-
-        response = await client.get(f"/v1/organizations/{organization.id}/account")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["id"] == str(account.id)
-        assert json["account_type"] == "stripe"
-        assert json["country"] == "US"
-        assert json["is_details_submitted"]
-        assert json["is_charges_enabled"]
-        assert json["is_payouts_enabled"]
-
-
-@pytest.mark.asyncio
 class TestDeleteOrganization:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -650,33 +538,20 @@ class TestDeleteOrganization:
         mock_enqueue.assert_called_once()
 
     @pytest.mark.auth
-    async def test_valid_with_account_deletion(
+    async def test_valid_with_payout_account_deletion(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
+        account: Account,
+        stripe_payout_account: Account,
         user_organization: UserOrganization,
         user: User,
         mocker: MockerFixture,
     ) -> None:
-        # Create an account for the organization
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="acct_test123",
-        )
-        await save_fixture(account)
-        organization.account_id = account.id
-        await save_fixture(organization)
-
-        # Mock Stripe account deletion to succeed (returns None on success)
-        mock_stripe_delete = mocker.patch(
-            "polar.account.service.account.delete_stripe_account",
+        # Mock payout account deletion to succeed (returns None on success)
+        payout_account_delete_mock = mocker.patch(
+            "polar.organization.service.payout_account_service.delete",
             return_value=None,
         )
         mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")
@@ -689,42 +564,28 @@ class TestDeleteOrganization:
         assert json["requires_support"] is False
         assert json["blocked_reasons"] == []
 
-        # Stripe account should have been deleted
-        mock_stripe_delete.assert_called_once()
+        # Payout account should have been deleted
+        payout_account_delete_mock.assert_called_once()
         # No background task should be enqueued (immediate deletion)
         mock_enqueue.assert_not_called()
 
     @pytest.mark.auth
-    async def test_stripe_account_deletion_failure(
+    async def test_payout_account_deletion_failure(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
+        account: Account,
+        stripe_payout_account: Account,
         user_organization: UserOrganization,
         user: User,
         mocker: MockerFixture,
     ) -> None:
-        # Create an account for the organization
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="acct_test123",
-        )
-        await save_fixture(account)
-        organization.account_id = account.id
-        await save_fixture(organization)
-
-        # Mock Stripe account deletion to fail with an exception
-        from polar.account.service import AccountServiceError
-
-        mock_stripe_delete = mocker.patch(
-            "polar.account.service.account.delete_stripe_account",
-            side_effect=AccountServiceError("Stripe account deletion failed"),
+        # Mock payout account deletion to fail with an exception
+        # Mock payout account deletion to succeed (returns None on success)
+        payout_account_delete_mock = mocker.patch(
+            "polar.organization.service.payout_account_service.delete",
+            side_effect=PayoutAccountServiceError("Stripe account deletion failed"),
         )
         mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")
 
@@ -736,8 +597,8 @@ class TestDeleteOrganization:
         assert json["requires_support"] is True
         assert "stripe_account_deletion_failed" in json["blocked_reasons"]
 
-        # Stripe account deletion should have been attempted
-        mock_stripe_delete.assert_called_once()
+        # Payout account deletion should have been attempted
+        payout_account_delete_mock.assert_called_once()
         # Background task should be enqueued for support ticket
         mock_enqueue.assert_called_once()
 
@@ -757,19 +618,7 @@ class TestDeleteOrganization:
         )
         await save_fixture(other_user)
 
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=other_user.id,  # Different admin than the current user
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="acct_test123",
-        )
-        await save_fixture(account)
-        organization.account_id = account.id
-        await save_fixture(organization)
+        await create_account(save_fixture, organization, user=other_user)
 
         response = await client.delete(f"/v1/organizations/{organization.id}")
 

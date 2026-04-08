@@ -10,7 +10,11 @@ from polar.payout.endpoints import payout_service  # type: ignore[attr-defined]
 from polar.payout.service import PayoutService
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_account, create_payout
+from tests.fixtures.random_objects import (
+    create_account,
+    create_payout,
+    create_payout_account,
+)
 from tests.transaction.conftest import create_transaction
 
 
@@ -24,9 +28,9 @@ class TestCreate:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_not_existing_account(self, client: AsyncClient) -> None:
+    async def test_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/v1/payouts/", json={"account_id": str(uuid.uuid4())}
+            "/v1/payouts/", json={"organization_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 404
@@ -40,9 +44,9 @@ class TestCreate:
         organization: Organization,
         user_second: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user_second)
+        await create_account(save_fixture, organization, user_second)
         response = await client.post(
-            "/v1/payouts/", json={"account_id": str(account.id)}
+            "/v1/payouts/", json={"organization_id": str(organization.id)}
         )
         assert response.status_code == 404
 
@@ -54,15 +58,22 @@ class TestCreate:
         mocker: MockerFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
+        organization: Organization,
     ) -> None:
         account = await create_account(
-            save_fixture, user_organization.organization, user_organization.user
+            save_fixture, organization, user_organization.user
+        )
+        payout_account = await create_payout_account(
+            save_fixture, organization, user_organization.user
         )
         transaction = await create_transaction(
             save_fixture, account=account, type=TransactionType.payout
         )
         payout = await create_payout(
-            save_fixture, account=account, transaction=transaction
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            transaction=transaction,
         )
 
         mocker.patch.object(
@@ -73,7 +84,7 @@ class TestCreate:
         )
 
         response = await client.post(
-            "/v1/payouts/", json={"account_id": str(account.id)}
+            "/v1/payouts/", json={"organization_id": str(organization.id)}
         )
 
         assert response.status_code == 201

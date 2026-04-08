@@ -7,7 +7,6 @@ import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
 
-from polar.account.service import account as account_service
 from polar.checkout.service import NotConfirmedCheckout
 from polar.dispute.service import dispute as dispute_service
 from polar.external_event.service import external_event as external_event_service
@@ -16,6 +15,7 @@ from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.payout.service import payout as payout_service
+from polar.payout_account.service import payout_account as payout_account_service
 from polar.refund.service import MissingRelatedDispute, RefundPendingCreation
 from polar.refund.service import refund as refund_service
 from polar.subscription.service import subscription as subscription_service
@@ -59,7 +59,7 @@ async def account_updated(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             stripe_account = cast(stripe_lib.Account, event.stripe_data.data.object)
             log.info(f"Processing Stripe Account {stripe_account.id}")
-            await account_service.update_account_from_stripe(
+            await payout_account_service.update_account_from_stripe(
                 session, stripe_account=stripe_account
             )
 

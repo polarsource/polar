@@ -7,12 +7,14 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.enums import PayoutAccountType
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
 from polar.locker import Locker
-from polar.models import Organization, Transaction, User
+from polar.models import Account, Organization, Transaction, User
+from polar.models.organization import PayoutAccountNotReady
 from polar.models.payout import PayoutStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
@@ -20,7 +22,6 @@ from polar.payout.service import (
     InsufficientBalance,
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
-    NotReadyAccount,
     PayoutNotCancelable,
     PayoutNotSucceeded,
 )
@@ -34,7 +35,11 @@ from polar.transaction.service.payout import (
 )
 from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_account, create_payout
+from tests.fixtures.random_objects import (
+    create_account,
+    create_payout,
+    create_payout_account,
+)
 from tests.transaction.conftest import create_transaction
 
 
@@ -78,43 +83,48 @@ class TestCreate:
         session: AsyncSession,
         locker: Locker,
         organization: Organization,
+        account: Account,
         user: User,
     ) -> None:
-        account = await create_account(
+        payout_account = await create_payout_account(
             save_fixture, organization, user, currency=currency
         )
         await create_balance_transaction(save_fixture, account=account, amount=balance)
 
         with pytest.raises(InsufficientBalance):
-            await payout_service.create(session, locker, account=account)
+            await payout_service.create(session, locker, organization)
 
-    async def test_payout_disabled_account(
+    async def test_missing_payout_account(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
         organization: Organization,
+        account: Account,
         user: User,
     ) -> None:
-        account = await create_account(
-            save_fixture, organization, user, is_payouts_enabled=False
+        with pytest.raises(PayoutAccountNotReady):
+            await payout_service.create(session, locker, organization)
+
+    async def test_disabled_payout_account(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture,
+            organization,
+            user,
+            type=PayoutAccountType.stripe,
+            is_payouts_enabled=False,
         )
 
-        with pytest.raises(NotReadyAccount):
-            await payout_service.create(session, locker, account=account)
-
-    async def test_disconnected_stripe_account(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        locker: Locker,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        account = await create_account(save_fixture, organization, user, stripe_id=None)
-
-        with pytest.raises(NotReadyAccount):
-            await payout_service.create(session, locker, account=account)
+        with pytest.raises(PayoutAccountNotReady):
+            await payout_service.create(session, locker, organization)
 
     async def test_valid(
         self,
@@ -123,9 +133,10 @@ class TestCreate:
         locker: Locker,
         organization: Organization,
         user: User,
+        account: Account,
         payout_transaction_service_mock: MagicMock,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(save_fixture, organization, user)
 
         payment_transaction_1 = await create_payment_transaction(save_fixture)
         balance_transaction_1 = await create_balance_transaction(
@@ -139,10 +150,11 @@ class TestCreate:
 
         payout_transaction_service_mock.create.return_value = Transaction()
 
-        payout = await payout_service.create(session, locker, account=account)
+        payout = await payout_service.create(session, locker, organization)
 
         assert payout.account == account
-        assert payout.processor == account.account_type
+        assert payout.payout_account == payout_account
+        assert payout.processor == payout_account.type
         assert payout.currency == "usd"
         assert payout.amount > 0
         assert payout.fees_amount > 0
@@ -158,10 +170,16 @@ class TestCreate:
         locker: Locker,
         organization: Organization,
         user: User,
+        account: Account,
         payout_transaction_service_mock: MagicMock,
     ) -> None:
-        account = await create_account(
-            save_fixture, organization, user, country="FR", currency="eur"
+        payout_account = await create_payout_account(
+            save_fixture,
+            organization,
+            user,
+            type=PayoutAccountType.stripe,
+            country="FR",
+            currency="eur",
         )
 
         payment_transaction_1 = await create_payment_transaction(save_fixture)
@@ -178,10 +196,11 @@ class TestCreate:
             account_currency="eur", account_amount=-1000
         )
 
-        payout = await payout_service.create(session, locker, account=account)
+        payout = await payout_service.create(session, locker, organization)
 
         assert payout.account == account
-        assert payout.processor == account.account_type
+        assert payout.payout_account == payout_account
+        assert payout.processor == payout_account.type
         assert payout.account_currency == "eur"
         assert payout.account_amount == 1000
 
@@ -194,13 +213,15 @@ class TestCreate:
         locker: Locker,
         organization: Organization,
         user: User,
+        account: Account,
         payout_transaction_service_mock: MagicMock,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(save_fixture, organization, user)
 
         payout = await create_payout(
             save_fixture,
             account=account,
+            payout_account=payout_account,
             # Set an invoice number that would conflict with the next one
             invoice_number=f"{settings.PAYOUT_INVOICES_PREFIX}0002",
         )
@@ -217,7 +238,7 @@ class TestCreate:
 
         payout_transaction_service_mock.create.return_value = Transaction()
 
-        payout = await payout_service.create(session, locker, account=account)
+        payout = await payout_service.create(session, locker, organization)
         await session.flush()
 
         assert payout.invoice_number == f"{settings.PAYOUT_INVOICES_PREFIX}0003"
@@ -231,6 +252,7 @@ class TestEstimate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        account: Account,
         user: User,
     ) -> None:
         """Test that regular currencies return net_amount unchanged."""
@@ -239,10 +261,11 @@ class TestEstimate:
             return_value=[],
         )
 
-        account = await create_account(save_fixture, organization, user, currency="usd")
+        await create_payout_account(save_fixture, organization, user, currency="usd")
+
         await create_balance_transaction(save_fixture, account=account, amount=12345)
 
-        estimate = await payout_service.estimate(session, account=account)
+        estimate = await payout_service.estimate(session, organization)
 
         assert estimate.gross_amount == 12345
         assert estimate.net_amount == 12345
@@ -263,11 +286,21 @@ class TestTriggerStripePayouts:
         enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
 
         account_1 = await create_account(save_fixture, organization, user)
+        payout_account_1 = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
         account_2 = await create_account(save_fixture, organization_second, user_second)
+        payout_account_2 = await create_payout_account(
+            save_fixture,
+            organization_second,
+            user_second,
+            type=PayoutAccountType.stripe,
+        )
 
         payout_1 = await create_payout(
             save_fixture,
             account=account_1,
+            payout_account=payout_account_1,
             created_at=utc_now() - datetime.timedelta(days=14),
             status=PayoutStatus.pending,
             attempts=[],
@@ -275,6 +308,7 @@ class TestTriggerStripePayouts:
         payout_2 = await create_payout(
             save_fixture,
             account=account_1,
+            payout_account=payout_account_1,
             created_at=utc_now() - datetime.timedelta(days=7),
             status=PayoutStatus.pending,
             attempts=[],
@@ -282,6 +316,7 @@ class TestTriggerStripePayouts:
         payout_3 = await create_payout(
             save_fixture,
             account=account_2,
+            payout_account=payout_account_2,
             created_at=utc_now() - datetime.timedelta(days=7),
             status=PayoutStatus.pending,
             attempts=[],
@@ -289,6 +324,7 @@ class TestTriggerStripePayouts:
         payout_4 = await create_payout(
             save_fixture,
             account=account_2,
+            payout_account=payout_account_2,
             created_at=utc_now() - datetime.timedelta(days=7),
             status=PayoutStatus.succeeded,
         )
@@ -318,7 +354,12 @@ class TestTransferStripe:
             id="STRIPE_TRANSFER_ID", destination_payment=None
         )
         account = await create_account(save_fixture, organization, user)
-        payout = await create_payout(save_fixture, account=account)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture, account=account, payout_account=payout_account
+        )
         transaction = await create_transaction(
             save_fixture,
             account=account,
@@ -331,7 +372,7 @@ class TestTransferStripe:
         await payout_service.transfer_stripe(session, payout)
 
         stripe_service_mock.transfer.assert_any_call(
-            account.stripe_id,
+            payout_account.stripe_id,
             payout.amount,
             metadata={
                 "payout_id": str(payout.id),
@@ -386,12 +427,19 @@ class TestTransferStripe:
         country_map = {"twd": "TW", "huf": "HU", "isk": "IS", "ugx": "UG", "eur": "DE"}
         country = country_map.get(account_currency, "US")
 
-        account = await create_account(
-            save_fixture, organization, user, country=country, currency=account_currency
+        account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(
+            save_fixture,
+            organization,
+            user,
+            type=PayoutAccountType.stripe,
+            country=country,
+            currency=account_currency,
         )
         payout = await create_payout(
             save_fixture,
             account=account,
+            payout_account=payout_account,
             account_currency=account_currency,
         )
         transaction = await create_transaction(
@@ -419,8 +467,14 @@ class TestCancel:
         user: User,
     ) -> None:
         account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
         payout = await create_payout(
-            save_fixture, account=account, status=PayoutStatus.succeeded
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.succeeded,
         )
 
         with pytest.raises(PayoutNotCancelable):
@@ -436,8 +490,15 @@ class TestCancel:
         payout_transaction_service_mock: MagicMock,
     ) -> None:
         account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
         payout = await create_payout(
-            save_fixture, account=account, status=PayoutStatus.pending, attempts=[]
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
         )
         payout_transaction = Transaction(
             type=TransactionType.payout,
@@ -483,7 +544,12 @@ class TestTriggerInvoiceGeneration:
         user: User,
     ) -> None:
         account = await create_account(save_fixture, organization, user)
-        payout = await create_payout(save_fixture, account=account)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture, account=account, payout_account=payout_account
+        )
         payout.invoice_path = "some/path/to/invoice.pdf"
         await save_fixture(payout)
 
@@ -500,9 +566,13 @@ class TestTriggerInvoiceGeneration:
         user: User,
     ) -> None:
         account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
         payout = await create_payout(
             save_fixture,
             account=account,
+            payout_account=payout_account,
             status=PayoutStatus.pending,
             attempts=[],
         )
@@ -520,8 +590,13 @@ class TestTriggerInvoiceGeneration:
         user: User,
     ) -> None:
         account = await create_account(save_fixture, organization, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
 
-        payout = await create_payout(save_fixture, account=account)
+        payout = await create_payout(
+            save_fixture, account=account, payout_account=payout_account
+        )
         await save_fixture(payout)
 
         with pytest.raises(MissingInvoiceBillingDetails):
@@ -543,18 +618,24 @@ class TestTriggerInvoiceGeneration:
             billing_name="Test Billing Name",
             billing_address=Address(country=CountryAlpha2("US"), line1="123 Test St"),
         )
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
 
         # Create first payout with a specific invoice number
         invoice_number = "INVOICE-123"
         payout1 = await create_payout(
             save_fixture,
             account=account,
+            payout_account=payout_account,
             invoice_number=invoice_number,
         )
         await save_fixture(payout1)
 
         # Create second payout
-        payout2 = await create_payout(save_fixture, account=account)
+        payout2 = await create_payout(
+            save_fixture, account=account, payout_account=payout_account
+        )
         await save_fixture(payout2)
 
         # Try to set the same invoice number on the second payout
@@ -580,8 +661,13 @@ class TestTriggerInvoiceGeneration:
             billing_name="Test Billing Name",
             billing_address=Address(country=CountryAlpha2("US"), line1="123 Test St"),
         )
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
 
-        payout = await create_payout(save_fixture, account=account)
+        payout = await create_payout(
+            save_fixture, account=account, payout_account=payout_account
+        )
 
         # Test with custom invoice number
         custom_invoice_number = "CUSTOM-INVOICE-123"
@@ -613,11 +699,15 @@ class TestTriggerInvoiceGeneration:
             billing_name="Test Billing Name",
             billing_address=Address(country=CountryAlpha2("US"), line1="123 Test St"),
         )
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
 
         original_invoice_number = "POLAR-12345"
         payout = await create_payout(
             save_fixture,
             account=account,
+            payout_account=payout_account,
             invoice_number=original_invoice_number,
         )
 

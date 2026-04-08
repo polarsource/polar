@@ -6,10 +6,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
-from polar.enums import AccountType
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
@@ -26,27 +24,30 @@ type Fees = tuple[FeeBasisPoints, FeeFixedCents]
 class Account(RecordModel):
     __tablename__ = "accounts"
 
-    account_type: Mapped[AccountType] = mapped_column(
-        StringEnum(AccountType), nullable=False
-    )
-
-    admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", use_alter=True))
-
+    account_type: Mapped[Any] = mapped_column(String(), nullable=False, deferred=True)
     stripe_id: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, default=None
+        String(100), nullable=True, default=None, deferred=True
     )
     open_collective_slug: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None, deferred=True
     )
 
-    email: Mapped[str | None] = mapped_column(String(254), nullable=True, default=None)
+    email: Mapped[str | None] = mapped_column(
+        String(254), nullable=True, default=None, deferred=True
+    )
 
-    country: Mapped[str] = mapped_column(String(2), nullable=False)
+    country: Mapped[str] = mapped_column(String(2), nullable=False, deferred=True)
     currency: Mapped[str] = mapped_column(String(3))
 
-    is_details_submitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    is_charges_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    is_payouts_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_details_submitted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, deferred=True
+    )
+    is_charges_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, deferred=True
+    )
+    is_payouts_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, deferred=True
+    )
 
     processor_fees_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
@@ -59,7 +60,7 @@ class Account(RecordModel):
     )
 
     business_type: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None
+        String(255), nullable=True, default=None, deferred=True
     )
 
     campaign_id: Mapped[UUID | None] = mapped_column(
@@ -69,7 +70,9 @@ class Account(RecordModel):
         index=True,
     )
 
-    data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, deferred=True
+    )
 
     billing_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
@@ -81,6 +84,8 @@ class Account(RecordModel):
     billing_notes: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     credit_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", use_alter=True))
 
     @declared_attr
     def admin(cls) -> Mapped["User"]:
@@ -116,23 +121,6 @@ class Account(RecordModel):
     @declared_attr
     def credits(cls) -> Mapped[list["AccountCredit"]]:
         return relationship("AccountCredit", lazy="raise", back_populates="account")
-
-    def is_payout_ready(self) -> bool:
-        # For Stripe accounts, check if payouts are enabled
-        # and that a Stripe account is actually connected.
-        # After a disconnect, stripe_id is cleared but the account
-        # may still be active with is_payouts_enabled=True.
-        return self.account_type != AccountType.stripe or (
-            self.is_payouts_enabled and self.stripe_id is not None
-        )
-
-    def get_associations_names(self) -> list[str]:
-        associations_names: list[str] = []
-        for user in self.users:
-            associations_names.append(user.email)
-        for organization in self.organizations:
-            associations_names.append(organization.slug)
-        return associations_names
 
     @property
     def platform_fee(self) -> Fees:

@@ -13,7 +13,6 @@ from polar.organization.repository import (
     OrganizationReviewRepository as OrgReviewRepository,
 )
 from polar.organization_review.schemas import (
-    AccountData,
     AgentReviewResult,
     DataSnapshot,
     DimensionAssessment,
@@ -21,6 +20,7 @@ from polar.organization_review.schemas import (
     IdentityData,
     OrganizationData,
     PaymentMetrics,
+    PayoutAccountData,
     ProductsData,
     ReviewAgentReport,
     ReviewContext,
@@ -69,7 +69,7 @@ def _make_agent_result(
             organization=OrganizationData(name="Test", slug="test"),
             products=ProductsData(),
             identity=IdentityData(),
-            account=AccountData(),
+            account=PayoutAccountData(),
             metrics=PaymentMetrics(),
             history=HistoryData(),
             collected_at=datetime(2026, 1, 1, tzinfo=UTC),

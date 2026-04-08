@@ -2156,7 +2156,7 @@ class TestCreateOrderBalance:
         session: AsyncSession,
         product: Product,
         customer: Customer,
-        organization_account: Account,
+        account: Account,
     ) -> None:
         order = await create_order(save_fixture, product=product, customer=customer)
         payment_transaction = await create_transaction(
@@ -2171,7 +2171,7 @@ class TestCreateOrderBalance:
             Transaction(
                 type=TransactionType.balance,
                 amount=order.net_amount,
-                account=organization_account,
+                account=account,
             ),
         )
 
@@ -2192,7 +2192,7 @@ class TestCreateOrderBalance:
                     amount=100,
                     currency="usd",
                     platform_fee_type=PlatformFeeType.payment,
-                    account=organization_account,
+                    account=account,
                 ),
             ),
             (
@@ -2207,7 +2207,7 @@ class TestCreateOrderBalance:
                     amount=50,
                     currency="usd",
                     platform_fee_type=PlatformFeeType.payment,
-                    account=organization_account,
+                    account=account,
                 ),
             ),
         ]
@@ -2217,7 +2217,7 @@ class TestCreateOrderBalance:
         assert create_balance_from_charge_mock.mock_calls[0] == call(
             ANY,
             source_account=None,
-            destination_account=organization_account,
+            destination_account=account,
             charge_id="CHARGE_ID",
             amount=payment_transaction.amount,
             order=order,
@@ -2226,7 +2226,7 @@ class TestCreateOrderBalance:
         create_balance_from_charge_mock.assert_awaited_once_with(
             ANY,
             source_account=None,
-            destination_account=organization_account,
+            destination_account=account,
             charge_id="CHARGE_ID",
             amount=payment_transaction.amount,
             order=order,

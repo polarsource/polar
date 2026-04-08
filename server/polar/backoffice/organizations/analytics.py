@@ -277,18 +277,6 @@ class OrganizationSetupAnalyticsService:
         )
         return result.scalar() or 0
 
-    async def check_user_verified_in_stripe(self, organization: Organization) -> bool:
-        """Check if organization owner is verified in Stripe."""
-        if not organization.account or not organization.account.stripe_id:
-            return False
-
-        # This would need to be implemented based on your Stripe integration
-        # For now, return a placeholder
-        return (
-            hasattr(organization.account, "charges_enabled")
-            and organization.account.charges_enabled
-        )
-
     async def check_account_enabled(
         self, organization: Organization
     ) -> tuple[bool, bool]:

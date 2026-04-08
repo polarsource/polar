@@ -546,57 +546,6 @@ export interface paths {
     patch: operations['accounts:patch']
     trace?: never
   }
-  '/v1/accounts': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Create */
-    post: operations['accounts:create']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/accounts/{id}/onboarding_link': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Onboarding Link */
-    post: operations['accounts:onboarding_link']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/accounts/{id}/dashboard_link': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Dashboard Link */
-    post: operations['accounts:dashboard_link']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/accounts/{id}/credits': {
     parameters: {
       query?: never
@@ -683,28 +632,6 @@ export interface paths {
     patch: operations['organizations:update']
     trace?: never
   }
-  '/v1/organizations/{id}/kyc': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Organization KYC Details
-     * @description Get an organization's KYC/compliance details.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
-     */
-    get: operations['organizations:get_kyc']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/organizations/{id}/account': {
     parameters: {
       query?: never
@@ -719,6 +646,28 @@ export interface paths {
      *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_account']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/kyc': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization KYC Details
+     * @description Get an organization's KYC/compliance details.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:get_kyc']
     put?: never
     post?: never
     delete?: never
@@ -4348,6 +4297,74 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/payout-accounts/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Create */
+    post: operations['payout_accounts:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/payout-accounts/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get */
+    get: operations['payout_accounts:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/payout-accounts/{id}/onboarding-link': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Onboarding Link */
+    post: operations['payout_accounts:onboarding_link']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/payout-accounts/{id}/dashboard-link': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Dashboard Link */
+    post: operations['payout_accounts:dashboard_link']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export interface webhooks {
   'checkout.created': {
@@ -5195,22 +5212,21 @@ export interface components {
     Account: {
       /**
        * Id
-       * Format: uuid
+       * Format: uuid4
+       * @description The ID of the object.
        */
       id: string
-      account_type: components['schemas']['AccountType']
-      /** Stripe Id */
-      stripe_id: string | null
-      /** Is Details Submitted */
-      is_details_submitted: boolean
-      /** Is Charges Enabled */
-      is_charges_enabled: boolean
-      /** Is Payouts Enabled */
-      is_payouts_enabled: boolean
-      /** Country */
-      country: string
-      /** Credit Balance */
-      credit_balance: number
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
       /** Billing Name */
       billing_name: string | null
       billing_address: components['schemas']['Address'] | null
@@ -5218,25 +5234,10 @@ export interface components {
       billing_additional_info: string | null
       /** Billing Notes */
       billing_notes: string | null
-      /** Users */
-      users: components['schemas']['UserBase'][]
-      /** Organizations */
-      organizations: components['schemas']['Organization'][]
-    }
-    /** AccountCreateForOrganization */
-    AccountCreateForOrganization: {
-      /**
-       * Organization Id
-       * Format: uuid
-       * @description Organization ID to create or get account for
-       */
-      organization_id: string
-      /**
-       * Account Type
-       * @constant
-       */
-      account_type: 'stripe'
-      country: components['schemas']['StripeAccountCountry']
+      /** Currency */
+      currency: string
+      /** Credit Balance */
+      credit_balance: number
     }
     /** AccountCredit */
     AccountCredit: {
@@ -5261,16 +5262,6 @@ export interface components {
       /** Revoked At */
       revoked_at: string | null
     }
-    /** AccountLink */
-    AccountLink: {
-      /** Url */
-      url: string
-    }
-    /**
-     * AccountType
-     * @enum {string}
-     */
-    AccountType: 'stripe' | 'manual'
     /** AccountUpdate */
     AccountUpdate: {
       /**
@@ -21894,6 +21885,16 @@ export interface components {
             | 'ZW'
           )
         | null
+      /**
+       * Account Id
+       * @description ID of the transactions account.
+       */
+      account_id: string | null
+      /**
+       * Payout Account Id
+       * @description ID of the payout account.
+       */
+      payout_account_id: string | null
     }
     /** OrganizationAccessToken */
     OrganizationAccessToken: {
@@ -22923,6 +22924,16 @@ export interface components {
             | 'ZW'
           )
         | null
+      /**
+       * Account Id
+       * @description ID of the transactions account.
+       */
+      account_id: string | null
+      /**
+       * Payout Account Id
+       * @description ID of the payout account.
+       */
+      payout_account_id: string | null
       /** @description Organization compliance details. Only visible to organization members. */
       details?: components['schemas']['OrganizationDetails'] | null
     }
@@ -23587,7 +23598,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      processor: components['schemas']['AccountType']
+      processor: components['schemas']['PayoutAccountType']
       status: components['schemas']['PayoutStatus']
       /** Paid At */
       paid_at: string | null
@@ -23622,6 +23633,56 @@ export interface components {
       /** Attempts */
       attempts: components['schemas']['PayoutAttempt'][]
     }
+    /** PayoutAccount */
+    PayoutAccount: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      type: components['schemas']['PayoutAccountType']
+      /** Currency */
+      currency: string
+      /** Is Payout Ready */
+      is_payout_ready: boolean
+    }
+    /** PayoutAccountCreate */
+    PayoutAccountCreate: {
+      /**
+       * Type
+       * @constant
+       */
+      type: 'stripe'
+      /**
+       * Organization Id
+       * Format: uuid
+       * @description Organization ID to create or get account for
+       */
+      organization_id: string
+      country: components['schemas']['StripeAccountCountry']
+    }
+    /** PayoutAccountLink */
+    PayoutAccountLink: {
+      /** Url */
+      url: string
+    }
+    /**
+     * PayoutAccountType
+     * @enum {string}
+     */
+    PayoutAccountType: 'stripe' | 'manual'
     /** PayoutAttempt */
     PayoutAttempt: {
       /**
@@ -23646,7 +23707,7 @@ export interface components {
        * Format: uuid
        */
       payout_id: string
-      processor: components['schemas']['AccountType']
+      processor: components['schemas']['PayoutAccountType']
       /** Processor Id */
       processor_id: string | null
       status: components['schemas']['PayoutAttemptStatus']
@@ -23667,10 +23728,10 @@ export interface components {
     /** PayoutCreate */
     PayoutCreate: {
       /**
-       * Account Id
+       * Organization Id
        * Format: uuid4
        */
-      account_id: string
+      organization_id: string
     }
     /** PayoutEstimate */
     PayoutEstimate: {
@@ -23679,6 +23740,11 @@ export interface components {
        * Format: uuid4
        */
       account_id: string
+      /**
+       * Payout Account Id
+       * Format: uuid4
+       */
+      payout_account_id: string
       /** Gross Amount */
       gross_amount: number
       /** Fees Amount */
@@ -23709,8 +23775,8 @@ export interface components {
       | '-fees_amount'
       | 'status'
       | '-status'
-      | 'account_id'
-      | '-account_id'
+      | 'payout_account_id'
+      | '-payout_account_id'
     /**
      * PayoutStatus
      * @enum {string}
@@ -27557,18 +27623,6 @@ export interface components {
       /** Property */
       property: string
     }
-    /** UserBase */
-    UserBase: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string
-      /** Avatar Url */
-      avatar_url: string | null
-      /** Account Id */
-      account_id: string | null
-    }
     /**
      * UserDeletionBlockedReason
      * @description Reasons why a user account cannot be immediately deleted.
@@ -30285,103 +30339,6 @@ export interface operations {
       }
     }
   }
-  'accounts:create': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AccountCreateForOrganization']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Account']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'accounts:onboarding_link': {
-    parameters: {
-      query: {
-        return_path: string
-      }
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['AccountLink']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'accounts:dashboard_link': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['AccountLink']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'accounts:get_credits': {
     parameters: {
       query?: never
@@ -30626,46 +30583,6 @@ export interface operations {
       }
     }
   }
-  'organizations:get_kyc': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['OrganizationKYC']
-        }
-      }
-      /** @description Organization not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'organizations:get_account': {
     parameters: {
       query?: never
@@ -30696,6 +30613,46 @@ export interface operations {
         }
       }
       /** @description Organization not found or account not set. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_kyc': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationKYC']
+        }
+      }
+      /** @description Organization not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -41733,7 +41690,7 @@ export interface operations {
   'payouts:get_estimate': {
     parameters: {
       query: {
-        account_id: string
+        organization_id: string
       }
       header?: never
       path?: never
@@ -42022,6 +41979,134 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'payout_accounts:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayoutAccountCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccount']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'payout_accounts:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccount']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'payout_accounts:onboarding_link': {
+    parameters: {
+      query: {
+        return_path: string
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountLink']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'payout_accounts:dashboard_link': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountLink']
         }
       }
       /** @description Validation Error */
@@ -45612,9 +45697,6 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'WET',
   'Zulu',
 ]
-export const accountTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AccountType']
-> = ['stripe', 'manual']
 export const addressCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Address']['country']
 > = [
@@ -48381,6 +48463,9 @@ export const paymentSortPropertyValues: ReadonlyArray<
 export const paymentStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentStatus']
 > = ['pending', 'succeeded', 'failed']
+export const payoutAccountTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PayoutAccountType']
+> = ['stripe', 'manual']
 export const payoutAttemptStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutAttemptStatus']
 > = ['pending', 'in_transit', 'succeeded', 'failed']
@@ -48395,8 +48480,8 @@ export const payoutSortPropertyValues: ReadonlyArray<
   '-fees_amount',
   'status',
   '-status',
-  'account_id',
-  '-account_id',
+  'payout_account_id',
+  '-payout_account_id',
 ]
 export const payoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutStatus']

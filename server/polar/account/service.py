@@ -6,8 +6,13 @@ from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
+from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
+from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.models import Account, Organization, User
+from polar.models.member import MemberRole
 from polar.models.user import IdentityVerificationStatus
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.user.repository import UserRepository
@@ -76,6 +81,43 @@ class AccountService:
             account, update_dict=account_update.model_dump(exclude_unset=True)
         )
 
+    async def _sync_polar_self_customer_owner(
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: uuid.UUID,
+        new_admin_user: User,
+    ) -> None:
+        if not settings.POLAR_ACCESS_TOKEN or not settings.POLAR_ORGANIZATION_ID:
+            return
+
+        polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_external_id_and_organization(
+            str(organization_id), polar_organization_id
+        )
+        if customer is None:
+            raise CannotChangeAdminError(
+                f"Polar self customer not found for organization {organization_id}"
+            )
+
+        member_repository = MemberRepository.from_session(session)
+        target_member = await member_repository.get_by_customer_id_and_external_id(
+            customer.id, str(new_admin_user.id)
+        )
+        if target_member is None:
+            raise CannotChangeAdminError(
+                f"Polar self member not found for user {new_admin_user.id}"
+            )
+
+        if target_member.role != MemberRole.owner:
+            await member_service.update(
+                session,
+                target_member,
+                role=MemberRole.owner,
+                allow_ownership_transfer=True,
+            )
+
     async def change_admin(
         self,
         session: AsyncSession,
@@ -110,6 +152,11 @@ class AccountService:
         repository = AccountRepository.from_session(session)
         account = await repository.update(
             account, update_dict={"admin_id": new_admin_id}
+        )
+        await self._sync_polar_self_customer_owner(
+            session,
+            organization_id=organization_id,
+            new_admin_user=new_admin_user,
         )
 
         return account

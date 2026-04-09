@@ -21,6 +21,11 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    groups:
+      react-email:
+        patterns:
+          - "react-email"
+          - "@react-email/*"
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]

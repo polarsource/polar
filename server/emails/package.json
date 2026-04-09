@@ -15,14 +15,14 @@
   },
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
-    "@react-email/components": "^1.0.1",
-    "@react-email/render": "^2.0.4",
+    "@react-email/components": "^1.0.11",
+    "@react-email/render": "^2.0.5",
     "commander": "^14.0.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
-    "@react-email/preview-server": "^5.0.8",
+    "@react-email/preview-server": "^5.2.10",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

@@ -11,6 +11,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { GeistMono } from 'geist/font/mono'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Metadata, Viewport } from 'next/types'
@@ -172,6 +173,7 @@ export default async function RootLayout({
             </PolarPostHogProvider>
           </UserContextProvider>
         </ExperimentProvider>
+        <SpeedInsights />
       </body>
     </html>
   )

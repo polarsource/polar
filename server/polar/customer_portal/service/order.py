@@ -43,6 +43,15 @@ class PaymentAlreadyInProgress(CustomerOrderError):
         super().__init__(message, 409)
 
 
+class ManualRetryLimitExceeded(CustomerOrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = (
+            "Maximum number of payment retry attempts has been reached for this order."
+        )
+        super().__init__(message, 429)
+
+
 class CustomerOrderSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"

@@ -64,6 +64,7 @@ from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
 from polar.order.schemas import OrderUpdate
 from polar.order.service import (
+    ManualRetryLimitExceeded,
     MissingCheckoutCustomer,
     NoPendingBillingEntries,
     NotRecurringProduct,
@@ -4277,6 +4278,45 @@ class TestProcessRetryPayment:
         )
 
         assert order.payment_lock_acquired_at is not None
+
+    async def test_process_retry_payment_manual_retry_limit_exceeded(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that manual retry is rejected when the limit is exceeded."""
+        from polar.config import settings
+
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        for _ in range(settings.CUSTOMER_RETRY_MAX_ATTEMPTS):
+            await create_payment(
+                save_fixture,
+                organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.retry_customer,
+                order=order,
+            )
+
+        with pytest.raises(ManualRetryLimitExceeded):
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
 
 
 @pytest.mark.asyncio

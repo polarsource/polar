@@ -269,3 +269,120 @@ class TestCountFailedPaymentsForOrder:
         # 2 < 4 (len of DUNNING_RETRY_INTERVALS), so the subscription stays
         # in dunning instead of being revoked.
         assert count == 2
+
+
+@pytest.mark.asyncio
+class TestCountCustomerRetryPaymentsForOrder:
+    """The manual retry ceiling counts *all* payments (any status) with
+    ``trigger = retry_customer`` to cap how many times a customer can
+    manually retry from the portal.
+    """
+
+    async def test_counts_failed_customer_retries(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+        for _ in range(3):
+            await create_payment(
+                save_fixture,
+                organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.retry_customer,
+                order=order,
+            )
+
+        repository = PaymentRepository.from_session(session)
+        count = await repository.count_customer_retry_payments_for_order(order.id)
+
+        assert count == 3
+
+    async def test_counts_all_statuses(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.failed,
+            trigger=PaymentTrigger.retry_customer,
+            order=order,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.succeeded,
+            trigger=PaymentTrigger.retry_customer,
+            order=order,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.pending,
+            trigger=PaymentTrigger.retry_customer,
+            order=order,
+        )
+
+        repository = PaymentRepository.from_session(session)
+        count = await repository.count_customer_retry_payments_for_order(order.id)
+
+        assert count == 3
+
+    async def test_excludes_other_triggers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
+            order=order,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.failed,
+            trigger=PaymentTrigger.retry_dunning,
+            order=order,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.failed,
+            trigger=PaymentTrigger.retry_payment_method_update,
+            order=order,
+        )
+
+        repository = PaymentRepository.from_session(session)
+        count = await repository.count_customer_retry_payments_for_order(order.id)
+
+        assert count == 0
+
+    async def test_zero_when_no_payments(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+
+        repository = PaymentRepository.from_session(session)
+        count = await repository.count_customer_retry_payments_for_order(order.id)
+
+        assert count == 0

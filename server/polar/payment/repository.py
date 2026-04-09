@@ -14,7 +14,11 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import Order, Payment, UserOrganization
-from polar.models.payment import DUNNING_COUNTING_TRIGGERS, PaymentStatus
+from polar.models.payment import (
+    DUNNING_COUNTING_TRIGGERS,
+    PaymentStatus,
+    PaymentTrigger,
+)
 
 from .sorting import PaymentSortProperty
 
@@ -106,6 +110,20 @@ class PaymentRepository(
             Payment.order_id == order_id,
             Payment.status == PaymentStatus.failed,
             Payment.trigger.in_(DUNNING_COUNTING_TRIGGERS),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar() or 0
+
+    async def count_customer_retry_payments_for_order(self, order_id: UUID) -> int:
+        """Count all payments triggered by manual customer retry for an order.
+
+        Counts payments of *any* status (pending, failed, succeeded) with
+        ``trigger = retry_customer`` to enforce a per-order ceiling on manual
+        retry attempts — separate from the dunning ceiling.
+        """
+        statement = select(func.count(Payment.id)).where(
+            Payment.order_id == order_id,
+            Payment.trigger == PaymentTrigger.retry_customer,
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0

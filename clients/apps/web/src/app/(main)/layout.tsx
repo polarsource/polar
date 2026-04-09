@@ -1,11 +1,8 @@
-import '@/styles/globals.css'
-
 import { CookieConsent } from '@/components/Privacy/CookieConsent'
 import { CONFIG } from '@/utils/config'
 import { headers } from 'next/headers'
 import { Metadata } from 'next/types'
 import { PolarThemeProvider } from '../providers'
-import RootShell from '../RootShell'
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseMetadata: Metadata = {
@@ -76,115 +73,81 @@ export default async function MainLayout({
   const countryCode = headersList.get('x-vercel-ip-country')
 
   return (
-    <RootShell
-      head={
-        <>
-          <link
-            rel="preload"
-            href="/fonts/Inter-Light.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/Inter-Regular.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/Inter-Medium.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/Inter-SemiBold.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/InterDisplay-Light.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/InterDisplay-Regular.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/InterDisplay-Medium.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/InterDisplay-SemiBold.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/Louize-Italic-205TF.otf"
-            as="font"
-            type="font/otf"
-            crossOrigin=""
-          />
-          <link
-            rel="preload"
-            href="/fonts/GeistMono-Variable.woff2"
-            as="font"
-            type="font/woff2"
-            crossOrigin=""
-          />
-          {CONFIG.ENVIRONMENT === 'development' ? (
-            <>
-              <link
-                href="/favicon-dev.png"
-                rel="icon"
-                media="(prefers-color-scheme: dark)"
-              />
-              <link
-                href="/favicon-dev-dark.png"
-                rel="icon"
-                media="(prefers-color-scheme: light)"
-              />
-            </>
-          ) : (
-            <>
-              <link
-                href="/favicon.png"
-                rel="icon"
-                media="(prefers-color-scheme: dark)"
-              />
-              <link
-                href="/favicon-dark.png"
-                rel="icon"
-                media="(prefers-color-scheme: light)"
-              />
-            </>
-          )}
-        </>
-      }
-    >
-      <PolarThemeProvider>
-        <div className="dark:bg-polar-950 h-full bg-white dark:text-white">
-          {children}
-          <CookieConsent countryCode={countryCode} />
-        </div>
-      </PolarThemeProvider>
-    </RootShell>
+    <PolarThemeProvider>
+      <link
+        rel="preload"
+        href="/fonts/Inter-Light.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/Inter-Regular.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/Inter-Medium.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/Inter-SemiBold.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/InterDisplay-Light.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/InterDisplay-Regular.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/InterDisplay-Medium.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/InterDisplay-SemiBold.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/Louize-Italic-205TF.otf"
+        as="font"
+        type="font/otf"
+        crossOrigin=""
+      />
+      <link
+        rel="preload"
+        href="/fonts/GeistMono-Variable.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin=""
+      />
+      <div className="dark:bg-polar-950 h-full bg-white dark:text-white">
+        {children}
+        <CookieConsent countryCode={countryCode} />
+      </div>
+    </PolarThemeProvider>
   )
 }

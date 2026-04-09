@@ -35,9 +35,7 @@ class PolarSelfClient:
             server_url=api_url,
         )
 
-    async def create_customer(
-        self, *, external_id: str, email: str, name: str, organization_id: str
-    ) -> None:
+    async def create_customer(self, *, external_id: str, email: str, name: str) -> None:
         from polar_sdk.models import CustomerCreate, CustomerType
         from polar_sdk.models.polarerror import PolarError
 
@@ -47,7 +45,6 @@ class PolarSelfClient:
                     email=email,
                     name=name,
                     external_id=external_id,
-                    organization_id=organization_id,
                     type=CustomerType.TEAM,
                 )
             )
@@ -104,7 +101,7 @@ class PolarSelfClient:
             self._handle_error(e, "remove_member", member_id=member_id)
 
     async def track_event_ingestion(
-        self, *, external_customer_id: str, count: int, organization_id: str
+        self, *, external_customer_id: str, count: int
     ) -> None:
         from polar_sdk.models import EventCreateExternalCustomer, EventsIngest
         from polar_sdk.models.polarerror import PolarError
@@ -116,7 +113,6 @@ class PolarSelfClient:
                         EventCreateExternalCustomer(
                             name="event_ingestion",
                             external_customer_id=external_customer_id,
-                            organization_id=organization_id,
                             metadata={"count": count},
                         )
                     ]

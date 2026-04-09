@@ -68,7 +68,6 @@ async def run_backfill(
                 external_id=str(org.id),
                 email=email,
                 name=org.name,
-                organization_id=settings.POLAR_ORGANIZATION_ID,
             )
             await client.create_free_subscription(
                 external_customer_id=str(org.id),

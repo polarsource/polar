@@ -266,6 +266,7 @@ variable "polar_self_config" {
     webhook_secret  = string
     organization_id = string
     free_product_id = string
+    api_url         = string
   })
   default   = null
   sensitive = true

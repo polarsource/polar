@@ -350,6 +350,7 @@ module "production" {
     webhook_secret  = var.polar_webhook_secret
     organization_id = var.polar_organization_id
     free_product_id = var.polar_free_product_id
+    api_url         = "https://api.polar.sh"
   }
 
   tinybird_config = {

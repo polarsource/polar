@@ -218,6 +218,7 @@ resource "render_env_group" "polar_self" {
     POLAR_POLAR_WEBHOOK_SECRET  = { value = var.polar_self_config.webhook_secret }
     POLAR_POLAR_ORGANIZATION_ID = { value = var.polar_self_config.organization_id }
     POLAR_POLAR_FREE_PRODUCT_ID = { value = var.polar_self_config.free_product_id }
+    POLAR_POLAR_API_URL         = { value = var.polar_self_config.api_url }
   }
 }
 

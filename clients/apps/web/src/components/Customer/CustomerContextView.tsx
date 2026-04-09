@@ -110,22 +110,6 @@ export const CustomerContextView = ({
           />
           <DetailRow
             labelClassName="flex-none md:basis-24"
-            label="Tax ID"
-            value={
-              customer.tax_id ? (
-                <span className="flex flex-row items-center gap-1.5">
-                  <span>{customer.tax_id[0]}</span>
-                  <span className="font-mono text-xs opacity-70">
-                    {customer.tax_id[1].toLocaleUpperCase().replace('_', ' ')}
-                  </span>
-                </span>
-              ) : (
-                '—'
-              )
-            }
-          />
-          <DetailRow
-            labelClassName="flex-none md:basis-24"
             label="Created At"
             value={<FormattedDateTime datetime={customer.created_at} />}
           />

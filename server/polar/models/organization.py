@@ -190,6 +190,7 @@ class OrganizationStatus(StrEnum):
     ONGOING_REVIEW = "ongoing_review"
     DENIED = "denied"
     ACTIVE = "active"
+    OFFBOARDING = "offboarding"
 
     def get_display_name(self) -> str:
         return {
@@ -199,6 +200,7 @@ class OrganizationStatus(StrEnum):
             OrganizationStatus.ONGOING_REVIEW: "Ongoing Review",
             OrganizationStatus.DENIED: "Denied",
             OrganizationStatus.ACTIVE: "Active",
+            OrganizationStatus.OFFBOARDING: "Offboarding",
         }[self]
 
     @classmethod
@@ -207,7 +209,7 @@ class OrganizationStatus(StrEnum):
 
     @classmethod
     def payment_ready_statuses(cls) -> set[Self]:
-        return {cls.ACTIVE, *cls.review_statuses()}  # pyright: ignore
+        return {cls.ACTIVE, cls.OFFBOARDING, *cls.review_statuses()}  # pyright: ignore
 
     @classmethod
     def payout_ready_statuses(cls) -> set[Self]:

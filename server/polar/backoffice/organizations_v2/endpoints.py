@@ -206,6 +206,8 @@ async def list_organizations(
         status_filter = OrganizationStatus.CREATED
     elif status == "onboarding_started":
         status_filter = OrganizationStatus.ONBOARDING_STARTED
+    elif status == "offboarding":
+        status_filter = OrganizationStatus.OFFBOARDING
 
     # Build query
     stmt = (
@@ -1579,6 +1581,166 @@ async def under_review_dialog(
                 ):
                     with button(variant="warning", type="submit"):
                         text("Set Under Review")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/offboard-dialog",
+    name="organizations:offboard_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def offboard_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Set organization to offboarding status dialog and action."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        form_data = await request.form()
+        reason = str(form_data.get("reason", "")).strip() or None
+
+        review_repo = OrganizationReviewRepository.from_session(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="OFFBOARD",
+            reason=reason,
+        )
+
+        await organization_service.set_organization_offboarding(
+            session, organization, reason=reason
+        )
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    with modal("Set Offboarding", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:offboard_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            classes="flex flex-col gap-4",
+        ):
+            with tag.p(classes="font-semibold text-warning"):
+                text("Set Organization to Offboarding")
+
+            with tag.div(
+                classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Change the organization status to Offboarding")
+                    with tag.li():
+                        text("Block payouts while the organization is offboarding")
+
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason for offboarding")
+                with tag.textarea(
+                    name="reason",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="Why is this organization being offboarded?",
+                    rows="3",
+                ):
+                    pass
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="warning", type="submit"):
+                    text("Set Offboarding")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/reactivate-dialog",
+    name="organizations:reactivate_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def reactivate_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Reactivate an offboarding organization dialog and action."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        review_repo = OrganizationReviewRepository.from_session(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="REACTIVATE",
+        )
+
+        await organization_service.reactivate_organization(session, organization)
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    with modal("Reactivate Organization", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p(classes="font-semibold text-success"):
+                text("Reactivate Organization")
+
+            with tag.div(
+                classes="bg-success/10 border border-success/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Change the organization status back to Active")
+                    with tag.li():
+                        text("Re-enable payouts for the organization")
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(
+                    hx_post=str(
+                        request.url_for(
+                            "organizations:reactivate_dialog",
+                            organization_id=organization_id,
+                        )
+                    ),
+                ):
+                    with button(variant="success", type="submit"):
+                        text("Reactivate")
 
     return None
 

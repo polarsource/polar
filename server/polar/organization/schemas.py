@@ -290,6 +290,7 @@ class LegacyOrganizationStatus(StrEnum):
             OrganizationStatus.ONGOING_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
             OrganizationStatus.DENIED: LegacyOrganizationStatus.DENIED,
             OrganizationStatus.ACTIVE: LegacyOrganizationStatus.ACTIVE,
+            OrganizationStatus.OFFBOARDING: LegacyOrganizationStatus.ACTIVE,
         }
         try:
             return mapping[status]

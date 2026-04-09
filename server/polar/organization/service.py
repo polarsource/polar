@@ -821,6 +821,47 @@ class OrganizationService:
             enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
 
+    async def set_organization_offboarding(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        reason: str | None = None,
+    ) -> Organization:
+        if organization.status not in OrganizationStatus.review_statuses():
+            raise OrganizationError(
+                "Only organizations under review can be set to offboarding.",
+                403,
+            )
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status_updated_at = datetime.now(UTC)
+
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+        note = f"[{timestamp}] Organization set to offboarding."
+        if reason:
+            note += f"\nReason: {reason}"
+        if organization.internal_notes:
+            organization.internal_notes = f"{organization.internal_notes}\n\n{note}"
+        else:
+            organization.internal_notes = note
+
+        session.add(organization)
+        return organization
+
+    async def reactivate_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> Organization:
+        if organization.status != OrganizationStatus.OFFBOARDING:
+            raise OrganizationError(
+                "Only offboarding organizations can be reactivated.", 403
+            )
+        organization.status = OrganizationStatus.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
+        session.add(organization)
+        return organization
+
     async def get_payment_status(
         self,
         session: AsyncReadSession,

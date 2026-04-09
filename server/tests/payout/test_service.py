@@ -135,6 +135,7 @@ class TestCreate:
             OrganizationStatus.INITIAL_REVIEW,
             OrganizationStatus.ONGOING_REVIEW,
             OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDING,
         ],
     )
     async def test_organization_under_review(

@@ -114,6 +114,7 @@ def organization_badge(organization: Organization) -> Generator[None]:
         elif (
             organization.is_under_review
             or organization.status == OrganizationStatus.DENIED
+            or organization.status == OrganizationStatus.OFFBOARDING
         ):
             classes("badge-warning")
         else:
@@ -1116,6 +1117,26 @@ async def get(
                     reason=reason,
                 )
                 await organization_service.deny_appeal(session, organization)
+            elif account_status.action == "offboard":
+                await review_repo.record_human_decision(
+                    organization_id=id,
+                    reviewer_id=user_session.user.id,
+                    decision="OFFBOARD",
+                    reason=reason,
+                )
+                await organization_service.set_organization_offboarding(
+                    session, organization, reason=reason
+                )
+            elif account_status.action == "reactivate":
+                await review_repo.record_human_decision(
+                    organization_id=id,
+                    reviewer_id=user_session.user.id,
+                    decision="REACTIVATE",
+                    reason=reason,
+                )
+                await organization_service.reactivate_organization(
+                    session, organization
+                )
             return HXRedirectResponse(request, request.url, 303)
         except PydanticCustomError as e:
             await add_toast(request, str(e.message_template), variant="error")

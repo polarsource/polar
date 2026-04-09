@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Organization, Product, User, UserOrganization
+from polar.models import Account, Organization, Product, User, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.billing_entry import BillingEntry, BillingEntryType
@@ -97,10 +97,13 @@ async def monthly_product_with_benefit(
 
 
 @pytest_asyncio.fixture
-async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
+async def seat_org(
+    save_fixture: SaveFixture, user: User, account: Account
+) -> Organization:
     """Organization with seat-based pricing enabled, linked to the test user."""
     org = await create_organization(
         save_fixture,
+        account,
         feature_settings={"seat_based_pricing_enabled": True},
     )
     await save_fixture(UserOrganization(user=user, organization=org))

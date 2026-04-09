@@ -476,14 +476,13 @@ class OrganizationService:
         5. Soft delete organization
         """
         # Authorization check: only account admin can delete if account exists
-        if organization.account_id is not None:
-            is_admin = await account_service.is_user_admin(
-                session, organization.account_id, auth_subject.subject
+        is_admin = await account_service.is_user_admin(
+            session, organization.account_id, auth_subject.subject
+        )
+        if not is_admin:
+            raise NotPermitted(
+                "Only the account admin can delete an organization with an account"
             )
-            if not is_admin:
-                raise NotPermitted(
-                    "Only the account admin can delete an organization with an account"
-                )
 
         check_result = await self.check_can_delete(session, organization)
 
@@ -643,31 +642,6 @@ class OrganizationService:
                 external_id=str(user.id),
                 delay=polar_self_member_delay,
             )
-
-    async def set_account(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization: Organization,
-        account_id: UUID,
-    ) -> Organization:
-        if organization.account_id is not None:
-            raise AccountAlreadySet(organization.slug)
-
-        account = await account_service.get(session, auth_subject, account_id)
-        if account is None:
-            raise InvalidAccount(account_id)
-
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.update(
-            organization, update_dict={"account": account}
-        )
-
-        enqueue_job("organization.account_set", organization.id)
-
-        await self._after_update(session, organization)
-
-        return organization
 
     async def get_next_invoice_number(
         self,

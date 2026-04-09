@@ -288,12 +288,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    account_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
+    account_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("accounts.id", ondelete="restrict"), nullable=False
     )
 
     @declared_attr
-    def account(cls) -> Mapped[Account | None]:
+    def account(cls) -> Mapped[Account]:
         return relationship(Account, lazy="raise", back_populates="organizations")
 
     payout_account_id: Mapped[UUID | None] = mapped_column(

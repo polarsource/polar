@@ -103,14 +103,6 @@ async def process_organizations(
 
         # For each organization, check if threshold is still positive
         for organization in organizations_limited:
-            if not organization.account_id:
-                log.warning(
-                    "Organization has no account",
-                    organization_id=str(organization.id),
-                    organization_slug=organization.slug,
-                )
-                continue
-
             # Same computation as check_review_threshold
             transfers_sum = await transaction_service.get_transactions_sum(
                 session, organization.account_id, type=TransactionType.balance
@@ -154,13 +146,6 @@ async def process_organizations(
         user_repository = UserRepository.from_session(session)
         for org_data in organizations_to_process:
             organization = cast(Organization, org_data["organization"])
-
-            if not organization.account:
-                log.warning(
-                    "Organization has no account loaded",
-                    organization_id=str(organization.id),
-                )
-                continue
 
             # Get admin user
             admin = await user_repository.get_by_id(organization.account.admin_id)

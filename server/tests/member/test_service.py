@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
 from polar.member.service import member_service
-from polar.models import Customer, Member, Organization, User, UserOrganization
+from polar.models import Account, Customer, Member, Organization, User, UserOrganization
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -74,8 +74,9 @@ class TestGetByExternalID:
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
+        account: Account,
     ) -> None:
-        other_org = await create_organization(save_fixture)
+        other_org = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,
@@ -106,9 +107,10 @@ class TestList:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Test that user cannot access members from organizations they don't belong to."""
-        other_org = await create_organization(save_fixture)
+        other_org = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,

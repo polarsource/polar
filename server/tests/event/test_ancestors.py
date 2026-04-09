@@ -6,7 +6,7 @@ from polar.event.repository import EventRepository
 from polar.event.schemas import EventCreateExternalCustomer, EventsIngest
 from polar.event.service import event as event_service
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Event, Organization
+from polar.models import Account, Event, Organization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -19,10 +19,10 @@ from tests.fixtures.random_objects import (
 @pytest.mark.asyncio
 class TestGetAncestorsBatch:
     async def test_root_event_has_no_ancestors(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
     ) -> None:
         """Test that a root event has no ancestors."""
-        organization = await create_organization(save_fixture)
+        organization = await create_organization(save_fixture, account)
 
         # Create root event
         root = await create_event(
@@ -38,10 +38,10 @@ class TestGetAncestorsBatch:
         assert root.id not in result
 
     async def test_child_has_parent_as_ancestor(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
     ) -> None:
         """Test that a child event has its parent as ancestor."""
-        organization = await create_organization(save_fixture)
+        organization = await create_organization(save_fixture, account)
 
         # Create root event
         root = await create_event(
@@ -65,10 +65,10 @@ class TestGetAncestorsBatch:
         assert result[child.id] == [str(root.id)]
 
     async def test_grandchild_ancestors_ordered_by_depth(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
     ) -> None:
         """Test that ancestors are ordered by depth for deeper hierarchies."""
-        organization = await create_organization(save_fixture)
+        organization = await create_organization(save_fixture, account)
 
         # Create root -> child -> grandchild
         root = await create_event(
@@ -98,10 +98,10 @@ class TestGetAncestorsBatch:
         assert result[grandchild.id] == [str(child.id), str(root.id)]
 
     async def test_batch_with_multiple_events(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
     ) -> None:
         """Test that ancestors are correctly computed for a batch of events."""
-        organization = await create_organization(save_fixture)
+        organization = await create_organization(save_fixture, account)
 
         # Create root with 3 children
         root = await create_event(

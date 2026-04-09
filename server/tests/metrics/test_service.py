@@ -42,6 +42,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
 from tests.fixtures.random_objects import (
+    create_account,
     create_checkout,
     create_customer,
     create_discount,
@@ -2252,9 +2253,10 @@ async def metrics_harness(
         ):
             user = await create_user(save_fixture)
             unauthorized_user = await create_user(save_fixture)
+            account = await create_account(save_fixture, user)
 
             async def make_org(key: str) -> Organization:
-                org = await create_organization(save_fixture)
+                org = await create_organization(save_fixture, account)
                 uo = UserOrganization(user=user, organization=org)
                 await save_fixture(uo)
                 return org
@@ -2525,7 +2527,8 @@ async def checkout_metrics_harness(
 
         async def make_context(key: str) -> CheckoutMetricsContext:
             user = await create_user(save_fixture)
-            organization = await create_organization(save_fixture)
+            account = await create_account(save_fixture, user)
+            organization = await create_organization(save_fixture, account)
             await save_fixture(UserOrganization(user=user, organization=organization))
             context = CheckoutMetricsContext(organization=organization, user=user)
             scenarios[key] = context

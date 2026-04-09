@@ -618,7 +618,8 @@ class TestDeleteOrganization:
         )
         await save_fixture(other_user)
 
-        await create_account(save_fixture, organization, user=other_user)
+        organization.account = await create_account(save_fixture, user=other_user)
+        await save_fixture(organization)
 
         response = await client.delete(f"/v1/organizations/{organization.id}")
 

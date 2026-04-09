@@ -855,10 +855,9 @@ class TestGetPaymentStatus:
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
-        # Make organization not payment ready (new org without account setup)
+        # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Mock environment to be sandbox
@@ -1541,9 +1540,9 @@ class TestRequestDeletion:
         other_user = User(email="admin@example.com")
         await save_fixture(other_user)
 
-        account = await create_account(
-            save_fixture, organization=organization, user=other_user
-        )
+        account = await create_account(save_fixture, user=other_user)
+        organization.account = account
+        await save_fixture(organization)
 
         with pytest.raises(NotPermitted) as exc_info:
             await organization_service.request_deletion(

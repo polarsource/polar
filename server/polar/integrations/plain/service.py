@@ -179,10 +179,6 @@ class PlainService:
             return
 
         user_repository = UserRepository.from_session(session)
-        if organization.account is None:
-            from polar.organization.tasks import OrganizationAccountNotSet
-
-            raise OrganizationAccountNotSet(organization.id)
         admin = await user_repository.get_by_id(organization.account.admin_id)
         if admin is None:
             raise AccountAdminDoesNotExistError(organization.account.admin_id)

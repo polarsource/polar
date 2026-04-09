@@ -182,9 +182,6 @@ class OrganizationRepository(
         self, session: AsyncReadSession, organization: Organization
     ) -> User | None:
         """Get the admin user of the organization from the associated account."""
-        if not organization.account_id:
-            return None
-
         statement = (
             select(User)
             .join(Account, Account.admin_id == User.id)

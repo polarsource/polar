@@ -19,6 +19,7 @@ from polar.models import (
     WebhookEndpoint,
 )
 from polar.models.dispute import DisputeStatus
+from polar.models.organization import PayoutAccountNotReady
 from polar.models.payment import PaymentStatus
 from polar.models.refund import RefundStatus
 from polar.models.transaction import TransactionType
@@ -277,17 +278,13 @@ class OrganizationSetupAnalyticsService:
         )
         return result.scalar() or 0
 
-    async def check_account_enabled(
-        self, organization: Organization
-    ) -> tuple[bool, bool]:
-        """Check if account charges and payouts are enabled."""
-        if not organization.account:
-            return False, False
-
-        charges_enabled = getattr(organization.account, "charges_enabled", False)
-        payouts_enabled = getattr(organization.account, "payouts_enabled", False)
-
-        return charges_enabled, payouts_enabled
+    async def check_payout_account_enabled(self, organization: Organization) -> bool:
+        """Check if payouts are enabled."""
+        try:
+            organization.get_ready_payout_account()
+            return True
+        except PayoutAccountNotReady:
+            return False
 
     @staticmethod
     def calculate_setup_score(
@@ -297,8 +294,7 @@ class OrganizationSetupAnalyticsService:
         products_count: int,
         benefits_count: int,
         user_verified: bool,
-        account_charges_enabled: bool,
-        account_payouts_enabled: bool,
+        payouts_enabled: bool,
     ) -> int:
         """Calculate setup score based on various metrics."""
         return sum(
@@ -309,7 +305,6 @@ class OrganizationSetupAnalyticsService:
                 1 if products_count > 0 else 0,
                 1 if benefits_count > 0 else 0,
                 1 if user_verified else 0,
-                1 if account_charges_enabled else 0,
-                1 if account_payouts_enabled else 0,
+                1 if payouts_enabled else 0,
             ]
         )

@@ -4915,10 +4915,9 @@ class TestConfirm:
         organization: Organization,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        # Make organization not payment ready (new org without account setup)
+        # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Payment confirmation should fail for paid products
@@ -4944,10 +4943,9 @@ class TestConfirm:
         mocker: MockerFixture,
         stripe_service_mock: MagicMock,
     ) -> None:
-        # Make organization not payment ready (new org without account setup)
+        # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Mock environment to be sandbox
@@ -5000,10 +4998,9 @@ class TestConfirm:
         checkout_one_time_free: Checkout,
         mocker: MockerFixture,
     ) -> None:
-        # Make organization not payment ready (new org without account setup)
+        # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Mock Stripe service for customer creation
@@ -5041,7 +5038,6 @@ class TestConfirm:
         # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Should fail for recurring products
@@ -5078,7 +5074,6 @@ class TestConfirm:
         # Make organization grandfathered (created before cutoff)
         organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Setup Stripe mocks
@@ -5119,7 +5114,7 @@ class TestConfirm:
         assert confirmed_checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.create_payment_intent.assert_called_once()
 
-    async def test_payment_not_ready_with_account_setup_complete(
+    async def test_payment_ready_with_account_setup_complete(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -5155,7 +5150,7 @@ class TestConfirm:
         stripe_customer.id = "cus_test"
         stripe_service_mock.create_customer.return_value = stripe_customer
 
-        # Should be allowed since account setup is complete (is_details_submitted=True)
+        # Should be allowed since setup is complete (active and payout account exists)
         confirmed_checkout = await checkout_service.confirm(
             session,
             auth_subject,
@@ -5190,7 +5185,6 @@ class TestConfirm:
         # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Verify preconditions: discount makes it free but payment setup needed
@@ -5251,7 +5245,6 @@ class TestConfirm:
         # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Verify preconditions
@@ -5320,7 +5313,6 @@ class TestConfirm:
         # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Verify preconditions: free one-time product doesn't need payment setup

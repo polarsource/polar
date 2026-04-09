@@ -26,7 +26,6 @@ from polar.enums import (
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import (
     Address,
@@ -2121,36 +2120,7 @@ class TestCreateOrderBalance:
         with pytest.raises(PaymentTransactionForChargeDoesNotExist):
             await order_service.create_order_balance(session, order, "CHARGE_ID")
 
-    async def test_no_account(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        order = await create_order(save_fixture, product=product, customer=customer)
-        payment_transaction = await create_transaction(
-            save_fixture, type=TransactionType.payment, charge_id="CHARGE_ID"
-        )
-
-        await order_service.create_order_balance(session, order, "CHARGE_ID")
-
-        held_balance = await held_balance_service.get_by(
-            session, organization_id=product.organization_id
-        )
-        assert held_balance is not None
-        assert held_balance.order_id == order.id
-
-        updated_payment_transaction = await payment_transaction_service.get(
-            session,
-            id=payment_transaction.id,
-            options=(joinedload(Transaction.payment_customer),),
-        )
-        assert updated_payment_transaction is not None
-        assert updated_payment_transaction.order == order
-        assert updated_payment_transaction.payment_customer == order.customer
-
-    async def test_with_account(
+    async def test_valid(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,

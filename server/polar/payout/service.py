@@ -248,7 +248,6 @@ class PayoutService:
             raise OrganizationUnderReview(organization)
 
         account = organization.account
-        assert account is not None
         payout_account = organization.get_ready_payout_account()
 
         balance_amount = await transaction_service.get_transactions_sum(
@@ -287,7 +286,6 @@ class PayoutService:
             raise OrganizationUnderReview(organization)
 
         account = organization.account
-        assert account is not None
 
         lock_name = f"payout:{account.id}"
         if await locker.is_locked(lock_name):

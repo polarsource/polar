@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 import pytest
 
 from polar.backoffice.organizations_v2.endpoints import count_test_sales
-from polar.models import UserOrganization
+from polar.models import Account, UserOrganization
 from polar.models.order import OrderStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -34,6 +34,7 @@ class TestCountTestSales:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         Orders from customers who have Member records (usage entities)
@@ -42,7 +43,7 @@ class TestCountTestSales:
         This is the core regression test for the bug where Member.email
         was used instead of User.email joined through UserOrganization.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
 
         # Create an org team member (the actual owner)
         owner = await create_user(save_fixture)
@@ -77,12 +78,13 @@ class TestCountTestSales:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         Orders from actual org team members (UserOrganization) should
         be counted as test sales.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
 
         # Create an org team member
         team_user = await create_user(save_fixture)
@@ -107,9 +109,10 @@ class TestCountTestSales:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Refunded test orders should not appear in the unrefunded count."""
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
 
         team_user = await create_user(save_fixture)
         team_uo = UserOrganization(user=team_user, organization=org)
@@ -137,9 +140,10 @@ class TestCountTestSales:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Orders with net_amount <= 0 should not be counted as test sales."""
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
 
         team_user = await create_user(save_fixture)
         team_uo = UserOrganization(user=team_user, organization=org)
@@ -168,6 +172,7 @@ class TestCountTestSales:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         An org with many customers/members but only a few team members
@@ -177,7 +182,7 @@ class TestCountTestSales:
         records (one per customer) and only 2 actual team members, but
         all customer orders matching Member emails were flagged.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
 
         # 2 actual org team members
         team_user_1 = await create_user(save_fixture)
@@ -211,9 +216,10 @@ class TestCountTestSales:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Email matching should be case-insensitive."""
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
 
         team_user = await create_user(save_fixture)
         team_uo = UserOrganization(user=team_user, organization=org)
@@ -237,12 +243,13 @@ class TestCountTestSales:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         Orders from users who were removed from the org team
         (deleted UserOrganization) should not be counted.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
 
         former_member = await create_user(save_fixture)
         uo = UserOrganization(user=former_member, organization=org)

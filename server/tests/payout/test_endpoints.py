@@ -44,7 +44,9 @@ class TestCreate:
         organization: Organization,
         user_second: User,
     ) -> None:
-        await create_account(save_fixture, organization, user_second)
+        organization.account = await create_account(save_fixture, user_second)
+        await save_fixture(organization)
+
         response = await client.post(
             "/v1/payouts/", json={"organization_id": str(organization.id)}
         )
@@ -60,9 +62,10 @@ class TestCreate:
         user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
-        account = await create_account(
-            save_fixture, organization, user_organization.user
-        )
+        account = await create_account(save_fixture, user_organization.user)
+        organization.account = account
+        await save_fixture(organization)
+
         payout_account = await create_payout_account(
             save_fixture, organization, user_organization.user
         )

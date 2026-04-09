@@ -136,9 +136,6 @@ async def get_account(
     if organization is None:
         raise ResourceNotFound()
 
-    if organization.account_id is None:
-        raise ResourceNotFound()
-
     if is_user(auth_subject):
         user = auth_subject.subject
         if not await account_service.is_user_admin(

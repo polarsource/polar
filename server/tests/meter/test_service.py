@@ -29,6 +29,7 @@ from polar.meter.schemas import MeterCreate, MeterUpdate
 from polar.meter.service import meter as meter_service
 from polar.meter.unit import MeterUnit
 from polar.models import (
+    Account,
     Customer,
     Event,
     Meter,
@@ -1343,9 +1344,10 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
         seat_org = await create_organization(
-            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
         )
 
         meter = await create_meter(
@@ -1443,9 +1445,10 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
         seat_org = await create_organization(
-            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
         )
 
         meter = await create_meter(
@@ -1524,9 +1527,10 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
         seat_org = await create_organization(
-            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
         )
 
         meter = await create_meter(
@@ -1652,9 +1656,10 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
         seat_org = await create_organization(
-            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
         )
 
         meter = await create_meter(

@@ -163,13 +163,12 @@ async def check_org_issues(
         issues.missing_socials = True
 
     # Check admin identity verification
-    if org.account is not None:
-        admin_stmt = select(User).where(User.id == org.account.admin_id)
-        admin_result = await session.execute(admin_stmt)
-        admin = admin_result.unique().scalar_one_or_none()
-        if admin is not None and not admin.identity_verified:
-            issues.admin_not_verified = True
-            issues.admin_verification_status = admin.identity_verification_status
+    admin_stmt = select(User).where(User.id == org.account.admin_id)
+    admin_result = await session.execute(admin_stmt)
+    admin = admin_result.unique().scalar_one_or_none()
+    if admin is not None and not admin.identity_verified:
+        issues.admin_not_verified = True
+        issues.admin_verification_status = admin.identity_verification_status
 
     return issues, org_name
 

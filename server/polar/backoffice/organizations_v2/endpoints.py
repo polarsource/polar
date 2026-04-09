@@ -514,10 +514,9 @@ async def get_organization_detail(
             else False
         )
 
-        (
-            account_charges_enabled,
-            account_payouts_enabled,
-        ) = await setup_analytics.check_account_enabled(organization)
+        payouts_enabled = await setup_analytics.check_payout_account_enabled(
+            organization
+        )
         payment_ready = await organization_service.is_organization_ready_for_payment(
             session, organization
         )
@@ -529,22 +528,13 @@ async def get_organization_detail(
             products_count,
             benefits_count,
             user_verified,
-            account_charges_enabled,
-            account_payouts_enabled,
+            payouts_enabled,
         )
 
         # Calculate total transfer sum (balance transactions)
-        total_transfer_sum = 0
-        if organization.account_id:
-            total_transfer_sum = await transaction_service.get_transactions_sum(
-                session, organization.account_id, type=TransactionType.balance
-            )
-        else:
-            logger.warning(
-                "Organization has no account_id for transaction sum",
-                organization_id=str(organization.id),
-                organization_slug=organization.slug,
-            )
+        total_transfer_sum = await transaction_service.get_transactions_sum(
+            session, organization.account_id, type=TransactionType.balance
+        )
 
         setup_data = {
             "setup_score": setup_score,
@@ -555,8 +545,7 @@ async def get_organization_detail(
             "benefits_count": benefits_count,
             "enabled_benefits_count": enabled_benefits_count,
             "user_verified": user_verified,
-            "account_charges_enabled": account_charges_enabled,
-            "account_payouts_enabled": account_payouts_enabled,
+            "payouts_enabled": payouts_enabled,
             "payment_ready": payment_ready,
             "next_review_threshold": organization.next_review_threshold,
             "total_transfer_sum": total_transfer_sum,
@@ -659,11 +648,10 @@ async def get_organization_detail(
                     pass
             elif section == "account":
                 account_credits: Sequence[AccountCredit] = []
-                if organization.account:
-                    credit_repository = AccountCreditRepository.from_session(session)
-                    account_credits = await credit_repository.get_all_by_account(
-                        organization.account.id
-                    )
+                credit_repository = AccountCreditRepository.from_session(session)
+                account_credits = await credit_repository.get_all_by_account(
+                    organization.account.id
+                )
                 account_section = AccountSection(
                     organization,
                     credits=account_credits,
@@ -2641,9 +2629,6 @@ async def make_admin(
 
     # Change the admin user
     try:
-        if not organization.account:
-            raise HTTPException(status_code=400, detail="Organization has no account")
-
         await account_service.change_admin(
             session, organization.account, user_id, organization_id
         )
@@ -3017,9 +3002,6 @@ async def grant_credit(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
-
     if request.method == "POST":
         form_data = await request.form()
 
@@ -3178,9 +3160,6 @@ async def revoke_credit(
 
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
-
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
 
     # Get the credit
     credit_repository = AccountCreditRepository.from_session(session)

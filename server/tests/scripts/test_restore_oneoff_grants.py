@@ -2,7 +2,7 @@ import pytest
 
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import Benefit, Customer, Organization, Product
+from polar.models import Account, Benefit, Customer, Organization, Product
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.license_key import LicenseKey, LicenseKeyStatus
@@ -25,10 +25,11 @@ from tests.fixtures.random_objects import (
 
 async def _setup_org_customer_product_benefit(
     save_fixture: SaveFixture,
+    account: Account,
 ) -> tuple[Organization, Customer, Product, Benefit, Member]:
     """Shared setup: org with member_model_enabled, customer, product, benefit, owner member."""
     organization = await create_organization(
-        save_fixture, feature_settings={"member_model_enabled": True}
+        save_fixture, account, feature_settings={"member_model_enabled": True}
     )
     customer = await create_customer(
         save_fixture,
@@ -56,6 +57,7 @@ class TestFindDeletedOneoffGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         (
             organization,
@@ -63,7 +65,7 @@ class TestFindDeletedOneoffGrants:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -93,6 +95,7 @@ class TestFindDeletedOneoffGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """The classic backfill bug: one grant survived with member_id,
         the other was soft-deleted without member_id."""
@@ -102,7 +105,7 @@ class TestFindDeletedOneoffGrants:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -136,6 +139,7 @@ class TestFindDeletedOneoffGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Subscription-scoped grants should NOT be restored — only one-off orders."""
         (
@@ -144,7 +148,7 @@ class TestFindDeletedOneoffGrants:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         subscription = await create_subscription(
             save_fixture,
             product=product,
@@ -181,6 +185,7 @@ class TestFindDeletedOneoffGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """If the deleted grant already has member_id, it was not a backfill casualty."""
         (
@@ -189,7 +194,7 @@ class TestFindDeletedOneoffGrants:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -222,6 +227,7 @@ class TestFindDeletedOneoffGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """A lone deleted grant with no sibling is not a backfill duplicate."""
         (
@@ -230,7 +236,7 @@ class TestFindDeletedOneoffGrants:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
 
         deleted_grant = await create_benefit_grant(
@@ -251,6 +257,7 @@ class TestFindDeletedOneoffGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """If the benefit was removed from the product, the surviving sibling
         gets revoked. We must not restore the deleted grant in that case."""
@@ -260,7 +267,7 @@ class TestFindDeletedOneoffGrants:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -294,10 +301,11 @@ class TestFindDeletedOneoffGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Should find affected grants across multiple customers."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         product = await create_product(
             save_fixture, organization=organization, recurring_interval=None
@@ -356,6 +364,7 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Basic restore: clears deleted_at and copies member_id from sibling."""
         (
@@ -364,7 +373,7 @@ class TestRestoreOneoffGrantBatch:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -406,6 +415,7 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """If the deleted grant also had revoked_at set, it should be cleared."""
         (
@@ -414,7 +424,7 @@ class TestRestoreOneoffGrantBatch:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -454,6 +464,7 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """License key referenced by the grant should be un-deleted and re-granted."""
         (
@@ -462,7 +473,7 @@ class TestRestoreOneoffGrantBatch:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -521,6 +532,7 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """If granted_at was cleared, restore should set it."""
         (
@@ -529,7 +541,7 @@ class TestRestoreOneoffGrantBatch:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -564,6 +576,7 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """If the license key is already in good shape, lk_restored should be 0."""
         (
@@ -572,7 +585,7 @@ class TestRestoreOneoffGrantBatch:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -620,6 +633,7 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """If the surviving sibling also has no member_id, the restored grant
         stays unlinked (repair command can link it later)."""
@@ -629,7 +643,7 @@ class TestRestoreOneoffGrantBatch:
             product,
             benefit,
             _,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
         order2 = await create_order(save_fixture, customer=customer, product=product)
 
@@ -666,10 +680,11 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Multiple grants from different customers restored in one batch."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         product = await create_product(
             save_fixture, organization=organization, recurring_interval=None
@@ -734,6 +749,7 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """License key belonging to a different customer should not be restored."""
         (
@@ -742,7 +758,7 @@ class TestRestoreOneoffGrantBatch:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         other_customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -804,6 +820,7 @@ class TestRestoreOneoffGrantBatch:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Passing IDs of healthy grants should not restore/mutate them."""
         (
@@ -812,7 +829,7 @@ class TestRestoreOneoffGrantBatch:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
         order1 = await create_order(save_fixture, customer=customer, product=product)
 
         # A healthy, non-deleted grant
@@ -839,6 +856,7 @@ class TestFindAndRestoreEndToEnd:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """End-to-end: find → restore → verify grants and license keys."""
         (
@@ -847,7 +865,7 @@ class TestFindAndRestoreEndToEnd:
             product,
             benefit,
             owner,
-        ) = await _setup_org_customer_product_benefit(save_fixture)
+        ) = await _setup_org_customer_product_benefit(save_fixture, account)
 
         benefit_lk = await create_benefit(
             save_fixture,

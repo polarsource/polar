@@ -12,21 +12,77 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ─── Font faces ─────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Inter';
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter-Light.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
+}
 
-@font-face { font-family: 'Inter'; font-weight: 300; font-style: normal; font-display: swap; src: url('/fonts/Inter-Light.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-weight: 400; font-style: normal; font-display: swap; src: url('/fonts/Inter-Regular.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-weight: 500; font-style: normal; font-display: swap; src: url('/fonts/Inter-Medium.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-weight: 600; font-style: normal; font-display: swap; src: url('/fonts/Inter-SemiBold.woff2') format('woff2'); }
+@font-face {
+  font-family: 'InterDisplay';
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/InterDisplay-Light.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'InterDisplay';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/InterDisplay-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'InterDisplay';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/InterDisplay-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'InterDisplay';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/InterDisplay-SemiBold.woff2') format('woff2');
+}
 
-@font-face { font-family: 'InterDisplay'; font-weight: 300; font-style: normal; font-display: swap; src: url('/fonts/InterDisplay-Light.woff2') format('woff2'); }
-@font-face { font-family: 'InterDisplay'; font-weight: 400; font-style: normal; font-display: swap; src: url('/fonts/InterDisplay-Regular.woff2') format('woff2'); }
-@font-face { font-family: 'InterDisplay'; font-weight: 500; font-style: normal; font-display: swap; src: url('/fonts/InterDisplay-Medium.woff2') format('woff2'); }
-@font-face { font-family: 'InterDisplay'; font-weight: 600; font-style: normal; font-display: swap; src: url('/fonts/InterDisplay-SemiBold.woff2') format('woff2'); }
+@font-face {
+  font-family: 'Louize';
+  font-style: italic;
+  font-display: swap;
+  src: url('/fonts/Louize-Italic-205TF.otf') format('opentype');
+}
 
-@font-face { font-family: 'Louize'; font-style: italic; font-display: swap; src: url('/fonts/Louize-Italic-205TF.otf') format('opentype'); }
-
-@font-face { font-family: 'GeistMono'; font-style: normal; font-display: swap; src: url('/fonts/GeistMono-Variable.woff2') format('woff2'); }
+@font-face {
+  font-family: 'GeistMono';
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
+}
 
 @theme {
   --shadow-md: 0 0px 15px rgba(0 0 0 / 0.04), 0 0px 2px rgba(0 0 0 / 0.06);

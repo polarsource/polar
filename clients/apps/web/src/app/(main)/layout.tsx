@@ -1,26 +1,11 @@
 import '@/styles/globals.css'
 
 import { CookieConsent } from '@/components/Privacy/CookieConsent'
-import SandboxBanner from '@/components/Sandbox/SandboxBanner'
-import { getExperimentNames } from '@/experiments'
-import { getDistinctId } from '@/experiments/distinct-id'
-import { ExperimentProvider } from '@/experiments/ExperimentProvider'
-import { getExperiments } from '@/experiments/server'
-import { UserContextProvider } from '@/providers/auth'
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
-import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
-import { schemas } from '@polar-sh/client'
-import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { headers } from 'next/headers'
 import { Metadata } from 'next/types'
-import {
-  NavigationHistoryProvider,
-  PolarNuqsProvider,
-  PolarPostHogProvider,
-  PolarQueryClientProvider,
-  PolarThemeProvider,
-} from '../providers'
+import { PolarThemeProvider } from '../providers'
+import RootShell from '../RootShell'
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseMetadata: Metadata = {
@@ -87,76 +72,119 @@ export default async function MainLayout({
 }: {
   children: React.ReactNode
 }) {
-  const api = await getServerSideAPI()
-
-  let authenticatedUser: schemas['UserRead'] | undefined = undefined
-  let userOrganizations: schemas['Organization'][] = []
-
-  try {
-    authenticatedUser = await getAuthenticatedUser()
-    userOrganizations = await getUserOrganizations(api)
-  } catch (e) {
-    if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
-      throw e
-    }
-  }
-
-  const distinctId = await getDistinctId()
-  const experimentVariants = await getExperiments(getExperimentNames(), {
-    distinctId,
-  })
   const headersList = await headers()
   const countryCode = headersList.get('x-vercel-ip-country')
 
   return (
-    <html lang="en" suppressHydrationWarning className="antialiased">
-      <head>
-        <link rel="preload" href="/fonts/Inter-Light.woff2" as="font" type="font/woff2" crossOrigin="" />
-        <link rel="preload" href="/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossOrigin="" />
-        <link rel="preload" href="/fonts/Inter-Medium.woff2" as="font" type="font/woff2" crossOrigin="" />
-        <link rel="preload" href="/fonts/Inter-SemiBold.woff2" as="font" type="font/woff2" crossOrigin="" />
-        <link rel="preload" href="/fonts/InterDisplay-Light.woff2" as="font" type="font/woff2" crossOrigin="" />
-        <link rel="preload" href="/fonts/InterDisplay-Regular.woff2" as="font" type="font/woff2" crossOrigin="" />
-        <link rel="preload" href="/fonts/InterDisplay-Medium.woff2" as="font" type="font/woff2" crossOrigin="" />
-        <link rel="preload" href="/fonts/InterDisplay-SemiBold.woff2" as="font" type="font/woff2" crossOrigin="" />
-        <link rel="preload" href="/fonts/Louize-Italic-205TF.otf" as="font" type="font/otf" crossOrigin="" />
-        <link rel="preload" href="/fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossOrigin="" />
-        {CONFIG.ENVIRONMENT === 'development' ? (
-          <>
-            <link href="/favicon-dev.png" rel="icon" media="(prefers-color-scheme: dark)" />
-            <link href="/favicon-dev-dark.png" rel="icon" media="(prefers-color-scheme: light)" />
-          </>
-        ) : (
-          <>
-            <link href="/favicon.png" rel="icon" media="(prefers-color-scheme: dark)" />
-            <link href="/favicon-dark.png" rel="icon" media="(prefers-color-scheme: light)" />
-          </>
-        )}
-      </head>
-      <body style={{ textRendering: 'optimizeLegibility' }}>
-        <ExperimentProvider experiments={experimentVariants}>
-          <UserContextProvider
-            user={authenticatedUser}
-            userOrganizations={userOrganizations}
-          >
-            <PolarPostHogProvider distinctId={distinctId}>
-              <PolarQueryClientProvider>
-                <PolarNuqsProvider>
-                  <NavigationHistoryProvider>
-                    {CONFIG.IS_SANDBOX && <SandboxBanner />}
-                    <PolarThemeProvider>
-                      <div className="dark:bg-polar-950 h-full bg-white dark:text-white">
-                        {children}
-                        <CookieConsent countryCode={countryCode} />
-                      </div>
-                    </PolarThemeProvider>
-                  </NavigationHistoryProvider>
-                </PolarNuqsProvider>
-              </PolarQueryClientProvider>
-            </PolarPostHogProvider>
-          </UserContextProvider>
-        </ExperimentProvider>
-      </body>
-    </html>
+    <RootShell
+      head={
+        <>
+          <link
+            rel="preload"
+            href="/fonts/Inter-Light.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/Inter-Regular.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/Inter-Medium.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/Inter-SemiBold.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/InterDisplay-Light.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/InterDisplay-Regular.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/InterDisplay-Medium.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/InterDisplay-SemiBold.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/Louize-Italic-205TF.otf"
+            as="font"
+            type="font/otf"
+            crossOrigin=""
+          />
+          <link
+            rel="preload"
+            href="/fonts/GeistMono-Variable.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+          />
+          {CONFIG.ENVIRONMENT === 'development' ? (
+            <>
+              <link
+                href="/favicon-dev.png"
+                rel="icon"
+                media="(prefers-color-scheme: dark)"
+              />
+              <link
+                href="/favicon-dev-dark.png"
+                rel="icon"
+                media="(prefers-color-scheme: light)"
+              />
+            </>
+          ) : (
+            <>
+              <link
+                href="/favicon.png"
+                rel="icon"
+                media="(prefers-color-scheme: dark)"
+              />
+              <link
+                href="/favicon-dark.png"
+                rel="icon"
+                media="(prefers-color-scheme: light)"
+              />
+            </>
+          )}
+        </>
+      }
+    >
+      <PolarThemeProvider>
+        <div className="dark:bg-polar-950 h-full bg-white dark:text-white">
+          {children}
+          <CookieConsent countryCode={countryCode} />
+        </div>
+      </PolarThemeProvider>
+    </RootShell>
   )
 }

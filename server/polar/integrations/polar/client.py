@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 import structlog
+from polar_sdk.models.polarerror import PolarError
 
 from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
@@ -38,17 +39,15 @@ class PolarSelfClient:
     async def create_customer(
         self, *, external_id: str, email: str, name: str, organization_id: str
     ) -> None:
-        from polar_sdk.models import CustomerCreate, CustomerType
-        from polar_sdk.models.polarerror import PolarError
+        from polar_sdk.models import CustomerTeamCreate
 
         try:
             await self._sdk.customers.create_async(
-                request=CustomerCreate(
+                request=CustomerTeamCreate(
                     email=email,
                     name=name,
                     external_id=external_id,
                     organization_id=organization_id,
-                    type=CustomerType.TEAM,
                 )
             )
         except PolarError as e:

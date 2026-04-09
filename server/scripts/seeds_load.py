@@ -48,8 +48,8 @@ from polar.models.organization import (
     OrganizationDetails,
     OrganizationStatus,
 )
+from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
-from polar.models.personal_access_token import PersonalAccessToken
 from polar.models.product import Product
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -58,7 +58,6 @@ from polar.models.product_price import (
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.models.user import IdentityVerificationStatus
-from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, create_async_engine
@@ -1093,8 +1092,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
 
 POLAR_ORG_SLUG = "polar"
-PAT_COMMENT = "Polar self-integration (dev seed)"
-PAT_SCOPES = " ".join(
+TOKEN_COMMENT = "Polar self-integration (dev seed)"
+TOKEN_SCOPES = " ".join(
     [
         Scope.customers_read,
         Scope.customers_write,
@@ -1150,43 +1149,33 @@ def polar_self_env() -> None:
             if product is None:
                 raise typer.Exit(1)
 
-            user_org = (
-                await session.execute(
-                    select(UserOrganization).where(
-                        UserOrganization.organization_id == org.id
-                    )
-                )
-            ).scalar_one_or_none()
-            if user_org is None:
-                raise typer.Exit(1)
-
-            # Delete any existing dev seed PAT
+            # Delete any existing dev seed token
             existing = (
                 (
                     await session.execute(
-                        select(PersonalAccessToken).where(
-                            PersonalAccessToken.user_id == user_org.user_id,
-                            PersonalAccessToken.comment == PAT_COMMENT,
+                        select(OrganizationAccessToken).where(
+                            OrganizationAccessToken.organization_id == org.id,
+                            OrganizationAccessToken.comment == TOKEN_COMMENT,
                         )
                     )
                 )
                 .scalars()
                 .all()
             )
-            for pat in existing:
-                await session.delete(pat)
+            for t in existing:
+                await session.delete(t)
 
             token, token_hash = generate_token_hash_pair(
                 secret=settings.SECRET,
-                prefix="polar_pat_",
+                prefix="polar_oat_",
             )
-            pat = PersonalAccessToken(
-                user_id=user_org.user_id,
+            oat = OrganizationAccessToken(
+                organization_id=org.id,
                 token=token_hash,
-                scope=PAT_SCOPES,
-                comment=PAT_COMMENT,
+                scope=TOKEN_SCOPES,
+                comment=TOKEN_COMMENT,
             )
-            session.add(pat)
+            session.add(oat)
             await session.commit()
 
             print(f"POLAR_POLAR_ORGANIZATION_ID={org.id}")

@@ -59,6 +59,7 @@ from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
+from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
@@ -1612,7 +1613,7 @@ async def offboard_dialog(
         await review_repo.record_human_decision(
             organization_id=organization_id,
             reviewer_id=user_session.user.id,
-            decision="OFFBOARD",
+            decision=OrganizationReviewFeedback.DecisionType.DENY,
             reason=reason,
         )
 
@@ -1698,7 +1699,7 @@ async def reactivate_dialog(
         await review_repo.record_human_decision(
             organization_id=organization_id,
             reviewer_id=user_session.user.id,
-            decision="REACTIVATE",
+            decision=OrganizationReviewFeedback.DecisionType.APPROVE,
         )
 
         await organization_service.reactivate_organization(session, organization)

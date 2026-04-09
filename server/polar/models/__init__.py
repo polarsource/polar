@@ -79,6 +79,7 @@ from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
+from .support_document import SupportDocument
 from .transaction import Transaction
 from .trial_redemption import TrialRedemption
 from .user import OAuthAccount, User
@@ -174,6 +175,7 @@ __all__ = [
     "SubscriptionMeter",
     "SubscriptionProductPrice",
     "SubscriptionUpdate",
+    "SupportDocument",
     "TimestampedModel",
     "Transaction",
     "TrialRedemption",

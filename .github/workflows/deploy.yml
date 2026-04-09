@@ -84,6 +84,9 @@ jobs:
       - name: Sync AUP to server
         run: cp "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx" "server/polar/organization_review/acceptable-use-policy.mdx"
 
+      - name: Sync docs for support agent
+        run: cp -r docs/ server/support-docs/
+
       - uses: useblacksmith/build-push-action@v2
         id: push
         with:

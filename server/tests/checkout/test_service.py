@@ -3242,10 +3242,10 @@ class TestUpdate:
     @pytest.mark.parametrize(
         "pad",
         [
-            pytest.param(" ", id="trailing_space"),
-            pytest.param("  ", id="trailing_spaces"),
-            pytest.param(" \t", id="trailing_mixed"),
-            pytest.param("\t", id="leading_tab"),
+            pytest.param(" ", id="single_space"),
+            pytest.param("  ", id="double_space"),
+            pytest.param(" \t", id="mixed_space_tab"),
+            pytest.param("\t", id="tab"),
         ],
     )
     async def test_valid_discount_code_with_whitespace(

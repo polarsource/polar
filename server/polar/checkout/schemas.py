@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Any, Literal
 
 from annotated_types import Ge, Le, MaxLen, MinLen
 from pydantic import (
@@ -46,6 +46,7 @@ from polar.kit.schemas import (
     IDSchema,
     Schema,
     SetSchemaReference,
+    StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import (
@@ -418,15 +419,9 @@ class CheckoutUpdate(
 class CheckoutUpdatePublic(CheckoutUpdateBase):
     """Update an existing checkout session using the client secret."""
 
-    discount_code: str | None = Field(
+    discount_code: Annotated[str, StripValidator] | None = Field(
         default=None, description="Discount code to apply to the checkout."
     )
-
-    @model_validator(mode="after")
-    def _strip_discount_code(self) -> Self:
-        if self.discount_code is not None:
-            self.discount_code = self.discount_code.strip()
-        return self
 
     allow_trial: Literal[False] | None = Field(
         default=None,

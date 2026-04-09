@@ -7,13 +7,15 @@ import SharedLayout from './components/SharedLayout'
 
 const isSubTypeOrganization = (
   sub_type: string,
-  _sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
-): _sub is schemas['AuthorizeOrganization'] => sub_type === 'organization'
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
+): sub is schemas['AuthorizeOrganization'] => sub_type === 'organization'
 
 const isSubTypeUser = (
   sub_type: string,
-  _sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
-): _sub is schemas['AuthorizeUser'] => sub_type === 'user'
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
+): sub is schemas['AuthorizeUser'] => sub_type === 'user'
 
 const groupScopes = (scopes: schemas['Scope'][]) => {
   return scopes.reduce<Record<string, schemas['Scope'][]>>((acc, scope) => {

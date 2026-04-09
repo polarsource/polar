@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Ge, Le, MaxLen, MinLen
 from pydantic import (
@@ -421,6 +421,12 @@ class CheckoutUpdatePublic(CheckoutUpdateBase):
     discount_code: str | None = Field(
         default=None, description="Discount code to apply to the checkout."
     )
+
+    @model_validator(mode="after")
+    def _strip_discount_code(self) -> Self:
+        if self.discount_code is not None:
+            self.discount_code = self.discount_code.strip()
+        return self
     allow_trial: Literal[False] | None = Field(
         default=None,
         description=(

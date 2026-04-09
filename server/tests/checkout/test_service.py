@@ -3239,6 +3239,32 @@ class TestUpdate:
             )
         )
 
+    @pytest.mark.parametrize(
+        "pad",
+        [
+            pytest.param(" ", id="trailing_space"),
+            pytest.param("  ", id="trailing_spaces"),
+            pytest.param(" \t", id="trailing_mixed"),
+            pytest.param("\t", id="leading_tab"),
+        ],
+    )
+    async def test_valid_discount_code_with_whitespace(
+        self,
+        pad: str,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+        discount_fixed_once: Discount,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(
+                discount_code=f"{pad}{discount_fixed_once.code}{pad}",
+            ),
+        )
+
+        assert checkout.discount == discount_fixed_once
+
     async def test_full_discount_resets_is_business_customer(
         self,
         save_fixture: SaveFixture,

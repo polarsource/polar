@@ -11,6 +11,7 @@ from tagflow import tag, text
 
 from polar.models import Organization, User
 from polar.models.organization import OrganizationStatus
+from polar.organization_review.schemas import ReviewVerdict
 
 from ...components import (
     Tab,
@@ -356,7 +357,7 @@ class OrganizationDetailView:
                         current_threshold = self.org.next_review_threshold or 0
                         suggested_threshold = max(25000, current_threshold * 2)
                         threshold_dollars = suggested_threshold // 100
-                        is_override = self.ai_verdict == "DENY"
+                        is_override = self.ai_verdict == ReviewVerdict.DENY.value
 
                         if is_override:
                             # AI disagrees: open modal for reason + threshold

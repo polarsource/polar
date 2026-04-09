@@ -9,6 +9,7 @@ from tagflow import tag, text
 
 from polar.models import Organization
 from polar.models.organization_agent_review import OrganizationAgentReview
+from polar.organization_review.schemas import ActorType
 
 from ....components import card
 from ._shared import RISK_LEVEL_BADGE, VERDICT_BADGE, render_dimension
@@ -61,7 +62,7 @@ class ReviewsSection:
         # Split feedbacks into agent and human
         feedbacks = review.review_feedbacks
         human_feedback = next(
-            (fb for fb in feedbacks if fb.actor_type == "human"), None
+            (fb for fb in feedbacks if fb.actor_type == ActorType.HUMAN), None
         )
 
         with tag.div(classes="border border-base-300 rounded-lg overflow-hidden"):

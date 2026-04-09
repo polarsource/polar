@@ -7,7 +7,14 @@ from polar.config import settings
 
 from .known_domains import known_domains_for_prompt, match_known_domain
 from .policy import fetch_policy_content
-from .schemas import DataSnapshot, ReviewAgentReport, ReviewContext, UsageInfo
+from .schemas import (
+    ActorType,
+    DataSnapshot,
+    DecisionType,
+    ReviewAgentReport,
+    ReviewContext,
+    UsageInfo,
+)
 from .thresholds import thresholds_for_prompt
 
 log = structlog.get_logger(__name__)
@@ -759,7 +766,8 @@ class ReviewAnalyzer:
             human_approvals = [
                 e
                 for e in prior_feedback.entries
-                if e.actor_type == "human" and e.decision == "APPROVE"
+                if e.actor_type == ActorType.HUMAN
+                and e.decision == DecisionType.APPROVE
             ]
             parts.append("\n## Prior Review Decisions")
             if human_approvals:

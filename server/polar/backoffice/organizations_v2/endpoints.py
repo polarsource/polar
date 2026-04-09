@@ -66,7 +66,12 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization_review.repository import OrganizationReviewRepository
-from polar.organization_review.schemas import ReviewAgentReport
+from polar.organization_review.schemas import (
+    DecisionType,
+    ReviewAgentReport,
+    ReviewContext,
+    ReviewVerdict,
+)
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
@@ -782,7 +787,7 @@ async def approve_dialog(
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     review_report = _get_review_report(agent_review)
     verdict = review_report.verdict.value if review_report else ""
-    is_override = verdict == "DENY"
+    is_override = verdict == ReviewVerdict.DENY.value
 
     # Suggested threshold: double current or $250 min
     current_threshold = organization.next_review_threshold or 0
@@ -798,7 +803,7 @@ async def approve_dialog(
         await review_repo.record_human_decision(
             organization_id=organization_id,
             reviewer_id=user_session.user.id,
-            decision="APPROVE",
+            decision=DecisionType.APPROVE,
         )
         await organization_service.confirm_organization_reviewed(
             session, organization, threshold
@@ -829,7 +834,7 @@ async def approve_dialog(
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
-                decision="APPROVE",
+                decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
             await organization_service.confirm_organization_reviewed(
@@ -920,7 +925,7 @@ async def run_review_agent(
     enqueue_job(
         "organization_review.run_agent",
         organization_id=organization.id,
-        context="manual",
+        context=ReviewContext.MANUAL,
     )
 
     return HXRedirectResponse(
@@ -968,7 +973,7 @@ async def deny_dialog(
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
-                decision="DENY",
+                decision=DecisionType.DENY,
                 reason=override_reason,
             )
 
@@ -1062,7 +1067,7 @@ async def approve_denied_dialog(
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     review_report = _get_review_report(agent_review)
     verdict = review_report.verdict.value if review_report else ""
-    is_override = verdict == "DENY"
+    is_override = verdict == ReviewVerdict.DENY.value
 
     error_message: str | None = None
 
@@ -1083,7 +1088,7 @@ async def approve_denied_dialog(
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
-                decision="APPROVE",
+                decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
 
@@ -1220,8 +1225,8 @@ async def deny_appeal_dialog(
         await review_repo.record_human_decision(
             organization_id=organization_id,
             reviewer_id=user_session.user.id,
-            decision="DENY",
-            review_context="appeal",
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.APPEAL,
             reason=reason,
         )
 
@@ -1322,7 +1327,7 @@ async def unblock_approve_dialog(
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     review_report = _get_review_report(agent_review)
     verdict = review_report.verdict.value if review_report else ""
-    is_override = verdict == "DENY"
+    is_override = verdict == ReviewVerdict.DENY.value
 
     error_message: str | None = None
 
@@ -1343,7 +1348,7 @@ async def unblock_approve_dialog(
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
-                decision="APPROVE",
+                decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
 

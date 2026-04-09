@@ -12,7 +12,18 @@ from polar.kit.schemas import Schema
 if TYPE_CHECKING:
     from pydantic_ai.usage import RunUsage as Usage
 
-# --- Review context ---
+# --- Review enums ---
+
+
+class ActorType(StrEnum):
+    AGENT = "agent"
+    HUMAN = "human"
+
+
+class DecisionType(StrEnum):
+    APPROVE = "APPROVE"
+    DENY = "DENY"
+    ESCALATE = "ESCALATE"
 
 
 class ReviewContext(StrEnum):
@@ -20,6 +31,7 @@ class ReviewContext(StrEnum):
     SETUP_COMPLETE = "setup_complete"  # Review when account setup is complete
     THRESHOLD = "threshold"  # Following reviews when payment threshold hit
     MANUAL = "manual"  # Full manual review triggered from backoffice
+    APPEAL = "appeal"  # Appeal of a previous denial
 
 
 # --- Shared utility schemas ---

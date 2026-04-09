@@ -44,6 +44,7 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.organization_review.repository import OrganizationReviewRepository
+from polar.organization_review.schemas import DecisionType, ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
@@ -1048,16 +1049,20 @@ async def get(
             reason = getattr(account_status, "reason", None)
             reason = reason.strip() if reason else None
 
-            def _is_override(human_decision: str) -> bool:
+            def _is_override(human_decision: DecisionType) -> bool:
                 """Check if the human decision contradicts the AI verdict."""
                 if ai_verdict is None:
                     return False
-                return (human_decision == "APPROVE" and ai_verdict == "DENY") or (
-                    human_decision == "DENY" and ai_verdict == "APPROVE"
+                return (
+                    human_decision == DecisionType.APPROVE
+                    and ai_verdict == ReviewVerdict.DENY.value
+                ) or (
+                    human_decision == DecisionType.DENY
+                    and ai_verdict == ReviewVerdict.APPROVE.value
                 )
 
             if account_status.action == "approve":
-                if _is_override("APPROVE") and not reason:
+                if _is_override(DecisionType.APPROVE) and not reason:
                     raise PydanticCustomError(
                         "override_reason_required",
                         "A reason is required when overriding the AI recommendation.",
@@ -1065,14 +1070,14 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision="APPROVE",
+                    decision=DecisionType.APPROVE,
                     reason=reason,
                 )
                 await organization_service.confirm_organization_reviewed(
                     session, organization, account_status.next_review_threshold
                 )
             elif account_status.action == "deny":
-                if _is_override("DENY") and not reason:
+                if _is_override(DecisionType.DENY) and not reason:
                     raise PydanticCustomError(
                         "override_reason_required",
                         "A reason is required when overriding the AI recommendation.",
@@ -1080,7 +1085,7 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision="DENY",
+                    decision=DecisionType.DENY,
                     reason=reason,
                 )
                 await organization_service.deny_organization(session, organization)
@@ -1089,7 +1094,7 @@ async def get(
                     session, organization
                 )
             elif account_status.action == "approve_appeal":
-                if _is_override("APPROVE") and not reason:
+                if _is_override(DecisionType.APPROVE) and not reason:
                     raise PydanticCustomError(
                         "override_reason_required",
                         "A reason is required when overriding the AI recommendation.",
@@ -1097,13 +1102,13 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision="APPROVE",
-                    review_context="appeal",
+                    decision=DecisionType.APPROVE,
+                    review_context=ReviewContext.APPEAL,
                     reason=reason,
                 )
                 await organization_service.approve_appeal(session, organization)
             elif account_status.action == "deny_appeal":
-                if _is_override("DENY") and not reason:
+                if _is_override(DecisionType.DENY) and not reason:
                     raise PydanticCustomError(
                         "override_reason_required",
                         "A reason is required when overriding the AI recommendation.",
@@ -1111,8 +1116,8 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision="DENY",
-                    review_context="appeal",
+                    decision=DecisionType.DENY,
+                    review_context=ReviewContext.APPEAL,
                     reason=reason,
                 )
                 await organization_service.deny_appeal(session, organization)

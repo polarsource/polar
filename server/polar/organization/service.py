@@ -38,7 +38,12 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
-from polar.organization_review.schemas import ReviewContext, ReviewVerdict
+from polar.organization_review.schemas import (
+    ActorType,
+    DecisionType,
+    ReviewContext,
+    ReviewVerdict,
+)
 from polar.payout_account.repository import PayoutAccountRepository
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncReadSession, AsyncSession, sql
@@ -835,9 +840,9 @@ class OrganizationService:
         await review_repository.deactivate_current_decisions(organization.id)
         await review_repository.save_review_decision(
             organization_id=organization.id,
-            actor_type="human",
-            decision="ESCALATE",
-            review_context="manual",
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.ESCALATE,
+            review_context=ReviewContext.MANUAL,
         )
 
         if enqueue_review:

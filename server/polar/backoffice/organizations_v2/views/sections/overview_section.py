@@ -12,7 +12,7 @@ from tagflow import tag, text
 from polar.config import settings
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
-from polar.organization_review.schemas import DimensionAssessment
+from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
 from polar.organization_review.thresholds import (
     AUTH_RATE,
     CHARGEBACK_RATE,
@@ -223,10 +223,10 @@ class OverviewSection(ChecklistMixin):
             has_missing = bool(self.missing_items)
             with tag.div(classes="flex items-center gap-4 mb-4"):
                 verdict = review_report.verdict.value
-                if verdict == "APPROVE" and has_missing:
+                if verdict == ReviewVerdict.APPROVE.value and has_missing:
                     badge_class = "badge-neutral"
                     display_verdict = "APPROVE (checklist incomplete)"
-                elif verdict == "DENY":
+                elif verdict == ReviewVerdict.DENY.value:
                     badge_class = "badge-error"
                     display_verdict = verdict
                 else:

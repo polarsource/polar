@@ -12,7 +12,9 @@ from polar.organization_review.report import (
 )
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
+    ActorType,
     DataSnapshot,
+    DecisionType,
     DimensionAssessment,
     HistoryData,
     IdentityData,
@@ -220,7 +222,7 @@ class TestRecordHumanDecision:
         decision = await repo.record_human_decision(
             organization_id=organization.id,
             reviewer_id=user.id,
-            decision="APPROVE",
+            decision=DecisionType.APPROVE,
             reason="Looks good",
         )
         await session.flush()
@@ -256,7 +258,7 @@ class TestRecordHumanDecision:
         decision = await repo.record_human_decision(
             organization_id=organization.id,
             reviewer_id=user.id,
-            decision="APPROVE",
+            decision=DecisionType.APPROVE,
             reason="False positive",
         )
         await session.flush()
@@ -288,12 +290,12 @@ class TestRecordHumanDecision:
         decision = await repo.record_human_decision(
             organization_id=organization.id,
             reviewer_id=user.id,
-            decision="APPROVE",
-            review_context="appeal",
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.APPEAL,
         )
         await session.flush()
 
-        assert decision.review_context == "appeal"
+        assert decision.review_context == ReviewContext.APPEAL
 
     async def test_without_agent_review(
         self,
@@ -306,13 +308,13 @@ class TestRecordHumanDecision:
         decision = await repo.record_human_decision(
             organization_id=organization.id,
             reviewer_id=user.id,
-            decision="APPROVE",
+            decision=DecisionType.APPROVE,
         )
         await session.flush()
 
-        assert decision.actor_type == "human"
-        assert decision.decision == "APPROVE"
-        assert decision.review_context == "manual"
+        assert decision.actor_type == ActorType.HUMAN
+        assert decision.decision == DecisionType.APPROVE
+        assert decision.review_context == ReviewContext.MANUAL
         assert decision.agent_review_id is None
         assert decision.verdict is None
         assert decision.risk_score is None
@@ -329,15 +331,15 @@ class TestRecordHumanDecision:
         first = await repo.record_human_decision(
             organization_id=organization.id,
             reviewer_id=user.id,
-            decision="DENY",
+            decision=DecisionType.DENY,
         )
         await session.flush()
 
         second = await repo.record_human_decision(
             organization_id=organization.id,
             reviewer_id=user.id,
-            decision="APPROVE",
-            review_context="appeal",
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.APPEAL,
         )
         await session.flush()
 
@@ -356,18 +358,18 @@ class TestSaveReviewDecision:
         repo = OrganizationReviewRepository.from_session(session)
         decision = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
-            verdict="APPROVE",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
+            verdict=ReviewVerdict.APPROVE,
             risk_score=15.0,
         )
         await session.flush()
 
         assert decision.organization_id == organization.id
-        assert decision.actor_type == "agent"
-        assert decision.decision == "APPROVE"
-        assert decision.review_context == "threshold"
+        assert decision.actor_type == ActorType.AGENT
+        assert decision.decision == DecisionType.APPROVE
+        assert decision.review_context == ReviewContext.THRESHOLD
         assert decision.verdict == "APPROVE"
         assert decision.risk_score == 15.0
         assert decision.reviewer_id is None
@@ -396,20 +398,20 @@ class TestSaveReviewDecision:
 
         decision = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="human",
-            decision="APPROVE",
-            review_context="manual",
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.MANUAL,
             agent_review_id=agent_review.id,
             reviewer_id=user.id,
-            verdict="DENY",
+            verdict=ReviewVerdict.DENY,
             risk_score=85.0,
             reason="Verified legitimate business",
         )
         await session.flush()
 
         assert decision.organization_id == organization.id
-        assert decision.actor_type == "human"
-        assert decision.decision == "APPROVE"
+        assert decision.actor_type == ActorType.HUMAN
+        assert decision.decision == DecisionType.APPROVE
         assert decision.reviewer_id == user.id
         assert decision.agent_review_id == agent_review.id
         assert decision.verdict == "DENY"
@@ -424,9 +426,9 @@ class TestSaveReviewDecision:
         repo = OrganizationReviewRepository.from_session(session)
         decision = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="ESCALATE",
-            review_context="setup_complete",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.ESCALATE,
+            review_context=ReviewContext.SETUP_COMPLETE,
         )
         await session.flush()
 
@@ -443,15 +445,15 @@ class TestGetCurrentDecision:
         repo = OrganizationReviewRepository.from_session(session)
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
         )
         await session.flush()
 
         current = await repo.get_current_decision(organization.id)
         assert current is not None
-        assert current.decision == "APPROVE"
+        assert current.decision == DecisionType.APPROVE
 
     async def test_returns_none_when_no_decision(
         self,
@@ -470,9 +472,9 @@ class TestGetCurrentDecision:
         repo = OrganizationReviewRepository.from_session(session)
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
             is_current=False,
         )
         await session.flush()
@@ -491,9 +493,9 @@ class TestDeactivateCurrentDecisions:
         repo = OrganizationReviewRepository.from_session(session)
         decision = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
         )
         await session.flush()
         assert decision.is_current is True
@@ -522,9 +524,9 @@ class TestDeactivateCurrentDecisions:
         # First decision
         first = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
         )
         await session.flush()
 
@@ -532,9 +534,9 @@ class TestDeactivateCurrentDecisions:
         await repo.deactivate_current_decisions(organization.id)
         second = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="human",
-            decision="DENY",
-            review_context="manual",
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.MANUAL,
         )
         await session.flush()
 
@@ -571,16 +573,16 @@ class TestRecordAgentDecision:
         decision = await repo.record_agent_decision(
             organization_id=organization.id,
             agent_review_id=agent_review.id,
-            decision="APPROVE",
-            review_context="threshold",
-            verdict="APPROVE",
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
+            verdict=ReviewVerdict.APPROVE,
             risk_score=10.0,
         )
         await session.flush()
 
-        assert decision.actor_type == "agent"
-        assert decision.decision == "APPROVE"
-        assert decision.review_context == "threshold"
+        assert decision.actor_type == ActorType.AGENT
+        assert decision.decision == DecisionType.APPROVE
+        assert decision.review_context == ReviewContext.THRESHOLD
         assert decision.verdict == "APPROVE"
         assert decision.risk_score == 10.0
         assert decision.agent_review_id == agent_review.id
@@ -607,18 +609,18 @@ class TestRecordAgentDecision:
         first = await repo.record_agent_decision(
             organization_id=organization.id,
             agent_review_id=agent_review.id,
-            decision="APPROVE",
-            review_context="threshold",
-            verdict="APPROVE",
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
+            verdict=ReviewVerdict.APPROVE,
         )
         await session.flush()
 
         second = await repo.record_agent_decision(
             organization_id=organization.id,
             agent_review_id=agent_review.id,
-            decision="DENY",
-            review_context="submission",
-            verdict="DENY",
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
+            verdict=ReviewVerdict.DENY,
         )
         await session.flush()
 

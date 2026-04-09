@@ -17,7 +17,9 @@ from polar.organization_review.report import (
 )
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
+    ActorType,
     DataSnapshot,
+    DecisionType,
     DimensionAssessment,
     HistoryData,
     IdentityData,
@@ -663,9 +665,9 @@ class TestGetFeedbackHistory:
         # Create two decisions in reverse chronological order
         second = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="human",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
             reviewer_id=user.id,
             reason="Looks good",
         )
@@ -673,9 +675,9 @@ class TestGetFeedbackHistory:
 
         first = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="DENY",
-            review_context="submission",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
             is_current=False,
         )
         await session.flush()
@@ -714,11 +716,11 @@ class TestGetFeedbackHistory:
 
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="DENY",
-            review_context="submission",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
             agent_review_id=agent_review.id,
-            verdict="DENY",
+            verdict=ReviewVerdict.DENY,
             risk_score=85.0,
         )
         await session.flush()
@@ -743,9 +745,9 @@ class TestGetFeedbackHistory:
 
         decision = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
         )
         await session.flush()
 
@@ -766,15 +768,15 @@ class TestGetFeedbackHistory:
 
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
         )
         await repo.save_review_decision(
             organization_id=organization_second.id,
-            actor_type="agent",
-            decision="DENY",
-            review_context="submission",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
         )
         await session.flush()
 
@@ -834,11 +836,11 @@ class TestCollectFeedbackDataIntegration:
         # Agent decision
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="DENY",
-            review_context="submission",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
             agent_review_id=agent_review.id,
-            verdict="DENY",
+            verdict=ReviewVerdict.DENY,
             risk_score=85.0,
             is_current=False,
         )
@@ -847,12 +849,12 @@ class TestCollectFeedbackDataIntegration:
         # Human override
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="human",
-            decision="APPROVE",
-            review_context="submission",
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.SUBMISSION,
             agent_review_id=agent_review.id,
             reviewer_id=user.id,
-            verdict="DENY",
+            verdict=ReviewVerdict.DENY,
             risk_score=85.0,
             reason="Reviewed pricing, it's legitimate for enterprise SaaS",
         )

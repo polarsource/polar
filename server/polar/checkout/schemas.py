@@ -427,6 +427,7 @@ class CheckoutUpdatePublic(CheckoutUpdateBase):
         if self.discount_code is not None:
             self.discount_code = self.discount_code.strip()
         return self
+
     allow_trial: Literal[False] | None = Field(
         default=None,
         description=(

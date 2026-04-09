@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
+from polar.subscription.schemas import SubscriptionID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -73,6 +74,9 @@ async def list(
     checkout_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="CheckoutID Filter", description="Filter by checkout ID."
     ),
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrderSchema]:
     """List orders."""
@@ -86,6 +90,7 @@ async def list(
         customer_id=customer_id,
         external_customer_id=external_customer_id,
         checkout_id=checkout_id,
+        subscription_id=subscription_id,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,

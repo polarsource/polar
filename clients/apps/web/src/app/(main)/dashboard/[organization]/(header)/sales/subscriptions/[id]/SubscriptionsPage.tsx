@@ -20,6 +20,7 @@ import {
   useUncancelSubscription,
 } from '@/hooks/queries'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
+import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List } from '@polar-sh/ui/components/atoms/List'
@@ -215,6 +216,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
         subscription.status === 'trialing') && (
         <UpcomingChargeCard subscription={subscription} />
       )}
+
+      <SubscriptionOrdersSection
+        organization={organization}
+        subscription={subscription}
+      />
 
       <div className="flex flex-col gap-4 md:hidden">
         <CustomerContextView

@@ -170,7 +170,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
             {product.is_archived ? null : (
               <div>
                 <Button
-                  size="sm"
                   variant="secondary"
                   onClick={() => {
                     router.push(
@@ -185,7 +184,10 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
             <div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="icon" variant="secondary">
+                  <Button
+                    className="aspect-square h-10 w-10"
+                    variant="secondary"
+                  >
                     <MoreVert fontSize="small" />
                   </Button>
                 </DropdownMenuTrigger>

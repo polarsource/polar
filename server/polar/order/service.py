@@ -305,6 +305,7 @@ class OrderService:
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
+        subscription_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[OrderSortProperty]] = [
@@ -349,6 +350,9 @@ class OrderService:
 
         if checkout_id is not None:
             statement = statement.where(Order.checkout_id.in_(checkout_id))
+
+        if subscription_id is not None:
+            statement = statement.where(Order.subscription_id.in_(subscription_id))
 
         if metadata is not None:
             statement = apply_metadata_clause(Order, statement, metadata)

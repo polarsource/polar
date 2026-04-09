@@ -32790,6 +32790,8 @@ export interface operations {
         external_customer_id?: string | string[] | null
         /** @description Filter by checkout ID. */
         checkout_id?: string | string[] | null
+        /** @description Filter by subscription ID. */
+        subscription_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

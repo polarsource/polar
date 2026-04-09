@@ -116,7 +116,6 @@ const MeterFormUnit = () => {
             control={control}
             name="custom_multiplier"
             rules={{
-              required: 'Required for custom unit',
               min: { value: 1, message: 'Must be at least 1' },
             }}
             render={({ field }) => (

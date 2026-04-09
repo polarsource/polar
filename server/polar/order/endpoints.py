@@ -5,7 +5,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
-from polar.subscription.schemas import SubscriptionID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -23,6 +22,7 @@ from polar.postgres import (
 )
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.subscription.schemas import SubscriptionID
 
 from . import auth, sorting
 from .schemas import Order as OrderSchema

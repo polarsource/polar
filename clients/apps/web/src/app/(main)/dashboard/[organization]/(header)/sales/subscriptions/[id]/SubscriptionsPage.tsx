@@ -110,7 +110,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
           {subscription.status !== 'canceled' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="secondary" size="default" className="aspect-square px-0">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="default"
+                  className="aspect-square px-0"
+                >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

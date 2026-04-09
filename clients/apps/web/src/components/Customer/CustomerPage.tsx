@@ -566,7 +566,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 label="Country"
                 value={
                   customer.billing_address?.country
-                    ? `${customer.billing_address.country} — ${regionName.of(customer.billing_address?.country)}`
+                    ? regionName.of(customer.billing_address?.country)
                     : undefined
                 }
               />

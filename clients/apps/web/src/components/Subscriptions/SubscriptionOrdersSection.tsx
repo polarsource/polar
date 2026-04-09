@@ -3,10 +3,7 @@
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 
-const BILLING_REASON_LABELS: Record<
-  schemas['OrderBillingReason'],
-  string
-> = {
+const BILLING_REASON_LABELS: Record<schemas['OrderBillingReason'], string> = {
   purchase: 'Purchase',
   subscription_create: 'New Subscription',
   subscription_cycle: 'Renewal',

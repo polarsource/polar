@@ -103,9 +103,9 @@ function mockXHR(options: { status?: number; etag?: string | null } = {}) {
 
   vi.stubGlobal(
     'XMLHttpRequest',
-    vi.fn().mockImplementation(() => ({
-      open: vi.fn(),
-      send: vi.fn().mockImplementation(function (this: MockXHRInstance) {
+    vi.fn().mockImplementation(function (this: MockXHRInstance) {
+      this.open = vi.fn()
+      this.send = vi.fn().mockImplementation(function (this: MockXHRInstance) {
         if (this.upload?.onprogress) {
           this.upload.onprogress.call(
             {} as XMLHttpRequestUpload,
@@ -116,24 +116,22 @@ function mockXHR(options: { status?: number; etag?: string | null } = {}) {
         this.status = status
         this.statusText = status === 200 ? 'OK' : 'Error'
         this.onreadystatechange?.call({} as XMLHttpRequest, {} as Event)
-      }),
-      setRequestHeader: vi.fn(),
-      getResponseHeader: vi.fn().mockImplementation((header: string) => {
-        if (header === 'ETag') return etag
-        return null
-      }),
-      readyState: 0,
-      status: 0,
-      statusText: '',
-      onreadystatechange: null as
-        | ((this: XMLHttpRequest, ev: Event) => void)
-        | null,
-      upload: {
-        onprogress: null as
-          | ((this: XMLHttpRequestUpload, ev: ProgressEvent) => void)
-          | null,
-      },
-    })),
+      })
+      this.setRequestHeader = vi.fn()
+      this.getResponseHeader = vi
+        .fn()
+        .mockImplementation((header: string) => {
+          if (header === 'ETag') return etag
+          return null
+        })
+      this.readyState = 0
+      this.status = 0
+      this.statusText = ''
+      this.onreadystatechange = null
+      this.upload = {
+        onprogress: null,
+      }
+    }),
   )
 }
 

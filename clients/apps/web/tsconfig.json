@@ -7,6 +7,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["src", ".next/types/**/*.ts"],
+  "include": ["src", ".next/types/**/*.ts", "vitest.setup.ts"],
   "exclude": ["node_modules"]
 }

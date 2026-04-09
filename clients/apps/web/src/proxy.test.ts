@@ -255,9 +255,15 @@ describe('middleware function', () => {
     const request = new NextRequest('https://example.com/dashboard')
     request.cookies.set('polar_session', 'valid-session-token')
 
+    // Suppress console.error — Next.js patches console to use AsyncLocalStorage
+    // which is unavailable in vitest's jsdom environment
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
     await expect(proxy(request)).rejects.toThrow(
       'Unexpected response status while fetching authenticated user',
     )
+
+    vi.mocked(console.error).mockRestore()
   })
 
   it('should handle 401 responses gracefully', async () => {

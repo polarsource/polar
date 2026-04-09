@@ -17,6 +17,10 @@
     "typecheck": "tsc --noEmit"
   },
   "exports": {
+    "./test-utils": {
+      "types": "./dist/test-utils/makeCheckout.d.ts",
+      "default": "./src/test-utils/makeCheckout.ts"
+    },
     "./guards": {
       "types": "./dist/guards.d.ts",
       "default": "./src/guards.ts"

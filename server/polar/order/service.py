@@ -1186,12 +1186,6 @@ class OrderService:
             await payment_repository.count_customer_retry_payments_for_order(order.id)
         )
         if customer_retry_count >= settings.CUSTOMER_RETRY_MAX_ATTEMPTS:
-            log.warning(
-                "Manual retry limit exceeded",
-                order_id=order.id,
-                customer_retry_count=customer_retry_count,
-                max_attempts=settings.CUSTOMER_RETRY_MAX_ATTEMPTS,
-            )
             raise ManualRetryLimitExceeded(order)
 
         customer_repository = CustomerRepository.from_session(session)

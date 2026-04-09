@@ -1,5 +1,6 @@
 'use client'
 
+import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 
@@ -54,6 +55,13 @@ const SubscriptionOrdersSection = ({
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 <FormattedDateTime datetime={original.created_at} />
               </span>
+            ),
+          },
+          {
+            header: 'Status',
+            accessorKey: 'status',
+            cell: ({ row: { original } }) => (
+              <OrderStatus status={original.status} />
             ),
           },
           {

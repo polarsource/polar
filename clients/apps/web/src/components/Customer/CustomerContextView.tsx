@@ -36,6 +36,7 @@ export const CustomerContextView = ({
 
   const customerSubscriptions = useSubscriptions(organization.id, {
     customer_id: [customer.id],
+    limit: 20,
   })
 
   return (

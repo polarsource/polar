@@ -5,7 +5,6 @@ import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import { ProductListItem } from '@/components/Products/ProductListItem'
 import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscriptionModal'
@@ -23,8 +22,15 @@ import { useOrganizationSeats } from '@/hooks/queries/seats'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { List } from '@polar-sh/ui/components/atoms/List'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/atoms/DropdownMenu'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { ArrowUpRightIcon, MoreVertical } from 'lucide-react'
+import Link from 'next/link'
 import React from 'react'
 
 interface ClientPageProps {
@@ -97,29 +103,33 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       className="gap-y-8"
       header={
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-row items-center gap-4">
           <Button type="button" onClick={showUpdateModal}>
             Update Subscription
           </Button>
-          {subscription.cancel_at_period_end &&
-          subscription.status !== 'canceled' ? (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleUncancel}
-              loading={uncancelSubscription.isPending}
-            >
-              Uncancel
-            </Button>
-          ) : subscription.status !== 'canceled' ? (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={showCancellationModal}
-            >
-              Cancel
-            </Button>
-          ) : null}
+          {subscription.status !== 'canceled' && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="secondary" size="default" className="aspect-square px-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {subscription.cancel_at_period_end ? (
+                  <DropdownMenuItem
+                    onClick={handleUncancel}
+                    disabled={uncancelSubscription.isPending}
+                  >
+                    Uncancel
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={showCancellationModal}>
+                    Cancel Subscription
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden"
@@ -130,17 +140,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
         />
       }
     >
-      <List size="small">
-        <ProductListItem
-          organization={organization}
-          product={product}
-          currency={subscription.currency}
-        />
-      </List>
-
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-8">
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <DetailRow
+              label="Product"
+              value={
+                <Link
+                  href={`/dashboard/${organization.slug}/products/${product?.id}`}
+                  className="flex items-center gap-1"
+                >
+                  {product?.name}
+                  <ArrowUpRightIcon className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                </Link>
+              }
+            />
             <SubscriptionDetails subscription={subscription} />
           </div>
         </div>

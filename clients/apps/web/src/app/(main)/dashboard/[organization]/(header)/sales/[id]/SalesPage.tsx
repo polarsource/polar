@@ -9,7 +9,6 @@ import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
-import { ProductListItem } from '@/components/Products/ProductListItem'
 import { RefundModal } from '@/components/Refunds/RefundModal'
 import {
   RefundReasonDisplay,
@@ -29,12 +28,12 @@ import {
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { List } from '@polar-sh/ui/components/atoms/List'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { Separator } from '@radix-ui/react-dropdown-menu'
@@ -116,18 +115,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
     >
-      {product && (
-        <List size="small">
-          <ProductListItem
-            organization={organization}
-            product={product}
-            currency={order.currency}
-          />
-        </List>
-      )}
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">
           <div className="flex flex-col gap-1">
+            <DetailRow
+              label="Product"
+              value={
+                product ? (
+                  <Link
+                    href={`/dashboard/${organization.slug}/products/${product.id}`}
+                    className="flex items-center gap-1"
+                  >
+                    {product.name}
+                    <ArrowUpRightIcon className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                  </Link>
+                ) : (
+                  '—'
+                )
+              }
+            />
             <DetailRow label="Invoice number" value={order.invoice_number} />
             <DetailRow
               label="Order ID"

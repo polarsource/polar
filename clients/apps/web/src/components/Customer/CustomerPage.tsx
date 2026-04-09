@@ -40,6 +40,8 @@ import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerTrendStatBox } from './CustomerTrendStatBox'
 
+const regionName = new Intl.DisplayNames(['en'], { type: 'region' })
+
 interface CustomerPageProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
@@ -562,7 +564,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               />
               <DetailRow
                 label="Country"
-                value={customer.billing_address?.country}
+                value={
+                  customer.billing_address?.country
+                    ? `${customer.billing_address.country} — ${regionName.of(customer.billing_address?.country)}`
+                    : undefined
+                }
               />
             </div>
           </div>

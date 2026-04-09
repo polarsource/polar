@@ -2,6 +2,16 @@
 
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
+
+const BILLING_REASON_LABELS: Record<
+  schemas['OrderBillingReason'],
+  string
+> = {
+  purchase: 'Purchase',
+  subscription_create: 'New Subscription',
+  subscription_cycle: 'Renewal',
+  subscription_update: 'Plan Change',
+}
 import { formatCurrency } from '@polar-sh/currency'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -30,13 +40,13 @@ const SubscriptionOrdersSection = ({
         data={orders?.items ?? []}
         columns={[
           {
-            header: 'Description',
-            accessorKey: 'description',
+            header: 'Billing Reason',
+            accessorKey: 'billing_reason',
             cell: ({ row: { original } }) => (
               <Link
                 href={`/dashboard/${organization.slug}/sales/${original.id}`}
               >
-                <span>{original.description}</span>
+                <span>{BILLING_REASON_LABELS[original.billing_reason]}</span>
               </Link>
             ),
           },

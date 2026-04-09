@@ -209,6 +209,10 @@ class OrganizationStatus(StrEnum):
     def payment_ready_statuses(cls) -> set[Self]:
         return {cls.ACTIVE, *cls.review_statuses()}  # pyright: ignore
 
+    @classmethod
+    def payout_ready_statuses(cls) -> set[Self]:
+        return {cls.ACTIVE}  # pyright: ignore
+
 
 class Organization(RateLimitGroupMixin, RecordModel):
     __tablename__ = "organizations"

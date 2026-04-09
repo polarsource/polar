@@ -110,6 +110,7 @@ from polar.models.event import EventSource
 from polar.models.member import MemberRole
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
@@ -139,7 +140,10 @@ def lstr(suffix: str) -> str:
 
 
 async def create_organization(
-    save_fixture: SaveFixture, name_prefix: str = "testorg", **kwargs: Any
+    save_fixture: SaveFixture,
+    name_prefix: str = "testorg",
+    status: OrganizationStatus = OrganizationStatus.ACTIVE,
+    **kwargs: Any,
 ) -> Organization:
     name = rstr(name_prefix)
     # Create organizations in the past so they are grandfathered for payment readiness
@@ -150,6 +154,7 @@ async def create_organization(
     organization = Organization(
         name=name,
         slug=name,
+        status=status,
         customer_invoice_prefix=name.upper(),
         avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
         account=None,

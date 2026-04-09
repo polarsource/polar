@@ -14,7 +14,7 @@ from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Account, Organization, Transaction, User
-from polar.models.organization import PayoutAccountNotReady
+from polar.models.organization import OrganizationStatus, PayoutAccountNotReady
 from polar.models.payout import PayoutStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
@@ -22,6 +22,7 @@ from polar.payout.service import (
     InsufficientBalance,
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
+    OrganizationUnderReview,
     PayoutNotCancelable,
     PayoutNotSucceeded,
 )
@@ -124,6 +125,44 @@ class TestCreate:
         )
 
         with pytest.raises(PayoutAccountNotReady):
+            await payout_service.create(session, locker, organization)
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.CREATED,
+            OrganizationStatus.ONBOARDING_STARTED,
+            OrganizationStatus.INITIAL_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW,
+            OrganizationStatus.DENIED,
+        ],
+    )
+    async def test_organization_under_review(
+        self,
+        status: OrganizationStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        organization.status = status
+        await save_fixture(organization)
+
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        balance_transaction_1 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_1
+        )
+
+        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        balance_transaction_2 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_2
+        )
+
+        with pytest.raises(OrganizationUnderReview):
             await payout_service.create(session, locker, organization)
 
     async def test_valid(

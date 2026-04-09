@@ -23,6 +23,7 @@ from polar.kit.sorting import Sorting
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Account, Organization, Payout, PayoutAttempt
+from polar.models.organization import OrganizationStatus
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.organization.repository import OrganizationRepository
@@ -84,6 +85,13 @@ def _adjust_payout_amount_for_zero_decimal_currency(
 
 
 class PayoutError(PolarError): ...
+
+
+class OrganizationUnderReview(PayoutError):
+    def __init__(self, organization: Organization) -> None:
+        self.organization = organization
+        message = "Your organization is currently under review. Payouts are disabled during this period."
+        super().__init__(message, 403)
 
 
 class InsufficientBalance(PayoutError):
@@ -236,6 +244,9 @@ class PayoutService:
     async def estimate(
         self, session: AsyncSession, organization: Organization
     ) -> PayoutEstimate:
+        if organization.status not in OrganizationStatus.payout_ready_statuses():
+            raise OrganizationUnderReview(organization)
+
         account = organization.account
         assert account is not None
         payout_account = organization.get_ready_payout_account()
@@ -272,6 +283,9 @@ class PayoutService:
     async def create(
         self, session: AsyncSession, locker: Locker, organization: Organization
     ) -> Payout:
+        if organization.status not in OrganizationStatus.payout_ready_statuses():
+            raise OrganizationUnderReview(organization)
+
         account = organization.account
         assert account is not None
 

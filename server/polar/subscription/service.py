@@ -1273,7 +1273,7 @@ class SubscriptionService:
                 subscription = await self.cycle(session, subscription)
             # Set new trial end date
             else:
-                subscription.trial_end = subscription.current_period_end = cast(  # type: ignore[redundant-cast]
+                subscription.trial_end = subscription.current_period_end = cast(
                     datetime, trial_end
                 )
         # Active subscription
@@ -1292,7 +1292,7 @@ class SubscriptionService:
                 )
             # Set a new trial
             else:
-                trial_end_datetime = cast(datetime, trial_end)  # type: ignore[redundant-cast]
+                trial_end_datetime = cast(datetime, trial_end)
                 # Ensure trial_end is after current_period_end to prevent customer loss
                 if trial_end_datetime <= subscription.current_period_end:
                     raise PolarRequestValidationError(

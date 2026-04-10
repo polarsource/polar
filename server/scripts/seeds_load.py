@@ -242,10 +242,12 @@ def _build_customer_timeline_events(
         # 3. Subscription created
         t += timedelta(minutes=random.randint(1, 5))
         fake_sub_id = str(generate_uuid())
-        price_amount = next(
-            (p.price_amount for p in chosen_product.all_prices if p.price_amount),
-            2900,
-        )
+        price_amount = 2900
+        for p in chosen_product.all_prices:
+            pa = getattr(p, "price_amount", None)
+            if pa is not None:
+                price_amount = pa
+                break
         interval = chosen_product.recurring_interval or "month"
         events.append(
             _evt(
@@ -465,10 +467,12 @@ def _build_customer_timeline_events(
             days=random.randint(1, max(1, days_ago - 5))
         )
         if otp_time < now:
-            otp_price = next(
-                (p.price_amount for p in otp.all_prices if p.price_amount),
-                4900,
-            )
+            otp_price = 4900
+            for p in otp.all_prices:
+                pa = getattr(p, "price_amount", None)
+                if pa is not None:
+                    otp_price = pa
+                    break
             otp_order_id = str(generate_uuid())
             events.append(
                 _evt(
@@ -529,9 +533,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         )
     ).scalar_one_or_none()
     if existing:
-        print(
-            "Seed data already exists. Use --new-org <slug> to create additional organizations."
-        )
         raise typer.Exit(2)
 
     # Organizations data

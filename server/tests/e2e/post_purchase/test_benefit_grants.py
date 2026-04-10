@@ -11,14 +11,21 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.auth.dependencies import _auth_subject_factory_cache
+from polar.auth.models import AuthSubject
+from polar.auth.scope import Scope
+from polar.config import settings
+from polar.customer_session.service import customer_session as cs_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
+from polar.models.file import File
 from tests.e2e.conftest import E2E_AUTH
 from tests.e2e.infra import DrainFn, StripeSimulator
 from tests.e2e.purchase.conftest import complete_purchase
@@ -137,6 +144,29 @@ async def product_with_feature_flag(
         type=BenefitType.feature_flag,
         description="Pro features",
         properties={},
+    )
+    return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+
+
+@pytest_asyncio.fixture
+async def product_with_downloadable(
+    save_fixture: SaveFixture, organization: Organization, uploaded_logo_png: File
+) -> Product:
+    file = uploaded_logo_png
+
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        name="E2E Downloadable Product",
+        prices=[(1500, "usd")],
+    )
+    benefit = await create_benefit(
+        save_fixture,
+        organization=organization,
+        type=BenefitType.downloadables,
+        description="Downloadable guide",
+        properties={"files": [str(file.id)], "archived": {}},
     )
     return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
@@ -266,3 +296,69 @@ class TestBenefitGrants:
         assert len(grants) == 1
         assert grants[0].is_granted
         assert grants[0].benefit.type == BenefitType.feature_flag
+
+    @E2E_AUTH
+    async def test_downloadable_benefit_granted(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        stripe_sim: StripeSimulator,
+        drain: DrainFn,
+        organization: Organization,
+        product_with_downloadable: Product,
+        app: FastAPI,
+    ) -> None:
+        # Given a product with a downloadable file benefit (real file in MinIO)
+        # When the customer purchases it
+        result = await complete_purchase(
+            client,
+            session,
+            stripe_sim,
+            drain,
+            organization,
+            product_with_downloadable,
+            amount=1500,
+        )
+
+        # Then the grant is created with file references
+        grants = await _get_grants(session, result.order_id)
+        assert len(grants) == 1
+        grant = grants[0]
+        assert grant.is_granted
+        assert grant.benefit.type == BenefitType.downloadables
+        props: dict[str, Any] = grant.properties  # type: ignore[assignment]
+        assert len(props["files"]) == 1
+
+        # Switch auth to the customer so we can call the customer portal API
+        assert result.customer_session_token is not None
+        customer_session = await cs_service.get_by_token(
+            session, result.customer_session_token
+        )
+        assert customer_session is not None
+        customer_subject = AuthSubject(
+            customer_session.customer,
+            {Scope.customer_portal_read, Scope.customer_portal_write},
+            customer_session,
+        )
+        for auth_getter in _auth_subject_factory_cache.values():
+            app.dependency_overrides[auth_getter] = lambda: customer_subject
+
+        # The customer portal API lists the downloadable with a download URL
+        response = await client.get("/v1/customer-portal/downloadables/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == 1
+        downloadable = data["items"][0]
+        assert downloadable["benefit_id"] == str(grant.benefit_id)
+        download_url = downloadable["file"]["download"]["url"]
+
+        # The download token redirects to a real presigned S3 URL
+        token = download_url.split("/")[-1]
+        response = await client.get(
+            f"/v1/customer-portal/downloadables/{token}",
+            follow_redirects=False,
+        )
+        assert response.status_code == 302
+        redirect_url = response.headers["location"]
+        assert settings.S3_ENDPOINT_URL is not None
+        assert redirect_url.startswith(settings.S3_ENDPOINT_URL)

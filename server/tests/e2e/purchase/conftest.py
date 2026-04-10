@@ -27,6 +27,7 @@ class CompletedPurchase:
     checkout_id: str
     order_id: str
     order: dict[str, Any]  # Full order JSON from API
+    customer_session_token: str | None = None
 
 
 async def complete_purchase(
@@ -55,8 +56,9 @@ async def complete_purchase(
 
     response = await client.post("/v1/checkouts/", json=checkout_body)
     assert response.status_code == 201, response.text
-    checkout_id = response.json()["id"]
-    client_secret = response.json()["client_secret"]
+    checkout_data = response.json()
+    checkout_id = checkout_data["id"]
+    client_secret = checkout_data["client_secret"]
     await drain()
 
     stripe_sim.expect_payment(
@@ -74,6 +76,7 @@ async def complete_purchase(
         },
     )
     assert response.status_code == 200, response.text
+    customer_session_token = response.json().get("customer_session_token")
     await drain()
 
     await stripe_sim.send_charge_webhook(
@@ -91,4 +94,5 @@ async def complete_purchase(
         checkout_id=checkout_id,
         order_id=order["id"],
         order=order,
+        customer_session_token=customer_session_token,
     )

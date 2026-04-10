@@ -24,13 +24,14 @@ from polar.models.billing_entry import (
     BillingEntryDirection,
     BillingEntryType,
 )
-from tests.e2e.conftest import E2E_AUTH, complete_purchase
+from tests.e2e.conftest import E2E_AUTH
 from tests.e2e.infra import StripeSimulator
 from tests.e2e.infra.task_drain import DrainFn
 from tests.e2e.lifecycle.conftest import (
     get_billing_entries,
     trigger_subscription_cycle,
 )
+from tests.e2e.purchase.conftest import complete_purchase
 
 
 @pytest.mark.asyncio

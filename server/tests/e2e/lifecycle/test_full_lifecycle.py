@@ -14,7 +14,7 @@ from httpx import AsyncClient
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product
 from polar.models.billing_entry import BillingEntryType
-from tests.e2e.conftest import BUYER_EMAIL, E2E_AUTH, complete_purchase
+from tests.e2e.conftest import E2E_AUTH
 from tests.e2e.infra import (
     DrainFn,
     EmailCapture,
@@ -22,6 +22,7 @@ from tests.e2e.infra import (
     StripeSimulator,
 )
 from tests.e2e.lifecycle.conftest import get_benefit_grants, get_billing_entries
+from tests.e2e.purchase.conftest import BUYER_EMAIL, complete_purchase
 
 
 @pytest.mark.asyncio

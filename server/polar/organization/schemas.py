@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
@@ -46,7 +47,24 @@ OrganizationID = Annotated[
     Field(examples=[ORGANIZATION_ID_EXAMPLE]),
 ]
 
-NameInput = Annotated[str, StringConstraints(min_length=3)]
+
+def validate_blocked_words(value: str) -> str:
+    pattern = re.compile(
+        r"\b("
+        + "|".join(re.escape(w) for w in settings.ORGANIZATION_BLOCKED_WORDS)
+        + r")\b",
+        re.IGNORECASE,
+    )
+    if pattern.search(value):
+        raise ValueError("This name is not allowed.")
+    return value
+
+
+NameInput = Annotated[
+    str,
+    StringConstraints(min_length=3),
+    AfterValidator(validate_blocked_words),
+]
 
 
 def validate_reserved_keywords(value: str) -> str:
@@ -60,6 +78,7 @@ SlugInput = Annotated[
     StringConstraints(to_lower=True, min_length=3),
     SlugValidator,
     AfterValidator(validate_reserved_keywords),
+    AfterValidator(validate_blocked_words),
 ]
 
 

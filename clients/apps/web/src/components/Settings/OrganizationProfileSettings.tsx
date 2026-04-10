@@ -4,6 +4,7 @@ import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
+import { containsBlockedWord } from '@/utils/blocked-words'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
@@ -311,7 +312,12 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               <FormField
                 control={control}
                 name="name"
-                rules={{ required: 'Organization name is required' }}
+                rules={{
+                  required: 'Organization name is required',
+                  validate: (v) =>
+                    !containsBlockedWord(v ?? '') ||
+                    'This name is not allowed.',
+                }}
                 render={({ field }) => (
                   <div>
                     <Input

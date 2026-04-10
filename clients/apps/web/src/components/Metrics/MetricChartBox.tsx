@@ -1,70 +1,77 @@
-'use client'
+"use client";
 
-import Spinner from '@/components/Shared/Spinner'
-import { ParsedMetricsResponse } from '@/hooks/queries'
-import { getFormattedMetricValue } from '@/utils/metrics'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
+import Spinner from "@/components/Shared/Spinner";
+import { ParsedMetricsResponse } from "@/hooks/queries";
+import { getFormattedMetricValue } from "@/utils/metrics";
+import ArrowOutwardOutlined from "@mui/icons-material/ArrowOutwardOutlined";
+import MoreVertOutlined from "@mui/icons-material/MoreVertOutlined";
+import { schemas } from "@polar-sh/client";
+import Button from "@polar-sh/ui/components/atoms/Button";
+import FormattedDateTime from "@polar-sh/ui/components/atoms/FormattedDateTime";
+import FormattedInterval from "@polar-sh/ui/components/atoms/FormattedInterval";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+} from "@polar-sh/ui/components/atoms/Select";
+import ShadowBox from "@polar-sh/ui/components/atoms/ShadowBox";
+import { Status } from "@polar-sh/ui/components/atoms/Status";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@polar-sh/ui/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
-import React, { useCallback, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
-import MetricChart from './MetricChart'
-import { ShareChartModal } from './ShareChartModal'
+} from "@polar-sh/ui/components/ui/tooltip";
+import React, { useCallback, useMemo } from "react";
+import { twMerge } from "tailwind-merge";
+import { Modal } from "../Modal";
+import { useModal } from "../Modal/useModal";
+import MetricChart from "./MetricChart";
+import { ShareChartModal } from "./ShareChartModal";
 
 interface MetricOption {
-  slug: keyof schemas['Metrics']
-  display_name: string
+  slug: keyof schemas["Metrics"];
+  display_name: string;
 }
 
 interface MetricChartBoxProps {
-  metric: keyof schemas['Metrics']
-  onMetricChange?: (metric: keyof schemas['Metrics']) => void
-  data?: ParsedMetricsResponse
-  previousData?: ParsedMetricsResponse
-  interval: schemas['TimeInterval']
-  className?: string
-  height?: number
-  width?: number
-  loading?: boolean
-  compact?: boolean
-  shareable?: boolean
-  simple?: boolean
-  chartType?: 'line' | 'bar'
+  metric: keyof schemas["Metrics"];
+  onMetricChange?: (metric: keyof schemas["Metrics"]) => void;
+  data?: ParsedMetricsResponse;
+  previousData?: ParsedMetricsResponse;
+  interval: schemas["TimeInterval"];
+  className?: string;
+  height?: number;
+  width?: number;
+  loading?: boolean;
+  compact?: boolean;
+  shareable?: boolean;
+  simple?: boolean;
+  chartType?: "line" | "bar";
   /** Override the list of metrics shown in the dropdown. If not provided, uses metrics from data. */
-  availableMetrics?: MetricOption[]
+  availableMetrics?: MetricOption[];
   /** Controlled hover index — syncs cursor across charts in a group. */
-  hoveredPeriodIndex?: number | null
-  onHoverPeriodChange?: (index: number | null) => void
+  hoveredPeriodIndex?: number | null;
+  onHoverPeriodChange?: (index: number | null) => void;
 }
 
 const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
   churn_rate: {
     tooltip:
-      'Churn rate values vary based on the selected time interval. For best results, use monthly or longer intervals.',
+      "Churn rate values vary based on the selected time interval. For best results, use monthly or longer intervals.",
   },
   ltv: {
     tooltip:
-      'LTV is based on Churn Rate, and values vary based on the selected interval. For best results, use monthly or longer intervals.',
+      "LTV is based on Churn Rate, and values vary based on the selected interval. For best results, use monthly or longer intervals.",
   },
-}
+};
 
 const MetricChartBox = ({
   ref,
@@ -80,93 +87,115 @@ const MetricChartBox = ({
   compact = false,
   shareable = true,
   simple = false,
-  chartType = 'line',
+  chartType = "line",
   availableMetrics,
   hoveredPeriodIndex: hoveredPeriodIndexProp,
   onHoverPeriodChange,
 }: MetricChartBoxProps & {
-  ref?: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>;
 }) => {
-  const { isShown: isModalOpen, show: showModal, hide: hideModal } = useModal()
+  const { isShown: isModalOpen, show: showModal, hide: hideModal } = useModal();
 
   const startDate = useMemo(() => {
-    if (!data || !data.periods.length) return null
-    return data.periods[0].timestamp
-  }, [data])
+    if (!data || !data.periods.length) return null;
+    return data.periods[0].timestamp;
+  }, [data]);
   const endDate = useMemo(() => {
-    if (!data || !data.periods.length) return null
-    return data.periods[data.periods.length - 1].timestamp
-  }, [data])
+    if (!data || !data.periods.length) return null;
+    return data.periods[data.periods.length - 1].timestamp;
+  }, [data]);
   const previousStartDate = useMemo(() => {
-    if (!previousData || !previousData.periods.length) return null
-    return previousData.periods[0].timestamp
-  }, [previousData])
+    if (!previousData || !previousData.periods.length) return null;
+    return previousData.periods[0].timestamp;
+  }, [previousData]);
   const previousEndDate = useMemo(() => {
-    if (!previousData || !previousData.periods.length) return null
-    return previousData.periods[previousData.periods.length - 1].timestamp
-  }, [previousData])
+    if (!previousData || !previousData.periods.length) return null;
+    return previousData.periods[previousData.periods.length - 1].timestamp;
+  }, [previousData]);
 
-  const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric])
+  const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric]);
   const [hoveredPeriodIndexLocal, setHoveredPeriodIndexLocal] = React.useState<
     number | null
-  >(null)
+  >(null);
   const hoveredPeriodIndex =
     hoveredPeriodIndexProp !== undefined
       ? hoveredPeriodIndexProp
-      : hoveredPeriodIndexLocal
+      : hoveredPeriodIndexLocal;
 
   const handleDataIndexHover = useCallback(
     (period: number | null) => {
-      setHoveredPeriodIndexLocal(period)
-      onHoverPeriodChange?.(period)
+      setHoveredPeriodIndexLocal(period);
+      onHoverPeriodChange?.(period);
     },
     [onHoverPeriodChange],
-  )
+  );
+
+  const handleExport = useCallback(() => {
+    if (!data || !selectedMetric) return;
+
+    const rows = [
+      ["Timestamp", selectedMetric.display_name],
+      ...data.periods.map((period) => [
+        period.timestamp.toISOString(),
+        String(period[metric] ?? ""),
+      ]),
+    ];
+    const csv = rows
+      .map((row) => row.map((v) => `"${v}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `polar-${metric}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [data, metric, selectedMetric]);
 
   const hoveredPeriod = useMemo(() => {
-    if (!data || !hoveredPeriodIndex) return null
-    return data.periods[hoveredPeriodIndex]
-  }, [data, hoveredPeriodIndex])
+    if (!data || !hoveredPeriodIndex) return null;
+    return data.periods[hoveredPeriodIndex];
+  }, [data, hoveredPeriodIndex]);
 
   const hoveredPreviousPeriod = useMemo(() => {
-    if (!previousData || !hoveredPeriodIndex) return null
-    return previousData.periods[hoveredPeriodIndex]
-  }, [previousData, hoveredPeriodIndex])
+    if (!previousData || !hoveredPeriodIndex) return null;
+    return previousData.periods[hoveredPeriodIndex];
+  }, [previousData, hoveredPeriodIndex]);
 
   const metricValue = useMemo(() => {
-    if (!data) return 0
-    const metricInfo = data.metrics[metric]
-    if (!metricInfo) return 0
+    if (!data) return 0;
+    const metricInfo = data.metrics[metric];
+    if (!metricInfo) return 0;
 
     const currentPeriod = hoveredPeriod
       ? hoveredPeriod
-      : data.periods[data.periods.length - 1]
+      : data.periods[data.periods.length - 1];
 
-    const value = hoveredPeriod ? currentPeriod[metric] : data.totals[metric]
+    const value = hoveredPeriod ? currentPeriod[metric] : data.totals[metric];
 
-    return getFormattedMetricValue(metricInfo, value ?? 0)
-  }, [hoveredPeriod, data, metric])
+    return getFormattedMetricValue(metricInfo, value ?? 0);
+  }, [hoveredPeriod, data, metric]);
 
   const trend = useMemo(() => {
-    if (!data || !previousData) return 0
+    if (!data || !previousData) return 0;
 
     const currentPeriod =
-      hoveredPeriod ?? data?.periods[data.periods.length - 1]
+      hoveredPeriod ?? data?.periods[data.periods.length - 1];
     const previousPeriod =
       hoveredPreviousPeriod ??
-      previousData?.periods[previousData?.periods.length - 1]
+      previousData?.periods[previousData?.periods.length - 1];
 
-    const currentValue = currentPeriod[metric] ?? 0
-    const previousValue = previousPeriod[metric] ?? 0
+    const currentValue = currentPeriod[metric] ?? 0;
+    const previousValue = previousPeriod[metric] ?? 0;
 
-    return ((currentValue - previousValue) / previousValue) * 100
-  }, [data, previousData, hoveredPeriod, hoveredPreviousPeriod, metric])
+    return ((currentValue - previousValue) / previousValue) * 100;
+  }, [data, previousData, hoveredPeriod, hoveredPreviousPeriod, metric]);
 
   return (
     <ShadowBox
       ref={ref}
       className={twMerge(
-        'dark:bg-polar-800 group relative flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
+        "dark:bg-polar-800 group relative flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs",
         className,
       )}
     >
@@ -177,17 +206,17 @@ const MetricChartBox = ({
       )}
       <div
         className={twMerge(
-          'flex flex-col gap-6 md:flex-row md:items-start md:justify-between',
-          compact ? 'p-4' : 'px-6 py-4',
-          loading && 'invisible',
+          "flex flex-col gap-6 md:flex-row md:items-start md:justify-between",
+          compact ? "p-4" : "px-6 py-4",
+          loading && "invisible",
         )}
       >
         <div
           className={twMerge(
-            'flex w-full',
+            "flex w-full",
             compact
-              ? 'flex-row items-center justify-between gap-x-4'
-              : 'flex-col gap-y-4',
+              ? "flex-row items-center justify-between gap-x-4"
+              : "flex-col gap-y-4",
           )}
         >
           {onMetricChange ? (
@@ -234,7 +263,7 @@ const MetricChartBox = ({
             </div>
           ) : (
             <div className="flex flex-row items-center gap-x-2">
-              <h3 className={compact ? 'text-base' : 'text-lg'}>
+              <h3 className={compact ? "text-base" : "text-lg"}>
                 {selectedMetric?.display_name}
               </h3>
               {metric in EXPERIMENTAL_METRICS && (
@@ -256,7 +285,7 @@ const MetricChartBox = ({
           )}
           <h2
             className={
-              compact ? 'text-base' : 'text-3xl xl:text-5xl xl:font-light'
+              compact ? "text-base" : "text-3xl xl:text-5xl xl:font-light"
             }
           >
             {metricValue}
@@ -314,10 +343,10 @@ const MetricChartBox = ({
                 trend > 0 ? `+${trend.toFixed(0)}%` : `${trend.toFixed(0)}%`
               }
               className={twMerge(
-                'text-sm',
+                "text-sm",
                 trend > 0
-                  ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
-                  : 'bg-red-100 text-red-500 dark:bg-red-950',
+                  ? "bg-emerald-100 text-emerald-500 dark:bg-emerald-950"
+                  : "bg-red-100 text-red-500 dark:bg-red-950",
               )}
             />
           )}
@@ -336,11 +365,25 @@ const MetricChartBox = ({
               <TooltipContent>Share Chart</TooltipContent>
             </Tooltip>
           )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:block"
+              >
+                <MoreVertOutlined fontSize="small" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExport}>Export</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <div
         className={twMerge(
-          'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white',
+          "dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white",
         )}
       >
         {loading ? (
@@ -381,15 +424,15 @@ const MetricChartBox = ({
               data={data}
               previousData={previousData}
               interval={interval}
-              metric={selectedMetric?.slug as keyof schemas['Metrics']}
+              metric={selectedMetric?.slug as keyof schemas["Metrics"]}
             />
           }
         />
       )}
     </ShadowBox>
-  )
-}
+  );
+};
 
-MetricChartBox.displayName = 'MetricChartBox'
+MetricChartBox.displayName = "MetricChartBox";
 
-export default MetricChartBox
+export default MetricChartBox;

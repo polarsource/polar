@@ -560,6 +560,9 @@ async def get_organization_detail(
             payment_count,
             total_amount,
         ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
+        account_balance = await payment_analytics.get_account_balance(
+            organization_id
+        )
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
         )
@@ -588,7 +591,9 @@ async def get_organization_detail(
 
         payment_stats = {
             "payment_count": payment_count,
-            "total_amount": total_amount / 100,
+            "total_amount": total_amount,
+            "total_net_amount": total_transfer_sum,
+            "account_balance": account_balance,
             "refunds_count": refunds_count,
             "refunds_amount": refunds_amount / 100,
             "refund_rate": refund_rate,
@@ -600,11 +605,10 @@ async def get_organization_detail(
             "chargeback_count": chargeback_count,
             "chargeback_amount": chargeback_amount / 100,
             "chargeback_rate": chargeback_rate,
-            "next_review_threshold": organization.next_review_threshold,
-            "total_transfer_sum": total_transfer_sum,
             "p50_risk": p50_risk,
             "p90_risk": p90_risk,
             "risk_scores_count": len(risk_scores),
+            "next_review_threshold": organization.next_review_threshold,
         }
 
         orders_count, unrefunded_orders_count = await count_test_sales(

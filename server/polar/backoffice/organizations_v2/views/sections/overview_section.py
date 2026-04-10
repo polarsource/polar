@@ -414,9 +414,6 @@ class OverviewSection(ChecklistMixin):
                 with tag.p(classes="text-base-content/60"):
                     text("No payment data available.")
             else:
-                next_review_threshold = payment_stats.get("next_review_threshold")
-                total_transfer_sum = payment_stats.get("total_transfer_sum")
-
                 with tag.div(classes="space-y-0"):
                     # Summary line items
                     self._payment_line(
@@ -425,13 +422,17 @@ class OverviewSection(ChecklistMixin):
                     )
                     self._payment_line(
                         "Total Amount",
-                        f"${payment_stats.get('total_amount', 0):,.2f}",
+                        f"${payment_stats.get('total_amount', 0) / 100:,.2f}",
                     )
-                    if total_transfer_sum:
-                        self._payment_line(
-                            "Total Transfers",
-                            f"${total_transfer_sum / 100:,.2f}",
-                        )
+                    self._payment_line(
+                        "Total Net Amount",
+                        f"${payment_stats.get('total_net_amount', 0) / 100:,.2f}",
+                    )
+                    self._payment_line(
+                        "Current Balance",
+                        f"${payment_stats.get('account_balance', 0) / 100:,.2f}",
+                    )
+                    next_review_threshold = payment_stats.get("next_review_threshold")
                     if next_review_threshold:
                         self._payment_line(
                             "Next Review",

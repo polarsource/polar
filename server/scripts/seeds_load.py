@@ -282,6 +282,7 @@ def _build_customer_timeline_events(
                     "subscription_id": fake_sub_id,
                     "recurring_interval": str(interval),
                     "recurring_interval_count": 1,
+                    "_cost": {"amount": price_amount / 100, "currency": "usd"},
                 },
             )
         )
@@ -341,6 +342,7 @@ def _build_customer_timeline_events(
                         "subscription_id": fake_sub_id,
                         "recurring_interval": str(interval),
                         "recurring_interval_count": 1,
+                        "_cost": {"amount": price_amount / 100, "currency": "usd"},
                     },
                 )
             )
@@ -434,6 +436,7 @@ def _build_customer_timeline_events(
                             "order_id": fake_order_id,
                             "refunded_amount": price_amount,
                             "currency": "usd",
+                            "_cost": {"amount": price_amount / 100, "currency": "usd"},
                         },
                     )
                 )
@@ -496,6 +499,7 @@ def _build_customer_timeline_events(
                         "currency": "usd",
                         "net_amount": int(otp_price * 0.95),
                         "tax_amount": int(otp_price * 0.05),
+                        "_cost": {"amount": otp_price / 100, "currency": "usd"},
                     },
                 )
             )

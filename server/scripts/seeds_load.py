@@ -520,6 +520,16 @@ def _build_customer_timeline_events(
 async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     """Create sample data for development and testing."""
 
+    # Check if seed data already exists
+    existing = (
+        await session.execute(
+            select(Organization).where(Organization.slug == "acme-corp")
+        )
+    ).scalar_one_or_none()
+    if existing:
+        print("✅ Seed data already exists, skipping. Use --new-org <slug> to create additional organizations.")
+        return
+
     # Organizations data
     orgs_data: list[OrganizationDict] = [
         {

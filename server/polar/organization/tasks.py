@@ -55,6 +55,21 @@ class UserDoesNotExist(OrganizationTaskError):
         super().__init__(message)
 
 
+@actor(actor_name="organization.held_balance_release", priority=TaskPriority.LOW)
+async def organization_held_balance_release(organization_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(
+            organization_id, options=(joinedload(Organization.account),)
+        )
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+        if organization.account is None:
+            raise AccountDoesNotExist(organization.account_id)
+
+        await held_balance_service.release_account(session, organization.account)
+
+
 @actor(actor_name="organization.created", priority=TaskPriority.LOW)
 async def organization_created(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:

@@ -7,15 +7,13 @@ import dramatiq
 import structlog
 import typer
 from rich.progress import Progress
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy import func, select
 
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import HeldBalance, Organization
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
-from polar.worker import JobQueueManager
+from polar.worker import JobQueueManager, enqueue_job
 
 cli = typer.Typer()
 
@@ -50,27 +48,30 @@ async def held_balance_release() -> None:
     redis = create_redis("script")
     async with sessionmaker() as session:
         async with JobQueueManager.open(dramatiq.get_broker(), redis) as manager:
-            statement = (
-                select(Organization)
-                .where(
-                    Organization.id.in_(
-                        select(HeldBalance.organization_id).where(
-                            HeldBalance.organization_id.is_not(None)
-                        )
+            statement = select(Organization.id).where(
+                Organization.id.in_(
+                    select(HeldBalance.organization_id).where(
+                        HeldBalance.organization_id.is_not(None)
                     )
                 )
-                .options(joinedload(Organization.account))
             )
 
+            count_statement = statement.with_only_columns(func.count()).order_by(None)
+            result = await session.execute(count_statement)
+            total_organizations = result.scalar_one()
+
             with Progress() as progress:
-                result = await session.execute(statement)
-                organizations = result.scalars().all()
                 task = progress.add_task(
-                    "[cyan]Releasing held balances...", total=len(organizations)
+                    "[cyan]Enqueuing held balances release...",
+                    total=total_organizations,
                 )
-                for organization in organizations:
-                    await held_balance_service.release_account(
-                        session, organization.account
+                organizations = await session.stream_scalars(
+                    statement, execution_options={"yield_per": 100}
+                )
+                async for organization_id in organizations:
+                    enqueue_job(
+                        "organization.held_balance_release",
+                        organization_id=organization_id,
                     )
                     progress.update(task, advance=1)
 

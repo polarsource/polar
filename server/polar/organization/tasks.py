@@ -55,7 +55,11 @@ class UserDoesNotExist(OrganizationTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="organization.held_balance_release", priority=TaskPriority.LOW)
+@actor(
+    actor_name="organization.held_balance_release",
+    priority=TaskPriority.LOW,
+    time_limit=600_000,
+)
 async def organization_held_balance_release(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)

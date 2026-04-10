@@ -72,6 +72,17 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         result = run_command(cmd, cwd=SERVER_DIR, capture=False)
 
+        if result and result.returncode == 2:
+            console.print()
+            console.print(Panel(
+                "[dim]Use [bold]dev seed --new-org <slug>[/bold] to create additional organizations.[/dim]",
+                title="[bold yellow]Already seeded[/bold yellow]",
+                border_style="yellow",
+                padding=(1, 2),
+            ))
+            console.print()
+            return
+
         if result and result.returncode == 0:
             if not new_org:
                 _configure_polar_self_integration()

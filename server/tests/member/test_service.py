@@ -13,7 +13,89 @@ from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import create_customer, create_organization
+
+
+@pytest.mark.asyncio
+class TestGetByExternalID:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_svc_123",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        result = await member_service.get_by_external_id(
+            session, auth_subject, "ext_svc_123"
+        )
+
+        assert result is not None
+        assert result.id == member.id
+        assert result.external_id == "ext_svc_123"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_not_existing(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+    ) -> None:
+        result = await member_service.get_by_external_id(
+            session, auth_subject, "nonexistent"
+        )
+
+        assert result is None
+
+    @pytest.mark.auth
+    async def test_not_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=other_org.id,
+            email="member@example.com",
+            external_id="ext_other_org",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        result = await member_service.get_by_external_id(
+            session, auth_subject, "ext_other_org"
+        )
+
+        assert result is None
 
 
 @pytest.mark.asyncio
@@ -26,8 +108,6 @@ class TestList:
         save_fixture: SaveFixture,
     ) -> None:
         """Test that user cannot access members from organizations they don't belong to."""
-        from tests.fixtures.random_objects import create_organization
-
         other_org = await create_organization(save_fixture)
         customer = await create_customer(
             save_fixture,

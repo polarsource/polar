@@ -80,6 +80,19 @@ class MemberService:
         )
         return await repository.get_one_or_none(statement)
 
+    async def get_by_external_id(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        external_id: str,
+    ) -> Member | None:
+        """Get a member by external ID if the auth subject has access to it."""
+        repository = MemberRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            Member.external_id == external_id
+        )
+        return await repository.get_one_or_none(statement)
+
     async def delete(
         self,
         session: AsyncSession,

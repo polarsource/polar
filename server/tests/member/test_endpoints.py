@@ -465,6 +465,295 @@ class TestCreateMember:
 
 
 @pytest.mark.asyncio
+class TestGetMemberByExternalID:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/members/external/ext_123")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get("/v1/members/external/ext_123")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_not_existing(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get("/v1/members/external/not-existing")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_123",
+            role="billing_manager",
+        )
+        await save_fixture(member)
+
+        response = await client.get("/v1/members/external/ext_123")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["email"] == "member@example.com"
+        assert json["name"] == "Test Member"
+        assert json["external_id"] == "ext_123"
+        assert json["role"] == "billing_manager"
+        assert json["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth
+    async def test_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=other_org.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_123",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.get("/v1/members/external/ext_123")
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestUpdateMemberByExternalID:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.patch(
+            "/v1/members/external/ext_123",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            "/v1/members/external/ext_123",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_not_existing(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            "/v1/members/external/not-existing",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Original Name",
+            external_id="ext_456",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            "/v1/members/external/ext_456",
+            json={"name": "Updated Name", "role": "billing_manager"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["name"] == "Updated Name"
+        assert json["role"] == "billing_manager"
+        assert json["external_id"] == "ext_456"
+
+    @pytest.mark.auth
+    async def test_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=other_org.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_789",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            "/v1/members/external/ext_789",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestDeleteMemberByExternalID:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.delete("/v1/members/external/ext_123")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.delete("/v1/members/external/ext_123")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_not_existing(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.delete("/v1/members/external/not-existing")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_delete",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.delete("/v1/members/external/ext_delete")
+
+        assert response.status_code == 204
+
+        # Verify member is soft-deleted
+        list_response = await client.get(
+            "/v1/members/", params={"customer_id": str(customer.id)}
+        )
+        assert list_response.status_code == 200
+        assert list_response.json()["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth
+    async def test_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=other_org.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_other",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.delete("/v1/members/external/ext_other")
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 class TestGetMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         member_id = str(uuid.uuid4())

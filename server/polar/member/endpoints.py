@@ -16,7 +16,7 @@ from polar.postgres import (
 from polar.routing import APIRouter
 
 from . import auth, sorting
-from .schemas import Member, MemberCreate, MemberUpdate
+from .schemas import ExternalMemberID, Member, MemberCreate, MemberUpdate
 from .service import member_service
 
 router = APIRouter(
@@ -133,6 +133,29 @@ async def get_member(
     return Member.model_validate(member)
 
 
+@router.get(
+    "/external/{external_id}",
+    summary="Get Member by External ID",
+    response_model=Member,
+    responses={
+        200: {"description": "Member retrieved."},
+        404: MemberNotFound,
+    },
+)
+async def get_member_by_external_id(
+    external_id: ExternalMemberID,
+    auth_subject: auth.MemberRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Member:
+    """Get a member by external ID."""
+    member = await member_service.get_by_external_id(session, auth_subject, external_id)
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    return Member.model_validate(member)
+
+
 @router.patch(
     "/{id}",
     summary="Update Member",
@@ -170,6 +193,38 @@ async def update_member(
     return Member.model_validate(updated_member)
 
 
+@router.patch(
+    "/external/{external_id}",
+    summary="Update Member by External ID",
+    response_model=Member,
+    responses={
+        200: {"description": "Member updated."},
+        404: MemberNotFound,
+    },
+)
+async def update_member_by_external_id(
+    external_id: ExternalMemberID,
+    member_update: MemberUpdate,
+    auth_subject: auth.MemberWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Member:
+    """Update a member by external ID."""
+    member = await member_service.get_by_external_id(session, auth_subject, external_id)
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    updated_member = await member_service.update(
+        session,
+        member,
+        name=member_update.name,
+        role=member_update.role,
+        allow_ownership_transfer=True,
+    )
+
+    return Member.model_validate(updated_member)
+
+
 @router.delete(
     "/{id}",
     status_code=204,
@@ -190,6 +245,29 @@ async def delete_member(
     The authenticated user or organization must have access to the member's organization.
     """
     member = await member_service.get(session, auth_subject, id)
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    await member_service.delete(session, member)
+
+
+@router.delete(
+    "/external/{external_id}",
+    status_code=204,
+    summary="Delete Member by External ID",
+    responses={
+        204: {"description": "Member deleted."},
+        404: MemberNotFound,
+    },
+)
+async def delete_member_by_external_id(
+    external_id: ExternalMemberID,
+    auth_subject: auth.MemberWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Delete a member by external ID."""
+    member = await member_service.get_by_external_id(session, auth_subject, external_id)
 
     if member is None:
         raise ResourceNotFound("Member not found")

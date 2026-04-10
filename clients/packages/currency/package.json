@@ -37,7 +37,7 @@
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "latest",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.4"
   },
   "publishConfig": {
     "access": "public"

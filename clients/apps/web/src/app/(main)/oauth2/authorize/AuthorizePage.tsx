@@ -7,11 +7,13 @@ import SharedLayout from './components/SharedLayout'
 
 const isSubTypeOrganization = (
   sub_type: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
 ): _sub is schemas['AuthorizeOrganization'] => sub_type === 'organization'
 
 const isSubTypeUser = (
   sub_type: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
 ): _sub is schemas['AuthorizeUser'] => sub_type === 'user'
 

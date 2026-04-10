@@ -60,7 +60,10 @@ async def organization_held_balance_release(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(
-            organization_id, options=(joinedload(Organization.account),)
+            organization_id,
+            options=(joinedload(Organization.account),),
+            include_deleted=True,
+            include_blocked=True,
         )
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)

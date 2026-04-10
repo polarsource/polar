@@ -9,6 +9,7 @@ import typer
 from rich.progress import Progress
 from sqlalchemy import func, select
 
+from polar import tasks  # noqa: F401
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import HeldBalance, Organization
 from polar.postgres import create_async_engine

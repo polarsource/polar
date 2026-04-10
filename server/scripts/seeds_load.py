@@ -30,7 +30,6 @@ from polar.enums import (
     TaxBehaviorOption,
 )
 from polar.event.repository import EventRepository
-from polar.models.event import Event as EventModel
 from polar.event.system import SystemEvent as SystemEventEnum
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
 from polar.kit.crypto import generate_token_hash_pair
@@ -44,6 +43,7 @@ from polar.meter.service import meter as meter_service
 from polar.models.benefit import BenefitType
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.event import Event as EventModel
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
 from polar.models.organization import (
@@ -242,11 +242,9 @@ def _build_customer_timeline_events(
         # 3. Subscription created
         t += timedelta(minutes=random.randint(1, 5))
         fake_sub_id = str(generate_uuid())
-        price_amount = (
-            next(
-                (p.price_amount for p in chosen_product.all_prices if p.price_amount),
-                2900,
-            )
+        price_amount = next(
+            (p.price_amount for p in chosen_product.all_prices if p.price_amount),
+            2900,
         )
         interval = chosen_product.recurring_interval or "month"
         events.append(
@@ -385,9 +383,7 @@ def _build_customer_timeline_events(
                     )
                 )
                 # Then uncanceled a few days later
-                uncancel_time = cancel_time + timedelta(
-                    days=random.randint(1, 5)
-                )
+                uncancel_time = cancel_time + timedelta(days=random.randint(1, 5))
                 if uncancel_time < now:
                     events.append(
                         _evt(
@@ -409,7 +405,9 @@ def _build_customer_timeline_events(
                 other = random.choice(
                     [p for p in recurring_products if p.id != chosen_product.id]
                 )
-                upgrade_time = t + timedelta(days=random.randint(7, min(60, days_ago - 5)))
+                upgrade_time = t + timedelta(
+                    days=random.randint(7, min(60, days_ago - 5))
+                )
                 if upgrade_time < now:
                     events.append(
                         _evt(
@@ -463,7 +461,9 @@ def _build_customer_timeline_events(
     # 8. Some customers also make one-time purchases
     if onetime_products and random.random() < 0.4:
         otp = random.choice(onetime_products)
-        otp_time = timeline_start + timedelta(days=random.randint(1, max(1, days_ago - 5)))
+        otp_time = timeline_start + timedelta(
+            days=random.randint(1, max(1, days_ago - 5))
+        )
         if otp_time < now:
             otp_price = next(
                 (p.price_amount for p in otp.all_prices if p.price_amount),
@@ -498,7 +498,9 @@ def _build_customer_timeline_events(
 
     # 9. Customer updated (some customers update their info)
     if random.random() < 0.3:
-        update_time = timeline_start + timedelta(days=random.randint(2, max(2, days_ago - 2)))
+        update_time = timeline_start + timedelta(
+            days=random.randint(2, max(2, days_ago - 2))
+        )
         if update_time < now:
             events.append(
                 _evt(
@@ -527,7 +529,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         )
     ).scalar_one_or_none()
     if existing:
-        print("Seed data already exists. Use --new-org <slug> to create additional organizations.")
+        print(
+            "Seed data already exists. Use --new-org <slug> to create additional organizations."
+        )
         raise typer.Exit(2)
 
     # Organizations data
@@ -1527,9 +1531,24 @@ async def create_single_org_seed(
 
     # Create a mix of recurring and one-time products
     products_data = [
-        ("Pro Plan", "Monthly pro subscription", 2900, SubscriptionRecurringInterval.month),
-        ("Business Plan", "Monthly business subscription", 9900, SubscriptionRecurringInterval.month),
-        ("Enterprise", "Annual enterprise subscription", 99900, SubscriptionRecurringInterval.year),
+        (
+            "Pro Plan",
+            "Monthly pro subscription",
+            2900,
+            SubscriptionRecurringInterval.month,
+        ),
+        (
+            "Business Plan",
+            "Monthly business subscription",
+            9900,
+            SubscriptionRecurringInterval.month,
+        ),
+        (
+            "Enterprise",
+            "Annual enterprise subscription",
+            99900,
+            SubscriptionRecurringInterval.year,
+        ),
         ("Starter Kit", "One-time starter package", 4900, None),
         ("Premium Add-on", "One-time premium add-on", 1900, None),
     ]
@@ -1602,7 +1621,9 @@ async def create_single_org_seed(
 
     await session.commit()
     print(f"✅ Created organization '{name}' ({slug})")
-    print(f"   {len(org_products)} products, {num_customers} customers with timeline events")
+    print(
+        f"   {len(org_products)} products, {num_customers} customers with timeline events"
+    )
 
 
 @cli.callback()

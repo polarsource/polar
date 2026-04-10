@@ -65,18 +65,6 @@ class PaymentAnalyticsService:
 
         return count, total_amount
 
-    async def get_account_balance(self, organization_id: UUID4) -> int:
-        """Get current account balance in USD cents."""
-        account_id = await self.get_organization_account_id(organization_id)
-        if not account_id:
-            return 0
-        result = await self.session.execute(
-            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-                Transaction.account_id == account_id
-            )
-        )
-        return int(result.scalar() or 0)
-
     async def get_risk_scores(self, organization_id: UUID4) -> list[float]:
         """Get risk scores from all payment attempts (succeeded and failed)."""
         result = await self.session.execute(

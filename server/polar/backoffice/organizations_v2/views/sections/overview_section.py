@@ -457,7 +457,7 @@ class OverviewSection(ChecklistMixin):
                         "Refund Rate",
                         f"{refund_rate:.1f}%",
                         variant=self._to_variant(REFUND_RATE.evaluate(refund_rate)),
-                        detail=f"${payment_stats.get('refunds_amount', 0):,.2f}",
+                        detail=f"${payment_stats.get('refunds_amount', 0) / 100:,.2f}",
                     )
 
                     dispute_rate = payment_stats.get("dispute_rate", 0)
@@ -465,7 +465,7 @@ class OverviewSection(ChecklistMixin):
                         "Dispute Rate",
                         f"{dispute_rate:.2f}%",
                         variant=self._to_variant(DISPUTE_RATE.evaluate(dispute_rate)),
-                        detail=f"{payment_stats.get('dispute_count', 0)} · ${payment_stats.get('dispute_amount', 0):,.2f}",
+                        detail=f"{payment_stats.get('dispute_count', 0)} · ${payment_stats.get('dispute_amount', 0) / 100:,.2f}",
                     )
 
                     chargeback_rate = payment_stats.get("chargeback_rate", 0)
@@ -475,7 +475,7 @@ class OverviewSection(ChecklistMixin):
                         variant=self._to_variant(
                             CHARGEBACK_RATE.evaluate(chargeback_rate)
                         ),
-                        detail=f"{payment_stats.get('chargeback_count', 0)} lost · ${payment_stats.get('chargeback_amount', 0):,.2f}",
+                        detail=f"{payment_stats.get('chargeback_count', 0)} lost · ${payment_stats.get('chargeback_amount', 0) / 100:,.2f}",
                     )
 
                     # Risk scores

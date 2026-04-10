@@ -560,8 +560,8 @@ async def get_organization_detail(
             payment_count,
             total_amount,
         ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
-        account_balance = await payment_analytics.get_account_balance(
-            organization_id
+        account_balance = await transaction_service.get_transactions_sum(
+            session, organization.account_id
         )
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
@@ -595,15 +595,15 @@ async def get_organization_detail(
             "total_net_amount": total_transfer_sum,
             "account_balance": account_balance,
             "refunds_count": refunds_count,
-            "refunds_amount": refunds_amount / 100,
+            "refunds_amount": refunds_amount,
             "refund_rate": refund_rate,
             "auth_rate": auth_rate,
             "failed_count": failed_count,
             "dispute_count": dispute_count,
-            "dispute_amount": dispute_amount / 100,
+            "dispute_amount": dispute_amount,
             "dispute_rate": dispute_rate,
             "chargeback_count": chargeback_count,
-            "chargeback_amount": chargeback_amount / 100,
+            "chargeback_amount": chargeback_amount,
             "chargeback_rate": chargeback_rate,
             "p50_risk": p50_risk,
             "p90_risk": p90_risk,

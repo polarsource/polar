@@ -21,6 +21,8 @@ from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationReviewRepository
+from polar.payout_account.schemas import PayoutAccountSetOrganization
+from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -151,6 +153,32 @@ async def get_account(
         raise ResourceNotFound()
 
     return account
+
+
+@router.patch(
+    "/{id}/payout-account",
+    summary="Set Organization Payout Account",
+    response_model=OrganizationSchema,
+    responses={
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def set_payout_account(
+    id: OrganizationID,
+    body: PayoutAccountSetOrganization,
+    auth_subject: auth.OrganizationsWriteUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Set the payout account for an organization."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    return await payout_account_service.set_organization_payout_account(
+        session, auth_subject, organization, body.payout_account_id
+    )
 
 
 @router.get(

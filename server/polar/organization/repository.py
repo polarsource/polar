@@ -291,6 +291,14 @@ class OrganizationRepository(
         )
         await self.session.execute(stmt)
 
+    async def get_all_by_payout_account(
+        self, payout_account: UUID
+    ) -> Sequence[Organization]:
+        statement = self.get_base_statement().where(
+            Organization.payout_account_id == payout_account,
+        )
+        return await self.get_all(statement)
+
 
 class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):
     model = OrganizationReview

@@ -654,6 +654,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/payout-account': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Set Organization Payout Account
+     * @description Set the payout account for an organization.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    patch: operations['organizations:set_payout_account']
+    trace?: never
+  }
   '/v1/organizations/{id}/kyc': {
     parameters: {
       query?: never
@@ -4304,7 +4326,11 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get?: never
+    /**
+     * List
+     * @description List payout accounts accessible to the authenticated user.
+     */
+    get: operations['payout_accounts:list']
     put?: never
     /** Create */
     post: operations['payout_accounts:create']
@@ -19252,6 +19278,12 @@ export interface components {
       items: components['schemas']['Payment'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[PayoutAccount] */
+    ListResource_PayoutAccount_: {
+      /** Items */
+      items: components['schemas']['PayoutAccount'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Payout] */
     ListResource_Payout_: {
       /** Items */
@@ -23733,6 +23765,15 @@ export interface components {
     PayoutAccountLink: {
       /** Url */
       url: string
+    }
+    /** PayoutAccountSetOrganization */
+    PayoutAccountSetOrganization: {
+      /**
+       * Payout Account Id
+       * Format: uuid
+       * @description ID of the payout account to set on the organization.
+       */
+      payout_account_id: string
     }
     /**
      * PayoutAccountType
@@ -30681,6 +30722,50 @@ export interface operations {
         }
       }
       /** @description Organization not found or account not set. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:set_payout_account': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PayoutAccountSetOrganization']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Organization']
+        }
+      }
+      /** @description Organization not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -42071,6 +42156,26 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'payout_accounts:list': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_PayoutAccount_']
         }
       }
     }

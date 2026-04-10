@@ -589,6 +589,10 @@ class OrganizationService:
         if payout_account is None:
             return
 
+        # Unlink the payout account from the organization before deleting
+        organization_repository = OrganizationRepository.from_session(session)
+        await organization_repository.delete_payout_account(payout_account.id)
+
         await payout_account_service.delete(session, payout_account)
 
     async def add_user(

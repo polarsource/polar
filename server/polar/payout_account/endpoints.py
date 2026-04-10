@@ -1,9 +1,11 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import Depends, Query
 
 from polar.auth.dependencies import WebUserRead, WebUserWrite
 from polar.exceptions import ResourceNotFound
+from polar.kit.pagination import ListResource, Pagination
 from polar.models import PayoutAccount
 from polar.openapi import APITag
 from polar.postgres import (
@@ -19,6 +21,22 @@ from .schemas import PayoutAccountCreate, PayoutAccountLink
 from .service import payout_account as payout_account_service
 
 router = APIRouter(prefix="/payout-accounts", tags=["payout_accounts", APITag.private])
+
+
+@router.get("/", response_model=ListResource[PayoutAccountSchema])
+async def list(
+    auth_subject: WebUserRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[PayoutAccountSchema]:
+    """List payout accounts accessible to the authenticated user."""
+    results: Sequence[PayoutAccount] = await payout_account_service.list(
+        session, auth_subject
+    )
+    items = [PayoutAccountSchema.model_validate(r) for r in results]
+    return ListResource(
+        items=items,
+        pagination=Pagination(total_count=len(items), max_page=1),
+    )
 
 
 @router.post("/", response_model=PayoutAccountSchema)

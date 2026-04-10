@@ -16,6 +16,13 @@ export const usePayoutAccount = (payoutAccountId: string | undefined) =>
     enabled: !!payoutAccountId,
   })
 
+export const usePayoutAccounts = () =>
+  useQuery({
+    queryKey: ['payoutAccounts'],
+    queryFn: () => unwrap(api.GET('/v1/payout-accounts/')),
+    retry: defaultRetry,
+  })
+
 export const useDeletePayoutAccount = () => {
   const queryClient = useQueryClient()
   return useMutation({
@@ -25,7 +32,22 @@ export const useDeletePayoutAccount = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] })
-      queryClient.invalidateQueries({ queryKey: ['payoutAccount'] })
+      queryClient.invalidateQueries({ queryKey: ['payoutAccounts'] })
+    },
+  })
+}
+
+export const useSetOrganizationPayoutAccount = (organizationId: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payoutAccountId: string) =>
+      api.PATCH('/v1/organizations/{id}/payout-account', {
+        params: { path: { id: organizationId } },
+        body: { payout_account_id: payoutAccountId },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] })
+      queryClient.invalidateQueries({ queryKey: ['payoutAccounts'] })
     },
   })
 }

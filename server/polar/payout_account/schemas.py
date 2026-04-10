@@ -137,12 +137,6 @@ class PayoutAccountCreate(Schema):
     country: Annotated[StripeAccountCountry, BeforeValidator(str.upper)]
 
 
-class PayoutAccountSetOrganization(Schema):
-    payout_account_id: UUID = Field(
-        description="ID of the payout account to set on the organization."
-    )
-
-
 class PayoutAccount(TimestampedSchema, IDSchema):
     type: PayoutAccountType
     currency: str

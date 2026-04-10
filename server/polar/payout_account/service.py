@@ -119,24 +119,6 @@ class PayoutAccountService:
 
         return payout_account
 
-    async def set_organization_payout_account(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        payout_account_id: uuid.UUID,
-    ) -> Organization:
-        payout_account = await self.get(session, auth_subject, payout_account_id)
-        if payout_account is None:
-            raise PayoutAccountExternalIdDoesNotExist(str(payout_account_id))
-
-        organization_repository = OrganizationRepository.from_session(session)
-        return await organization_repository.update(
-            organization,
-            update_dict={"payout_account_id": payout_account.id},
-            flush=True,
-        )
-
     async def onboarding_link(
         self, payout_account: PayoutAccount, return_path: str
     ) -> PayoutAccountLink:
@@ -263,8 +245,6 @@ class PayoutAccountService:
                 data=stripe_account.to_dict(),
             )
         )
-
-
 
 
 payout_account = PayoutAccountService()

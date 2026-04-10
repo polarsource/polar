@@ -595,6 +595,35 @@ class OrganizationService:
 
         await payout_account_service.delete(session, payout_account)
 
+    async def set_payout_account(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        payout_account_id: uuid.UUID,
+    ) -> Organization:
+        payout_account = await payout_account_service.get(
+            session, auth_subject, payout_account_id
+        )
+        if payout_account is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "payout_account_id"),
+                        "msg": "Payout account not found or not accessible.",
+                        "input": str(payout_account_id),
+                    }
+                ]
+            )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        return await organization_repository.update(
+            organization,
+            update_dict={"payout_account_id": payout_account.id},
+            flush=True,
+        )
+
     async def add_user(
         self,
         session: AsyncSession,

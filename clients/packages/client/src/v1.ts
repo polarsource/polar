@@ -23766,8 +23766,8 @@ export interface components {
       /** Url */
       url: string
     }
-    /** PayoutAccountSetOrganization */
-    PayoutAccountSetOrganization: {
+    /** OrganizationPayoutAccountSet */
+    OrganizationPayoutAccountSet: {
       /**
        * Payout Account Id
        * Format: uuid
@@ -30752,7 +30752,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['PayoutAccountSetOrganization']
+        'application/json': components['schemas']['OrganizationPayoutAccountSet']
       }
     }
     responses: {

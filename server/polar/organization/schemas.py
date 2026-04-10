@@ -528,3 +528,9 @@ class OrganizationValidateWebsiteResponse(Schema):
     error: str | None = Field(
         default=None, description="Error message if the URL is not reachable."
     )
+
+
+class OrganizationPayoutAccountSet(Schema):
+    payout_account_id: UUID4 = Field(
+        description="ID of the payout account to set on the organization."
+    )

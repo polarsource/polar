@@ -9,6 +9,8 @@ from polar.payout_account.service import (
     PayoutAccountLinkedToOrganization,
     PayoutAccountNonZeroBalance,
     PayoutAccountStripeAccountDoesNotExist,
+)
+from polar.payout_account.service import (
     payout_account as payout_account_service,
 )
 from polar.postgres import AsyncSession
@@ -58,7 +60,7 @@ class TestDelete:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
         # Unlink from org first so we get past the linked check
-        organization.payout_account_id = None
+        organization.payout_account = None
         await save_fixture(organization)
 
         stripe_service_mock.account_exists.return_value = False  # type: ignore[attr-defined]
@@ -82,7 +84,7 @@ class TestDelete:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
         # Unlink from org first so we get past the linked check
-        organization.payout_account_id = None
+        organization.payout_account = None
         await save_fixture(organization)
 
         stripe_service_mock.account_exists.return_value = True  # type: ignore[attr-defined]
@@ -107,7 +109,7 @@ class TestDelete:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
         # Unlink from org so we get past the linked check
-        organization.payout_account_id = None
+        organization.payout_account = None
         await save_fixture(organization)
 
         stripe_service_mock.account_exists.return_value = True  # type: ignore[attr-defined]
@@ -119,29 +121,3 @@ class TestDelete:
         stripe_service_mock.delete_account.assert_called_once_with(  # type: ignore[attr-defined]
             payout_account.stripe_id
         )
-
-
-@pytest.mark.asyncio
-class TestSetOrganizationPayoutAccount:
-    @pytest.mark.auth
-    async def test_set_payout_account_on_organization(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user: User,
-    ) -> None:
-        """Successfully sets the payout account on an organization."""
-        payout_account = await create_payout_account(
-            save_fixture, organization, user, type=PayoutAccountType.stripe
-        )
-        # Unlink from org first
-        organization.payout_account_id = None
-        await save_fixture(organization)
-
-        updated_org = await payout_account_service.set_organization_payout_account(
-            session, auth_subject, organization, payout_account.id
-        )
-
-        assert updated_org.payout_account_id == payout_account.id

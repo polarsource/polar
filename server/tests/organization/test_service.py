@@ -1759,3 +1759,46 @@ class TestUpdateSeatBasedPricing:
         )
 
         assert result.feature_settings["seat_based_pricing_enabled"] is True
+
+
+@pytest.mark.asyncio
+class TestSetPayoutAccount:
+    @pytest.mark.auth
+    async def test_set_payout_account_on_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Successfully sets the payout account on an organization."""
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        # Unlink from org first
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        updated_org = await organization_service.set_payout_account(
+            session, auth_subject, organization, payout_account.id
+        )
+
+        assert updated_org.payout_account_id == payout_account.id
+
+    @pytest.mark.auth
+    async def test_set_unknown_payout_account_raises_error(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Raises PolarRequestValidationError for unknown payout account."""
+        import uuid
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.set_payout_account(
+                session, auth_subject, organization, uuid.uuid4()
+            )

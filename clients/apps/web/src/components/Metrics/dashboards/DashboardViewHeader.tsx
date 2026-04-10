@@ -1,114 +1,114 @@
-"use client";
+'use client'
 
-import { ConfirmModal } from "@/components/Modal/ConfirmModal";
-import { Modal } from "@/components/Modal";
-import { useModal } from "@/components/Modal/useModal";
-import { MetricDashboardEditorContent } from "@/components/DashboardOverview/MetricSelectorModal";
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
+import { MetricDashboardEditorContent } from '@/components/DashboardOverview/MetricSelectorModal'
 import {
   useDeleteMetricDashboard,
   useMetricDashboards,
   useUpdateMetricDashboard,
-} from "@/hooks/queries/metrics";
-import { getServerURL } from "@/utils/api";
-import { METRIC_GROUPS, toISODate } from "@/utils/metrics";
-import MoreVertOutlined from "@mui/icons-material/MoreVertOutlined";
-import { schemas } from "@polar-sh/client";
-import Button from "@polar-sh/ui/components/atoms/Button";
+} from '@/hooks/queries/metrics'
+import { getServerURL } from '@/utils/api'
+import { METRIC_GROUPS, toISODate } from '@/utils/metrics'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@polar-sh/ui/components/atoms/DropdownMenu";
-import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
-import { MetricsHeader } from "./MetricsHeader";
-import { useMetricsFilters } from "./useMetricsFilters";
+} from '@polar-sh/ui/components/atoms/DropdownMenu'
+import { usePathname, useRouter } from 'next/navigation'
+import { useCallback, useMemo } from 'react'
+import { MetricsHeader } from './MetricsHeader'
+import { useMetricsFilters } from './useMetricsFilters'
 
 const BUILT_IN_NAMES: Record<string, string> = {
-  revenue: "Revenue",
-  orders: "Orders",
-  subscriptions: "Subscriptions",
-  checkouts: "Checkouts",
-  cancellations: "Cancellations",
-  "unit-economics": "Unit Economics",
-  costs: "Costs",
-  usage: "Usage",
-};
+  revenue: 'Revenue',
+  orders: 'Orders',
+  subscriptions: 'Subscriptions',
+  checkouts: 'Checkouts',
+  cancellations: 'Cancellations',
+  'unit-economics': 'Unit Economics',
+  costs: 'Costs',
+  usage: 'Usage',
+}
 
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 interface DashboardViewHeaderProps {
-  organization: schemas["Organization"];
-  earliestDateISOString: string;
+  organization: schemas['Organization']
+  earliestDateISOString: string
 }
 
 export function DashboardViewHeader({
   organization,
   earliestDateISOString,
 }: DashboardViewHeaderProps) {
-  const pathname = usePathname();
-  const { data: customDashboards } = useMetricDashboards(organization.id);
-  const { isShown: isEditShown, show: showEdit, hide: hideEdit } = useModal();
+  const pathname = usePathname()
+  const { data: customDashboards } = useMetricDashboards(organization.id)
+  const { isShown: isEditShown, show: showEdit, hide: hideEdit } = useModal()
 
   const { interval, startDate, endDate, productId } = useMetricsFilters(
     earliestDateISOString,
-  );
+  )
 
   const currentSlug = useMemo(() => {
-    const parts = pathname.split("/");
-    const metricsIndex = parts.indexOf("metrics");
-    return metricsIndex !== -1 ? (parts[metricsIndex + 1] ?? null) : null;
-  }, [pathname]);
+    const parts = pathname.split('/')
+    const metricsIndex = parts.indexOf('metrics')
+    return metricsIndex !== -1 ? (parts[metricsIndex + 1] ?? null) : null
+  }, [pathname])
 
   const isCustomDashboard = useMemo(
     () => !!currentSlug && UUID_REGEX.test(currentSlug),
     [currentSlug],
-  );
+  )
 
   const currentDashboard = useMemo(() => {
-    if (!isCustomDashboard || !customDashboards) return null;
+    if (!isCustomDashboard || !customDashboards) return null
     return (
       customDashboards.find(
-        (d: schemas["MetricDashboardSchema"]) => d.id === currentSlug,
+        (d: schemas['MetricDashboardSchema']) => d.id === currentSlug,
       ) ?? null
-    );
-  }, [isCustomDashboard, currentSlug, customDashboards]);
+    )
+  }, [isCustomDashboard, currentSlug, customDashboards])
 
   const dashboardName = useMemo(() => {
-    if (!currentSlug) return null;
-    if (BUILT_IN_NAMES[currentSlug]) return BUILT_IN_NAMES[currentSlug];
-    return currentDashboard?.name ?? null;
-  }, [currentSlug, currentDashboard]);
+    if (!currentSlug) return null
+    if (BUILT_IN_NAMES[currentSlug]) return BUILT_IN_NAMES[currentSlug]
+    return currentDashboard?.name ?? null
+  }, [currentSlug, currentDashboard])
 
   const metricsForExport = useMemo(() => {
     if (isCustomDashboard && currentDashboard) {
-      return currentDashboard.metrics;
+      return currentDashboard.metrics
     }
     if (currentSlug) {
       const group = METRIC_GROUPS.find(
-        (g) => g.category.toLowerCase().replace(/\s+/g, "-") === currentSlug,
-      );
-      return group ? group.metrics.map((m) => m.slug) : [];
+        (g) => g.category.toLowerCase().replace(/\s+/g, '-') === currentSlug,
+      )
+      return group ? group.metrics.map((m) => m.slug) : []
     }
-    return [];
-  }, [isCustomDashboard, currentDashboard, currentSlug]);
+    return []
+  }, [isCustomDashboard, currentDashboard, currentSlug])
 
   const handleExport = useCallback(() => {
-    const url = new URL(`${getServerURL()}/v1/metrics/export`);
-    url.searchParams.set("organization_id", organization.id);
-    url.searchParams.set("start_date", toISODate(startDate));
-    url.searchParams.set("end_date", toISODate(endDate));
-    url.searchParams.set("interval", interval);
+    const url = new URL(`${getServerURL()}/v1/metrics/export`)
+    url.searchParams.set('organization_id', organization.id)
+    url.searchParams.set('start_date', toISODate(startDate))
+    url.searchParams.set('end_date', toISODate(endDate))
+    url.searchParams.set('interval', interval)
     url.searchParams.set(
-      "timezone",
+      'timezone',
       Intl.DateTimeFormat().resolvedOptions().timeZone,
-    );
-    productId?.forEach((id) => url.searchParams.append("product_id", id));
-    metricsForExport.forEach((m) => url.searchParams.append("metrics", m));
-    window.open(url.toString(), "_blank");
+    )
+    productId?.forEach((id) => url.searchParams.append('product_id', id))
+    metricsForExport.forEach((m) => url.searchParams.append('metrics', m))
+    window.open(url.toString(), '_blank')
   }, [
     organization.id,
     startDate,
@@ -116,7 +116,7 @@ export function DashboardViewHeader({
     interval,
     productId,
     metricsForExport,
-  ]);
+  ])
 
   return (
     <div className="flex w-full items-center justify-between gap-x-4">
@@ -158,7 +158,7 @@ export function DashboardViewHeader({
         />
       )}
     </div>
-  );
+  )
 }
 
 // ─── Dot menu ────────────────────────────────────────────────────────────────
@@ -175,7 +175,7 @@ function ExportMenu({ onExport }: { onExport: () => void }) {
         <DropdownMenuItem onClick={onExport}>Export</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }
 
 function DashboardDotMenu({
@@ -184,27 +184,24 @@ function DashboardDotMenu({
   onEdit,
   onExport,
 }: {
-  organization: schemas["Organization"];
-  dashboard: schemas["MetricDashboardSchema"];
-  onEdit: () => void;
-  onExport: () => void;
+  organization: schemas['Organization']
+  dashboard: schemas['MetricDashboardSchema']
+  onEdit: () => void
+  onExport: () => void
 }) {
-  const router = useRouter();
-  const deleteMutation = useDeleteMetricDashboard(
-    dashboard.id,
-    organization.id,
-  );
+  const router = useRouter()
+  const deleteMutation = useDeleteMetricDashboard(dashboard.id, organization.id)
   const {
     isShown: isDeleteShown,
     show: showDelete,
     hide: hideDelete,
-  } = useModal();
+  } = useModal()
 
   const handleDelete = useCallback(async () => {
-    await deleteMutation.mutateAsync();
-    hideDelete();
-    router.push(`/dashboard/${organization.slug}/analytics/metrics`);
-  }, [deleteMutation, hideDelete, router, organization.slug]);
+    await deleteMutation.mutateAsync()
+    hideDelete()
+    router.push(`/dashboard/${organization.slug}/analytics/metrics`)
+  }, [deleteMutation, hideDelete, router, organization.slug])
 
   return (
     <>
@@ -234,7 +231,7 @@ function DashboardDotMenu({
         onConfirm={handleDelete}
       />
     </>
-  );
+  )
 }
 
 // ─── Edit dashboard form ──────────────────────────────────────────────────────
@@ -244,22 +241,19 @@ function EditDashboardContent({
   dashboard,
   onClose,
 }: {
-  organization: schemas["Organization"];
-  dashboard: schemas["MetricDashboardSchema"];
-  onClose: () => void;
+  organization: schemas['Organization']
+  dashboard: schemas['MetricDashboardSchema']
+  onClose: () => void
 }) {
-  const updateMutation = useUpdateMetricDashboard(
-    dashboard.id,
-    organization.id,
-  );
+  const updateMutation = useUpdateMetricDashboard(dashboard.id, organization.id)
 
   const handleSave = useCallback(
     async (metrics: string[], name?: string) => {
-      await updateMutation.mutateAsync({ name: name!, metrics });
-      onClose();
+      await updateMutation.mutateAsync({ name: name!, metrics })
+      onClose()
     },
     [updateMutation, onClose],
-  );
+  )
 
   return (
     <MetricDashboardEditorContent
@@ -272,5 +266,5 @@ function EditDashboardContent({
       isPending={updateMutation.isPending}
       saveLabel="Save Changes"
     />
-  );
+  )
 }

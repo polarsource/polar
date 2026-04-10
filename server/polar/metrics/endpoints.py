@@ -247,7 +247,8 @@ async def export(
 
         # Header row
         yield csv_writer.getrow(
-            ["Timestamp"] + [metrics_info[slug]["display_name"] for slug in ordered_slugs]
+            ["Timestamp"]
+            + [metrics_info[slug]["display_name"] for slug in ordered_slugs]
         )
 
         for period in response.periods:

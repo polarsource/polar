@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime
 from unittest.mock import call
 
@@ -1796,8 +1797,6 @@ class TestSetPayoutAccount:
         user: User,
     ) -> None:
         """Raises PolarRequestValidationError for unknown payout account."""
-        import uuid
-
         with pytest.raises(PolarRequestValidationError):
             await organization_service.set_payout_account(
                 session, auth_subject, organization, uuid.uuid4()

@@ -139,6 +139,7 @@ class PayoutAccountCreate(Schema):
 
 class PayoutAccount(TimestampedSchema, IDSchema):
     type: PayoutAccountType
+    country: str
     currency: str
     is_payout_ready: bool
 

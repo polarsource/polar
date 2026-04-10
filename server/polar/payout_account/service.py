@@ -23,13 +23,6 @@ class PayoutAccountServiceError(PolarError):
     pass
 
 
-class PayoutAccountAlreadyExists(PayoutAccountServiceError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        message = f"Organization {organization_id} already has a payout account"
-        super().__init__(message, 409)
-
-
 class PayoutAccountExternalIdDoesNotExist(PayoutAccountServiceError):
     def __init__(self, external_id: str) -> None:
         self.external_id = external_id
@@ -102,9 +95,6 @@ class PayoutAccountService:
         organization = await get_payload_organization(
             session, auth_subject, payout_account_create
         )
-
-        if organization.payout_account_id is not None:
-            raise PayoutAccountAlreadyExists(organization.id)
 
         payout_account = await self._create_stripe_account(
             session,

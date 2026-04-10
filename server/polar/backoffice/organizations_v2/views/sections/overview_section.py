@@ -5,11 +5,9 @@ import json
 from collections.abc import Generator
 from datetime import datetime
 
-import pycountry
 from fastapi import Request
 from tagflow import tag, text
 
-from polar.config import settings
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
@@ -24,7 +22,6 @@ from polar.organization_review.thresholds import (
 )
 
 from ....components import card
-from ....components._alert import alert
 from ....components._metric_card import Variant
 from ._shared import (
     RISK_LEVEL_BADGE,
@@ -349,36 +346,6 @@ class OverviewSection(ChecklistMixin):
                     text(json.dumps(snapshot_data, indent=2, default=str))
 
             yield
-
-    # ------------------------------------------------------------------
-    # Account-level risk flags
-    # ------------------------------------------------------------------
-
-    def _render_risk_flags(self) -> None:
-        """Render account-level risk flags above metrics."""
-        payout_account = self.org.payout_account
-        if not payout_account:
-            return
-
-        flags: list[str] = []
-        risk_countries = settings.RISK_COUNTRY_CODES
-        if payout_account.country in risk_countries:
-            country_obj = pycountry.countries.get(alpha_2=payout_account.country)
-            country_name = country_obj.name if country_obj else payout_account.country
-            flags.append(f"Account country: {payout_account.country} ({country_name})")
-        if payout_account.currency.lower() in {
-            c.lower() for c in settings.RISK_CURRENCY_CODES
-        }:
-            flags.append(f"Payout currency: {payout_account.currency.upper()}")
-
-        if not flags:
-            return
-
-        with alert(variant="warning", soft=True):
-            with tag.div(classes="space-y-1"):
-                for flag in flags:
-                    with tag.div(classes="text-sm font-medium"):
-                        text(flag)
 
     # ------------------------------------------------------------------
     # Payment Metrics card
@@ -763,8 +730,6 @@ class OverviewSection(ChecklistMixin):
 
             # Right: supporting evidence stacked (~40%)
             with tag.div(classes="lg:w-2/5 space-y-6"):
-                self._render_risk_flags()
-
                 with self.payment_card(payment_stats):
                     pass
 

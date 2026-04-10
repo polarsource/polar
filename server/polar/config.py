@@ -222,11 +222,6 @@ class Settings(BaseSettings):
     APPLE_KEY_ID: str = ""
     APPLE_KEY_VALUE: str = ""
 
-    # Risk review — comma-separated codes that trigger visual warning flags
-    # in the backoffice overview.
-    RISK_COUNTRY_CODES: list[str] = []
-    RISK_CURRENCY_CODES: list[str] = []
-
     # Pydantic AI Gateway
     PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
     PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.2-2025-12-11"

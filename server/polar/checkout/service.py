@@ -76,7 +76,6 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import CustomerType
-from polar.models.discount import DiscountDuration
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
@@ -963,14 +962,8 @@ class CheckoutService:
         ):
             if checkout.is_payment_required:
                 raise PaymentNotReady()
-            # When a discount makes a checkout free, ensure it's a permanent
-            # (forever) discount to avoid starting charges once it expires
-            # without the organization having been reviewed.
-            if (
-                checkout.is_payment_setup_required
-                and checkout.discount is not None
-                and checkout.discount.duration != DiscountDuration.forever
-            ):
+
+            if checkout.is_payment_setup_required:
                 raise PaymentNotReady()
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name

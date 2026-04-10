@@ -1910,4 +1910,3 @@ class TestSetPayoutAccount:
             await organization_service.set_payout_account(
                 session, auth_subject, organization, uuid.uuid4()
             )
-

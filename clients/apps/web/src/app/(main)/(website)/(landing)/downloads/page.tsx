@@ -46,6 +46,8 @@ const downloads = [
     title: 'Polar for Android',
     description:
       'The perfect companion app for your business on Polar. Built for Android.',
+    href: 'https://play.google.com/store/apps/details?id=com.polarsource.Polar',
+    target: '_blank',
     icon: <Google size={20} />,
   },
 ]

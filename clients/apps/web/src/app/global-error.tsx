@@ -1,9 +1,7 @@
 'use client'
 
 import InternalServerError from '@/components/Shared/InternalServerError'
-import { inter } from '@/fonts/fonts'
 import * as Sentry from '@sentry/nextjs'
-import { GeistMono } from 'geist/font/mono'
 import { useEffect } from 'react'
 
 export default function GlobalError({ error }: { error: Error }) {
@@ -12,7 +10,7 @@ export default function GlobalError({ error }: { error: Error }) {
   }, [error])
 
   return (
-    <html className={`antialiased ${inter.variable} ${GeistMono.variable}`}>
+    <html className="antialiased">
       <body>
         <InternalServerError
           digest={'digest' in error ? (error.digest as string) : undefined}

@@ -25,7 +25,12 @@ from polar.kit.schemas import Schema
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.organization_review.report import parse_agent_report
-from polar.organization_review.schemas import DataSnapshot
+from polar.organization_review.schemas import (
+    ActorType,
+    DataSnapshot,
+    DecisionType,
+    ReviewVerdict,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -122,9 +127,11 @@ async def extract_dataset(
         select(OrganizationReviewFeedback)
         .where(
             OrganizationReviewFeedback.deleted_at.is_(None),
-            OrganizationReviewFeedback.actor_type == "human",
+            OrganizationReviewFeedback.actor_type == ActorType.HUMAN,
             OrganizationReviewFeedback.agent_review_id.is_not(None),
-            OrganizationReviewFeedback.decision.in_(["APPROVE", "DENY"]),
+            OrganizationReviewFeedback.decision.in_(
+                [DecisionType.APPROVE, DecisionType.DENY]
+            ),
         )
         .options(selectinload(OrganizationReviewFeedback.agent_review))
         .order_by(OrganizationReviewFeedback.created_at.desc())
@@ -161,9 +168,9 @@ async def extract_dataset(
             skipped += 1
             continue
 
-        if fb.verdict == "APPROVE" and fb.decision == "DENY":
+        if fb.verdict == ReviewVerdict.APPROVE and fb.decision == DecisionType.DENY:
             false_approvals.append(case)
-        elif fb.verdict == "DENY" and fb.decision == "APPROVE":
+        elif fb.verdict == ReviewVerdict.DENY and fb.decision == DecisionType.APPROVE:
             false_denials.append(case)
         else:
             matches.append(case)

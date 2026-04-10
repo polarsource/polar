@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from annotated_types import MaxLen
+from fastapi import Path
 from pydantic import UUID4, Field
 
 from polar.kit.email import EmailStrDNS
@@ -11,6 +12,8 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.member import MemberRole
+
+ExternalMemberID = Annotated[str, Path(description="The member external ID.")]
 
 _external_id_description = (
     "The ID of the member in your system. This must be unique within the customer. "

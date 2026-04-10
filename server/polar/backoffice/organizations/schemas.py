@@ -26,8 +26,7 @@ class SetupVerdictData:
     products_count: int
     benefits_count: int
     user_verified: bool
-    account_charges_enabled: bool
-    account_payouts_enabled: bool
+    payouts_enabled: bool
     setup_score: int
     benefits_configured: bool
     webhooks_configured: bool

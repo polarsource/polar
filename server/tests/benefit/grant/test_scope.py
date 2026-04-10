@@ -8,7 +8,7 @@ from polar.benefit.grant.scope import (
     MemberNotFound,
     resolve_member,
 )
-from polar.models import Member
+from polar.models import Account, Member
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -23,10 +23,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When member_model_enabled is False, should return None regardless of inputs."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": False}
+            save_fixture, account, feature_settings={"member_model_enabled": False}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -44,10 +45,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When feature flag is disabled, explicit member_id is still used."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": False}
+            save_fixture, account, feature_settings={"member_model_enabled": False}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -76,10 +78,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When feature flag is disabled and no member_id, returns None."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": False}
+            save_fixture, account, feature_settings={"member_model_enabled": False}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -97,10 +100,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When feature flag enabled and member_id provided, load and return that member."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -128,10 +132,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2C (non-seat-based) with feature flag enabled auto-resolves owner member."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -161,10 +166,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2C with feature flag enabled but no owner member auto-creates one."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -186,10 +192,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2C auto-creates owner member even when only regular member exists."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -218,10 +225,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2B (seat-based) with feature flag enabled but no member_id raises MemberIdRequired."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -238,10 +246,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2B (seat-based) with explicit member_id returns that member."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -269,10 +278,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2C: When customer_id doesn't match any customer, raises error."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         fake_customer_id = uuid.uuid4()
 
@@ -289,10 +299,11 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2C: Soft-deleted owner member is not found without include_deleted."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -323,11 +334,12 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2C: Soft-deleted owner member is found with include_deleted=True.
         This is the benefit.revoke path for deleted customers."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
@@ -362,11 +374,12 @@ class TestResolveMember:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2B: When explicit member_id doesn't exist, raises MemberNotFound."""
 
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 

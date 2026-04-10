@@ -4,7 +4,7 @@ import pytest
 
 from polar.integrations.polar.client import PolarSelfClient
 from polar.kit.db.postgres import AsyncSession
-from polar.models import UserOrganization
+from polar.models import Account, UserOrganization
 from scripts.backfill_polar_self_customers import run_backfill
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_organization, create_user
@@ -16,8 +16,9 @@ class TestBackfillPolarSelfCustomers:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         user1 = await create_user(save_fixture)
         user2 = await create_user(save_fixture)
         await save_fixture(UserOrganization(user=user1, organization=org))
@@ -48,8 +49,9 @@ class TestBackfillPolarSelfCustomers:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         active_user = await create_user(save_fixture)
         deleted_user = await create_user(save_fixture)
         await save_fixture(UserOrganization(user=active_user, organization=org))

@@ -112,13 +112,9 @@ class SetupVerdict:
                     ):
                         pass
 
-                    # Account setup
-                    account_enabled = (
-                        self.data.account_charges_enabled
-                        and self.data.account_payouts_enabled
-                    )
+                    # Payouts enabled
                     with self._render_detail_item(
-                        "Account Charges & Payouts Enabled", account_enabled
+                        "Payouts Enabled", self.data.payouts_enabled
                     ):
                         pass
 

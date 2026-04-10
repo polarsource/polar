@@ -135,11 +135,6 @@ async def process_organizations(
                 status=organization.status,
             )
 
-            if not organization.account:
-                org_log.warning("No account, skipping")
-                stats["skipped"] += 1
-                continue
-
             if dry_run:
                 org_log.info(
                     "DRY RUN: Would review",

@@ -12,7 +12,7 @@ from tagflow import tag, text
 from polar.config import settings
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
-from polar.organization_review.schemas import DimensionAssessment
+from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
 from polar.organization_review.thresholds import (
     AUTH_RATE,
     CHARGEBACK_RATE,
@@ -223,10 +223,10 @@ class OverviewSection(ChecklistMixin):
             has_missing = bool(self.missing_items)
             with tag.div(classes="flex items-center gap-4 mb-4"):
                 verdict = review_report.verdict.value
-                if verdict == "APPROVE" and has_missing:
+                if verdict == ReviewVerdict.APPROVE.value and has_missing:
                     badge_class = "badge-neutral"
                     display_verdict = "APPROVE (checklist incomplete)"
-                elif verdict == "DENY":
+                elif verdict == ReviewVerdict.DENY.value:
                     badge_class = "badge-error"
                     display_verdict = verdict
                 else:
@@ -414,9 +414,6 @@ class OverviewSection(ChecklistMixin):
                 with tag.p(classes="text-base-content/60"):
                     text("No payment data available.")
             else:
-                next_review_threshold = payment_stats.get("next_review_threshold")
-                total_transfer_sum = payment_stats.get("total_transfer_sum")
-
                 with tag.div(classes="space-y-0"):
                     # Summary line items
                     self._payment_line(
@@ -425,13 +422,17 @@ class OverviewSection(ChecklistMixin):
                     )
                     self._payment_line(
                         "Total Amount",
-                        f"${payment_stats.get('total_amount', 0):,.2f}",
+                        f"${payment_stats.get('total_amount', 0) / 100:,.2f}",
                     )
-                    if total_transfer_sum:
-                        self._payment_line(
-                            "Total Transfers",
-                            f"${total_transfer_sum / 100:,.2f}",
-                        )
+                    self._payment_line(
+                        "Total Net Amount",
+                        f"${payment_stats.get('total_net_amount', 0) / 100:,.2f}",
+                    )
+                    self._payment_line(
+                        "Current Balance",
+                        f"${payment_stats.get('account_balance', 0) / 100:,.2f}",
+                    )
+                    next_review_threshold = payment_stats.get("next_review_threshold")
                     if next_review_threshold:
                         self._payment_line(
                             "Next Review",
@@ -456,7 +457,7 @@ class OverviewSection(ChecklistMixin):
                         "Refund Rate",
                         f"{refund_rate:.1f}%",
                         variant=self._to_variant(REFUND_RATE.evaluate(refund_rate)),
-                        detail=f"${payment_stats.get('refunds_amount', 0):,.2f}",
+                        detail=f"${payment_stats.get('refunds_amount', 0) / 100:,.2f}",
                     )
 
                     dispute_rate = payment_stats.get("dispute_rate", 0)
@@ -464,7 +465,7 @@ class OverviewSection(ChecklistMixin):
                         "Dispute Rate",
                         f"{dispute_rate:.2f}%",
                         variant=self._to_variant(DISPUTE_RATE.evaluate(dispute_rate)),
-                        detail=f"{payment_stats.get('dispute_count', 0)} · ${payment_stats.get('dispute_amount', 0):,.2f}",
+                        detail=f"{payment_stats.get('dispute_count', 0)} · ${payment_stats.get('dispute_amount', 0) / 100:,.2f}",
                     )
 
                     chargeback_rate = payment_stats.get("chargeback_rate", 0)
@@ -474,7 +475,7 @@ class OverviewSection(ChecklistMixin):
                         variant=self._to_variant(
                             CHARGEBACK_RATE.evaluate(chargeback_rate)
                         ),
-                        detail=f"{payment_stats.get('chargeback_count', 0)} lost · ${payment_stats.get('chargeback_amount', 0):,.2f}",
+                        detail=f"{payment_stats.get('chargeback_count', 0)} lost · ${payment_stats.get('chargeback_amount', 0) / 100:,.2f}",
                     )
 
                     # Risk scores

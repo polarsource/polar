@@ -31,10 +31,13 @@ export const CustomerSelector = ({
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const { data, fetchNextPage, hasNextPage } = useCustomers(organizationId, {
-    query: query || undefined,
-    sorting: ['-created_at'],
-  })
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomers(
+    organizationId,
+    {
+      query: query || undefined,
+      sorting: ['-created_at'],
+    },
+  )
 
   const allCustomers = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -53,10 +56,10 @@ export const CustomerSelector = ({
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
   useEffect(() => {
-    if (inViewport && hasNextPage) {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
-  }, [inViewport, hasNextPage, fetchNextPage])
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleToggleCustomer = useCallback(
     (customerId: string) => {

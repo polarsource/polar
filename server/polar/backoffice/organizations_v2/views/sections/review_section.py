@@ -10,6 +10,7 @@ from tagflow import tag, text
 
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
+from polar.organization_review.schemas import ReviewVerdict
 
 from ....components import button, card
 from ._shared import (
@@ -94,7 +95,7 @@ class ReviewSection(ChecklistMixin):
             with tag.div(classes="flex items-center gap-4 mb-4"):
                 verdict = review_report.verdict.value
                 # Override APPROVE to warning when checklist items are missing
-                if verdict == "APPROVE" and has_missing:
+                if verdict == ReviewVerdict.APPROVE.value and has_missing:
                     badge_class = "badge-warning"
                     display_verdict = "APPROVE (checklist incomplete)"
                 else:

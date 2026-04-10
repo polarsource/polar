@@ -85,9 +85,8 @@ class TestOrganizationUnderReview:
         account: Account,
         user: User,
     ) -> None:
-        # Update organization to have under review status and account
+        # Update organization to have under review status
         organization.status = OrganizationStatus.INITIAL_REVIEW
-        organization.account_id = account.id
         await save_fixture(organization)
 
         # then
@@ -151,12 +150,10 @@ class TestOrganizationReviewed:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        account: Account,
         user: User,
     ) -> None:
-        # Update organization to have active status and account
+        # Update organization to have active status
         organization.status = OrganizationStatus.ACTIVE
-        organization.account_id = account.id
         await save_fixture(organization)
 
         release_account_mock = mocker.patch.object(

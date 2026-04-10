@@ -18,9 +18,6 @@ class TestSearch:
         user_second: User,
         all_transactions: list[Transaction],
     ) -> None:
-        # then
-        session.expunge_all()
-
         results, count = await transaction_service.search(
             session, user_second, pagination=PaginationParams(1, 10)
         )
@@ -36,9 +33,6 @@ class TestSearch:
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
-        # then
-        session.expunge_all()
-
         results, count = await transaction_service.search(
             session, user, pagination=PaginationParams(1, 10)
         )

@@ -135,6 +135,7 @@ class TestCreate:
             OrganizationStatus.INITIAL_REVIEW,
             OrganizationStatus.ONGOING_REVIEW,
             OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDING,
         ],
     )
     async def test_organization_under_review(
@@ -324,11 +325,11 @@ class TestTriggerStripePayouts:
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
 
-        account_1 = await create_account(save_fixture, organization, user)
+        account_1 = await create_account(save_fixture, user)
         payout_account_1 = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
-        account_2 = await create_account(save_fixture, organization_second, user_second)
+        account_2 = await create_account(save_fixture, user_second)
         payout_account_2 = await create_payout_account(
             save_fixture,
             organization_second,
@@ -392,7 +393,7 @@ class TestTransferStripe:
         stripe_service_mock.transfer.return_value = SimpleNamespace(
             id="STRIPE_TRANSFER_ID", destination_payment=None
         )
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -466,7 +467,7 @@ class TestTransferStripe:
         country_map = {"twd": "TW", "huf": "HU", "isk": "IS", "ugx": "UG", "eur": "DE"}
         country = country_map.get(account_currency, "US")
 
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture,
             organization,
@@ -505,7 +506,7 @@ class TestCancel:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -528,7 +529,7 @@ class TestCancel:
         stripe_service_mock: MagicMock,
         payout_transaction_service_mock: MagicMock,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -582,7 +583,7 @@ class TestTriggerInvoiceGeneration:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -604,7 +605,7 @@ class TestTriggerInvoiceGeneration:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -628,7 +629,7 @@ class TestTriggerInvoiceGeneration:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -652,7 +653,6 @@ class TestTriggerInvoiceGeneration:
     ) -> None:
         account = await create_account(
             save_fixture,
-            organization,
             user,
             billing_name="Test Billing Name",
             billing_address=Address(country=CountryAlpha2("US"), line1="123 Test St"),
@@ -695,7 +695,6 @@ class TestTriggerInvoiceGeneration:
 
         account = await create_account(
             save_fixture,
-            organization,
             user,
             billing_name="Test Billing Name",
             billing_address=Address(country=CountryAlpha2("US"), line1="123 Test St"),
@@ -733,7 +732,6 @@ class TestTriggerInvoiceGeneration:
 
         account = await create_account(
             save_fixture,
-            organization,
             user,
             billing_name="Test Billing Name",
             billing_address=Address(country=CountryAlpha2("US"), line1="123 Test St"),

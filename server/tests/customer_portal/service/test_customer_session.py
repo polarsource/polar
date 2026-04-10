@@ -18,6 +18,7 @@ from polar.customer_portal.service.customer_session import (
 from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
 from polar.kit.utils import utc_now
 from polar.models import (
+    Account,
     CustomerSession,
     CustomerSessionCode,
     Member,
@@ -375,6 +376,7 @@ class TestRequestMemberEnabledOrg:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        account: Account,
     ) -> None:
         """Test that customer_id from different org raises CustomerDoesNotExist."""
         organization.feature_settings = {"member_model_enabled": True}
@@ -393,7 +395,7 @@ class TestRequestMemberEnabledOrg:
         await save_fixture(member1)
 
         # Create another organization with its own customer
-        other_org = await create_organization(save_fixture)
+        other_org = await create_organization(save_fixture, account)
         other_customer = await create_customer(
             save_fixture, organization=other_org, email="other@example.com"
         )

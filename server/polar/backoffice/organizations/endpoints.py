@@ -44,6 +44,7 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.organization_review.repository import OrganizationReviewRepository
+from polar.organization_review.schemas import DecisionType, ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
@@ -114,6 +115,7 @@ def organization_badge(organization: Organization) -> Generator[None]:
         elif (
             organization.is_under_review
             or organization.status == OrganizationStatus.DENIED
+            or organization.status == OrganizationStatus.OFFBOARDING
         ):
             classes("badge-warning")
         else:
@@ -236,10 +238,7 @@ async def get_setup_verdict_data(
     )
 
     # Check account charges and payouts enabled
-    (
-        account_charges_enabled,
-        account_payouts_enabled,
-    ) = await analytics_service.check_account_enabled(organization)
+    payouts_enabled = await analytics_service.check_payout_account_enabled(organization)
 
     # Calculate setup score using helper
     setup_score = analytics_service.calculate_setup_score(
@@ -249,8 +248,7 @@ async def get_setup_verdict_data(
         products_count=products_count,
         benefits_count=benefits_count,
         user_verified=user_verified,
-        account_charges_enabled=account_charges_enabled,
-        account_payouts_enabled=account_payouts_enabled,
+        payouts_enabled=payouts_enabled,
     )
 
     return SetupVerdictData(
@@ -260,8 +258,7 @@ async def get_setup_verdict_data(
         products_count=products_count,
         benefits_count=benefits_count,
         user_verified=user_verified,
-        account_charges_enabled=account_charges_enabled,
-        account_payouts_enabled=account_payouts_enabled,
+        payouts_enabled=payouts_enabled,
         setup_score=setup_score,
         benefits_configured=benefits_count > 0,
         webhooks_configured=webhooks_count > 0,
@@ -297,7 +294,7 @@ async def list(
     repository = OrganizationRepository.from_session(session)
     statement = (
         repository.get_base_statement(include_deleted=True)
-        .join(Account, Organization.account_id == Account.id, isouter=True)
+        .join(Account, Organization.account_id == Account.id)
         .options(
             contains_eager(Organization.account),
         )
@@ -1008,6 +1005,7 @@ async def get(
         id,
         options=(
             joinedload(Organization.account),
+            joinedload(Organization.payout_account),
             joinedload(Organization.review),
         ),
         include_deleted=True,
@@ -1019,8 +1017,6 @@ async def get(
 
     user_repository = UserRepository.from_session(session)
     users = await user_repository.get_all_by_organization(organization.id)
-
-    account = organization.account
 
     # Get setup, payment, and organization verdicts for account review sections
     setup_verdict_data = await get_setup_verdict_data(organization, session)
@@ -1048,16 +1044,20 @@ async def get(
             reason = getattr(account_status, "reason", None)
             reason = reason.strip() if reason else None
 
-            def _is_override(human_decision: str) -> bool:
+            def _is_override(human_decision: DecisionType) -> bool:
                 """Check if the human decision contradicts the AI verdict."""
                 if ai_verdict is None:
                     return False
-                return (human_decision == "APPROVE" and ai_verdict == "DENY") or (
-                    human_decision == "DENY" and ai_verdict == "APPROVE"
+                return (
+                    human_decision == DecisionType.APPROVE
+                    and ai_verdict == ReviewVerdict.DENY.value
+                ) or (
+                    human_decision == DecisionType.DENY
+                    and ai_verdict == ReviewVerdict.APPROVE.value
                 )
 
             if account_status.action == "approve":
-                if _is_override("APPROVE") and not reason:
+                if _is_override(DecisionType.APPROVE) and not reason:
                     raise PydanticCustomError(
                         "override_reason_required",
                         "A reason is required when overriding the AI recommendation.",
@@ -1065,14 +1065,14 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision="APPROVE",
+                    decision=DecisionType.APPROVE,
                     reason=reason,
                 )
                 await organization_service.confirm_organization_reviewed(
                     session, organization, account_status.next_review_threshold
                 )
             elif account_status.action == "deny":
-                if _is_override("DENY") and not reason:
+                if _is_override(DecisionType.DENY) and not reason:
                     raise PydanticCustomError(
                         "override_reason_required",
                         "A reason is required when overriding the AI recommendation.",
@@ -1080,7 +1080,7 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision="DENY",
+                    decision=DecisionType.DENY,
                     reason=reason,
                 )
                 await organization_service.deny_organization(session, organization)
@@ -1089,7 +1089,7 @@ async def get(
                     session, organization
                 )
             elif account_status.action == "approve_appeal":
-                if _is_override("APPROVE") and not reason:
+                if _is_override(DecisionType.APPROVE) and not reason:
                     raise PydanticCustomError(
                         "override_reason_required",
                         "A reason is required when overriding the AI recommendation.",
@@ -1097,13 +1097,13 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision="APPROVE",
-                    review_context="appeal",
+                    decision=DecisionType.APPROVE,
+                    review_context=ReviewContext.APPEAL,
                     reason=reason,
                 )
                 await organization_service.approve_appeal(session, organization)
             elif account_status.action == "deny_appeal":
-                if _is_override("DENY") and not reason:
+                if _is_override(DecisionType.DENY) and not reason:
                     raise PydanticCustomError(
                         "override_reason_required",
                         "A reason is required when overriding the AI recommendation.",
@@ -1111,11 +1111,31 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision="DENY",
-                    review_context="appeal",
+                    decision=DecisionType.DENY,
+                    review_context=ReviewContext.APPEAL,
                     reason=reason,
                 )
                 await organization_service.deny_appeal(session, organization)
+            elif account_status.action == "offboard":
+                await review_repo.record_human_decision(
+                    organization_id=id,
+                    reviewer_id=user_session.user.id,
+                    decision=DecisionType.DENY,
+                    reason=reason,
+                )
+                await organization_service.set_organization_offboarding(
+                    session, organization, reason=reason
+                )
+            elif account_status.action == "reactivate":
+                await review_repo.record_human_decision(
+                    organization_id=id,
+                    reviewer_id=user_session.user.id,
+                    decision=DecisionType.APPROVE,
+                    reason=reason,
+                )
+                await organization_service.reactivate_organization(
+                    session, organization
+                )
             return HXRedirectResponse(request, request.url, 303)
         except PydanticCustomError as e:
             await add_toast(request, str(e.message_template), variant="error")
@@ -1256,11 +1276,9 @@ async def get(
                                 text(f"Team Members ({len(users)})")
 
                         # Check if current organization has admin
-                        admin_user = None
-                        if organization.account_id:
-                            admin_user = await repository.get_admin_user(
-                                session, organization
-                            )
+                        admin_user = await repository.get_admin_user(
+                            session, organization
+                        )
 
                         if users:
                             # Users table

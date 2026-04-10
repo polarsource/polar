@@ -38,7 +38,12 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
-from polar.organization_review.schemas import ReviewContext, ReviewVerdict
+from polar.organization_review.schemas import (
+    ActorType,
+    DecisionType,
+    ReviewContext,
+    ReviewVerdict,
+)
 from polar.payout_account.repository import PayoutAccountRepository
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncReadSession, AsyncSession, sql
@@ -476,14 +481,13 @@ class OrganizationService:
         5. Soft delete organization
         """
         # Authorization check: only account admin can delete if account exists
-        if organization.account_id is not None:
-            is_admin = await account_service.is_user_admin(
-                session, organization.account_id, auth_subject.subject
+        is_admin = await account_service.is_user_admin(
+            session, organization.account_id, auth_subject.subject
+        )
+        if not is_admin:
+            raise NotPermitted(
+                "Only the account admin can delete an organization with an account"
             )
-            if not is_admin:
-                raise NotPermitted(
-                    "Only the account admin can delete an organization with an account"
-                )
 
         check_result = await self.check_can_delete(session, organization)
 
@@ -677,31 +681,6 @@ class OrganizationService:
                 delay=polar_self_member_delay,
             )
 
-    async def set_account(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization: Organization,
-        account_id: UUID,
-    ) -> Organization:
-        if organization.account_id is not None:
-            raise AccountAlreadySet(organization.slug)
-
-        account = await account_service.get(session, auth_subject, account_id)
-        if account is None:
-            raise InvalidAccount(account_id)
-
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.update(
-            organization, update_dict={"account": account}
-        )
-
-        enqueue_job("organization.account_set", organization.id)
-
-        await self._after_update(session, organization)
-
-        return organization
-
     async def get_next_invoice_number(
         self,
         session: AsyncSession,
@@ -868,13 +847,54 @@ class OrganizationService:
         await review_repository.deactivate_current_decisions(organization.id)
         await review_repository.save_review_decision(
             organization_id=organization.id,
-            actor_type="human",
-            decision="ESCALATE",
-            review_context="manual",
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.ESCALATE,
+            review_context=ReviewContext.MANUAL,
         )
 
         if enqueue_review:
             enqueue_job("organization.under_review", organization_id=organization.id)
+        return organization
+
+    async def set_organization_offboarding(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        reason: str | None = None,
+    ) -> Organization:
+        if organization.status not in OrganizationStatus.review_statuses():
+            raise OrganizationError(
+                "Only organizations under review can be set to offboarding.",
+                403,
+            )
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status_updated_at = datetime.now(UTC)
+
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+        note = f"[{timestamp}] Organization set to offboarding."
+        if reason:
+            note += f"\nReason: {reason}"
+        if organization.internal_notes:
+            organization.internal_notes = f"{organization.internal_notes}\n\n{note}"
+        else:
+            organization.internal_notes = note
+
+        session.add(organization)
+        return organization
+
+    async def reactivate_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> Organization:
+        if organization.status != OrganizationStatus.OFFBOARDING:
+            raise OrganizationError(
+                "Only offboarding organizations can be reactivated.", 403
+            )
+        organization.status = OrganizationStatus.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
+        session.add(organization)
         return organization
 
     async def get_payment_status(

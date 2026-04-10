@@ -1,3 +1,7 @@
+import asyncio
+import random
+
+import stripe as stripe_lib
 import structlog
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
@@ -86,11 +90,29 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
             )
             balance_transactions_list.append(balance_transactions)
 
-            platform_fee_transactions = (
-                await platform_fee_transaction_service.create_fees_reversal_balances(
-                    session, balance_transactions=balance_transactions
+            max_attempts = 3
+            attempt = 0
+            while attempt < max_attempts:
+                try:
+                    platform_fee_transactions = await platform_fee_transaction_service.create_fees_reversal_balances(
+                        session, balance_transactions=balance_transactions
+                    )
+                    break
+                except stripe_lib.RateLimitError as e:
+                    log.info(
+                        "Stripe rate limit hit, waiting...",
+                        attempt=attempt,
+                        held_balance_id=str(held_balance.id),
+                    )
+                    await asyncio.sleep(2**attempt + random.randint(1, 5))
+                    attempt += 1
+            else:
+                log.error(
+                    "Failed to create platform fee reversal balances after multiple attempts",
+                    held_balance_id=str(held_balance.id),
                 )
-            )
+                raise Exception("Failed to create platform fee reversal balances")
+
             if held_balance.order:
                 held_balance.order.platform_fee_amount = sum(
                     incoming.amount for _, incoming in platform_fee_transactions

@@ -29,7 +29,15 @@ from polar.metrics import queries_tinybird
 from polar.metrics.metrics import METRICS_TINYBIRD
 from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
-from polar.models import Customer, Event, Model, Organization, Product, Subscription
+from polar.models import (
+    Account,
+    Customer,
+    Event,
+    Model,
+    Organization,
+    Product,
+    Subscription,
+)
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
@@ -37,6 +45,7 @@ from polar.models.subscription import CustomerCancellationReason, SubscriptionSt
 from polar.postgres import AsyncSession
 from tests.fixtures.database import get_database_url, save_fixture_factory
 from tests.fixtures.random_objects import (
+    create_account,
     create_customer,
     create_event,
     create_order,
@@ -44,6 +53,7 @@ from tests.fixtures.random_objects import (
     create_payment_transaction,
     create_product,
     create_subscription,
+    create_user,
 )
 from tests.fixtures.tinybird import tinybird_available
 
@@ -1465,9 +1475,10 @@ async def _seed_organization_scenario(
     save_fixture: Any,
     scenario: OrganizationScenario,
     *,
+    account: Account,
     events: list[Event],
 ) -> OrganizationContext:
-    organization = await create_organization(save_fixture)
+    organization = await create_organization(save_fixture, account)
     await save_fixture(organization)
 
     products: dict[str, Product] = {}
@@ -1601,10 +1612,13 @@ async def metrics_harness(
             patch.object(tinybird_service, "client", tinybird_client),
             patch.object(queries_tinybird, "tinybird_client", tinybird_client),
         ):
+            user = await create_user(save_fixture)
+            account = await create_account(save_fixture, user)
             for scenario in ORGANIZATION_SCENARIOS:
                 organizations[scenario.key] = await _seed_organization_scenario(
                     save_fixture,
                     scenario,
+                    account=account,
                     events=events,
                 )
 

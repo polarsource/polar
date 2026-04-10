@@ -52,10 +52,13 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
   )
   const [query, setQuery] = useQueryState('query', parseAsString)
 
-  const { data, fetchNextPage, hasNextPage } = useCustomers(organization.id, {
-    query: query ?? undefined,
-    sorting: [sorting],
-  })
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomers(
+    organization.id,
+    {
+      query: query ?? undefined,
+      sorting: [sorting],
+    },
+  )
 
   const customers = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -71,10 +74,10 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
   useEffect(() => {
-    if (inViewport && hasNextPage) {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
-  }, [inViewport, hasNextPage, fetchNextPage])
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const onExport = useCallback(() => {
     const url = new URL(

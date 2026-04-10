@@ -51,10 +51,6 @@ class TestGrant:
             "polar.account_credit.service.notifications_service.send_to_org_members"
         )
 
-        # Link organization to account
-        organization.account = account
-        await save_fixture(organization)
-
         credit = await account_credit_service.grant(
             session,
             account=account,

@@ -20,7 +20,7 @@ from polar.worker import AsyncSessionMaker, TaskPriority, actor
 from .agent import run_organization_review
 from .report import build_agent_report
 from .repository import OrganizationReviewRepository
-from .schemas import ReviewContext, ReviewVerdict
+from .schemas import ActorType, DecisionType, ReviewContext, ReviewVerdict
 
 log = structlog.get_logger(__name__)
 
@@ -120,8 +120,8 @@ async def run_review_agent(
             )
             if (
                 current_decision is not None
-                and current_decision.actor_type == "human"
-                and current_decision.review_context == "manual"
+                and current_decision.actor_type == ActorType.HUMAN
+                and current_decision.review_context == ReviewContext.MANUAL
             ):
                 auto_approve_eligible = False
                 log.info(
@@ -149,9 +149,9 @@ async def run_review_agent(
                 await review_repository.record_agent_decision(
                     organization_id=organization_id,
                     agent_review_id=agent_review.id,
-                    decision="APPROVE",
-                    review_context="threshold",
-                    verdict=report.verdict.value,
+                    decision=DecisionType.APPROVE,
+                    review_context=ReviewContext.THRESHOLD,
+                    verdict=report.verdict,
                     risk_score=report.overall_risk_score,
                 )
 
@@ -210,9 +210,9 @@ async def run_review_agent(
                 await review_repository.record_agent_decision(
                     organization_id=organization_id,
                     agent_review_id=agent_review.id,
-                    decision="DENY",
-                    review_context="submission",
-                    verdict=report.verdict.value,
+                    decision=DecisionType.DENY,
+                    review_context=ReviewContext.SUBMISSION,
+                    verdict=report.verdict,
                     risk_score=report.overall_risk_score,
                 )
 

@@ -7,6 +7,7 @@ amounts directly from Payment, Refund, or Dispute records.
 import pytest
 
 from polar.backoffice.organizations.analytics import PaymentAnalyticsService
+from polar.models import Account
 from polar.models.dispute import DisputeStatus
 from polar.models.payment import PaymentStatus
 from polar.postgres import AsyncSession
@@ -30,13 +31,14 @@ class TestGetSucceededPaymentsStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         When a payment is made in a non-USD currency, the total amount returned
         should be the USD amount from the Transaction, not the presentment currency
         amount from Payment.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         # Payment in EUR: 900 EUR cents
         payment = await create_payment(
             save_fixture,
@@ -63,8 +65,9 @@ class TestGetSucceededPaymentsStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         service = PaymentAnalyticsService(session)
         count, total_amount = await service.get_succeeded_payments_stats(org.id)
         assert count == 0
@@ -74,8 +77,9 @@ class TestGetSucceededPaymentsStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         failed_payment = await create_payment(
             save_fixture, org, amount=1000, currency="usd", status=PaymentStatus.failed
         )
@@ -94,9 +98,10 @@ class TestGetRiskScores:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Risk scores should include both succeeded and failed payments."""
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         await create_payment(
             save_fixture, org, status=PaymentStatus.succeeded, risk_score=5
         )
@@ -113,8 +118,9 @@ class TestGetRiskScores:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         await create_payment(
             save_fixture, org, status=PaymentStatus.succeeded, risk_score=3
         )
@@ -131,8 +137,9 @@ class TestGetRiskScores:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         service = PaymentAnalyticsService(session)
         risk_scores = await service.get_risk_scores(org.id)
         assert risk_scores == []
@@ -144,13 +151,14 @@ class TestGetRefundStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         When a refund is in a non-USD currency, the total refund amount returned
         should be the USD amount from the Transaction (negated), not the
         presentment currency amount from Refund.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=org, stripe_customer_id="STRIPE_CUST_REFUND"
         )
@@ -179,13 +187,14 @@ class TestGetRefundStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         When an order has multiple refunds (e.g. partial + remainder),
         the count should reflect one refunded order, not the number of
         refund records. The total amount should still sum all refunds.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=org, stripe_customer_id="STRIPE_CUST_SPLIT"
         )
@@ -228,11 +237,12 @@ class TestGetRefundStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         Refunds on different orders should each be counted.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=org, stripe_customer_id="STRIPE_CUST_MULTI"
         )
@@ -284,8 +294,9 @@ class TestGetRefundStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         service = PaymentAnalyticsService(session)
         count, refund_amount = await service.get_refund_stats(org.id)
         assert count == 0
@@ -298,13 +309,14 @@ class TestGetDisputeStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """
         When a dispute is in a non-USD currency, the total dispute amount returned
         should be the USD amount from the Transaction (negated), not the
         presentment currency amount from Dispute.
         """
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=org, stripe_customer_id="STRIPE_CUST_DISPUTE"
         )
@@ -340,8 +352,9 @@ class TestGetDisputeStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture,
             organization=org,
@@ -379,8 +392,9 @@ class TestGetDisputeStats:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
-        org = await create_organization(save_fixture)
+        org = await create_organization(save_fixture, account)
         service = PaymentAnalyticsService(session)
         (
             dispute_count,

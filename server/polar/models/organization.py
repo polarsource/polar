@@ -190,6 +190,7 @@ class OrganizationStatus(StrEnum):
     ONGOING_REVIEW = "ongoing_review"
     DENIED = "denied"
     ACTIVE = "active"
+    OFFBOARDING = "offboarding"
 
     def get_display_name(self) -> str:
         return {
@@ -199,6 +200,7 @@ class OrganizationStatus(StrEnum):
             OrganizationStatus.ONGOING_REVIEW: "Ongoing Review",
             OrganizationStatus.DENIED: "Denied",
             OrganizationStatus.ACTIVE: "Active",
+            OrganizationStatus.OFFBOARDING: "Offboarding",
         }[self]
 
     @classmethod
@@ -207,7 +209,7 @@ class OrganizationStatus(StrEnum):
 
     @classmethod
     def payment_ready_statuses(cls) -> set[Self]:
-        return {cls.ACTIVE, *cls.review_statuses()}  # pyright: ignore
+        return {cls.ACTIVE, cls.OFFBOARDING, *cls.review_statuses()}  # pyright: ignore
 
     @classmethod
     def payout_ready_statuses(cls) -> set[Self]:
@@ -286,12 +288,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    account_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
+    account_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("accounts.id", ondelete="restrict"), nullable=False
     )
 
     @declared_attr
-    def account(cls) -> Mapped[Account | None]:
+    def account(cls) -> Mapped[Account]:
         return relationship(Account, lazy="raise", back_populates="organizations")
 
     payout_account_id: Mapped[UUID | None] = mapped_column(

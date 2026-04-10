@@ -265,6 +265,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <UpdateSubscriptionModal
             subscription={subscription}
             onUpdate={hideUpdateModal}
+            organization={organization}
           />
         }
       />

@@ -5,6 +5,7 @@ import pytest
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
+from polar.models import Account
 from polar.models.benefit import BenefitType
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File, FileServiceTypes
@@ -33,10 +34,11 @@ class TestBackfillLicenseKeys:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """License key with no member_id gets it from the linked benefit grant."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="alice@test.com"
@@ -97,10 +99,11 @@ class TestBackfillLicenseKeys:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """License key that already has member_id is not touched."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="bob@test.com"
@@ -159,10 +162,11 @@ class TestBackfillLicenseKeys:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """License key is not updated if the grant itself has no member_id."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="carol@test.com"
@@ -216,10 +220,11 @@ class TestBackfillLicenseKeys:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Deleted grants are ignored."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="dave@test.com"
@@ -282,10 +287,11 @@ class TestBackfillLicenseKeys:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Running twice produces the same result."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="eve@test.com"
@@ -347,10 +353,11 @@ class TestBackfillLicenseKeys:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Multiple license keys from different grants are all backfilled."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="frank@test.com"
@@ -434,10 +441,11 @@ class TestBackfillDownloadables:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Downloadable with no member_id gets it from the matching benefit grant."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="alice@test.com"
@@ -499,10 +507,11 @@ class TestBackfillDownloadables:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Downloadable that already has member_id is not touched."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="bob@test.com"
@@ -561,10 +570,11 @@ class TestBackfillDownloadables:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Downloadable is not updated if the grant has no member_id."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="carol@test.com"
@@ -619,10 +629,11 @@ class TestBackfillDownloadables:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When multiple grants exist, the most recently granted one wins."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="dave@test.com"
@@ -724,10 +735,11 @@ class TestBackfillDownloadables:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Running twice produces the same result."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="eve@test.com"
@@ -789,10 +801,11 @@ class TestBackfillDownloadables:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Multiple downloadables for the same benefit all get backfilled."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="frank@test.com"
@@ -857,13 +870,14 @@ class TestBackfillDownloadables:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Downloadables from different organizations don't cross-pollinate."""
         org1 = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         org2 = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer1 = await create_customer(
             save_fixture, organization=org1, email="org1@test.com"

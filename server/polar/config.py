@@ -400,6 +400,27 @@ class Settings(BaseSettings):
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40
 
+    ORGANIZATION_BLOCKED_WORDS: list[str] = [
+        "porn",
+        "porno",
+        "pornography",
+        "sex",
+        "sexual",
+        "sexy",
+        "nsfw",
+        "xxx",
+        "hentai",
+        "erotic",
+        "erotica",
+        "fetish",
+        "nude",
+        "nudes",
+        "nudity",
+        "onlyfans",
+        "camgirl",
+        "escort",
+    ]
+
     ORGANIZATION_SLUG_RESERVED_KEYWORDS: list[str] = [
         # Landing pages
         "benefits",

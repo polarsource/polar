@@ -856,10 +856,9 @@ class TestGetPaymentStatus:
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
-        # Make organization not payment ready (new org without account setup)
+        # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Mock environment to be sandbox
@@ -1542,9 +1541,9 @@ class TestRequestDeletion:
         other_user = User(email="admin@example.com")
         await save_fixture(other_user)
 
-        account = await create_account(
-            save_fixture, organization=organization, user=other_user
-        )
+        account = await create_account(save_fixture, user=other_user)
+        organization.account = account
+        await save_fixture(organization)
 
         with pytest.raises(NotPermitted) as exc_info:
             await organization_service.request_deletion(
@@ -1763,6 +1762,116 @@ class TestUpdateSeatBasedPricing:
 
 
 @pytest.mark.asyncio
+class TestSetOrganizationOffboarding:
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.INITIAL_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW,
+        ],
+    )
+    async def test_from_review_statuses(
+        self,
+        status: OrganizationStatus,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+
+        result = await organization_service.set_organization_offboarding(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDING
+        assert result.status_updated_at is not None
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.CREATED,
+        ],
+    )
+    async def test_from_non_review_raises(
+        self,
+        status: OrganizationStatus,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+
+        with pytest.raises(Exception, match="Only organizations under review"):
+            await organization_service.set_organization_offboarding(
+                session, organization
+            )
+
+    async def test_with_reason_appends_internal_notes(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.internal_notes = None
+
+        result = await organization_service.set_organization_offboarding(
+            session, organization, reason="Requested by merchant"
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDING
+        assert result.internal_notes is not None
+        assert "Requested by merchant" in result.internal_notes
+
+
+@pytest.mark.asyncio
+class TestReactivateOrganization:
+    async def test_from_offboarding(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+
+        result = await organization_service.reactivate_organization(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.ACTIVE
+        assert result.status_updated_at is not None
+
+    async def test_from_non_offboarding_raises(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+
+        with pytest.raises(Exception, match="Only offboarding organizations"):
+            await organization_service.reactivate_organization(session, organization)
+
+
+@pytest.mark.asyncio
+class TestOffboardingPaymentReady:
+    async def test_offboarding_allows_payments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Offboarding organizations should still be able to accept payments."""
+        # Grandfathered organization so we skip account setup checks
+        organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.OFFBOARDING
+        await save_fixture(organization)
+
+        result = await organization_service.is_organization_ready_for_payment(
+            session, organization
+        )
+
+        assert result is True
+
+
+@pytest.mark.asyncio
 class TestSetPayoutAccount:
     @pytest.mark.auth
     async def test_set_payout_account_on_organization(
@@ -1801,3 +1910,4 @@ class TestSetPayoutAccount:
             await organization_service.set_payout_account(
                 session, auth_subject, organization, uuid.uuid4()
             )
+

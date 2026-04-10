@@ -129,21 +129,14 @@ async def load_balance_transactions(
 
 
 @pytest_asyncio.fixture
-async def account_processor_fees(
-    save_fixture: SaveFixture, organization: Organization, user: User
-) -> Account:
-    return await create_account(
-        save_fixture, organization, user, processor_fees_applicable=True
-    )
+async def account_processor_fees(save_fixture: SaveFixture, user: User) -> Account:
+    return await create_account(save_fixture, user, processor_fees_applicable=True)
 
 
 @pytest_asyncio.fixture
-async def account_custom_fees(
-    save_fixture: SaveFixture, organization: Organization, user: User
-) -> Account:
+async def account_custom_fees(save_fixture: SaveFixture, user: User) -> Account:
     return await create_account(
         save_fixture,
-        organization,
         user,
         processor_fees_applicable=True,
         fee_basis_points=389,
@@ -489,7 +482,6 @@ class TestCreatePayoutFeesBalances:
     ) -> None:
         account = await create_account(
             save_fixture,
-            organization,
             user,
             processor_fees_applicable=False,
         )
@@ -517,9 +509,7 @@ class TestCreatePayoutFeesBalances:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(
-            save_fixture, organization=organization, user=user
-        )
+        account = await create_account(save_fixture, user=user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.manual
         )
@@ -646,7 +636,7 @@ class TestCreatePayoutFeesBalances:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture,
             organization,

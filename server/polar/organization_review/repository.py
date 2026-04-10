@@ -27,6 +27,12 @@ from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.organization_review.report import AnyAgentReport
+from polar.organization_review.schemas import (
+    ActorType,
+    DecisionType,
+    ReviewContext,
+    ReviewVerdict,
+)
 
 
 class OrganizationReviewRepository(
@@ -223,12 +229,12 @@ class OrganizationReviewRepository(
         self,
         *,
         organization_id: UUID,
-        actor_type: str,
-        decision: str,
-        review_context: str,
+        actor_type: ActorType,
+        decision: DecisionType,
+        review_context: ReviewContext,
         agent_review_id: UUID | None = None,
         reviewer_id: UUID | None = None,
-        verdict: str | None = None,
+        verdict: ReviewVerdict | None = None,
         risk_score: float | None = None,
         reason: str | None = None,
         is_current: bool = True,
@@ -254,8 +260,8 @@ class OrganizationReviewRepository(
         *,
         organization_id: UUID,
         reviewer_id: UUID,
-        decision: str,
-        review_context: str | None = None,
+        decision: DecisionType,
+        review_context: ReviewContext | None = None,
         reason: str | None = None,
     ) -> OrganizationReviewFeedback:
         """Record a human review decision with full context from the latest agent review.
@@ -269,24 +275,27 @@ class OrganizationReviewRepository(
         """
         agent_review = await self.get_latest_agent_review(organization_id)
 
-        verdict: str | None = None
+        verdict: ReviewVerdict | None = None
         risk_score: float | None = None
         agent_review_id: UUID | None = None
-        derived_context = review_context or "manual"
+        derived_context = review_context or ReviewContext.MANUAL
 
         if agent_review is not None:
             agent_review_id = agent_review.id
             parsed = agent_review.parsed_report
-            verdict = parsed.report.verdict.value
+            verdict = parsed.report.verdict
             risk_score = parsed.report.overall_risk_score
 
             if review_context is None:
-                derived_context = parsed.review_type or "manual"
+                try:
+                    derived_context = ReviewContext(parsed.review_type)
+                except (ValueError, KeyError):
+                    derived_context = ReviewContext.MANUAL
 
         await self.deactivate_current_decisions(organization_id)
         return await self.save_review_decision(
             organization_id=organization_id,
-            actor_type="human",
+            actor_type=ActorType.HUMAN,
             decision=decision,
             review_context=derived_context,
             agent_review_id=agent_review_id,
@@ -301,9 +310,9 @@ class OrganizationReviewRepository(
         *,
         organization_id: UUID,
         agent_review_id: UUID,
-        decision: str,
-        review_context: str,
-        verdict: str,
+        decision: DecisionType,
+        review_context: ReviewContext,
+        verdict: ReviewVerdict,
         risk_score: float | None = None,
     ) -> OrganizationReviewFeedback:
         """Record an automated agent decision.
@@ -313,7 +322,7 @@ class OrganizationReviewRepository(
         await self.deactivate_current_decisions(organization_id)
         return await self.save_review_decision(
             organization_id=organization_id,
-            actor_type="agent",
+            actor_type=ActorType.AGENT,
             decision=decision,
             review_context=review_context,
             agent_review_id=agent_review_id,

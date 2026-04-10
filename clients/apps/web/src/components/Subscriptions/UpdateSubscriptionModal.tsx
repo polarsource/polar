@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  useDiscount,
-  useDiscounts,
-  useOrganization,
-  useProducts,
-} from '@/hooks/queries'
+import { useDiscount, useDiscounts, useProducts } from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
@@ -38,7 +33,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { XIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
@@ -56,20 +51,23 @@ const validationDiscriminators = [
 const UpdateProduct = ({
   subscription,
   onUpdate,
+  organization,
 }: {
   subscription: schemas['Subscription']
   onUpdate?: () => void
+  organization: schemas['Organization']
 }) => {
   const updateSubscription = useUpdateSubscription(subscription.id)
-  const { data: organization } = useOrganization(
-    subscription.product.organization_id,
-  )
+
+  const defaultProrationBehavior =
+    organization.subscription_settings.proration_behavior
+
   const form = useForm<schemas['SubscriptionUpdateProduct']>({
     defaultValues: {
-      proration_behavior: 'prorate',
+      proration_behavior: defaultProrationBehavior,
     },
   })
-  const { control, handleSubmit, setError, watch, resetField } = form
+  const { control, handleSubmit, setError, watch } = form
   const { data: allProducts } = useProducts(
     subscription.product.organization_id,
     {
@@ -145,15 +143,6 @@ const UpdateProduct = ({
     [updateSubscription, subscription, setError, onUpdate],
   )
 
-  // Set default proration behavior from organization settings
-  useEffect(() => {
-    if (organization) {
-      resetField('proration_behavior', {
-        defaultValue: organization.subscription_settings.proration_behavior,
-      })
-    }
-  }, [organization, resetField])
-
   return (
     <Form {...form}>
       <form
@@ -214,13 +203,11 @@ const UpdateProduct = ({
                   <FormLabel>Proration behavior</FormLabel>
                 </div>
                 <FormControl>
-                  {organization && (
-                    <ProrationBehavior
-                      organization={organization}
-                      value={field.value || 'prorate'}
-                      onValueChange={field.onChange}
-                    />
-                  )}
+                  <ProrationBehavior
+                    organization={organization}
+                    value={field.value || defaultProrationBehavior}
+                    onValueChange={field.onChange}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -692,20 +679,18 @@ const UpdateBillingPeriod = ({
   )
 }
 
-interface UpdateSubscriptionModalProps {
-  subscription: schemas['Subscription']
-  onUpdate?: () => void
-}
-
 const UpdateSubscriptionModal = ({
   subscription,
   onUpdate,
-}: UpdateSubscriptionModalProps) => {
-  const isActive = useMemo(
-    () =>
-      subscription.status === 'active' || subscription.status === 'trialing',
-    [subscription],
-  )
+  organization,
+}: {
+  subscription: schemas['Subscription']
+  onUpdate?: () => void
+  organization: schemas['Organization']
+}) => {
+  const isActive =
+    subscription.status === 'active' || subscription.status === 'trialing'
+
   return (
     <div className="flex h-full flex-col gap-8 overflow-y-auto px-8 py-12">
       <div className="flex flex-row items-center gap-x-4">
@@ -722,7 +707,11 @@ const UpdateSubscriptionModal = ({
         </TabsList>
         <TabsContent value="product">
           <div className="flex h-full flex-col gap-4">
-            <UpdateProduct subscription={subscription} onUpdate={onUpdate} />
+            <UpdateProduct
+              subscription={subscription}
+              onUpdate={onUpdate}
+              organization={organization}
+            />
           </div>
         </TabsContent>
 

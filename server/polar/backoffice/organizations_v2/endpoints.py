@@ -66,7 +66,12 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization_review.repository import OrganizationReviewRepository
-from polar.organization_review.schemas import ReviewAgentReport
+from polar.organization_review.schemas import (
+    DecisionType,
+    ReviewAgentReport,
+    ReviewContext,
+    ReviewVerdict,
+)
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
@@ -206,6 +211,8 @@ async def list_organizations(
         status_filter = OrganizationStatus.CREATED
     elif status == "onboarding_started":
         status_filter = OrganizationStatus.ONBOARDING_STARTED
+    elif status == "offboarding":
+        status_filter = OrganizationStatus.OFFBOARDING
 
     # Build query
     stmt = (
@@ -511,10 +518,9 @@ async def get_organization_detail(
             else False
         )
 
-        (
-            account_charges_enabled,
-            account_payouts_enabled,
-        ) = await setup_analytics.check_account_enabled(organization)
+        payouts_enabled = await setup_analytics.check_payout_account_enabled(
+            organization
+        )
         payment_ready = await organization_service.is_organization_ready_for_payment(
             session, organization
         )
@@ -526,22 +532,13 @@ async def get_organization_detail(
             products_count,
             benefits_count,
             user_verified,
-            account_charges_enabled,
-            account_payouts_enabled,
+            payouts_enabled,
         )
 
         # Calculate total transfer sum (balance transactions)
-        total_transfer_sum = 0
-        if organization.account_id:
-            total_transfer_sum = await transaction_service.get_transactions_sum(
-                session, organization.account_id, type=TransactionType.balance
-            )
-        else:
-            logger.warning(
-                "Organization has no account_id for transaction sum",
-                organization_id=str(organization.id),
-                organization_slug=organization.slug,
-            )
+        total_transfer_sum = await transaction_service.get_transactions_sum(
+            session, organization.account_id, type=TransactionType.balance
+        )
 
         setup_data = {
             "setup_score": setup_score,
@@ -552,8 +549,7 @@ async def get_organization_detail(
             "benefits_count": benefits_count,
             "enabled_benefits_count": enabled_benefits_count,
             "user_verified": user_verified,
-            "account_charges_enabled": account_charges_enabled,
-            "account_payouts_enabled": account_payouts_enabled,
+            "payouts_enabled": payouts_enabled,
             "payment_ready": payment_ready,
             "next_review_threshold": organization.next_review_threshold,
             "total_transfer_sum": total_transfer_sum,
@@ -564,6 +560,9 @@ async def get_organization_detail(
             payment_count,
             total_amount,
         ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
+        account_balance = await transaction_service.get_transactions_sum(
+            session, organization.account_id
+        )
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
         )
@@ -592,23 +591,24 @@ async def get_organization_detail(
 
         payment_stats = {
             "payment_count": payment_count,
-            "total_amount": total_amount / 100,
+            "total_amount": total_amount,
+            "total_net_amount": total_transfer_sum,
+            "account_balance": account_balance,
             "refunds_count": refunds_count,
-            "refunds_amount": refunds_amount / 100,
+            "refunds_amount": refunds_amount,
             "refund_rate": refund_rate,
             "auth_rate": auth_rate,
             "failed_count": failed_count,
             "dispute_count": dispute_count,
-            "dispute_amount": dispute_amount / 100,
+            "dispute_amount": dispute_amount,
             "dispute_rate": dispute_rate,
             "chargeback_count": chargeback_count,
-            "chargeback_amount": chargeback_amount / 100,
+            "chargeback_amount": chargeback_amount,
             "chargeback_rate": chargeback_rate,
-            "next_review_threshold": organization.next_review_threshold,
-            "total_transfer_sum": total_transfer_sum,
             "p50_risk": p50_risk,
             "p90_risk": p90_risk,
             "risk_scores_count": len(risk_scores),
+            "next_review_threshold": organization.next_review_threshold,
         }
 
         orders_count, unrefunded_orders_count = await count_test_sales(
@@ -656,11 +656,10 @@ async def get_organization_detail(
                     pass
             elif section == "account":
                 account_credits: Sequence[AccountCredit] = []
-                if organization.account:
-                    credit_repository = AccountCreditRepository.from_session(session)
-                    account_credits = await credit_repository.get_all_by_account(
-                        organization.account.id
-                    )
+                credit_repository = AccountCreditRepository.from_session(session)
+                account_credits = await credit_repository.get_all_by_account(
+                    organization.account.id
+                )
                 account_section = AccountSection(
                     organization,
                     credits=account_credits,
@@ -782,7 +781,7 @@ async def approve_dialog(
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     review_report = _get_review_report(agent_review)
     verdict = review_report.verdict.value if review_report else ""
-    is_override = verdict == "DENY"
+    is_override = verdict == ReviewVerdict.DENY.value
 
     # Suggested threshold: double current or $250 min
     current_threshold = organization.next_review_threshold or 0
@@ -798,7 +797,7 @@ async def approve_dialog(
         await review_repo.record_human_decision(
             organization_id=organization_id,
             reviewer_id=user_session.user.id,
-            decision="APPROVE",
+            decision=DecisionType.APPROVE,
         )
         await organization_service.confirm_organization_reviewed(
             session, organization, threshold
@@ -829,7 +828,7 @@ async def approve_dialog(
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
-                decision="APPROVE",
+                decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
             await organization_service.confirm_organization_reviewed(
@@ -920,7 +919,7 @@ async def run_review_agent(
     enqueue_job(
         "organization_review.run_agent",
         organization_id=organization.id,
-        context="manual",
+        context=ReviewContext.MANUAL,
     )
 
     return HXRedirectResponse(
@@ -968,7 +967,7 @@ async def deny_dialog(
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
-                decision="DENY",
+                decision=DecisionType.DENY,
                 reason=override_reason,
             )
 
@@ -1062,7 +1061,7 @@ async def approve_denied_dialog(
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     review_report = _get_review_report(agent_review)
     verdict = review_report.verdict.value if review_report else ""
-    is_override = verdict == "DENY"
+    is_override = verdict == ReviewVerdict.DENY.value
 
     error_message: str | None = None
 
@@ -1083,7 +1082,7 @@ async def approve_denied_dialog(
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
-                decision="APPROVE",
+                decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
 
@@ -1220,8 +1219,8 @@ async def deny_appeal_dialog(
         await review_repo.record_human_decision(
             organization_id=organization_id,
             reviewer_id=user_session.user.id,
-            decision="DENY",
-            review_context="appeal",
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.APPEAL,
             reason=reason,
         )
 
@@ -1322,7 +1321,7 @@ async def unblock_approve_dialog(
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     review_report = _get_review_report(agent_review)
     verdict = review_report.verdict.value if review_report else ""
-    is_override = verdict == "DENY"
+    is_override = verdict == ReviewVerdict.DENY.value
 
     error_message: str | None = None
 
@@ -1343,7 +1342,7 @@ async def unblock_approve_dialog(
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
-                decision="APPROVE",
+                decision=DecisionType.APPROVE,
                 reason=override_reason,
             )
 
@@ -1579,6 +1578,166 @@ async def under_review_dialog(
                 ):
                     with button(variant="warning", type="submit"):
                         text("Set Under Review")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/offboard-dialog",
+    name="organizations:offboard_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def offboard_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Set organization to offboarding status dialog and action."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        form_data = await request.form()
+        reason = str(form_data.get("reason", "")).strip() or None
+
+        review_repo = OrganizationReviewRepository.from_session(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision=DecisionType.DENY,
+            reason=reason,
+        )
+
+        await organization_service.set_organization_offboarding(
+            session, organization, reason=reason
+        )
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    with modal("Set Offboarding", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:offboard_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            classes="flex flex-col gap-4",
+        ):
+            with tag.p(classes="font-semibold text-warning"):
+                text("Set Organization to Offboarding")
+
+            with tag.div(
+                classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Change the organization status to Offboarding")
+                    with tag.li():
+                        text("Block payouts while the organization is offboarding")
+
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason for offboarding")
+                with tag.textarea(
+                    name="reason",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="Why is this organization being offboarded?",
+                    rows="3",
+                ):
+                    pass
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="warning", type="submit"):
+                    text("Set Offboarding")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/reactivate-dialog",
+    name="organizations:reactivate_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def reactivate_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Reactivate an offboarding organization dialog and action."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        review_repo = OrganizationReviewRepository.from_session(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision=DecisionType.APPROVE,
+        )
+
+        await organization_service.reactivate_organization(session, organization)
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    with modal("Reactivate Organization", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p(classes="font-semibold text-success"):
+                text("Reactivate Organization")
+
+            with tag.div(
+                classes="bg-success/10 border border-success/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Change the organization status back to Active")
+                    with tag.li():
+                        text("Re-enable payouts for the organization")
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(
+                    hx_post=str(
+                        request.url_for(
+                            "organizations:reactivate_dialog",
+                            organization_id=organization_id,
+                        )
+                    ),
+                ):
+                    with button(variant="success", type="submit"):
+                        text("Reactivate")
 
     return None
 
@@ -2478,9 +2637,6 @@ async def make_admin(
 
     # Change the admin user
     try:
-        if not organization.account:
-            raise HTTPException(status_code=400, detail="Organization has no account")
-
         await account_service.change_admin(
             session, organization.account, user_id, organization_id
         )
@@ -2854,9 +3010,6 @@ async def grant_credit(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
-
     if request.method == "POST":
         form_data = await request.form()
 
@@ -3015,9 +3168,6 @@ async def revoke_credit(
 
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
-
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
 
     # Get the credit
     credit_repository = AccountCreditRepository.from_session(session)

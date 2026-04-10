@@ -68,7 +68,9 @@ class TestCreate:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
+        organization.account = account
+        await save_fixture(organization)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -121,7 +123,9 @@ class TestReverse:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(save_fixture, user)
+        organization.account = account
+        await save_fixture(organization)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )

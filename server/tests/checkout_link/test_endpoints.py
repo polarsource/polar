@@ -7,7 +7,7 @@ from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import CHECKOUT_CLIENT_SECRET_PREFIX
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
-from polar.models import Checkout, CheckoutLink, Product, UserOrganization
+from polar.models import Account, Checkout, CheckoutLink, Product, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -208,9 +208,11 @@ class TestRedirect:
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
+        account: Account,
     ) -> None:
         org = await create_organization(
             save_fixture,
+            account,
             name_prefix="blockedorg",
             blocked_at=utc_now(),
         )

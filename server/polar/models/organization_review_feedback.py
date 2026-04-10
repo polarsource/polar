@@ -1,4 +1,3 @@
-from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -7,7 +6,6 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Index,
-    String,
     Text,
     Uuid,
     text,
@@ -15,6 +13,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy import StrEnumType
+from polar.organization_review.schemas import (
+    ActorType,
+    DecisionType,
+    ReviewContext,
+    ReviewVerdict,
+)
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
@@ -24,15 +29,6 @@ if TYPE_CHECKING:
 
 class OrganizationReviewFeedback(RecordModel):
     """Captures review decisions for organizations — both AI agent and human reviewer."""
-
-    class ActorType(StrEnum):
-        AGENT = "agent"
-        HUMAN = "human"
-
-    class DecisionType(StrEnum):
-        APPROVE = "APPROVE"
-        DENY = "DENY"
-        ESCALATE = "ESCALATE"
 
     __tablename__ = "organization_review_feedback"
 
@@ -70,11 +66,19 @@ class OrganizationReviewFeedback(RecordModel):
         index=True,
     )
 
-    actor_type: Mapped[str | None] = mapped_column(String, nullable=True)
-    decision: Mapped[str | None] = mapped_column(String, nullable=True)
-    verdict: Mapped[str | None] = mapped_column(String, nullable=True)
+    actor_type: Mapped[ActorType | None] = mapped_column(
+        StrEnumType(ActorType), nullable=True
+    )
+    decision: Mapped[DecisionType | None] = mapped_column(
+        StrEnumType(DecisionType), nullable=True
+    )
+    verdict: Mapped[ReviewVerdict | None] = mapped_column(
+        StrEnumType(ReviewVerdict), nullable=True
+    )
     risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    review_context: Mapped[str | None] = mapped_column(String, nullable=True)
+    review_context: Mapped[ReviewContext | None] = mapped_column(
+        StrEnumType(ReviewContext), nullable=True
+    )
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_current: Mapped[bool | None] = mapped_column(
         Boolean, nullable=True, server_default="false"

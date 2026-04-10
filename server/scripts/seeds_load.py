@@ -27,6 +27,7 @@ from polar.discount.service import discount as discount_service
 from polar.enums import (
     PaymentProcessor,
     SubscriptionRecurringInterval,
+    TaxBehavior,
     TaxBehaviorOption,
 )
 from polar.event.repository import EventRepository
@@ -1362,7 +1363,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     amount=amount,
                     net_amount=amount,
                     currency=seat_based_price.price_currency,
-                    tax_behavior=organization.default_tax_behavior,
+                    tax_behavior=TaxBehavior.exclusive,
                     recurring_interval=seat_based_product.recurring_interval,
                     recurring_interval_count=1,
                     status=SubscriptionStatus.active,

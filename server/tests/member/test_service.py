@@ -8,12 +8,16 @@ from sqlalchemy.exc import IntegrityError
 from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
 from polar.member.service import member_service
-from polar.models import Account, Customer, Member, Organization, User, UserOrganization
+from polar.models import Customer, Member, Organization, User, UserOrganization
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_organization
+from tests.fixtures.random_objects import (
+    create_account,
+    create_customer,
+    create_organization,
+)
 
 
 @pytest.mark.asyncio
@@ -74,9 +78,10 @@ class TestGetByExternalID:
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
-        account: Account,
+        user: User,
     ) -> None:
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,
@@ -107,10 +112,11 @@ class TestList:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
-        account: Account,
+        user: User,
     ) -> None:
         """Test that user cannot access members from organizations they don't belong to."""
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,

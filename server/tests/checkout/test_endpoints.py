@@ -17,7 +17,6 @@ from polar.enums import SubscriptionRecurringInterval, TaxBehavior, TaxProcessor
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.models import (
-    Account,
     Checkout,
     Customer,
     Discount,
@@ -36,6 +35,7 @@ from polar.tax.calculation.base import TaxabilityReason
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_checkout,
     create_discount,
     create_organization,
@@ -102,10 +102,9 @@ async def webhook_endpoint(
 
 
 async def create_blocked_product(
-    save_fixture: SaveFixture,
-    auth_subject: AuthSubject[User],
-    account: Account,
+    save_fixture: SaveFixture, auth_subject: AuthSubject[User]
 ) -> Product:
+    account = await create_account(save_fixture, auth_subject.subject)
     org = await create_organization(
         save_fixture,
         account,
@@ -187,9 +186,8 @@ class TestGet:
         client: AsyncClient,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
-        account: Account,
     ) -> None:
-        product = await create_blocked_product(save_fixture, auth_subject, account)
+        product = await create_blocked_product(save_fixture, auth_subject)
         product.organization.blocked_at = None
         await save_fixture(product)
 
@@ -267,9 +265,8 @@ class TestCreateCheckout:
         client: AsyncClient,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
-        account: Account,
     ) -> None:
-        product = await create_blocked_product(save_fixture, auth_subject, account)
+        product = await create_blocked_product(save_fixture, auth_subject)
 
         response = await client.post(
             f"{api_prefix}/",

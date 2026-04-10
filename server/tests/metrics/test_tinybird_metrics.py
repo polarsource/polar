@@ -1613,8 +1613,8 @@ async def metrics_harness(
             patch.object(queries_tinybird, "tinybird_client", tinybird_client),
         ):
             user = await create_user(save_fixture)
-            account = await create_account(save_fixture, user)
             for scenario in ORGANIZATION_SCENARIOS:
+                account = await create_account(save_fixture, user)
                 organizations[scenario.key] = await _seed_organization_scenario(
                     save_fixture,
                     scenario,

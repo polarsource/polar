@@ -2,11 +2,15 @@ import pytest
 
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
-from polar.models import Account, Member, Organization
+from polar.models import Account, Member, Organization, User
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_organization
+from tests.fixtures.random_objects import (
+    create_account,
+    create_customer,
+    create_organization,
+)
 
 
 @pytest.mark.asyncio
@@ -161,6 +165,7 @@ class TestListByEmailAndOrganization:
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
+        user: User,
     ) -> None:
         """Test that only members from specified organization are returned."""
         # Create member in primary organization
@@ -176,7 +181,8 @@ class TestListByEmailAndOrganization:
         await save_fixture(member1)
 
         # Create member with same email in different organization
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer2 = await create_customer(
             save_fixture, organization=other_org, email="customer2@example.com"
         )

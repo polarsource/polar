@@ -6,7 +6,7 @@ from sqlalchemy import select
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import Account, Customer, CustomerSeat
+from polar.models import Account, Customer, CustomerSeat, User
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer import (
@@ -24,6 +24,7 @@ from polar.organization.tasks import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_benefit,
     create_benefit_grant,
     create_customer,
@@ -664,17 +665,17 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        account: Account,
+        user: User,
     ) -> None:
         org1 = await create_organization(
             save_fixture,
-            account,
+            await create_account(save_fixture, user),
             feature_settings={"member_model_enabled": True},
             name_prefix="org1",
         )
         org2 = await create_organization(
             save_fixture,
-            account,
+            await create_account(save_fixture, user),
             feature_settings={"member_model_enabled": True},
             name_prefix="org2",
         )

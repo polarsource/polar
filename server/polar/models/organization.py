@@ -289,7 +289,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     account_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("accounts.id", ondelete="restrict"), nullable=False
+        Uuid,
+        ForeignKey("accounts.id", ondelete="restrict"),
+        nullable=False,
+        unique=True,
     )
 
     @declared_attr

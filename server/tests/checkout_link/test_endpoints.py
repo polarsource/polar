@@ -7,11 +7,12 @@ from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import CHECKOUT_CLIENT_SECRET_PREFIX
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
-from polar.models import Account, Checkout, CheckoutLink, Product, UserOrganization
+from polar.models import Checkout, CheckoutLink, Product, User, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_checkout_link,
     create_organization,
     create_product,
@@ -205,11 +206,9 @@ class TestRedirect:
         assert response.status_code == 404
 
     async def test_blocked_organization(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        account: Account,
+        self, save_fixture: SaveFixture, client: AsyncClient, user: User
     ) -> None:
+        account = await create_account(save_fixture, user)
         org = await create_organization(
             save_fixture,
             account,

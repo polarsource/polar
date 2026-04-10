@@ -2253,9 +2253,9 @@ async def metrics_harness(
         ):
             user = await create_user(save_fixture)
             unauthorized_user = await create_user(save_fixture)
-            account = await create_account(save_fixture, user)
 
             async def make_org(key: str) -> Organization:
+                account = await create_account(save_fixture, user)
                 org = await create_organization(save_fixture, account)
                 uo = UserOrganization(user=user, organization=org)
                 await save_fixture(uo)

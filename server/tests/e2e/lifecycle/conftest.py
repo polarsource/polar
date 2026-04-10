@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Account, Organization, Product, User, UserOrganization
+from polar.models import Organization, Product, User, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.billing_entry import BillingEntry, BillingEntryType
@@ -18,6 +18,7 @@ from tests.e2e.infra import DrainFn, DrainResult
 from tests.e2e.purchase.subscription.conftest import monthly_product  # noqa: F401
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_benefit,
     create_organization,
     create_product,
@@ -97,10 +98,9 @@ async def monthly_product_with_benefit(
 
 
 @pytest_asyncio.fixture
-async def seat_org(
-    save_fixture: SaveFixture, user: User, account: Account
-) -> Organization:
+async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
     """Organization with seat-based pricing enabled, linked to the test user."""
+    account = await create_account(save_fixture, user)
     org = await create_organization(
         save_fixture,
         account,

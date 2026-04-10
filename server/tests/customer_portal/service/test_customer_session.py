@@ -24,12 +24,17 @@ from polar.models import (
     Member,
     MemberSession,
     Organization,
+    User,
 )
 from polar.models.member import MemberRole
 from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_organization
+from tests.fixtures.random_objects import (
+    create_account,
+    create_customer,
+    create_organization,
+)
 
 
 @pytest.mark.asyncio
@@ -377,6 +382,7 @@ class TestRequestMemberEnabledOrg:
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
+        user: User,
     ) -> None:
         """Test that customer_id from different org raises CustomerDoesNotExist."""
         organization.feature_settings = {"member_model_enabled": True}
@@ -395,7 +401,8 @@ class TestRequestMemberEnabledOrg:
         await save_fixture(member1)
 
         # Create another organization with its own customer
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         other_customer = await create_customer(
             save_fixture, organization=other_org, email="other@example.com"
         )

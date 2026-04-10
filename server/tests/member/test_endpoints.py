@@ -3,10 +3,14 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-from polar.models import Account, Member, Organization, UserOrganization
+from polar.models import Account, Member, Organization, User, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_organization
+from tests.fixtures.random_objects import (
+    create_account,
+    create_customer,
+    create_organization,
+)
 
 
 @pytest.mark.asyncio
@@ -190,11 +194,11 @@ class TestListMembers:
         client: AsyncClient,
         organization: Organization,
         account: Account,
+        user: User,
     ) -> None:
         # Create a customer for a different organization that the user doesn't have access to
-        from tests.fixtures.random_objects import create_organization
-
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,
@@ -414,9 +418,10 @@ class TestCreateMember:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        account: Account,
+        user: User,
     ) -> None:
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         other_org.feature_settings = {"member_model_enabled": True}
         await save_fixture(other_org)
 
@@ -535,9 +540,10 @@ class TestGetMemberByExternalID:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        account: Account,
+        user: User,
     ) -> None:
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,
@@ -638,9 +644,11 @@ class TestUpdateMemberByExternalID:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
+        user: User,
         account: Account,
     ) -> None:
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,
@@ -735,8 +743,10 @@ class TestDeleteMemberByExternalID:
         client: AsyncClient,
         organization: Organization,
         account: Account,
+        user: User,
     ) -> None:
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,
@@ -831,8 +841,10 @@ class TestGetMember:
         client: AsyncClient,
         organization: Organization,
         account: Account,
+        user: User,
     ) -> None:
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,
@@ -1084,9 +1096,10 @@ class TestUpdateMember:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        account: Account,
+        user: User,
     ) -> None:
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,
@@ -1218,10 +1231,11 @@ class TestDeleteMember:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        account: Account,
+        user: User,
     ) -> None:
         # Create a member for a different organization
-        other_org = await create_organization(save_fixture, account)
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
         customer = await create_customer(
             save_fixture,
             organization=other_org,

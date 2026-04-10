@@ -33,6 +33,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_customer,
     create_customer_seat,
     create_member,
@@ -1993,16 +1994,20 @@ class TestGetSeat:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        account: Account,
         product: Product,
         customer: Customer,
+        user: User,
     ) -> None:
         # Create a different organization (not seat-enabled)
-        different_org = await create_organization(save_fixture, account)
+        different_org = await create_organization(
+            save_fixture, await create_account(save_fixture, user)
+        )
         auth_subject = AuthSubject(subject=different_org, scopes=set(), session=None)
 
         # Create a seat with seat-enabled organization
-        seat_enabled_org = await create_organization(save_fixture, account)
+        seat_enabled_org = await create_organization(
+            save_fixture, await create_account(save_fixture, user)
+        )
         seat_enabled_org.feature_settings = {"seat_based_pricing_enabled": True}
         await save_fixture(seat_enabled_org)
 

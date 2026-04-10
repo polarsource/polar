@@ -11,21 +11,24 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Account, Organization, Product, User, UserOrganization
+from polar.models import Organization, Product, User, UserOrganization
 from tests.e2e.infra import DrainFn, StripeSimulator
 from tests.e2e.post_purchase.conftest import E2E_SEAT_AUTH
 from tests.e2e.purchase.conftest import complete_purchase
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_organization, create_product
+from tests.fixtures.random_objects import (
+    create_account,
+    create_organization,
+    create_product,
+)
 
 SEAT_RECIPIENT_EMAIL = "teammate@example.com"
 
 
 @pytest_asyncio.fixture
-async def seat_org(
-    save_fixture: SaveFixture, user: User, account: Account
-) -> Organization:
+async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
     """Organization with seat-based pricing enabled, linked to the test user."""
+    account = await create_account(save_fixture, user)
     org = await create_organization(
         save_fixture,
         account,

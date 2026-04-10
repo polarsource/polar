@@ -5,7 +5,7 @@ import pytest
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import Account
+from polar.models import Account, User
 from polar.models.benefit import BenefitType
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File, FileServiceTypes
@@ -18,6 +18,7 @@ from scripts.migrate_organizations_members import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_benefit,
     create_benefit_grant,
     create_customer,
@@ -438,12 +439,10 @@ async def _create_file(
 @pytest.mark.asyncio
 class TestBackfillDownloadables:
     async def test_sets_member_id_from_grant(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        account: Account,
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
     ) -> None:
         """Downloadable with no member_id gets it from the matching benefit grant."""
+        account = await create_account(save_fixture, user)
         organization = await create_organization(
             save_fixture, account, feature_settings={"member_model_enabled": True}
         )
@@ -870,14 +869,18 @@ class TestBackfillDownloadables:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        account: Account,
+        user: User,
     ) -> None:
         """Downloadables from different organizations don't cross-pollinate."""
         org1 = await create_organization(
-            save_fixture, account, feature_settings={"member_model_enabled": True}
+            save_fixture,
+            await create_account(save_fixture, user),
+            feature_settings={"member_model_enabled": True},
         )
         org2 = await create_organization(
-            save_fixture, account, feature_settings={"member_model_enabled": True}
+            save_fixture,
+            await create_account(save_fixture, user),
+            feature_settings={"member_model_enabled": True},
         )
         customer1 = await create_customer(
             save_fixture, organization=org1, email="org1@test.com"

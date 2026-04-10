@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import func, select
 
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Account, Discount, Organization, ProductBenefit
+from polar.models import Account, Discount, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration, DiscountType
 from scripts.transfer_products_between_organizations import (
@@ -14,6 +14,7 @@ from scripts.transfer_products_between_organizations import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_benefit,
     create_checkout_link,
     create_customer,
@@ -115,11 +116,15 @@ class TestProductTransferService:
         assert product2.id in [p.id for p in service.products]
 
     async def test_validate_products_belong_to_same_organization_mixed_orgs(
-        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+        self, save_fixture: SaveFixture, session: AsyncSession, user: User
     ) -> None:
         """Test validation fails when products belong to different organizations."""
-        org1 = await create_organization(save_fixture, account)
-        org2 = await create_organization(save_fixture, account)
+        org1 = await create_organization(
+            save_fixture, await create_account(save_fixture, user)
+        )
+        org2 = await create_organization(
+            save_fixture, await create_account(save_fixture, user)
+        )
 
         product1 = await create_product(
             save_fixture, organization=org1, name="Product 1", recurring_interval=None

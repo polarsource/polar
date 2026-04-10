@@ -41,6 +41,22 @@ def _extract_domain(url: str) -> str | None:
         return None
 
 
+def _normalize_domain(domain: str) -> str:
+    """Strip leading 'www.' so that bare and www variants are treated as the same domain."""
+    return domain.removeprefix("www.")
+
+
+def _is_cross_domain(original: str | None, final: str | None) -> bool:
+    """Return True if two domains differ after www-normalization.
+
+    Returns False if either domain is None (unparseable URLs are not
+    treated as cross-domain redirects — they surface via the error field).
+    """
+    if original is None or final is None:
+        return False
+    return _normalize_domain(original) != _normalize_domain(final)
+
+
 def _unique_domains(urls: list[str]) -> list[str]:
     """Extract and deduplicate domains from a list of URLs, preserving order."""
     seen: set[str] = set()
@@ -110,7 +126,7 @@ async def _resolve_redirect(
             final_url = str(response.url)
             final_domain = _extract_domain(final_url)
             original_domain = _extract_domain(url)
-            redirected = final_domain != original_domain
+            redirected = _is_cross_domain(original_domain, final_domain)
             return UrlRedirectInfo(
                 original_url=url,
                 final_url=final_url,
@@ -196,7 +212,7 @@ async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
         final_url = page.url
         final_domain = _extract_domain(final_url)
         original_domain = _extract_domain(url)
-        redirected = final_domain != original_domain
+        redirected = _is_cross_domain(original_domain, final_domain)
 
         return UrlRedirectInfo(
             original_url=url,

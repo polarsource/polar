@@ -55,15 +55,13 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
     ),
   )
 
-  const { data, hasNextPage, fetchNextPage } = useMetersInfinite(
-    organization.id,
-    {
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useMetersInfinite(organization.id, {
       sorting: [sorting],
       query,
       is_archived:
         archivedFilter === 'all' ? undefined : archivedFilter === 'archived',
-    },
-  )
+    })
 
   const meters = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -82,10 +80,10 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
   const { ref: loadingRef, inViewport } = useInViewport()
 
   useEffect(() => {
-    if (inViewport && hasNextPage) {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
-  }, [inViewport, hasNextPage, fetchNextPage])
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
     <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">

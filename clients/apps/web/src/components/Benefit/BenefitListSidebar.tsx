@@ -53,13 +53,11 @@ export const BenefitListSidebar = ({
     parseAsBoolean.withDefault(false),
   )
 
-  const { data, fetchNextPage, hasNextPage } = useInfiniteBenefits(
-    organization.id,
-    {
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteBenefits(organization.id, {
       query: query ?? undefined,
       sorting: [sorting],
-    },
-  )
+    })
 
   const benefits = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -76,10 +74,10 @@ export const BenefitListSidebar = ({
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
   useEffect(() => {
-    if (inViewport && hasNextPage) {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
-  }, [inViewport, hasNextPage, fetchNextPage])
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   useEffect(() => {
     if (createBenefitQuerystring) {

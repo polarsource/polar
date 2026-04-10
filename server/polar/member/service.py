@@ -85,12 +85,23 @@ class MemberService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         external_id: str,
+        *,
+        customer_id: UUID | None = None,
+        external_customer_id: str | None = None,
     ) -> Member | None:
         """Get a member by external ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             Member.external_id == external_id
         )
+
+        if external_customer_id is not None:
+            statement = statement.join(Customer).where(
+                Customer.external_id == external_customer_id
+            )
+        if customer_id is not None:
+            statement = statement.where(Member.customer_id == customer_id)
+
         return await repository.get_one_or_none(statement)
 
     async def delete(

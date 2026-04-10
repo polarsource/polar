@@ -486,11 +486,21 @@ class TestGetMemberByExternalID:
     @pytest.mark.auth
     async def test_not_existing(
         self,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        response = await client.get("/v1/members/external/not-existing")
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        response = await client.get(
+            "/v1/members/external/not-existing",
+            params={"customer_id": str(customer.id)},
+        )
 
         assert response.status_code == 404
 
@@ -518,7 +528,10 @@ class TestGetMemberByExternalID:
         )
         await save_fixture(member)
 
-        response = await client.get("/v1/members/external/ext_123")
+        response = await client.get(
+            "/v1/members/external/ext_123",
+            params={"customer_id": str(customer.id)},
+        )
 
         assert response.status_code == 200
         json = response.json()
@@ -554,7 +567,10 @@ class TestGetMemberByExternalID:
         )
         await save_fixture(member)
 
-        response = await client.get("/v1/members/external/ext_123")
+        response = await client.get(
+            "/v1/members/external/ext_123",
+            params={"customer_id": str(customer.id)},
+        )
 
         assert response.status_code == 404
 
@@ -585,12 +601,20 @@ class TestUpdateMemberByExternalID:
     @pytest.mark.auth
     async def test_not_existing(
         self,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
         response = await client.patch(
             "/v1/members/external/not-existing",
+            params={"customer_id": str(customer.id)},
             json={"name": "Updated Name"},
         )
 
@@ -622,6 +646,7 @@ class TestUpdateMemberByExternalID:
 
         response = await client.patch(
             "/v1/members/external/ext_456",
+            params={"customer_id": str(customer.id)},
             json={"name": "Updated Name", "role": "billing_manager"},
         )
 
@@ -659,6 +684,7 @@ class TestUpdateMemberByExternalID:
 
         response = await client.patch(
             "/v1/members/external/ext_789",
+            params={"customer_id": str(customer.id)},
             json={"name": "Updated Name"},
         )
 
@@ -685,11 +711,21 @@ class TestDeleteMemberByExternalID:
     @pytest.mark.auth
     async def test_not_existing(
         self,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        response = await client.delete("/v1/members/external/not-existing")
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        response = await client.delete(
+            "/v1/members/external/not-existing",
+            params={"customer_id": str(customer.id)},
+        )
 
         assert response.status_code == 404
 
@@ -717,7 +753,10 @@ class TestDeleteMemberByExternalID:
         )
         await save_fixture(member)
 
-        response = await client.delete("/v1/members/external/ext_delete")
+        response = await client.delete(
+            "/v1/members/external/ext_delete",
+            params={"customer_id": str(customer.id)},
+        )
 
         assert response.status_code == 204
 
@@ -753,7 +792,10 @@ class TestDeleteMemberByExternalID:
         )
         await save_fixture(member)
 
-        response = await client.delete("/v1/members/external/ext_other")
+        response = await client.delete(
+            "/v1/members/external/ext_other",
+            params={"customer_id": str(customer.id)},
+        )
 
         assert response.status_code == 404
 

@@ -125,7 +125,14 @@ SELECT
     COALESCE(ar.ai_risk_level, '—') AS ai_risk_level,
     LEFT(ar.ai_summary, 120) AS ai_summary,
 
+    -- Polar-held balance (distinct from GTV: this is money currently in their account)
+    ROUND(COALESCE(bal.balance_cents, 0) / 100.0, 2) AS balance_usd,
+
+    -- Activity freshness
+    lo.last_order_at::date AS last_order_date,
+
     -- Context
+    o.created_at::date AS org_created_at,
     o.next_review_threshold / 100.0 AS next_review_usd,
     o.status_updated_at,
     EXTRACT(DAY FROM NOW() - o.status_updated_at)::int AS days_in_review
@@ -136,6 +143,19 @@ LEFT JOIN failed f ON f.organization_id = o.id
 LEFT JOIN refunds ref ON ref.organization_id = o.id
 LEFT JOIN disputes dis ON dis.organization_id = o.id
 LEFT JOIN latest_agent_review ar ON ar.organization_id = o.id
+LEFT JOIN LATERAL (
+    SELECT COALESCE(SUM(t.amount), 0) AS balance_cents
+    FROM transactions t
+    WHERE t.account_id = o.account_id
+      AND t.type = 'balance'
+) bal ON true
+LEFT JOIN LATERAL (
+    SELECT MAX(ordr.created_at) AS last_order_at
+    FROM orders ordr
+    JOIN products p ON p.id = ordr.product_id
+    WHERE p.organization_id = o.id
+      AND ordr.deleted_at IS NULL
+) lo ON true
 WHERE o.status = 'ongoing_review'
   AND o.deleted_at IS NULL
 ORDER BY

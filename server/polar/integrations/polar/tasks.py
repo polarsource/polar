@@ -52,8 +52,31 @@ async def add_member(
 
 
 @actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)
-async def remove_member(member_id: str) -> None:
-    await get_client().remove_member(member_id=member_id)
+async def remove_member(external_customer_id: str, external_id: str) -> None:
+    from polar_sdk.models.polarerror import PolarError
+
+    client = get_client()
+    try:
+        await client.get_member_by_external_id(
+            external_customer_id=external_customer_id,
+            external_id=external_id,
+        )
+    except PolarError as e:
+        if e.status_code == 404 and can_retry():
+            raise Retry(delay=1000) from e
+        if e.status_code == 404:
+            return
+        raise
+
+    await client.remove_member(
+        external_customer_id=external_customer_id,
+        external_id=external_id,
+    )
+
+
+@actor(actor_name="polar_self.delete_customer", priority=TaskPriority.LOW)
+async def delete_customer(external_id: str) -> None:
+    await get_client().delete_customer(external_id=external_id)
 
 
 @actor(actor_name="polar_self.track_event_ingestion", priority=TaskPriority.LOW)

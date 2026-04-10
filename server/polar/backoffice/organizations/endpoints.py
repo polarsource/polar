@@ -828,7 +828,11 @@ async def remove_member(
         user_email = user.email if user else str(user_id)
 
         # Attempt to remove the member safely
-        await user_organization_service.remove_member_safe(session, user_id, id)
+        await user_organization_service.remove_member_safe(
+            session,
+            user_id=user_id,
+            organization_id=id,
+        )
 
         # Add success toast and redirect
         await add_toast(

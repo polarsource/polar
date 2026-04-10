@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "2026-04-02T12:11:04.483478914Z"
+exclude-newer = "2026-04-03T09:50:38.682842Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -2171,7 +2171,7 @@ requires-dist = [
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "plain-client", specifier = ">=0.0.3" },
     { name = "playwright", specifier = ">=1.50.0" },
-    { name = "polar-sdk", specifier = "==0.30.1" },
+    { name = "polar-sdk", url = "https://files.pythonhosted.org/packages/ef/23/bd856ec12a8faef40bfb6b30e7add657952c7266f5f0ac7c156067fa30ea/polar_sdk-0.31.3-py3-none-any.whl" },
     { name = "posthog", specifier = ">=3.6.0" },
     { name = "prometheus-client", specifier = ">=0.21.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.5" },
@@ -2233,8 +2233,8 @@ dev = [
 
 [[package]]
 name = "polar-sdk"
-version = "0.30.1"
-source = { registry = "https://pypi.org/simple" }
+version = "0.31.3"
+source = { url = "https://files.pythonhosted.org/packages/ef/23/bd856ec12a8faef40bfb6b30e7add657952c7266f5f0ac7c156067fa30ea/polar_sdk-0.31.3-py3-none-any.whl" }
 dependencies = [
     { name = "httpcore" },
     { name = "httpx" },
@@ -2242,9 +2242,17 @@ dependencies = [
     { name = "pydantic" },
     { name = "standardwebhooks" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0c/8b/10d59b566b72202eed1ee30fe212752ce97a90cc95f20909681d32cbaba9/polar_sdk-0.30.1.tar.gz", hash = "sha256:8d2583655ce6cf1a876e9fd7b9542dfda3115146f1ebdbd4b450e90339c11469", size = 288948, upload-time = "2026-03-11T09:10:18.196Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fe/33/37e1f7a7d67d4a64cf342e25ac4fdea88448f92beac02d3ecc4cc063c427/polar_sdk-0.30.1-py3-none-any.whl", hash = "sha256:047899ccd89d987e93612f0558ec39c4a689bd65de8a9b7ed919fa23c54579fc", size = 820158, upload-time = "2026-03-11T09:10:16.613Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/23/bd856ec12a8faef40bfb6b30e7add657952c7266f5f0ac7c156067fa30ea/polar_sdk-0.31.3-py3-none-any.whl", hash = "sha256:22fa1ae3fa2c79cf2279dd3b1ff633d193132197dcdd807ec7191fb14544ff80" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpcore", specifier = ">=1.0.9" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "jsonpath-python", specifier = ">=1.0.6" },
+    { name = "pydantic", specifier = ">=2.11.2" },
+    { name = "standardwebhooks", specifier = ">=1.0.0,<2.0.0" },
 ]
 
 [[package]]

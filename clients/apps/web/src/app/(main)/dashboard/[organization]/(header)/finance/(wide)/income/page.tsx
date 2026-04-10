@@ -20,6 +20,7 @@ export default async function Page(props: {
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
+    false,
   )
 
   const { pagination, sorting } = parseSearchParams(

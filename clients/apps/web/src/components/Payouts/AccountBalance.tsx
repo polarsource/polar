@@ -132,17 +132,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
       <Well className="flex-1 justify-between rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
           <h2 className="text-lg font-medium capitalize">Payout Account</h2>
-        </WellHeader>
-        <WellContent>
-          {payoutAccount ? (
-            <p className="text-lg capitalize">{payoutAccount.type}</p>
-          ) : (
-            <p className="dark:text-polar-500 text-gray-500">
-              No payout account configured.
-            </p>
-          )}
-        </WellContent>
-        <WellFooter>
           {payoutAccount ? (
             <Button
               className="self-start"
@@ -156,8 +145,45 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
               className="self-start"
               onClick={showCreatePayoutAccountModal}
             >
-              Create Payout Account
+              Create
             </Button>
+          )}
+        </WellHeader>
+        <WellContent>
+          {payoutAccount ? (
+            <p className="text-4xl capitalize">{payoutAccount.type}</p>
+          ) : (
+            <p className="dark:text-polar-700 text-4xl text-gray-300">—</p>
+          )}
+        </WellContent>
+        <WellFooter>
+          {payoutAccount ? (
+            <div className="flex items-center gap-x-3">
+              <p className="dark:text-polar-500 text-gray-500">
+                {payoutAccount.country.toUpperCase()} ·{' '}
+                {payoutAccount.currency.toUpperCase()}
+              </p>
+              <span
+                className={`inline-flex items-center gap-x-1.5 text-xs ${
+                  payoutAccount.is_payout_ready
+                    ? 'text-green-600 dark:text-green-500'
+                    : 'text-yellow-600 dark:text-yellow-500'
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    payoutAccount.is_payout_ready
+                      ? 'bg-green-600 dark:bg-green-500'
+                      : 'bg-yellow-600 dark:bg-yellow-500'
+                  }`}
+                />
+                {payoutAccount.is_payout_ready ? 'Ready' : 'Setup required'}
+              </span>
+            </div>
+          ) : (
+            <p className="dark:text-polar-500 text-gray-500">
+              No payout account configured.
+            </p>
           )}
         </WellFooter>
       </Well>
@@ -200,4 +226,3 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
 }
 
 export default AccountBalance
-

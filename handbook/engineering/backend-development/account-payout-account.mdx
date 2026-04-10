@@ -7,9 +7,9 @@ description: "How Polar's financial ledger entities work: Account (transaction l
 
 Polar's financial architecture is split across two distinct entities:
 
-| Entity | Table | Purpose | Required? |
-|--------|-------|---------|-----------|
-| `Account` | `accounts` | Financial ledger — holds all transactions for an entity | **Mandatory** — every org has exactly one |
+| Entity          | Table             | Purpose                                                            | Required?                                                            |
+| --------------- | ----------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `Account`       | `accounts`        | Financial ledger — holds all transactions for an entity            | **Mandatory** — every org has exactly one                            |
 | `PayoutAccount` | `payout_accounts` | Payout configuration — holds Stripe Connect or manual bank details | **Optional** — created when the merchant is ready to receive payouts |
 
 ```mermaid
@@ -54,11 +54,10 @@ erDiagram
 ```
 
 This separation means:
+
 - **Transaction history is never lost** when a merchant changes their payout processor.
 - **Multiple organisations** can share a single `PayoutAccount` (e.g. a company with several Polar orgs pointing to one Stripe Connect account).
 - **Accounts are created immediately** on org creation — no held balances, no pending state.
-
----
 
 ## `Account` Model
 
@@ -121,12 +120,11 @@ sequenceDiagram
 ```
 
 Credits are reduced in two cases:
+
 - **Applied to a fee** — `account.reduce_credit_balance(amount_applied)` after consuming `AccountCredit` rows
 - **Revoked by admin** — `account.reduce_credit_balance(credit.amount)` immediately
 
 `reduce_credit_balance(amount)` subtracts `min(amount, credit_balance)`, flooring at zero.
-
----
 
 ## `PayoutAccount` Model
 
@@ -136,9 +134,9 @@ The `PayoutAccount` holds all payout processor configuration. It is decoupled fr
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `stripe` | Stripe Connect Express account |
+| Type     | Description                                        |
+| -------- | -------------------------------------------------- |
+| `stripe` | Stripe Connect Express account                     |
 | `manual` | Backoffice-managed; always considered payout-ready |
 
 ### Key fields
@@ -174,8 +172,6 @@ def is_payout_ready(self) -> bool:
 
 Manual accounts are always ready. Stripe accounts require `is_payouts_enabled=True`.
 
----
-
 ## `Organization` Relationships
 
 **`server/polar/models/organization.py`**
@@ -196,52 +192,6 @@ payout_account_id: UUID | None = mapped_column(
 ```
 
 `unique=True` on `account_id` enforces the 1-to-1 constraint at the DB level. `payout_account_id` has no `unique` constraint — **multiple orgs can share a single `PayoutAccount`**.
-
-### Payment readiness check
-
-`OrganizationService.is_organization_ready_for_payment()` evaluates in order:
-
-```mermaid
-flowchart TD
-    A([Start]) --> B{Sandbox?}
-    B -- Yes --> PASS([✅ Ready])
-    B -- No --> C{Blocked or DENIED?}
-    C -- Yes --> FAIL([❌ Not ready])
-    C -- No --> D{"Grandfathered?\n(created before 2025-08-04)"}
-    D -- Yes --> PASS
-    D -- No --> E{Status in\npayment_ready_statuses?}
-    E -- No --> FAIL
-    E -- Yes --> F{Onboarding details\ncomplete?}
-    F -- No --> FAIL
-    F -- Yes --> G{payout_account_id\nset?}
-    G -- No --> FAIL
-    G -- Yes --> H{Admin KYC\nverified or pending?}
-    H -- No --> FAIL
-    H -- Yes --> PASS
-```
-
-Where `payment_ready_statuses = {ACTIVE, OFFBOARDING, INITIAL_REVIEW, ONGOING_REVIEW}`.
-
-<Note>
-An org can _receive_ transactions (write to its `Account`) before passing this check. The check gates _accepting payments from customers_, not internal bookkeeping.
-</Note>
-
-### Organisation status flow
-
-```mermaid
-stateDiagram-v2
-    [*] --> CREATED
-    CREATED --> ONBOARDING_STARTED
-    ONBOARDING_STARTED --> INITIAL_REVIEW
-    INITIAL_REVIEW --> ACTIVE
-    INITIAL_REVIEW --> DENIED
-    ACTIVE --> ONGOING_REVIEW
-    ONGOING_REVIEW --> ACTIVE
-    ACTIVE --> OFFBOARDING
-    OFFBOARDING --> [*]
-```
-
----
 
 ## `Transaction` Model
 
@@ -267,8 +217,6 @@ flowchart LR
     P -->|payout transfer| PA[PayoutAccount\nStripe Connect]
 ```
 
----
-
 ## `Payout` Model
 
 **`server/polar/models/payout.py` · table `payouts`**
@@ -292,129 +240,3 @@ processor: PayoutAccountType
 invoice_number: str
 invoice_path: str | None   # storage path; None until PDF is generated
 ```
-
----
-
-## Key Flows
-
-### Organisation creation
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant OS as OrganizationService
-    participant AS as AccountService
-    participant DB as Database
-
-    U->>OS: Create organisation
-    OS->>AS: account_service.create(session, user)
-    AS->>DB: INSERT Account(currency="usd", admin=user)
-    DB-->>AS: Account
-    AS-->>OS: Account
-    OS->>DB: INSERT Organization(account=account, ...)
-    DB-->>OS: Organization
-    OS-->>U: Organization (with Account, no PayoutAccount yet)
-```
-
-No Stripe call, no KYC — just a bare ledger row. The org can receive internal transactions immediately.
-
-### Merchant onboarding for payouts
-
-```mermaid
-sequenceDiagram
-    participant M as Merchant
-    participant API as POST /v1/payout-accounts/
-    participant PAS as PayoutAccountService
-    participant Stripe
-    participant DB as Database
-
-    M->>API: {type: "stripe", organization_id, country}
-    API->>PAS: create(auth_subject, payout_account_create)
-    PAS->>DB: Assert org.payout_account_id IS NULL
-    PAS->>Stripe: create_account(country, name=org.name)
-    Note over Stripe: Express account, manual payout schedule
-    Stripe-->>PAS: stripe_account
-    PAS->>DB: INSERT PayoutAccount(stripe_id=..., ...)
-    PAS->>DB: UPDATE org SET payout_account_id = ...
-    PAS-->>M: PayoutAccount
-    M->>API: POST /v1/payout-accounts/{id}/onboarding-link
-    API-->>M: Stripe Connect onboarding URL
-    Note over M,Stripe: Merchant completes KYC on Stripe
-    Stripe->>API: Webhook: account.updated
-    API->>DB: UPDATE PayoutAccount SET is_payouts_enabled=True, ...
-```
-
-### Switching payout accounts
-
-A user can have multiple `PayoutAccount` rows and switch which one is active on a given org.
-
-```mermaid
-sequenceDiagram
-    participant M as Merchant
-    participant API as PATCH /v1/organizations/{id}/payout-account
-    participant OS as OrganizationService
-    participant DB as Database
-
-    Note over M: Has multiple PayoutAccount rows
-    M->>API: {payout_account_id: new_id}
-    API->>OS: set_payout_account(auth_subject, org, payout_account_id)
-    OS->>OS: Validate user admin access to PayoutAccount
-    OS->>DB: UPDATE org SET payout_account_id = new_id
-    Note over DB: Account and all Transactions untouched
-    DB-->>M: 200 OK
-```
-
-### Deleting a payout account
-
-Two guards are evaluated before deletion:
-
-1. **`PayoutAccountLinkedToOrganization`** (422) — raised if any org still has `payout_account_id` pointing to this account. Switch the org to another `PayoutAccount` first.
-2. **`PayoutAccountNonZeroBalance`** (422) — raised if the Stripe account has a non-zero pending balance.
-
-If both guards pass, the row is soft-deleted and `stripe.delete_account()` is called.
-
-<Warning>
-Active payout accounts cannot be deleted directly. Use `PATCH /v1/organizations/{id}/payout-account` to move the org to a different account first.
-</Warning>
-
-### Payout triggered
-
-`POST /v1/payouts/` with `{ organization_id }`:
-
-1. Resolves `organization.account` and `organization.get_ready_payout_account()`
-2. Aggregates all un-swept transactions on the `Account`
-3. Applies `credit_balance` against fees, then deducts remaining fees
-4. Calls Stripe Transfers API targeting `payout_account.stripe_id`
-5. Creates `Payout` row linking `account_id` + `payout_account_id`
-6. Marks contributing `Transaction` rows with `payout_id`
-
----
-
-## API Reference
-
-### Account
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/v1/organizations/{id}/account` | Get the org's Account (admin only) |
-| `PATCH` | `/v1/accounts/{id}` | Update billing fields |
-| `GET` | `/v1/accounts/{id}/credits` | List fee credits |
-
-### PayoutAccount
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/v1/payout-accounts/` | List all PayoutAccounts accessible to the user |
-| `POST` | `/v1/payout-accounts/` | Create a Stripe PayoutAccount |
-| `GET` | `/v1/payout-accounts/{id}` | Get PayoutAccount details |
-| `DELETE` | `/v1/payout-accounts/{id}` | Delete (must not be linked to any org; Stripe balance must be zero) |
-| `POST` | `/v1/payout-accounts/{id}/onboarding-link` | Get Stripe Connect onboarding URL |
-| `POST` | `/v1/payout-accounts/{id}/dashboard-link` | Get Stripe Express dashboard URL |
-| `PATCH` | `/v1/organizations/{id}/payout-account` | Switch the active PayoutAccount for an org |
-
-### Payouts
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/v1/payouts/estimate?organization_id=` | Estimate available payout amount |
-| `POST` | `/v1/payouts/` | Trigger a payout |

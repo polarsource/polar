@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 import structlog
 from sqlalchemy.orm import joinedload
 
+from polar.config import Environment, settings
 from polar.exceptions import PolarTaskError
 from polar.integrations.plain.service import plain as plain_service
 from polar.models.organization import Organization, OrganizationStatus
@@ -58,6 +59,9 @@ async def run_review_agent(
     For SUBMISSION context: creates an OrganizationReview record and auto-denies on DENY.
     For THRESHOLD context: log-only, persists to OrganizationAgentReview table.
     """
+    if settings.ENV == Environment.sandbox:
+        return
+
     review_context = ReviewContext(context)
 
     async with AsyncSessionMaker() as session:

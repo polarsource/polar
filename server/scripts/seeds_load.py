@@ -188,7 +188,7 @@ def _build_customer_timeline_events(
     events: list[dict[str, Any]] = []
     now = datetime.now(UTC)
 
-    days_ago = random.randint(30, 180)
+    days_ago = random.randint(90, 540)
     timeline_start = now - timedelta(days=days_ago)
 
     def _evt(
@@ -308,7 +308,7 @@ def _build_customer_timeline_events(
         cycle_time = t + timedelta(days=cycle_days)
         cycle_count = 0
 
-        while cycle_time < now and cycle_count < 12:
+        while cycle_time < now and cycle_count < 36:
             # Subscription cycled
             events.append(
                 _evt(

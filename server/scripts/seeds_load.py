@@ -527,8 +527,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         )
     ).scalar_one_or_none()
     if existing:
-        print("✅ Seed data already exists, skipping. Use --new-org <slug> to create additional organizations.")
-        return
+        print("Seed data already exists. Use --new-org <slug> to create additional organizations.")
+        raise typer.Exit(2)
 
     # Organizations data
     orgs_data: list[OrganizationDict] = [

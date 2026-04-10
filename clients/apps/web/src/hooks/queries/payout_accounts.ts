@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const usePayoutAccount = (payoutAccountId: string | undefined) =>
@@ -15,3 +15,17 @@ export const usePayoutAccount = (payoutAccountId: string | undefined) =>
     retry: defaultRetry,
     enabled: !!payoutAccountId,
   })
+
+export const useDeletePayoutAccount = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.DELETE('/v1/payout-accounts/{id}', {
+        params: { path: { id } },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] })
+      queryClient.invalidateQueries({ queryKey: ['payoutAccount'] })
+    },
+  })
+}

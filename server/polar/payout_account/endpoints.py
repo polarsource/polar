@@ -44,6 +44,18 @@ async def get(
     return payout_account
 
 
+@router.delete("/{id}", status_code=204)
+async def delete(
+    id: UUID,
+    auth_subject: WebUserWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    payout_account = await payout_account_service.get(session, auth_subject, id)
+    if payout_account is None:
+        raise ResourceNotFound()
+    await payout_account_service.delete(session, payout_account)
+
+
 @router.post("/{id}/onboarding-link", response_model=PayoutAccountLink)
 async def onboarding_link(
     id: UUID,

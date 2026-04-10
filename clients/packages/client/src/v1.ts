@@ -4325,7 +4325,8 @@ export interface paths {
     get: operations['payout_accounts:get']
     put?: never
     post?: never
-    delete?: never
+    /** Delete */
+    delete: operations['payout_accounts:delete']
     options?: never
     head?: never
     patch?: never
@@ -19502,6 +19503,17 @@ export interface components {
       /** Order Url */
       readonly order_url: string | null
     }
+    /** ManualRetryLimitExceeded */
+    ManualRetryLimitExceeded: {
+      /**
+       * Error
+       * @example ManualRetryLimitExceeded
+       * @constant
+       */
+      error: 'ManualRetryLimitExceeded'
+      /** Detail */
+      detail: string
+    }
     /**
      * Member
      * @description A member of a customer.
@@ -33837,16 +33849,6 @@ export interface operations {
         end_date: string
         /** @description Timezone to use for the timestamps. Default is UTC. */
         timezone?:
-          | 'ACDT'
-          | 'ACST'
-          | 'ADT'
-          | 'AEDT'
-          | 'AEST'
-          | 'AKDT'
-          | 'AKST'
-          | 'ART'
-          | 'AST'
-          | 'AWST'
           | 'Africa/Abidjan'
           | 'Africa/Accra'
           | 'Africa/Addis_Ababa'
@@ -34217,19 +34219,11 @@ export interface operations {
           | 'Australia/Victoria'
           | 'Australia/West'
           | 'Australia/Yancowinna'
-          | 'BRT'
-          | 'BST'
           | 'Brazil/Acre'
           | 'Brazil/DeNoronha'
           | 'Brazil/East'
           | 'Brazil/West'
-          | 'CAT'
-          | 'CDT'
-          | 'CEST'
           | 'CET'
-          | 'CLT'
-          | 'COT'
-          | 'CST'
           | 'CST6CDT'
           | 'Canada/Atlantic'
           | 'Canada/Central'
@@ -34242,9 +34236,6 @@ export interface operations {
           | 'Chile/Continental'
           | 'Chile/EasterIsland'
           | 'Cuba'
-          | 'EAT'
-          | 'EDT'
-          | 'EEST'
           | 'EET'
           | 'EST'
           | 'EST5EDT'
@@ -34357,10 +34348,8 @@ export interface operations {
           | 'GMT-0'
           | 'GMT0'
           | 'Greenwich'
-          | 'HKT'
           | 'HST'
           | 'Hongkong'
-          | 'IST'
           | 'Iceland'
           | 'Indian/Antananarivo'
           | 'Indian/Chagos'
@@ -34375,33 +34364,20 @@ export interface operations {
           | 'Indian/Reunion'
           | 'Iran'
           | 'Israel'
-          | 'JST'
           | 'Jamaica'
           | 'Japan'
-          | 'KST'
           | 'Kwajalein'
           | 'Libya'
-          | 'MDT'
           | 'MET'
           | 'MST'
           | 'MST7MDT'
-          | 'MYT'
           | 'Mexico/BajaNorte'
           | 'Mexico/BajaSur'
           | 'Mexico/General'
-          | 'NDT'
-          | 'NST'
           | 'NZ'
           | 'NZ-CHAT'
-          | 'NZDT'
-          | 'NZST'
           | 'Navajo'
-          | 'PDT'
-          | 'PET'
-          | 'PHT'
-          | 'PKT'
           | 'PRC'
-          | 'PST'
           | 'PST8PDT'
           | 'Pacific/Apia'
           | 'Pacific/Auckland'
@@ -34451,8 +34427,6 @@ export interface operations {
           | 'Portugal'
           | 'ROC'
           | 'ROK'
-          | 'SAST'
-          | 'SGT'
           | 'Singapore'
           | 'Turkey'
           | 'UCT'
@@ -34469,17 +34443,11 @@ export interface operations {
           | 'US/Pacific'
           | 'US/Samoa'
           | 'UTC'
-          | 'UYT'
           | 'Universal'
-          | 'VET'
           | 'W-SU'
-          | 'WAT'
-          | 'WEST'
           | 'WET'
-          | 'WIB'
-          | 'WIT'
-          | 'WITA'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -38202,6 +38170,15 @@ export interface operations {
           'application/json': components['schemas']['OrderNotEligibleForRetry']
         }
       }
+      /** @description Manual retry limit exceeded. */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ManualRetryLimitExceeded']
+        }
+      }
     }
   }
   'customer_portal:organizations:get': {
@@ -39066,16 +39043,6 @@ export interface operations {
         end_date: string
         /** @description Timezone to use for the dates. Default is UTC. */
         timezone?:
-          | 'ACDT'
-          | 'ACST'
-          | 'ADT'
-          | 'AEDT'
-          | 'AEST'
-          | 'AKDT'
-          | 'AKST'
-          | 'ART'
-          | 'AST'
-          | 'AWST'
           | 'Africa/Abidjan'
           | 'Africa/Accra'
           | 'Africa/Addis_Ababa'
@@ -39446,19 +39413,11 @@ export interface operations {
           | 'Australia/Victoria'
           | 'Australia/West'
           | 'Australia/Yancowinna'
-          | 'BRT'
-          | 'BST'
           | 'Brazil/Acre'
           | 'Brazil/DeNoronha'
           | 'Brazil/East'
           | 'Brazil/West'
-          | 'CAT'
-          | 'CDT'
-          | 'CEST'
           | 'CET'
-          | 'CLT'
-          | 'COT'
-          | 'CST'
           | 'CST6CDT'
           | 'Canada/Atlantic'
           | 'Canada/Central'
@@ -39471,9 +39430,6 @@ export interface operations {
           | 'Chile/Continental'
           | 'Chile/EasterIsland'
           | 'Cuba'
-          | 'EAT'
-          | 'EDT'
-          | 'EEST'
           | 'EET'
           | 'EST'
           | 'EST5EDT'
@@ -39586,10 +39542,8 @@ export interface operations {
           | 'GMT-0'
           | 'GMT0'
           | 'Greenwich'
-          | 'HKT'
           | 'HST'
           | 'Hongkong'
-          | 'IST'
           | 'Iceland'
           | 'Indian/Antananarivo'
           | 'Indian/Chagos'
@@ -39604,33 +39558,20 @@ export interface operations {
           | 'Indian/Reunion'
           | 'Iran'
           | 'Israel'
-          | 'JST'
           | 'Jamaica'
           | 'Japan'
-          | 'KST'
           | 'Kwajalein'
           | 'Libya'
-          | 'MDT'
           | 'MET'
           | 'MST'
           | 'MST7MDT'
-          | 'MYT'
           | 'Mexico/BajaNorte'
           | 'Mexico/BajaSur'
           | 'Mexico/General'
-          | 'NDT'
-          | 'NST'
           | 'NZ'
           | 'NZ-CHAT'
-          | 'NZDT'
-          | 'NZST'
           | 'Navajo'
-          | 'PDT'
-          | 'PET'
-          | 'PHT'
-          | 'PKT'
           | 'PRC'
-          | 'PST'
           | 'PST8PDT'
           | 'Pacific/Apia'
           | 'Pacific/Auckland'
@@ -39680,8 +39621,6 @@ export interface operations {
           | 'Portugal'
           | 'ROC'
           | 'ROK'
-          | 'SAST'
-          | 'SGT'
           | 'Singapore'
           | 'Turkey'
           | 'UCT'
@@ -39698,17 +39637,11 @@ export interface operations {
           | 'US/Pacific'
           | 'US/Samoa'
           | 'UTC'
-          | 'UYT'
           | 'Universal'
-          | 'VET'
           | 'W-SU'
-          | 'WAT'
-          | 'WEST'
           | 'WET'
-          | 'WIB'
-          | 'WIT'
-          | 'WITA'
           | 'Zulu'
+          | 'localtime'
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
@@ -39754,16 +39687,6 @@ export interface operations {
         end_date: string
         /** @description Timezone to use for the dates. Default is UTC. */
         timezone?:
-          | 'ACDT'
-          | 'ACST'
-          | 'ADT'
-          | 'AEDT'
-          | 'AEST'
-          | 'AKDT'
-          | 'AKST'
-          | 'ART'
-          | 'AST'
-          | 'AWST'
           | 'Africa/Abidjan'
           | 'Africa/Accra'
           | 'Africa/Addis_Ababa'
@@ -40134,19 +40057,11 @@ export interface operations {
           | 'Australia/Victoria'
           | 'Australia/West'
           | 'Australia/Yancowinna'
-          | 'BRT'
-          | 'BST'
           | 'Brazil/Acre'
           | 'Brazil/DeNoronha'
           | 'Brazil/East'
           | 'Brazil/West'
-          | 'CAT'
-          | 'CDT'
-          | 'CEST'
           | 'CET'
-          | 'CLT'
-          | 'COT'
-          | 'CST'
           | 'CST6CDT'
           | 'Canada/Atlantic'
           | 'Canada/Central'
@@ -40159,9 +40074,6 @@ export interface operations {
           | 'Chile/Continental'
           | 'Chile/EasterIsland'
           | 'Cuba'
-          | 'EAT'
-          | 'EDT'
-          | 'EEST'
           | 'EET'
           | 'EST'
           | 'EST5EDT'
@@ -40274,10 +40186,8 @@ export interface operations {
           | 'GMT-0'
           | 'GMT0'
           | 'Greenwich'
-          | 'HKT'
           | 'HST'
           | 'Hongkong'
-          | 'IST'
           | 'Iceland'
           | 'Indian/Antananarivo'
           | 'Indian/Chagos'
@@ -40292,33 +40202,20 @@ export interface operations {
           | 'Indian/Reunion'
           | 'Iran'
           | 'Israel'
-          | 'JST'
           | 'Jamaica'
           | 'Japan'
-          | 'KST'
           | 'Kwajalein'
           | 'Libya'
-          | 'MDT'
           | 'MET'
           | 'MST'
           | 'MST7MDT'
-          | 'MYT'
           | 'Mexico/BajaNorte'
           | 'Mexico/BajaSur'
           | 'Mexico/General'
-          | 'NDT'
-          | 'NST'
           | 'NZ'
           | 'NZ-CHAT'
-          | 'NZDT'
-          | 'NZST'
           | 'Navajo'
-          | 'PDT'
-          | 'PET'
-          | 'PHT'
-          | 'PKT'
           | 'PRC'
-          | 'PST'
           | 'PST8PDT'
           | 'Pacific/Apia'
           | 'Pacific/Auckland'
@@ -40368,8 +40265,6 @@ export interface operations {
           | 'Portugal'
           | 'ROC'
           | 'ROK'
-          | 'SAST'
-          | 'SGT'
           | 'Singapore'
           | 'Turkey'
           | 'UCT'
@@ -40386,17 +40281,11 @@ export interface operations {
           | 'US/Pacific'
           | 'US/Samoa'
           | 'UTC'
-          | 'UYT'
           | 'Universal'
-          | 'VET'
           | 'W-SU'
-          | 'WAT'
-          | 'WEST'
           | 'WET'
-          | 'WIB'
-          | 'WIT'
-          | 'WITA'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -40843,16 +40732,6 @@ export interface operations {
         interval: components['schemas']['TimeInterval']
         /** @description Timezone to use for the timestamps. Default is UTC. */
         timezone?:
-          | 'ACDT'
-          | 'ACST'
-          | 'ADT'
-          | 'AEDT'
-          | 'AEST'
-          | 'AKDT'
-          | 'AKST'
-          | 'ART'
-          | 'AST'
-          | 'AWST'
           | 'Africa/Abidjan'
           | 'Africa/Accra'
           | 'Africa/Addis_Ababa'
@@ -41223,19 +41102,11 @@ export interface operations {
           | 'Australia/Victoria'
           | 'Australia/West'
           | 'Australia/Yancowinna'
-          | 'BRT'
-          | 'BST'
           | 'Brazil/Acre'
           | 'Brazil/DeNoronha'
           | 'Brazil/East'
           | 'Brazil/West'
-          | 'CAT'
-          | 'CDT'
-          | 'CEST'
           | 'CET'
-          | 'CLT'
-          | 'COT'
-          | 'CST'
           | 'CST6CDT'
           | 'Canada/Atlantic'
           | 'Canada/Central'
@@ -41248,9 +41119,6 @@ export interface operations {
           | 'Chile/Continental'
           | 'Chile/EasterIsland'
           | 'Cuba'
-          | 'EAT'
-          | 'EDT'
-          | 'EEST'
           | 'EET'
           | 'EST'
           | 'EST5EDT'
@@ -41363,10 +41231,8 @@ export interface operations {
           | 'GMT-0'
           | 'GMT0'
           | 'Greenwich'
-          | 'HKT'
           | 'HST'
           | 'Hongkong'
-          | 'IST'
           | 'Iceland'
           | 'Indian/Antananarivo'
           | 'Indian/Chagos'
@@ -41381,33 +41247,20 @@ export interface operations {
           | 'Indian/Reunion'
           | 'Iran'
           | 'Israel'
-          | 'JST'
           | 'Jamaica'
           | 'Japan'
-          | 'KST'
           | 'Kwajalein'
           | 'Libya'
-          | 'MDT'
           | 'MET'
           | 'MST'
           | 'MST7MDT'
-          | 'MYT'
           | 'Mexico/BajaNorte'
           | 'Mexico/BajaSur'
           | 'Mexico/General'
-          | 'NDT'
-          | 'NST'
           | 'NZ'
           | 'NZ-CHAT'
-          | 'NZDT'
-          | 'NZST'
           | 'Navajo'
-          | 'PDT'
-          | 'PET'
-          | 'PHT'
-          | 'PKT'
           | 'PRC'
-          | 'PST'
           | 'PST8PDT'
           | 'Pacific/Apia'
           | 'Pacific/Auckland'
@@ -41457,8 +41310,6 @@ export interface operations {
           | 'Portugal'
           | 'ROC'
           | 'ROK'
-          | 'SAST'
-          | 'SGT'
           | 'Singapore'
           | 'Turkey'
           | 'UCT'
@@ -41475,17 +41326,11 @@ export interface operations {
           | 'US/Pacific'
           | 'US/Samoa'
           | 'UTC'
-          | 'UYT'
           | 'Universal'
-          | 'VET'
           | 'W-SU'
-          | 'WAT'
-          | 'WEST'
           | 'WET'
-          | 'WIB'
-          | 'WIT'
-          | 'WITA'
           | 'Zulu'
+          | 'localtime'
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -42282,6 +42127,35 @@ export interface operations {
         content: {
           'application/json': components['schemas']['PayoutAccount']
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'payout_accounts:delete': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -43530,16 +43404,6 @@ export const pathsV1WebhooksDeliveriesGetParametersQueryHttp_code_classAnyOf0Val
 export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/metrics/']['get']['parameters']['query']['timezone']
 > = [
-  'ACDT',
-  'ACST',
-  'ADT',
-  'AEDT',
-  'AEST',
-  'AKDT',
-  'AKST',
-  'ART',
-  'AST',
-  'AWST',
   'Africa/Abidjan',
   'Africa/Accra',
   'Africa/Addis_Ababa',
@@ -43910,19 +43774,11 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'Australia/Victoria',
   'Australia/West',
   'Australia/Yancowinna',
-  'BRT',
-  'BST',
   'Brazil/Acre',
   'Brazil/DeNoronha',
   'Brazil/East',
   'Brazil/West',
-  'CAT',
-  'CDT',
-  'CEST',
   'CET',
-  'CLT',
-  'COT',
-  'CST',
   'CST6CDT',
   'Canada/Atlantic',
   'Canada/Central',
@@ -43935,9 +43791,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'Chile/Continental',
   'Chile/EasterIsland',
   'Cuba',
-  'EAT',
-  'EDT',
-  'EEST',
   'EET',
   'EST',
   'EST5EDT',
@@ -44050,10 +43903,8 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'GMT-0',
   'GMT0',
   'Greenwich',
-  'HKT',
   'HST',
   'Hongkong',
-  'IST',
   'Iceland',
   'Indian/Antananarivo',
   'Indian/Chagos',
@@ -44068,33 +43919,20 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'Indian/Reunion',
   'Iran',
   'Israel',
-  'JST',
   'Jamaica',
   'Japan',
-  'KST',
   'Kwajalein',
   'Libya',
-  'MDT',
   'MET',
   'MST',
   'MST7MDT',
-  'MYT',
   'Mexico/BajaNorte',
   'Mexico/BajaSur',
   'Mexico/General',
-  'NDT',
-  'NST',
   'NZ',
   'NZ-CHAT',
-  'NZDT',
-  'NZST',
   'Navajo',
-  'PDT',
-  'PET',
-  'PHT',
-  'PKT',
   'PRC',
-  'PST',
   'PST8PDT',
   'Pacific/Apia',
   'Pacific/Auckland',
@@ -44144,8 +43982,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'Portugal',
   'ROC',
   'ROK',
-  'SAST',
-  'SGT',
   'Singapore',
   'Turkey',
   'UCT',
@@ -44162,31 +43998,15 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'US/Pacific',
   'US/Samoa',
   'UTC',
-  'UYT',
   'Universal',
-  'VET',
   'W-SU',
-  'WAT',
-  'WEST',
   'WET',
-  'WIB',
-  'WIT',
-  'WITA',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/by-property']['get']['parameters']['query']['timezone']
 > = [
-  'ACDT',
-  'ACST',
-  'ADT',
-  'AEDT',
-  'AEST',
-  'AKDT',
-  'AKST',
-  'ART',
-  'AST',
-  'AWST',
   'Africa/Abidjan',
   'Africa/Accra',
   'Africa/Addis_Ababa',
@@ -44557,19 +44377,11 @@ export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: 
   'Australia/Victoria',
   'Australia/West',
   'Australia/Yancowinna',
-  'BRT',
-  'BST',
   'Brazil/Acre',
   'Brazil/DeNoronha',
   'Brazil/East',
   'Brazil/West',
-  'CAT',
-  'CDT',
-  'CEST',
   'CET',
-  'CLT',
-  'COT',
-  'CST',
   'CST6CDT',
   'Canada/Atlantic',
   'Canada/Central',
@@ -44582,9 +44394,6 @@ export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: 
   'Chile/Continental',
   'Chile/EasterIsland',
   'Cuba',
-  'EAT',
-  'EDT',
-  'EEST',
   'EET',
   'EST',
   'EST5EDT',
@@ -44697,10 +44506,8 @@ export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: 
   'GMT-0',
   'GMT0',
   'Greenwich',
-  'HKT',
   'HST',
   'Hongkong',
-  'IST',
   'Iceland',
   'Indian/Antananarivo',
   'Indian/Chagos',
@@ -44715,33 +44522,20 @@ export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: 
   'Indian/Reunion',
   'Iran',
   'Israel',
-  'JST',
   'Jamaica',
   'Japan',
-  'KST',
   'Kwajalein',
   'Libya',
-  'MDT',
   'MET',
   'MST',
   'MST7MDT',
-  'MYT',
   'Mexico/BajaNorte',
   'Mexico/BajaSur',
   'Mexico/General',
-  'NDT',
-  'NST',
   'NZ',
   'NZ-CHAT',
-  'NZDT',
-  'NZST',
   'Navajo',
-  'PDT',
-  'PET',
-  'PHT',
-  'PKT',
   'PRC',
-  'PST',
   'PST8PDT',
   'Pacific/Apia',
   'Pacific/Auckland',
@@ -44791,8 +44585,6 @@ export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: 
   'Portugal',
   'ROC',
   'ROK',
-  'SAST',
-  'SGT',
   'Singapore',
   'Turkey',
   'UCT',
@@ -44809,31 +44601,15 @@ export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: 
   'US/Pacific',
   'US/Samoa',
   'UTC',
-  'UYT',
   'Universal',
-  'VET',
   'W-SU',
-  'WAT',
-  'WEST',
   'WET',
-  'WIB',
-  'WIT',
-  'WITA',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
 > = [
-  'ACDT',
-  'ACST',
-  'ADT',
-  'AEDT',
-  'AEST',
-  'AKDT',
-  'AKST',
-  'ART',
-  'AST',
-  'AWST',
   'Africa/Abidjan',
   'Africa/Accra',
   'Africa/Addis_Ababa',
@@ -45204,19 +44980,11 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'Australia/Victoria',
   'Australia/West',
   'Australia/Yancowinna',
-  'BRT',
-  'BST',
   'Brazil/Acre',
   'Brazil/DeNoronha',
   'Brazil/East',
   'Brazil/West',
-  'CAT',
-  'CDT',
-  'CEST',
   'CET',
-  'CLT',
-  'COT',
-  'CST',
   'CST6CDT',
   'Canada/Atlantic',
   'Canada/Central',
@@ -45229,9 +44997,6 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'Chile/Continental',
   'Chile/EasterIsland',
   'Cuba',
-  'EAT',
-  'EDT',
-  'EEST',
   'EET',
   'EST',
   'EST5EDT',
@@ -45344,10 +45109,8 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'GMT-0',
   'GMT0',
   'Greenwich',
-  'HKT',
   'HST',
   'Hongkong',
-  'IST',
   'Iceland',
   'Indian/Antananarivo',
   'Indian/Chagos',
@@ -45362,33 +45125,20 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'Indian/Reunion',
   'Iran',
   'Israel',
-  'JST',
   'Jamaica',
   'Japan',
-  'KST',
   'Kwajalein',
   'Libya',
-  'MDT',
   'MET',
   'MST',
   'MST7MDT',
-  'MYT',
   'Mexico/BajaNorte',
   'Mexico/BajaSur',
   'Mexico/General',
-  'NDT',
-  'NST',
   'NZ',
   'NZ-CHAT',
-  'NZDT',
-  'NZST',
   'Navajo',
-  'PDT',
-  'PET',
-  'PHT',
-  'PKT',
   'PRC',
-  'PST',
   'PST8PDT',
   'Pacific/Apia',
   'Pacific/Auckland',
@@ -45438,8 +45188,6 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'Portugal',
   'ROC',
   'ROK',
-  'SAST',
-  'SGT',
   'Singapore',
   'Turkey',
   'UCT',
@@ -45456,31 +45204,15 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'US/Pacific',
   'US/Samoa',
   'UTC',
-  'UYT',
   'Universal',
-  'VET',
   'W-SU',
-  'WAT',
-  'WEST',
   'WET',
-  'WIB',
-  'WIT',
-  'WITA',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/meters/{id}/quantities']['get']['parameters']['query']['timezone']
 > = [
-  'ACDT',
-  'ACST',
-  'ADT',
-  'AEDT',
-  'AEST',
-  'AKDT',
-  'AKST',
-  'ART',
-  'AST',
-  'AWST',
   'Africa/Abidjan',
   'Africa/Accra',
   'Africa/Addis_Ababa',
@@ -45851,19 +45583,11 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'Australia/Victoria',
   'Australia/West',
   'Australia/Yancowinna',
-  'BRT',
-  'BST',
   'Brazil/Acre',
   'Brazil/DeNoronha',
   'Brazil/East',
   'Brazil/West',
-  'CAT',
-  'CDT',
-  'CEST',
   'CET',
-  'CLT',
-  'COT',
-  'CST',
   'CST6CDT',
   'Canada/Atlantic',
   'Canada/Central',
@@ -45876,9 +45600,6 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'Chile/Continental',
   'Chile/EasterIsland',
   'Cuba',
-  'EAT',
-  'EDT',
-  'EEST',
   'EET',
   'EST',
   'EST5EDT',
@@ -45991,10 +45712,8 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'GMT-0',
   'GMT0',
   'Greenwich',
-  'HKT',
   'HST',
   'Hongkong',
-  'IST',
   'Iceland',
   'Indian/Antananarivo',
   'Indian/Chagos',
@@ -46009,33 +45728,20 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'Indian/Reunion',
   'Iran',
   'Israel',
-  'JST',
   'Jamaica',
   'Japan',
-  'KST',
   'Kwajalein',
   'Libya',
-  'MDT',
   'MET',
   'MST',
   'MST7MDT',
-  'MYT',
   'Mexico/BajaNorte',
   'Mexico/BajaSur',
   'Mexico/General',
-  'NDT',
-  'NST',
   'NZ',
   'NZ-CHAT',
-  'NZDT',
-  'NZST',
   'Navajo',
-  'PDT',
-  'PET',
-  'PHT',
-  'PKT',
   'PRC',
-  'PST',
   'PST8PDT',
   'Pacific/Apia',
   'Pacific/Auckland',
@@ -46085,8 +45791,6 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'Portugal',
   'ROC',
   'ROK',
-  'SAST',
-  'SGT',
   'Singapore',
   'Turkey',
   'UCT',
@@ -46103,17 +45807,11 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'US/Pacific',
   'US/Samoa',
   'UTC',
-  'UYT',
   'Universal',
-  'VET',
   'W-SU',
-  'WAT',
-  'WEST',
   'WET',
-  'WIB',
-  'WIT',
-  'WITA',
   'Zulu',
+  'localtime',
 ]
 export const addressCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Address']['country']

@@ -43,6 +43,23 @@ class PayoutAccountExternalLinkUnsupported(PayoutAccountServiceError):
         super().__init__(message, 404)
 
 
+class PayoutAccountStripeAccountDoesNotExist(PayoutAccountServiceError):
+    def __init__(self, stripe_id: str) -> None:
+        self.stripe_id = stripe_id
+        message = f"Stripe account {stripe_id} does not exist"
+        super().__init__(message, 422)
+
+
+class PayoutAccountNonZeroBalance(PayoutAccountServiceError):
+    def __init__(self, stripe_id: str) -> None:
+        self.stripe_id = stripe_id
+        message = (
+            f"Stripe account {stripe_id} has a non-zero balance. "
+            "Please withdraw your balance before deleting the payout account."
+        )
+        super().__init__(message, 422)
+
+
 class PayoutAccountService:
     async def get(
         self,
@@ -112,9 +129,11 @@ class PayoutAccountService:
             assert payout_account.stripe_id is not None
             # Verify the account exists on Stripe before deletion
             if not await stripe.account_exists(payout_account.stripe_id):
-                raise PayoutAccountServiceError(
-                    f"Stripe Account ID {payout_account.stripe_id} doesn't exist"
-                )
+                raise PayoutAccountStripeAccountDoesNotExist(payout_account.stripe_id)
+            # Verify the account has a zero balance before deletion
+            _, balance = await stripe.retrieve_balance(payout_account.stripe_id)
+            if balance != 0:
+                raise PayoutAccountNonZeroBalance(payout_account.stripe_id)
             await stripe.delete_account(payout_account.stripe_id)
 
         repository = PayoutAccountRepository.from_session(session)

@@ -50,7 +50,8 @@
               "engineering/backend-development/task-debouncer",
               "engineering/backend-development/operational-errors",
               "engineering/backend-development/metadata",
-              "engineering/backend-development/tinybird"
+              "engineering/backend-development/tinybird",
+              "engineering/backend-development/account-payout-account"
             ]
           },
           {

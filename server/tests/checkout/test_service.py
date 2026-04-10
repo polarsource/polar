@@ -5218,6 +5218,54 @@ class TestConfirm:
                 ),
             )
 
+    async def test_payment_not_ready_trial_checkout(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product_recurring_trial: Product,
+    ) -> None:
+        # Make organization not payment ready
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.CREATED
+        await save_fixture(organization)
+
+        # Create a checkout with a trial (no discount)
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_trial],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=3,
+        )
+
+        # Verify preconditions: trial makes it free but payment setup needed
+        assert checkout.is_payment_required is False
+        assert checkout.is_payment_setup_required is True
+        assert checkout.discount is None
+
+        # Should fail: trial checkout when org not ready for payment
+        with pytest.raises(PaymentNotReady):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {
+                            "line1": "123 Main St",
+                            "postal_code": "12345",
+                            "city": "New York",
+                            "state": "US-NY",
+                            "country": "US",
+                        },
+                    }
+                ),
+            )
+
     async def test_payment_not_ready_forever_discount_recurring_allowed(
         self,
         save_fixture: SaveFixture,

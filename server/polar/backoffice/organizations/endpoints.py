@@ -35,7 +35,6 @@ from polar.models import (
 from polar.models.file import FileServiceTypes
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
-from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
@@ -1121,7 +1120,7 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision=OrganizationReviewFeedback.DecisionType.DENY,
+                    decision=DecisionType.DENY,
                     reason=reason,
                 )
                 await organization_service.set_organization_offboarding(
@@ -1131,7 +1130,7 @@ async def get(
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
-                    decision=OrganizationReviewFeedback.DecisionType.APPROVE,
+                    decision=DecisionType.APPROVE,
                     reason=reason,
                 )
                 await organization_service.reactivate_organization(

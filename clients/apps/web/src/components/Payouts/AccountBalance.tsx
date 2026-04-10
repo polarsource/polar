@@ -82,6 +82,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
         }),
       )
       window.open(link.url, '_blank')
+    } catch {
+      toast({
+        title: 'Failed to open Stripe dashboard',
+        description: 'An error occurred while generating the dashboard link.',
+      })
     } finally {
       setIsLoadingDashboard(false)
     }
@@ -97,6 +102,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           typeof error.detail === 'string'
             ? error.detail
             : 'An error occurred while deleting the payout account.',
+      })
+    } else {
+      toast({
+        title: 'Payout account deleted',
+        description: 'Your payout account has been successfully deleted.',
       })
     }
   }, [payoutAccount, deletePayoutAccount])

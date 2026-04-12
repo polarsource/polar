@@ -230,3 +230,12 @@ async def run_review_agent(
                 organization.status = OrganizationStatus.ACTIVE
                 organization.status_updated_at = datetime.now(UTC)
                 session.add(organization)
+
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review.id,
+                    decision=DecisionType.APPROVE,
+                    review_context=ReviewContext.SUBMISSION,
+                    verdict=report.verdict,
+                    risk_score=report.overall_risk_score,
+                )

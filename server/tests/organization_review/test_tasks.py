@@ -6,15 +6,20 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from sqlalchemy import select
 
+from polar.models.account import Account
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
+from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.organization.repository import (
     OrganizationReviewRepository as OrgReviewRepository,
 )
 from polar.organization_review.schemas import (
+    ActorType,
     AgentReviewResult,
     DataSnapshot,
+    DecisionType,
     DimensionAssessment,
     HistoryData,
     IdentityData,
@@ -32,6 +37,7 @@ from polar.organization_review.schemas import (
 from polar.organization_review.tasks import run_review_agent
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_organization
 
 # Access the unwrapped async function to bypass the actor decorator
 # which requires JobQueueManager / Redis / Dramatiq broker infrastructure.
@@ -309,3 +315,98 @@ class TestRunReviewAgentGrandfathered:
         # Verify the org was denied
         await session.refresh(organization)
         assert organization.status == OrganizationStatus.DENIED
+
+
+@pytest.mark.asyncio
+class TestSubmissionApproveActivatesOrganization:
+    """Test that AI APPROVE on SUBMISSION properly activates the organization."""
+
+    async def test_approve_sets_org_active(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+    ) -> None:
+        """An org in CREATED status should become ACTIVE when AI approves."""
+        organization = await create_organization(
+            save_fixture,
+            account,
+            status=OrganizationStatus.CREATED,
+            created_at=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+
+        agent_result = _make_agent_result(
+            verdict=ReviewVerdict.APPROVE,
+            merchant_summary="Legitimate business",
+        )
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=agent_result,
+            ),
+            patch("polar.organization_review.tasks.plain_service"),
+        ):
+            await _run_review_agent(
+                organization.id,
+                context=ReviewContext.SUBMISSION,
+            )
+
+        await session.flush()
+        await session.refresh(organization)
+
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.initially_reviewed_at is None
+
+    async def test_approve_records_agent_decision(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+    ) -> None:
+        """Approval should record an agent APPROVE decision in the feedback table."""
+        organization = await create_organization(
+            save_fixture,
+            account,
+            status=OrganizationStatus.CREATED,
+            created_at=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+
+        agent_result = _make_agent_result(verdict=ReviewVerdict.APPROVE)
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=agent_result,
+            ),
+            patch("polar.organization_review.tasks.plain_service"),
+        ):
+            await _run_review_agent(
+                organization.id,
+                context=ReviewContext.SUBMISSION,
+            )
+
+        await session.flush()
+
+        result = await session.execute(
+            select(OrganizationReviewFeedback).where(
+                OrganizationReviewFeedback.organization_id == organization.id,
+                OrganizationReviewFeedback.is_current.is_(True),
+            )
+        )
+        decision = result.scalar_one()
+
+        assert decision.actor_type == ActorType.AGENT
+        assert decision.decision == DecisionType.APPROVE
+        assert decision.review_context == ReviewContext.SUBMISSION
+        assert decision.verdict == ReviewVerdict.APPROVE

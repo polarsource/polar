@@ -18,6 +18,7 @@ from polar.models import (
     Customer,
     Order,
     Organization,
+    PayoutAccount,
     Subscription,
     User,
     UserOrganization,
@@ -71,7 +72,11 @@ class OrganizationRepository(
     ) -> Organization | None:
         statement = (
             self.get_base_statement(include_deleted=include_deleted)
-            .options(joinedload(Organization.payout_account))
+            .options(
+                joinedload(Organization.payout_account).subqueryload(
+                    PayoutAccount.admin
+                )
+            )
             .where(self.model.id == id)
         )
 

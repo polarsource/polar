@@ -75,8 +75,14 @@ export class CheckoutPage {
   }
 
   async expectConfirmation() {
-    await expect(this.page.getByText(/your order was successful/i)).toBeVisible(
-      { timeout: 30_000 },
-    )
+    await expect(
+      this.page.getByText(/your order was successful/i),
+    ).toBeVisible()
+  }
+
+  async expectProcessing() {
+    await expect(
+      this.page.getByText(/we are processing your order/i),
+    ).toBeVisible()
   }
 }

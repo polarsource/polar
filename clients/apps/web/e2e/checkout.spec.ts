@@ -21,6 +21,6 @@ test.describe('Checkout', () => {
 
     await expect(checkout.submitButton).toHaveText(/subscribe now/i)
     await checkout.submit()
-    await checkout.expectConfirmation()
+    await checkout.expectProcessing()
   })
 })

@@ -15,10 +15,10 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             str | None, typer.Argument(help="Service name (db, redis, minio, tinybird)")
         ] = None,
         follow: Annotated[
-            bool, typer.Option("--follow", "-f", help="Follow log output")
+            bool, typer.Option("--follow", help="Follow log output")
         ] = True,
         tail: Annotated[
-            int, typer.Option("--tail", "-n", help="Number of lines to show")
+            int, typer.Option("--tail", help="Number of lines to show")
         ] = 100,
     ) -> None:
         """View Docker container logs."""

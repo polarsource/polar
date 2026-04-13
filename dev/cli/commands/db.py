@@ -26,7 +26,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @db_app.command("reset")
     def db_reset(
         force: Annotated[
-            bool, typer.Option("--force", "-f", help="Skip confirmation")
+            bool, typer.Option("--force", help="Skip confirmation")
         ] = False,
     ) -> None:
         """Reset database to clean state."""

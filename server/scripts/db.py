@@ -6,6 +6,7 @@ import typer
 from alembic.command import upgrade as alembic_upgrade
 from alembic.config import Config
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.config import settings
@@ -164,7 +165,19 @@ def upgrade(
 @cli.command()
 def recreate() -> None:
     assert_dev_or_testing()
-    _recreate()
+    try:
+        _recreate()
+    except OperationalError as e:
+        if "is being accessed by other users" in str(e):
+            print(
+                f"Database '{settings.POSTGRES_DATABASE}' is still in use by other sessions."
+            )
+            print("Stop local processes connected to Postgres and retry.")
+            print(
+                "Common culprits: `dev api`, `dev worker`, psql sessions, or other database tools."
+            )
+            raise typer.Exit(1) from None
+        raise
 
 
 @cli.command(

@@ -11,7 +11,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def down(
         volumes: Annotated[
-            bool, typer.Option("--volumes", "-v", help="Also remove volumes (data)")
+            bool, typer.Option("--volumes", help="Also remove volumes (data)")
         ] = False,
     ) -> None:
         """Stop infrastructure and clean up."""

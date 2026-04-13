@@ -18,7 +18,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def reset(
         force: Annotated[
-            bool, typer.Option("--force", "-f", help="Skip confirmation")
+            bool, typer.Option("--force", help="Skip confirmation")
         ] = False,
     ) -> None:
         """Reset environment to clean state for testing dev up."""

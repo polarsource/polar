@@ -18,7 +18,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def web(
         port: Annotated[
-            int | None, typer.Option("--port", "-p", help="Port to run on")
+            int | None, typer.Option("--port", help="Port to run on")
         ] = None,
     ) -> None:
         """Start the frontend web dev server."""

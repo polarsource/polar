@@ -14,12 +14,14 @@ A CLI tool to streamline Polar development environment setup and management.
 """
 
 import importlib.util
+import inspect
 import sys
 import time
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, get_args, get_origin
 
 import typer
+from typer.models import OptionInfo
 
 CLI_DIR = Path(__file__).parent
 sys.path.insert(0, str(CLI_DIR))
@@ -214,45 +216,116 @@ def help() -> None:
         padding=(1, 4),
     ))
 
-    def _section(title: str, commands: list[tuple[str, str]]) -> None:
+    recipes = Table(show_header=False, box=None, padding=(0, 2))
+    recipes.add_column(style="bold cyan", min_width=24)
+    recipes.add_column(style="dim")
+    recipes.add_row("dev up", "First time setup, or when pulling new changes")
+    recipes.add_row("dev seed", "Load the default sample data")
+    recipes.add_row("dev api", "Start API server")
+    recipes.add_row("dev worker", "Start background worker")
+    recipes.add_row("dev web", "Start frontend dev server")
+
+    console.print("\n  [bold]Common commands[/bold]")
+    console.print(Padding(recipes, (0, 2)))
+
+    def _command_name(command_info: object) -> str:
+        name = getattr(command_info, "name", None)
+        if name:
+            return str(name)
+        callback = getattr(command_info, "callback", None)
+        return getattr(callback, "__name__", "<unknown>")
+
+    def _command_help(command_info: object) -> str:
+        help_text = getattr(command_info, "help", None)
+        if help_text:
+            return str(help_text)
+        callback = getattr(command_info, "callback", None)
+        doc = getattr(callback, "__doc__", "") or ""
+        return doc.strip().split("\n")[0] if doc.strip() else ""
+
+    def _command_options(command_info: object) -> list[tuple[str, str]]:
+        callback = getattr(command_info, "callback", None)
+        if callback is None:
+            return []
+
+        options: list[tuple[str, str]] = []
+        for parameter in inspect.signature(callback).parameters.values():
+            option_info = None
+
+            annotation = parameter.annotation
+            if get_origin(annotation) is Annotated:
+                for metadata in get_args(annotation)[1:]:
+                    if isinstance(metadata, OptionInfo):
+                        option_info = metadata
+                        break
+
+            if option_info is None and isinstance(parameter.default, OptionInfo):
+                option_info = parameter.default
+
+            if option_info is None:
+                continue
+
+            param_decls = list(getattr(option_info, "param_decls", ()) or ())
+            if not param_decls:
+                param_decls = [f"--{parameter.name.replace('_', '-')}"]
+
+            option_help = getattr(option_info, "help", None) or ""
+            options.append((", ".join(param_decls), option_help))
+
+        return options
+
+    def _section(title: str, commands: list[tuple[str, str, list[tuple[str, str]]]]) -> None:
         table = Table(show_header=False, box=None, padding=(0, 2))
-        table.add_column(style="bold cyan", min_width=16)
+        table.add_column(style="bold cyan", min_width=24)
         table.add_column(style="dim")
-        for cmd, desc in commands:
+        for cmd, desc, options in commands:
             table.add_row(cmd, desc)
+            for flags, flags_help in options:
+                table.add_row(f"  {flags}", flags_help)
         console.print(f"\n  [bold]{title}[/bold]")
         console.print(Padding(table, (0, 2)))
 
-    _section("Setup & Environment", [
-        ("up", "Prepare the development environment"),
-        ("down", "Stop infrastructure"),
-        ("reset", "Reset environment to clean state"),
-        ("status", "Show environment status"),
-        ("logs", "View Docker container logs"),
-    ])
+    top_level_commands = sorted(
+        [
+            (
+                _command_name(command_info),
+                _command_help(command_info),
+                _command_options(command_info),
+            )
+            for command_info in app.registered_commands
+        ],
+        key=lambda command: command[0],
+    )
+    if top_level_commands:
+        _section("Commands", top_level_commands)
 
-    _section("Run Services", [
-        ("start", "Start all services in a tmux session"),
-        ("api", "Start the backend API server"),
-        ("worker", "Start the background job worker"),
-        ("web", "Start the frontend dev server"),
-        ("stripe", "Start Stripe webhook listener"),
-    ])
+    section_titles = {
+        "db": "Database",
+        "docker": "Docker",
+    }
 
-    _section("Database", [
-        ("seed", "Load sample data into the database"),
-        ("db migrate", "Run database migrations"),
-        ("db reset", "Reset database"),
-    ])
+    for group_info in sorted(
+        app.registered_groups,
+        key=lambda group: _command_name(group),
+    ):
+        group_name = _command_name(group_info)
+        group_app = getattr(group_info, "typer_instance", None)
+        if group_app is None:
+            continue
 
-    _section("Docker (Isolated)", [
-        ("docker up", "Start full stack in Docker containers"),
-        ("docker down", "Stop Docker services"),
-        ("docker logs", "View Docker service logs"),
-        ("docker ps", "List running Docker services"),
-        ("docker shell", "Open shell in a Docker container"),
-        ("docker cleanup", "Remove containers and volumes"),
-    ])
+        group_commands = sorted(
+            [
+                (
+                    f"{group_name} {_command_name(command_info)}",
+                    _command_help(command_info),
+                    _command_options(command_info),
+                )
+                for command_info in group_app.registered_commands
+            ],
+            key=lambda command: command[0],
+        )
+        if group_commands:
+            _section(section_titles.get(group_name, group_name.title()), group_commands)
 
     console.print()
 

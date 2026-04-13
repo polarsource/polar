@@ -697,7 +697,10 @@ def _build_user_cost_span_events(
                     "support_request",
                     span_id,
                     span_start,
-                    {"ticket_id": str(generate_uuid()), "channel": random.choice(["email", "chat", "api"])},
+                    {
+                        "ticket_id": str(generate_uuid()),
+                        "channel": random.choice(["email", "chat", "api"]),
+                    },
                 )
             )
 
@@ -715,7 +718,11 @@ def _build_user_cost_span_events(
                     input_tokens,
                     output_tokens,
                     vendor,
-                    {"sentiment": random.choice(["positive", "neutral", "negative", "frustrated"])},
+                    {
+                        "sentiment": random.choice(
+                            ["positive", "neutral", "negative", "frustrated"]
+                        )
+                    },
                 )
             )
 
@@ -769,7 +776,9 @@ def _build_user_cost_span_events(
                     span_start,
                     {
                         "document_id": doc_id,
-                        "filename": random.choice(["report.pdf", "contract.docx", "data.csv", "spec.txt"]),
+                        "filename": random.choice(
+                            ["report.pdf", "contract.docx", "data.csv", "spec.txt"]
+                        ),
                         "size_bytes": random.randint(5_000, 5_000_000),
                     },
                 )
@@ -791,7 +800,9 @@ def _build_user_cost_span_events(
                     vendor,
                     {
                         "document_id": doc_id,
-                        "task": random.choice(["summarize", "extract", "classify", "translate"]),
+                        "task": random.choice(
+                            ["summarize", "extract", "classify", "translate"]
+                        ),
                     },
                 )
             )
@@ -805,7 +816,10 @@ def _build_user_cost_span_events(
                     span_id,
                     t,
                     cost_amount=round(size_gb * 0.023, 8),  # $0.023 per GB
-                    extra_metadata={"document_id": doc_id, "size_gb": round(size_gb, 6)},
+                    extra_metadata={
+                        "document_id": doc_id,
+                        "size_gb": round(size_gb, 6),
+                    },
                 )
             )
 
@@ -1625,7 +1639,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     inserted = await event_repository.get_all(
                         select(EventModel).where(EventModel.id.in_(event_ids))
                     )
-                    ancestors_by_event = await event_repository.get_ancestors_batch(event_ids)
+                    ancestors_by_event = await event_repository.get_ancestors_batch(
+                        event_ids
+                    )
                     await tinybird_ingest_events(inserted, ancestors_by_event)
 
         # Create seat-based customers with subscriptions and seats
@@ -1917,7 +1933,9 @@ async def create_single_org_seed(
                 inserted = await event_repository.get_all(
                     select(EventModel).where(EventModel.id.in_(event_ids))
                 )
-                ancestors_by_event = await event_repository.get_ancestors_batch(event_ids)
+                ancestors_by_event = await event_repository.get_ancestors_batch(
+                    event_ids
+                )
                 await tinybird_ingest_events(inserted, ancestors_by_event)
 
     await session.commit()

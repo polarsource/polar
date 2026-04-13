@@ -17,21 +17,12 @@ export class CheckoutPage {
 
   async goto(checkoutLink: string) {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'
-    const url = `${apiBase}/v1/checkout-links/${checkoutLink}/redirect`
 
-    // Preview envs can take a while to boot, we poll until
-    // the redirect target stops returning 404, up to 120s.
-    const deadline = Date.now() + 120_000
-    while (true) {
-      const response = await this.page.goto(url)
-      if (response && response.status() !== 404) break
-      if (Date.now() >= deadline) {
-        throw new Error(`Preview env still returning 404 after 120s: ${url}`)
-      }
-      await this.page.waitForTimeout(5_000)
-    }
+    await this.page.goto(
+      `${apiBase}/v1/checkout-links/${checkoutLink}/redirect`,
+    )
 
-    await expect(this.submitButton).toBeVisible({ timeout: 15_000 })
+    await expect(this.submitButton).toBeVisible()
   }
 
   async fillEmail(email: string) {

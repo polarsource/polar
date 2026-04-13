@@ -387,6 +387,12 @@ variable "polar_free_product_id" {
   type        = string
 }
 
+variable "customer_portal_url_overrides" {
+  description = "JSON object mapping organization IDs to custom customer portal URLs"
+  type        = string
+  default     = "{}"
+}
+
 # Tailscale
 variable "tailscale_authkey" {
   description = "Tailscale auth key for the subnet router"

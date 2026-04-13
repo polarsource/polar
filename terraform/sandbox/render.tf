@@ -179,7 +179,7 @@ module "sandbox" {
     invoices_additional_info      = ""
     tax_processors                = "[\"numeral\",\"stripe\"]"
     tax_record_processor          = "numeral"
-    customer_portal_url_overrides = "{}"
+    customer_portal_url_overrides = var.customer_portal_url_overrides
   }
 
   backend_secrets = {

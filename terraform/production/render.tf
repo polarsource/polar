@@ -258,7 +258,7 @@ module "production" {
     invoices_additional_info      = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
     tax_processors                = "[\"stripe\"]"
     tax_record_processor          = "stripe"
-    customer_portal_url_overrides = "{}"
+    customer_portal_url_overrides = var.customer_portal_url_overrides
   }
 
   backend_secrets = {

@@ -46,6 +46,7 @@ from polar.kit.schemas import (
     IDSchema,
     Schema,
     SetSchemaReference,
+    StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import (
@@ -418,9 +419,10 @@ class CheckoutUpdate(
 class CheckoutUpdatePublic(CheckoutUpdateBase):
     """Update an existing checkout session using the client secret."""
 
-    discount_code: str | None = Field(
+    discount_code: Annotated[str, StripValidator] | None = Field(
         default=None, description="Discount code to apply to the checkout."
     )
+
     allow_trial: Literal[False] | None = Field(
         default=None,
         description=(

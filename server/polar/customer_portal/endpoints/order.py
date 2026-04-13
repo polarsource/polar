@@ -31,7 +31,11 @@ from ..schemas.order import (
     CustomerOrderPaymentStatus,
     CustomerOrderUpdate,
 )
-from ..service.order import CustomerOrderSortProperty, OrderNotEligibleForRetry
+from ..service.order import (
+    CustomerOrderSortProperty,
+    ManualRetryLimitExceeded,
+    OrderNotEligibleForRetry,
+)
 from ..service.order import customer_order as customer_order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.public])
@@ -220,6 +224,10 @@ async def get_payment_status(
         422: {
             "description": "Order not eligible for retry or payment confirmation failed.",
             "model": OrderNotEligibleForRetry.schema(),
+        },
+        429: {
+            "description": "Manual retry limit exceeded.",
+            "model": ManualRetryLimitExceeded.schema(),
         },
     },
 )

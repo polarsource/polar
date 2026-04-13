@@ -5,29 +5,9 @@ import IntervalPicker, {
   getNextValidInterval,
 } from '@/components/Metrics/IntervalPicker'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { subMonths } from 'date-fns/subMonths'
-import {
-  createParser,
-  parseAsArrayOf,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryState,
-} from 'nuqs'
 import { useCallback, useMemo } from 'react'
-
-const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
-
-// Custom parser for YYYY-MM-DD date format
-const parseAsISODate = createParser({
-  parse: (value) => {
-    if (!value) return null
-    const date = fromISODate(value)
-    return isNaN(date.getTime()) ? null : date
-  },
-  serialize: (date) => toISODate(date),
-})
+import { useMetricsFilters } from './useMetricsFilters'
 
 interface MetricsHeaderProps {
   organization: schemas['Organization']
@@ -38,33 +18,17 @@ export function MetricsHeader({
   organization,
   earliestDateISOString,
 }: MetricsHeaderProps) {
-  const minDate = useMemo(
-    () => fromISODate(earliestDateISOString),
-    [earliestDateISOString],
-  )
-
-  const defaultStartDate = useMemo(() => subMonths(new Date(), 1), [])
-  const defaultEndDate = useMemo(() => new Date(), [])
-
-  const [interval, setInterval] = useQueryState(
-    'interval',
-    parseAsStringLiteral(TIME_INTERVALS).withDefault('day'),
-  )
-
-  const [startDate, setStartDate] = useQueryState(
-    'start_date',
-    parseAsISODate.withDefault(defaultStartDate),
-  )
-
-  const [endDate, setEndDate] = useQueryState(
-    'end_date',
-    parseAsISODate.withDefault(defaultEndDate),
-  )
-
-  const [productId, setProductId] = useQueryState(
-    'product_id',
-    parseAsArrayOf(parseAsString),
-  )
+  const {
+    interval,
+    setInterval,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    productId,
+    setProductId,
+    minDate,
+  } = useMetricsFilters(earliestDateISOString)
 
   const dateRange = useMemo(
     () => ({ from: startDate, to: endDate }),

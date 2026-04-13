@@ -339,6 +339,13 @@ const Checkout = ({
                     compact
                   />
                 )}
+                {checkout.active_trial_interval &&
+                  checkout.active_trial_interval_count && (
+                    <>
+                      <CheckoutHeroPrice checkout={checkout} locale={locale} />
+                      <hr className="dark:border-polar-700 border-gray-200" />
+                    </>
+                  )}
                 <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
                 <CheckoutDiscountInput
                   checkout={checkout}

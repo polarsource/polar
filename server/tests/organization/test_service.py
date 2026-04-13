@@ -1,4 +1,6 @@
+import uuid
 from datetime import UTC, datetime
+from unittest.mock import call
 
 import pytest
 from pydantic import ValidationError
@@ -6,7 +8,11 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
-from polar.enums import AccountType, InvoiceNumbering, SubscriptionRecurringInterval
+from polar.enums import (
+    InvoiceNumbering,
+    PayoutAccountType,
+    SubscriptionRecurringInterval,
+)
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
@@ -20,7 +26,6 @@ from polar.organization.schemas import (
     OrganizationFeatureSettings,
     OrganizationUpdate,
 )
-from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
 from polar.organization_review.schemas import ReviewVerdict
 from polar.postgres import AsyncSession
@@ -28,6 +33,11 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import (
+    create_account,
+    create_order,
+    create_payout_account,
+)
 
 
 @pytest.mark.asyncio
@@ -100,6 +110,56 @@ class TestCreate:
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id
         )
+
+    @pytest.mark.auth
+    async def test_enqueues_polar_self_customer_before_initial_member(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+    ) -> None:
+        polar_self_manager = mocker.MagicMock()
+        create_customer_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_create_customer"
+        )
+        polar_self_manager.attach_mock(create_customer_mock, "enqueue_create_customer")
+        add_member_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_add_member"
+        )
+        polar_self_manager.attach_mock(add_member_mock, "enqueue_add_member")
+
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(name="My New Organization", slug="signup-race-test"),
+            auth_subject,
+        )
+
+        create_customer_mock.assert_called_once_with(
+            organization_id=organization.id,
+            email=organization.email or auth_subject.subject.email,
+            name=organization.name,
+        )
+        add_member_mock.assert_called_once_with(
+            external_customer_id=str(organization.id),
+            email=auth_subject.subject.email,
+            name=auth_subject.subject.public_name,
+            external_id=str(auth_subject.subject.id),
+            delay=1000,
+        )
+        assert polar_self_manager.mock_calls == [
+            call.enqueue_create_customer(
+                organization_id=organization.id,
+                email=organization.email or auth_subject.subject.email,
+                name=organization.name,
+            ),
+            call.enqueue_add_member(
+                external_customer_id=str(organization.id),
+                email=auth_subject.subject.email,
+                name=auth_subject.subject.public_name,
+                external_id=str(auth_subject.subject.id),
+                delay=1000,
+            ),
+        ]
 
     @pytest.mark.auth
     async def test_valid_with_feature_settings(
@@ -796,10 +856,9 @@ class TestGetPaymentStatus:
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
-        # Make organization not payment ready (new org without account setup)
+        # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.CREATED
-        organization.account_id = None
         await save_fixture(organization)
 
         # Mock environment to be sandbox
@@ -856,87 +915,6 @@ class TestGetAIReview:
         assert result is not None
         assert result.id == review.id
         assert result.verdict == OrganizationReview.Verdict.PASS
-
-
-@pytest.mark.asyncio
-class TestSetAccount:
-    @pytest.mark.auth
-    async def test_first_account_setup_by_any_member(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-        auth_subject: AuthSubject[User],
-    ) -> None:
-        """Test that any member can set up the first account."""
-        # Ensure organization has no account initially
-        organization.account_id = None
-        await save_fixture(organization)
-
-        # Create an account
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
-
-        # First account setup should succeed
-        updated_organization = await organization_service.set_account(
-            session, auth_subject, organization, account.id
-        )
-
-        assert updated_organization.account_id == account.id
-
-    @pytest.mark.auth
-    async def test_account_change_fails(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        initial_account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="INITIAL_ACCOUNT_ID",
-        )
-        await save_fixture(initial_account)
-
-        organization.account_id = initial_account.id
-        await save_fixture(organization)
-
-        # Create a new account
-        new_account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="NEW_ACCOUNT_ID",
-        )
-        await save_fixture(new_account)
-
-        with pytest.raises(AccountAlreadySet) as exc_info:
-            await organization_service.set_account(
-                session, auth_subject, organization, new_account.id
-            )
-
-        assert "already been set up" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -1471,8 +1449,6 @@ class TestRequestDeletion:
         customer: Customer,
     ) -> None:
         """Organization with orders creates support ticket."""
-        from tests.fixtures.random_objects import create_order
-
         await create_order(save_fixture, customer=customer)
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
@@ -1491,38 +1467,23 @@ class TestRequestDeletion:
         )
 
     @pytest.mark.auth
-    async def test_with_account_deletes_stripe_account(
+    async def test_with_account_deletes_payout_account(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
+        account: Account,
         user: User,
     ) -> None:
-        """Organization with account deletes Stripe account first."""
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
+        """Organization with account deletes payout account first."""
+        await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
         )
-        await save_fixture(account)
-
-        organization.account = account
-        organization.account_id = account.id
-        await save_fixture(organization)
-
-        # Mock Stripe account deletion
-        mock_delete_stripe = mocker.patch(
-            "polar.account.service.AccountService.delete_stripe_account"
-        )
-        mock_delete_account = mocker.patch(
-            "polar.account.service.AccountService.delete"
+        payout_account_delete_mock = mocker.patch(
+            "polar.organization.service.payout_account_service.delete",
+            return_value=None,
         )
 
         result = await organization_service.request_deletion(
@@ -1531,11 +1492,10 @@ class TestRequestDeletion:
 
         assert result.can_delete_immediately is True
         assert organization.deleted_at is not None
-        mock_delete_stripe.assert_called_once()
-        mock_delete_account.assert_called_once()
+        payout_account_delete_mock.assert_called_once()
 
     @pytest.mark.auth
-    async def test_stripe_deletion_failure_creates_ticket(
+    async def test_payout_account_deletion_failure_creates_ticket(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1544,28 +1504,15 @@ class TestRequestDeletion:
         organization: Organization,
         user: User,
     ) -> None:
-        """Stripe account deletion failure creates support ticket."""
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
+        """Payout account deletion failure creates support ticket."""
+        await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
         )
-        await save_fixture(account)
-
-        organization.account = account
-        organization.account_id = account.id
-        await save_fixture(organization)
-
-        # Mock Stripe account deletion to fail
         mocker.patch(
-            "polar.account.service.AccountService.delete_stripe_account",
-            side_effect=Exception("Stripe deletion failed"),
+            "polar.organization.service.payout_account_service.delete",
+            side_effect=Exception("Stripe API error"),
         )
+
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
         result = await organization_service.request_deletion(
@@ -1594,20 +1541,8 @@ class TestRequestDeletion:
         other_user = User(email="admin@example.com")
         await save_fixture(other_user)
 
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=other_user.id,  # Different admin than auth_subject
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
-
+        account = await create_account(save_fixture, user=other_user)
         organization.account = account
-        organization.account_id = account.id
         await save_fixture(organization)
 
         with pytest.raises(NotPermitted) as exc_info:
@@ -1616,26 +1551,6 @@ class TestRequestDeletion:
             )
 
         assert "account admin" in str(exc_info.value).lower()
-
-    @pytest.mark.auth
-    async def test_any_member_can_delete_without_account(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-    ) -> None:
-        """Any organization member can delete when there's no account."""
-        # Ensure no account is set
-        assert organization.account_id is None
-
-        mocker.patch("polar.organization.service.enqueue_job")
-
-        result = await organization_service.request_deletion(
-            session, auth_subject, organization
-        )
-
-        assert result.can_delete_immediately is True
 
 
 @pytest.mark.asyncio
@@ -1844,3 +1759,154 @@ class TestUpdateSeatBasedPricing:
         )
 
         assert result.feature_settings["seat_based_pricing_enabled"] is True
+
+
+@pytest.mark.asyncio
+class TestSetOrganizationOffboarding:
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.INITIAL_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW,
+        ],
+    )
+    async def test_from_review_statuses(
+        self,
+        status: OrganizationStatus,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+
+        result = await organization_service.set_organization_offboarding(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDING
+        assert result.status_updated_at is not None
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.CREATED,
+        ],
+    )
+    async def test_from_non_review_raises(
+        self,
+        status: OrganizationStatus,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+
+        with pytest.raises(Exception, match="Only organizations under review"):
+            await organization_service.set_organization_offboarding(
+                session, organization
+            )
+
+    async def test_with_reason_appends_internal_notes(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.internal_notes = None
+
+        result = await organization_service.set_organization_offboarding(
+            session, organization, reason="Requested by merchant"
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDING
+        assert result.internal_notes is not None
+        assert "Requested by merchant" in result.internal_notes
+
+
+@pytest.mark.asyncio
+class TestReactivateOrganization:
+    async def test_from_offboarding(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+
+        result = await organization_service.reactivate_organization(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.ACTIVE
+        assert result.status_updated_at is not None
+
+    async def test_from_non_offboarding_raises(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+
+        with pytest.raises(Exception, match="Only offboarding organizations"):
+            await organization_service.reactivate_organization(session, organization)
+
+
+@pytest.mark.asyncio
+class TestOffboardingPaymentReady:
+    async def test_offboarding_allows_payments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Offboarding organizations should still be able to accept payments."""
+        # Grandfathered organization so we skip account setup checks
+        organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.OFFBOARDING
+        await save_fixture(organization)
+
+        result = await organization_service.is_organization_ready_for_payment(
+            session, organization
+        )
+
+        assert result is True
+
+
+@pytest.mark.asyncio
+class TestSetPayoutAccount:
+    @pytest.mark.auth
+    async def test_set_payout_account_on_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Successfully sets the payout account on an organization."""
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        # Unlink from org first
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        updated_org = await organization_service.set_payout_account(
+            session, auth_subject, organization, payout_account.id
+        )
+
+        assert updated_org.payout_account_id == payout_account.id
+
+    @pytest.mark.auth
+    async def test_set_unknown_payout_account_raises_error(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Raises PolarRequestValidationError for unknown payout account."""
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.set_payout_account(
+                session, auth_subject, organization, uuid.uuid4()
+            )

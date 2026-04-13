@@ -11,7 +11,7 @@ class PayoutSortProperty(StrEnum):
     amount = "amount"
     fees_amount = "fees_amount"
     status = "status"
-    account_id = "account_id"
+    payout_account_id = "payout_account_id"
 
 
 ListSorting = Annotated[

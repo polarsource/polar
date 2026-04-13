@@ -11,6 +11,7 @@ from tagflow import tag, text
 
 from polar.models import Organization, User
 from polar.models.organization import OrganizationStatus
+from polar.organization_review.schemas import ReviewVerdict
 
 from ...components import (
     Tab,
@@ -174,12 +175,12 @@ class OrganizationDetailView:
                                 text(f"{days} days")
 
                     # Country
-                    if self.org.account and self.org.account.country:
+                    if self.org.payout_account:
                         with tag.div():
                             with tag.dt(classes="text-base-content/60 mb-1"):
                                 text("Country")
                             with tag.dd(classes="font-semibold"):
-                                text(self.org.account.country)
+                                text(self.org.payout_account.country)
 
             # Impersonate
             if self.impersonate_user:
@@ -351,12 +352,28 @@ class OrganizationDetailView:
                             ):
                                 text("Deny")
 
+                    elif self.org.status == OrganizationStatus.OFFBOARDING:
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:reactivate_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Reactivate")
+
                     elif self.org.is_under_review:
                         # Compute suggested threshold: double current or $250 min
                         current_threshold = self.org.next_review_threshold or 0
                         suggested_threshold = max(25000, current_threshold * 2)
                         threshold_dollars = suggested_threshold // 100
-                        is_override = self.ai_verdict == "DENY"
+                        is_override = self.ai_verdict == ReviewVerdict.DENY.value
 
                         if is_override:
                             # AI disagrees: open modal for reason + threshold
@@ -419,6 +436,21 @@ class OrganizationDetailView:
                                 hx_target="#modal",
                             ):
                                 text("Deny")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:offboard_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Set Offboarding")
 
                     # Always available actions
                     with tag.div(classes="divider my-2"):
@@ -549,7 +581,10 @@ class OrganizationDetailView:
                                     hx_target="#modal",
                                 ):
                                     text("Add Domain to Allowlist")
-                            if self.org.account and self.org.account.stripe_id:
+                            if (
+                                self.org.payout_account
+                                and self.org.payout_account.type == "stripe"
+                            ):
                                 with tag.li():
                                     with tag.a(
                                         hx_post=str(

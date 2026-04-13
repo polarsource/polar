@@ -35,6 +35,7 @@ from polar.tax.calculation.base import TaxabilityReason
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_checkout,
     create_discount,
     create_organization,
@@ -101,11 +102,12 @@ async def webhook_endpoint(
 
 
 async def create_blocked_product(
-    save_fixture: SaveFixture,
-    auth_subject: AuthSubject[User],
+    save_fixture: SaveFixture, auth_subject: AuthSubject[User]
 ) -> Product:
+    account = await create_account(save_fixture, auth_subject.subject)
     org = await create_organization(
         save_fixture,
+        account,
         name_prefix="blockedorg",
         blocked_at=utc_now(),
     )

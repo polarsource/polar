@@ -1,3 +1,4 @@
+import httpx
 from fastapi import Depends, Query, Response, status
 from sqlalchemy.orm import joinedload
 
@@ -11,6 +12,10 @@ from polar.exceptions import (
     NotPermitted,
     PolarRequestValidationError,
     ResourceNotFound,
+)
+from polar.kit.http import (
+    UnsafeCrawlableUrl,
+    validate_crawlable_url,
 )
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
@@ -39,8 +44,11 @@ from .schemas import (
     OrganizationID,
     OrganizationKYC,
     OrganizationPaymentStatus,
+    OrganizationPayoutAccountSet,
     OrganizationReviewStatus,
     OrganizationUpdate,
+    OrganizationValidateWebsiteRequest,
+    OrganizationValidateWebsiteResponse,
 )
 from .service import organization as organization_service
 
@@ -100,6 +108,73 @@ async def get(
         raise ResourceNotFound()
 
     return organization
+
+
+@router.get(
+    "/{id}/account",
+    response_model=AccountSchema,
+    summary="Get Organization Account",
+    responses={
+        403: {
+            "description": "User is not the admin of the account.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Organization not found or account not set.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def get_account(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Account:
+    """Get the account for an organization."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    if is_user(auth_subject):
+        user = auth_subject.subject
+        if not await account_service.is_user_admin(
+            session, organization.account_id, user
+        ):
+            raise NotPermitted("You are not the admin of this account")
+
+    account = await account_service.get(session, auth_subject, organization.account_id)
+    if account is None:
+        raise ResourceNotFound()
+
+    return account
+
+
+@router.patch(
+    "/{id}/payout-account",
+    summary="Set Organization Payout Account",
+    response_model=OrganizationSchema,
+    responses={
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def set_payout_account(
+    id: OrganizationID,
+    body: OrganizationPayoutAccountSet,
+    auth_subject: auth.OrganizationsWriteUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Set the payout account for an organization."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    return await organization_service.set_payout_account(
+        session, auth_subject, organization, body.payout_account_id
+    )
 
 
 @router.get(
@@ -211,50 +286,6 @@ async def delete(
         requires_support=not result.can_delete_immediately,
         blocked_reasons=result.blocked_reasons,
     )
-
-
-@router.get(
-    "/{id}/account",
-    response_model=AccountSchema,
-    summary="Get Organization Account",
-    responses={
-        403: {
-            "description": "User is not the admin of the account.",
-            "model": NotPermitted.schema(),
-        },
-        404: {
-            "description": "Organization not found or account not set.",
-            "model": ResourceNotFound.schema(),
-        },
-    },
-    tags=[APITag.private],
-)
-async def get_account(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> Account:
-    """Get the account for an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    if organization.account_id is None:
-        raise ResourceNotFound()
-
-    if is_user(auth_subject):
-        user = auth_subject.subject
-        if not await account_service.is_user_admin(
-            session, organization.account_id, user
-        ):
-            raise NotPermitted("You are not the admin of this account")
-
-    account = await account_service.get(session, auth_subject, organization.account_id)
-    if account is None:
-        raise ResourceNotFound()
-
-    return account
 
 
 @router.get(
@@ -641,3 +672,60 @@ async def get_review_status(
         appeal_decision=review.appeal_decision,
         appeal_reviewed_at=review.appeal_reviewed_at,
     )
+
+
+@router.post(
+    "/{id}/validate-website",
+    response_model=OrganizationValidateWebsiteResponse,
+    summary="Validate Website URL",
+    responses={
+        200: {"description": "Website validation result."},
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def validate_website(
+    id: OrganizationID,
+    body: OrganizationValidateWebsiteRequest,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> OrganizationValidateWebsiteResponse:
+    """Validate that a website URL is reachable and not targeting a private network."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    try:
+        validated_url = await validate_crawlable_url(body.url)
+    except UnsafeCrawlableUrl as e:
+        return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
+
+    async def _check_redirect(response: httpx.Response) -> None:
+        if response.is_redirect:
+            location = response.headers.get("location", "")
+            await validate_crawlable_url(location)
+
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=5.0,
+            headers={"User-Agent": "Polar URL Validator/1.0"},
+            event_hooks={"response": [_check_redirect]},
+        ) as client:
+            response = await client.head(str(validated_url))
+
+        reachable = 200 <= response.status_code < 400
+        return OrganizationValidateWebsiteResponse(
+            reachable=reachable, status=response.status_code
+        )
+    except UnsafeCrawlableUrl as e:
+        return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
+    except httpx.TimeoutException:
+        return OrganizationValidateWebsiteResponse(
+            reachable=False, error="Request timed out"
+        )
+    except httpx.HTTPError:
+        return OrganizationValidateWebsiteResponse(
+            reachable=False, error="Unable to reach URL"
+        )

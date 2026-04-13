@@ -97,6 +97,14 @@ variable "openai_secrets" {
   sensitive = true
 }
 
+variable "pydantic_ai_gateway_secrets" {
+  description = "Pydantic AI Gateway secrets (sensitive)"
+  type = object({
+    api_key = string
+  })
+  sensitive = true
+}
+
 variable "backend_config" {
   description = "Backend environment configuration (non-sensitive)"
   type = object({
@@ -136,6 +144,7 @@ variable "backend_secrets" {
     loops_api_key                  = optional(string, "")
     posthog_project_api_key        = optional(string, "")
     resend_api_key                 = string
+    resend_webhook_secret          = optional(string, "")
     logo_dev_publishable_key       = optional(string, "")
     secret                         = string
     sentry_dsn                     = string
@@ -257,6 +266,7 @@ variable "polar_self_config" {
     webhook_secret  = string
     organization_id = string
     free_product_id = string
+    api_url         = string
   })
   default   = null
   sensitive = true

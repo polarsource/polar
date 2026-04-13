@@ -1,16 +1,17 @@
 from fastapi import Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
+from sqlalchemy.orm import joinedload
 
-from polar.account.service import account as account_service
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
-from polar.models import Payout
+from polar.models import Organization, Payout
 from polar.models.payout import PayoutStatus
 from polar.openapi import APITag
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.routing import APIRouter
 
@@ -18,7 +19,7 @@ from . import auth as payouts_auth
 from . import sorting
 from .schemas import Payout as PayoutSchema
 from .schemas import PayoutCreate, PayoutEstimate, PayoutGenerateInvoice, PayoutInvoice
-from .service import InsufficientBalance, UnderReviewAccount
+from .service import InsufficientBalance
 from .service import payout as payout_service
 
 router = APIRouter(prefix="/payouts", tags=["payouts", APITag.private])
@@ -63,23 +64,27 @@ async def list(
             "description": "The balance is insufficient to create a payout.",
             "model": InsufficientBalance.schema(),
         },
-        403: {
-            "description": "The account is under review or not ready.",
-            "model": UnderReviewAccount.schema(),
-        },
         404: {"description": "Account not found.", "model": ResourceNotFound.schema()},
     },
 )
 async def get_estimate(
     auth_subject: payouts_auth.PayoutsRead,
-    account_id: UUID4,
+    organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> PayoutEstimate:
-    account = await account_service.get(session, auth_subject, account_id)
-    if account is None:
+    organization = await organization_service.get(
+        session,
+        auth_subject,
+        organization_id,
+        options=(
+            joinedload(Organization.account),
+            joinedload(Organization.payout_account),
+        ),
+    )
+    if organization is None:
         raise ResourceNotFound()
 
-    return await payout_service.estimate(session, account=account)
+    return await payout_service.estimate(session, organization)
 
 
 @router.post("/", response_model=PayoutSchema, status_code=201)
@@ -89,12 +94,19 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> Payout:
-    account_id = payout_create.account_id
-    account = await account_service.get(session, auth_subject, account_id)
-    if account is None:
+    organization_id = payout_create.organization_id
+    organization = await organization_service.get(
+        session,
+        auth_subject,
+        organization_id,
+        options=(
+            joinedload(Organization.account),
+            joinedload(Organization.payout_account),
+        ),
+    )
+    if organization is None:
         raise ResourceNotFound()
-
-    return await payout_service.create(session, locker, account=account)
+    return await payout_service.create(session, locker, organization)
 
 
 @router.get(

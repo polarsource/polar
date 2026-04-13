@@ -5,10 +5,10 @@ from sqlalchemy import select
 
 from polar.account.repository import AccountRepository
 from polar.account_credit.service import account_credit_service
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
-from polar.models import Account, Transaction
+from polar.models import Account, PayoutAccount, Transaction
 from polar.models.transaction import PlatformFeeType, Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.fees.stripe import (
@@ -70,12 +70,17 @@ class PlatformFeeTransactionService(BaseTransactionService):
         return fees_balances
 
     async def get_payout_fees(
-        self, session: AsyncSession, *, account: Account, balance_amount: int
+        self,
+        session: AsyncSession,
+        *,
+        account: Account,
+        payout_account: PayoutAccount,
+        balance_amount: int,
     ) -> list[tuple[PlatformFeeType, int]]:
         if not account.processor_fees_applicable:
             return []
 
-        if account.account_type != AccountType.stripe:
+        if payout_account.type != PayoutAccountType.stripe:
             return []
 
         payout_fees: list[tuple[PlatformFeeType, int]] = []
@@ -88,7 +93,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
 
         try:
             transfer_fee_amount, payout_fee_amount = get_reverse_stripe_payout_fees(
-                balance_amount, account.country
+                balance_amount, payout_account.country
             )
         except ValueError as e:
             raise PayoutAmountTooLow(balance_amount) from e
@@ -104,10 +109,18 @@ class PlatformFeeTransactionService(BaseTransactionService):
         return payout_fees
 
     async def create_payout_fees_balances(
-        self, session: AsyncSession, *, account: Account, balance_amount: int
+        self,
+        session: AsyncSession,
+        *,
+        account: Account,
+        payout_account: PayoutAccount,
+        balance_amount: int,
     ) -> tuple[int, list[tuple[Transaction, Transaction]]]:
         payout_fees = await self.get_payout_fees(
-            session, account=account, balance_amount=balance_amount
+            session,
+            account=account,
+            payout_account=payout_account,
+            balance_amount=balance_amount,
         )
 
         payout_fees_balances: list[tuple[Transaction, Transaction]] = []

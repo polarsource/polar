@@ -120,7 +120,7 @@ describe('ProductPriceLabel', () => {
     it('shows meter name and per-unit price', () => {
       const price = createMeteredPrice({
         unit_amount: '0.05',
-        meter: { id: 'meter_1', name: 'API Calls' },
+        meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' as const },
       })
       const { container } = render(
         <ProductPriceLabel product={baseProduct} price={price} locale="en" />,

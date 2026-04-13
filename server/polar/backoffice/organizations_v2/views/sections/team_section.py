@@ -168,25 +168,24 @@ class TeamSection:
                         text("No team members found")
 
             # Admin change requirements (if applicable)
-            if hasattr(self.org, "account") and self.org.account:
-                with card(bordered=True):
-                    with tag.h3(classes="text-md font-bold mb-3"):
-                        text("Admin Change Requirements")
+            with card(bordered=True):
+                with tag.h3(classes="text-md font-bold mb-3"):
+                    text("Admin Change Requirements")
 
-                    with tag.ul(classes="space-y-2 text-sm"):
-                        with tag.li(classes="flex items-start gap-2"):
-                            with tag.span(classes="text-base-content/60"):
-                                text(
-                                    "• No Stripe account connected (restriction for alpha)"
-                                )
+                with tag.ul(classes="space-y-2 text-sm"):
+                    with tag.li(classes="flex items-start gap-2"):
+                        with tag.span(classes="text-base-content/60"):
+                            text(
+                                "• No Stripe account connected (restriction for alpha)"
+                            )
 
-                        with tag.li(classes="flex items-start gap-2"):
-                            with tag.span(classes="text-base-content/60"):
-                                text("• New admin must be verified")
+                    with tag.li(classes="flex items-start gap-2"):
+                        with tag.span(classes="text-base-content/60"):
+                            text("• New admin must be verified")
 
-                        with tag.li(classes="flex items-start gap-2"):
-                            with tag.span(classes="text-base-content/60"):
-                                text("• At least 2 team members required")
+                    with tag.li(classes="flex items-start gap-2"):
+                        with tag.span(classes="text-base-content/60"):
+                            text("• At least 2 team members required")
 
             yield
 

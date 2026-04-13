@@ -9,7 +9,7 @@ from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
@@ -43,8 +43,8 @@ class PayoutAttempt(RecordModel):
     """ID of the associated Payout."""
     payout: Mapped["Payout"] = relationship("Payout", back_populates="attempts")
 
-    processor: Mapped[AccountType] = mapped_column(
-        StringEnum(AccountType), nullable=False
+    processor: Mapped[PayoutAccountType] = mapped_column(
+        StringEnum(PayoutAccountType), nullable=False
     )
     """Payment processor used for this payout attempt."""
     processor_id: Mapped[str | None] = mapped_column(

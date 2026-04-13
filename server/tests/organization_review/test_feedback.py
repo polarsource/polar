@@ -17,13 +17,15 @@ from polar.organization_review.report import (
 )
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
-    AccountData,
+    ActorType,
     DataSnapshot,
+    DecisionType,
     DimensionAssessment,
     HistoryData,
     IdentityData,
     OrganizationData,
     PaymentMetrics,
+    PayoutAccountData,
     PriorDimensionAssessment,
     PriorFeedbackData,
     PriorFeedbackEntry,
@@ -77,7 +79,7 @@ def _make_typed_report(
             organization=OrganizationData(name="Test", slug="test"),
             products=ProductsData(),
             identity=IdentityData(),
-            account=AccountData(),
+            account=PayoutAccountData(),
             metrics=PaymentMetrics(),
             history=HistoryData(),
             collected_at=datetime(2026, 1, 1, tzinfo=UTC),
@@ -98,7 +100,7 @@ def _make_snapshot(
         organization=OrganizationData(name="Acme", slug="acme"),
         products=ProductsData(),
         identity=IdentityData(),
-        account=AccountData(),
+        account=PayoutAccountData(),
         metrics=PaymentMetrics(),
         history=HistoryData(),
         prior_feedback=prior_feedback or PriorFeedbackData(),
@@ -335,7 +337,29 @@ class TestBuildPromptPriorFeedback:
         prompt = self._build(_make_snapshot(prior_feedback=feedback))
 
         assert "## Prior Review Decisions" in prompt
-        assert "do NOT re-raise the same concerns" in prompt
+        # With a prior human approval, the prompt surfaces a strong trust signal
+        # and instructs the agent not to re-raise resolved concerns.
+        assert "APPROVED BY A HUMAN REVIEWER" in prompt
+        assert "Do NOT re-raise the same concerns" in prompt
+
+    def test_feedback_without_human_approval_renders_default_warning(self) -> None:
+        feedback = PriorFeedbackData(
+            entries=[
+                PriorFeedbackEntry(
+                    actor_type="agent",
+                    decision="DENY",
+                    review_context="submission",
+                    created_at=datetime(2026, 1, 10, tzinfo=UTC),
+                )
+            ]
+        )
+        prompt = self._build(_make_snapshot(prior_feedback=feedback))
+
+        assert "## Prior Review Decisions" in prompt
+        # No prior human approval → default "do not re-raise" guidance,
+        # without the human-approval trust banner.
+        assert "APPROVED BY A HUMAN REVIEWER" not in prompt
+        assert "Do NOT re-raise the same concerns" in prompt
 
     def test_feedback_renders_entry_details(self) -> None:
         feedback = PriorFeedbackData(
@@ -489,7 +513,7 @@ class TestPriorFeedbackSchema:
             organization=OrganizationData(name="X", slug="x"),
             products=ProductsData(),
             identity=IdentityData(),
-            account=AccountData(),
+            account=PayoutAccountData(),
             metrics=PaymentMetrics(),
             history=HistoryData(),
             collected_at=datetime(2026, 1, 1, tzinfo=UTC),
@@ -641,9 +665,9 @@ class TestGetFeedbackHistory:
         # Create two decisions in reverse chronological order
         second = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="human",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
             reviewer_id=user.id,
             reason="Looks good",
         )
@@ -651,9 +675,9 @@ class TestGetFeedbackHistory:
 
         first = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="DENY",
-            review_context="submission",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
             is_current=False,
         )
         await session.flush()
@@ -692,11 +716,11 @@ class TestGetFeedbackHistory:
 
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="DENY",
-            review_context="submission",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
             agent_review_id=agent_review.id,
-            verdict="DENY",
+            verdict=ReviewVerdict.DENY,
             risk_score=85.0,
         )
         await session.flush()
@@ -721,9 +745,9 @@ class TestGetFeedbackHistory:
 
         decision = await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
         )
         await session.flush()
 
@@ -744,15 +768,15 @@ class TestGetFeedbackHistory:
 
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="APPROVE",
-            review_context="threshold",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.THRESHOLD,
         )
         await repo.save_review_decision(
             organization_id=organization_second.id,
-            actor_type="agent",
-            decision="DENY",
-            review_context="submission",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
         )
         await session.flush()
 
@@ -812,11 +836,11 @@ class TestCollectFeedbackDataIntegration:
         # Agent decision
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="agent",
-            decision="DENY",
-            review_context="submission",
+            actor_type=ActorType.AGENT,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.SUBMISSION,
             agent_review_id=agent_review.id,
-            verdict="DENY",
+            verdict=ReviewVerdict.DENY,
             risk_score=85.0,
             is_current=False,
         )
@@ -825,12 +849,12 @@ class TestCollectFeedbackDataIntegration:
         # Human override
         await repo.save_review_decision(
             organization_id=organization.id,
-            actor_type="human",
-            decision="APPROVE",
-            review_context="submission",
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.APPROVE,
+            review_context=ReviewContext.SUBMISSION,
             agent_review_id=agent_review.id,
             reviewer_id=user.id,
-            verdict="DENY",
+            verdict=ReviewVerdict.DENY,
             risk_score=85.0,
             reason="Reviewed pricing, it's legitimate for enterprise SaaS",
         )

@@ -750,6 +750,72 @@ class TestUpdate:
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
 
+    async def test_syncs_owner_member_email_for_individual_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Individual customer email change syncs the owner member's email via get_owner_by_customer_id."""
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="individual@example.com"
+        )
+        # Owner member email matches the customer's current email so the sanity check passes.
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="individual@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="individual-new@example.com"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "individual-new@example.com"
+        # Owner member email must be normalized (strip + lowercase)
+        assert member.email == "individual-new@example.com"
+
+    async def test_no_owner_member_email_sync_for_team_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Team customer email change does NOT sync any member emails."""
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="team@example.com"
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="team@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="team-new@example.com"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "team-new@example.com"
+        # Member email must NOT be synced for team customers
+        assert member.email == "team@example.com"
+
     async def test_syncs_owner_member_email_on_email_change(
         self,
         session: AsyncSession,

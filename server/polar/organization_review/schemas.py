@@ -6,12 +6,24 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import Field, computed_field
 
+from polar.enums import PayoutAccountType
 from polar.kit.schemas import Schema
 
 if TYPE_CHECKING:
     from pydantic_ai.usage import RunUsage as Usage
 
-# --- Review context ---
+# --- Review enums ---
+
+
+class ActorType(StrEnum):
+    AGENT = "agent"
+    HUMAN = "human"
+
+
+class DecisionType(StrEnum):
+    APPROVE = "APPROVE"
+    DENY = "DENY"
+    ESCALATE = "ESCALATE"
 
 
 class ReviewContext(StrEnum):
@@ -19,6 +31,7 @@ class ReviewContext(StrEnum):
     SETUP_COMPLETE = "setup_complete"  # Review when account setup is complete
     THRESHOLD = "threshold"  # Following reviews when payment threshold hit
     MANUAL = "manual"  # Full manual review triggered from backoffice
+    APPEAL = "appeal"  # Appeal of a previous denial
 
 
 # --- Shared utility schemas ---
@@ -44,12 +57,12 @@ class UsageInfo(Schema):
         )
 
     @classmethod
-    def from_agent_usage(cls, usage: Usage, model_name: str) -> UsageInfo:
+    def from_agent_usage(cls, usage: Usage, provider: str, model: str) -> UsageInfo:
         import genai_prices
 
         estimated_cost: float | None = None
         try:
-            price = genai_prices.calc_price(usage, model_name, provider_id="openai")
+            price = genai_prices.calc_price(usage, model, provider_id=provider)
             estimated_cost = float(price.total_price)
         except Exception:
             pass
@@ -104,7 +117,8 @@ class IdentityData(Schema):
     verified_dob: str | None = None
 
 
-class AccountData(Schema):
+class PayoutAccountData(Schema):
+    type: PayoutAccountType | None = None
     country: str | None = None
     currency: str | None = None
     business_type: str | None = None
@@ -290,7 +304,7 @@ class DataSnapshot(Schema):
     organization: OrganizationData
     products: ProductsData
     identity: IdentityData = Field(default_factory=IdentityData)
-    account: AccountData
+    account: PayoutAccountData
     metrics: PaymentMetrics
     history: HistoryData
     setup: SetupData = Field(default_factory=SetupData)

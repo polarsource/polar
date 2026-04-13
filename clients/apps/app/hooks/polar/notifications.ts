@@ -1,17 +1,9 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
 import { useSession } from '@/providers/SessionProvider'
 import { queryClient } from '@/utils/query'
-import { unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
 import { Platform } from 'react-native'
-
-export interface NotificationRecipient {
-  id: string
-  expo_push_token: string
-  platform: 'ios' | 'android'
-  created_at: string
-  updated_at: string
-}
 
 export const useCreateNotificationRecipient = () => {
   const { polar } = usePolarClient()
@@ -95,67 +87,19 @@ export const useDeleteNotificationRecipient = () => {
   })
 }
 
-export type MaintainerAccountUnderReviewNotificationPayload = {
-  account_type: string
-}
+export type Notification = schemas['NotificationsList']['notifications'][number]
 
-export type MaintainerAccountReviewedNotificationPayload = {
-  account_type: string
-}
-
-export type MaintainerCreateAccountNotificationPayload = {
-  organization_name: string
-  url: string
-}
-
-export type MaintainerNewPaidSubscriptionNotificationPayload = {
-  subscriber_name: string
-  tier_name: string
-  tier_price_amount: number | null
-  tier_price_recurring_interval: string
-  tier_organization_name: string
-  currency: string
-}
-
-export type MaintainerNewProductSaleNotificationPayload = {
-  customer_name: string
-  product_name: string
-  product_price_amount: number
-  organization_name: string
-  currency: string
-}
-
-export type MaintainerAccountCreditsGrantedNotificationPayload = {
-  organization_name: string
-  amount: number
-  title: string
-  currency: string
-}
-
-export type Notification = {
-  id: string
-  created_at: string
-  type:
-    | 'MaintainerAccountUnderReview'
-    | 'MaintainerAccountReviewed'
-    | 'MaintainerCreateAccount'
-    | 'MaintainerNewPaidSubscription'
-    | 'MaintainerNewProductSale'
-    | 'MaintainerAccountCreditsGrantedNotification'
-  payload:
-    | MaintainerAccountUnderReviewNotificationPayload
-    | MaintainerAccountReviewedNotificationPayload
-    | MaintainerCreateAccountNotificationPayload
-    | MaintainerNewPaidSubscriptionNotificationPayload
-    | MaintainerNewProductSaleNotificationPayload
-    | MaintainerAccountCreditsGrantedNotificationPayload
-}
+export type MaintainerCreateAccountNotificationPayload =
+  schemas['MaintainerCreateAccountNotificationPayload']
+export type MaintainerNewPaidSubscriptionNotificationPayload =
+  schemas['MaintainerNewPaidSubscriptionNotificationPayload']
+export type MaintainerNewProductSaleNotificationPayload =
+  schemas['MaintainerNewProductSaleNotificationPayload']
+export type MaintainerAccountCreditsGrantedNotificationPayload =
+  schemas['MaintainerAccountCreditsGrantedNotificationPayload']
 
 export const useListNotifications = (): UseQueryResult<
-  {
-    notifications: Notification[]
-    last_read_notification_id: string
-  },
+  schemas['NotificationsList'],
   Error
 > => {
   const { session } = useSession()

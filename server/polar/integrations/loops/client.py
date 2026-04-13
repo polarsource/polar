@@ -4,7 +4,7 @@ import httpx
 import structlog
 
 from polar.config import settings
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.exceptions import PolarError
 from polar.logging import Logger
 
@@ -37,7 +37,7 @@ class Properties(TypedDict, total=False):
     webhooksCreated: bool
     lastOrderAt: int
 
-    accountType: AccountType
+    accountType: PayoutAccountType
 
     # Issue Funding
     githubOrgInstalled: bool

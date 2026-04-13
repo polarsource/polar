@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.config import settings
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -17,7 +17,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.utils import utc_now
-from polar.models import Account, Payout, PayoutAttempt, Transaction
+from polar.models import Payout, PayoutAccount, PayoutAttempt, Transaction
 from polar.payout.sorting import PayoutSortProperty
 
 
@@ -42,16 +42,16 @@ class PayoutRepository(
         """
         statement = (
             self.get_base_statement()
-            .distinct(Payout.account_id)
+            .distinct(Payout.payout_account_id)
             .where(
-                Payout.processor == AccountType.stripe,
+                Payout.processor == PayoutAccountType.stripe,
                 Payout.created_at < utc_now() - delay,
                 # Only include payouts that have no attempts yet
                 ~exists(
                     select(PayoutAttempt).where(PayoutAttempt.payout_id == Payout.id)
                 ),
             )
-            .order_by(Payout.account_id.asc(), Payout.created_at.asc())
+            .order_by(Payout.payout_account_id.asc(), Payout.created_at.asc())
         )
         return await self.get_all(statement)
 
@@ -67,6 +67,7 @@ class PayoutRepository(
     def get_eager_options(self) -> Options:
         return (
             joinedload(Payout.account),
+            joinedload(Payout.payout_account),
             joinedload(Payout.transactions).selectinload(
                 Transaction.incurred_transactions
             ),
@@ -79,8 +80,8 @@ class PayoutRepository(
 
         if is_user(auth_subject):
             user = auth_subject.subject
-            statement = statement.join(Payout.account).where(
-                Account.admin_id == user.id
+            statement = statement.join(Payout.payout_account).where(
+                PayoutAccount.admin_id == user.id
             )
         elif is_organization(auth_subject):
             # Only the admin of the account can access it
@@ -98,8 +99,8 @@ class PayoutRepository(
                 return Payout.fees_amount
             case PayoutSortProperty.status:
                 return Payout.status
-            case PayoutSortProperty.account_id:
-                return Payout.account_id
+            case PayoutSortProperty.payout_account_id:
+                return Payout.payout_account_id
 
 
 class PayoutAttemptRepository(RepositoryBase[PayoutAttempt]):
@@ -107,7 +108,7 @@ class PayoutAttemptRepository(RepositoryBase[PayoutAttempt]):
 
     async def get_by_processor_id(
         self,
-        processor: AccountType,
+        processor: PayoutAccountType,
         processor_id: str,
     ) -> PayoutAttempt | None:
         statement = self.get_base_statement().where(

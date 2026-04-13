@@ -1,16 +1,12 @@
-from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Uuid
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
-from polar.enums import AccountType
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
@@ -25,45 +21,9 @@ type Fees = tuple[FeeBasisPoints, FeeFixedCents]
 
 
 class Account(RecordModel):
-    class Status(StrEnum):
-        CREATED = "created"
-        ONBOARDING_STARTED = "onboarding_started"
-        UNDER_REVIEW = "under_review"
-        DENIED = "denied"
-        ACTIVE = "active"
-
-        def get_display_name(self) -> str:
-            return {
-                Account.Status.CREATED: "Created",
-                Account.Status.ONBOARDING_STARTED: "Onboarding Started",
-                Account.Status.UNDER_REVIEW: "Under Review",
-                Account.Status.DENIED: "Denied",
-                Account.Status.ACTIVE: "Active",
-            }[self]
-
     __tablename__ = "accounts"
 
-    account_type: Mapped[AccountType] = mapped_column(
-        StringEnum(AccountType), nullable=False
-    )
-
-    admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", use_alter=True))
-
-    stripe_id: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, default=None
-    )
-    open_collective_slug: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None, deferred=True
-    )
-
-    email: Mapped[str | None] = mapped_column(String(254), nullable=True, default=None)
-
-    country: Mapped[str] = mapped_column(String(2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3))
-
-    is_details_submitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    is_charges_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    is_payouts_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     processor_fees_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
@@ -75,24 +35,12 @@ class Account(RecordModel):
         Integer, name="platform_fee_fixed", nullable=True, default=None
     )
 
-    business_type: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None
-    )
-
-    status: Mapped[Status] = mapped_column(
-        StringEnum(Status), nullable=False, default=Status.CREATED
-    )
-    next_review_threshold: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=0
-    )
     campaign_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("campaigns.id", ondelete="set null"),
         default=None,
         index=True,
     )
-
-    data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     billing_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
@@ -104,6 +52,8 @@ class Account(RecordModel):
     billing_notes: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     credit_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", use_alter=True))
 
     @declared_attr
     def admin(cls) -> Mapped["User"]:
@@ -139,30 +89,6 @@ class Account(RecordModel):
     @declared_attr
     def credits(cls) -> Mapped[list["AccountCredit"]]:
         return relationship("AccountCredit", lazy="raise", back_populates="account")
-
-    def is_active(self) -> bool:
-        return self.status == Account.Status.ACTIVE
-
-    def is_under_review(self) -> bool:
-        return self.status == Account.Status.UNDER_REVIEW
-
-    def is_payout_ready(self) -> bool:
-        return self.is_active() and (
-            # For Stripe accounts, check if payouts are enabled
-            # and that a Stripe account is actually connected.
-            # After a disconnect, stripe_id is cleared but the account
-            # may still be active with is_payouts_enabled=True.
-            self.account_type != AccountType.stripe
-            or (self.is_payouts_enabled and self.stripe_id is not None)
-        )
-
-    def get_associations_names(self) -> list[str]:
-        associations_names: list[str] = []
-        for user in self.users:
-            associations_names.append(user.email)
-        for organization in self.organizations:
-            associations_names.append(organization.slug)
-        return associations_names
 
     @property
     def platform_fee(self) -> Fees:

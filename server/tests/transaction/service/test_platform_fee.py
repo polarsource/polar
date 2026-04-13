@@ -7,13 +7,14 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Account,
     IssueReward,
     Order,
     Organization,
+    PayoutAccount,
     Pledge,
     Transaction,
     User,
@@ -30,7 +31,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_account
+from tests.fixtures.random_objects import create_account, create_payout_account
 
 
 async def create_balance_transactions(
@@ -128,21 +129,14 @@ async def load_balance_transactions(
 
 
 @pytest_asyncio.fixture
-async def account_processor_fees(
-    save_fixture: SaveFixture, organization: Organization, user: User
-) -> Account:
-    return await create_account(
-        save_fixture, organization, user, processor_fees_applicable=True
-    )
+async def account_processor_fees(save_fixture: SaveFixture, user: User) -> Account:
+    return await create_account(save_fixture, user, processor_fees_applicable=True)
 
 
 @pytest_asyncio.fixture
-async def account_custom_fees(
-    save_fixture: SaveFixture, organization: Organization, user: User
-) -> Account:
+async def account_custom_fees(save_fixture: SaveFixture, user: User) -> Account:
     return await create_account(
         save_fixture,
-        organization,
         user,
         processor_fees_applicable=True,
         fee_basis_points=389,
@@ -488,16 +482,21 @@ class TestCreatePayoutFeesBalances:
     ) -> None:
         account = await create_account(
             save_fixture,
-            organization,
             user,
             processor_fees_applicable=False,
+        )
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
         )
 
         (
             balance_amount,
             payout_fees_balances,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
-            session, account=account, balance_amount=10000
+            session,
+            account=account,
+            payout_account=payout_account,
+            balance_amount=10000,
         )
 
         assert balance_amount == 10000
@@ -510,35 +509,36 @@ class TestCreatePayoutFeesBalances:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(
-            save_fixture,
-            organization=organization,
-            user=user,
-            account_type=AccountType.manual,
+        account = await create_account(save_fixture, user=user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.manual
         )
-
-        # then
-        session.expunge_all()
 
         (
             balance_amount,
             payout_fees_balances,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
-            session, account=account, balance_amount=10000
+            session,
+            account=account,
+            payout_account=payout_account,
+            balance_amount=10000,
         )
 
         assert balance_amount == 10000
         assert payout_fees_balances == []
 
     async def test_stripe_amount_too_low(
-        self, session: AsyncSession, account_processor_fees: Account
+        self,
+        session: AsyncSession,
+        account_processor_fees: Account,
+        stripe_payout_account: PayoutAccount,
     ) -> None:
-        # then
-        session.expunge_all()
-
         with pytest.raises(PayoutAmountTooLow):
             await platform_fee_transaction_service.create_payout_fees_balances(
-                session, account=account_processor_fees, balance_amount=1
+                session,
+                account=account_processor_fees,
+                payout_account=stripe_payout_account,
+                balance_amount=1,
             )
 
     @pytest.mark.parametrize(
@@ -550,6 +550,7 @@ class TestCreatePayoutFeesBalances:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account_processor_fees: Account,
+        stripe_payout_account: PayoutAccount,
     ) -> None:
         if payout_created_at is not None:
             payout_transaction = Transaction(
@@ -565,14 +566,14 @@ class TestCreatePayoutFeesBalances:
             )
             await save_fixture(payout_transaction)
 
-        # then
-        session.expunge_all()
-
         (
             balance_amount,
             payout_fees_balances,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
-            session, account=account_processor_fees, balance_amount=10000
+            session,
+            account=account_processor_fees,
+            payout_account=stripe_payout_account,
+            balance_amount=10000,
         )
 
         assert len(payout_fees_balances) == 2
@@ -595,6 +596,7 @@ class TestCreatePayoutFeesBalances:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account_processor_fees: Account,
+        stripe_payout_account: PayoutAccount,
     ) -> None:
         payout_transaction = Transaction(
             created_at=datetime.now(UTC) - timedelta(days=7),
@@ -609,14 +611,14 @@ class TestCreatePayoutFeesBalances:
         )
         await save_fixture(payout_transaction)
 
-        # then
-        session.expunge_all()
-
         (
             balance_amount,
             payout_fees_balances,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
-            session, account=account_processor_fees, balance_amount=10000
+            session,
+            account=account_processor_fees,
+            payout_account=stripe_payout_account,
+            balance_amount=10000,
         )
 
         assert len(payout_fees_balances) == 1
@@ -634,23 +636,24 @@ class TestCreatePayoutFeesBalances:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
             save_fixture,
             organization,
             user,
+            type=PayoutAccountType.stripe,
             country="FR",
             currency="eur",
-            processor_fees_applicable=True,
         )
-
-        # then
-        session.expunge_all()
 
         (
             balance_amount,
             payout_fees_balances,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
-            session, account=account, balance_amount=10000
+            session,
+            account=account,
+            payout_account=payout_account,
+            balance_amount=10000,
         )
 
         assert len(payout_fees_balances) == 3

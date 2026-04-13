@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react'
 import CustomerPortalSubscription from '../CustomerPortal/CustomerPortalSubscription'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
+import { getCustomerSubscriptionBasePrice } from './pricing'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 
@@ -61,22 +62,10 @@ const CustomerSubscriptionDetails = ({
   const uncancelSubscription = useCustomerUncancelSubscription(api)
   const router = useRouter()
 
-  const subscriptionBaseAmount = useMemo(() => {
-    const price = subscription.product.prices.find(
-      ({ amount_type }) => amount_type === 'fixed' || amount_type === 'custom',
-    )
-
-    if (!price) {
-      return null
-    }
-
-    // This should be obsolete but I don't think we have proper type guards for the generated schema
-    if ('price_amount' in price) {
-      return price.price_amount
-    }
-
-    return null
-  }, [subscription])
+  const subscriptionBasePrice = useMemo(
+    () => getCustomerSubscriptionBasePrice(subscription),
+    [subscription],
+  )
 
   if (!organization) {
     return null
@@ -90,12 +79,12 @@ const CustomerSubscriptionDetails = ({
           <div className="dark:text-polar-500 text-xl text-gray-500">
             {subscription.amount && subscription.currency ? (
               <span className="flex flex-row justify-end gap-x-1">
-                {subscriptionBaseAmount &&
-                  subscription.amount !== subscriptionBaseAmount && (
+                {subscriptionBasePrice &&
+                  subscription.amount !== subscriptionBasePrice.amount && (
                     <span className="text-gray-500 line-through">
                       {formatCurrency('compact')(
-                        subscriptionBaseAmount,
-                        subscription.currency,
+                        subscriptionBasePrice.amount,
+                        subscriptionBasePrice.currency,
                       )}
                     </span>
                   )}

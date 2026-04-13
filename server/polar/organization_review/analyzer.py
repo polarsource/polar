@@ -2,14 +2,19 @@ import asyncio
 
 import structlog
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 
 from .known_domains import known_domains_for_prompt, match_known_domain
 from .policy import fetch_policy_content
-from .schemas import DataSnapshot, ReviewAgentReport, ReviewContext, UsageInfo
+from .schemas import (
+    ActorType,
+    DataSnapshot,
+    DecisionType,
+    ReviewAgentReport,
+    ReviewContext,
+    UsageInfo,
+)
 from .thresholds import thresholds_for_prompt
 
 log = structlog.get_logger(__name__)
@@ -62,7 +67,14 @@ No payment history is neutral (new org), not negative.
 The following thresholds need human review:
 {thresholds_for_prompt()}
 
-If thare are any monthly products above $1000 USD, mark this as a high risk if the organization
+**CRITICAL — Minimum volume requirement**: These thresholds are only meaningful with \
+sufficient payment volume. With fewer than 10 succeeded payments, individual refunds or \
+auth failures create wildly misleading rates (e.g., 1 refund out of 2 payments = "50% refund rate"). \
+Do NOT flag rate-based metrics as HIGH risk when the sample size is below 10 payments. \
+Instead, note the limited data and treat rates as inconclusive. Only flag if there are \
+clear absolute red flags (e.g., multiple disputes at any volume).
+
+If there are any monthly products above $1000 USD, mark this as a high risk if the organization
 is new and has no prior payment history.
 
 Note: older reviews may contain a separate "prior_history" dimension — this has been \
@@ -171,6 +183,78 @@ itself is prohibited by the payment processor.
 **Lesson**: Some business categories are prohibited by Stripe's AUP regardless of legitimacy. \
 Dating services, even mainstream ones, fall into this category.
 
+### Example 6: Design Agency Selling Framer Templates → APPROVE
+**Business**: Framer templates sold as one-time digital products. Website shows a design \
+studio offering custom web design, branding, and monthly retainer services.
+**Agent concern**: Website presents human services (design, web development), creating a \
+mismatch with digital product sales.
+**Correct verdict**: APPROVE. The Polar products are digital templates — fully automated \
+delivery, no human fulfillment. Many independent designers run a service business AND sell \
+digital assets. Evaluate what they SELL ON POLAR (templates), not what their broader \
+business does (design services). A services website is NOT grounds for denial if the Polar \
+products are clearly digital.
+**Lesson**: Indie creators often have a services website but sell digital products on Polar. \
+This is normal and expected. Only deny if the Polar products themselves require human delivery.
+
+### Example 7: AI Text Humanizer Tool → APPROVE
+**Business**: SaaS that rewrites AI-generated text to sound more natural. Subscription \
+and credit-based pricing.
+**Agent concern**: Could be used to bypass AI detection in academic settings (Turnitin, \
+GPTZero), which may constitute "circumventing rules or terms of other services."
+**Correct verdict**: APPROVE. The tool rewrites text — it does not directly interact with \
+or circumvent any third-party service. Users may apply it to academic work, but the tool \
+itself is a general-purpose writing assistant. Polar does not police end-user intent for \
+legitimate software tools. Many SaaS products COULD be misused; that does not make them \
+prohibited.
+**Lesson**: A tool that CAN be used for circumvention is not the same as a tool DESIGNED \
+for circumvention. Evaluate the tool's primary function, not hypothetical misuse scenarios. \
+VPNs, ad blockers, and text rewriters are all legitimate software categories.
+
+### Example 8: Testimonial Collection SaaS → APPROVE
+**Business**: SaaS platform for collecting, managing, and displaying customer testimonials \
+on websites. Subscription pricing.
+**Agent concern**: Overlaps with "fake testimonials/reviews/social proof" prohibition.
+**Correct verdict**: APPROVE. This is a legitimate SaaS tool for collecting REAL testimonials \
+from REAL customers. The prohibition targets platforms that fabricate fake reviews or \
+artificially inflate social proof. A tool that helps businesses collect and display genuine \
+customer feedback is the opposite of that — it promotes transparency.
+**Lesson**: Read the policy carefully. "Fake testimonials" means fabricated/fraudulent reviews, \
+not tools that manage real customer feedback.
+
+### Example 9: Open Source Project with Pay-What-You-Want → APPROVE (Threshold)
+**Business**: Open source developer tool with a "Support this project" checkout link. \
+One-time payment, no benefits attached. Low volume (3 payments).
+**Agent concern**: Checkout has no benefits, looks like a donation. Low volume makes metrics \
+unreliable.
+**Correct verdict**: APPROVE. Open source sponsorship/support is EXPLICITLY allowed on Polar. \
+Pay-what-you-want and voluntary support payments are a core use case. The lack of "benefits" \
+is expected — the user is supporting the project, not buying a product. Do not confuse this \
+with prohibited "donations" (which refers to charity/non-profit fundraising, not open source support).
+**Lesson**: Open source project support is always acceptable. Low volume with no benefits is \
+normal for this category — do not flag it.
+
+### Example 10: Small-Volume Org with High Refund Rate → APPROVE (Threshold)
+**Business**: Legitimate SaaS with 3 succeeded payments and 1 refund (33% refund rate). \
+Product and website look fine. Verified identity.
+**Agent concern**: Refund rate 33% exceeds the 15% critical threshold.
+**Correct verdict**: APPROVE. With only 3 payments, a single refund creates a misleading \
+33% rate. This is statistical noise, not a pattern. Apply financial thresholds only when \
+there is meaningful volume (10+ payments). At low volumes, look at absolute numbers: \
+1 refund is completely normal for a new business. The product and identity check out.
+**Lesson**: Rate-based metrics on tiny samples are meaningless. 1 out of 3 is not the same \
+as 333 out of 1000. Always consider sample size before flagging financial metrics.
+
+### Example 11: Finance Calculator App → APPROVE
+**Business**: Personal budgeting and expense tracking app. SaaS subscription.
+**Agent concern**: Could overlap with "financial services" or "financial advice" prohibition.
+**Correct verdict**: APPROVE. A budgeting app that helps users track their own expenses is \
+a productivity tool, not a financial service. It does not facilitate transactions, provide \
+investment advice, manage portfolios, or offer trading capabilities. The "financial services" \
+prohibition targets platforms that handle money on behalf of users (trading, brokerage, \
+investment advisory), not tools that help users understand their own spending.
+**Lesson**: "Financial" in the product name does not mean "financial services." Evaluate what \
+the tool actually does: calculators, trackers, and budgeting tools are productivity software.
+
 ## Overall Risk Level
 
 After assessing each dimension, provide an overall_risk_level:
@@ -237,8 +321,28 @@ Examples for APPROVE:
 
 THRESHOLD_PREAMBLE = f"""\
 This is a THRESHOLD review triggered when a payment threshold is hit. \
-Perform a comprehensive analysis across ALL five dimensions, including SETUP_READINESS. \
-If website content is not available, flag this as a red flag.
+Perform a comprehensive analysis across ALL five dimensions, including SETUP_READINESS.
+
+**CRITICAL — Prior human approval trust**: If the "Prior Review Decisions" section shows \
+that a HUMAN reviewer (actor=human) has already APPROVED this organization, you should \
+strongly default to APPROVE. A human approval is a high-confidence trust signal that \
+overrides agent-level concerns. Specifically:
+
+- Do NOT re-raise the SAME concerns that were raised in prior agent reviews and resolved \
+by a human approval. This includes: setup/integration concerns, website concerns, \
+cross-domain redirects, missing webhooks, missing checkout link benefits, domain \
+mismatches, and policy concerns the human already considered.
+- The ONLY reasons to deny an org with prior human approval are:
+  1. NEW evidence of a clearly prohibited business (e.g., the org pivoted to selling \
+prohibited content like adult/gambling/financial trading).
+  2. NEW critical fraud signals from Stripe (account disabled, fraud verification errors, \
+disputes/chargebacks at meaningful volume).
+  3. Hard policy violations introduced AFTER the prior approval (new prohibited products).
+- If the human's approval reason mentions special context (e.g., "hackathon participant", \
+"trusted merchant", "use case is OK", "confirmed digital products only"), treat this as \
+a binding decision and do NOT override it based on the same concerns.
+- Re-flagging the same concerns wastes human reviewer time and degrades trust in the \
+agent. When in doubt, defer to the prior human decision.
 
 Important information to check (assess under SETUP_READINESS):
 - **Setup readiness check**: The org is ready to sell if ANY of these is true:
@@ -267,6 +371,11 @@ Perform a comprehensive analysis across ALL five dimensions with full detail, in
 
 You have access to ALL available data: products, account info, identity verification, \
 payment metrics (if any exist), prior history, and website content.
+
+**Prior human approval trust**: If the "Prior Review Decisions" section shows a prior \
+HUMAN approval, treat that as a strong trust signal. Do NOT re-raise concerns the human \
+already considered (setup, integration, website, redirects, domain mismatches). Only flag \
+NEW issues or NEW evidence that was not available at the prior review.
 
 Key areas to cover thoroughly:
 
@@ -329,15 +438,18 @@ def _annotate_domains(domains: list[str]) -> str:
 
 
 class ReviewAnalyzer:
-    def __init__(self) -> None:
-        provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-        self.model = OpenAIChatModel(settings.OPENAI_MODEL, provider=provider)
+    def __init__(self, model: str | None = None) -> None:
+        model_instance, model_provider, model_name = (
+            settings.get_pydantic_gateway_model(model)
+        )
         self.agent = Agent(
-            self.model,
+            model_instance,
             output_type=ReviewAgentReport,
             system_prompt=SYSTEM_PROMPT,
             model_settings={"temperature": 0},
         )
+        self.model_provider = model_provider
+        self.model_name = model_name
 
     async def analyze(
         self,
@@ -361,7 +473,9 @@ class ReviewAnalyzer:
                 self.agent.run(prompt, instructions=instructions),
                 timeout=timeout_seconds,
             )
-            usage = UsageInfo.from_agent_usage(result.usage(), self.model.model_name)
+            usage = UsageInfo.from_agent_usage(
+                result.usage(), self.model_provider, self.model_name
+            )
             return result.output, usage
         except TimeoutError:
             log.warning(
@@ -382,7 +496,7 @@ class ReviewAnalyzer:
         org = snapshot.organization
         products = snapshot.products
         identity = snapshot.identity
-        account = snapshot.account
+        payout_account = snapshot.account
         metrics = snapshot.metrics
         history = snapshot.history
 
@@ -553,45 +667,47 @@ class ReviewAnalyzer:
             parts.append(f"Verified Date of Birth: {identity.verified_dob}")
 
         # Stripe Connect Account (payout account)
-        parts.append("\n## Stripe Connect Account")
-        if account.country:
-            parts.append(f"Account Country: {account.country}")
-        if account.business_type:
-            parts.append(f"Business Type: {account.business_type}")
-        parts.append(f"Details Submitted: {account.is_details_submitted}")
-        parts.append(f"Charges Enabled: {account.is_charges_enabled}")
-        parts.append(f"Payouts Enabled: {account.is_payouts_enabled}")
-        if account.business_name:
-            parts.append(f"Business Name: {account.business_name}")
-        if account.business_url:
-            parts.append(f"Business URL: {account.business_url}")
-        if account.business_support_address_country:
+        parts.append("\n## Payout Account")
+        parts.append(f"Account Type: {payout_account.type}")
+        if payout_account.country:
+            parts.append(f"Account Country: {payout_account.country}")
+        if payout_account.business_type:
+            parts.append(f"Business Type: {payout_account.business_type}")
+        parts.append(f"Details Submitted: {payout_account.is_details_submitted}")
+        parts.append(f"Charges Enabled: {payout_account.is_charges_enabled}")
+        parts.append(f"Payouts Enabled: {payout_account.is_payouts_enabled}")
+        if payout_account.business_name:
+            parts.append(f"Business Name: {payout_account.business_name}")
+        if payout_account.business_url:
+            parts.append(f"Business URL: {payout_account.business_url}")
+        if payout_account.business_support_address_country:
             parts.append(
-                f"Support Address Country: {account.business_support_address_country}"
+                f"Support Address Country: {payout_account.business_support_address_country}"
             )
-        if account.capabilities:
-            cap_strs = [f"{k}={v}" for k, v in account.capabilities.items()]
+        if payout_account.capabilities:
+            cap_strs = [f"{k}={v}" for k, v in payout_account.capabilities.items()]
             parts.append(f"Capabilities: {', '.join(cap_strs)}")
-        if account.requirements_disabled_reason:
+        if payout_account.requirements_disabled_reason:
             parts.append(
-                f"WARNING — Disabled Reason: {account.requirements_disabled_reason}"
+                f"WARNING — Disabled Reason: {payout_account.requirements_disabled_reason}"
             )
-        if account.requirements_errors:
+        if payout_account.requirements_errors:
             error_strs = [
-                f"{e['code']}: {e['reason']}" for e in account.requirements_errors
+                f"{e['code']}: {e['reason']}"
+                for e in payout_account.requirements_errors
             ]
             parts.append(f"WARNING — Verification Errors: {'; '.join(error_strs)}")
-        if account.requirements_past_due:
+        if payout_account.requirements_past_due:
             parts.append(
-                f"Requirements Past Due: {', '.join(account.requirements_past_due)}"
+                f"Requirements Past Due: {', '.join(payout_account.requirements_past_due)}"
             )
-        if account.requirements_currently_due:
+        if payout_account.requirements_currently_due:
             parts.append(
-                f"Requirements Currently Due: {', '.join(account.requirements_currently_due)}"
+                f"Requirements Currently Due: {', '.join(payout_account.requirements_currently_due)}"
             )
-        if account.requirements_pending_verification:
+        if payout_account.requirements_pending_verification:
             parts.append(
-                f"Requirements Pending Verification: {', '.join(account.requirements_pending_verification)}"
+                f"Requirements Pending Verification: {', '.join(payout_account.requirements_pending_verification)}"
             )
 
         # Payment Metrics
@@ -612,6 +728,11 @@ class ReviewAnalyzer:
             if metrics.succeeded_payments > 0:
                 refund_rate = metrics.refund_count / metrics.succeeded_payments * 100
                 parts.append(f"Refund Rate: {refund_rate:.1f}%")
+                if metrics.succeeded_payments < 10:
+                    parts.append(
+                        f"⚠️ LOW VOLUME ({metrics.succeeded_payments} payments) — "
+                        "rate-based metrics are NOT statistically meaningful at this volume."
+                    )
             parts.append(
                 f"Disputes: {metrics.dispute_count} (${metrics.dispute_amount_cents / 100:,.2f})"
             )
@@ -642,14 +763,32 @@ class ReviewAnalyzer:
         # Prior Review Decisions
         prior_feedback = snapshot.prior_feedback
         if prior_feedback.entries:
+            human_approvals = [
+                e
+                for e in prior_feedback.entries
+                if e.actor_type == ActorType.HUMAN
+                and e.decision == DecisionType.APPROVE
+            ]
             parts.append("\n## Prior Review Decisions")
-            parts.append(
-                "The following previous review decisions exist for this organization. "
-                "If a human reviewer has already evaluated and approved the organization, "
-                "do NOT re-raise the same concerns unless you have new, concrete evidence "
-                "that was not available during the prior review. Focus your analysis on "
-                "what has CHANGED since the last review."
-            )
+            if human_approvals:
+                parts.append(
+                    f"⚠️ THIS ORGANIZATION HAS BEEN APPROVED BY A HUMAN REVIEWER "
+                    f"{len(human_approvals)} TIME(S). This is a strong trust signal. "
+                    "You should strongly default to APPROVE unless you find NEW evidence "
+                    "of a clearly prohibited business or NEW critical fraud signals that "
+                    "were NOT present in the prior reviews. Do NOT re-raise the same "
+                    "concerns the human already considered (setup, integration, website, "
+                    "redirects, domain mismatches, etc). Re-flagging resolved concerns "
+                    "wastes reviewer time and degrades trust in the agent."
+                )
+            else:
+                parts.append(
+                    "The following previous review decisions exist for this "
+                    "organization. Do NOT re-raise the same concerns unless you have "
+                    "new, concrete evidence that was not available during the prior "
+                    "review. Focus your analysis on what has CHANGED since the last "
+                    "review."
+                )
             for entry in prior_feedback.entries:
                 date_str = (
                     entry.created_at.strftime("%Y-%m-%d")

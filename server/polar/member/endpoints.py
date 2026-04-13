@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import Depends, Query
 
 from polar.customer.schemas.customer import ExternalCustomerID
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models.member import MemberRole
 from polar.openapi import APITag
@@ -16,7 +16,7 @@ from polar.postgres import (
 from polar.routing import APIRouter
 
 from . import auth, sorting
-from .schemas import Member, MemberCreate, MemberUpdate
+from .schemas import ExternalMemberID, Member, MemberCreate, MemberUpdate
 from .service import member_service
 
 router = APIRouter(
@@ -28,6 +28,33 @@ MemberNotFound = {
     "description": "Member not found.",
     "model": ResourceNotFound.schema(),
 }
+
+
+def _validate_customer_id_params(
+    customer_id: UUID | None, external_customer_id: str | None
+) -> None:
+    if customer_id is None and external_customer_id is None:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "missing",
+                    "loc": ("query",),
+                    "msg": "One of customer_id or external_customer_id must be provided.",
+                    "input": None,
+                }
+            ]
+        )
+    if customer_id is not None and external_customer_id is not None:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("query",),
+                    "msg": "Only one of customer_id or external_customer_id may be provided.",
+                    "input": None,
+                }
+            ]
+        )
 
 
 @router.get(
@@ -133,6 +160,41 @@ async def get_member(
     return Member.model_validate(member)
 
 
+@router.get(
+    "/external/{external_id}",
+    summary="Get Member by External ID",
+    response_model=Member,
+    responses={
+        200: {"description": "Member retrieved."},
+        404: MemberNotFound,
+    },
+)
+async def get_member_by_external_id(
+    external_id: ExternalMemberID,
+    auth_subject: auth.MemberRead,
+    customer_id: UUID | None = Query(None, description="The customer ID."),
+    external_customer_id: str | None = Query(
+        None, description="The customer external ID."
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Member:
+    """Get a member by external ID. One of customer_id or external_customer_id must be specified."""
+    _validate_customer_id_params(customer_id, external_customer_id)
+
+    member = await member_service.get_by_external_id(
+        session,
+        auth_subject,
+        external_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+    )
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    return Member.model_validate(member)
+
+
 @router.patch(
     "/{id}",
     summary="Update Member",
@@ -170,6 +232,50 @@ async def update_member(
     return Member.model_validate(updated_member)
 
 
+@router.patch(
+    "/external/{external_id}",
+    summary="Update Member by External ID",
+    response_model=Member,
+    responses={
+        200: {"description": "Member updated."},
+        404: MemberNotFound,
+    },
+)
+async def update_member_by_external_id(
+    external_id: ExternalMemberID,
+    member_update: MemberUpdate,
+    auth_subject: auth.MemberWrite,
+    customer_id: UUID | None = Query(None, description="The customer ID."),
+    external_customer_id: str | None = Query(
+        None, description="The customer external ID."
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> Member:
+    """Update a member by external ID. One of customer_id or external_customer_id must be specified."""
+    _validate_customer_id_params(customer_id, external_customer_id)
+
+    member = await member_service.get_by_external_id(
+        session,
+        auth_subject,
+        external_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+    )
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    updated_member = await member_service.update(
+        session,
+        member,
+        name=member_update.name,
+        role=member_update.role,
+        allow_ownership_transfer=True,
+    )
+
+    return Member.model_validate(updated_member)
+
+
 @router.delete(
     "/{id}",
     status_code=204,
@@ -190,6 +296,41 @@ async def delete_member(
     The authenticated user or organization must have access to the member's organization.
     """
     member = await member_service.get(session, auth_subject, id)
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    await member_service.delete(session, member)
+
+
+@router.delete(
+    "/external/{external_id}",
+    status_code=204,
+    summary="Delete Member by External ID",
+    responses={
+        204: {"description": "Member deleted."},
+        404: MemberNotFound,
+    },
+)
+async def delete_member_by_external_id(
+    external_id: ExternalMemberID,
+    auth_subject: auth.MemberWrite,
+    customer_id: UUID | None = Query(None, description="The customer ID."),
+    external_customer_id: str | None = Query(
+        None, description="The customer external ID."
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Delete a member by external ID. One of customer_id or external_customer_id must be specified."""
+    _validate_customer_id_params(customer_id, external_customer_id)
+
+    member = await member_service.get_by_external_id(
+        session,
+        auth_subject,
+        external_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+    )
 
     if member is None:
         raise ResourceNotFound("Member not found")

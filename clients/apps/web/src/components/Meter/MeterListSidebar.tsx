@@ -24,6 +24,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { METER_UNIT_DISPLAY_NAMES } from '@polar-sh/ui/lib/meterUnit'
 
 interface MeterListSidebarProps {
   organization: schemas['Organization']
@@ -54,15 +55,13 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
     ),
   )
 
-  const { data, hasNextPage, fetchNextPage } = useMetersInfinite(
-    organization.id,
-    {
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useMetersInfinite(organization.id, {
       sorting: [sorting],
       query,
       is_archived:
         archivedFilter === 'all' ? undefined : archivedFilter === 'archived',
-    },
-  )
+    })
 
   const meters = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -81,10 +80,10 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
   const { ref: loadingRef, inViewport } = useInViewport()
 
   useEffect(() => {
-    if (inViewport && hasNextPage) {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
-  }, [inViewport, hasNextPage, fetchNextPage])
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
     <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
@@ -190,7 +189,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
                   <div className="truncate text-sm">{meter.name}</div>
                 </div>
                 <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500 capitalize">
-                  {meter.aggregation.func}
+                  {METER_UNIT_DISPLAY_NAMES[meter.unit]}
                 </div>
               </div>
             </Link>

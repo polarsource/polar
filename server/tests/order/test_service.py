@@ -26,7 +26,6 @@ from polar.enums import (
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import (
     Address,
@@ -57,13 +56,14 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
 from polar.order.schemas import OrderUpdate
 from polar.order.service import (
+    ManualRetryLimitExceeded,
     MissingCheckoutCustomer,
     NoPendingBillingEntries,
     NotRecurringProduct,
@@ -984,6 +984,7 @@ class TestCreateSubscriptionOrder:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=subscription.payment_method_id,
+            payment_trigger="purchase",
         )
 
     async def test_cycle_discount(
@@ -1297,6 +1298,7 @@ class TestCreateSubscriptionOrder:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=subscription.payment_method_id,
+            payment_trigger="purchase",
         )
 
     @pytest.mark.parametrize(
@@ -1561,6 +1563,7 @@ class TestCreateSubscriptionOrder:
                 "order.trigger_payment",
                 order_id=order.id,
                 payment_method_id=subscription.payment_method_id,
+                payment_trigger="purchase",
             )
             assert customer_balance == 0
         else:
@@ -2117,43 +2120,14 @@ class TestCreateOrderBalance:
         with pytest.raises(PaymentTransactionForChargeDoesNotExist):
             await order_service.create_order_balance(session, order, "CHARGE_ID")
 
-    async def test_no_account(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        order = await create_order(save_fixture, product=product, customer=customer)
-        payment_transaction = await create_transaction(
-            save_fixture, type=TransactionType.payment, charge_id="CHARGE_ID"
-        )
-
-        await order_service.create_order_balance(session, order, "CHARGE_ID")
-
-        held_balance = await held_balance_service.get_by(
-            session, organization_id=product.organization_id
-        )
-        assert held_balance is not None
-        assert held_balance.order_id == order.id
-
-        updated_payment_transaction = await payment_transaction_service.get(
-            session,
-            id=payment_transaction.id,
-            options=(joinedload(Transaction.payment_customer),),
-        )
-        assert updated_payment_transaction is not None
-        assert updated_payment_transaction.order == order
-        assert updated_payment_transaction.payment_customer == order.customer
-
-    async def test_with_account(
+    async def test_valid(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
         customer: Customer,
-        organization_account: Account,
+        account: Account,
     ) -> None:
         order = await create_order(save_fixture, product=product, customer=customer)
         payment_transaction = await create_transaction(
@@ -2168,7 +2142,7 @@ class TestCreateOrderBalance:
             Transaction(
                 type=TransactionType.balance,
                 amount=order.net_amount,
-                account=organization_account,
+                account=account,
             ),
         )
 
@@ -2189,7 +2163,7 @@ class TestCreateOrderBalance:
                     amount=100,
                     currency="usd",
                     platform_fee_type=PlatformFeeType.payment,
-                    account=organization_account,
+                    account=account,
                 ),
             ),
             (
@@ -2204,7 +2178,7 @@ class TestCreateOrderBalance:
                     amount=50,
                     currency="usd",
                     platform_fee_type=PlatformFeeType.payment,
-                    account=organization_account,
+                    account=account,
                 ),
             ),
         ]
@@ -2214,7 +2188,7 @@ class TestCreateOrderBalance:
         assert create_balance_from_charge_mock.mock_calls[0] == call(
             ANY,
             source_account=None,
-            destination_account=organization_account,
+            destination_account=account,
             charge_id="CHARGE_ID",
             amount=payment_transaction.amount,
             order=order,
@@ -2223,7 +2197,7 @@ class TestCreateOrderBalance:
         create_balance_from_charge_mock.assert_awaited_once_with(
             ANY,
             source_account=None,
-            destination_account=organization_account,
+            destination_account=account,
             charge_id="CHARGE_ID",
             amount=payment_transaction.amount,
             order=order,
@@ -2618,6 +2592,7 @@ class TestHandlePaymentFailure:
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -2667,12 +2642,14 @@ class TestHandlePaymentFailure:
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
         await create_payment(
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -2723,6 +2700,7 @@ class TestHandlePaymentFailure:
                 save_fixture,
                 order.organization,
                 status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
                 order=order,
             )
 
@@ -2772,6 +2750,7 @@ class TestHandlePaymentFailure:
                 save_fixture,
                 order.organization,
                 status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
                 order=order,
             )
 
@@ -2819,6 +2798,7 @@ class TestHandlePaymentFailure:
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
         await create_payment(
@@ -2954,6 +2934,7 @@ class TestHandlePaymentFailure:
             order.organization,
             status=PaymentStatus.failed,
             decline_reason="stolen_card",
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -3015,6 +2996,7 @@ class TestHandlePaymentFailure:
             order.organization,
             status=PaymentStatus.failed,
             decline_reason="insufficient_funds",
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -3068,6 +3050,7 @@ class TestHandlePaymentFailure:
             order.organization,
             status=PaymentStatus.failed,
             decline_reason="stolen_card",
+            trigger=PaymentTrigger.purchase,
             order=order,
         )
 
@@ -3247,6 +3230,7 @@ class TestProcessDunningOrder:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=payment_method.id,
+            payment_trigger="retry_dunning",
         )
 
 
@@ -3257,13 +3241,14 @@ class TestScheduleRetryForPastDueOrders:
     @freeze_time("2024-01-15 12:00:00")
     async def test_schedules_retry_for_past_due_no_next_attempt(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
         product: Product,
     ) -> None:
         """When a customer saves a new payment method and has a past_due subscription
-        with no next_payment_attempt_at, a retry should be scheduled immediately."""
+        with no next_payment_attempt_at, a payment should be enqueued immediately."""
         payment_method = await create_payment_method(save_fixture, customer=customer)
         subscription = await create_subscription(
             save_fixture,
@@ -3292,9 +3277,12 @@ class TestScheduleRetryForPastDueOrders:
         )
 
         # Then
-        await session.refresh(order)
-        assert order.next_payment_attempt_at is not None
-        assert order.next_payment_attempt_at == utc_now()
+        enqueue_job_mock.assert_called_once_with(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=new_payment_method.id,
+            payment_trigger="retry_payment_method_update",
+        )
 
         await session.refresh(subscription)
         assert subscription.payment_method_id == new_payment_method.id
@@ -3302,6 +3290,7 @@ class TestScheduleRetryForPastDueOrders:
     @freeze_time("2024-01-15 12:00:00")
     async def test_skips_canceled_subscription(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -3319,7 +3308,7 @@ class TestScheduleRetryForPastDueOrders:
             payment_method=payment_method,
             cancel_at_period_end=True,
         )
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -3338,12 +3327,12 @@ class TestScheduleRetryForPastDueOrders:
         )
 
         # Then — no retry scheduled
-        await session.refresh(order)
-        assert order.next_payment_attempt_at is None
+        enqueue_job_mock.assert_not_called()
 
     @freeze_time("2024-02-01 12:00:00")
     async def test_skips_past_deadline(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -3361,7 +3350,7 @@ class TestScheduleRetryForPastDueOrders:
             past_due_at=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
             payment_method=payment_method,
         )
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -3380,19 +3369,19 @@ class TestScheduleRetryForPastDueOrders:
         )
 
         # Then — no retry scheduled (deadline expired)
-        await session.refresh(order)
-        assert order.next_payment_attempt_at is None
+        enqueue_job_mock.assert_not_called()
 
     @freeze_time("2024-01-15 12:00:00")
-    async def test_moves_up_retry_if_next_attempt_already_set(
+    async def test_enqueues_payment_if_next_attempt_already_set(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
         product: Product,
     ) -> None:
-        """When a customer saves a new payment method, an existing scheduled retry
-        should be moved up to now for immediate recovery."""
+        """When a customer saves a new payment method, a payment should be
+        enqueued immediately even if next_payment_attempt_at was already set."""
         payment_method = await create_payment_method(save_fixture, customer=customer)
         existing_retry_date = datetime(2024, 1, 16, 0, 0, 0, tzinfo=UTC)
         subscription = await create_subscription(
@@ -3421,9 +3410,13 @@ class TestScheduleRetryForPastDueOrders:
             session, customer, new_payment_method
         )
 
-        # Then — retry moved up to now for immediate recovery
-        await session.refresh(order)
-        assert order.next_payment_attempt_at == utc_now()
+        # Then — payment enqueued immediately
+        enqueue_job_mock.assert_called_once_with(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=new_payment_method.id,
+            payment_trigger="retry_payment_method_update",
+        )
 
         await session.refresh(subscription)
         assert subscription.payment_method_id == new_payment_method.id
@@ -3431,6 +3424,7 @@ class TestScheduleRetryForPastDueOrders:
     @freeze_time("2024-01-15 12:00:00")
     async def test_skips_active_subscription(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -3444,7 +3438,7 @@ class TestScheduleRetryForPastDueOrders:
             customer=customer,
             payment_method=payment_method,
         )
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -3463,8 +3457,7 @@ class TestScheduleRetryForPastDueOrders:
         )
 
         # Then — no retry scheduled (subscription is active, not past_due)
-        await session.refresh(order)
-        assert order.next_payment_attempt_at is None
+        enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -4255,6 +4248,45 @@ class TestProcessRetryPayment:
         )
 
         assert order.payment_lock_acquired_at is not None
+
+    async def test_process_retry_payment_manual_retry_limit_exceeded(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that manual retry is rejected when the limit is exceeded."""
+        from polar.config import settings
+
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        for _ in range(settings.CUSTOMER_RETRY_MAX_ATTEMPTS):
+            await create_payment(
+                save_fixture,
+                organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.retry_customer,
+                order=order,
+            )
+
+        with pytest.raises(ManualRetryLimitExceeded):
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
 
 
 @pytest.mark.asyncio

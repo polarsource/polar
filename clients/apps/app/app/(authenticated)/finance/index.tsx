@@ -7,6 +7,7 @@ import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import {
   useOrganizationAccount,
+  usePayoutAccount,
   usePayouts,
   useTransactionsSummary,
 } from '@/hooks/polar/finance'
@@ -25,6 +26,11 @@ export default function Finance() {
     refetch: refetchAccount,
     isRefetching: isRefetchingAccount,
   } = useOrganizationAccount(organization?.id)
+  const {
+    data: payoutAccount,
+    refetch: refetchPayoutAccount,
+    isRefetching: isRefetchingPayoutAccount,
+  } = usePayoutAccount(organization?.payout_account_id || undefined)
 
   const {
     data: summary,
@@ -46,7 +52,8 @@ export default function Finance() {
     isRefetchingAccount || isRefetchingSummary || isRefetchingPayouts
 
   const canWithdraw =
-    account?.status === 'active' &&
+    payoutAccount &&
+    payoutAccount.is_payout_ready &&
     summary?.balance?.amount &&
     summary.balance.amount >= 1000
 
@@ -105,10 +112,10 @@ export default function Finance() {
       }
     >
       <Stack.Screen options={{ title: 'Finance' }} />
-      {!account?.is_payouts_enabled ? (
+      {!payoutAccount || !payoutAccount.is_payout_ready ? (
         <Banner
           title="No Payout Account"
-          description="This organization does not have a payout account connected."
+          description="This organization does not have a ready payout account connected. Please set up your payout account to receive funds."
         />
       ) : null}
       <Box
@@ -122,7 +129,7 @@ export default function Finance() {
         <Text variant="headlineLarge">
           {formatCurrency('accounting')(
             summary?.balance.amount ?? 0,
-            summary.payout.account_currency,
+            summary.balance.currency,
           )}
         </Text>
       </Box>

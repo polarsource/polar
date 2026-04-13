@@ -6,7 +6,7 @@ from sqlalchemy import select
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import Customer, CustomerSeat
+from polar.models import Account, Customer, CustomerSeat, User
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer import (
@@ -24,6 +24,7 @@ from polar.organization.tasks import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_benefit,
     create_benefit_grant,
     create_customer,
@@ -47,9 +48,10 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": False}
+            save_fixture, account, feature_settings={"member_model_enabled": False}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="c@test.com"
@@ -70,9 +72,10 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         c1 = await create_customer(
             save_fixture,
@@ -108,9 +111,10 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture, organization=organization, email="has-owner@test.com"
@@ -143,9 +147,10 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         await create_customer(
             save_fixture,
@@ -172,11 +177,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When billing manager holds the seat, customer_id stays the same
         and member_id points to their owner member."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -230,11 +237,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When someone else holds the seat, customer_id changes to billing
         customer and a new member is created under the billing customer."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -295,11 +304,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Pending seats held by a different customer: customer_id migrated
         to billing customer, email preserved, member created."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -357,11 +368,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Pending seats with no holder: customer_id migrated,
         member_id stays NULL since there's no email."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -404,9 +417,11 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -450,9 +465,10 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -516,11 +532,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Grants from a billing manager's subscription should be linked to the
         seat member, not the owner member, when the customer has a seat."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -588,9 +606,10 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -646,14 +665,17 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        user: User,
     ) -> None:
         org1 = await create_organization(
             save_fixture,
+            await create_account(save_fixture, user),
             feature_settings={"member_model_enabled": True},
             name_prefix="org1",
         )
         org2 = await create_organization(
             save_fixture,
+            await create_account(save_fixture, user),
             feature_settings={"member_model_enabled": True},
             name_prefix="org2",
         )
@@ -696,11 +718,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Benefit grants from the old seat-holder customer should be
         transferred to the new member under the billing customer."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -774,11 +798,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """License keys from the old seat-holder customer should be
         transferred to the billing customer."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -858,10 +884,12 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Customer OAuth accounts should be copied to the owner member."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -907,11 +935,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Seat-holder customer OAuth accounts should be copied to the
         new member under the billing customer."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -988,11 +1018,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Seat-holder customers with no subscriptions or orders
         should be soft-deleted after backfill."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1051,11 +1083,13 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Seat-holder customers that have their own subscriptions
         should NOT be soft-deleted."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1119,10 +1153,12 @@ class TestBackfillMembers:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Seat-holder customers that have orders should NOT be soft-deleted."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1189,10 +1225,11 @@ class TestBackfillMembersB2C:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Each B2C customer gets an owner member."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         c1 = await create_customer(
             save_fixture,
@@ -1224,10 +1261,11 @@ class TestBackfillMembersB2C:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2C customers should have type=individual after backfill."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -1247,10 +1285,11 @@ class TestBackfillMembersB2C:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Benefits linked to owner member with customer_id unchanged."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -1298,10 +1337,11 @@ class TestBackfillMembersB2C:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """OAuth accounts on customer are copied to the owner member."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -1337,10 +1377,11 @@ class TestBackfillMembersB2C:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2C license keys should not be transferred (same customer)."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -1399,10 +1440,12 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Billing customer gets an owner member."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1439,10 +1482,12 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Billing customer with seats should have type=team after backfill."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1488,10 +1533,12 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Each seat holder gets a member under the billing customer."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1560,10 +1607,12 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """After backfill, each seat has member_id pointing to its member."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1616,10 +1665,12 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """After backfill, seat customer_id is updated to billing customer."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1668,11 +1719,13 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Seat holder benefits are transferred to the billing customer
         and linked to the seat member."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1742,11 +1795,13 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """B2B license keys are transferred from seat holder to billing
         customer and linked to the seat member."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1824,10 +1879,12 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Seat holder OAuth accounts are copied to the seat member."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1896,10 +1953,12 @@ class TestBackfillMembersB2B:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Seat holder customers with no own subscriptions/orders are soft-deleted."""
         organization = await create_organization(
             save_fixture,
+            account,
             feature_settings={
                 "member_model_enabled": True,
                 "seat_based_pricing_enabled": True,
@@ -1958,11 +2017,12 @@ class TestBackfillBenefitGrantsDuplicates:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """Old grant (member_id=NULL) should be soft-deleted when a
         member-linked grant already exists for the same unique key."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -2030,11 +2090,12 @@ class TestBackfillBenefitGrantsDuplicates:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When the old grant has properties but the existing member-linked
         grant has empty properties, the properties should be carried over."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -2103,11 +2164,12 @@ class TestBackfillBenefitGrantsDuplicates:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When both grants have properties, the existing grant's
         properties should not be overwritten."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -2175,11 +2237,12 @@ class TestBackfillBenefitGrantsDuplicates:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When two order-scoped grants exist for the same benefit and customer,
         both should be kept since each order is a distinct purchase."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,
@@ -2241,11 +2304,12 @@ class TestBackfillBenefitGrantsDuplicates:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        account: Account,
     ) -> None:
         """When there is no conflicting member-linked grant, the old
         grant should be linked to the member normally."""
         organization = await create_organization(
-            save_fixture, feature_settings={"member_model_enabled": True}
+            save_fixture, account, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(
             save_fixture,

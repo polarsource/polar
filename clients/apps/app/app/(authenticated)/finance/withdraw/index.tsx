@@ -19,13 +19,13 @@ export default function Index() {
   const scrollRef = useRef<ScrollView>(null)
   const { organization } = useContext(OrganizationContext)
   const { data: account } = useOrganizationAccount(organization?.id)
-  const { data: estimate } = usePayoutEstimate(account?.id)
+  const { data: estimate } = usePayoutEstimate(organization?.id)
   const { data: summary } = useTransactionsSummary(account?.id)
   const { data: orders } = useOrders(organization?.id, { limit: 1 })
   const theme = useTheme()
   const router = useRouter()
 
-  const { mutateAsync: withdrawFunds } = useCreatePayout(account?.id)
+  const { mutateAsync: withdrawFunds } = useCreatePayout(organization?.id)
   const { requestReview, shouldShow } = useStoreReview()
 
   const hasOrders = useMemo(() => {

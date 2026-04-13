@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import ipaddress
 import re
-import socket
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
 
@@ -12,10 +10,9 @@ import structlog
 import trafilatura
 from playwright.async_api import Browser, Page, Playwright, Route, async_playwright
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
+from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 
 from ..schemas import UsageInfo, WebsiteData, WebsitePage
 
@@ -26,36 +23,6 @@ MAX_PAGES = 5
 MAX_CHARS_PER_PAGE = 15_000
 PAGE_TIMEOUT_MS = 15_000
 MAX_REDIRECTS = 10
-
-
-class SSRFBlockedError(Exception):
-    """Raised when a request targets a private/reserved IP address."""
-
-
-async def _resolve_and_validate_ip(hostname: str) -> None:
-    """Resolve *hostname* and raise `SSRFBlockedError` if any IP is private/reserved."""
-    loop = asyncio.get_running_loop()
-    try:
-        infos = await loop.run_in_executor(
-            None,
-            lambda: socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP),
-        )
-    except socket.gaierror as exc:
-        raise SSRFBlockedError(f"DNS resolution failed for {hostname}") from exc
-
-    for info in infos:
-        addr = ipaddress.ip_address(info[4][0])
-        if (
-            addr.is_private
-            or addr.is_loopback
-            or addr.is_reserved
-            or addr.is_link_local
-            or addr.is_multicast
-            or addr.is_unspecified
-        ):
-            raise SSRFBlockedError(
-                f"Blocked request to {hostname}: resolves to private/reserved IP {addr}"
-            )
 
 
 # Realistic Chrome user-agent to avoid bot detection by CDNs (Cloudflare, Vercel, etc.)
@@ -202,7 +169,7 @@ class WebsiteDeps:
             hostname = parsed.hostname
             if hostname:
                 try:
-                    await _resolve_and_validate_ip(hostname)
+                    await resolve_and_validate_ip(hostname)
                 except SSRFBlockedError:
                     log.info(
                         "website_collector.playwright_blocked_ssrf",
@@ -234,11 +201,10 @@ class WebsiteDeps:
 # Module-level singleton agent
 # ---------------------------------------------------------------------------
 
-_provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-_model = OpenAIChatModel(settings.OPENAI_MODEL, provider=_provider)
 
+model_instance, model_provider, model_name = settings.get_pydantic_gateway_model()
 _website_agent: Agent[WebsiteDeps, str] = Agent(
-    _model,
+    model_instance,
     output_type=str,
     deps_type=WebsiteDeps,
     system_prompt=SYSTEM_PROMPT,
@@ -340,7 +306,7 @@ with server-side rendering. Use this by default."""
     initial_host = urlparse(url).hostname
     if initial_host:
         try:
-            await _resolve_and_validate_ip(initial_host)
+            await resolve_and_validate_ip(initial_host)
         except SSRFBlockedError as e:
             return f"Error: {e}"
 
@@ -366,7 +332,7 @@ with server-side rendering. Use this by default."""
 
             redirect_host = urlparse(redirect_url).hostname
             if redirect_host:
-                await _resolve_and_validate_ip(redirect_host)
+                await resolve_and_validate_ip(redirect_host)
 
             current_url = redirect_url
         else:
@@ -425,7 +391,7 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
     initial_host = urlparse(url).hostname
     if initial_host:
         try:
-            await _resolve_and_validate_ip(initial_host)
+            await resolve_and_validate_ip(initial_host)
         except SSRFBlockedError as e:
             return f"Error: {e}"
 
@@ -563,7 +529,9 @@ async def _run_website_agent(base_url: str) -> WebsiteData:
                 total_pages_succeeded=len(
                     [p for p in deps.pages_visited if p.content.strip()]
                 ),
-                usage=UsageInfo.from_agent_usage(result.usage(), _model.model_name),
+                usage=UsageInfo.from_agent_usage(
+                    result.usage(), model_provider, model_name
+                ),
             )
         finally:
             await deps.cleanup()

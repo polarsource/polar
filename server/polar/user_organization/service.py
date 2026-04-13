@@ -153,10 +153,9 @@ class UserOrganizationService:
             raise UserNotMemberOfOrganization(user_id, organization_id)
 
         # Check if the user is the organization admin
-        if organization.account_id:
-            admin_user = await org_repo.get_admin_user(session, organization)
-            if admin_user and admin_user.id == user_id:
-                raise CannotRemoveOrganizationAdmin(user_id, organization_id)
+        admin_user = await org_repo.get_admin_user(session, organization)
+        if admin_user and admin_user.id == user_id:
+            raise CannotRemoveOrganizationAdmin(user_id, organization_id)
 
         # Remove the member
         await self.remove_member(session, user_id, organization_id)

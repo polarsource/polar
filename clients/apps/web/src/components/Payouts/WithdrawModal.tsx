@@ -10,7 +10,6 @@ import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 
 interface WithdrawModalProps {
-  account: schemas['Account']
   organization: schemas['Organization']
   isShown: boolean
   hide: () => void
@@ -18,7 +17,6 @@ interface WithdrawModalProps {
 }
 
 const WithdrawModal: React.FC<WithdrawModalProps> = ({
-  account,
   organization,
   isShown,
   hide,
@@ -39,7 +37,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     }
 
     const { data, error } = await api.GET('/v1/payouts/estimate', {
-      params: { query: { account_id: account.id } },
+      params: { query: { organization_id: organization.id } },
     })
     if (error) {
       if (isValidationError(error.detail)) {
@@ -56,7 +54,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     if (data) {
       setPayoutEstimate(data)
     }
-  }, [account, canWithdraw])
+  }, [organization, canWithdraw])
 
   /* eslint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
   useEffect(() => {
@@ -70,7 +68,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const onConfirm = useCallback(async () => {
     setLoading(true)
     const { data, error } = await api.POST('/v1/payouts/', {
-      body: { account_id: account.id },
+      body: { organization_id: organization.id },
     })
     setLoading(false)
 
@@ -88,12 +86,12 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     })
 
     onSuccess?.(data.id)
-  }, [account.id, onSuccess])
+  }, [organization, onSuccess])
 
   return (
     <Modal
       title="Withdraw Balance"
-      className="min-w-[400px]"
+      className="min-w-100"
       isShown={isShown}
       hide={hide}
       modalContent={

@@ -12,25 +12,33 @@ from polar.user_organization.service import (
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
 class TestRemoveMemberSafe:
     async def test_remove_member_success(
         self,
+        save_fixture: SaveFixture,
         session: Any,
         organization: Organization,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
     ) -> None:
+        user_organization = UserOrganization(
+            user=user_second, organization=organization
+        )
+        await save_fixture(user_organization)
+
         # Test successful member removal
         await user_organization_service.remove_member_safe(
-            session, user.id, organization.id
+            session, user_second.id, organization.id
         )
 
         # Verify the member was soft deleted
         user_org = await user_organization_service.get_by_user_and_org(
-            session, user.id, organization.id
+            session, user_second.id, organization.id
         )
         assert user_org is None
 
@@ -67,7 +75,7 @@ class TestRemoveMemberSafe:
     async def test_remove_member_cannot_remove_admin(
         self,
         session: Any,
-        organization_account: Account,
+        account: Account,
         organization: Organization,
         user: User,
         save_fixture: Any,
@@ -96,7 +104,7 @@ class TestRemoveMemberSafe:
     async def test_remove_member_non_admin_with_account(
         self,
         session: Any,
-        organization_account: Account,
+        account: Account,
         organization: Organization,
         user_second: User,
         save_fixture: Any,
@@ -122,24 +130,6 @@ class TestRemoveMemberSafe:
             UserOrganization | None
         ) = await user_organization_service.get_by_user_and_org(
             session, user_second.id, organization.id
-        )
-        assert user_org is None
-
-    async def test_remove_member_no_account(
-        self,
-        session: Any,
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-    ) -> None:
-        # Test removing member from organization without account (no admin check)
-        await user_organization_service.remove_member_safe(
-            session, user.id, organization.id
-        )
-
-        # Verify the member was soft deleted
-        user_org = await user_organization_service.get_by_user_and_org(
-            session, user.id, organization.id
         )
         assert user_org is None
 

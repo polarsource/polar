@@ -53,13 +53,11 @@ export const CheckoutLinkListSidebar = ({
   const [createCheckoutLinkQuerystring, setCreateCheckoutLinkQuerystring] =
     useQueryState('create_checkout_link', parseAsBoolean.withDefault(false))
 
-  const { data, fetchNextPage, hasNextPage } = useCheckoutLinks(
-    organization.id,
-    {
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useCheckoutLinks(organization.id, {
       sorting: [sorting],
       product_id: productIds,
-    },
-  )
+    })
 
   const checkoutLinks = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -75,10 +73,10 @@ export const CheckoutLinkListSidebar = ({
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
   useEffect(() => {
-    if (inViewport && hasNextPage) {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
-  }, [inViewport, hasNextPage, fetchNextPage])
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   useEffect(() => {
     if (createCheckoutLinkQuerystring) {

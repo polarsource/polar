@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useSelectedLayoutSegment } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
 export const MasterDetailLayout = ({
@@ -15,6 +16,8 @@ export const MasterDetailLayout = ({
   listViewClassName?: string
   placement?: 'left' | 'right'
 }) => {
+  const isIndexPage = !useSelectedLayoutSegment()
+
   return (
     <motion.div
       className={twMerge(
@@ -32,13 +35,21 @@ export const MasterDetailLayout = ({
             animate: { opacity: 1, transition: { duration: 0.3 } },
             exit: { opacity: 0, transition: { duration: 0.3 } },
           }}
-          className="dark:bg-polar-900 dark:border-polar-800 h-full w-full overflow-y-hidden rounded-2xl border border-gray-200 bg-white md:max-w-[300px] md:shadow-xs xl:max-w-[320px]"
+          className={twMerge(
+            'dark:bg-polar-900 dark:border-polar-800 h-full w-full overflow-y-hidden rounded-2xl border border-gray-200 bg-white md:max-w-[300px] md:shadow-xs xl:max-w-[320px]',
+            isIndexPage ? 'mx-4 mt-4 md:mx-0 md:mt-0' : 'hidden md:block',
+          )}
         >
           {listView}
         </motion.div>
       ) : null}
 
-      <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs">
+      <div
+        className={twMerge(
+          'dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs',
+          isIndexPage && 'hidden md:flex',
+        )}
+      >
         <motion.div
           className={twMerge(
             'flex h-full w-full max-w-(--breakpoint-xl) flex-col',

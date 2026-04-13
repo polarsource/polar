@@ -51,7 +51,7 @@ dependencies = [
   "prometheus-client>=0.21.0",
   "python-snappy>=0.7.3",
   "fpdf2>=2.8.3",
-  "pydantic-ai-slim[openai]>=0.7.1",
+  "pydantic-ai-slim[openai]>=1.16.0",
   "asgi-ratelimit>=0.10.0",
   "aiocsv>=1.4.0",
   "alembic-utils>=0.8.8",
@@ -59,6 +59,7 @@ dependencies = [
   "playwright>=1.50.0",
   "trafilatura>=2.0.0",
   "polar-sdk==0.30.1",
+  "anyio>=4.12.1",
 ]
 
 [dependency-groups]

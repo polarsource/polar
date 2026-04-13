@@ -5,9 +5,11 @@ from polar.worker import enqueue_job
 
 
 class PolarSelfService:
+    INITIAL_MEMBER_DELAY_MS = 1000
+
     @property
     def is_configured(self) -> bool:
-        return bool(settings.POLAR_ACCESS_TOKEN)
+        return settings.POLAR_SELF_ENABLED
 
     def enqueue_create_customer(
         self, *, organization_id: uuid.UUID, email: str, name: str
@@ -20,25 +22,24 @@ class PolarSelfService:
             email=email,
             name=name,
             organization_id=settings.POLAR_ORGANIZATION_ID,
-        )
-
-    def enqueue_create_free_subscription(self, *, external_customer_id: str) -> None:
-        if not self.is_configured:
-            return
-        enqueue_job(
-            "polar_self.create_free_subscription",
-            external_customer_id=external_customer_id,
             product_id=settings.POLAR_FREE_PRODUCT_ID,
         )
 
     def enqueue_add_member(
-        self, *, customer_id: str, email: str, name: str, external_id: str
+        self,
+        *,
+        external_customer_id: str,
+        email: str,
+        name: str,
+        external_id: str,
+        delay: int | None = None,
     ) -> None:
         if not self.is_configured:
             return
         enqueue_job(
             "polar_self.add_member",
-            customer_id=customer_id,
+            delay=delay,
+            external_customer_id=external_customer_id,
             email=email,
             name=name,
             external_id=external_id,

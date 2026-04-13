@@ -8,7 +8,7 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
-import { addMonths, addYears } from 'date-fns'
+import { addDays, addMonths, addWeeks, addYears } from 'date-fns'
 import { useMemo } from 'react'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { getSeatRows } from '../utils/seats'
@@ -28,6 +28,22 @@ function formatShortDate(date: Date, locale: AcceptedLocale): string {
   })
 }
 
+function addInterval(date: Date, interval: string, count: number | null): Date {
+  const c = count ?? 1
+  switch (interval) {
+    case 'day':
+      return addDays(date, c)
+    case 'week':
+      return addWeeks(date, c)
+    case 'month':
+      return addMonths(date, c)
+    case 'year':
+      return addYears(date, c)
+    default:
+      return addMonths(date, c)
+  }
+}
+
 function getDiscountEndDate(
   baseDate: Date,
   discount: NonNullable<schemas['CheckoutPublic']['discount']>,
@@ -35,10 +51,9 @@ function getDiscountEndDate(
   intervalCount: number | null,
 ): Date {
   if (discount.duration === 'once') {
-    const count = intervalCount ?? 1
-    return interval === 'year'
-      ? addYears(baseDate, count)
-      : addMonths(baseDate, count)
+    return interval
+      ? addInterval(baseDate, interval, intervalCount)
+      : addMonths(baseDate, intervalCount ?? 1)
   }
   if (
     'duration_in_months' in discount &&
@@ -81,9 +96,27 @@ const CheckoutPricingBreakdown = ({
       return ''
     }
 
+    if (!interval) {
+      return ''
+    }
+
     const baseDate = checkout.trial_end
       ? new Date(checkout.trial_end)
       : new Date()
+
+    if (
+      'duration_in_months' in checkout.discount &&
+      typeof checkout.discount.duration_in_months === 'number'
+    ) {
+      const discountEnd = addMonths(
+        baseDate,
+        checkout.discount.duration_in_months,
+      )
+      const nextCycle = addInterval(baseDate, interval, intervalCount)
+      if (discountEnd <= nextCycle) {
+        return ''
+      }
+    }
 
     const endDate = getDiscountEndDate(
       baseDate,
@@ -215,16 +248,13 @@ const CheckoutPricingBreakdown = ({
             />
           </DetailRow>
           {meteredPrices.length > 0 && (
-            <DetailRow
-              title={t('checkout.pricing.additionalMeteredUsage')}
-              emphasis
-            />
+            <DetailRow title={t('checkout.pricing.additionalMeteredUsage')} />
           )}
           {meteredPrices.map((meteredPrice) => (
             <DetailRow
               title={meteredPrice.meter.name}
               key={meteredPrice.id}
-              className="text-gray-600"
+              emphasis
             >
               <MeteredPriceLabel price={meteredPrice} locale={locale} />
             </DetailRow>

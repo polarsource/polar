@@ -5,6 +5,7 @@ from pytest_mock import MockerFixture
 
 from polar.organization_review.collectors.setup import (
     _extract_domain,
+    _normalize_domain,
     collect_setup_data,
     resolve_url_redirects,
 )
@@ -68,6 +69,20 @@ class TestExtractDomain:
 
     def test_http_url(self) -> None:
         assert _extract_domain("http://my-site.org") == "my-site.org"
+
+
+class TestNormalizeDomain:
+    def test_strips_www(self) -> None:
+        assert _normalize_domain("www.example.com") == "example.com"
+
+    def test_bare_domain_unchanged(self) -> None:
+        assert _normalize_domain("example.com") == "example.com"
+
+    def test_non_www_subdomain_unchanged(self) -> None:
+        assert _normalize_domain("app.example.com") == "app.example.com"
+
+    def test_www_only(self) -> None:
+        assert _normalize_domain("www.com") == "com"
 
 
 class TestCollectSetupDataEmpty:
@@ -422,6 +437,68 @@ class TestResolveUrlRedirects:
 
         assert len(results) == 1
         assert results[0].redirected is False
+
+    @pytest.mark.asyncio
+    async def test_www_redirect_not_flagged(self, mocker: MockerFixture) -> None:
+        """Redirect from bare domain to www (or vice versa) is not flagged."""
+        import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://example.com/thanks",
+                final_url="https://www.example.com/thanks",
+                final_domain="www.example.com",
+                redirected=False,
+            ),
+        )
+
+        with respx.mock:
+            respx.head("https://example.com/thanks").respond(
+                301, headers={"Location": "https://www.example.com/thanks"}
+            )
+            respx.head("https://www.example.com/thanks").respond(200)
+            results = await resolve_url_redirects(["https://example.com/thanks"])
+
+        assert len(results) == 1
+        assert results[0].redirected is False
+        assert results[0].final_domain == "www.example.com"
+
+    @pytest.mark.asyncio
+    async def test_www_to_bare_redirect_not_flagged(
+        self, mocker: MockerFixture
+    ) -> None:
+        """Redirect from www to bare domain is not flagged."""
+        import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://www.example.com/thanks",
+                final_url="https://example.com/thanks",
+                final_domain="example.com",
+                redirected=False,
+            ),
+        )
+
+        with respx.mock:
+            respx.head("https://www.example.com/thanks").respond(
+                301, headers={"Location": "https://example.com/thanks"}
+            )
+            respx.head("https://example.com/thanks").respond(200)
+            results = await resolve_url_redirects(["https://www.example.com/thanks"])
+
+        assert len(results) == 1
+        assert results[0].redirected is False
+        assert results[0].final_domain == "example.com"
 
     @pytest.mark.asyncio
     async def test_timeout_error(self, mocker: MockerFixture) -> None:

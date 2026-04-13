@@ -4,7 +4,6 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
-from polar.enums import AccountType
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.integrations.stripe.service import StripeService
@@ -149,6 +148,7 @@ class TestCreate:
         user: User,
         product: Product,
         customer: Customer,
+        account: Account,
         stripe_service_mock: MagicMock,
         balance_transaction_service_mock: MagicMock,
         create_refund_fees_mock: AsyncMock,
@@ -159,18 +159,6 @@ class TestCreate:
         )
         balance_transaction = build_stripe_balance_transaction(amount=-charge.amount)
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
-
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
@@ -323,6 +311,7 @@ class TestCreate:
         user: User,
         product: Product,
         customer: Customer,
+        account: Account,
         stripe_service_mock: MagicMock,
         balance_transaction_service_mock: MagicMock,
         create_refund_fees_mock: AsyncMock,
@@ -335,18 +324,6 @@ class TestCreate:
             tax_amount=200,
             currency="eur",
         )
-
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="usd",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
@@ -497,20 +474,9 @@ class TestRevert:
         user: User,
         product: Product,
         customer: Customer,
+        account: Account,
         stripe_service_mock: MagicMock,
     ) -> None:
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
-
         # Create a charge and order
         charge = build_stripe_charge()
         refund, order, payment = await create_order_and_refund(
@@ -671,20 +637,9 @@ class TestRevert:
         user: User,
         product: Product,
         customer: Customer,
+        account: Account,
         stripe_service_mock: MagicMock,
     ) -> None:
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
-
         # Create a charge and order
         charge = build_stripe_charge(amount=1200, currency="eur")
         refund, order, _ = await create_order_and_refund(

@@ -1,4 +1,3 @@
-from .delete_stripe_modal import DeleteStripeModal
-from .disconnect_stripe_modal import DisconnectStripeModal
+from .delete_payout_account_modal import DeletePayoutAccountModal
 
-__all__ = ["DeleteStripeModal", "DisconnectStripeModal"]
+__all__ = ["DeletePayoutAccountModal"]

@@ -156,8 +156,8 @@ module "production" {
     custom_domains  = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
     image_url       = data.render_web_service.production_api.runtime_source.image.image_url
     image_digest    = data.render_web_service.production_api.runtime_source.image.digest
-    plan            = "pro"
-    web_concurrency = "4"
+    plan            = "pro_plus"
+    web_concurrency = "6"
   }
 
   postgres_config = {
@@ -220,7 +220,7 @@ module "production" {
 
   cron_jobs = {
     "bulk-appeal-review" = {
-      schedule      = "0 8 * * *" # 8:00 UTC = 9:00 CET
+      schedule      = "0 */6 * * *" # Every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
       start_command = "uv run python -m scripts.bulk_appeal_review --execute --limit 0"
       image_url     = "ghcr.io/polarsource/polar-playwright"
       plan          = "standard"
@@ -234,6 +234,10 @@ module "production" {
 
   openai_secrets = {
     api_key = var.openai_api_key_production
+  }
+
+  pydantic_ai_gateway_secrets = {
+    api_key = var.pydantic_ai_gateway_api_key_production
   }
 
   backend_config = {
@@ -267,6 +271,7 @@ module "production" {
     loops_api_key                  = var.backend_loops_api_key_production
     posthog_project_api_key        = var.backend_posthog_project_api_key_production
     resend_api_key                 = var.backend_resend_api_key_production
+    resend_webhook_secret          = var.backend_resend_webhook_secret
     logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_production
     secret                         = var.backend_secret_production
     sentry_dsn                     = var.backend_sentry_dsn_production
@@ -345,6 +350,7 @@ module "production" {
     webhook_secret  = var.polar_webhook_secret
     organization_id = var.polar_organization_id
     free_product_id = var.polar_free_product_id
+    api_url         = "https://api.polar.sh"
   }
 
   tinybird_config = {

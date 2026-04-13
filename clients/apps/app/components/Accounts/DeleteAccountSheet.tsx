@@ -52,7 +52,7 @@ export const DeleteAccountSheet = ({ onDismiss }: DeleteAccountSheetProps) => {
           color: theme.colors.monochromeInverted,
         }}
         placeholderTextColor={theme.colors.inputPlaceholder}
-        placeholder={user?.email}
+        placeholder={user?.email ?? undefined}
         onChangeText={setEmail}
         value={email}
       />

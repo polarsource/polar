@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
+from polar.auth.scope import Scope
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.strategies.custom.schemas import BenefitCustomCreate
 from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesCreate
@@ -18,32 +19,42 @@ from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesC
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
+from polar.config import settings
 from polar.customer.schemas.customer import CustomerIndividualCreate
 from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
 from polar.discount.service import discount as discount_service
 from polar.enums import (
-    AccountType,
     PaymentProcessor,
     SubscriptionRecurringInterval,
+    TaxBehavior,
     TaxBehaviorOption,
 )
 from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent as SystemEventEnum
+from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.kit.utils import utc_now
+from polar.kit.utils import generate_uuid, utc_now
 from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.schemas import MeterCreate
 from polar.meter.service import meter as meter_service
-from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.event import Event as EventModel
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
-from polar.models.organization import OrganizationDetails, OrganizationStatus
+from polar.models.organization import (
+    Organization,
+    OrganizationDetails,
+    OrganizationStatus,
+)
+from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
+from polar.models.product import Product
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceSeatUnit,
@@ -70,7 +81,7 @@ from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
 
-cli = typer.Typer()
+cli = typer.Typer(invoke_without_command=True)
 
 
 class SeatBasedCustomerDict(TypedDict):
@@ -163,8 +174,371 @@ def create_benefit_schema(
         )
 
 
+def _build_customer_timeline_events(
+    organization_id: Any,
+    customer_id: Any,
+    customer_email: str,
+    customer_name: str,
+    products: list[Product],
+) -> list[dict[str, Any]]:
+    """Generate a realistic timeline of system events for a customer.
+
+    Simulates a customer lifecycle: creation → checkout → subscription →
+    recurring cycles with order payments → possible cancellation/refund.
+    """
+    events: list[dict[str, Any]] = []
+    now = datetime.now(UTC)
+
+    days_ago = random.randint(90, 540)
+    timeline_start = now - timedelta(days=days_ago)
+
+    def _evt(
+        name: str, timestamp: datetime, metadata: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {
+            "name": name,
+            "source": "system",
+            "timestamp": timestamp,
+            "organization_id": organization_id,
+            "customer_id": customer_id,
+            "user_metadata": metadata,
+        }
+
+    # 1. Customer created
+    t = timeline_start
+    events.append(
+        _evt(
+            SystemEventEnum.customer_created,
+            t,
+            {
+                "customer_id": str(customer_id),
+                "customer_email": customer_email,
+                "customer_name": customer_name,
+                "customer_external_id": None,
+            },
+        )
+    )
+
+    # Pick a product for this customer's subscription journey
+    recurring_products = [p for p in products if p.recurring_interval is not None]
+    onetime_products = [p for p in products if p.recurring_interval is None]
+
+    # 2. Checkout created
+    t += timedelta(minutes=random.randint(1, 30))
+    chosen_product = random.choice(recurring_products) if recurring_products else None
+    if chosen_product:
+        fake_checkout_id = str(generate_uuid())
+        events.append(
+            _evt(
+                SystemEventEnum.checkout_created,
+                t,
+                {
+                    "checkout_id": fake_checkout_id,
+                    "checkout_status": "succeeded",
+                    "product_id": str(chosen_product.id),
+                },
+            )
+        )
+
+        # 3. Subscription created
+        t += timedelta(minutes=random.randint(1, 5))
+        fake_sub_id = str(generate_uuid())
+        price_amount = 2900
+        for p in chosen_product.all_prices:
+            pa = getattr(p, "price_amount", None)
+            if pa is not None:
+                price_amount = pa
+                break
+        interval = chosen_product.recurring_interval or "month"
+        events.append(
+            _evt(
+                SystemEventEnum.subscription_created,
+                t,
+                {
+                    "subscription_id": fake_sub_id,
+                    "product_id": str(chosen_product.id),
+                    "amount": price_amount,
+                    "currency": "usd",
+                    "recurring_interval": str(interval),
+                    "recurring_interval_count": 1,
+                    "started_at": t.isoformat(),
+                },
+            )
+        )
+
+        # 4. Initial order paid
+        t += timedelta(seconds=random.randint(1, 30))
+        fake_order_id = str(generate_uuid())
+        events.append(
+            _evt(
+                SystemEventEnum.order_paid,
+                t,
+                {
+                    "order_id": fake_order_id,
+                    "product_id": str(chosen_product.id),
+                    "amount": price_amount,
+                    "currency": "usd",
+                    "net_amount": int(price_amount * 0.95),
+                    "tax_amount": int(price_amount * 0.05),
+                    "subscription_id": fake_sub_id,
+                    "recurring_interval": str(interval),
+                    "recurring_interval_count": 1,
+                    "_cost": {"amount": price_amount / 100, "currency": "usd"},
+                },
+            )
+        )
+
+        # 5. Benefit granted (if product has benefits)
+        t += timedelta(seconds=random.randint(1, 10))
+        fake_benefit_id = str(generate_uuid())
+        fake_grant_id = str(generate_uuid())
+        events.append(
+            _evt(
+                SystemEventEnum.benefit_granted,
+                t,
+                {
+                    "benefit_id": fake_benefit_id,
+                    "benefit_grant_id": fake_grant_id,
+                    "benefit_type": "custom",
+                },
+            )
+        )
+
+        # 6. Subscription cycles + order payments over time
+        interval_days = {"day": 1, "week": 7, "month": 30, "year": 365}
+        cycle_days = interval_days.get(str(interval), 30)
+        cycle_time = t + timedelta(days=cycle_days)
+        cycle_count = 0
+
+        while cycle_time < now and cycle_count < 36:
+            # Subscription cycled
+            events.append(
+                _evt(
+                    SystemEventEnum.subscription_cycled,
+                    cycle_time,
+                    {
+                        "subscription_id": fake_sub_id,
+                        "product_id": str(chosen_product.id),
+                        "amount": price_amount,
+                        "currency": "usd",
+                        "recurring_interval": str(interval),
+                        "recurring_interval_count": 1,
+                    },
+                )
+            )
+
+            # Order paid for the cycle
+            cycle_order_id = str(generate_uuid())
+            events.append(
+                _evt(
+                    SystemEventEnum.order_paid,
+                    cycle_time + timedelta(seconds=random.randint(1, 60)),
+                    {
+                        "order_id": cycle_order_id,
+                        "product_id": str(chosen_product.id),
+                        "amount": price_amount,
+                        "currency": "usd",
+                        "net_amount": int(price_amount * 0.95),
+                        "tax_amount": int(price_amount * 0.05),
+                        "subscription_id": fake_sub_id,
+                        "recurring_interval": str(interval),
+                        "recurring_interval_count": 1,
+                        "_cost": {"amount": price_amount / 100, "currency": "usd"},
+                    },
+                )
+            )
+
+            # Benefit cycled
+            events.append(
+                _evt(
+                    SystemEventEnum.benefit_cycled,
+                    cycle_time + timedelta(seconds=random.randint(1, 60)),
+                    {
+                        "benefit_id": fake_benefit_id,
+                        "benefit_grant_id": fake_grant_id,
+                        "benefit_type": "custom",
+                    },
+                )
+            )
+
+            cycle_time += timedelta(days=cycle_days)
+            cycle_count += 1
+
+        # 7. Some customers get interesting lifecycle events
+        roll = random.random()
+        if roll < 0.15:
+            # ~15% cancel then uncanceled
+            cancel_time = t + timedelta(days=random.randint(10, days_ago - 5))
+            if cancel_time < now:
+                events.append(
+                    _evt(
+                        SystemEventEnum.subscription_canceled,
+                        cancel_time,
+                        {
+                            "subscription_id": fake_sub_id,
+                            "product_id": str(chosen_product.id),
+                            "amount": price_amount,
+                            "currency": "usd",
+                            "recurring_interval": str(interval),
+                            "recurring_interval_count": 1,
+                            "customer_cancellation_reason": "too_expensive",
+                            "canceled_at": cancel_time.isoformat(),
+                            "cancel_at_period_end": True,
+                        },
+                    )
+                )
+                # Then uncanceled a few days later
+                uncancel_time = cancel_time + timedelta(days=random.randint(1, 5))
+                if uncancel_time < now:
+                    events.append(
+                        _evt(
+                            SystemEventEnum.subscription_uncanceled,
+                            uncancel_time,
+                            {
+                                "subscription_id": fake_sub_id,
+                                "product_id": str(chosen_product.id),
+                                "amount": price_amount,
+                                "currency": "usd",
+                                "recurring_interval": str(interval),
+                                "recurring_interval_count": 1,
+                            },
+                        )
+                    )
+        elif roll < 0.30:
+            # ~15% upgraded to a different product
+            if len(recurring_products) > 1:
+                other = random.choice(
+                    [p for p in recurring_products if p.id != chosen_product.id]
+                )
+                upgrade_time = t + timedelta(
+                    days=random.randint(7, min(60, days_ago - 5))
+                )
+                if upgrade_time < now:
+                    events.append(
+                        _evt(
+                            SystemEventEnum.subscription_product_updated,
+                            upgrade_time,
+                            {
+                                "subscription_id": fake_sub_id,
+                                "old_product_id": str(chosen_product.id),
+                                "new_product_id": str(other.id),
+                            },
+                        )
+                    )
+        elif roll < 0.40:
+            # ~10% got a refund on one order
+            refund_time = t + timedelta(days=random.randint(5, min(30, days_ago - 5)))
+            if refund_time < now:
+                events.append(
+                    _evt(
+                        SystemEventEnum.order_refunded,
+                        refund_time,
+                        {
+                            "order_id": fake_order_id,
+                            "refunded_amount": price_amount,
+                            "currency": "usd",
+                            "_cost": {"amount": price_amount / 100, "currency": "usd"},
+                        },
+                    )
+                )
+        elif roll < 0.50:
+            # ~10% canceled for real
+            cancel_time = t + timedelta(days=random.randint(15, days_ago - 2))
+            if cancel_time < now:
+                events.append(
+                    _evt(
+                        SystemEventEnum.subscription_canceled,
+                        cancel_time,
+                        {
+                            "subscription_id": fake_sub_id,
+                            "product_id": str(chosen_product.id),
+                            "amount": price_amount,
+                            "currency": "usd",
+                            "recurring_interval": str(interval),
+                            "recurring_interval_count": 1,
+                            "customer_cancellation_reason": "unused",
+                            "customer_cancellation_comment": "Not using it enough",
+                            "canceled_at": cancel_time.isoformat(),
+                            "cancel_at_period_end": False,
+                        },
+                    )
+                )
+
+    # 8. Some customers also make one-time purchases
+    if onetime_products and random.random() < 0.4:
+        otp = random.choice(onetime_products)
+        otp_time = timeline_start + timedelta(
+            days=random.randint(1, max(1, days_ago - 5))
+        )
+        if otp_time < now:
+            otp_price = 4900
+            for p in otp.all_prices:
+                pa = getattr(p, "price_amount", None)
+                if pa is not None:
+                    otp_price = pa
+                    break
+            otp_order_id = str(generate_uuid())
+            events.append(
+                _evt(
+                    SystemEventEnum.checkout_created,
+                    otp_time,
+                    {
+                        "checkout_id": str(generate_uuid()),
+                        "checkout_status": "succeeded",
+                        "product_id": str(otp.id),
+                    },
+                )
+            )
+            events.append(
+                _evt(
+                    SystemEventEnum.order_paid,
+                    otp_time + timedelta(minutes=random.randint(1, 5)),
+                    {
+                        "order_id": otp_order_id,
+                        "product_id": str(otp.id),
+                        "amount": otp_price,
+                        "currency": "usd",
+                        "net_amount": int(otp_price * 0.95),
+                        "tax_amount": int(otp_price * 0.05),
+                        "_cost": {"amount": otp_price / 100, "currency": "usd"},
+                    },
+                )
+            )
+
+    # 9. Customer updated (some customers update their info)
+    if random.random() < 0.3:
+        update_time = timeline_start + timedelta(
+            days=random.randint(2, max(2, days_ago - 2))
+        )
+        if update_time < now:
+            events.append(
+                _evt(
+                    SystemEventEnum.customer_updated,
+                    update_time,
+                    {
+                        "customer_id": str(customer_id),
+                        "customer_email": customer_email,
+                        "customer_name": customer_name,
+                        "customer_external_id": None,
+                        "updated_fields": {"name": customer_name},
+                    },
+                )
+            )
+
+    return events
+
+
 async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     """Create sample data for development and testing."""
+
+    # Check if seed data already exists
+    existing = (
+        await session.execute(
+            select(Organization).where(Organization.slug == "acme-corp")
+        )
+    ).scalar_one_or_none()
+    if existing:
+        raise typer.Exit(2)
 
     # Organizations data
     orgs_data: list[OrganizationDict] = [
@@ -476,6 +850,34 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             ],
         },
         {
+            "name": "Polar",
+            "slug": "polar",
+            "email": "admin@polar.sh",
+            "website": "https://polar.sh",
+            "bio": "Open source payment infrastructure for developers",
+            "status": OrganizationStatus.ACTIVE,
+            "details": {
+                "about": "Polar is an open source payment infrastructure platform for developers",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "SaaS platform with usage-based billing for event ingestion",
+                "previous_annual_revenue": 0,
+            },
+            "feature_settings": {
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+            "products": [
+                {
+                    "name": "Polar Default",
+                    "description": "Default Polar plan with seat-based pricing",
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "seat_based": True,
+                    "price_per_seat": 0,
+                },
+            ],
+        },
+        {
             "name": "SeatBased Members Corp",
             "slug": "seatbased-members-corp",
             "email": "admin@polar.sh",
@@ -641,28 +1043,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             )
             session.add(organization_review)
 
-        # Create an Account for all organizations except Widget Industries
-        if org_data["slug"] != "widget-industries":
-            account = Account(
-                account_type=AccountType.stripe,
-                admin_id=user.id,
-                stripe_id=f"acct_{organization.slug}_test",  # Test Stripe account ID
-                country="US",
-                currency="USD",
-                is_details_submitted=True,
-                is_charges_enabled=True,
-                is_payouts_enabled=True,
-                status=Account.Status.ACTIVE,
-                email=org_data["email"],
-                processor_fees_applicable=True,
-            )
-            session.add(account)
-            await session.flush()
-
-            # Link the account to the organization
-            organization.account_id = account.id
-            session.add(organization)
-
         # Create benefits for organization
         org_benefits = {}
         for key, benefit_data in org_data.get("benefits", {}).items():
@@ -718,6 +1098,29 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 organization_id=organization.id,
             )
             coldmail_meter = await meter_service.create(
+                session=session,
+                meter_create=meter_create,
+                auth_subject=auth_subject,
+            )
+
+        # Create meter for Polar organization
+        if org_data["slug"] == "polar":
+            meter_create = MeterCreate(
+                name="Events Ingested",
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="events_ingested",
+                        )
+                    ],
+                ),
+                aggregation=CountAggregation(),
+                organization_id=organization.id,
+            )
+            await meter_service.create(
                 session=session,
                 meter_create=meter_create,
                 auth_subject=auth_subject,
@@ -859,8 +1262,12 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             )
 
         # Create customers for organization (skip if seat_based_customers are defined)
+        # Pre-load product prices for timeline event generation
+        for p in org_products:
+            await session.refresh(p, ["all_prices"])
+
         num_customers = (
-            random.randint(0, 5) if not org_data.get("seat_based_customers") else 0
+            random.randint(3, 8) if not org_data.get("seat_based_customers") else 0
         )
         for i in range(num_customers):
             # customer_email = f"customer_{org_data['slug']}_{i + 1}@example.com"
@@ -875,11 +1282,20 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 auth_subject=auth_subject,
             )
 
+            timeline_events = _build_customer_timeline_events(
+                organization_id=organization.id,
+                customer_id=customer.id,
+                customer_email=customer_email,
+                customer_name=f"Customer {i + 1}",
+                products=org_products,
+            )
+
+            event_repository = EventRepository.from_session(session)
+
             # Create meter events for ColdMail customers
             if org_data["slug"] == "coldmail" and coldmail_meter and i == 0:
                 # Create events for the first customer showing usage over time
-                event_repository = EventRepository.from_session(session)
-                events_to_insert = []
+                meter_events: list[dict[str, Any]] = []
 
                 # Create 150 email send events over the past 30 days
                 base_time = datetime.now(UTC) - timedelta(days=30)
@@ -893,7 +1309,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                             hours=random.randint(0, 23),
                             minutes=random.randint(0, 59),
                         )
-                        events_to_insert.append(
+                        meter_events.append(
                             {
                                 "name": "email_sent",
                                 "source": "user",
@@ -908,13 +1324,16 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                             }
                         )
 
-                # Insert all events in batch
-                if events_to_insert:
-                    await event_repository.insert_batch(events_to_insert)
+                timeline_events.extend(meter_events)
 
-            # TODO: Create some checkouts for customers
-            # This would require more complex checkout creation logic
-            pass
+            # Insert all events in batch and sync to Tinybird
+            if timeline_events:
+                event_ids, _ = await event_repository.insert_batch(timeline_events)
+                if event_ids:
+                    inserted = await event_repository.get_all(
+                        select(EventModel).where(EventModel.id.in_(event_ids))
+                    )
+                    await tinybird_ingest_events(inserted)
 
         # Create seat-based customers with subscriptions and seats
         seat_based_customers = org_data.get("seat_based_customers", [])
@@ -944,7 +1363,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     amount=amount,
                     net_amount=amount,
                     currency=seat_based_price.price_currency,
-                    tax_behavior=organization.default_tax_behavior,
+                    tax_behavior=TaxBehavior.exclusive,
                     recurring_interval=seat_based_product.recurring_interval,
                     recurring_interval_count=1,
                     status=SubscriptionStatus.active,
@@ -1055,9 +1474,176 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     print("Created 3 organizations with users, products, benefits, and customers")
 
 
-@cli.command()
-def seeds_load() -> None:
+POLAR_ORG_SLUG = "polar"
+TOKEN_COMMENT = "Polar self-integration (dev seed)"
+TOKEN_SCOPES = " ".join(
+    [
+        Scope.customers_read,
+        Scope.customers_write,
+        Scope.subscriptions_write,
+        Scope.events_write,
+        Scope.members_read,
+        Scope.members_write,
+    ]
+)
+
+
+async def create_single_org_seed(
+    session: AsyncSession, redis: Redis, slug: str
+) -> None:
+    """Create a single organization with products, customers, and timeline events."""
+    name = slug.replace("-", " ").title()
+
+    user, _created = await user_service.get_by_email_or_create(
+        session=session,
+        email=f"{slug}@polar.sh",
+    )
+    user_repository = UserRepository.from_session(session)
+    await user_repository.update(
+        user,
+        update_dict={
+            "is_admin": True,
+            "identity_verification_status": IdentityVerificationStatus.verified,
+            "identity_verification_id": f"vs_{slug}_test",
+        },
+    )
+
+    auth_subject = AuthSubject(subject=user, scopes=set(), session=None)
+
+    organization = await organization_service.create(
+        session=session,
+        create_schema=OrganizationCreate(name=name, slug=slug),
+        auth_subject=auth_subject,
+    )
+    organization.email = f"{slug}@polar.sh"
+    organization.bio = f"Seeded organization: {name}"
+    organization.status = OrganizationStatus.ACTIVE
+    organization.details_submitted_at = utc_now()
+    organization.initially_reviewed_at = utc_now()
+    session.add(organization)
+
+    organization_review = OrganizationReview(
+        organization_id=organization.id,
+        verdict=OrganizationReview.Verdict.PASS,
+        risk_score=0.0,
+        violated_sections=[],
+        reason="Seed data - automatically approved",
+        timed_out=False,
+        model_used="seed",
+        validated_at=utc_now(),
+        organization_details_snapshot={},
+    )
+    session.add(organization_review)
+
+    # Create a mix of recurring and one-time products
+    products_data = [
+        (
+            "Pro Plan",
+            "Monthly pro subscription",
+            2900,
+            SubscriptionRecurringInterval.month,
+        ),
+        (
+            "Business Plan",
+            "Monthly business subscription",
+            9900,
+            SubscriptionRecurringInterval.month,
+        ),
+        (
+            "Enterprise",
+            "Annual enterprise subscription",
+            99900,
+            SubscriptionRecurringInterval.year,
+        ),
+        ("Starter Kit", "One-time starter package", 4900, None),
+        ("Premium Add-on", "One-time premium add-on", 1900, None),
+    ]
+
+    org_products: list[Product] = []
+    for prod_name, prod_desc, price, interval in products_data:
+        price_create = ProductPriceFixedCreate(
+            amount_type=ProductPriceAmountType.fixed,
+            tax_behavior=TaxBehaviorOption.exclusive,
+            price_amount=price,
+            price_currency=PresentmentCurrency.usd,
+        )
+        product_create: ProductCreate
+        if interval is None:
+            product_create = ProductCreateOneTime(
+                name=prod_name,
+                description=prod_desc,
+                organization_id=organization.id,
+                prices=[price_create],
+            )
+        else:
+            product_create = ProductCreateRecurring(
+                name=prod_name,
+                description=prod_desc,
+                organization_id=organization.id,
+                recurring_interval=interval,
+                prices=[price_create],
+            )
+        product = await product_service.create(
+            session=session,
+            create_schema=product_create,
+            auth_subject=auth_subject,
+        )
+        org_products.append(product)
+
+    # Pre-load product prices for timeline event generation
+    for p in org_products:
+        await session.refresh(p, ["all_prices"])
+
+    # Create customers with timeline events
+    num_customers = random.randint(5, 10)
+    for i in range(num_customers):
+        customer_email = f"customer_{slug}_{i + 1}@polar.sh"
+        customer = await customer_service.create(
+            session=session,
+            customer_create=CustomerIndividualCreate(
+                email=customer_email,
+                name=f"Customer {i + 1}",
+                organization_id=organization.id,
+            ),
+            auth_subject=auth_subject,
+        )
+
+        timeline_events = _build_customer_timeline_events(
+            organization_id=organization.id,
+            customer_id=customer.id,
+            customer_email=customer_email,
+            customer_name=f"Customer {i + 1}",
+            products=org_products,
+        )
+
+        if timeline_events:
+            event_repository = EventRepository.from_session(session)
+            event_ids, _ = await event_repository.insert_batch(timeline_events)
+            if event_ids:
+                inserted = await event_repository.get_all(
+                    select(EventModel).where(EventModel.id.in_(event_ids))
+                )
+                await tinybird_ingest_events(inserted)
+
+    await session.commit()
+    print(f"✅ Created organization '{name}' ({slug})")
+    print(
+        f"   {len(org_products)} products, {num_customers} customers with timeline events"
+    )
+
+
+@cli.callback()
+def seeds_load(
+    ctx: typer.Context,
+    new_org: str | None = typer.Option(
+        None,
+        "--new-org",
+        help="Create a single new organization with this slug, with products, customers, and timeline events.",
+    ),
+) -> None:
     """Load sample/test data into the database."""
+    if ctx.invoked_subcommand is not None:
+        return
 
     async def run() -> None:
         redis = create_redis("app")
@@ -1065,7 +1651,76 @@ def seeds_load() -> None:
             engine = create_async_engine("script")
             sessionmaker = create_async_sessionmaker(engine)
             async with sessionmaker() as session:
-                await create_seed_data(session, redis)
+                if new_org:
+                    await create_single_org_seed(session, redis, new_org)
+                else:
+                    await create_seed_data(session, redis)
+
+    asyncio.run(run())
+
+
+@cli.command(name="polar-self-env")
+def polar_self_env() -> None:
+    """Output Polar self-integration env vars for the seeded Polar org."""
+
+    async def run() -> None:
+        engine = create_async_engine("script")
+        sessionmaker = create_async_sessionmaker(engine)
+        async with sessionmaker() as session:
+            org = (
+                await session.execute(
+                    select(Organization).where(Organization.slug == POLAR_ORG_SLUG)
+                )
+            ).scalar_one_or_none()
+            if org is None:
+                raise typer.Exit(1)
+
+            product = (
+                await session.execute(
+                    select(Product).where(
+                        Product.organization_id == org.id,
+                        Product.name == "Polar Default",
+                    )
+                )
+            ).scalar_one_or_none()
+            if product is None:
+                raise typer.Exit(1)
+
+            # Delete any existing dev seed token
+            existing = (
+                (
+                    await session.execute(
+                        select(OrganizationAccessToken).where(
+                            OrganizationAccessToken.organization_id == org.id,
+                            OrganizationAccessToken.comment == TOKEN_COMMENT,
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            for t in existing:
+                await session.delete(t)
+
+            token, token_hash = generate_token_hash_pair(
+                secret=settings.SECRET,
+                prefix="polar_oat_",
+            )
+            oat = OrganizationAccessToken(
+                organization_id=org.id,
+                token=token_hash,
+                scope=TOKEN_SCOPES,
+                comment=TOKEN_COMMENT,
+            )
+            session.add(oat)
+            await session.commit()
+
+            print(f"POLAR_POLAR_ORGANIZATION_ID={org.id}")
+            print(f"POLAR_POLAR_FREE_PRODUCT_ID={product.id}")
+            print(f"POLAR_POLAR_ACCESS_TOKEN={token}")
+            print("POLAR_POLAR_API_URL=http://127.0.0.1:8000")
+
+        await engine.dispose()
 
     asyncio.run(run())
 

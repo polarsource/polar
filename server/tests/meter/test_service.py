@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import pytest_asyncio
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -26,7 +27,9 @@ from polar.meter.aggregation import (
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.schemas import MeterCreate, MeterUpdate
 from polar.meter.service import meter as meter_service
+from polar.meter.unit import MeterUnit
 from polar.models import (
+    Account,
     Customer,
     Event,
     Meter,
@@ -107,6 +110,87 @@ class TestCreate:
         )
 
         assert meter.last_billed_event == events[1]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_default_unit_is_scalar(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        meter = await meter_service.create(
+            session,
+            MeterCreate(
+                name="Meter",
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="test.event",
+                        )
+                    ],
+                ),
+                aggregation=CountAggregation(),
+            ),
+            auth_subject,
+        )
+
+        assert meter.unit == MeterUnit.scalar
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("unit", [MeterUnit.tokens, MeterUnit.custom])
+    async def test_custom_unit(
+        self,
+        unit: MeterUnit,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        meter = await meter_service.create(
+            session,
+            MeterCreate(
+                name="Meter",
+                unit=unit,
+                custom_label="gigabyte" if unit == MeterUnit.custom else None,
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="test.event",
+                        )
+                    ],
+                ),
+                aggregation=CountAggregation(),
+            ),
+            auth_subject,
+        )
+
+        assert meter.unit == unit
+
+    @pytest.mark.parametrize("unit", [MeterUnit.scalar, MeterUnit.tokens])
+    async def test_custom_fields_rejected_on_non_custom_unit(
+        self,
+        unit: MeterUnit,
+    ) -> None:
+        with pytest.raises(ValidationError):
+            MeterCreate(
+                name="Meter",
+                unit=unit,
+                custom_label="gigabyte",
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="test.event",
+                        )
+                    ],
+                ),
+                aggregation=CountAggregation(),
+            )
 
 
 @pytest.mark.asyncio
@@ -213,6 +297,27 @@ class TestUpdate:
             MeterUpdate(name="New Name"),  # pyright: ignore
         )
         assert updated_meter.name == "New Name"
+
+    @pytest.mark.parametrize(
+        "unit",
+        [MeterUnit.scalar, MeterUnit.tokens, MeterUnit.custom],
+    )
+    async def test_update_unit(
+        self,
+        unit: MeterUnit,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        updated_meter = await meter_service.update(
+            session,
+            meter,
+            MeterUpdate(unit=unit),  # pyright: ignore
+        )
+
+        assert updated_meter.unit == unit
 
 
 @pytest.mark.asyncio
@@ -1239,9 +1344,10 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
         seat_org = await create_organization(
-            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
         )
 
         meter = await create_meter(
@@ -1339,9 +1445,10 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
         seat_org = await create_organization(
-            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
         )
 
         meter = await create_meter(
@@ -1420,9 +1527,10 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
         seat_org = await create_organization(
-            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
         )
 
         meter = await create_meter(
@@ -1548,9 +1656,10 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        account: Account,
     ) -> None:
         seat_org = await create_organization(
-            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
         )
 
         meter = await create_meter(

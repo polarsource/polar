@@ -157,6 +157,10 @@ module "sandbox" {
     api_key = var.openai_api_key_sandbox
   }
 
+  pydantic_ai_gateway_secrets = {
+    api_key = var.pydantic_ai_gateway_api_key_sandbox
+  }
+
   backend_config = {
     base_url                   = "https://sandbox-api.polar.sh"
     user_session_cookie_domain = "polar.sh"
@@ -185,6 +189,7 @@ module "sandbox" {
     discord_client_secret    = var.backend_discord_client_secret_sandbox
     discord_proxy_url        = var.backend_discord_proxy_url
     resend_api_key           = var.backend_resend_api_key_sandbox
+    resend_webhook_secret    = var.backend_resend_webhook_secret
     logo_dev_publishable_key = var.backend_logo_dev_publishable_key_sandbox
     secret                   = var.backend_secret_sandbox
     sentry_dsn               = var.backend_sentry_dsn_sandbox
@@ -247,6 +252,7 @@ module "sandbox" {
     webhook_secret  = var.polar_webhook_secret
     organization_id = var.polar_organization_id
     free_product_id = var.polar_free_product_id
+    api_url         = "https://sandbox-api.polar.sh"
   }
 
   tinybird_config = {

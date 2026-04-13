@@ -126,17 +126,43 @@ const formatCurrencyStatistics = (
   locales?: Intl.LocalesArgument,
 ): string => {
   const decimalFactor = getCurrencyDecimalFactor(currency)
-  const currencyNumberFormat = new Intl.NumberFormat(locales, {
-    style: 'currency',
-    currency,
-    currencyDisplay: 'narrowSymbol',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
-    notation: 'compact',
-    compactDisplay: 'short',
-  })
+  const displayValue = cents / decimalFactor
 
-  return currencyNumberFormat.format(cents / decimalFactor)
+  // >= $1M: compact notation with multipliers
+  if (displayValue >= 1_000_000) {
+    return new Intl.NumberFormat(locales, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+      notation: 'compact',
+      compactDisplay: 'short',
+      maximumSignificantDigits: 5,
+      maximumFractionDigits: 3,
+      roundingPriority: 'lessPrecision',
+    }).format(displayValue)
+  }
+
+  // $10K–$999K: no decimals, truncated
+  if (displayValue >= 10_000) {
+    return new Intl.NumberFormat(locales, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Math.trunc(displayValue))
+  }
+
+  // Under $10K: standard formatting, either 0 or 2 decimals
+  return scrubTrailingZeros(
+    new Intl.NumberFormat(locales, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
+      maximumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
+    }).format(displayValue),
+  )
 }
 
 const formatCurrencySubcent = (

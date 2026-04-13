@@ -6,7 +6,12 @@ import structlog
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarError
-from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.service import (
+    STRIPE_METADATA_PAYMENT_TRIGGER,
+)
+from polar.integrations.stripe.service import (
+    stripe as stripe_service,
+)
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -18,6 +23,7 @@ from polar.models import (
     WalletTransaction,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.models.payment import DUNNING_COUNTING_TRIGGERS, PaymentTrigger
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
@@ -159,8 +165,17 @@ async def resolve_order(
             uuid.UUID(order_id), options=order_repository.get_eager_options()
         )
         if order is None:
+            payment_intent_id: str | None = None
             if object.OBJECT_NAME == "payment_intent":
-                updated_intent = await stripe_service.get_payment_intent(object.id)
+                payment_intent_id = object.id
+            elif object.OBJECT_NAME == "charge" and isinstance(
+                object.payment_intent, str
+            ):
+                payment_intent_id = object.payment_intent
+            if payment_intent_id is not None:
+                updated_intent = await stripe_service.get_payment_intent(
+                    payment_intent_id
+                )
                 if (
                     updated_intent.metadata
                     and updated_intent.metadata.get("polar_failed_sync_payment")
@@ -178,6 +193,26 @@ async def resolve_order(
     return None
 
 
+def _resolve_trigger(
+    object: stripe_lib.Charge | stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
+) -> PaymentTrigger | None:
+    if object.metadata is None:
+        return None
+    raw = object.metadata.get(STRIPE_METADATA_PAYMENT_TRIGGER)
+    if raw is not None:
+        try:
+            return PaymentTrigger(raw)
+        except ValueError:
+            log.warning(
+                "Unknown payment_trigger value in Stripe metadata",
+                object_id=object.id,
+                raw_trigger=raw,
+            )
+    if object.metadata.get("checkout_id") is not None:
+        return PaymentTrigger.purchase
+    return None
+
+
 async def handle_success(
     session: AsyncSession, object: stripe_lib.Charge | stripe_lib.SetupIntent
 ) -> None:
@@ -186,10 +221,12 @@ async def handle_success(
     wallet, wallet_transaction = await resolve_wallet(session, object)
     order = await resolve_order(session, object, checkout)
 
+    trigger = _resolve_trigger(object)
+
     payment: Payment | None = None
     if object.OBJECT_NAME == "charge":
         payment = await payment_service.upsert_from_stripe_charge(
-            session, object, organization, checkout, wallet, order
+            session, object, organization, checkout, wallet, order, trigger=trigger
         )
 
     if checkout is not None:
@@ -242,26 +279,29 @@ async def handle_failure(
     wallet, _ = await resolve_wallet(session, object)
     order = await resolve_order(session, object, checkout)
 
+    trigger = _resolve_trigger(object)
+
     payment: Payment | None = None
     if object.OBJECT_NAME == "charge":
         payment = await payment_service.upsert_from_stripe_charge(
-            session, object, organization, checkout, wallet, order
+            session, object, organization, checkout, wallet, order, trigger=trigger
         )
     elif object.OBJECT_NAME == "payment_intent":
         payment = await payment_service.upsert_from_stripe_payment_intent(
-            session, object, organization, checkout, order
+            session, object, organization, checkout, order, trigger=trigger
         )
 
     if checkout is not None:
         await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
-        # Check if this is a manual retry - skip dunning progression if so
-        skip_dunning = (
-            hasattr(object, "metadata")
-            and object.metadata is not None
-            and object.metadata.get("manual_retry") == "true"
-        )
+        # Failures from triggers that don't count toward the dunning ceiling
+        # also shouldn't progress the dunning state machine — otherwise a
+        # one-shot recovery attempt (manual portal retry, post-card-update
+        # retry) could push the next scheduled retry around without ever
+        # being recorded as a real attempt. A NULL trigger (legacy / unknown
+        # call site) is treated as countable, so it follows the normal flow.
+        skip_dunning = trigger is not None and trigger not in DUNNING_COUNTING_TRIGGERS
         await order_service.handle_payment_failure(
             session, order, skip_dunning=skip_dunning
         )

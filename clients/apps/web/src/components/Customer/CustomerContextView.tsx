@@ -2,22 +2,17 @@
 
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { useMetrics } from '@/hooks/queries/metrics'
-import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
-import { useCallback, useState } from 'react'
-import { InlineModal } from '../Modal/InlineModal'
-import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
-import { toast } from '../Toast/use-toast'
-import { EditCustomerModal } from './EditCustomerModal'
+import { useSubscriptions } from '@/hooks/queries'
+import { PropsWithChildren } from 'react'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
@@ -31,52 +26,6 @@ export const CustomerContextView = ({
   organization,
   customer,
 }: CustomerContextViewProps) => {
-  const { isShown: isModalShown, show: showModal, hide: hideModal } = useModal()
-
-  const [customerSessionLoading, setCustomerSessionLoading] = useState(false)
-  const [customerSessionError, setCustomerSessionError] = useState<
-    string | null
-  >(null)
-  const [customerSession, setCustomerSession] = useState<
-    schemas['CustomerSession'] | null
-  >(null)
-  const memberModelEnabled =
-    !!organization.feature_settings?.member_model_enabled
-  const createCustomerSession = useCallback(async () => {
-    setCustomerSessionLoading(true)
-
-    let memberId: string | undefined
-    if (memberModelEnabled && customer.type === 'team') {
-      const { data: membersData } = await api.GET('/v1/members/', {
-        params: {
-          query: { customer_id: customer.id, role: 'owner', limit: 1 },
-        },
-      })
-      const ownerMember = membersData?.items?.[0]
-      if (!ownerMember) {
-        setCustomerSessionLoading(false)
-        setCustomerSessionError('No owner member found for this team customer.')
-        return
-      }
-      memberId = ownerMember.id
-    }
-
-    const { data: session, error } = await api.POST('/v1/customer-sessions/', {
-      body: {
-        customer_id: customer.id,
-        ...(memberId ? { member_id: memberId } : {}),
-      },
-    })
-    setCustomerSessionLoading(false)
-    if (error) {
-      setCustomerSessionError(
-        'An error occurred while creating the customer portal link. Please try again later.',
-      )
-      return
-    }
-    setCustomerSession(session)
-  }, [customer, memberModelEnabled])
-
   const metrics = useMetrics({
     startDate: new Date(customer.created_at),
     endDate: new Date(),
@@ -85,32 +34,34 @@ export const CustomerContextView = ({
     customer_id: [customer.id],
   })
 
+  const customerSubscriptions = useSubscriptions(organization.id, {
+    customer_id: [customer.id],
+    limit: 20,
+  })
+
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto">
-      <ShadowBox className="dark:border-polar-800 flex flex-col gap-6 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
-        <Link
-          href={`/dashboard/${organization.slug}/customers/${customer.id}?query=${customer.email}`}
-          className="flex flex-row items-center gap-4"
-        >
+      <ContextCard>
+        <div className="flex flex-row items-center gap-4">
           <Avatar
             avatar_url={customer.avatar_url}
             name={customer.name || customer.email || '—'}
             className="size-12 text-sm"
           />
           <div className="flex flex-col">
-            <p>
-              {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
-              {customer.deleted_at && (
-                <Pill className="ml-2 text-xs" color="red">
-                  Deleted
-                </Pill>
-              )}
-            </p>
+            {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
+            {customer.deleted_at && (
+              <Pill className="ml-2 text-xs" color="red">
+                Deleted
+              </Pill>
+            )}
+
             <div className="dark:text-polar-500 flex flex-row items-center gap-1 text-sm text-gray-500">
               {customer.email}
             </div>
           </div>
-        </Link>
+        </div>
+
         <div className="flex flex-row justify-between gap-4">
           <StatisticCard title="Cumulative Revenue">
             {formatCurrency('statistics')(
@@ -123,157 +74,188 @@ export const CustomerContextView = ({
             <FormattedDateTime datetime={customer.created_at} />
           </StatisticCard>
         </div>
-        {!customer.deleted_at && (
-          <div className="flex flex-col gap-4">
-            {customerSession ? (
-              <CopyToClipboardInput
-                value={customerSession.customer_portal_url}
-                buttonLabel="Copy"
-                className="bg-white"
-                onCopy={() => {
-                  toast({
-                    title: 'Copied To Clipboard',
-                    description: `Customer Portal Link was copied to clipboard`,
-                  })
-                }}
-              />
-            ) : (
-              <Button
-                className="w-full"
-                size="lg"
-                variant="secondary"
-                loading={customerSessionLoading}
-                onClick={createCustomerSession}
-              >
-                Generate Customer Portal
-              </Button>
-            )}
-            <div className="flex flex-row gap-4">
-              <a
-                href={`mailto:${customer.email}`}
-                className="w-1/2 text-blue-500 dark:text-blue-400"
-              >
-                <Button className="w-full" size="lg" variant="secondary">
-                  Send Email
-                </Button>
-              </a>
-              <Button
-                className="w-1/2"
-                size="lg"
-                variant="secondary"
-                onClick={showModal}
-              >
-                Edit
-              </Button>
-            </div>
-
-            {customerSessionError && (
-              <p className="text-destructive-foreground text-sm">
-                {customerSessionError}
-              </p>
-            )}
-          </div>
-        )}
-      </ShadowBox>
-      <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:gap-0 md:shadow-xs lg:rounded-2xl">
-        {!customer.deleted_at && (
+        <Link
+          href={`/dashboard/${organization.slug}/customers/${customer.id}?query=${customer.email}`}
+          className="flex flex-row items-center gap-4"
+        >
+          <Button className="w-full" size="lg" variant="secondary">
+            View Customer
+          </Button>
+        </Link>
+      </ContextCard>
+      <ContextCard>
+        <div className="flex flex-col">
+          {!customer.deleted_at && (
+            <DetailRow
+              labelClassName="flex-none md:basis-24"
+              valueClassName="font-mono"
+              label="ID"
+              value={customer.id}
+            />
+          )}
           <DetailRow
             labelClassName="flex-none md:basis-24"
             valueClassName="font-mono"
-            label="ID"
-            value={customer.id}
-          />
-        )}
-        <DetailRow
-          labelClassName="flex-none md:basis-24"
-          valueClassName="font-mono"
-          label="External ID"
-          value={customer.external_id ?? '—'}
-        />
-        <DetailRow
-          labelClassName="flex-none md:basis-24"
-          label="Email"
-          value={customer.email}
-        />
-        <DetailRow
-          labelClassName="flex-none md:basis-24"
-          label="Name"
-          value={customer.name}
-        />
-        <DetailRow
-          labelClassName="flex-none md:basis-24"
-          label="Tax ID"
-          value={
-            customer.tax_id ? (
-              <span className="flex flex-row items-center gap-1.5">
-                <span>{customer.tax_id[0]}</span>
-                <span className="font-mono text-xs opacity-70">
-                  {customer.tax_id[1].toLocaleUpperCase().replace('_', ' ')}
-                </span>
-              </span>
-            ) : (
-              '—'
-            )
-          }
-        />
-        <DetailRow
-          labelClassName="flex-none md:basis-24"
-          label="Created At"
-          value={<FormattedDateTime datetime={customer.created_at} />}
-        />
-      </ShadowBox>
-      <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
-        <h4 className="text-lg">Billing Address</h4>
-        <div className="flex flex-col gap-4 md:gap-0">
-          <DetailRow
-            labelClassName="flex-none md:basis-24"
-            label="Line 1"
-            value={customer.billing_address?.line1}
+            label="External ID"
+            value={customer.external_id ?? '—'}
           />
           <DetailRow
             labelClassName="flex-none md:basis-24"
-            label="Line 2"
-            value={customer.billing_address?.line2}
+            label="Email"
+            value={customer.email}
           />
           <DetailRow
             labelClassName="flex-none md:basis-24"
-            label="City"
-            value={customer.billing_address?.city}
+            label="Name"
+            value={customer.name}
           />
           <DetailRow
             labelClassName="flex-none md:basis-24"
-            label="State"
-            value={customer.billing_address?.state}
-          />
-          <DetailRow
-            labelClassName="flex-none md:basis-24"
-            label="Postal Code"
-            value={customer.billing_address?.postal_code}
-          />
-          <DetailRow
-            labelClassName="flex-none md:basis-24"
-            label="Country"
-            value={customer.billing_address?.country}
+            label="Created At"
+            value={<FormattedDateTime datetime={customer.created_at} />}
           />
         </div>
-      </ShadowBox>
+      </ContextCard>
+      {(customerSubscriptions.data?.pagination.total_count ?? 0) > 0 ? (
+        <ContextCard>
+          <h4 className="text-lg">Subscriptions</h4>
+
+          <div className="flex flex-col gap-4 md:gap-0">
+            {[...(customerSubscriptions.data?.items ?? [])]
+              .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
+              .map((subscription) => (
+                <SubscriptionRow
+                  key={subscription.id}
+                  subscription={subscription}
+                  organization={organization}
+                />
+              ))}
+          </div>
+        </ContextCard>
+      ) : null}
+
       {!customer.deleted_at && Object.keys(customer.metadata).length > 0 && (
-        <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
+        <ContextCard>
           <div className="flex flex-row items-center justify-between gap-2">
             <h3 className="text-lg">Metadata</h3>
           </div>
           {Object.entries(customer.metadata).map(([key, value]) => (
             <DetailRow key={key} label={key} value={value} />
           ))}
-        </ShadowBox>
+        </ContextCard>
       )}
-      <InlineModal
-        isShown={isModalShown}
-        hide={hideModal}
-        modalContent={
-          <EditCustomerModal customer={customer} onClose={hideModal} />
-        }
-      />
     </div>
+  )
+}
+
+type ContextCardProps = PropsWithChildren & {}
+
+const ContextCard = (props: ContextCardProps) => {
+  return (
+    <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
+      {props.children}
+    </ShadowBox>
+  )
+}
+
+const STATUS_DISPLAY_NAMES: Record<schemas['SubscriptionStatus'], string> = {
+  active: 'Active',
+  trialing: 'Trialing',
+  past_due: 'Past Due',
+  unpaid: 'Unpaid',
+  canceled: 'Canceled',
+  incomplete: 'Incomplete',
+  incomplete_expired: 'Expired',
+}
+
+const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
+  active: 0,
+  trialing: 1,
+  past_due: 2,
+  unpaid: 3,
+  incomplete: 4,
+  canceled: 5,
+  incomplete_expired: 6,
+}
+
+const STATUS_COLORS: Record<schemas['SubscriptionStatus'], string> = {
+  active: 'border-green-500',
+  trialing: 'border-blue-500',
+  past_due: 'border-yellow-500',
+  unpaid: 'border-orange-500',
+  canceled: 'border-red-500',
+  incomplete: 'dark:border-polar-500 border-gray-500',
+  incomplete_expired: 'dark:border-polar-500 border-gray-500',
+}
+
+const INTERVAL_LABELS: Record<
+  schemas['SubscriptionRecurringInterval'],
+  string
+> = { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' }
+
+const INTERVAL_PLURAL: Record<
+  schemas['SubscriptionRecurringInterval'],
+  string
+> = { day: 'days', week: 'weeks', month: 'months', year: 'years' }
+
+const formatInterval = (
+  interval: schemas['SubscriptionRecurringInterval'],
+  count: number,
+): string =>
+  count === 1
+    ? INTERVAL_LABELS[interval]
+    : `Every ${count} ${INTERVAL_PLURAL[interval]}`
+
+interface SubscriptionRowProps {
+  subscription: schemas['Subscription']
+  organization: schemas['Organization']
+}
+
+const SubscriptionRow = ({
+  subscription,
+  organization,
+}: SubscriptionRowProps) => {
+  const statusColor =
+    subscription.cancel_at_period_end && subscription.status === 'active'
+      ? 'border-yellow-500'
+      : STATUS_COLORS[subscription.status]
+
+  const formattedPrice =
+    subscription.amount === 0
+      ? 'Free'
+      : subscription.amount != null && subscription.currency
+        ? `${formatCurrency('standard')(subscription.amount, subscription.currency)} / ${formatInterval(subscription.recurring_interval, subscription.recurring_interval_count)}`
+        : null
+
+  return (
+    <Link
+      href={`/dashboard/${organization.slug}/sales/subscriptions/${subscription.id}`}
+      className="dark:hover:bg-polar-800 -mx-4 flex flex-row items-center justify-between gap-3 rounded-lg px-4 py-2 hover:bg-gray-100"
+    >
+      <div className="flex flex-row items-center gap-4 overflow-hidden">
+        <span
+          className={`size-2 shrink-0 rounded-full ${statusColor} border-2`}
+          title={
+            subscription.cancel_at_period_end
+              ? 'Canceling at period end'
+              : subscription.status
+          }
+        />
+        <span className="truncate text-sm">{subscription.product.name}</span>
+        <span className="dark:text-polar-500 text-sm text-gray-500">
+          {subscription.status === 'active'
+            ? formatInterval(
+                subscription.recurring_interval,
+                subscription.recurring_interval_count,
+              )
+            : STATUS_DISPLAY_NAMES[subscription.status]}
+        </span>
+      </div>
+      {formattedPrice && (
+        <span className="dark:text-polar-400 shrink-0 text-sm text-gray-500">
+          {formattedPrice}
+        </span>
+      )}
+    </Link>
   )
 }

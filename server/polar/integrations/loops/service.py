@@ -1,6 +1,6 @@
 from typing import Unpack
 
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.models import User
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -118,7 +118,7 @@ class Loops:
         )
 
     async def user_created_account(
-        self, session: AsyncSession, user: User, accountType: AccountType
+        self, session: AsyncSession, user: User, accountType: PayoutAccountType
     ) -> None:
         is_creator = await self.is_creator(session, user)
         if not is_creator:

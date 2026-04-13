@@ -5,7 +5,7 @@ import LogoType from '../Brand/logos/LogoType'
 
 const PageNotFound = () => {
   return (
-    <div className="dark:bg-polar-950 flex h-screen w-full flex-col items-center justify-center gap-y-12 bg-gray-50 px-12">
+    <div className="dark:bg-polar-950 flex h-screen w-full flex-col items-center justify-center gap-y-12 bg-gray-50 px-12 text-center">
       <div className="flex flex-col items-center justify-center gap-y-1">
         <h1 className="text-2xl font-medium text-black dark:text-white">
           Page not found

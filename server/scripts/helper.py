@@ -26,6 +26,25 @@ def configure_script_logging() -> None:
     )
 
 
+def configure_script_console_logging() -> None:
+    """Structlog config for scripts that should produce readable console output.
+
+    Uses ``plain_traceback`` so exceptions render as a standard Python
+    traceback instead of rich's locals dump — critical for cron jobs whose
+    output is captured by log aggregators that don't render ANSI or boxes.
+    """
+    structlog.configure(
+        processors=[
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso", utc=True),
+            structlog.dev.ConsoleRenderer(
+                colors=False,
+                exception_formatter=structlog.dev.plain_traceback,
+            ),
+        ]
+    )
+
+
 def typer_async(f):  # type: ignore
     # From https://github.com/tiangolo/typer/issues/85
     @wraps(f)

@@ -23,7 +23,7 @@ class EmailLog(RecordModel):
     )
     status: Mapped[EmailLogStatus] = mapped_column(String, nullable=False, index=True)
     processor: Mapped[EmailSender] = mapped_column(String, nullable=False)
-    processor_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    processor_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     to_email_addr: Mapped[str] = mapped_column(String, nullable=False, index=True)
     from_email_addr: Mapped[str] = mapped_column(String, nullable=False)
     from_name: Mapped[str] = mapped_column(String, nullable=False)

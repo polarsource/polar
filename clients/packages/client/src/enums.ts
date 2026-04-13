@@ -7,6 +7,7 @@ export {
   checkoutStatusValues,
   countAggregationFuncValues,
   customFieldTypeValues,
+  meterUnitValues,
   presentmentCurrencyValues,
   propertyAggregationFuncValues,
   refundReasonValues,

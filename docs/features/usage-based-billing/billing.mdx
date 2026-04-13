@@ -37,7 +37,13 @@ Our Usage Based Billing infrastructure is built to work with Subscription produc
 
 ### Add a metered price to your product
 
-To charge your customers for usage, you need to add a metered price to your product. You'll need the select the **Meter** and the **amount per unit**.
+To charge your customers for usage, you need to add a metered price to your product. You'll need to select the **Meter** and the **amount per unit**.
+
+<Info>
+  The price is always entered as the cost per **single unit**. How it is
+  displayed to customers — for example as `$20 / 1M tokens` — is controlled by
+  the [Unit](/features/usage-based-billing/meters#unit) setting on the meter.
+</Info>
 
 <img className="block dark:hidden" src="/assets/features/usage/cap.light.png" />
 <img className="hidden dark:block" src="/assets/features/usage/cap.dark.png" />

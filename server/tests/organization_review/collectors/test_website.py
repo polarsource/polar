@@ -1,5 +1,4 @@
 import asyncio
-import socket
 from collections.abc import Awaitable, Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -7,25 +6,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from polar.kit.http import SSRFBlockedError
 from polar.organization_review.collectors.website import (
     MAX_CHARS_PER_PAGE,
     MAX_PAGES,
     MAX_REDIRECTS,
-    SSRFBlockedError,
     WebsiteDeps,
     _build_tool_response,
     _extract_links_from_html,
     _is_allowed_origin,
-    _resolve_and_validate_ip,
     browse_page,
     collect_website_data,
     fetch_page,
 )
 from polar.organization_review.schemas import WebsiteData
 
-# Shorthand for patching _resolve_and_validate_ip to allow all IPs
+# Shorthand for patching resolve_and_validate_ip to allow all IPs
 _PATCH_SSRF = patch(
-    "polar.organization_review.collectors.website._resolve_and_validate_ip",
+    "polar.organization_review.collectors.website.resolve_and_validate_ip",
     new_callable=AsyncMock,
 )
 
@@ -455,93 +453,6 @@ class TestWebsiteDepsCleanup:
 
 
 # ---------------------------------------------------------------------------
-# _resolve_and_validate_ip
-# ---------------------------------------------------------------------------
-
-
-def _fake_getaddrinfo(*addrs: str) -> list[tuple[int, int, int, str, tuple[str, int]]]:
-    """Build a fake getaddrinfo result list from IP strings."""
-    return [
-        (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (a, 0))
-        for a in addrs
-    ]
-
-
-class TestResolveAndValidateIp:
-    @pytest.mark.asyncio
-    async def test_blocks_loopback(self) -> None:
-        with patch("socket.getaddrinfo", return_value=_fake_getaddrinfo("127.0.0.1")):
-            with pytest.raises(SSRFBlockedError, match="private/reserved"):
-                await _resolve_and_validate_ip("localhost")
-
-    @pytest.mark.asyncio
-    async def test_blocks_private_10x(self) -> None:
-        with patch("socket.getaddrinfo", return_value=_fake_getaddrinfo("10.0.0.1")):
-            with pytest.raises(SSRFBlockedError):
-                await _resolve_and_validate_ip("internal.example.com")
-
-    @pytest.mark.asyncio
-    async def test_blocks_private_172_16(self) -> None:
-        with patch("socket.getaddrinfo", return_value=_fake_getaddrinfo("172.16.0.1")):
-            with pytest.raises(SSRFBlockedError):
-                await _resolve_and_validate_ip("internal.example.com")
-
-    @pytest.mark.asyncio
-    async def test_blocks_private_192_168(self) -> None:
-        with patch("socket.getaddrinfo", return_value=_fake_getaddrinfo("192.168.1.1")):
-            with pytest.raises(SSRFBlockedError):
-                await _resolve_and_validate_ip("internal.example.com")
-
-    @pytest.mark.asyncio
-    async def test_blocks_link_local_metadata(self) -> None:
-        """169.254.169.254 (AWS/GCP metadata) is link-local and must be blocked."""
-        with patch(
-            "socket.getaddrinfo", return_value=_fake_getaddrinfo("169.254.169.254")
-        ):
-            with pytest.raises(SSRFBlockedError, match="private/reserved"):
-                await _resolve_and_validate_ip("metadata.internal")
-
-    @pytest.mark.asyncio
-    async def test_blocks_ipv6_loopback(self) -> None:
-        info = [
-            (
-                socket.AF_INET6,
-                socket.SOCK_STREAM,
-                socket.IPPROTO_TCP,
-                "",
-                ("::1", 0, 0, 0),
-            )
-        ]
-        with patch("socket.getaddrinfo", return_value=info):
-            with pytest.raises(SSRFBlockedError):
-                await _resolve_and_validate_ip("localhost6")
-
-    @pytest.mark.asyncio
-    async def test_allows_public_ip(self) -> None:
-        with patch(
-            "socket.getaddrinfo", return_value=_fake_getaddrinfo("93.184.216.34")
-        ):
-            # Should not raise
-            await _resolve_and_validate_ip("example.com")
-
-    @pytest.mark.asyncio
-    async def test_blocks_mixed_public_and_private(self) -> None:
-        """If even one resolved IP is private, the request must be blocked."""
-        with patch(
-            "socket.getaddrinfo",
-            return_value=_fake_getaddrinfo("93.184.216.34", "10.0.0.1"),
-        ):
-            with pytest.raises(SSRFBlockedError):
-                await _resolve_and_validate_ip("dual-homed.example.com")
-
-    @pytest.mark.asyncio
-    async def test_dns_failure(self) -> None:
-        with patch("socket.getaddrinfo", side_effect=socket.gaierror("NXDOMAIN")):
-            with pytest.raises(SSRFBlockedError, match="DNS resolution failed"):
-                await _resolve_and_validate_ip("nonexistent.invalid")
-
-
-# ---------------------------------------------------------------------------
 # fetch_page — SSRF & redirect tests
 # ---------------------------------------------------------------------------
 
@@ -556,7 +467,7 @@ class TestFetchPageSSRF:
         ctx.deps = deps
 
         with patch(
-            "polar.organization_review.collectors.website._resolve_and_validate_ip",
+            "polar.organization_review.collectors.website.resolve_and_validate_ip",
             new_callable=AsyncMock,
             side_effect=SSRFBlockedError("resolves to private IP 10.0.0.1"),
         ):
@@ -591,7 +502,7 @@ class TestFetchPageSSRF:
                 raise SSRFBlockedError(f"Blocked: {hostname} resolves to private IP")
 
         with patch(
-            "polar.organization_review.collectors.website._resolve_and_validate_ip",
+            "polar.organization_review.collectors.website.resolve_and_validate_ip",
             new_callable=AsyncMock,
             side_effect=_validate_side_effect,
         ):
@@ -719,7 +630,7 @@ class TestBrowsePageSSRF:
         ctx.deps = deps
 
         with patch(
-            "polar.organization_review.collectors.website._resolve_and_validate_ip",
+            "polar.organization_review.collectors.website.resolve_and_validate_ip",
             new_callable=AsyncMock,
             side_effect=SSRFBlockedError("resolves to private IP 10.0.0.1"),
         ):
@@ -858,7 +769,7 @@ class TestPlaywrightRouteInterceptor:
         route.request.resource_type = "image"
 
         with patch(
-            "polar.organization_review.collectors.website._resolve_and_validate_ip",
+            "polar.organization_review.collectors.website.resolve_and_validate_ip",
             new_callable=AsyncMock,
             side_effect=SSRFBlockedError("private IP"),
         ):

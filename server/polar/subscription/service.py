@@ -882,6 +882,24 @@ class SubscriptionService:
         *,
         update: SubscriptionUpdate,
     ) -> Subscription:
+        if (
+            isinstance(update, SubscriptionUpdateProduct | SubscriptionUpdateSeats)
+            and update.proration_behavior == SubscriptionProrationBehavior.reset
+        ):
+            organization = subscription.customer.organization
+            if not organization.feature_settings.get(
+                "reset_proration_behavior_enabled"
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "proration_behavior"),
+                            "msg": "The 'reset' proration behavior is not enabled for this organization.",
+                            "input": update.proration_behavior,
+                        }
+                    ]
+                )
         if isinstance(update, SubscriptionUpdateProduct):
             return await self.update_product(
                 session,
@@ -1098,12 +1116,10 @@ class SubscriptionService:
             session
         )
 
+        subscription_update, billing_entries = generate_subscription_update(
+            subscription, proration_behavior, product=product
+        )
         if proration_behavior == SubscriptionProrationBehavior.next_period:
-            subscription_update, _ = generate_subscription_update(
-                subscription,
-                product=product,
-                applies_at=subscription.current_period_end,
-            )
             subscription.pending_update = await subscription_update_repository.upsert(
                 subscription_update
             )
@@ -1115,9 +1131,6 @@ class SubscriptionService:
             )
             subscription.pending_update = None
 
-            subscription_update, billing_entries = generate_subscription_update(
-                subscription, product=product
-            )
             for entry in billing_entries:
                 entry.event = event
                 session.add(entry)
@@ -1127,15 +1140,11 @@ class SubscriptionService:
             session.add(subscription)
             await session.flush()
 
+            # Invoice and attempt to pay immediately
             if (
-                proration_behavior == SubscriptionProrationBehavior.invoice
-                or interval_changed
-            ) and len(billing_entries) > 0:
-                # Invoice and attempt to pay immediately
+                proration_behavior.is_immediate() or interval_changed
+            ) and billing_entries:
                 await self._create_subscription_update_order(session, subscription)
-            elif proration_behavior == SubscriptionProrationBehavior.prorate:
-                # Add prorations to next invoice
-                pass
 
             await self.enqueue_benefits_grants(session, subscription)
 
@@ -1398,7 +1407,7 @@ class SubscriptionService:
         )
 
         subscription_update, billing_entries = generate_subscription_update(
-            subscription, seats=seats
+            subscription, proration_behavior, seats=seats
         )
 
         previous_status = subscription.status
@@ -1408,9 +1417,6 @@ class SubscriptionService:
             session
         )
         if proration_behavior == SubscriptionProrationBehavior.next_period:
-            subscription_update, _ = generate_subscription_update(
-                subscription, seats=seats, applies_at=subscription.current_period_end
-            )
             subscription.pending_update = await subscription_update_repository.upsert(
                 subscription_update
             )
@@ -1422,9 +1428,6 @@ class SubscriptionService:
             )
             subscription.pending_update = None
 
-            subscription_update, billing_entries = generate_subscription_update(
-                subscription, seats=seats
-            )
             # Skip proration for trialing subscriptions - no billing during trial
             if not subscription.trialing:
                 for entry in billing_entries:
@@ -1445,9 +1448,9 @@ class SubscriptionService:
             )
 
             if (
-                proration_behavior == SubscriptionProrationBehavior.invoice
+                proration_behavior.is_immediate()
                 and not subscription.trialing
-                and len(billing_entries) > 0
+                and billing_entries
             ):
                 # Invoice and attempt to pay immediately
                 await self._create_subscription_update_order(session, subscription)

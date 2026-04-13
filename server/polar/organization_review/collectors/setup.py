@@ -5,6 +5,7 @@ import httpx
 import structlog
 from playwright.async_api import async_playwright
 
+from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 from polar.models.checkout_link import CheckoutLink
 from polar.models.webhook_endpoint import WebhookEndpoint
 
@@ -19,7 +20,6 @@ from ..schemas import (
     UrlRedirectInfo,
     WebhookEndpointData,
 )
-from .website import SSRFBlockedError, _resolve_and_validate_ip
 
 log = structlog.get_logger(__name__)
 
@@ -39,6 +39,22 @@ def _extract_domain(url: str) -> str | None:
         return parsed.netloc or None
     except Exception:
         return None
+
+
+def _normalize_domain(domain: str) -> str:
+    """Strip leading 'www.' so that bare and www variants are treated as the same domain."""
+    return domain.removeprefix("www.")
+
+
+def _is_cross_domain(original: str | None, final: str | None) -> bool:
+    """Return True if two domains differ after www-normalization.
+
+    Returns False if either domain is None (unparseable URLs are not
+    treated as cross-domain redirects — they surface via the error field).
+    """
+    if original is None or final is None:
+        return False
+    return _normalize_domain(original) != _normalize_domain(final)
 
 
 def _unique_domains(urls: list[str]) -> list[str]:
@@ -65,7 +81,7 @@ async def _validate_url_host(url: str) -> None:
     parsed = urlparse(url)
     hostname = parsed.hostname
     if hostname:
-        await _resolve_and_validate_ip(hostname)
+        await resolve_and_validate_ip(hostname)
 
 
 async def _resolve_redirect(
@@ -110,7 +126,7 @@ async def _resolve_redirect(
             final_url = str(response.url)
             final_domain = _extract_domain(final_url)
             original_domain = _extract_domain(url)
-            redirected = final_domain != original_domain
+            redirected = _is_cross_domain(original_domain, final_domain)
             return UrlRedirectInfo(
                 original_url=url,
                 final_url=final_url,
@@ -173,7 +189,7 @@ async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
             hostname = parsed.hostname
             if hostname:
                 try:
-                    await _resolve_and_validate_ip(hostname)
+                    await resolve_and_validate_ip(hostname)
                 except SSRFBlockedError:
                     await route.abort("blockedbyclient")
                     return
@@ -196,7 +212,7 @@ async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
         final_url = page.url
         final_domain = _extract_domain(final_url)
         original_domain = _extract_domain(url)
-        redirected = final_domain != original_domain
+        redirected = _is_cross_domain(original_domain, final_domain)
 
         return UrlRedirectInfo(
             original_url=url,

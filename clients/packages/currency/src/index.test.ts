@@ -95,27 +95,69 @@ describe('formatCurrency', () => {
   })
 
   describe('Statistics mode', () => {
-    it('should format with small currency symbol, maximum 1 digit', () => {
+    // Statistics mode are an opinionated balance between accurracy and readability.
+    // The main goal is to always land between 4-7 characters (excluding currency symbol) (including separators) (including the K/M/B/T multipliers)
+    // while keeping the number as accurate as possible.
+    // This means there are certain thresholds where the formatting / rounding / significant digits change to keep the output concise and accurate.
+    //
+    // I have strong feelings about this, haha, so before making any changes here, please chat with me — @pieterbeulque
+    it('should format small numbers with small currency symbol, either 0 or 2 digits', () => {
+      expect(formatCurrency('statistics', 'en-US')(1, 'usd')).toEqual('$0.01')
+      expect(formatCurrency('statistics', 'en-US')(12, 'usd')).toEqual('$0.12')
+      expect(formatCurrency('statistics', 'en-US')(123, 'usd')).toEqual('$1.23')
+      expect(formatCurrency('statistics', 'en-US')(1200, 'usd')).toEqual('$12')
+      expect(formatCurrency('statistics', 'en-US')(1230, 'usd')).toEqual(
+        '$12.30',
+      )
+      expect(formatCurrency('statistics', 'en-US')(1234, 'usd')).toEqual(
+        '$12.34',
+      )
       expect(formatCurrency('statistics', 'en-US')(12345, 'usd')).toEqual(
-        '$123.5',
+        '$123.45',
       )
     })
 
-    it('should compact big figures with multipliers, maximum 1 digit', () => {
-      expect(formatCurrency('statistics', 'en-US')(4200000, 'usd')).toEqual(
-        '$42K',
+    it('should format thousands without multipliers, either 0 or 2 digits', () => {
+      expect(formatCurrency('statistics', 'en-US')(123400, 'usd')).toEqual(
+        '$1,234',
       )
-      expect(formatCurrency('statistics', 'en-US')(4212010, 'usd')).toEqual(
-        '$42.1K',
+      expect(formatCurrency('statistics', 'en-US')(123456, 'usd')).toEqual(
+        '$1,234.56',
       )
-      expect(formatCurrency('statistics', 'en-US')(4210000010, 'usd')).toEqual(
-        '$42.1M',
+    })
+
+    // tens & hundreds of thousands are an exception case.
+    // For example, $12.34K <> $12,345 or $123.45K <> $123,456 but loses a significant digit, so we show in full, no decimals
+    it('should format tens of thousands without multipliers, no digits', () => {
+      expect(formatCurrency('statistics', 'en-US')(1234500, 'usd')).toEqual(
+        '$12,345',
+      )
+      expect(formatCurrency('statistics', 'en-US')(1234567, 'usd')).toEqual(
+        '$12,345',
+      )
+    })
+
+    it('should format hundreds of thousands without multipliers, no digits', () => {
+      expect(formatCurrency('statistics', 'en-US')(12345678, 'usd')).toEqual(
+        '$123,456',
+      )
+    })
+
+    it('should compact big figures with multipliers, maximum 5 significant digits, maximum 3 decimal digits', () => {
+      expect(formatCurrency('statistics', 'en-US')(123456700, 'usd')).toEqual(
+        '$1.235M',
+      )
+      expect(formatCurrency('statistics', 'en-US')(1234567800, 'usd')).toEqual(
+        '$12.346M',
+      )
+      expect(formatCurrency('statistics', 'en-US')(12345678900, 'usd')).toEqual(
+        '$123.46M',
       )
     })
 
     it('should handle non-decimal currencies', () => {
-      expect(formatCurrency('statistics', 'en-US')(12300, 'jpy')).toEqual(
-        '¥12.3K',
+      expect(formatCurrency('statistics', 'en-US')(123456700, 'jpy')).toEqual(
+        '¥123.46M',
       )
     })
   })

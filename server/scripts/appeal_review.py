@@ -15,7 +15,7 @@ Usage:
     uv run python -m scripts.appeal_review <org_slug> --plain-api-key <key>
 
     # Override AI model
-    uv run python -m scripts.appeal_review <org_slug> --model gpt-4o
+    uv run python -m scripts.appeal_review <org_slug> --model openai:gpt-4o
 
     # Skip optional data sources
     uv run python -m scripts.appeal_review <org_slug> --skip-website
@@ -36,8 +36,6 @@ import httpx
 import structlog
 from pydantic import model_validator
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 from polar.kit.db.postgres import create_async_sessionmaker
@@ -45,12 +43,14 @@ from polar.kit.schemas import Schema
 from polar.models.organization import Organization
 from polar.models.user_organization import UserOrganization
 from polar.organization.repository import OrganizationRepository
-from polar.organization_review.collectors.account import collect_account_data
 from polar.organization_review.collectors.feedback import collect_feedback_data
 from polar.organization_review.collectors.history import collect_history_data
 from polar.organization_review.collectors.identity import collect_identity_data
 from polar.organization_review.collectors.metrics import collect_metrics_data
 from polar.organization_review.collectors.organization import collect_organization_data
+from polar.organization_review.collectors.payout_account import (
+    collect_payout_account_data,
+)
 from polar.organization_review.collectors.products import collect_products_data
 from polar.organization_review.collectors.setup import collect_setup_data
 from polar.organization_review.collectors.website import collect_website_data
@@ -58,6 +58,8 @@ from polar.organization_review.policy import fetch_policy_content
 from polar.organization_review.report import parse_agent_report
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.postgres import create_async_engine
+
+from .helper import configure_script_console_logging
 
 log = structlog.get_logger(__name__)
 
@@ -374,11 +376,9 @@ when their explanation is reasonable and consistent with the data.
 
 
 def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]:
-    provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-    model = OpenAIChatModel(model_name, provider=provider)
-
+    model_instance, _, _ = settings.get_pydantic_gateway_model(model_name)
     agent: Agent[AppealAgentDeps, AppealReviewResult] = Agent(
-        model,
+        model_instance,
         output_type=AppealReviewResult,
         deps_type=AppealAgentDeps,
         system_prompt=SYSTEM_PROMPT,
@@ -689,36 +689,39 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
         async with deps.sessionmaker() as session:
             # Get org with account
             org_repo = OrganizationRepository.from_session(session)
-            org = await org_repo.get_by_id_with_account(deps._organization_id)
+            org = await org_repo.get_by_id_with_payout_account(deps._organization_id)
             if org is None:
                 return "Organization not found."
 
-            review_repo = OrganizationReviewRepository.from_session(session)
-            account = None
-            if org.account_id:
-                account = await review_repo.get_account_with_admin(org.account_id)
+            payout_account = org.payout_account
+            payout_account_data = collect_payout_account_data(payout_account)
+            identity_data = await collect_identity_data(
+                payout_account.admin if payout_account else None
+            )
 
-            account_data = collect_account_data(account)
-            identity_data = await collect_identity_data(account)
-
-            parts = ["## Stripe Account"]
-            parts.append(f"Country: {account_data.country or 'unknown'}")
-            parts.append(f"Business Type: {account_data.business_type or 'unknown'}")
-            parts.append(f"Details Submitted: {account_data.is_details_submitted}")
-            parts.append(f"Charges Enabled: {account_data.is_charges_enabled}")
-            parts.append(f"Payouts Enabled: {account_data.is_payouts_enabled}")
-            if account_data.business_name:
-                parts.append(f"Business Name: {account_data.business_name}")
-            if account_data.business_url:
-                parts.append(f"Business URL: {account_data.business_url}")
-            if account_data.requirements_disabled_reason:
+            parts = ["## Payout Account"]
+            parts.append(f"Type: {payout_account_data.type or 'unknown'}")
+            parts.append(f"Country: {payout_account_data.country or 'unknown'}")
+            parts.append(
+                f"Business Type: {payout_account_data.business_type or 'unknown'}"
+            )
+            parts.append(
+                f"Details Submitted: {payout_account_data.is_details_submitted}"
+            )
+            parts.append(f"Charges Enabled: {payout_account_data.is_charges_enabled}")
+            parts.append(f"Payouts Enabled: {payout_account_data.is_payouts_enabled}")
+            if payout_account_data.business_name:
+                parts.append(f"Business Name: {payout_account_data.business_name}")
+            if payout_account_data.business_url:
+                parts.append(f"Business URL: {payout_account_data.business_url}")
+            if payout_account_data.requirements_disabled_reason:
                 parts.append(
-                    f"WARNING — Disabled Reason: {account_data.requirements_disabled_reason}"
+                    f"WARNING — Disabled Reason: {payout_account_data.requirements_disabled_reason}"
                 )
-            if account_data.requirements_errors:
+            if payout_account_data.requirements_errors:
                 error_strs = [
                     f"{e['code']}: {e['reason']}"
-                    for e in account_data.requirements_errors
+                    for e in payout_account_data.requirements_errors
                 ]
                 parts.append(f"WARNING — Errors: {'; '.join(error_strs)}")
 
@@ -1058,7 +1061,7 @@ async def run_appeal_review_with_deps(
     session_maker: Any,
     plain_client: Any | None,
     plain_token: str | None,
-    model: str = "gpt-5.2-2025-12-11",
+    model: str = "openai:gpt-5.2-2025-12-11",
     skip_website: bool = False,
 ) -> AppealReviewResult:
     """Run the appeal review agent with pre-created dependencies.
@@ -1088,7 +1091,7 @@ async def run_appeal_review_with_deps(
 async def run_appeal_review(
     org_slug: str,
     *,
-    model: str = "gpt-5.2-2025-12-11",
+    model: str = "openai:gpt-5.2-2025-12-11",
     plain_api_key: str | None = None,
     skip_website: bool = False,
     skip_plain: bool = False,
@@ -1189,8 +1192,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--model",
-        default="gpt-4o",
-        help="OpenAI model to use (default: gpt-4o)",
+        default="openai:gpt-4o",
+        help="OpenAI model to use (default: openai:gpt-4o)",
     )
     parser.add_argument(
         "--skip-website",
@@ -1209,13 +1212,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    structlog.configure(
-        processors=[
-            structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.dev.ConsoleRenderer(),
-        ]
-    )
+    configure_script_console_logging()
 
     try:
         asyncio.run(
@@ -1232,7 +1229,12 @@ def main() -> None:
         log.info("Interrupted by user")
         sys.exit(1)
     except Exception as e:
-        log.error("Script failed", error=str(e), exc_info=True)
+        log.error(
+            "Script failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
         sys.exit(1)
 
 

@@ -10,7 +10,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import generate_uuid
 from polar.models import Checkout, Order, Payment, Wallet
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import PaymentRepository
@@ -104,6 +104,7 @@ class PaymentService:
         checkout: Checkout | None,
         wallet: Wallet | None,
         order: Order | None,
+        trigger: PaymentTrigger | None = None,
     ) -> Payment:
         repository = PaymentRepository.from_session(session)
 
@@ -140,6 +141,7 @@ class PaymentService:
                 payment.risk_level = risk_level
                 payment.risk_score = charge.outcome.get("risk_score")
 
+        payment.trigger = trigger
         payment.checkout = checkout
         payment.order = order
         payment.wallet = wallet
@@ -154,6 +156,7 @@ class PaymentService:
         organization: Organization,
         checkout: Checkout | None,
         order: Order | None,
+        trigger: PaymentTrigger | None = None,
     ) -> Payment:
         # Only handle payment intents that are not linked to a charge, and which
         # have a last_payment_error.
@@ -191,6 +194,7 @@ class PaymentService:
         payment.decline_reason = getattr(payment_error, "code", None)
         payment.decline_message = payment_error.message
 
+        payment.trigger = trigger
         payment.checkout = checkout
         payment.order = order
         payment.organization = organization

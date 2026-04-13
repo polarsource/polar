@@ -5,6 +5,7 @@ on:
     branches: ["main"]
   pull_request:
     types: [opened, synchronize, edited]
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -214,6 +215,16 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+
+      redis:
+        image: redis:7.4-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
       minio:
         image: bitnamilegacy/minio:2024.5.28

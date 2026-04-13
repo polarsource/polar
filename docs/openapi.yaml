@@ -673,6 +673,68 @@
             "description": "Filter by subscriptions that are set to cancel at period end."
           },
           {
+            "name": "customer_cancellation_reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CustomerCancellationReason"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerCancellationReason"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CustomerCancellationReason Filter",
+              "description": "Filter by customer cancellation reason."
+            },
+            "description": "Filter by customer cancellation reason."
+          },
+          {
+            "name": "canceled_at_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by cancellation date (after or equal to).",
+              "title": "Canceled At After"
+            },
+            "description": "Filter by cancellation date (after or equal to)."
+          },
+          {
+            "name": "canceled_at_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by cancellation date (before or equal to).",
+              "title": "Canceled At Before"
+            },
+            "description": "Filter by cancellation date (before or equal to)."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -5492,12 +5554,12 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Orders.Update(ctx, \"<value>\", components.OrderUpdate{\n        BillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Order != nil {\n        switch res.Order.Discount.Type {\n            case components.OrderDiscountTypeDiscountFixedOnceForeverDurationBase:\n                // res.Order.Discount.DiscountFixedOnceForeverDurationBase is populated\n            case components.OrderDiscountTypeDiscountFixedRepeatDurationBase:\n                // res.Order.Discount.DiscountFixedRepeatDurationBase is populated\n            case components.OrderDiscountTypeDiscountPercentageOnceForeverDurationBase:\n                // res.Order.Discount.DiscountPercentageOnceForeverDurationBase is populated\n            case components.OrderDiscountTypeDiscountPercentageRepeatDurationBase:\n                // res.Order.Discount.DiscountPercentageRepeatDurationBase is populated\n        }\n\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Orders.Update(ctx, \"<value>\", components.OrderUpdate{\n        BillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Order != nil {\n        switch res.Order.Discount.Type {\n            case components.OrderDiscountTypeDiscountFixedOnceForeverDurationBase:\n                // res.Order.Discount.DiscountFixedOnceForeverDurationBase is populated\n            case components.OrderDiscountTypeDiscountFixedRepeatDurationBase:\n                // res.Order.Discount.DiscountFixedRepeatDurationBase is populated\n            case components.OrderDiscountTypeDiscountPercentageOnceForeverDurationBase:\n                // res.Order.Discount.DiscountPercentageOnceForeverDurationBase is populated\n            case components.OrderDiscountTypeDiscountPercentageRepeatDurationBase:\n                // res.Order.Discount.DiscountPercentageRepeatDurationBase is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.orders.update(id=\"<value>\", order_update={\n        \"billing_address\": {\n            \"country\": polar_sdk.CountryAlpha2Input.US,\n        },\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.orders.update(id=\"<value>\", order_update={\n        \"billing_address\": {\n            \"country\": polar_sdk.AddressInputCountryAlpha2Input.US,\n        },\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -5507,7 +5569,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$orderUpdate = new Components\\OrderUpdate(\n    billingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n);\n\n$response = $sdk->orders->update(\n    id: '<value>',\n    orderUpdate: $orderUpdate\n\n);\n\nif ($response->order !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$orderUpdate = new Components\\OrderUpdate(\n    billingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n);\n\n$response = $sdk->orders->update(\n    id: '<value>',\n    orderUpdate: $orderUpdate\n\n);\n\nif ($response->order !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -6793,12 +6855,12 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Create(ctx, components.CheckoutCreate{\n        CustomerName: polargo.Pointer(\"John Doe\"),\n        CustomerBillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n        Products: []string{\n            \"<value 1>\",\n            \"<value 2>\",\n            \"<value 3>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        switch res.Checkout.ProductPrice.Type {\n            case components.CheckoutProductPriceTypeLegacyRecurringProductPrice:\n                // res.Checkout.ProductPrice.LegacyRecurringProductPrice is populated\n            case components.CheckoutProductPriceTypeProductPrice:\n                // res.Checkout.ProductPrice.ProductPrice is populated\n        }\n\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Create(ctx, components.CheckoutCreate{\n        CustomerName: polargo.Pointer(\"John Doe\"),\n        CustomerBillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n        Products: []string{\n            \"<value 1>\",\n            \"<value 2>\",\n            \"<value 3>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        switch res.Checkout.ProductPrice.Type {\n            case components.CheckoutProductPriceTypeLegacyRecurringProductPrice:\n                // res.Checkout.ProductPrice.LegacyRecurringProductPrice is populated\n            case components.CheckoutProductPriceTypeProductPrice:\n                // res.Checkout.ProductPrice.ProductPrice is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.create(request={\n        \"customer_name\": \"John Doe\",\n        \"customer_billing_address\": {\n            \"country\": polar_sdk.CountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n        \"products\": [\n            \"<value 1>\",\n            \"<value 2>\",\n            \"<value 3>\",\n        ],\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.create(request={\n        \"customer_name\": \"John Doe\",\n        \"customer_billing_address\": {\n            \"country\": polar_sdk.AddressInputCountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n        \"products\": [\n            \"<value 1>\",\n            \"<value 2>\",\n            \"<value 3>\",\n        ],\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -6808,7 +6870,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CheckoutCreate(\n    customerName: 'John Doe',\n    customerBillingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n    products: [\n        '<value 1>',\n        '<value 2>',\n        '<value 3>',\n    ],\n);\n\n$response = $sdk->checkouts->create(\n    request: $request\n);\n\nif ($response->checkout !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CheckoutCreate(\n    customerName: 'John Doe',\n    customerBillingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n    products: [\n        '<value 1>',\n        '<value 2>',\n        '<value 3>',\n    ],\n);\n\n$response = $sdk->checkouts->create(\n    request: $request\n);\n\nif ($response->checkout !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -6987,12 +7049,12 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Update(ctx, \"<value>\", components.CheckoutUpdate{\n        CustomerName: polargo.Pointer(\"John Doe\"),\n        CustomerBillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        switch res.Checkout.ProductPrice.Type {\n            case components.CheckoutProductPriceTypeLegacyRecurringProductPrice:\n                // res.Checkout.ProductPrice.LegacyRecurringProductPrice is populated\n            case components.CheckoutProductPriceTypeProductPrice:\n                // res.Checkout.ProductPrice.ProductPrice is populated\n        }\n\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Update(ctx, \"<value>\", components.CheckoutUpdate{\n        CustomerName: polargo.Pointer(\"John Doe\"),\n        CustomerBillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        switch res.Checkout.ProductPrice.Type {\n            case components.CheckoutProductPriceTypeLegacyRecurringProductPrice:\n                // res.Checkout.ProductPrice.LegacyRecurringProductPrice is populated\n            case components.CheckoutProductPriceTypeProductPrice:\n                // res.Checkout.ProductPrice.ProductPrice is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.update(id=\"<value>\", checkout_update={\n        \"customer_name\": \"John Doe\",\n        \"customer_billing_address\": {\n            \"country\": polar_sdk.CountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.update(id=\"<value>\", checkout_update={\n        \"customer_name\": \"John Doe\",\n        \"customer_billing_address\": {\n            \"country\": polar_sdk.AddressInputCountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -7002,7 +7064,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$checkoutUpdate = new Components\\CheckoutUpdate(\n    customerName: 'John Doe',\n    customerBillingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n);\n\n$response = $sdk->checkouts->update(\n    id: '<value>',\n    checkoutUpdate: $checkoutUpdate\n\n);\n\nif ($response->checkout !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$checkoutUpdate = new Components\\CheckoutUpdate(\n    customerName: 'John Doe',\n    customerBillingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n);\n\n$response = $sdk->checkouts->update(\n    id: '<value>',\n    checkoutUpdate: $checkoutUpdate\n\n);\n\nif ($response->checkout !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -7197,7 +7259,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Checkouts.ClientUpdate(ctx, \"<value>\", components.CheckoutUpdatePublic{\n        CustomerName: polargo.Pointer(\"John Doe\"),\n        CustomerBillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        switch res.CheckoutPublic.ProductPrice.Type {\n            case components.CheckoutPublicProductPriceTypeLegacyRecurringProductPrice:\n                // res.CheckoutPublic.ProductPrice.LegacyRecurringProductPrice is populated\n            case components.CheckoutPublicProductPriceTypeProductPrice:\n                // res.CheckoutPublic.ProductPrice.ProductPrice is populated\n        }\n\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Checkouts.ClientUpdate(ctx, \"<value>\", components.CheckoutUpdatePublic{\n        CustomerName: polargo.Pointer(\"John Doe\"),\n        CustomerBillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        switch res.CheckoutPublic.ProductPrice.Type {\n            case components.CheckoutPublicProductPriceTypeLegacyRecurringProductPrice:\n                // res.CheckoutPublic.ProductPrice.LegacyRecurringProductPrice is populated\n            case components.CheckoutPublicProductPriceTypeProductPrice:\n                // res.CheckoutPublic.ProductPrice.ProductPrice is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
@@ -7324,12 +7386,12 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.ClientConfirm(ctx, \"<value>\", components.CheckoutConfirmStripe{\n        CustomerName: polargo.Pointer(\"John Doe\"),\n        CustomerBillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublicConfirmed != nil {\n        switch res.CheckoutPublicConfirmed.ProductPrice.Type {\n            case components.CheckoutPublicConfirmedProductPriceTypeLegacyRecurringProductPrice:\n                // res.CheckoutPublicConfirmed.ProductPrice.LegacyRecurringProductPrice is populated\n            case components.CheckoutPublicConfirmedProductPriceTypeProductPrice:\n                // res.CheckoutPublicConfirmed.ProductPrice.ProductPrice is populated\n        }\n\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.ClientConfirm(ctx, \"<value>\", components.CheckoutConfirmStripe{\n        CustomerName: polargo.Pointer(\"John Doe\"),\n        CustomerBillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublicConfirmed != nil {\n        switch res.CheckoutPublicConfirmed.ProductPrice.Type {\n            case components.CheckoutPublicConfirmedProductPriceTypeLegacyRecurringProductPrice:\n                // res.CheckoutPublicConfirmed.ProductPrice.LegacyRecurringProductPrice is populated\n            case components.CheckoutPublicConfirmedProductPriceTypeProductPrice:\n                // res.CheckoutPublicConfirmed.ProductPrice.ProductPrice is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.client_confirm(client_secret=\"<value>\", checkout_confirm_stripe={\n        \"customer_name\": \"John Doe\",\n        \"customer_billing_address\": {\n            \"country\": polar_sdk.CountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n        \"allow_trial\": False,\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.client_confirm(client_secret=\"<value>\", checkout_confirm_stripe={\n        \"customer_name\": \"John Doe\",\n        \"customer_billing_address\": {\n            \"country\": polar_sdk.AddressInputCountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n        \"allow_trial\": False,\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -7339,7 +7401,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$checkoutConfirmStripe = new Components\\CheckoutConfirmStripe(\n    customerName: 'John Doe',\n    customerBillingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n);\n\n$response = $sdk->checkouts->clientConfirm(\n    clientSecret: '<value>',\n    checkoutConfirmStripe: $checkoutConfirmStripe\n\n);\n\nif ($response->checkoutPublicConfirmed !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$checkoutConfirmStripe = new Components\\CheckoutConfirmStripe(\n    customerName: 'John Doe',\n    customerBillingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n);\n\n$response = $sdk->checkouts->clientConfirm(\n    clientSecret: '<value>',\n    checkoutConfirmStripe: $checkoutConfirmStripe\n\n);\n\nif ($response->checkoutPublicConfirmed !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -8266,6 +8328,450 @@
             "lang": "php",
             "label": "PHP (SDK)",
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->metrics->limits(\n\n);\n\nif ($response->metricsLimits !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/metrics/dashboards": {
+      "get": {
+        "tags": [
+          "metrics",
+          "public",
+          "mcp"
+        ],
+        "summary": "List Metric Dashboards",
+        "description": "List user-defined metric dashboards.\n\n**Scopes**: `metrics:read`",
+        "operationId": "metrics:list_dashboards",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "examples": [
+                    "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                  ],
+                  "description": "The organization ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/organizations",
+                    "resourceName": "Organization",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "examples": [
+                      "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                    ],
+                    "description": "The organization ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/organizations",
+                      "resourceName": "Organization",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
+            },
+            "description": "Filter by organization ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetricDashboardSchema"
+                  },
+                  "title": "Response Metrics:List Dashboards"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "read",
+            "metrics"
+          ]
+        },
+        "x-speakeasy-group": "metrics",
+        "x-speakeasy-name-override": "list_dashboards",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.ListDashboards(ctx, polargo.Pointer(operations.CreateMetricsListDashboardsQueryParamOrganizationIDFilterStr(\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    )))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseMetricsListDashboards != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.list_dashboards(organization_id=\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.listDashboards({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->metrics->listDashboards(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737'\n);\n\nif ($response->responseMetricsListDashboards !== null) {\n    // handle response\n}"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "metrics",
+          "public",
+          "mcp"
+        ],
+        "summary": "Create Metric Dashboard",
+        "description": "Create a user-defined metric dashboard.\n\n**Scopes**: `metrics:write`",
+        "operationId": "metrics:create_dashboard",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetricDashboardCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricDashboardSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "metrics"
+          ]
+        },
+        "x-speakeasy-group": "metrics",
+        "x-speakeasy-name-override": "create_dashboard",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.CreateDashboard(ctx, components.MetricDashboardCreate{\n        Name: \"<value>\",\n        OrganizationID: polargo.Pointer(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricDashboardSchema != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.create_dashboard(request={\n        \"name\": \"<value>\",\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.createDashboard({\n    name: \"<value>\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\MetricDashboardCreate(\n    name: '<value>',\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->metrics->createDashboard(\n    request: $request\n);\n\nif ($response->metricDashboardSchema !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/metrics/dashboards/{id}": {
+      "get": {
+        "tags": [
+          "metrics",
+          "public",
+          "mcp"
+        ],
+        "summary": "Get Metric Dashboard",
+        "description": "Get a user-defined metric dashboard by ID.\n\n**Scopes**: `metrics:read`",
+        "operationId": "metrics:get_dashboard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The metric dashboard ID.",
+              "title": "Id"
+            },
+            "description": "The metric dashboard ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricDashboardSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "read",
+            "metrics"
+          ]
+        },
+        "x-speakeasy-group": "metrics",
+        "x-speakeasy-name-override": "get_dashboard",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.GetDashboard(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricDashboardSchema != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.get_dashboard(id=\"<value>\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.getDashboard({\n    id: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->metrics->getDashboard(\n    id: '<value>'\n);\n\nif ($response->metricDashboardSchema !== null) {\n    // handle response\n}"
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "metrics",
+          "public",
+          "mcp"
+        ],
+        "summary": "Update Metric Dashboard",
+        "description": "Update a user-defined metric dashboard.\n\n**Scopes**: `metrics:write`",
+        "operationId": "metrics:update_dashboard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The metric dashboard ID.",
+              "title": "Id"
+            },
+            "description": "The metric dashboard ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetricDashboardUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricDashboardSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "metrics"
+          ]
+        },
+        "x-speakeasy-group": "metrics",
+        "x-speakeasy-name-override": "update_dashboard",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.UpdateDashboard(ctx, \"<value>\", components.MetricDashboardUpdate{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricDashboardSchema != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.update_dashboard(id=\"<value>\", metric_dashboard_update={})\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.updateDashboard({\n    id: \"<value>\",\n    metricDashboardUpdate: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$metricDashboardUpdate = new Components\\MetricDashboardUpdate();\n\n$response = $sdk->metrics->updateDashboard(\n    id: '<value>',\n    metricDashboardUpdate: $metricDashboardUpdate\n\n);\n\nif ($response->metricDashboardSchema !== null) {\n    // handle response\n}"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "metrics",
+          "public",
+          "mcp"
+        ],
+        "summary": "Delete Metric Dashboard",
+        "description": "Delete a user-defined metric dashboard.\n\n**Scopes**: `metrics:write`",
+        "operationId": "metrics:delete_dashboard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The metric dashboard ID.",
+              "title": "Id"
+            },
+            "description": "The metric dashboard ID."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "metrics"
+          ]
+        },
+        "x-speakeasy-group": "metrics",
+        "x-speakeasy-name-override": "delete_dashboard",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.DeleteDashboard(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.metrics.delete_dashboard(id=\"<value>\")\n\n    # Use the SDK ..."
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.metrics.deleteDashboard({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->metrics->deleteDashboard(\n    id: '<value>'\n);\n\nif ($response->statusCode === 200) {\n    // handle response\n}"
           }
         ]
       }
@@ -10978,22 +11484,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Create(ctx, components.CustomerCreate{\n        ExternalID: polargo.Pointer(\"usr_1337\"),\n        Email: \"customer@example.com\",\n        Name: polargo.Pointer(\"John Doe\"),\n        BillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n        Type: components.CustomerTypeIndividual.ToPointer(),\n        OrganizationID: polargo.Pointer(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n        Owner: &components.OwnerCreate{\n            Email: polargo.Pointer(\"member@example.com\"),\n            Name: polargo.Pointer(\"Jane Doe\"),\n            ExternalID: polargo.Pointer(\"usr_1337\"),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Create(ctx, components.CreateCustomerCreateCustomerIndividualCreate(\n        components.CustomerIndividualCreate{\n            ExternalID: polargo.Pointer(\"usr_1337\"),\n            Name: polargo.Pointer(\"John Doe\"),\n            BillingAddress: &components.AddressInput{\n                Country: components.AddressInputCountryAlpha2InputUs,\n            },\n            Locale: polargo.Pointer(\"en\"),\n            OrganizationID: polargo.Pointer(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Owner: &components.MemberOwnerCreate{\n                Email: \"member@example.com\",\n                Name: polargo.Pointer(\"Jane Doe\"),\n                ExternalID: polargo.Pointer(\"usr_1337\"),\n            },\n            Email: \"customer@example.com\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        switch res.Customer.Type {\n            case components.CustomerUnionTypeIndividual:\n                // res.Customer.CustomerIndividual is populated\n            case components.CustomerUnionTypeTeam:\n                // res.Customer.CustomerTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customers.create(request={\n        \"external_id\": \"usr_1337\",\n        \"email\": \"customer@example.com\",\n        \"name\": \"John Doe\",\n        \"billing_address\": {\n            \"country\": polar_sdk.CountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n        \"type\": polar_sdk.CustomerType.INDIVIDUAL,\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        \"owner\": {\n            \"email\": \"member@example.com\",\n            \"name\": \"Jane Doe\",\n            \"external_id\": \"usr_1337\",\n        },\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customers.create(request={\n        \"external_id\": \"usr_1337\",\n        \"name\": \"John Doe\",\n        \"billing_address\": {\n            \"country\": polar_sdk.AddressInputCountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        \"owner\": None,\n        \"type\": \"team\",\n        \"email\": \"customer@example.com\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    externalId: \"usr_1337\",\n    email: \"customer@example.com\",\n    name: \"John Doe\",\n    billingAddress: {\n      country: \"US\",\n    },\n    locale: \"en\",\n    type: \"individual\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    owner: {\n      email: \"member@example.com\",\n      name: \"Jane Doe\",\n      externalId: \"usr_1337\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    externalId: \"usr_1337\",\n    name: \"John Doe\",\n    billingAddress: {\n      country: \"US\",\n    },\n    locale: \"en\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    owner: {\n      email: \"member@example.com\",\n      name: \"Jane Doe\",\n      externalId: \"usr_1337\",\n    },\n    type: \"individual\",\n    email: \"customer@example.com\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomerCreate(\n    externalId: 'usr_1337',\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n    taxId: [\n        '911144442',\n        'us_ein',\n    ],\n    locale: 'en',\n    type: Components\\CustomerType::Individual,\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    owner: new Components\\OwnerCreate(\n        email: 'member@example.com',\n        name: 'Jane Doe',\n        externalId: 'usr_1337',\n    ),\n);\n\n$response = $sdk->customers->create(\n    request: $request\n);\n\nif ($response->customerWithMembers !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomerIndividualCreate(\n    externalId: 'usr_1337',\n    name: 'John Doe',\n    billingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    owner: new Components\\MemberOwnerCreate(\n        email: 'member@example.com',\n        name: 'Jane Doe',\n        externalId: 'usr_1337',\n    ),\n    email: 'customer@example.com',\n);\n\n$response = $sdk->customers->create(\n    request: $request\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -11189,7 +11695,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n\t\"github.com/polarsource/polar-go/models/components\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        switch res.Customer.Type {\n            case components.CustomerUnionTypeIndividual:\n                // res.Customer.CustomerIndividual is populated\n            case components.CustomerUnionTypeTeam:\n                // res.Customer.CustomerTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
@@ -11204,7 +11710,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->customers->get(\n    id: '<value>'\n);\n\nif ($response->customerWithMembers !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->customers->get(\n    id: '<value>'\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -11290,22 +11796,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Update(ctx, \"<value>\", components.CustomerUpdate{\n        Email: polargo.Pointer(\"customer@example.com\"),\n        Name: polargo.Pointer(\"John Doe\"),\n        BillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n        ExternalID: polargo.Pointer(\"usr_1337\"),\n        Type: components.CustomerTypeIndividual.ToPointer(),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Update(ctx, \"<value>\", components.CustomerUpdate{\n        Email: polargo.Pointer(\"customer@example.com\"),\n        Name: polargo.Pointer(\"John Doe\"),\n        BillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n        ExternalID: polargo.Pointer(\"usr_1337\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        switch res.Customer.Type {\n            case components.CustomerUnionTypeIndividual:\n                // res.Customer.CustomerIndividual is populated\n            case components.CustomerUnionTypeTeam:\n                // res.Customer.CustomerTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customers.update(id=\"<value>\", customer_update={\n        \"email\": \"customer@example.com\",\n        \"name\": \"John Doe\",\n        \"billing_address\": {\n            \"country\": polar_sdk.CountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n        \"external_id\": \"usr_1337\",\n        \"type\": polar_sdk.CustomerType.INDIVIDUAL,\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customers.update(id=\"<value>\", customer_update={\n        \"email\": \"customer@example.com\",\n        \"name\": \"John Doe\",\n        \"billing_address\": {\n            \"country\": polar_sdk.AddressInputCountryAlpha2Input.US,\n        },\n        \"locale\": \"en\",\n        \"external_id\": \"usr_1337\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      locale: \"en\",\n      externalId: \"usr_1337\",\n      type: \"individual\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      locale: \"en\",\n      externalId: \"usr_1337\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdate = new Components\\CustomerUpdate(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n    taxId: [\n        '911144442',\n        'us_ein',\n    ],\n    locale: 'en',\n    externalId: 'usr_1337',\n    type: Components\\CustomerType::Individual,\n);\n\n$response = $sdk->customers->update(\n    id: '<value>',\n    customerUpdate: $customerUpdate\n\n);\n\nif ($response->customerWithMembers !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdate = new Components\\CustomerUpdate(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n    externalId: 'usr_1337',\n);\n\n$response = $sdk->customers->update(\n    id: '<value>',\n    customerUpdate: $customerUpdate\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -11478,7 +11984,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.GetExternal(ctx, \"<id>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n\t\"github.com/polarsource/polar-go/models/components\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.GetExternal(ctx, \"<id>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        switch res.Customer.Type {\n            case components.CustomerUnionTypeIndividual:\n                // res.Customer.CustomerIndividual is populated\n            case components.CustomerUnionTypeTeam:\n                // res.Customer.CustomerTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
@@ -11493,7 +11999,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->customers->getExternal(\n    externalId: '<id>'\n);\n\nif ($response->customerWithMembers !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->customers->getExternal(\n    externalId: '<id>'\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -11578,7 +12084,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.UpdateExternal(ctx, \"<id>\", components.CustomerUpdateExternalID{\n        Email: polargo.Pointer(\"customer@example.com\"),\n        Name: polargo.Pointer(\"John Doe\"),\n        BillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.UpdateExternal(ctx, \"<id>\", components.CustomerUpdateExternalID{\n        Email: polargo.Pointer(\"customer@example.com\"),\n        Name: polargo.Pointer(\"John Doe\"),\n        BillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n        Locale: polargo.Pointer(\"en\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        switch res.Customer.Type {\n            case components.CustomerUnionTypeIndividual:\n                // res.Customer.CustomerIndividual is populated\n            case components.CustomerUnionTypeTeam:\n                // res.Customer.CustomerTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
@@ -11593,7 +12099,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdateExternalID = new Components\\CustomerUpdateExternalID(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n    taxId: [\n        '911144442',\n        'us_ein',\n    ],\n    locale: 'en',\n);\n\n$response = $sdk->customers->updateExternal(\n    externalId: '<id>',\n    customerUpdateExternalID: $customerUpdateExternalID\n\n);\n\nif ($response->customerWithMembers !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdateExternalID = new Components\\CustomerUpdateExternalID(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n    locale: 'en',\n);\n\n$response = $sdk->customers->updateExternal(\n    externalId: '<id>',\n    customerUpdateExternalID: $customerUpdateExternalID\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -11766,7 +12272,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.GetState(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerState != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n\t\"github.com/polarsource/polar-go/models/components\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.GetState(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerState != nil {\n        switch res.CustomerState.Type {\n            case components.CustomerStateTypeIndividual:\n                // res.CustomerState.CustomerStateIndividual is populated\n            case components.CustomerStateTypeTeam:\n                // res.CustomerState.CustomerStateTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
@@ -11858,7 +12364,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.GetStateExternal(ctx, \"<id>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerState != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n\t\"github.com/polarsource/polar-go/models/components\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.GetStateExternal(ctx, \"<id>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerState != nil {\n        switch res.CustomerState.Type {\n            case components.CustomerStateTypeIndividual:\n                // res.CustomerState.CustomerStateIndividual is populated\n            case components.CustomerStateTypeTeam:\n                // res.CustomerState.CustomerStateTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
@@ -13118,12 +13624,12 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.Update(ctx, components.CustomerPortalCustomerUpdate{\n        BillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n    }, operations.CustomerPortalCustomersUpdateSecurity{\n        CustomerSession: polargo.Pointer(os.Getenv(\"POLAR_CUSTOMER_SESSION\")),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerPortalCustomer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.Update(ctx, components.CustomerPortalCustomerUpdate{\n        BillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n    }, operations.CustomerPortalCustomersUpdateSecurity{\n        CustomerSession: polargo.Pointer(os.Getenv(\"POLAR_CUSTOMER_SESSION\")),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerPortalCustomer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.customers.update(security=polar_sdk.CustomerPortalCustomersUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), request={\n        \"billing_address\": {\n            \"country\": polar_sdk.CountryAlpha2Input.US,\n        },\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.customers.update(security=polar_sdk.CustomerPortalCustomersUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), request={\n        \"billing_address\": {\n            \"country\": polar_sdk.AddressInputCountryAlpha2Input.US,\n        },\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -13133,7 +13639,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\CustomerPortalCustomerUpdate(\n    billingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n);\n$requestSecurity = new Operations\\CustomerPortalCustomersUpdateSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->update(\n    request: $request,\n    security: $requestSecurity\n);\n\nif ($response->customerPortalCustomer !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\CustomerPortalCustomerUpdate(\n    billingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n);\n$requestSecurity = new Operations\\CustomerPortalCustomersUpdateSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->update(\n    request: $request,\n    security: $requestSecurity\n);\n\nif ($response->customerPortalCustomer !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -16001,12 +16507,12 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Orders.Update(ctx, operations.CustomerPortalOrdersUpdateSecurity{\n        CustomerSession: polargo.Pointer(os.Getenv(\"POLAR_CUSTOMER_SESSION\")),\n    }, \"<value>\", components.CustomerOrderUpdate{\n        BillingAddress: &components.AddressInput{\n            Country: components.CountryAlpha2InputUs,\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerOrder != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Orders.Update(ctx, operations.CustomerPortalOrdersUpdateSecurity{\n        CustomerSession: polargo.Pointer(os.Getenv(\"POLAR_CUSTOMER_SESSION\")),\n    }, \"<value>\", components.CustomerOrderUpdate{\n        BillingAddress: &components.AddressInput{\n            Country: components.AddressInputCountryAlpha2InputUs,\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerOrder != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.orders.update(security=polar_sdk.CustomerPortalOrdersUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\", customer_order_update={\n        \"billing_address\": {\n            \"country\": polar_sdk.CountryAlpha2Input.US,\n        },\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.orders.update(security=polar_sdk.CustomerPortalOrdersUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\", customer_order_update={\n        \"billing_address\": {\n            \"country\": polar_sdk.AddressInputCountryAlpha2Input.US,\n        },\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -16016,7 +16522,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$customerOrderUpdate = new Components\\CustomerOrderUpdate(\n    billingAddress: new Components\\AddressInput(\n        country: Components\\CountryAlpha2Input::Us,\n    ),\n);\n$requestSecurity = new Operations\\CustomerPortalOrdersUpdateSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->orders->update(\n    security: $requestSecurity,\n    id: '<value>',\n    customerOrderUpdate: $customerOrderUpdate\n\n);\n\nif ($response->customerOrder !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$customerOrderUpdate = new Components\\CustomerOrderUpdate(\n    billingAddress: new Components\\AddressInput(\n        country: Components\\AddressInputCountryAlpha2Input::Us,\n    ),\n);\n$requestSecurity = new Operations\\CustomerPortalOrdersUpdateSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->orders->update(\n    security: $requestSecurity,\n    id: '<value>',\n    customerOrderUpdate: $customerOrderUpdate\n\n);\n\nif ($response->customerOrder !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -17910,7 +18416,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerSessions.Create(ctx, operations.CreateCustomerSessionsCreateCustomerSessionCreateCustomerSessionCustomerExternalIDCreate(\n        components.CustomerSessionCustomerExternalIDCreate{\n            ExternalCustomerID: \"<id>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSession != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerSessions.Create(ctx, operations.CreateCustomerSessionsCreateCustomerSessionCreateCustomerSessionCustomerExternalIDCreate(\n        components.CustomerSessionCustomerExternalIDCreate{\n            ExternalCustomerID: \"<id>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSession != nil {\n        switch res.CustomerSession.Customer.Type {\n            case components.CustomerUnionTypeIndividual:\n                // res.CustomerSession.Customer.CustomerIndividual is populated\n            case components.CustomerUnionTypeTeam:\n                // res.CustomerSession.Customer.CustomerTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
@@ -20623,7 +21129,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerMeters.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerMeter != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n\t\"github.com/polarsource/polar-go/models/components\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerMeters.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerMeter != nil {\n        switch res.CustomerMeter.Customer.Type {\n            case components.CustomerUnionTypeIndividual:\n                // res.CustomerMeter.Customer.CustomerIndividual is populated\n            case components.CustomerUnionTypeTeam:\n                // res.CustomerMeter.Customer.CustomerTeam is populated\n        }\n\n    }\n}"
           },
           {
             "lang": "python",
@@ -20879,7 +21385,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListResource__"
+                  "$ref": "#/components/schemas/ListResource_Payment_"
                 }
               }
             }
@@ -20931,7 +21437,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Payments.List(ctx, operations.PaymentsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreatePaymentsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResource != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Payments.List(ctx, operations.PaymentsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreatePaymentsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourcePayment != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -23749,6 +24255,7 @@
               "refunds:write": "Create or modify refunds",
               "payments:read": "Read payments made on your organizations",
               "metrics:read": "Read metrics",
+              "metrics:write": "Create or modify metric definitions",
               "webhooks:read": "Read webhooks",
               "webhooks:write": "Create or modify webhooks",
               "license_keys:read": "Read license keys",
@@ -23866,6 +24373,7 @@
               "refunds:write": "Create or modify refunds",
               "payments:read": "Read payments made on your organizations",
               "metrics:read": "Read metrics",
+              "metrics:write": "Create or modify metric definitions",
               "webhooks:read": "Read webhooks",
               "webhooks:write": "Create or modify webhooks",
               "license_keys:read": "Read license keys",
@@ -23974,6 +24482,7 @@
           "refunds:write",
           "payments:read",
           "metrics:read",
+          "metrics:write",
           "webhooks:read",
           "webhooks:write",
           "license_keys:read",
@@ -38246,197 +38755,21 @@
         "description": "Schema to update a custom field of type text."
       },
       "Customer": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the customer.",
-            "examples": [
-              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
-            ]
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CustomerIndividual"
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "metadata": {
-            "$ref": "#/components/schemas/MetadataOutputType"
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
-            "examples": [
-              "usr_1337"
-            ]
-          },
-          "email": {
-            "type": "string",
-            "title": "Email",
-            "description": "The email address of the customer. This must be unique within the organization.",
-            "examples": [
-              "customer@example.com"
-            ]
-          },
-          "email_verified": {
-            "type": "boolean",
-            "title": "Email Verified",
-            "description": "Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.",
-            "examples": [
-              true
-            ]
-          },
-          "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomerType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
-            "examples": [
-              "individual"
-            ]
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "The name of the customer.",
-            "examples": [
-              "John Doe"
-            ]
-          },
-          "billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Address"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "tax_id": {
-            "anyOf": [
-              {
-                "prefixItems": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TaxIDFormat"
-                  }
-                ],
-                "type": "array",
-                "maxItems": 2,
-                "minItems": 2,
-                "examples": [
-                  [
-                    "911144442",
-                    "us_ein"
-                  ],
-                  [
-                    "FR61954506077",
-                    "eu_vat"
-                  ]
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tax Id"
-          },
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Locale"
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the customer.",
-            "examples": [
-              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Deleted At",
-            "description": "Timestamp for when the customer was soft deleted."
-          },
-          "avatar_url": {
-            "type": "string",
-            "title": "Avatar Url",
-            "examples": [
-              "https://www.gravatar.com/avatar/xxx?d=404"
-            ]
+          {
+            "$ref": "#/components/schemas/CustomerTeam"
           }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "created_at",
-          "modified_at",
-          "metadata",
-          "email",
-          "email_verified",
-          "name",
-          "billing_address",
-          "tax_id",
-          "organization_id",
-          "deleted_at",
-          "avatar_url"
         ],
-        "title": "Customer",
-        "description": "A customer in an organization."
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "individual": "#/components/schemas/CustomerIndividual",
+            "team": "#/components/schemas/CustomerTeam"
+          }
+        }
       },
       "CustomerBenefitGrant": {
         "anyOf": [
@@ -39683,168 +40016,14 @@
         "title": "CustomerCancellationReason"
       },
       "CustomerCreate": {
-        "properties": {
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CustomerIndividualCreate"
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
-            "examples": [
-              "usr_1337"
-            ]
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email",
-            "description": "The email address of the customer. This must be unique within the organization.",
-            "examples": [
-              "customer@example.com"
-            ]
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256,
-                "description": "The name of the customer.",
-                "examples": [
-                  "John Doe"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "tax_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tax Id"
-          },
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
-                "examples": [
-                  "en",
-                  "en-US",
-                  "fr",
-                  "fr-CA"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Locale"
-          },
-          "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomerType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The type of customer. Defaults to 'individual'. Set to 'team' for customers that can have multiple members.",
-            "examples": [
-              "individual"
-            ]
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4",
-                "description": "The organization ID.",
-                "examples": [
-                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
-                ],
-                "x-polar-selector-widget": {
-                  "displayProperty": "name",
-                  "resourceName": "Organization",
-                  "resourceRoot": "/v1/organizations"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the customer. **Required unless you use an organization token.**"
-          },
-          "owner": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OwnerCreate"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name."
+          {
+            "$ref": "#/components/schemas/CustomerTeamCreate"
           }
-        },
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "CustomerCreate"
+        ]
       },
       "CustomerCreatedEvent": {
         "properties": {
@@ -39998,7 +40177,14 @@
             "title": "Customer Id"
           },
           "customer_email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Customer Email"
           },
           "customer_name": {
@@ -40360,7 +40546,14 @@
             "title": "Customer Id"
           },
           "customer_email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Customer Email"
           },
           "customer_name": {
@@ -40394,6 +40587,351 @@
           "customer_external_id"
         ],
         "title": "CustomerDeletedMetadata"
+      },
+      "CustomerIndividual": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the customer.",
+            "examples": [
+              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/MetadataOutputType"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "The email address of the customer. This must be unique within the organization.",
+            "examples": [
+              "customer@example.com"
+            ]
+          },
+          "email_verified": {
+            "type": "boolean",
+            "title": "Email Verified",
+            "description": "Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.",
+            "examples": [
+              true
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "individual",
+            "title": "Type",
+            "description": "The type of customer.",
+            "examples": [
+              "individual"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the customer.",
+            "examples": [
+              "John Doe"
+            ]
+          },
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "prefixItems": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TaxIDFormat"
+                  }
+                ],
+                "type": "array",
+                "maxItems": 2,
+                "minItems": 2,
+                "examples": [
+                  [
+                    "911144442",
+                    "us_ein"
+                  ],
+                  [
+                    "FR61954506077",
+                    "eu_vat"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the customer.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At",
+            "description": "Timestamp for when the customer was soft deleted."
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url",
+            "examples": [
+              "https://www.gravatar.com/avatar/xxx?d=404"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "metadata",
+          "email",
+          "email_verified",
+          "type",
+          "name",
+          "billing_address",
+          "tax_id",
+          "organization_id",
+          "deleted_at",
+          "avatar_url"
+        ],
+        "title": "CustomerIndividual",
+        "description": "A customer in an organization."
+      },
+      "CustomerIndividualCreate": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "description": "The name of the customer.",
+                "examples": [
+                  "John Doe"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AddressInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ],
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the customer. **Required unless you use an organization token.**"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberOwnerCreate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name."
+          },
+          "type": {
+            "type": "string",
+            "const": "individual",
+            "title": "Type",
+            "default": "individual"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "The email address of the customer. This must be unique within the organization.",
+            "examples": [
+              "customer@example.com"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "CustomerIndividualCreate"
       },
       "CustomerMeter": {
         "properties": {
@@ -42580,6 +43118,125 @@
         "title": "CustomerSortProperty"
       },
       "CustomerState": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CustomerStateIndividual"
+          },
+          {
+            "$ref": "#/components/schemas/CustomerStateTeam"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "individual": "#/components/schemas/CustomerStateIndividual",
+            "team": "#/components/schemas/CustomerStateTeam"
+          }
+        }
+      },
+      "CustomerStateBenefitGrant": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the grant.",
+            "examples": [
+              "d322132c-a9d0-4e0d-b8d3-d81ad021a3a9"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "granted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Granted At",
+            "description": "The timestamp when the benefit was granted.",
+            "examples": [
+              "2025-01-03T13:37:00Z"
+            ]
+          },
+          "benefit_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The ID of the benefit concerned by this grant.",
+            "examples": [
+              "397a17aa-15cf-4cb4-9333-18040203cf98"
+            ]
+          },
+          "benefit_type": {
+            "$ref": "#/components/schemas/BenefitType",
+            "description": "The type of the benefit concerned by this grant.",
+            "examples": [
+              "custom"
+            ]
+          },
+          "benefit_metadata": {
+            "$ref": "#/components/schemas/MetadataOutputType",
+            "description": "The metadata of the benefit concerned by this grant.",
+            "examples": [
+              {
+                "key": "value"
+              }
+            ]
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
+              },
+              {
+                "$ref": "#/components/schemas/BenefitGrantFeatureFlagProperties"
+              }
+            ],
+            "title": "Properties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "granted_at",
+          "benefit_id",
+          "benefit_type",
+          "benefit_metadata",
+          "properties"
+        ],
+        "title": "CustomerStateBenefitGrant",
+        "description": "An active benefit grant for a customer."
+      },
+      "CustomerStateIndividual": {
         "properties": {
           "id": {
             "type": "string",
@@ -42644,15 +43301,10 @@
             ]
           },
           "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomerType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "type": "string",
+            "const": "individual",
+            "title": "Type",
+            "description": "The type of customer.",
             "examples": [
               "individual"
             ]
@@ -42786,6 +43438,7 @@
           "metadata",
           "email",
           "email_verified",
+          "type",
           "name",
           "billing_address",
           "tax_id",
@@ -42796,110 +43449,8 @@
           "active_meters",
           "avatar_url"
         ],
-        "title": "CustomerState",
+        "title": "CustomerStateIndividual",
         "description": "A customer along with additional state information:\n\n* Active subscriptions\n* Granted benefits\n* Active meters"
-      },
-      "CustomerStateBenefitGrant": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the grant.",
-            "examples": [
-              "d322132c-a9d0-4e0d-b8d3-d81ad021a3a9"
-            ]
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "granted_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Granted At",
-            "description": "The timestamp when the benefit was granted.",
-            "examples": [
-              "2025-01-03T13:37:00Z"
-            ]
-          },
-          "benefit_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Benefit Id",
-            "description": "The ID of the benefit concerned by this grant.",
-            "examples": [
-              "397a17aa-15cf-4cb4-9333-18040203cf98"
-            ]
-          },
-          "benefit_type": {
-            "$ref": "#/components/schemas/BenefitType",
-            "description": "The type of the benefit concerned by this grant.",
-            "examples": [
-              "custom"
-            ]
-          },
-          "benefit_metadata": {
-            "$ref": "#/components/schemas/MetadataOutputType",
-            "description": "The metadata of the benefit concerned by this grant.",
-            "examples": [
-              {
-                "key": "value"
-              }
-            ]
-          },
-          "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitGrantDiscordProperties"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGrantGitHubRepositoryProperties"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGrantDownloadablesProperties"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGrantCustomProperties"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGrantFeatureFlagProperties"
-              }
-            ],
-            "title": "Properties"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "created_at",
-          "modified_at",
-          "granted_at",
-          "benefit_id",
-          "benefit_type",
-          "benefit_metadata",
-          "properties"
-        ],
-        "title": "CustomerStateBenefitGrant",
-        "description": "An active benefit grant for a customer."
       },
       "CustomerStateMeter": {
         "properties": {
@@ -43303,6 +43854,228 @@
         ],
         "title": "CustomerStateSubscriptionMeter",
         "description": "Current consumption and spending for a subscription meter."
+      },
+      "CustomerStateTeam": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the customer.",
+            "examples": [
+              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/MetadataOutputType"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "The email address of the customer. This must be unique within the organization.",
+            "examples": [
+              "customer@example.com"
+            ]
+          },
+          "email_verified": {
+            "type": "boolean",
+            "title": "Email Verified",
+            "description": "Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.",
+            "examples": [
+              true
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "team",
+            "title": "Type",
+            "description": "The type of customer. Team customers can have multiple members.",
+            "examples": [
+              "team"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the customer.",
+            "examples": [
+              "John Doe"
+            ]
+          },
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "prefixItems": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TaxIDFormat"
+                  }
+                ],
+                "type": "array",
+                "maxItems": 2,
+                "minItems": 2,
+                "examples": [
+                  [
+                    "911144442",
+                    "us_ein"
+                  ],
+                  [
+                    "FR61954506077",
+                    "eu_vat"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the customer.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At",
+            "description": "Timestamp for when the customer was soft deleted."
+          },
+          "active_subscriptions": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerStateSubscription"
+            },
+            "type": "array",
+            "title": "Active Subscriptions",
+            "description": "The customer's active subscriptions."
+          },
+          "granted_benefits": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerStateBenefitGrant"
+            },
+            "type": "array",
+            "title": "Granted Benefits",
+            "description": "The customer's active benefit grants."
+          },
+          "active_meters": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerStateMeter"
+            },
+            "type": "array",
+            "title": "Active Meters",
+            "description": "The customer's active meters."
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url",
+            "examples": [
+              "https://www.gravatar.com/avatar/xxx?d=404"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "metadata",
+          "email_verified",
+          "type",
+          "name",
+          "billing_address",
+          "tax_id",
+          "organization_id",
+          "deleted_at",
+          "active_subscriptions",
+          "granted_benefits",
+          "active_meters",
+          "avatar_url"
+        ],
+        "title": "CustomerStateTeam",
+        "description": "A team customer along with additional state information:\n\n* Active subscriptions\n* Granted benefits\n* Active meters"
       },
       "CustomerSubscription": {
         "properties": {
@@ -43998,6 +44771,363 @@
         ],
         "title": "CustomerSubscriptionUpdateSeats"
       },
+      "CustomerTeam": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the customer.",
+            "examples": [
+              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/MetadataOutputType"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "The email address of the customer. This must be unique within the organization.",
+            "examples": [
+              "customer@example.com"
+            ]
+          },
+          "email_verified": {
+            "type": "boolean",
+            "title": "Email Verified",
+            "description": "Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.",
+            "examples": [
+              true
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "team",
+            "title": "Type",
+            "description": "The type of customer. Team customers can have multiple members.",
+            "examples": [
+              "team"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the customer.",
+            "examples": [
+              "John Doe"
+            ]
+          },
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "prefixItems": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TaxIDFormat"
+                  }
+                ],
+                "type": "array",
+                "maxItems": 2,
+                "minItems": 2,
+                "examples": [
+                  [
+                    "911144442",
+                    "us_ein"
+                  ],
+                  [
+                    "FR61954506077",
+                    "eu_vat"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the customer.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At",
+            "description": "Timestamp for when the customer was soft deleted."
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url",
+            "examples": [
+              "https://www.gravatar.com/avatar/xxx?d=404"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "metadata",
+          "email_verified",
+          "type",
+          "name",
+          "billing_address",
+          "tax_id",
+          "organization_id",
+          "deleted_at",
+          "avatar_url"
+        ],
+        "title": "CustomerTeam",
+        "description": "A team customer in an organization."
+      },
+      "CustomerTeamCreate": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "description": "The name of the customer.",
+                "examples": [
+                  "John Doe"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AddressInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ],
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the customer. **Required unless you use an organization token.**"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberOwnerCreate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name."
+          },
+          "type": {
+            "type": "string",
+            "const": "team",
+            "title": "Type"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "The email address of the team customer. Optional for team customers — if omitted, an owner with an email must be provided.",
+            "examples": [
+              "customer@example.com"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "CustomerTeamCreate"
+      },
       "CustomerType": {
         "type": "string",
         "enum": [
@@ -44472,7 +45602,14 @@
             "title": "Customer Id"
           },
           "customer_email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Customer Email"
           },
           "customer_name": {
@@ -48730,6 +49867,17 @@
             "title": "Price Currency",
             "description": "The currency in which the customer will be charged."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -48794,6 +49942,7 @@
           "source",
           "amount_type",
           "price_currency",
+          "tax_behavior",
           "is_archived",
           "product_id",
           "type",
@@ -48847,6 +49996,17 @@
             "title": "Price Currency",
             "description": "The currency in which the customer will be charged."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -48887,6 +50047,7 @@
           "source",
           "amount_type",
           "price_currency",
+          "tax_behavior",
           "is_archived",
           "product_id",
           "type",
@@ -48938,6 +50099,17 @@
             "title": "Price Currency",
             "description": "The currency in which the customer will be charged."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -48973,6 +50145,7 @@
           "source",
           "amount_type",
           "price_currency",
+          "tax_behavior",
           "is_archived",
           "product_id",
           "type",
@@ -49245,7 +50418,14 @@
             ]
           },
           "email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email",
             "description": "The email address of the customer. This must be unique within the organization.",
             "examples": [
@@ -49261,15 +50441,8 @@
             ]
           },
           "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomerType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "$ref": "#/components/schemas/CustomerType",
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members.",
             "examples": [
               "individual"
             ]
@@ -49377,8 +50550,8 @@
           "created_at",
           "modified_at",
           "metadata",
-          "email",
           "email_verified",
+          "type",
           "name",
           "billing_address",
           "tax_id",
@@ -49626,7 +50799,14 @@
             "title": "Id"
           },
           "email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email"
           },
           "public_name": {
@@ -49648,7 +50828,6 @@
         "type": "object",
         "required": [
           "id",
-          "email",
           "public_name"
         ],
         "title": "LicenseKeyUser"
@@ -50483,6 +51662,26 @@
         ],
         "title": "ListResource[Organization]"
       },
+      "ListResource_Payment_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[Payment]"
+      },
       "ListResource_Product_": {
         "properties": {
           "items": {
@@ -50582,26 +51781,6 @@
           "pagination"
         ],
         "title": "ListResource[WebhookEndpoint]"
-      },
-      "ListResource__": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/Payment"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/Pagination"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "pagination"
-        ],
-        "title": "ListResource[]"
       },
       "Member": {
         "properties": {
@@ -50760,6 +51939,56 @@
         ],
         "title": "MemberCreate",
         "description": "Schema for creating a new member."
+      },
+      "MemberOwnerCreate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "The email address of the member.",
+            "examples": [
+              "member@example.com"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "description": "The name of the member.",
+                "examples": [
+                  "Jane Doe"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id",
+            "description": "The ID of the member in your system. This must be unique within the customer. ",
+            "examples": [
+              "usr_1337"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "MemberOwnerCreate",
+        "description": "Schema for creating an owner member during customer creation."
       },
       "MemberRole": {
         "type": "string",
@@ -51543,6 +52772,148 @@
         ],
         "title": "Metric",
         "description": "Information about a metric."
+      },
+      "MetricDashboardCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Display name for the dashboard."
+          },
+          "metrics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Metrics",
+            "description": "List of metric slugs to display in this dashboard."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ],
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning this dashboard. **Required unless you use an organization token.**"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "MetricDashboardCreate",
+        "description": "Schema for creating a metrics dashboard."
+      },
+      "MetricDashboardSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Display name for the dashboard."
+          },
+          "metrics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Metrics",
+            "description": "List of metric slugs displayed in this dashboard."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning this dashboard."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "name",
+          "metrics",
+          "organization_id"
+        ],
+        "title": "MetricDashboardSchema",
+        "description": "A user-defined metrics dashboard."
+      },
+      "MetricDashboardUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Display name for the dashboard."
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metrics",
+            "description": "List of metric slugs to display in this dashboard."
+          }
+        },
+        "type": "object",
+        "title": "MetricDashboardUpdate",
+        "description": "Schema for updating a metrics dashboard."
       },
       "MetricPeriod": {
         "properties": {
@@ -53457,7 +54828,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
+            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
           },
           "client_name": {
             "type": "string",
@@ -53578,7 +54949,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
+            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
           },
           "client_name": {
             "type": "string",
@@ -54195,7 +55566,14 @@
             ]
           },
           "email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email",
             "description": "The email address of the customer. This must be unique within the organization.",
             "examples": [
@@ -54211,15 +55589,8 @@
             ]
           },
           "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomerType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "$ref": "#/components/schemas/CustomerType",
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members.",
             "examples": [
               "individual"
             ]
@@ -54327,8 +55698,8 @@
           "created_at",
           "modified_at",
           "metadata",
-          "email",
           "email_verified",
+          "type",
           "name",
           "billing_address",
           "tax_id",
@@ -55307,7 +56678,14 @@
             "title": "Id"
           },
           "email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email"
           },
           "public_name": {
@@ -55340,10 +56718,177 @@
         "type": "object",
         "required": [
           "id",
-          "email",
           "public_name"
         ],
         "title": "OrderUser"
+      },
+      "OrderVoidedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ],
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "order.voided",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/OrderVoidedMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "OrderVoidedEvent",
+        "description": "An event created by Polar when an order is voided."
+      },
+      "OrderVoidedMetadata": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "amount",
+          "currency"
+        ],
+        "title": "OrderVoidedMetadata"
       },
       "Organization": {
         "properties": {
@@ -55456,6 +57001,10 @@
             "type": "string",
             "title": "Default Presentment Currency",
             "description": "Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available."
+          },
+          "default_tax_behavior": {
+            "$ref": "#/components/schemas/TaxBehaviorOption",
+            "description": "Default tax behavior applied on products."
           },
           "feature_settings": {
             "anyOf": [
@@ -56015,6 +57564,7 @@
           "status",
           "details_submitted_at",
           "default_presentment_currency",
+          "default_tax_behavior",
           "feature_settings",
           "subscription_settings",
           "notification_settings",
@@ -57124,6 +58674,11 @@
             "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "Default presentment currency for the organization",
             "default": "usd"
+          },
+          "default_tax_behavior": {
+            "$ref": "#/components/schemas/TaxBehaviorOption",
+            "description": "Default tax behavior applied on products.",
+            "default": "location"
           }
         },
         "type": "object",
@@ -58179,64 +59734,21 @@
               }
             ],
             "description": "Default presentment currency for the organization"
+          },
+          "default_tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Default tax behavior applied on products."
           }
         },
         "type": "object",
         "title": "OrganizationUpdate"
-      },
-      "OwnerCreate": {
-        "properties": {
-          "email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "email"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email",
-            "description": "The email address of the member.",
-            "examples": [
-              "member@example.com"
-            ]
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256,
-                "description": "The name of the member.",
-                "examples": [
-                  "Jane Doe"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "The ID of the member in your system. This must be unique within the customer. ",
-            "examples": [
-              "usr_1337"
-            ]
-          }
-        },
-        "type": "object",
-        "title": "OwnerCreate",
-        "description": "Schema for creating an owner member during customer creation."
       },
       "Pagination": {
         "properties": {
@@ -59579,6 +61091,17 @@
             "title": "Price Currency",
             "description": "The currency in which the customer will be charged."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -59628,6 +61151,7 @@
           "source",
           "amount_type",
           "price_currency",
+          "tax_behavior",
           "is_archived",
           "product_id",
           "minimum_amount",
@@ -59648,6 +61172,17 @@
             "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency in which the customer will be charged.",
             "default": "usd"
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
           },
           "minimum_amount": {
             "type": "integer",
@@ -59735,6 +61270,17 @@
             "title": "Price Currency",
             "description": "The currency in which the customer will be charged."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -59760,6 +61306,7 @@
           "source",
           "amount_type",
           "price_currency",
+          "tax_behavior",
           "is_archived",
           "product_id",
           "price_amount"
@@ -59778,6 +61325,17 @@
             "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency in which the customer will be charged.",
             "default": "usd"
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
           },
           "price_amount": {
             "type": "integer",
@@ -59836,6 +61394,17 @@
             "title": "Price Currency",
             "description": "The currency in which the customer will be charged."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -59856,6 +61425,7 @@
           "source",
           "amount_type",
           "price_currency",
+          "tax_behavior",
           "is_archived",
           "product_id"
         ],
@@ -59873,6 +61443,17 @@
             "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency in which the customer will be charged.",
             "default": "usd"
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
           }
         },
         "type": "object",
@@ -59945,6 +61526,17 @@
             "title": "Price Currency",
             "description": "The currency in which the customer will be charged."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -59993,6 +61585,7 @@
           "source",
           "amount_type",
           "price_currency",
+          "tax_behavior",
           "is_archived",
           "product_id",
           "unit_amount",
@@ -60014,6 +61607,17 @@
             "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency in which the customer will be charged.",
             "default": "usd"
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
           },
           "meter_id": {
             "type": "string",
@@ -60100,6 +61704,17 @@
             "title": "Price Currency",
             "description": "The currency in which the customer will be charged."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -60124,6 +61739,7 @@
           "source",
           "amount_type",
           "price_currency",
+          "tax_behavior",
           "is_archived",
           "product_id",
           "seat_tiers"
@@ -60142,6 +61758,17 @@
             "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency in which the customer will be charged.",
             "default": "usd"
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehaviorOption"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tax behavior of the price. If not set, it will default to the organization's default tax behavior."
           },
           "seat_tiers": {
             "$ref": "#/components/schemas/ProductPriceSeatTiers-Input",
@@ -61150,6 +62777,7 @@
           "refunds:write",
           "payments:read",
           "metrics:read",
+          "metrics:write",
           "webhooks:read",
           "webhooks:write",
           "license_keys:read",
@@ -61197,6 +62825,7 @@
           "meters:read": "Read meters",
           "meters:write": "Create or modify meters",
           "metrics:read": "Read metrics",
+          "metrics:write": "Create or modify metric definitions",
           "notification_recipients:read": "Read notification recipients",
           "notification_recipients:write": "Create or modify notification recipients",
           "notifications:read": "Read notifications",
@@ -62582,7 +64211,14 @@
             ]
           },
           "email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email",
             "description": "The email address of the customer. This must be unique within the organization.",
             "examples": [
@@ -62598,15 +64234,8 @@
             ]
           },
           "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomerType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "$ref": "#/components/schemas/CustomerType",
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members.",
             "examples": [
               "individual"
             ]
@@ -62714,8 +64343,8 @@
           "created_at",
           "modified_at",
           "metadata",
-          "email",
           "email_verified",
+          "type",
           "name",
           "billing_address",
           "tax_id",
@@ -64215,7 +65844,14 @@
             "title": "Id"
           },
           "email": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Email"
           },
           "public_name": {
@@ -64248,7 +65884,6 @@
         "type": "object",
         "required": [
           "id",
-          "email",
           "public_name"
         ],
         "title": "SubscriptionUser"
@@ -64307,6 +65942,9 @@
             "$ref": "#/components/schemas/OrderRefundedEvent"
           },
           {
+            "$ref": "#/components/schemas/OrderVoidedEvent"
+          },
+          {
             "$ref": "#/components/schemas/CheckoutCreatedEvent"
           },
           {
@@ -64358,6 +65996,7 @@
             "meter.reset": "#/components/schemas/MeterResetEvent",
             "order.paid": "#/components/schemas/OrderPaidEvent",
             "order.refunded": "#/components/schemas/OrderRefundedEvent",
+            "order.voided": "#/components/schemas/OrderVoidedEvent",
             "subscription.billing_period_updated": "#/components/schemas/SubscriptionBillingPeriodUpdatedEvent",
             "subscription.canceled": "#/components/schemas/SubscriptionCanceledEvent",
             "subscription.created": "#/components/schemas/SubscriptionCreatedEvent",
@@ -64369,6 +66008,15 @@
             "subscription.updated": "#/components/schemas/SubscriptionUpdatedEvent"
           }
         }
+      },
+      "TaxBehaviorOption": {
+        "type": "string",
+        "enum": [
+          "location",
+          "inclusive",
+          "exclusive"
+        ],
+        "title": "TaxBehaviorOption"
       },
       "TaxIDFormat": {
         "type": "string",

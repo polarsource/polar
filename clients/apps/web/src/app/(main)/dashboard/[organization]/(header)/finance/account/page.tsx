@@ -17,6 +17,7 @@ export default async function Page(props: {
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
+    false, // Don't use cache to make sure we get the latest payout account info after onboarding changes
   )
 
   return <AccountPage organization={organization} />

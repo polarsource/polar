@@ -57,6 +57,12 @@ KNOWN_DOMAINS: list[KnownDomain] = [
     KnownDomain("*.supabase.co", "Supabase", "backend"),
     KnownDomain("*.convex.site", "Convex", "backend"),
     KnownDomain("*.convex.cloud", "Convex", "backend"),
+    # No-code builders
+    KnownDomain("lovable.dev", "Lovable", "no-code-builder"),
+    KnownDomain("*.lovable.dev", "Lovable", "no-code-builder"),
+    KnownDomain("lovable.app", "Lovable", "no-code-builder"),
+    KnownDomain("*.lovable.app", "Lovable", "no-code-builder"),
+    KnownDomain("*.lovableproject.com", "Lovable", "no-code-builder"),
 ]
 
 

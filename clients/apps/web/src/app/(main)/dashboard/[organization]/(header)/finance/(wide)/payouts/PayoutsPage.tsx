@@ -7,7 +7,6 @@ import DownloadInvoice, {
 } from '@/components/Payouts/DownloadInvoice'
 import { PayoutProvider } from '@/components/Payouts/PayoutContext'
 import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
-import AccountBanner from '@/components/Transactions/AccountBanner'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { getServerURL } from '@/utils/api'
@@ -274,7 +273,6 @@ export default function ClientPage({
   return (
     <PayoutProvider>
       <div className="flex flex-col gap-y-8">
-        <AccountBanner organization={organization} />
         {account && (
           <AccountBalance account={account} organization={organization} />
         )}

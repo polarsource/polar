@@ -10,10 +10,16 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 from tagflow import attr, classes, tag, text
 
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Account, Organization, Payout, PayoutAttempt, Transaction
+from polar.models import (
+    Account,
+    Organization,
+    Payout,
+    PayoutAttempt,
+    Transaction,
+)
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.payout.repository import PayoutRepository
@@ -69,19 +75,17 @@ class PayoutAccountProcessorIdListItem(description_list.DescriptionListItem[Payo
         super().__init__("processor_id")
 
     def render(self, request: Request, item: Payout) -> Generator[None] | None:
-        account = item.account
-        if account.stripe_id and account.account_type == AccountType.stripe:
+        payout_account = item.payout_account
+        if payout_account.stripe_id and payout_account.type == PayoutAccountType.stripe:
             with tag.a(
-                href=f"https://dashboard.stripe.com/connect/accounts/{account.stripe_id}",
+                href=f"https://dashboard.stripe.com/connect/accounts/{payout_account.stripe_id}",
                 classes="link flex flex-row gap-1 items-center",
             ):
                 attr("target", "_blank")
                 attr("rel", "noopener noreferrer")
-                text(account.stripe_id)
+                text(payout_account.stripe_id)
                 with tag.div(classes="icon-external-link"):
                     pass
-        elif account.stripe_id:
-            text(account.stripe_id)
         return None
 
 
@@ -121,7 +125,7 @@ class PayoutAttemptProcessorIdColumn(
             text("N/A")
             return None
 
-        if item.processor == AccountType.stripe:
+        if item.processor == PayoutAccountType.stripe:
             with tag.a(
                 href=f"https://dashboard.stripe.com/payouts/{item.processor_id}",
                 classes="link flex flex-row gap-1 items-center",
@@ -264,7 +268,9 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     repository = PayoutRepository.from_session(session)
-    payout = await repository.get_by_id(id, options=(joinedload(Payout.account),))
+    payout = await repository.get_by_id(
+        id, options=(joinedload(Payout.account), joinedload(Payout.payout_account))
+    )
 
     if payout is None:
         raise HTTPException(status_code=404)
@@ -336,11 +342,11 @@ async def get(
             with tag.div(classes="card card-border w-full shadow-sm"):
                 with tag.div(classes="card-body"):
                     with tag.h2(classes="card-title"):
-                        text("Account Details")
+                        text("Payout Account Details")
 
                     with description_list.DescriptionList[Payout](
                         description_list.DescriptionListAttrItem(
-                            "account.account_type", "Account Processor"
+                            "payout_account.type", "Payout Account Processor"
                         ),
                         PayoutAccountProcessorIdListItem(),
                     ).render(request, payout):
@@ -522,6 +528,7 @@ async def cancel(
         id,
         options=(
             joinedload(Payout.account),
+            joinedload(Payout.payout_account),
             joinedload(Payout.transactions).options(
                 joinedload(Transaction.account),
                 joinedload(Transaction.payout),
@@ -576,7 +583,9 @@ async def refresh(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     repository = PayoutRepository.from_session(session)
-    payout = await repository.get_by_id(id, options=(joinedload(Payout.account),))
+    payout = await repository.get_by_id(
+        id, options=(joinedload(Payout.account), joinedload(Payout.payout_account))
+    )
 
     if payout is None:
         raise HTTPException(status_code=404)

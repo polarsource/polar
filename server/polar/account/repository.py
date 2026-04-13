@@ -20,20 +20,6 @@ class AccountRepository(
 ):
     model = Account
 
-    async def get_by_stripe_id(
-        self,
-        stripe_id: str,
-        *,
-        options: Options = (),
-        include_deleted: bool = False,
-    ) -> Account | None:
-        statement = (
-            self.get_base_statement(include_deleted=include_deleted)
-            .where(Account.stripe_id == stripe_id)
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
-
     async def get_by_user(
         self, user: uuid.UUID, *, options: Options = (), include_deleted: bool = False
     ) -> Account | None:

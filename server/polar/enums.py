@@ -44,14 +44,14 @@ class TaxBehaviorOption(StrEnum):
     exclusive = "exclusive"
 
 
-class AccountType(StrEnum):
+class PayoutAccountType(StrEnum):
     stripe = "stripe"
     manual = "manual"
 
     def get_display_name(self) -> str:
         return {
-            AccountType.stripe: "Stripe Connect Express",
-            AccountType.manual: "Manual",
+            PayoutAccountType.stripe: "Stripe Connect Express",
+            PayoutAccountType.manual: "Manual",
         }[self]
 
 
@@ -91,6 +91,25 @@ class SubscriptionProrationBehavior(StrEnum):
     """Don't invoice immediately, but add prorations to the next invoice."""
     next_period = "next_period"
     """Don't invoice immediately, and don't add prorations. The new price will be applied at the start of the next period."""
+    reset = "reset"
+    """
+    Invoice the full amount of the new plan immediately and reset the billing cycle to now. No proration.
+
+    **This mode is not globally available and may not be supported in all contexts.**
+    """
+
+    def is_immediate(self) -> bool:
+        return self in {
+            SubscriptionProrationBehavior.invoice,
+            SubscriptionProrationBehavior.reset,
+        }
+
+
+PublicSubscriptionProrationBehavior = Literal[
+    SubscriptionProrationBehavior.invoice,
+    SubscriptionProrationBehavior.prorate,
+    SubscriptionProrationBehavior.next_period,
+]
 
 
 class InvoiceNumbering(StrEnum):
@@ -113,6 +132,7 @@ class TokenType(StrEnum):
 class EmailSender(StrEnum):
     logger = "logger"
     resend = "resend"
+    plain = "plain"
 
 
 class RateLimitGroup(StrEnum):

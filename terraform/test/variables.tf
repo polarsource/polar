@@ -30,6 +30,13 @@ variable "openai_api_key" {
   sensitive   = true
 }
 
+# Pydantic AI Gateway
+variable "pydantic_ai_gateway_api_key" {
+  description = "Pydantic AI Gateway API Key for test"
+  type        = string
+  sensitive   = true
+}
+
 # Backend - Production
 variable "backend_current_jwk_kid" {
   description = "Current JWK KID for production"
@@ -56,9 +63,16 @@ variable "backend_discord_client_secret" {
 }
 
 variable "backend_resend_api_key" {
-  description = "Resend API Key for production"
+  description = "Resend API Key for test"
   type        = string
   sensitive   = true
+}
+
+variable "backend_resend_webhook_secret" {
+  description = "Resend Webhook Secret for test"
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "backend_logo_dev_publishable_key" {

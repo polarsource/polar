@@ -31,6 +31,7 @@ from polar.integrations.github_repository_benefit.endpoints import (
 )
 from polar.integrations.google.endpoints import router as google_router
 from polar.integrations.plain.endpoints import router as plain_router
+from polar.integrations.resend.endpoints import router as resend_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.login_code.endpoints import router as login_code_router
@@ -46,6 +47,7 @@ from polar.organization_access_token.endpoints import (
 )
 from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
+from polar.payout_account.endpoints import router as payout_account_router
 from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
@@ -151,5 +153,9 @@ router.include_router(payment_router)
 router.include_router(payout_router)
 # /wallets
 router.include_router(wallet_router)
+# /integrations/resend
+router.include_router(resend_router)
 # /integrations/chargeback-stop
 router.include_router(chargeback_stop_router)
+# /payout-accounts
+router.include_router(payout_account_router)

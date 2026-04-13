@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import func, select
 
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Discount, Organization, ProductBenefit
+from polar.models import Account, Discount, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration, DiscountType
 from scripts.transfer_products_between_organizations import (
@@ -14,6 +14,7 @@ from scripts.transfer_products_between_organizations import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_benefit,
     create_checkout_link,
     create_customer,
@@ -34,10 +35,12 @@ class TestProductTransferService:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test successful organization validation."""
         source_org = organization
-        target_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture, account_second)
 
         service = ProductTransferService(source_org.id, target_org.id)
 
@@ -48,10 +51,14 @@ class TestProductTransferService:
         assert service.target_organization_id == target_org.id
 
     async def test_validate_organizations_exist_source_not_found(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test validation fails when source organization doesn't exist."""
-        target_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture, account_second)
 
         service = ProductTransferService(
             UUID("123e4567-e89b-12d3-a456-426614174000"), target_org.id
@@ -63,10 +70,10 @@ class TestProductTransferService:
             await service.validate_organizations_exist(session)
 
     async def test_validate_organizations_exist_target_not_found(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
     ) -> None:
         """Test validation fails when target organization doesn't exist."""
-        source_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
 
         service = ProductTransferService(
             source_org.id, UUID("123e4567-e89b-12d3-a456-426614174000")
@@ -109,11 +116,15 @@ class TestProductTransferService:
         assert product2.id in [p.id for p in service.products]
 
     async def test_validate_products_belong_to_same_organization_mixed_orgs(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self, save_fixture: SaveFixture, session: AsyncSession, user: User
     ) -> None:
         """Test validation fails when products belong to different organizations."""
-        org1 = await create_organization(save_fixture)
-        org2 = await create_organization(save_fixture)
+        org1 = await create_organization(
+            save_fixture, await create_account(save_fixture, user)
+        )
+        org2 = await create_organization(
+            save_fixture, await create_account(save_fixture, user)
+        )
 
         product1 = await create_product(
             save_fixture, organization=org1, name="Product 1", recurring_interval=None
@@ -233,11 +244,15 @@ class TestProductTransferService:
         assert service.transfer_stats["customers_to_split"] == 1
 
     async def test_customer_splitting_creates_new_customer(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that customer splitting creates new customer records."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product = await create_product(
@@ -269,11 +284,15 @@ class TestProductTransferService:
         assert order.customer_id == new_customer.id
 
     async def test_customer_splitting_with_existing_email_in_target(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that when splitting customers, if target customer exists with same email, use that instead of creating new."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product = await create_product(
@@ -314,11 +333,15 @@ class TestProductTransferService:
         assert source_customer.deleted_at is None
 
     async def test_transfer_benefits_updates_organization(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that benefits are transferred to target organization."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create product with benefit
         product = await create_product(
@@ -343,11 +366,15 @@ class TestProductTransferService:
         assert benefit.organization_id == target_org.id
 
     async def test_transfer_products_updates_organization(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that products are transferred to target organization."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product1 = await create_product(
@@ -375,11 +402,15 @@ class TestProductTransferService:
         assert product2.organization_id == target_org.id
 
     async def test_transfer_customers_directly(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that customers with only transferring products are transferred directly."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create a product
         product = await create_product(
@@ -408,11 +439,15 @@ class TestProductTransferService:
         assert order.customer_id == customer.id
 
     async def test_transfer_customers_directly_with_existing_email_in_target(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that when a customer with the same email exists in target org, related objects are wired to the existing customer."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create a product
         product = await create_product(
@@ -454,11 +489,15 @@ class TestProductTransferService:
         assert service.transfer_stats["customers_merged"] == 1
 
     async def test_transfer_discounts_directly(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that discounts used only by transferring products are transferred directly."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create a product
         product = await create_product(
@@ -496,11 +535,15 @@ class TestProductTransferService:
         assert service.transfer_stats["discounts_transferred_directly"] == 1
 
     async def test_split_discounts(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that discounts used by both transferring and non-transferring products are split correctly."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create two products - one to transfer, one to stay
         product_transfer = await create_product(
@@ -557,11 +600,15 @@ class TestProductTransferService:
         assert discount.organization_id == source_org.id  # Original stays
 
     async def test_analyze_discounts(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that discount analysis correctly categorizes discounts."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product_transfer = await create_product(
@@ -626,11 +673,15 @@ class TestProductTransferService:
         assert discount_stay not in service.discounts_to_split
 
     async def test_validate_transfer_success(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test successful transfer validation."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product1 = await create_product(
@@ -660,11 +711,15 @@ class TestProductTransferService:
         await service.validate_transfer(session)
 
     async def test_validate_transfer_with_existing_customers(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test transfer validation when customers with existing emails are handled."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product = await create_product(
@@ -703,11 +758,15 @@ class TestProductTransferService:
         await service.validate_transfer(session)
 
     async def test_validate_transfer_failure(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test transfer validation fails when not all products were transferred."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product1 = await create_product(
@@ -738,11 +797,15 @@ class TestProductTransferService:
             await service.validate_transfer(session)
 
     async def test_analyze_checkout_links(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that checkout links containing transferring products are identified."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product_transfer = await create_product(
@@ -790,11 +853,15 @@ class TestProductTransferService:
         assert service.transfer_stats["checkout_links_to_update"] == 2
 
     async def test_update_checkout_links(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that checkout links are updated by removing transferring products."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products
         product_transfer = await create_product(
@@ -830,11 +897,15 @@ class TestProductTransferService:
         assert service.transfer_stats["checkout_links_updated"] == 1
 
     async def test_update_checkout_links_soft_delete_when_empty(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that checkout links are soft deleted when all products are removed."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create a single product
         product_transfer = await create_product(
@@ -863,12 +934,16 @@ class TestProductTransferService:
         assert service.transfer_stats["checkout_links_soft_deleted"] == 1
 
     async def test_analyze_events(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that events are properly analyzed for transfer."""
         # Setup: Create source and target orgs, products, customers, and events
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
         product = await create_product(
             save_fixture, organization=source_org, recurring_interval=None
         )
@@ -913,12 +988,16 @@ class TestProductTransferService:
         assert {event1.id, event2.id} == {e.id for e in service.events_to_transfer}
 
     async def test_transfer_events(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that events are properly transferred."""
         # Setup
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
         product = await create_product(
             save_fixture, organization=source_org, recurring_interval=None
         )
@@ -951,12 +1030,16 @@ class TestProductTransferService:
         assert service.transfer_stats["events_transferred"] == 2
 
     async def test_events_not_transferred_for_split_customers(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that events for split customers are NOT transferred."""
         # Setup
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
         product = await create_product(
             save_fixture, organization=source_org, recurring_interval=None
         )
@@ -987,12 +1070,16 @@ class TestProductTransferService:
         assert len(service.events_to_transfer) == 0
 
     async def test_events_transferred_for_merged_customers(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test that events for merged customers ARE transferred."""
         # Setup
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
         product = await create_product(
             save_fixture, organization=source_org, recurring_interval=None
         )
@@ -1037,11 +1124,15 @@ class TestProductTransferIntegration:
     """Integration tests for the complete product transfer workflow."""
 
     async def test_complete_transfer_workflow_simple_case(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test complete transfer workflow for simple case with no customer splitting."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create a product
         product = await create_product(
@@ -1077,11 +1168,15 @@ class TestProductTransferIntegration:
         assert service.transfer_stats["products_transferred"] == 1
 
     async def test_complete_transfer_workflow_with_customer_splitting(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test complete transfer workflow with customer splitting."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products - one to transfer, one to stay
         product_transfer = await create_product(
@@ -1140,11 +1235,15 @@ class TestProductTransferIntegration:
         assert order_stay.customer_id == customer.id
 
     async def test_complete_transfer_workflow_with_checkout_links(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test complete transfer workflow with checkout links."""
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
 
         # Create products - one to transfer, one to stay
         product_transfer = await create_product(
@@ -1195,12 +1294,16 @@ class TestProductTransferIntegration:
         assert service.transfer_stats["checkout_links_updated"] == 1
 
     async def test_complete_transfer_workflow_with_events(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+        account_second: Account,
     ) -> None:
         """Test complete transfer workflow including event transfer."""
         # Setup
-        source_org = await create_organization(save_fixture)
-        target_org = await create_organization(save_fixture)
+        source_org = await create_organization(save_fixture, account)
+        target_org = await create_organization(save_fixture, account_second)
         product = await create_product(
             save_fixture, organization=source_org, recurring_interval=None
         )

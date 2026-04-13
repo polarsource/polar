@@ -4,7 +4,6 @@ import pytest
 import pytest_asyncio
 from pytest_mock import MockerFixture
 
-from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Account,
@@ -131,6 +130,7 @@ class TestCreateDispute:
         user: User,
         order: Order,
         payment: Payment,
+        account: Account,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
@@ -150,18 +150,6 @@ class TestCreateDispute:
                 ),
             ],
         )
-
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
@@ -273,6 +261,7 @@ class TestCreateDispute:
         user: User,
         order: Order,
         payment: Payment,
+        account: Account,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
@@ -295,18 +284,6 @@ class TestCreateDispute:
                 ),
             ],
         )
-
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
@@ -408,6 +385,7 @@ class TestCreateDispute:
         user: User,
         order: Order,
         payment: Payment,
+        account: Account,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
@@ -452,18 +430,6 @@ class TestCreateDispute:
                 ),
             ],
         )
-
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,
@@ -578,6 +544,7 @@ class TestCreateDispute:
         user: User,
         order: Order,
         payment: Payment,
+        account: Account,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
@@ -621,18 +588,6 @@ class TestCreateDispute:
                 ),
             ],
         )
-
-        account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="STRIPE_ACCOUNT_ID",
-        )
-        await save_fixture(account)
 
         payment_transaction = Transaction(
             type=TransactionType.payment,

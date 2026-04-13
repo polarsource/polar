@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, func, or_, select, update
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
@@ -61,18 +62,16 @@ class OrganizationRepository(
 
         return await self.get_one_or_none(statement)
 
-    async def get_by_id_with_account(
+    async def get_by_id_with_payout_account(
         self,
         id: UUID,
         *,
         include_deleted: bool = False,
         include_blocked: bool = True,
     ) -> Organization | None:
-        from sqlalchemy.orm import joinedload
-
         statement = (
             self.get_base_statement(include_deleted=include_deleted)
-            .options(joinedload(Organization.account))
+            .options(joinedload(Organization.payout_account))
             .where(self.model.id == id)
         )
 
@@ -183,9 +182,6 @@ class OrganizationRepository(
         self, session: AsyncReadSession, organization: Organization
     ) -> User | None:
         """Get the admin user of the organization from the associated account."""
-        if not organization.account_id:
-            return None
-
         statement = (
             select(User)
             .join(Account, Account.admin_id == User.id)
@@ -282,6 +278,23 @@ class OrganizationRepository(
         result = await self.session.execute(stmt)
         next_number = result.scalar_one()
         return next_number - 1
+
+    async def delete_payout_account(self, payout_account: UUID) -> None:
+        """Reset Organization.payout_account_id to None for any organization linked to the payout account."""
+        stmt = (
+            update(Organization)
+            .where(Organization.payout_account_id == payout_account)
+            .values(payout_account_id=None)
+        )
+        await self.session.execute(stmt)
+
+    async def get_all_by_payout_account(
+        self, payout_account: UUID
+    ) -> Sequence[Organization]:
+        statement = self.get_base_statement().where(
+            Organization.payout_account_id == payout_account,
+        )
+        return await self.get_all(statement)
 
 
 class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):

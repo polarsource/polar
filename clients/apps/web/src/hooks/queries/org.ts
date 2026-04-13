@@ -124,13 +124,18 @@ export const useUpdateOrganization = () =>
     },
   })
 
-export const useOrganization = (id: string, enabled: boolean = true) =>
+export const useOrganization = (
+  id: string,
+  enabled: boolean = true,
+  initialData?: schemas['Organization'],
+) =>
   useQuery({
     queryKey: ['organizations', id],
     queryFn: () =>
       unwrap(api.GET('/v1/organizations/{id}', { params: { path: { id } } })),
     retry: defaultRetry,
     enabled,
+    initialData,
   })
 
 export const useOrganizationKYC = (id: string, enabled: boolean = true) =>

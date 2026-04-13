@@ -195,6 +195,26 @@ jobs:
           PREVIEW_URL=$(grep -oP 'Deployed at \K.*' /tmp/deploy.log || true)
           echo "preview_url=${PREVIEW_URL}" >> "$GITHUB_OUTPUT"
 
+      - name: Wait for preview API
+        if: steps.action.outputs.action == 'deploy' && steps.deploy.outputs.preview_url != ''
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          API_URL="${PREVIEW_URL%/}/v1/"
+          echo "Waiting for API at ${API_URL}"
+          for i in $(seq 1 60); do
+            BODY=$(curl -sS -m 10 "${API_URL}" || true)
+            if [[ "$BODY" == '{"detail":"Not Found"}' ]]; then
+              echo "API is up (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i/60: not ready yet"
+            sleep 5
+          done
+          echo "::error::API did not come up within timeout"
+          exit 1
+
       # --- SSH destroy ---
       - name: Destroy preview on VM
         if: steps.action.outputs.action == 'destroy'

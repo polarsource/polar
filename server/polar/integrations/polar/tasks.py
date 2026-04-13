@@ -1,17 +1,23 @@
-from polar.worker import TaskPriority, actor
+from dramatiq import Retry
+
+from polar.worker import TaskPriority, actor, can_retry
 
 from .client import get_client
 
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
 async def create_customer(
-    external_id: str, email: str, name: str, organization_id: str
+    external_id: str, email: str, name: str, organization_id: str, product_id: str
 ) -> None:
-    await get_client().create_customer(
+    client = get_client()
+    await client.create_customer(
         external_id=external_id,
         email=email,
         name=name,
-        organization_id=organization_id,
+    )
+    await client.create_free_subscription(
+        external_customer_id=external_id,
+        product_id=product_id,
     )
 
 
@@ -24,9 +30,21 @@ async def create_free_subscription(external_customer_id: str, product_id: str) -
 
 
 @actor(actor_name="polar_self.add_member", priority=TaskPriority.LOW)
-async def add_member(customer_id: str, email: str, name: str, external_id: str) -> None:
-    await get_client().add_member(
-        customer_id=customer_id,
+async def add_member(
+    external_customer_id: str, email: str, name: str, external_id: str
+) -> None:
+    from polar_sdk.models.polarerror import PolarError
+
+    client = get_client()
+    try:
+        customer = await client.get_customer_by_external_id(external_customer_id)
+    except PolarError as e:
+        if e.status_code == 404 and can_retry():
+            raise Retry(delay=1000) from e
+        raise
+
+    await client.add_member(
+        customer_id=customer.id,
         email=email,
         name=name,
         external_id=external_id,
@@ -45,5 +63,4 @@ async def track_event_ingestion(
     await get_client().track_event_ingestion(
         external_customer_id=external_customer_id,
         count=count,
-        organization_id=organization_id,
     )

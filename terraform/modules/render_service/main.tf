@@ -24,6 +24,14 @@ resource "render_env_group" "openai" {
   }
 }
 
+resource "render_env_group" "pydantic_ai_gateway" {
+  environment_id = var.render_environment_id
+  name           = "pydantic-ai-gateway-${var.environment}"
+  env_vars = {
+    POLAR_PYDANTIC_AI_GATEWAY_API_KEY = { value = var.pydantic_ai_gateway_secrets.api_key }
+  }
+}
+
 resource "render_env_group" "backend" {
   environment_id = var.render_environment_id
   name           = "backend-${var.environment}"
@@ -50,6 +58,7 @@ resource "render_env_group" "backend" {
       POLAR_DISCORD_CLIENT_SECRET      = { value = var.backend_secrets.discord_client_secret }
       POLAR_DISCORD_PROXY_URL          = { value = var.backend_secrets.discord_proxy_url }
       POLAR_RESEND_API_KEY             = { value = var.backend_secrets.resend_api_key }
+      POLAR_RESEND_WEBHOOK_SECRET      = { value = var.backend_secrets.resend_webhook_secret }
       POLAR_LOGO_DEV_PUBLISHABLE_KEY   = { value = var.backend_secrets.logo_dev_publishable_key }
       POLAR_SECRET                     = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                 = { value = var.backend_secrets.sentry_dsn }
@@ -209,6 +218,7 @@ resource "render_env_group" "polar_self" {
     POLAR_POLAR_WEBHOOK_SECRET  = { value = var.polar_self_config.webhook_secret }
     POLAR_POLAR_ORGANIZATION_ID = { value = var.polar_self_config.organization_id }
     POLAR_POLAR_FREE_PRODUCT_ID = { value = var.polar_self_config.free_product_id }
+    POLAR_POLAR_API_URL         = { value = var.polar_self_config.api_url }
   }
 }
 
@@ -244,7 +254,21 @@ resource "render_web_service" "api" {
 
   autoscaling = var.environment == "production" ? {
     enabled = true
-    min     = 1
+    min     = 2
+    max     = 4
+    criteria = {
+      cpu = {
+        enabled    = true
+        percentage = 90
+      }
+      memory = {
+        enabled    = true
+        percentage = 90
+      }
+    }
+    } : var.environment == "sandbox" ? {
+    enabled = true
+    min     = 2
     max     = 2
     criteria = {
       cpu = {
@@ -415,6 +439,11 @@ resource "render_env_group_link" "logfire" {
 
 resource "render_env_group_link" "openai" {
   env_group_id = render_env_group.openai.id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "pydantic_ai_gateway" {
+  env_group_id = render_env_group.pydantic_ai_gateway.id
   service_ids  = local.all_service_ids
 }
 

@@ -6,9 +6,11 @@ from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.meter.aggregation import Aggregation, AggregationType
 from polar.meter.filter import Filter, FilterType
+from polar.meter.unit import MeterUnit
 
 if TYPE_CHECKING:
     from .event import Event
@@ -19,6 +21,13 @@ class Meter(RecordModel, MetadataMixin):
     __tablename__ = "meters"
 
     name: Mapped[str] = mapped_column(String, nullable=False)
+    unit: Mapped[MeterUnit] = mapped_column(
+        StringEnum(MeterUnit), nullable=False, default=MeterUnit.scalar
+    )
+    custom_label: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+    custom_multiplier: Mapped[int | None] = mapped_column(nullable=True, default=None)
     filter: Mapped[Filter] = mapped_column(FilterType, nullable=False)
     aggregation: Mapped[Aggregation] = mapped_column(AggregationType, nullable=False)
     last_billed_event_id: Mapped[UUID | None] = mapped_column(

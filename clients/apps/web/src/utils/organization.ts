@@ -5,7 +5,7 @@ import { cache } from 'react'
 const _getOrganizationBySlug = async (
   api: Client,
   slug: string,
-  bypassCache: boolean = false,
+  cached: boolean,
 ): Promise<schemas['Organization'] | undefined> => {
   const requestOptions: Record<string, unknown> & {
     params: { query: { slug: string } }
@@ -17,13 +17,13 @@ const _getOrganizationBySlug = async (
     },
   }
 
-  if (bypassCache) {
-    requestOptions.cache = 'no-cache'
-  } else {
+  if (cached) {
     requestOptions.next = {
       tags: [`organizations:${slug}`],
       revalidate: 600,
     }
+  } else {
+    requestOptions.cache = 'no-cache'
   }
 
   const data = await unwrap(api.GET('/v1/organizations/', requestOptions))
@@ -31,16 +31,20 @@ const _getOrganizationBySlug = async (
 }
 
 // Tell React to memoize it for the duration of the request
-const _getOrganizationBySlugCached = (api: Client, slug: string) =>
-  _getOrganizationBySlug(api, slug, false)
+const _getOrganizationBySlugCached = (
+  api: Client,
+  slug: string,
+  cached: boolean = true,
+) => _getOrganizationBySlug(api, slug, cached)
 
 export const getOrganizationBySlug = cache(_getOrganizationBySlugCached)
 
 export const getOrganizationBySlugOrNotFound = async (
   api: Client,
   slug: string,
+  cached: boolean = true,
 ): Promise<schemas['Organization']> => {
-  let organization = await getOrganizationBySlug(api, slug)
+  let organization = await getOrganizationBySlug(api, slug, cached)
 
   // If the organization is not found, refetch bypassing the cache
   // This avoids race conditions with new organizations (e.g. during onboarding)

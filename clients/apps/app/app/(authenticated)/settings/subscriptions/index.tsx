@@ -21,6 +21,7 @@ const PRORATION_BEHAVIOR_LABELS: Record<
   invoice: 'Invoice Immediately',
   prorate: 'Prorate next Invoice',
   next_period: 'Apply on Next Period',
+  reset: 'Invoice Immediately without Proration and Reset Cycle',
 }
 
 const BENEFIT_REVOCATION_LABELS: Record<
@@ -162,12 +163,17 @@ export default function SubscriptionSettingsPage() {
         <SelectionSheet
           title="Proration Behavior"
           description="Determines how to bill customers when they change their subscription"
-          items={Object.entries(PRORATION_BEHAVIOR_LABELS).map(
-            ([key, label]) => ({
+          items={Object.entries(PRORATION_BEHAVIOR_LABELS)
+            .filter(
+              ([key]) =>
+                key !== 'reset' ||
+                organization?.feature_settings
+                  ?.reset_proration_behavior_enabled,
+            )
+            .map(([key, label]) => ({
               value: key,
               label,
-            }),
-          )}
+            }))}
           onSelect={createSubscriptionSettingHandler('proration_behavior')}
           selectedValue={organization?.subscription_settings.proration_behavior}
           onDismiss={() => setProrationBehaviorSheetOpen(false)}

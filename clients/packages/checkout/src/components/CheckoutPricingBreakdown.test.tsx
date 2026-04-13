@@ -14,6 +14,67 @@ function getRowValue(label: string): string {
   return within(row).getAllByRole('generic').pop()?.textContent?.trim() ?? ''
 }
 
+function createDiscountedCheckout({
+  interval,
+  intervalCount,
+  discount,
+  trial,
+}: {
+  interval: 'day' | 'week' | 'month' | 'year' | null
+  intervalCount?: number
+  discount: schemas['CheckoutPublic']['discount']
+  trial?: boolean
+}) {
+  return interval
+    ? createCheckout({
+        amount: 999,
+        discount_amount: 500,
+        net_amount: 499,
+        tax_amount: null,
+        total_amount: 499,
+        product: {
+          ...createCheckout().product,
+          recurring_interval: interval,
+          recurring_interval_count: intervalCount ?? 1,
+          is_recurring: true,
+        },
+        discount,
+        ...(trial && {
+          active_trial_interval: 'month',
+          active_trial_interval_count: 1,
+          trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
+        }),
+      })
+    : createBaseCheckout({
+        amount: 999,
+        discount_amount: 500,
+        net_amount: 499,
+        tax_amount: null,
+        total_amount: 499,
+        discount,
+      })
+}
+
+const onceDiscount = {
+  id: 'disc_1',
+  name: '50% off',
+  type: 'percentage',
+  duration: 'once',
+  code: null,
+  basis_points: 5000,
+} satisfies schemas['CheckoutPublic']['discount']
+
+const repeatingDiscount = (durationInMonths: number) =>
+  ({
+    id: 'disc_1',
+    name: '50% off',
+    type: 'percentage',
+    duration: 'repeating',
+    duration_in_months: durationInMonths,
+    code: null,
+    basis_points: 5000,
+  }) satisfies schemas['CheckoutPublic']['discount']
+
 describe('CheckoutPricingBreakdown', () => {
   describe('basic product, no tax, no discount', () => {
     it('shows subtotal and total as the same amount', () => {
@@ -359,28 +420,116 @@ describe('CheckoutPricingBreakdown', () => {
       expect(screen.queryByText('Total due today')).not.toBeInTheDocument()
     })
 
-    it('shows "Until" date on discount line for trial with once discount', () => {
-      const checkout = createBaseCheckout({
-        amount: 999,
-        discount_amount: 500,
-        net_amount: 499,
-        tax_amount: null,
-        total_amount: 499,
-        active_trial_interval: 'month',
-        active_trial_interval_count: 1,
-        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
-        discount: {
-          id: 'disc_1',
-          name: '50% off',
-          type: 'percentage',
-          duration: 'once',
-          code: null,
-          basis_points: 5000,
-        } satisfies schemas['CheckoutPublic']['discount'],
+    it('shows "Until" for once discount on recurring product with trial', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'month',
+        discount: onceDiscount,
+        trial: true,
       })
-
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+    })
 
+    it('shows correct "Until" date for once discount on weekly billing', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'week',
+        discount: onceDiscount,
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      const expected = new Date()
+      expected.setDate(expected.getDate() + 7)
+      const month = expected.toLocaleString('en', { month: 'short' })
+      expect(
+        screen.getByText(new RegExp(`Until ${month} ${expected.getDate()}`)),
+      ).toBeInTheDocument()
+    })
+
+    it('shows correct "Until" date for once discount on daily billing', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'day',
+        discount: onceDiscount,
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      const expected = new Date()
+      expected.setDate(expected.getDate() + 1)
+      const month = expected.toLocaleString('en', { month: 'short' })
+      expect(
+        screen.getByText(new RegExp(`Until ${month} ${expected.getDate()}`)),
+      ).toBeInTheDocument()
+    })
+
+    it('hides "Until" for once discount on one-time product', () => {
+      const checkout = createDiscountedCheckout({
+        interval: null,
+        discount: onceDiscount,
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.queryByText(/Until/i)).not.toBeInTheDocument()
+    })
+
+    it('hides "Until" when discount period is within one billing cycle (6mo on yearly)', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'year',
+        discount: repeatingDiscount(6),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.queryByText(/Until/i)).not.toBeInTheDocument()
+    })
+
+    it('shows "Until" when discount spans multiple cycles (6mo on monthly)', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'month',
+        discount: repeatingDiscount(6),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+    })
+
+    it('shows "Until" for weekly billing with 1mo discount', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'week',
+        discount: repeatingDiscount(1),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+    })
+
+    it('shows "Until" for daily billing with 1mo discount', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'day',
+        discount: repeatingDiscount(1),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+    })
+
+    it('hides "Until" for every-30-days billing with 1mo discount', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'day',
+        intervalCount: 30,
+        discount: repeatingDiscount(1),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.queryByText(/Until/i)).not.toBeInTheDocument()
+    })
+
+    it('shows "Until" for every-4-weeks billing with 1mo discount', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'week',
+        intervalCount: 4,
+        discount: repeatingDiscount(1),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+    })
+
+    it('shows "Until" for every-2-weeks billing with 1mo discount', () => {
+      const checkout = createDiscountedCheckout({
+        interval: 'week',
+        intervalCount: 2,
+        discount: repeatingDiscount(1),
+      })
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
       expect(screen.getByText(/Until/i)).toBeInTheDocument()
     })
   })
@@ -389,7 +538,7 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows additional metered usage row', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',
-        meter: { id: 'meter_1', name: 'API Calls' },
+        meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' as const },
       })
       const checkout = createCheckout({
         amount: 999,

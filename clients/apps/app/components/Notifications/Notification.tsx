@@ -2,8 +2,6 @@ import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import {
   MaintainerAccountCreditsGrantedNotificationPayload,
-  MaintainerAccountReviewedNotificationPayload,
-  MaintainerAccountUnderReviewNotificationPayload,
   MaintainerCreateAccountNotificationPayload,
   MaintainerNewPaidSubscriptionNotificationPayload,
   MaintainerNewProductSaleNotificationPayload,
@@ -19,8 +17,6 @@ export interface NotificationProps {
   type: string
   createdAt: string
   payload:
-    | MaintainerAccountUnderReviewNotificationPayload
-    | MaintainerAccountReviewedNotificationPayload
     | MaintainerCreateAccountNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload

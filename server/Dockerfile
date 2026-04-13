@@ -88,7 +88,7 @@ ENV POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb
 ARG RELEASE_VERSION
 ENV RELEASE_VERSION=${RELEASE_VERSION}
 
-CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000", "--limit-max-requests", "50000", "--limit-max-requests-jitter", "10000"]
+CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000", "--limit-max-requests", "50000", "--limit-max-requests-jitter", "10000", "--timeout-graceful-shutdown", "30"]
 
 # Stage 5: Playwright image (for browser automation workers)
 FROM production AS playwright

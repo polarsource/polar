@@ -74,7 +74,7 @@ export function createMeteredPrice(
     unit_amount: '0.05',
     cap_amount: null,
     meter_id: 'meter_1',
-    meter: { id: 'meter_1', name: 'API Calls' },
+    meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' },
     ...overrides,
   }
 }

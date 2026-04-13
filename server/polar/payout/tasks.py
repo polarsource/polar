@@ -2,13 +2,16 @@ import uuid
 
 import structlog
 
-from polar.enums import AccountType
+from polar.enums import PayoutAccountType
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .repository import PayoutRepository
-from .service import InsufficientBalance, PayoutAlreadyTriggered
+from .service import (
+    PayoutAccountInsufficientBalance,
+    PayoutAlreadyTriggered,
+)
 from .service import payout as payout_service
 
 log: Logger = structlog.get_logger()
@@ -34,7 +37,7 @@ async def payout_created(payout_id: uuid.UUID) -> None:
         if payout is None:
             raise PayoutDoesNotExist(payout_id)
 
-        if payout.processor == AccountType.stripe:
+        if payout.processor == PayoutAccountType.stripe:
             await payout_service.transfer_stripe(session, payout)
 
 
@@ -62,7 +65,7 @@ async def trigger_payout(
 
         try:
             await payout_service.trigger_stripe_payout(session, payout, account_amount)
-        except InsufficientBalance:
+        except PayoutAccountInsufficientBalance:
             # Swallow it, since it's likely the money not having arrived in the Stripe account yet.
             # The payout will be triggered again later.
             pass

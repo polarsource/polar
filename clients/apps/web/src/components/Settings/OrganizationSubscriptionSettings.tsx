@@ -105,6 +105,7 @@ const OrganizationSubscriptionSettings: React.FC<
                 <FormItem>
                   <FormControl>
                     <ProrationBehavior
+                      organization={organization}
                       value={field.value}
                       onValueChange={field.onChange}
                     />

@@ -23,6 +23,7 @@ const CreateMeterModalContent = ({
 
   const form = useForm<schemas['MeterCreate']>({
     defaultValues: {
+      unit: 'scalar',
       filter: {
         conjunction: 'and',
         clauses: [

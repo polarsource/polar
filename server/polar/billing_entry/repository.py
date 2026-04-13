@@ -3,7 +3,7 @@ from datetime import datetime
 from itertools import batched
 from uuid import UUID
 
-from sqlalchemy import Select, func, update
+from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.config import settings
@@ -37,6 +37,14 @@ class BillingEntryRepository(
                 .values(order_item_id=order_item_id)
             )
             await self.session.execute(statement)
+
+    async def get_all_by_subscription(
+        self, subscription_id: UUID
+    ) -> Sequence[BillingEntry]:
+        statement = select(self.model).where(
+            self.model.subscription_id == subscription_id
+        )
+        return await self.get_all(statement)
 
     async def get_pending_by_subscription(
         self, subscription_id: UUID, *, options: Options = ()

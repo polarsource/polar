@@ -28,7 +28,7 @@ export function MetricGroup({
   return (
     <div className="flex flex-col gap-y-6">
       <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
-        <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] lg:grid-cols-2 2xl:grid-cols-3">
           {metricKeys.map((metricKey, index) => (
             <MetricChartBox
               key={String(metricKey)}

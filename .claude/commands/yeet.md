@@ -25,3 +25,8 @@ Lint, type-check, and create a PR.
 4. **If lint auto-fixed files** (e.g. ruff formatted), stage and commit those changes with a message like "lint: auto-fix formatting".
 
 5. **Create the PR** using the standard PR creation instructions from the system prompt. Use the full commit history from `main` to draft the PR title and description.
+
+   **Important — this is a public repo.** When writing the PR title and description:
+   - **No PII**: Do not include any personally identifiable information such as names, emails, user IDs, API keys, tokens, internal URLs, or customer data — even if they appear in commit messages or diffs.
+   - **No stats data**: Do not include specific metrics, revenue figures, user counts, conversion rates, or any other business/analytics data that may appear in the code changes.
+   - Describe *what* the changes do and *why*, without exposing sensitive details.

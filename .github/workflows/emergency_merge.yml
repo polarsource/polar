@@ -1,4 +1,4 @@
-name: Emergency Merge 🚨
+name: "Emergency Merge 🚨"
 
 on:
   issue_comment:

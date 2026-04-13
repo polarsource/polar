@@ -11,6 +11,7 @@ from polar.logging import Logger
 
 if TYPE_CHECKING:
     from polar_sdk import Polar as PolarSDK
+    from polar_sdk.models import Customer
 
 log: Logger = structlog.get_logger()
 
@@ -34,10 +35,8 @@ class PolarSelfClient:
             server_url=api_url,
         )
 
-    async def create_customer(
-        self, *, external_id: str, email: str, name: str, organization_id: str
-    ) -> None:
-        from polar_sdk.models import CustomerCreate
+    async def create_customer(self, *, external_id: str, email: str, name: str) -> None:
+        from polar_sdk.models import CustomerCreate, CustomerType
         from polar_sdk.models.polarerror import PolarError
 
         try:
@@ -46,7 +45,7 @@ class PolarSelfClient:
                     email=email,
                     name=name,
                     external_id=external_id,
-                    organization_id=organization_id,
+                    type=CustomerType.TEAM,
                 )
             )
         except PolarError as e:
@@ -71,6 +70,9 @@ class PolarSelfClient:
                 "create_free_subscription",
                 external_customer_id=external_customer_id,
             )
+
+    async def get_customer_by_external_id(self, external_id: str) -> Customer:
+        return await self._sdk.customers.get_external_async(external_id=external_id)
 
     async def add_member(
         self, *, customer_id: str, email: str, name: str, external_id: str
@@ -99,7 +101,7 @@ class PolarSelfClient:
             self._handle_error(e, "remove_member", member_id=member_id)
 
     async def track_event_ingestion(
-        self, *, external_customer_id: str, count: int, organization_id: str
+        self, *, external_customer_id: str, count: int
     ) -> None:
         from polar_sdk.models import EventCreateExternalCustomer, EventsIngest
         from polar_sdk.models.polarerror import PolarError
@@ -111,7 +113,6 @@ class PolarSelfClient:
                         EventCreateExternalCustomer(
                             name="event_ingestion",
                             external_customer_id=external_customer_id,
-                            organization_id=organization_id,
                             metadata={"count": count},
                         )
                     ]

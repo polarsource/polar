@@ -62,6 +62,10 @@ def status_badge(
             "class": "badge-ghost border border-base-300",
             "aria": "onboarding started status",
         },
+        OrganizationStatus.OFFBOARDING: {
+            "class": "badge-warning",
+            "aria": "offboarding status",
+        },
     }
 
     config = status_config.get(

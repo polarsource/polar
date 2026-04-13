@@ -512,7 +512,7 @@ export const ProductPricingSection = ({
               className={
                 pricesForSelectedCurrency.length > 1 &&
                 isMeteredPrice(price as ProductPrice)
-                  ? 'dark:bg-polar-800 rounded-2xl bg-gray-50 p-4'
+                  ? 'dark:border-polar-700 rounded-2xl border border-gray-200 p-4'
                   : ''
               }
             >

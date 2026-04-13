@@ -1,4 +1,3 @@
-import { GeistMono } from 'geist/font/mono'
 import type { Effect, EffectInstance } from '../core'
 import { FILM_GRAIN_GLSL, HASH_GLSL } from '../glsl'
 
@@ -135,7 +134,7 @@ export function buildAtlas(
   const ctx = canvas.getContext('2d')!
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.fillStyle = 'white'
-  ctx.font = `${size}px ${GeistMono.style.fontFamily}, monospace`
+  ctx.font = `${size}px GeistMono, monospace`
   ctx.textBaseline = 'middle'
   ctx.textAlign = 'center'
 

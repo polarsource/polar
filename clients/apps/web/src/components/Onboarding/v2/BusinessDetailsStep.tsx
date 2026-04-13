@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
+import { containsBlockedWord } from '@/utils/blocked-words'
 import { CurrencySelector } from '../../CurrencySelector'
 import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
@@ -325,7 +326,11 @@ export function BusinessDetailsStep() {
             <FormField
               control={form.control}
               name="orgName"
-              rules={{ required: 'Organization name is required' }}
+              rules={{
+                required: 'Organization name is required',
+                validate: (v) =>
+                  !containsBlockedWord(v) || 'This name is not allowed.',
+              }}
               render={({ field }) => (
                 <FormItem className="w-full">
                   <FormLabel>Organization Name</FormLabel>
@@ -340,7 +345,11 @@ export function BusinessDetailsStep() {
             <FormField
               control={form.control}
               name="orgSlug"
-              rules={{ required: 'Slug is required' }}
+              rules={{
+                required: 'Slug is required',
+                validate: (v) =>
+                  !containsBlockedWord(v) || 'This slug is not allowed.',
+              }}
               render={({ field }) => (
                 <FormItem className="w-full">
                   <FormLabel>Organization Slug</FormLabel>

@@ -241,7 +241,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify Slack - result
-        if: always()
+        if: always() && steps.result.outputs.classification != 'unknown'
         uses: slackapi/slack-github-action@v3
         with:
           method: chat.postMessage

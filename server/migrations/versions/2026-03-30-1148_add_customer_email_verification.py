@@ -1,7 +1,7 @@
 """Add customer email verification
 
 Revision ID: 18e67fb1e9fc
-Revises: c7f2e9d1a3b6
+Revises: 8f2a1c3d5e7b
 Create Date: 2026-03-30 11:48:52.339965
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "18e67fb1e9fc"
-down_revision = "32c17499cb60"
+down_revision = "8f2a1c3d5e7b"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

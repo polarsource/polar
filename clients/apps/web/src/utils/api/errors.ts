@@ -2,6 +2,15 @@ import { useToast } from '@/components/Toast/use-toast'
 import { schemas } from '@polar-sh/client'
 import { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form'
 
+export const extractApiErrorMessage = (
+  error: { detail?: string | schemas['ValidationError'][] } | null | undefined,
+  fallback: string,
+): string => {
+  if (typeof error?.detail === 'string') return error.detail
+  if (Array.isArray(error?.detail)) return error.detail[0]?.msg || fallback
+  return fallback
+}
+
 export const setValidationErrors = <TFieldValues extends FieldValues>(
   errors: schemas['ValidationError'][],
   setError: UseFormSetError<TFieldValues>,

@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
-import { schemas } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -83,6 +83,17 @@ export function SandboxStep() {
 
     if (createError) {
       setError('Failed to create organization. Please try again.')
+      setSubmitting(false)
+      return
+      let errorMessage = 'Failed to create organization. Please try again.'
+
+      if (isValidationError(createError.detail)) {
+        errorMessage = createError.detail[0]?.msg ?? errorMessage
+      } else if (typeof createError.detail === 'string') {
+        errorMessage = createError.detail
+      }
+
+      setError(errorMessage)
       setSubmitting(false)
       return
     }

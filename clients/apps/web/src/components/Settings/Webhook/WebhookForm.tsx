@@ -24,7 +24,7 @@ type CreateOrUpdate =
   | schemas['WebhookEndpointCreate']
   | schemas['WebhookEndpointUpdate']
 
-const isPrivateIP = (hostname: string): boolean => {
+export const isPrivateIP = (hostname: string): boolean => {
   const parts = hostname.split('.')
   if (parts.length === 4 && parts.every((p) => /^\d+$/.test(p))) {
     const [a, b] = parts.map(Number)
@@ -36,7 +36,8 @@ const isPrivateIP = (hostname: string): boolean => {
     if (a === 0) return true
     if (a === 100 && b >= 64 && b <= 127) return true
   }
-  if (/^\[?f[cd]/i.test(hostname) || /^\[?fe80/i.test(hostname)) return true
+  if (/^\[?f[cd][0-9a-f]*:/i.test(hostname) || /^\[?fe80:/i.test(hostname))
+    return true
   return false
 }
 

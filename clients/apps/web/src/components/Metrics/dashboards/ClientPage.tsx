@@ -2,7 +2,7 @@
 
 import { useMetrics } from '@/hooks/queries'
 import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
-import { subMonths } from 'date-fns/subMonths'
+import { getMetricsRangeDates } from '@polar-sh/client'
 import {
   createParser,
   parseAsArrayOf,
@@ -34,8 +34,10 @@ export default function ClientPage({
   metric,
   organizationId,
 }: ClientPageProps) {
-  const defaultStartDate = useMemo(() => subMonths(new Date(), 1), [])
-  const defaultEndDate = useMemo(() => new Date(), [])
+  const [defaultStartDate, defaultEndDate] = useMemo(
+    () => getMetricsRangeDates('30d'),
+    [],
+  )
 
   const [interval] = useQueryState(
     'interval',

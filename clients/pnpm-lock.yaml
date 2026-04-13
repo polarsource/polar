@@ -657,6 +657,9 @@ importers:
 
   packages/client:
     dependencies:
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
       openapi-fetch:
         specifier: ^0.15.0
         version: 0.15.0

@@ -2,8 +2,7 @@
 
 import { useMetricDashboards, useMetrics } from '@/hooks/queries/metrics'
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
-import { subMonths } from 'date-fns/subMonths'
+import { getMetricsRangeDates, schemas } from '@polar-sh/client'
 import {
   createParser,
   parseAsArrayOf,
@@ -34,8 +33,10 @@ export default function DashboardDetailClientPage({
   organization,
   dashboard: initialDashboard,
 }: DashboardDetailClientPageProps) {
-  const defaultStartDate = useMemo(() => subMonths(new Date(), 1), [])
-  const defaultEndDate = useMemo(() => new Date(), [])
+  const [defaultStartDate, defaultEndDate] = useMemo(
+    () => getMetricsRangeDates('30d'),
+    [],
+  )
 
   // Use live query data so edits in the header modal are reflected immediately
   const { data: dashboards } = useMetricDashboards(organization.id)

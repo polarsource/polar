@@ -35,6 +35,7 @@
     "access": "public"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
     "openapi-fetch": "^0.15.0",
     "openapi-typescript-helpers": "^0.0.15"
   }

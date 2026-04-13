@@ -20,6 +20,7 @@ from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tinybird
 from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.time_queries import TimeInterval
+from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
     Customer,
@@ -3411,6 +3412,53 @@ class TestGetMetrics:
         mar = metrics.periods[2]
         assert mar.monthly_recurring_revenue == 100_00
         assert mar.committed_monthly_recurring_revenue == 100_00
+
+    async def test_committed_mrr_is_stable_across_now_values(
+        self,
+        metrics_harness: MetricsHarness,
+        metrics_session: AsyncSession,
+    ) -> None:
+        case = QUERY_CASES_BY_LABEL["committed_mrr"]
+        org_ctx = metrics_harness.organizations[case.org_key]
+        auth_subject = _metrics_auth_subject(
+            metrics_harness.user,
+            metrics_harness.unauthorized_user,
+            org_ctx.organization,
+            case.auth_type,
+        )
+
+        async def get_metrics(now: datetime) -> MetricsResponse:
+            return await metrics_service.get_metrics(
+                metrics_session,
+                auth_subject,
+                start_date=case.start_date,
+                end_date=case.end_date,
+                timezone=ZoneInfo(case.timezone),
+                interval=case.interval,
+                organization_id=[org_ctx.organization.id]
+                if case.organization_id_filter or case.auth_type == "user"
+                else None,
+                product_id=[org_ctx.product_ids[k] for k in case.product_keys] or None,
+                billing_type=list(case.billing_types) or None,
+                customer_id=[org_ctx.customer_ids[k] for k in case.customer_keys]
+                or None,
+                metrics=list(case.metrics) if case.metrics is not None else None,
+                now=now,
+            )
+
+        early_metrics = await get_metrics(datetime(2024, 2, 15, tzinfo=UTC))
+        later_metrics = await get_metrics(datetime(2024, 4, 15, tzinfo=UTC))
+
+        assert len(early_metrics.periods) == len(later_metrics.periods) == 3
+
+        for early_period, later_period in zip(
+            early_metrics.periods, later_metrics.periods, strict=True
+        ):
+            assert early_period.timestamp == later_period.timestamp
+            assert (
+                early_period.committed_monthly_recurring_revenue
+                == later_period.committed_monthly_recurring_revenue
+            )
 
     async def test_trial_excluded_from_mrr(
         self,

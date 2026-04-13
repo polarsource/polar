@@ -47,14 +47,14 @@ def _in_trial(t: ColumnElement[datetime], i: TimeInterval) -> ColumnElement[bool
     )
 
 
-def _not_ended_as_of(
-    t: ColumnElement[datetime], i: TimeInterval, when: datetime
+def _not_ended_as_of_bucket(
+    t: ColumnElement[datetime], i: TimeInterval
 ) -> ColumnElement[bool]:
     buckets = t.table.c
     return or_(
         buckets.ended_or_ends_at.is_(None),
         i.sql_date_trunc(cast(SQLColumnExpression[datetime], buckets.ended_or_ends_at))
-        < i.sql_date_trunc(when),
+        < i.sql_date_trunc(t),
     )
 
 
@@ -132,7 +132,9 @@ class CommittedSubscriptionsMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.count(t.table.c.subscription_id).filter(_not_ended_as_of(t, i, now))
+        return func.count(t.table.c.subscription_id).filter(
+            _not_ended_as_of_bucket(t, i)
+        )
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -171,7 +173,7 @@ class CommittedMonthlyRecurringRevenueMetric(SQLMetric):
         buckets = t.table.c
         return func.coalesce(
             func.sum(buckets.monthly_amount).filter(
-                and_(_not_in_trial(t, i), _not_ended_as_of(t, i, now))
+                and_(_not_in_trial(t, i), _not_ended_as_of_bucket(t, i))
             ),
             0,
         )
@@ -212,7 +214,7 @@ class TrialCommittedMonthlyRecurringRevenueMetric(SQLMetric):
     ) -> ColumnElement[int]:
         return func.coalesce(
             func.sum(t.table.c.monthly_amount).filter(
-                and_(_in_trial(t, i), _not_ended_as_of(t, i, now))
+                and_(_in_trial(t, i), _not_ended_as_of_bucket(t, i))
             ),
             0,
         )

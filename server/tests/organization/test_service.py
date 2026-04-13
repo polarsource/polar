@@ -23,6 +23,9 @@ from polar.models.organization import (
     OrganizationStatus,
     OrganizationSubscriptionSettings,
 )
+from polar.models.organization import (
+    OrganizationDetails as OrganizationDetailsDict,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import (
@@ -221,6 +224,10 @@ class TestUpdateReviewSubmission:
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
+        organization.status = OrganizationStatus.CREATED
+        session.add(organization)
+        await session.flush()
+
         result = await organization_service.update(
             session,
             organization,
@@ -253,6 +260,9 @@ class TestUpdateReviewSubmission:
         organization: Organization,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.CREATED
+        session.add(organization)
+        await session.flush()
         await organization_service.update(
             session,
             organization,
@@ -288,6 +298,9 @@ class TestUpdateReviewSubmission:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        session.add(organization)
+        await session.flush()
         await organization_service.update(
             session,
             organization,
@@ -309,6 +322,38 @@ class TestUpdateReviewSubmission:
         assert ("body", "email") in error_locations
         assert ("body", "socials") in error_locations
         assert ("body", "details", "product_description") in error_locations
+
+    @pytest.mark.auth
+    async def test_update_details_ignored_after_initial_status(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        original_details: OrganizationDetailsDict = {
+            "product_description": "Original description for the organization.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": False,
+        }
+        organization.details = original_details
+        organization.status = OrganizationStatus.ACTIVE
+        session.add(organization)
+        await session.flush()
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                details=OrganizationDetails(
+                    product_description="Attempted tampering after approval.",
+                    selling_categories=["Other"],
+                    pricing_models=["One-time"],
+                    switching=True,
+                )
+            ),
+        )
+
+        assert result.details == original_details
 
 
 @pytest.mark.asyncio

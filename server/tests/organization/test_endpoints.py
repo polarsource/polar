@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 
 from polar.models import Product, User
 from polar.models.account import Account
-from polar.models.organization import Organization
+from polar.models.organization import Organization, OrganizationStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import UserOrganization
 from polar.payout_account.service import PayoutAccountServiceError
@@ -386,10 +386,14 @@ class TestUpdateOrganization:
         self,
         client: AsyncClient,
         mocker: MockerFixture,
+        save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        organization.status = OrganizationStatus.CREATED
+        await save_fixture(organization)
 
         update_response = await client.patch(
             f"/v1/organizations/{organization.id}",

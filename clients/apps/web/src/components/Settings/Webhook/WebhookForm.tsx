@@ -36,7 +36,10 @@ const isPrivateIP = (hostname: string): boolean => {
     if (a === 0) return true
     if (a === 100 && b >= 64 && b <= 127) return true
   }
-  if (/^\[?f[cd]/i.test(hostname) || /^\[?fe80/i.test(hostname)) return true
+  if (hostname.includes(':')) {
+    if (/^f[cd][0-9a-f]{2}:/i.test(hostname)) return true
+    if (/^fe[89ab][0-9a-f]:/i.test(hostname)) return true
+  }
   return false
 }
 
@@ -85,12 +88,7 @@ export const FieldUrl = () => {
           try {
             const url = new URL(value)
             const hostname = url.hostname.toLowerCase()
-            const localhostHosts = [
-              'localhost',
-              '127.0.0.1',
-              '0.0.0.0',
-              '[::1]',
-            ]
+            const localhostHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1']
             if (localhostHosts.includes(hostname)) {
               return 'Webhook URLs cannot point to localhost or private IP addresses.'
             }

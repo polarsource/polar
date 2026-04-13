@@ -1,7 +1,6 @@
 [Unit]
 Description=Process preview infra triggers
-StartLimitIntervalSec=60
-StartLimitBurst=30
+StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot

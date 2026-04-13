@@ -57,9 +57,9 @@ Polar needs a [Python 3](https://www.python.org/downloads/) and [Node.js 24](htt
 We have an internal tool in place called `dev` for an easy setup:
 
 ```sh
-./dev/cli/install   # One-time setup to add the 'dev' alias (restart your terminal after)
-dev up              # Sets up the entire environment
-dev seed --new-org <org-name>            # Optional, seeds a new organization with basic data
+./dev/cli/install              # One-time setup to add the 'dev' alias (restart your terminal after)
+dev up                         # Sets up the entire environment
+dev seed --new-org <org-name>  # Optional, seeds a new organization with basic data
 ```
 
 The `dev up` command will:

@@ -113,6 +113,27 @@ const OrganizationCustomerPortalSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
+            title="Allow email address changes"
+            description="Allow customers to change the email address associated with their account."
+          >
+            <FormField
+              control={control}
+              name="customer.allow_email_change"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
+
+          <SettingsGroupItem
             title="Enable subscription plan changes"
             description="Allow customers to change their subscription plan from the portal."
           >

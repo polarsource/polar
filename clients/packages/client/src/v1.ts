@@ -14788,6 +14788,11 @@ export interface components {
       default_payment_method_id?: string | null
       type?: components['schemas']['CustomerType'] | null
     }
+    /** CustomerPortalCustomerSettings */
+    CustomerPortalCustomerSettings: {
+      /** Allow Email Change */
+      allow_email_change: boolean
+    }
     /** CustomerPortalCustomerUpdate */
     CustomerPortalCustomerUpdate: {
       /** Billing Name */
@@ -22479,6 +22484,7 @@ export interface components {
     OrganizationCustomerPortalSettings: {
       usage: components['schemas']['CustomerPortalUsageSettings']
       subscription: components['schemas']['CustomerPortalSubscriptionSettings']
+      customer: components['schemas']['CustomerPortalCustomerSettings']
     }
     /**
      * OrganizationDeletionBlockedReason

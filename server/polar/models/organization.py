@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, Self, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, Self, TypedDict
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -136,9 +136,14 @@ class CustomerPortalSubscriptionSettings(TypedDict):
     update_plan: bool
 
 
+class CustomerPortalCustomerSettings(TypedDict):
+    allow_email_change: bool
+
+
 class OrganizationCustomerPortalSettings(TypedDict):
     usage: CustomerPortalUsageSettings
     subscription: CustomerPortalSubscriptionSettings
+    customer: NotRequired[CustomerPortalCustomerSettings]
 
 
 _default_customer_portal_settings: OrganizationCustomerPortalSettings = {
@@ -146,6 +151,9 @@ _default_customer_portal_settings: OrganizationCustomerPortalSettings = {
     "subscription": {
         "update_seats": True,
         "update_plan": True,
+    },
+    "customer": {
+        "allow_email_change": False,
     },
 }
 

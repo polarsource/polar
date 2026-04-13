@@ -13,6 +13,7 @@ from polar.customer_email_update.service import (
     customer_email_update as customer_email_update_service,
 )
 from polar.customer_session.service import customer_session as customer_session_service
+from polar.exceptions import NotPermitted
 from polar.openapi import APITag
 from polar.postgres import (
     AsyncReadSession,
@@ -50,6 +51,12 @@ async def request_email_update(
 
     # Load organization for building the verification URL
     await session.refresh(customer, ["organization"])
+
+    customer_settings = customer.organization.customer_portal_settings.get(
+        "customer", {}
+    )
+    if not customer_settings.get("allow_email_change", False):
+        raise NotPermitted("Email changes are not enabled for this organization.")
 
     log.info(
         "customer_portal.email_update.request",

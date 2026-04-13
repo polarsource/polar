@@ -129,7 +129,10 @@ export const CustomerPortalSettings = ({
         </WellContent>
       </Well>
 
-      {customer.type !== 'team' && customer.email && (
+      {customer.type !== 'team' &&
+        customer.email &&
+        organization.customer_portal_settings.customer?.allow_email_change ===
+          true && (
         <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
           <WellHeader className="flex-row items-center justify-between">
             <div className="flex flex-col gap-y-2">

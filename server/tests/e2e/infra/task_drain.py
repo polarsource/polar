@@ -199,6 +199,13 @@ class TaskDrain:
         ignored = DEFAULT_IGNORED_ACTORS | (ignored_actors or set())
         result = DrainResult()
 
+        # Purge stale messages from the broker's real Redis.
+        # group().run() and pipeline enqueue directly to the broker,
+        # bypassing the drain's FakeRedis. Leftover messages from
+        # previous tests or parallel workers would be siphoned into
+        # the current test and cause spurious failures.
+        self._purge_broker_queues()
+
         # Flush the HTTP request's JQM to Redis
         try:
             jqm = JobQueueManager.get()
@@ -266,6 +273,26 @@ class TaskDrain:
 
         return None
 
+    def _purge_broker_queues(self) -> None:
+        """Remove stale messages from the broker's real Redis.
+
+        ``group().run()`` and ``dramatiq.pipeline`` write directly to the
+        broker's Redis.  If a previous test (or a parallel pytest-xdist
+        worker) left messages behind, ``_siphon_broker_messages`` would
+        pull them into the current test and cause spurious failures.
+
+        Called at the *start* of each drain — before the current test's
+        JQM is flushed — so only genuinely stale messages are removed.
+        """
+        broker = dramatiq.get_broker()
+        broker_redis = getattr(broker, "client", None)
+        if broker_redis is None or broker_redis is self._redis:
+            return
+
+        for queue_name in QUEUE_NAMES:
+            broker_redis.delete(f"dramatiq:{queue_name}")
+            broker_redis.delete(f"dramatiq:{queue_name}.msgs")
+
     async def _siphon_broker_messages(self) -> None:
         """Transfer messages from the broker's Redis to the drain's FakeRedis.
 
@@ -299,7 +326,15 @@ class TaskDrain:
         fn: Any,
         message: dict[str, Any],
     ) -> Exception | None:
-        """Execute a single task function with proper CurrentMessage context."""
+        """Execute a single task function with proper CurrentMessage context.
+
+        Each task runs inside an outer SAVEPOINT so that if the task
+        fails (and ``AsyncSessionMaker`` calls ``session.rollback()``),
+        the rollback is contained and cannot corrupt the shared test
+        session.  Successful tasks release the SAVEPOINT, making their
+        changes visible in the connection's transaction for subsequent
+        tasks and assertions.
+        """
         args = message.get("args", ())
         kwargs = message.get("kwargs", {})
         options = message.get("options", {})
@@ -318,11 +353,25 @@ class TaskDrain:
         )
         CurrentMessage._MESSAGE.set(msg)
         try:
-            await fn(*args, **kwargs)
-            return None
-        except Retry:
-            return None
-        except Exception as exc:
-            return exc
+            nested = await self._session.begin_nested()
+            try:
+                await fn(*args, **kwargs)
+            except Retry:
+                # Retry is success from the drain's perspective.
+                # The inner rollback already happened; just make sure
+                # our SAVEPOINT is cleaned up.
+                if nested.is_active:
+                    await nested.rollback()
+                return None
+            except Exception as exc:
+                if nested.is_active:
+                    await nested.rollback()
+                return exc
+            else:
+                # Task succeeded — release the SAVEPOINT so its changes
+                # are visible in the outer transaction.
+                if nested.is_active:
+                    await nested.commit()
+                return None
         finally:
             CurrentMessage._MESSAGE.set(None)

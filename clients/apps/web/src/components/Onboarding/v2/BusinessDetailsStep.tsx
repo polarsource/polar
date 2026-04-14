@@ -134,7 +134,7 @@ function CurrencyAndCountryFields() {
   }, [businessCountry])
 
   return (
-    <div className="flex flex-col gap-y-2">
+    <Box display="flex" flexDirection="column" rowGap="s">
       <Box
         display="grid"
         gap="m"
@@ -201,7 +201,7 @@ function CurrencyAndCountryFields() {
           </p>
         </Box>
       )}
-    </div>
+    </Box>
   )
 }
 
@@ -275,9 +275,12 @@ export function BusinessDetailsStep() {
       step="business"
     >
       <Form {...form}>
-        <form
+        <Box
+          as="form"
           onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-6"
+          display="flex"
+          flexDirection="column"
+          rowGap="xl"
         >
           <FormSync />
           <OrgNameSync
@@ -322,7 +325,11 @@ export function BusinessDetailsStep() {
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <Box
+            display="grid"
+            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+            gap="l"
+          >
             <FormField
               control={form.control}
               name="orgName"
@@ -373,7 +380,7 @@ export function BusinessDetailsStep() {
                 </FormItem>
               )}
             />
-          </div>
+          </Box>
 
           <CompanyFields
             onEditBusinessName={() => setEditedBusinessName(true)}
@@ -382,7 +389,7 @@ export function BusinessDetailsStep() {
           <CurrencyAndCountryFields />
 
           <SubmitButton loading={submitting} />
-        </form>
+        </Box>
       </Form>
     </OnboardingShell>
   )

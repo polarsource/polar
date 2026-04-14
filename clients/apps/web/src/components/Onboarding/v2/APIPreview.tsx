@@ -1,6 +1,7 @@
 'use client'
 
 import { type schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useOnboardingData, useOnboardingDataLive } from './OnboardingContext'
@@ -164,40 +165,62 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
       : 'text-amber-600 dark:text-amber-500'
 
   return (
-    <div className="flex flex-col font-mono text-[11px]">
-      <div className="flex flex-col gap-1.5 border-b border-gray-200 pb-3 dark:border-gray-800">
-        <div className="flex items-center gap-2">
-          <span className={`font-semibold ${methodColor}`}>{method}</span>
-          <span className="text-gray-400 dark:text-gray-600">{path}</span>
-        </div>
-        <div className="flex flex-col gap-0.5 text-[10px] text-gray-400 dark:text-gray-600">
-          <span>Host: api.polar.sh</span>
-          <span>Content-Type: application/json</span>
-          <span>Content-Length: {contentLength}</span>
-          <span>Authorization: Bearer polar_sk_Yj1mbihldmVudHMp</span>
-        </div>
-      </div>
+    <Box display="flex" flexDirection="column">
+      <Box
+        display="flex"
+        flexDirection="column"
+        rowGap="xs"
+        borderBottomWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        paddingBottom="m"
+      >
+        <Box display="flex" alignItems="center" gap="s">
+          <p
+            className={`font-mono text-[11px] leading-relaxed font-semibold ${methodColor}`}
+          >
+            {method}
+          </p>
+          <p className="font-mono text-[11px] leading-relaxed text-gray-400 dark:text-gray-600">
+            {path}
+          </p>
+        </Box>
+        <Box display="flex" flexDirection="column">
+          <p className="font-mono text-[10px] leading-relaxed text-gray-400 dark:text-gray-600">
+            Host: api.polar.sh
+          </p>
+          <p className="font-mono text-[10px] leading-relaxed text-gray-400 dark:text-gray-600">
+            Content-Type: application/json
+          </p>
+          <p className="font-mono text-[10px] leading-relaxed text-gray-400 dark:text-gray-600">
+            Content-Length: {contentLength}
+          </p>
+          <p className="font-mono text-[10px] leading-relaxed text-gray-400 dark:text-gray-600">
+            Authorization: Bearer polar_sk_Yj1mbihldmVudHMp
+          </p>
+        </Box>
+      </Box>
 
-      <div className="pt-3 pb-2 text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-600">
+      <p className="pt-3 pb-2 font-mono text-[10px] leading-relaxed font-medium tracking-wider text-gray-400 uppercase dark:text-gray-600">
         Request Body
-      </div>
+      </p>
 
-      <div className="flex flex-col font-mono">
+      <Box display="flex" flexDirection="column">
         {lines.map((line, i) => {
           const isFlashed = flashedKeys.has(line.key)
           return (
-            <div key={line.key} className="flex leading-relaxed">
-              <span
-                className="mr-3 shrink-0 text-right text-gray-300 select-none dark:text-gray-700"
+            <Box key={line.key} display="flex">
+              <p
+                className="mr-3 shrink-0 text-right font-mono text-[11px] leading-relaxed text-gray-300 select-none dark:text-gray-700"
                 style={{ minWidth: '1.5ch' }}
               >
                 {i + 1}
-              </span>
-              <span
-                className="flex-1 leading-relaxed break-words"
+              </p>
+              <code
+                className="flex-1 font-mono text-[11px] leading-relaxed break-words"
                 style={{ paddingLeft: `${line.indent}ch` }}
               >
-                <span
+                <code
                   className={`-mx-1 rounded px-1 transition-colors duration-500 ${
                     isFlashed
                       ? 'bg-blue-500/15 dark:bg-blue-400/10'
@@ -205,68 +228,86 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
                   }`}
                 >
                   {line.content}
-                </span>
-              </span>
-            </div>
+                </code>
+              </code>
+            </Box>
           )
         })}
-      </div>
+      </Box>
 
       {apiLoading && (
-        <div className="mt-3 flex items-center gap-2 border-t border-gray-200 pt-3 dark:border-gray-800">
-          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500" />
-          <span className="text-[10px] text-gray-400 dark:text-gray-500">
+        <Box
+          marginTop="m"
+          display="flex"
+          alignItems="center"
+          gap="s"
+          borderTopWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          paddingTop="m"
+        >
+          <Box height={6} width={6} borderRadius="full" />
+          <p className="font-mono text-[10px] leading-relaxed text-gray-400 dark:text-gray-500">
             Sending request...
-          </span>
-        </div>
+          </p>
+        </Box>
       )}
 
       {apiResponse && (
-        <div className="mt-3 flex flex-col gap-3 border-t border-gray-200 pt-3 dark:border-gray-800">
-          <div className="flex items-center gap-2">
-            <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+        <Box
+          marginTop="m"
+          display="flex"
+          flexDirection="column"
+          rowGap="m"
+          borderTopWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          paddingTop="m"
+        >
+          <Box display="flex" alignItems="center" gap="s">
+            <p
+              className={`rounded-sm px-1.5 py-0.5 font-mono text-[10px] leading-relaxed font-bold ${
                 apiResponse.status >= 400
                   ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                   : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
               }`}
             >
               {apiResponse.status}
-            </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-500">
+            </p>
+            <p className="font-mono text-[10px] leading-relaxed text-gray-500 dark:text-gray-500">
               {apiResponse.message}
-            </span>
-          </div>
+            </p>
+          </Box>
 
           {apiResponse.status < 400 && (
             <>
-              <div className="pb-2 text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-600">
+              <p className="pb-2 font-mono text-[10px] leading-relaxed font-medium tracking-wider text-gray-400 uppercase dark:text-gray-600">
                 Response Body
-              </div>
-              <pre className="leading-relaxed text-gray-500 dark:text-gray-500">
+              </p>
+              <pre className="font-mono text-[11px] leading-relaxed text-gray-500 dark:text-gray-500">
                 {'{\n'}
                 {'  '}
-                <span className="text-blue-600 dark:text-blue-400">
+                <code className="text-blue-600 dark:text-blue-400">
                   {'"id"'}
-                </span>
-                <span className="text-gray-400">: </span>
-                <span className="text-green-600 dark:text-green-400">
+                </code>
+                <code className="text-gray-400">: </code>
+                <code className="text-green-600 dark:text-green-400">
                   {'"org_•••"'}
-                </span>
+                </code>
                 {',\n'}
                 {'  '}
-                <span className="text-blue-600 dark:text-blue-400">
+                <code className="text-blue-600 dark:text-blue-400">
                   {'"created_at"'}
-                </span>
-                <span className="text-gray-400">: </span>
-                <span className="text-green-600 dark:text-green-400">{`"${new Date().toISOString().split('.')[0]}Z"`}</span>
+                </code>
+                <code className="text-gray-400">: </code>
+                <code className="text-green-600 dark:text-green-400">{`"${new Date().toISOString().split('.')[0]}Z"`}</code>
                 {'\n}'}
               </pre>
             </>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   )
 }
 
@@ -284,9 +325,7 @@ function buildLines(
         key: 'empty',
         fingerprint: '{}',
         indent: 0,
-        content: (
-          <span className="text-gray-400 dark:text-gray-500">{'{ }'}</span>
-        ),
+        content: <code className="text-gray-400">{'{ }'}</code>,
       },
     ]
   }
@@ -298,7 +337,7 @@ function buildLines(
       key: '__open',
       fingerprint: '{',
       indent: 0,
-      content: <span className="text-gray-400">{'{'}</span>,
+      content: <code className="text-gray-400">{'{'}</code>,
     })
   }
 
@@ -312,10 +351,10 @@ function buildLines(
         fingerprint: `${fullKey}:{`,
         indent,
         content: (
-          <span>
-            <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
-            <span className="text-gray-400">{': {'}</span>
-          </span>
+          <>
+            <code className="text-blue-600 dark:text-blue-400">{`"${key}"`}</code>
+            <code className="text-gray-400">{': {'}</code>
+          </>
         ),
       })
       lines.push(
@@ -326,10 +365,10 @@ function buildLines(
         fingerprint: `${fullKey}:}${comma ? ',' : ''}`,
         indent,
         content: (
-          <span className="text-gray-400">
+          <code className="text-gray-400">
             {'}'}
             {comma && ','}
-          </span>
+          </code>
         ),
       })
     } else if (Array.isArray(value) && value.length > 0) {
@@ -338,10 +377,10 @@ function buildLines(
         fingerprint: `${fullKey}:[`,
         indent,
         content: (
-          <span>
-            <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
-            <span className="text-gray-400">{': ['}</span>
-          </span>
+          <>
+            <code className="text-blue-600 dark:text-blue-400">{`"${key}"`}</code>
+            <code className="text-gray-400">{': ['}</code>
+          </>
         ),
       })
       value.forEach((item, j) => {
@@ -351,10 +390,10 @@ function buildLines(
           fingerprint: `${fullKey}-${j}:${itemStr}`,
           indent: indent + 2,
           content: (
-            <span>
+            <>
               <JsonValue value={item} />
-              {j < value.length - 1 && <span className="text-gray-400">,</span>}
-            </span>
+              {j < value.length - 1 && <code className="text-gray-400">,</code>}
+            </>
           ),
         })
       })
@@ -363,10 +402,10 @@ function buildLines(
         fingerprint: `${fullKey}:]${comma ? ',' : ''}`,
         indent,
         content: (
-          <span className="text-gray-400">
+          <code className="text-gray-400">
             {']'}
             {comma && ','}
-          </span>
+          </code>
         ),
       })
     } else {
@@ -376,12 +415,12 @@ function buildLines(
         fingerprint: `${fullKey}:${valStr}`,
         indent,
         content: (
-          <span>
-            <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
-            <span className="text-gray-400">: </span>
+          <>
+            <code className="text-blue-600 dark:text-blue-400">{`"${key}"`}</code>
+            <code className="text-gray-400">: </code>
             <JsonValue value={value} />
-            {comma && <span className="text-gray-400">,</span>}
-          </span>
+            {comma && <code className="text-gray-400">,</code>}
+          </>
         ),
       })
     }
@@ -392,7 +431,7 @@ function buildLines(
       key: '__close',
       fingerprint: '}',
       indent: 0,
-      content: <span className="text-gray-400">{'}'}</span>,
+      content: <code className="text-gray-400">{'}'}</code>,
     })
   }
 
@@ -402,26 +441,26 @@ function buildLines(
 function JsonValue({ value }: { value: unknown }) {
   if (typeof value === 'string') {
     return (
-      <span className="text-green-600 dark:text-green-400">{`"${value}"`}</span>
+      <code className="text-green-600 dark:text-green-400">{`"${value}"`}</code>
     )
   }
   if (typeof value === 'boolean') {
     return (
-      <span className="text-amber-600 dark:text-amber-400">
+      <code className="text-amber-600 dark:text-amber-400">
         {String(value)}
-      </span>
+      </code>
     )
   }
   if (typeof value === 'number') {
     return (
-      <span className="text-amber-600 dark:text-amber-400">
+      <code className="text-amber-600 dark:text-amber-400">
         {String(value)}
-      </span>
+      </code>
     )
   }
   if (Array.isArray(value)) {
-    if (value.length === 0) return <span className="text-gray-400">[]</span>
+    if (value.length === 0) return <code className="text-gray-400">[]</code>
     return null
   }
-  return <span className="text-gray-400">null</span>
+  return <code className="text-gray-400">null</code>
 }

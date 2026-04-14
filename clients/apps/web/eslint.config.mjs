@@ -1,14 +1,6 @@
 import { nextJsConfig } from '@polar-sh/eslint-config/next-js'
 import polarPlugin from './eslint-rules/index.mjs'
 
-const baseRestrictedSyntax = [
-  {
-    selector: 'JSXOpeningElement[name.name="img"]',
-    message:
-      'Use <UploadImage /> from @/components/Image/Image or <StaticImage /> from @/components/Image/StaticImage instead of <img>.',
-  },
-]
-
 /** @type {import("eslint").Linter.Config} */
 export default [
   ...nextJsConfig,
@@ -49,7 +41,6 @@ export default [
       'polar/no-classname-box': 'error',
       'polar/no-style-box': 'error',
       'polar/no-next-image': 'error',
-      'no-restricted-syntax': ['error', ...baseRestrictedSyntax],
     },
   },
   {
@@ -68,7 +59,6 @@ export default [
       'src/components/Onboarding/**/*.tsx',
     ],
     rules: {
-      'no-restricted-syntax': ['error', ...baseRestrictedSyntax],
       'polar/no-raw-html-layout': 'error',
     },
   },

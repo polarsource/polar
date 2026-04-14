@@ -48,20 +48,27 @@ export default function Page() {
       paddingHorizontal="l"
       position="relative"
     >
-      <div className="dark:text-polar-500 absolute bottom-6 left-6 flex gap-4 text-sm text-gray-400">
+      <Box
+        position="absolute"
+        bottom={24}
+        left={24}
+        display="flex"
+        gap="l"
+        color="text-tertiary"
+      >
         <Link
           href="/dashboard/account/preferences"
-          className="dark:hover:text-polar-200 hover:text-gray-900"
+          className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
         >
           User settings
         </Link>
         <a
           href={`${CONFIG.BASE_URL}/v1/auth/logout`}
-          className="dark:hover:text-polar-200 hover:text-gray-900"
+          className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
         >
           Log out
         </a>
-      </div>
+      </Box>
       <Box
         display="flex"
         width="100%"

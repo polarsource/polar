@@ -59,8 +59,14 @@ function SlugPreview({
   const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
 
   return (
-    <span className="dark:text-polar-500 flex items-center gap-1 text-xs text-gray-400">
-      <span>polar.sh/</span>
+    <Box
+      as="span"
+      display="flex"
+      alignItems="center"
+      gap="xs"
+      color="text-tertiary"
+    >
+      <Box as="span">polar.sh/</Box>
       {editingSlug ? (
         <input
           value={orgSlug}
@@ -89,7 +95,7 @@ function SlugPreview({
           {orgSlug || 'your-slug'}
         </button>
       )}
-    </span>
+    </Box>
   )
 }
 
@@ -161,38 +167,37 @@ export function SandboxFormFields({
                 }}
                 className="mt-0.5"
               />
-              <label
-                htmlFor="terms"
-                className="cursor-pointer text-sm leading-snug font-medium"
-              >
-                I agree to Polar&apos;s{' '}
-                <a
-                  href="https://polar.sh/legal/terms"
-                  className="text-gray-900 underline dark:text-white"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Terms
-                </a>
-                ,{' '}
-                <a
-                  href="https://polar.sh/legal/privacy"
-                  className="text-gray-900 underline dark:text-white"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Privacy Policy
-                </a>{' '}
-                &amp;{' '}
-                <a
-                  href="https://polar.sh/docs/merchant-of-record/account-reviews"
-                  className="text-gray-900 underline dark:text-white"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  AUP
-                </a>
-              </label>
+              <Box as="label" htmlFor="terms">
+                <p className="cursor-pointer text-sm leading-snug font-medium">
+                  I agree to Polar&apos;s{' '}
+                  <a
+                    href="https://polar.sh/legal/terms"
+                    className="text-gray-900 underline dark:text-white"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Terms
+                  </a>
+                  ,{' '}
+                  <a
+                    href="https://polar.sh/legal/privacy"
+                    className="text-gray-900 underline dark:text-white"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Privacy Policy
+                  </a>{' '}
+                  &amp;{' '}
+                  <a
+                    href="https://polar.sh/docs/merchant-of-record/account-reviews"
+                    className="text-gray-900 underline dark:text-white"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    AUP
+                  </a>
+                </p>
+              </Box>
             </Box>
             <FormMessage />
           </FormItem>

@@ -3,6 +3,7 @@
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -99,9 +100,12 @@ export function SandboxStep() {
       apiStep="sandbox"
     >
       <Form {...form}>
-        <form
+        <Box
+          as="form"
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex w-full flex-col gap-y-6"
+          display="flex"
+          flexDirection="column"
+          rowGap="xl"
         >
           <OrgNameSlugSync editedSlug={editedSlug} />
           <SandboxFormFields
@@ -111,7 +115,7 @@ export function SandboxStep() {
             form={form}
           />
           <SubmitButton loading={submitting} error={error} />
-        </form>
+        </Box>
       </Form>
     </OnboardingShell>
   )

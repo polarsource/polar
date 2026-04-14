@@ -194,9 +194,12 @@ export function PersonalDetailsStep() {
       step="personal"
     >
       <Form {...form}>
-        <form
+        <Box
+          as="form"
           onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-6"
+          display="flex"
+          flexDirection="column"
+          rowGap="xl"
         >
           <FormSync />
           <Box
@@ -234,7 +237,7 @@ export function PersonalDetailsStep() {
             />
           </Box>
 
-          <div className="flex flex-col gap-y-2">
+          <Box display="flex" flexDirection="column" rowGap="s">
             <FormField
               control={control}
               name="country"
@@ -274,7 +277,7 @@ export function PersonalDetailsStep() {
                 </p>
               </Box>
             )}
-          </div>
+          </Box>
 
           <Box display="flex" flexDirection="column" rowGap="s">
             <FormLabel>Date of Birth</FormLabel>
@@ -367,15 +370,15 @@ export function PersonalDetailsStep() {
             <TermsCheckbox control={control} name="terms" setValue={setValue} />
           )}
 
-          <div className="flex flex-col gap-y-2">
+          <Box display="flex" flexDirection="column" rowGap="s">
             <SubmitButton loading={submitting} />
             {submitError && (
               <p className="text-sm text-red-500 dark:text-red-500">
                 Something went wrong, please try again.
               </p>
             )}
-          </div>
-        </form>
+          </Box>
+        </Box>
       </Form>
     </OnboardingShell>
   )

@@ -46,40 +46,39 @@ export function TermsCheckbox<T extends FieldValues>({
                 }}
                 className="mt-0.5"
               />
-              <div className="flex flex-col gap-y-1 text-sm">
-                <label
-                  htmlFor="terms"
-                  className="cursor-pointer leading-snug font-medium"
-                >
-                  I agree to Polar&apos;s{' '}
-                  <a
-                    href="https://polar.sh/legal/master-services-terms"
-                    className="text-gray-900 underline dark:text-white"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Terms
-                  </a>
-                  ,{' '}
-                  <a
-                    href="https://polar.sh/legal/privacy-policy"
-                    className="text-gray-900 underline dark:text-white"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Privacy Policy
-                  </a>{' '}
-                  &amp;{' '}
-                  <a
-                    href="https://polar.sh/legal/acceptable-use-policy"
-                    className="text-gray-900 underline dark:text-white"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    AUP
-                  </a>
-                </label>
-              </div>
+              <Box display="flex" flexDirection="column" rowGap="xs">
+                <Box as="label" htmlFor="terms">
+                  <p className="cursor-pointer text-sm leading-snug font-medium">
+                    I agree to Polar&apos;s{' '}
+                    <a
+                      href="https://polar.sh/legal/master-services-terms"
+                      className="text-gray-900 underline dark:text-white"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Terms
+                    </a>
+                    ,{' '}
+                    <a
+                      href="https://polar.sh/legal/privacy-policy"
+                      className="text-gray-900 underline dark:text-white"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Privacy Policy
+                    </a>{' '}
+                    &amp;{' '}
+                    <a
+                      href="https://polar.sh/legal/acceptable-use-policy"
+                      className="text-gray-900 underline dark:text-white"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      AUP
+                    </a>
+                  </p>
+                </Box>
+              </Box>
             </Box>
           </FormControl>
           <FormMessage />

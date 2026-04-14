@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
+import { Box } from '@polar-sh/orbit/Box'
 import { DynamicToolUIPart } from 'ai'
 import { useState } from 'react'
 import LogoIcon from '../Brand/logos/LogoIcon'
@@ -183,18 +184,27 @@ export const ToolCallGroup = ({
 
   if (expanded) {
     return (
-      <div className="not-prose flex flex-col gap-2">
+      <Box display="flex" flexDirection="column" gap="s">
         <button
           onClick={() => setExpanded(false)}
           className="dark:text-polar-500 flex items-center gap-1 text-left text-gray-500 hover:text-gray-700 dark:hover:text-gray-400"
         >
           <LogoIcon size={24} className="-ml-1.5" />
-          <span>
+          <Box as="span">
             Took {parts.length} action{parts.length === 1 ? '' : 's'} to
             configure your account
-          </span>
+          </Box>
         </button>
-        <div className="dark:border-polar-700 ml-6 flex flex-col gap-1.5 border-l-2 border-gray-200 pl-4">
+        <Box
+          marginLeft="xl"
+          display="flex"
+          flexDirection="column"
+          gap="xs"
+          borderLeftWidth={2}
+          borderStyle="solid"
+          borderColor="border-primary"
+          paddingLeft="l"
+        >
           {parts.map((part, index) => {
             const label = getToolLabel(part)
             return (
@@ -206,8 +216,8 @@ export const ToolCallGroup = ({
               </p>
             )
           })}
-        </div>
-      </div>
+        </Box>
+      </Box>
     )
   }
 
@@ -219,12 +229,12 @@ export const ToolCallGroup = ({
     >
       <LogoIcon size={24} className="-ml-1.5" />
       {isComplete ? (
-        <span>
+        <Box as="span">
           Took {parts.length} action{parts.length === 1 ? '' : 's'} to configure
           your account
-        </span>
+        </Box>
       ) : (
-        <span>{getToolLabel(lastPart)}</span>
+        <Box as="span">{getToolLabel(lastPart)}</Box>
       )}
     </button>
   )

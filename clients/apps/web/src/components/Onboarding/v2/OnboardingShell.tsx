@@ -47,20 +47,27 @@ export function OnboardingShell({
       overflowX="hidden"
       position="relative"
     >
-      <div className="dark:text-polar-500 absolute bottom-6 left-6 flex gap-4 text-sm text-gray-400">
+      <Box
+        position="absolute"
+        bottom={24}
+        left={24}
+        display="flex"
+        gap="l"
+        color="text-tertiary"
+      >
         <Link
           href="/dashboard/account/preferences"
-          className="dark:hover:text-polar-200 hover:text-gray-900"
+          className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
         >
           User settings
         </Link>
         <a
           href={`${CONFIG.BASE_URL}/v1/auth/logout`}
-          className="dark:hover:text-polar-200 hover:text-gray-900"
+          className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
         >
           Log out
         </a>
-      </div>
+      </Box>
       <Box display="flex" width="100%" maxWidth="60rem">
         {/* Left: form */}
         <Box
@@ -103,12 +110,15 @@ export function OnboardingShell({
                   <Box display="flex" width="100%" alignItems="center" gap="s">
                     {STEPS.map((s, i) => (
                       <Box key={s} display="flex" flex={1}>
-                        <div
-                          className={`h-0.5 w-full rounded-full transition-colors ${
+                        <Box
+                          height={2}
+                          width="100%"
+                          borderRadius="full"
+                          backgroundColor={
                             i <= currentIndex
-                              ? 'dark:bg-polar-50 bg-gray-900'
-                              : 'dark:bg-polar-700 bg-gray-200'
-                          }`}
+                              ? 'text-primary'
+                              : 'border-primary'
+                          }
                         />
                       </Box>
                     ))}

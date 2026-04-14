@@ -266,9 +266,12 @@ export function ProductDetailsStep() {
       step="product"
     >
       <Form {...form}>
-        <form
+        <Box
+          as="form"
           onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-6"
+          display="flex"
+          flexDirection="column"
+          rowGap="xl"
         >
           <Box display="flex" flexDirection="column" rowGap="m">
             <FormLabel>What are you selling?</FormLabel>
@@ -339,9 +342,9 @@ export function ProductDetailsStep() {
           <Box display="flex" flexDirection="column" rowGap="m">
             <FormLabel>
               Currently selling on{' '}
-              <span className="dark:text-polar-500 text-gray-400">
+              <Box as="span" color="text-tertiary">
                 (optional)
-              </span>
+              </Box>
             </FormLabel>
             <ChipSelect
               options={SELLING_PLATFORMS}
@@ -365,9 +368,9 @@ export function ProductDetailsStep() {
                 <FormItem className="w-full">
                   <FormLabel>
                     Support Email{' '}
-                    <span className="dark:text-polar-500 text-gray-400">
+                    <Box as="span" color="text-tertiary">
                       (optional)
-                    </span>
+                    </Box>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -388,9 +391,9 @@ export function ProductDetailsStep() {
                 <FormItem className="w-full">
                   <FormLabel>
                     Product URL{' '}
-                    <span className="dark:text-polar-500 text-gray-400">
+                    <Box as="span" color="text-tertiary">
                       (optional)
-                    </span>
+                    </Box>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -405,7 +408,7 @@ export function ProductDetailsStep() {
             />
           </Box>
 
-          <div className="flex flex-col gap-y-2">
+          <Box display="flex" flexDirection="column" rowGap="s">
             <Button
               type="submit"
               onClick={() => form.clearErrors()}
@@ -442,8 +445,8 @@ export function ProductDetailsStep() {
                 {form.formState.errors.root.message}
               </p>
             )}
-          </div>
-        </form>
+          </Box>
+        </Box>
       </Form>
     </OnboardingShell>
   )

@@ -2,13 +2,13 @@ import { useOnboardingTracking } from '@/hooks'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import slugify from 'slugify'
-import { twMerge } from 'tailwind-merge'
 import LogoIcon from '../Brand/logos/LogoIcon'
 import BetterAuthIcon from '../Icons/frameworks/better-auth'
 import NextJsIcon from '../Icons/frameworks/nextjs'
@@ -196,20 +196,43 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
   const isPython = currentFramework?.slug === 'python'
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
-      <div className="dark:bg-polar-900 flex h-full min-h-0 w-full flex-col gap-8 overflow-y-auto p-12 md:max-w-lg">
-        <div className="flex flex-col gap-y-12">
+    <Box
+      display="flex"
+      height="100%"
+      flexDirection={{ base: 'column', md: 'row' }}
+    >
+      <Box
+        display="flex"
+        height="100%"
+        minHeight={0}
+        width="100%"
+        flexDirection="column"
+        gap="2xl"
+        overflowY="auto"
+        padding="3xl"
+        maxWidth={{ md: '32rem' }}
+        backgroundColor="background-card"
+      >
+        <Box display="flex" flexDirection="column" rowGap="3xl">
           <LogoIcon size={50} />
-          <div className="flex flex-col gap-y-4">
+          <Box display="flex" flexDirection="column" rowGap="l">
             <h1 className="text-3xl">Integrate Checkout</h1>
             <p className="dark:text-polar-400 text-lg text-gray-600">
               Integrate checkouts with your favorite framework.
             </p>
-          </div>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="hidden flex-col gap-y-8 md:flex">
-          <div className="grid grid-cols-2 gap-4">
+        <Box
+          display={{ base: 'none', md: 'flex' }}
+          flexDirection="column"
+          rowGap="2xl"
+        >
+          <Box
+            display="grid"
+            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+            gap="l"
+          >
             {parsedFrameworks.map((framework) => (
               <FrameworkCard
                 key={framework.slug}
@@ -218,29 +241,53 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
                 onClick={() => setSelectedFramework(framework.slug)}
               />
             ))}
-          </div>
-          <div className="flex flex-col gap-y-4">
+          </Box>
+          <Box display="flex" flexDirection="column" rowGap="l">
             <Link
               href={`https://polar.sh/docs/integrate/sdk/adapters/nextjs`}
               target="_blank"
               className="w-full"
             >
               <Button size="lg" fullWidth variant="secondary">
-                <span>Explore All Adapters</span>
+                <Box as="span">Explore All Adapters</Box>
                 <ArrowOutwardOutlined className="ml-2" fontSize="small" />
               </Button>
             </Link>
             <Button size="lg" fullWidth onClick={handleGoToDashboard}>
               Go to Dashboard
             </Button>
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
       <SyntaxHighlighterProvider>
-        <div className="dark:bg-polar-950 hidden flex-1 grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
-          <div className="dark:bg-polar-900 flex w-full max-w-3xl flex-col gap-y-12 rounded-3xl bg-white p-12">
-            <div className="flex flex-col gap-y-6">
-              <div className="flex flex-row items-center justify-between">
+        <Box
+          display={{ base: 'none', md: 'flex' }}
+          flex={1}
+          flexGrow={1}
+          flexDirection="column"
+          alignItems="center"
+          gap="3xl"
+          overflowY="auto"
+          backgroundColor="background-secondary"
+          padding="4xl"
+        >
+          <Box
+            display="flex"
+            width="100%"
+            maxWidth="48rem"
+            flexDirection="column"
+            rowGap="3xl"
+            borderRadius="xl"
+            backgroundColor="background-card"
+            padding="3xl"
+          >
+            <Box display="flex" flexDirection="column" rowGap="xl">
+              <Box
+                display="flex"
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="between"
+              >
                 <h2 className="text-lg">1. Install Dependencies</h2>
                 {!isPython && (
                   <Tabs
@@ -262,13 +309,13 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
                     </TabsList>
                   </Tabs>
                 )}
-              </div>
+              </Box>
               <CodeWrapper>
                 <SyntaxHighlighterClient lang="bash" code={installCommand} />
               </CodeWrapper>
-            </div>
+            </Box>
 
-            <div className="flex flex-col gap-y-6">
+            <Box display="flex" flexDirection="column" rowGap="xl">
               <h2 className="text-lg">2. Add Environment Variables</h2>
               <OrganizationAccessTokensSettings
                 organization={organization}
@@ -283,9 +330,9 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
 POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
                 />
               </CodeWrapper>
-            </div>
+            </Box>
 
-            <div className="flex flex-col gap-y-6">
+            <Box display="flex" flexDirection="column" rowGap="xl">
               <h2 className="text-lg">3. Integrate the Checkout</h2>
               <CodeWrapper>
                 <SyntaxHighlighterClient
@@ -299,23 +346,31 @@ POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
               </CodeWrapper>
               <Link href={currentFramework?.link ?? ''} target="_blank">
                 <Button size="lg" variant="secondary" fullWidth>
-                  <span>View Documentation</span>
+                  <Box as="span">View Documentation</Box>
                   <ArrowOutwardOutlined className="ml-2" fontSize="small" />
                 </Button>
               </Link>
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
       </SyntaxHighlighterProvider>
-    </div>
+    </Box>
   )
 }
 
 const CodeWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="dark:border-polar-700 dark:bg-polar-800 w-full rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm">
+    <Box
+      width="100%"
+      borderRadius="md"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      backgroundColor="background-secondary"
+      padding="l"
+    >
       {children}
-    </div>
+    </Box>
   )
 }
 
@@ -335,20 +390,29 @@ const FrameworkCard = ({
   onClick,
 }: FrameworkCardProps) => {
   return (
-    <div
-      className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 flex cursor-pointer flex-col gap-y-4 rounded-xl border border-transparent bg-gray-100 p-4',
-        active
-          ? 'shadow-3xl border-gray-100 bg-black text-white dark:bg-white dark:text-black'
-          : 'transition-opacity hover:opacity-70',
-      )}
-      role="button"
-      onClick={() => onClick(slug)}
-    >
-      {icon ?? (
-        <div className="dark:bg-polar-900 h-8 w-8 rounded-full bg-gray-200" />
-      )}
-      <h2 className="text-lg">{name}</h2>
-    </div>
+    <button type="button" onClick={() => onClick(slug)}>
+      <Box
+        cursor="pointer"
+        display="flex"
+        flexDirection="column"
+        rowGap="l"
+        borderRadius="md"
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor={active ? 'border-secondary' : 'border-primary'}
+        backgroundColor={active ? 'text-primary' : 'background-secondary'}
+        padding="l"
+      >
+        {icon ?? (
+          <Box
+            height={32}
+            width={32}
+            borderRadius="full"
+            backgroundColor="border-primary"
+          />
+        )}
+        <h2 className="text-lg">{name}</h2>
+      </Box>
+    </button>
   )
 }

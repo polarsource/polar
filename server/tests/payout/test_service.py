@@ -131,9 +131,8 @@ class TestCreate:
         "status",
         [
             OrganizationStatus.CREATED,
-            OrganizationStatus.ONBOARDING_STARTED,
-            OrganizationStatus.INITIAL_REVIEW,
-            OrganizationStatus.ONGOING_REVIEW,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
             OrganizationStatus.DENIED,
             OrganizationStatus.OFFBOARDING,
         ],

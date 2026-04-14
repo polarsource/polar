@@ -452,10 +452,7 @@ class OrganizationDetailView:
                             ):
                                 text("Set Offboarding")
 
-                    elif self.org.status in (
-                        OrganizationStatus.CREATED,
-                        OrganizationStatus.ONBOARDING_STARTED,
-                    ):
+                    elif self.org.status == OrganizationStatus.CREATED:
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",

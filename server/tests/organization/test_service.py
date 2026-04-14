@@ -367,7 +367,7 @@ class TestCheckReviewThreshold:
         organization: Organization,
     ) -> None:
         # Given organization already under review
-        organization.status = OrganizationStatus.INITIAL_REVIEW
+        organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 1000
         organization.total_balance = None
 
@@ -382,7 +382,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then - status unchanged but total_balance is updated
-        assert result.status == OrganizationStatus.INITIAL_REVIEW
+        assert result.status == OrganizationStatus.REVIEW
         assert result.total_balance == 7500
 
     async def test_below_review_threshold(
@@ -501,7 +501,7 @@ class TestConfirmOrganizationReviewed:
         organization: Organization,
     ) -> None:
         # Given organization under review
-        organization.status = OrganizationStatus.INITIAL_REVIEW
+        organization.status = OrganizationStatus.REVIEW
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
@@ -528,7 +528,7 @@ class TestConfirmOrganizationReviewed:
         organization: Organization,
     ) -> None:
         # Given organization under review
-        organization.status = OrganizationStatus.INITIAL_REVIEW
+        organization.status = OrganizationStatus.REVIEW
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
@@ -555,7 +555,7 @@ class TestConfirmOrganizationReviewed:
         organization: Organization,
     ) -> None:
         # Given organization under review
-        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.status = OrganizationStatus.REVIEW
         initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
         organization.initially_reviewed_at = initially_reviewed_at
 
@@ -623,8 +623,8 @@ class TestHandleOngoingReviewVerdict:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is ONGOING_REVIEW with threshold=$500 (50_000 cents)
-        organization.status = OrganizationStatus.ONGOING_REVIEW
+        # Given: org is REVIEW with threshold=$500 (50_000 cents)
+        organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 50_000
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -651,8 +651,8 @@ class TestHandleOngoingReviewVerdict:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is ONGOING_REVIEW with threshold=$500
-        organization.status = OrganizationStatus.ONGOING_REVIEW
+        # Given: org is REVIEW with threshold=$500
+        organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 50_000
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -668,7 +668,7 @@ class TestHandleOngoingReviewVerdict:
 
         # Then: escalated, Plain ticket created, status unchanged
         assert result is False
-        assert organization.status == OrganizationStatus.ONGOING_REVIEW
+        assert organization.status == OrganizationStatus.REVIEW
         plain_mock.assert_called_once_with(session, organization)
         enqueue_job_mock.assert_not_called()
 
@@ -678,8 +678,8 @@ class TestHandleOngoingReviewVerdict:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is ONGOING_REVIEW with threshold=$500
-        organization.status = OrganizationStatus.ONGOING_REVIEW
+        # Given: org is REVIEW with threshold=$500
+        organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 50_000
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -695,7 +695,7 @@ class TestHandleOngoingReviewVerdict:
 
         # Then: escalated, Plain ticket created
         assert result is False
-        assert organization.status == OrganizationStatus.ONGOING_REVIEW
+        assert organization.status == OrganizationStatus.REVIEW
         plain_mock.assert_called_once_with(session, organization)
         enqueue_job_mock.assert_not_called()
 
@@ -705,8 +705,8 @@ class TestHandleOngoingReviewVerdict:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is ONGOING_REVIEW with a low threshold (no min threshold required)
-        organization.status = OrganizationStatus.ONGOING_REVIEW
+        # Given: org is REVIEW with a low threshold (no min threshold required)
+        organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 100
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -733,8 +733,8 @@ class TestHandleOngoingReviewVerdict:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is ONGOING_REVIEW with default threshold of $0
-        organization.status = OrganizationStatus.ONGOING_REVIEW
+        # Given: org is REVIEW with default threshold of $0
+        organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 0
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -755,14 +755,14 @@ class TestHandleOngoingReviewVerdict:
         enqueue_job_mock.assert_called_once()
         plain_mock.assert_not_called()
 
-    async def test_not_eligible_initial_review(
+    async def test_not_eligible_no_initial_review(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is INITIAL_REVIEW with threshold=$500
-        organization.status = OrganizationStatus.INITIAL_REVIEW
+        # Given: org is REVIEW without initially_reviewed_at
+        organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 50_000
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
@@ -770,14 +770,14 @@ class TestHandleOngoingReviewVerdict:
             "polar.organization.service.plain_service.create_organization_review_thread"
         )
 
-        # When: verdict is APPROVE but status is INITIAL_REVIEW
+        # When: verdict is APPROVE but org hasn't been initially reviewed
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.APPROVE
         )
 
         # Then: not eligible, escalated to Plain
         assert result is False
-        assert organization.status == OrganizationStatus.INITIAL_REVIEW
+        assert organization.status == OrganizationStatus.REVIEW
         plain_mock.assert_called_once_with(session, organization)
         enqueue_job_mock.assert_not_called()
 
@@ -797,7 +797,7 @@ class TestHandleOngoingReviewVerdict:
             "polar.organization.service.plain_service.create_organization_review_thread"
         )
 
-        # When: verdict is APPROVE but status is ACTIVE (not ONGOING_REVIEW)
+        # When: verdict is APPROVE but status is ACTIVE (not REVIEW)
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.APPROVE
         )
@@ -1074,7 +1074,7 @@ class TestApproveAppeal:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.INITIAL_REVIEW
+        organization.status = OrganizationStatus.REVIEW
         review = OrganizationReview(
             organization_id=organization.id,
             verdict=OrganizationReview.Verdict.FAIL,
@@ -1830,8 +1830,8 @@ class TestSetOrganizationOffboarding:
     @pytest.mark.parametrize(
         "status",
         [
-            OrganizationStatus.INITIAL_REVIEW,
-            OrganizationStatus.ONGOING_REVIEW,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
         ],
     )
     async def test_from_review_statuses(
@@ -1875,7 +1875,7 @@ class TestSetOrganizationOffboarding:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.status = OrganizationStatus.REVIEW
         organization.internal_notes = None
 
         result = await organization_service.set_organization_offboarding(

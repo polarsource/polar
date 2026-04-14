@@ -193,9 +193,6 @@ OrganizationLegalEntity = (
 
 class OrganizationStatus(StrEnum):
     CREATED = "created"
-    ONBOARDING_STARTED = "onboarding_started"
-    INITIAL_REVIEW = "initial_review"
-    ONGOING_REVIEW = "ongoing_review"
     REVIEW = "review"
     SNOOZED = "snoozed"
     DENIED = "denied"
@@ -205,9 +202,6 @@ class OrganizationStatus(StrEnum):
     def get_display_name(self) -> str:
         return {
             OrganizationStatus.CREATED: "Created",
-            OrganizationStatus.ONBOARDING_STARTED: "Onboarding Started",
-            OrganizationStatus.INITIAL_REVIEW: "Initial Review",
-            OrganizationStatus.ONGOING_REVIEW: "Ongoing Review",
             OrganizationStatus.REVIEW: "Review",
             OrganizationStatus.SNOOZED: "Snoozed",
             OrganizationStatus.DENIED: "Denied",
@@ -217,7 +211,7 @@ class OrganizationStatus(StrEnum):
 
     @classmethod
     def review_statuses(cls) -> set[Self]:
-        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW, cls.REVIEW, cls.SNOOZED}  # pyright: ignore
+        return {cls.REVIEW, cls.SNOOZED}  # pyright: ignore
 
     @classmethod
     def payment_ready_statuses(cls) -> set[Self]:

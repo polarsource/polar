@@ -278,22 +278,6 @@ class OrganizationListView:
                 count=sum(status_counts.values()),
             ),
             Tab(
-                label="Initial Review",
-                url=str(request.url_for("organizations:list"))
-                + "?status=initial_review",
-                active=status_filter == OrganizationStatus.INITIAL_REVIEW,
-                count=status_counts.get(OrganizationStatus.INITIAL_REVIEW, 0),
-                badge_variant="warning",
-            ),
-            Tab(
-                label="Ongoing Review",
-                url=str(request.url_for("organizations:list"))
-                + "?status=ongoing_review",
-                active=status_filter == OrganizationStatus.ONGOING_REVIEW,
-                count=status_counts.get(OrganizationStatus.ONGOING_REVIEW, 0),
-                badge_variant="warning",
-            ),
-            Tab(
                 label="Review",
                 url=str(request.url_for("organizations:list")) + "?status=review",
                 active=status_filter == OrganizationStatus.REVIEW,

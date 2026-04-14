@@ -18,11 +18,8 @@ def status_badge(
 
     Generates a badge element with appropriate styling based on organization status.
     Uses DaisyUI badge classes with semantic color mapping:
-    - ACTIVE: success (green)
-    - INITIAL_REVIEW: warning (yellow)
-    - ONGOING_REVIEW: warning (yellow)
-    - DENIED: error (red)
-    - CREATED, ONBOARDING_STARTED: secondary (gray)
+    - REVIEW, OFFBOARDING: warning (yellow)
+    - ACTIVE, SNOOZED, DENIED, CREATED: ghost (gray)
 
     Args:
         status: The organization status to display.
@@ -42,14 +39,6 @@ def status_badge(
             "class": "badge-ghost border border-base-300",
             "aria": "active status",
         },
-        OrganizationStatus.INITIAL_REVIEW: {
-            "class": "badge-warning",
-            "aria": "initial review status",
-        },
-        OrganizationStatus.ONGOING_REVIEW: {
-            "class": "badge-warning",
-            "aria": "ongoing review status",
-        },
         OrganizationStatus.REVIEW: {
             "class": "badge-warning",
             "aria": "review status",
@@ -65,10 +54,6 @@ def status_badge(
         OrganizationStatus.CREATED: {
             "class": "badge-ghost border border-base-300",
             "aria": "created status",
-        },
-        OrganizationStatus.ONBOARDING_STARTED: {
-            "class": "badge-ghost border border-base-300",
-            "aria": "onboarding started status",
         },
         OrganizationStatus.OFFBOARDING: {
             "class": "badge-warning",

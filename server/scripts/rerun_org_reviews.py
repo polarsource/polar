@@ -87,15 +87,7 @@ async def process_organizations(
         # Query organizations under review
         statement = (
             select(Organization)
-            .where(
-                Organization.status.in_(
-                    [
-                        OrganizationStatus.INITIAL_REVIEW,
-                        OrganizationStatus.ONGOING_REVIEW,
-                        OrganizationStatus.REVIEW,
-                    ]
-                )
-            )
+            .where(Organization.status == OrganizationStatus.REVIEW)
             .options(joinedload(Organization.account))
             .order_by(Organization.status_updated_at.desc())
         )

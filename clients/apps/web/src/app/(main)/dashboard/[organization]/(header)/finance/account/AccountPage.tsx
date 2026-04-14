@@ -39,13 +39,7 @@ export default function ClientPage({
 
   const isDenied = organization.status === 'denied'
 
-  const isActive = [
-    'active',
-    'initial_review',
-    'ongoing_review',
-    'review',
-    'snoozed',
-  ].includes(organization.status)
+  const isActive = ['active', 'review', 'snoozed'].includes(organization.status)
 
   const [hasSubmittedDetails, setHasSubmittedDetails] = useState(
     !!organization.details_submitted_at,

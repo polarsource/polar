@@ -797,8 +797,7 @@ class OrganizationService:
         Only auto-approves when: verdict is APPROVE and org has been initially reviewed.
         """
         is_eligible = (
-            organization.status
-            in (OrganizationStatus.ONGOING_REVIEW, OrganizationStatus.REVIEW)
+            organization.status == OrganizationStatus.REVIEW
             and organization.initially_reviewed_at is not None
             and verdict == ReviewVerdict.APPROVE
         )
@@ -811,11 +810,7 @@ class OrganizationService:
         # Guard: only create a thread if the org is still under review
         # (it may have been handled already, e.g. on a task retry)
         # Excludes SNOOZED — snoozed orgs shouldn't get new Plain tickets
-        if organization.status in (
-            OrganizationStatus.INITIAL_REVIEW,
-            OrganizationStatus.ONGOING_REVIEW,
-            OrganizationStatus.REVIEW,
-        ):
+        if organization.status == OrganizationStatus.REVIEW:
             await plain_service.create_organization_review_thread(session, organization)
         return False
 

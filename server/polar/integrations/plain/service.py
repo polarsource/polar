@@ -193,10 +193,6 @@ class PlainService:
                 ) from e
 
             match organization.status:
-                case OrganizationStatus.INITIAL_REVIEW:
-                    title = "Initial Account Review"
-                case OrganizationStatus.ONGOING_REVIEW:
-                    title = "Ongoing Account Review"
                 case OrganizationStatus.REVIEW:
                     if organization.initially_reviewed_at is not None:
                         title = "Ongoing Account Review"

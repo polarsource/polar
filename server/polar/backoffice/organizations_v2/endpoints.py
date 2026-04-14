@@ -203,14 +203,8 @@ async def list_organizations(
         status_filter = OrganizationStatus.ACTIVE
     elif status == "denied":
         status_filter = OrganizationStatus.DENIED
-    elif status == "initial_review":
-        status_filter = OrganizationStatus.INITIAL_REVIEW
-    elif status == "ongoing_review":
-        status_filter = OrganizationStatus.ONGOING_REVIEW
     elif status == "created":
         status_filter = OrganizationStatus.CREATED
-    elif status == "onboarding_started":
-        status_filter = OrganizationStatus.ONBOARDING_STARTED
     elif status == "offboarding":
         status_filter = OrganizationStatus.OFFBOARDING
     elif status == "review":

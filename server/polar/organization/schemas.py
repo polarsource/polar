@@ -290,7 +290,6 @@ class LegacyOrganizationStatus(StrEnum):
     """
 
     CREATED = "created"
-    ONBOARDING_STARTED = "onboarding_started"
     UNDER_REVIEW = "under_review"
     DENIED = "denied"
     ACTIVE = "active"
@@ -299,11 +298,6 @@ class LegacyOrganizationStatus(StrEnum):
     def from_status(cls, status: OrganizationStatus) -> "LegacyOrganizationStatus":
         mapping = {
             OrganizationStatus.CREATED: LegacyOrganizationStatus.CREATED,
-            OrganizationStatus.ONBOARDING_STARTED: (
-                LegacyOrganizationStatus.ONBOARDING_STARTED
-            ),
-            OrganizationStatus.INITIAL_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
-            OrganizationStatus.ONGOING_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
             OrganizationStatus.REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
             OrganizationStatus.SNOOZED: LegacyOrganizationStatus.UNDER_REVIEW,
             OrganizationStatus.DENIED: LegacyOrganizationStatus.DENIED,

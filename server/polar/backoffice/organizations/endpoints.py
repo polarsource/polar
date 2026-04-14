@@ -333,12 +333,16 @@ async def list(
 
     # Add review cycle filter
     if review_cycle:
+        statement = statement.where(Organization.status == OrganizationStatus.REVIEW)
         match review_cycle:
             case "first":
-                status = OrganizationStatus.INITIAL_REVIEW
+                statement = statement.where(
+                    Organization.initially_reviewed_at.is_(None)
+                )
             case "subsequent":
-                status = OrganizationStatus.ONGOING_REVIEW
-        statement = statement.where(Organization.status == status)
+                statement = statement.where(
+                    Organization.initially_reviewed_at.is_not(None)
+                )
 
     statement = repository.apply_sorting(statement, sorting)
     items, count = await repository.paginate(

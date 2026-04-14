@@ -107,6 +107,7 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     query: str | None = Query(None),
+    organization: str | None = Query(None),
     status: Annotated[
         OrderStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
@@ -134,7 +135,6 @@ async def list(
                 or_(
                     Order.id == parsed_uuid,
                     Order.customer_id == parsed_uuid,
-                    Organization.id == parsed_uuid,
                 )
             )
         except ValueError:
@@ -143,9 +143,19 @@ async def list(
                     Customer.email.ilike(f"%{query}%"),
                     Customer.name.ilike(f"%{query}%"),
                     Product.name.ilike(f"%{query}%"),
-                    Organization.slug.ilike(f"%{query}%"),
-                    Organization.name.ilike(f"%{query}%"),
                     Order.invoice_number.ilike(f"%{query}%"),
+                )
+            )
+
+    if organization is not None:
+        try:
+            parsed_org_uuid = uuid.UUID(organization)
+            statement = statement.where(Organization.id == parsed_org_uuid)
+        except ValueError:
+            statement = statement.where(
+                or_(
+                    Organization.slug.ilike(f"%{organization}%"),
+                    Organization.name.ilike(f"%{organization}%"),
                 )
             )
 
@@ -175,7 +185,13 @@ async def list(
                 with input.search(
                     "query",
                     query,
-                    placeholder="Search by customer, product, invoice number...",
+                    placeholder="Search by order/customer ID, email, product, invoice...",
+                ):
+                    pass
+                with input.search(
+                    "organization",
+                    organization,
+                    placeholder="Organization ID, name, or slug...",
                 ):
                     pass
                 with input.select(

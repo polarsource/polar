@@ -82,23 +82,6 @@ export default function FeatureSettings({
       >
         <SettingsGroup>
           <SettingsGroupItem
-            title="Cost Insights"
-            description="Experimental feature to track costs and profits."
-          >
-            <FormField
-              control={control}
-              name="revops_enabled"
-              render={({ field }) => {
-                return (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={(enabled) => field.onChange(enabled)}
-                  />
-                )
-              }}
-            />
-          </SettingsGroupItem>
-          <SettingsGroupItem
             title="Localized Checkout"
             description={
               <>

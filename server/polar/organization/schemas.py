@@ -98,9 +98,6 @@ class OrganizationFeatureSettings(Schema):
     seat_based_pricing_enabled: bool = Field(
         False, description="If this organization has seat-based pricing enabled"
     )
-    revops_enabled: bool = Field(
-        False, description="If this organization has RevOps enabled"
-    )
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"
     )

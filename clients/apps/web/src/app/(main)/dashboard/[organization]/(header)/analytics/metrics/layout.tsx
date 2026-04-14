@@ -33,7 +33,6 @@ export default async function Layout(props: {
   ])
 
   const hasRecurringProducts = products.items.some((p) => p.is_recurring)
-  const revopsEnabled = organization.feature_settings?.revops_enabled ?? false
 
   const defaultDashboards = METRIC_GROUPS.map((g) => ({
     slug: g.category.toLowerCase().replace(/\s+/g, '-'),
@@ -42,7 +41,6 @@ export default async function Layout(props: {
     if (slug === 'subscriptions' || slug === 'cancellations') {
       return hasRecurringProducts
     }
-    if (slug === 'costs') return revopsEnabled
     return true
   })
 

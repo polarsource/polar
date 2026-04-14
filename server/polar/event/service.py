@@ -45,7 +45,6 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.event import EventSource
-from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_events, enqueue_job
 
@@ -1095,13 +1094,10 @@ class EventService:
         events = await repository.get_all(statement)
         customers: set[Customer] = set()
         organization_ids: set[uuid.UUID] = set()
-        organization_ids_for_revops: set[uuid.UUID] = set()
         for event in events:
             organization_ids.add(event.organization_id)
             if event.customer and not event.customer.is_deleted:
                 customers.add(event.customer)
-            if "_cost" in event.user_metadata:
-                organization_ids_for_revops.add(event.organization_id)
 
         span = trace.get_current_span()
         span.set_attribute(
@@ -1121,10 +1117,6 @@ class EventService:
         if events:
             tinybird_events = events_to_tinybird(events, ancestors_by_event)
             enqueue_job("tinybird.ingest", tinybird_events)
-
-        if organization_ids_for_revops:
-            organization_repository = OrganizationRepository.from_session(session)
-            await organization_repository.enable_revops(organization_ids_for_revops)
 
         polar_self_service.enqueue_event_ingestion(events)
 

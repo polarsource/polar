@@ -17,7 +17,7 @@ import {
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { useMemberModelEnabled } from '@/hooks/useMemberModelEnabled'
-import { formatPercentage, formatScalar } from '@/utils/formatters'
+import { formatPercentage } from '@/utils/formatters'
 import { getPreviousDateRange } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -89,9 +89,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     type: 'billing',
   })
 
-  const [selectedMetric, setSelectedMetric] = React.useState<
-    keyof schemas['Metrics']
-  >(organization.feature_settings?.revops_enabled ? 'cashflow' : 'revenue')
+  const [selectedMetric, setSelectedMetric] =
+    React.useState<keyof schemas['Metrics']>('cashflow')
 
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate: dateRange.startDate,
@@ -112,7 +111,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       interval: interval,
       customer_id: [customer.id],
     },
-    organization.feature_settings?.revops_enabled ?? false,
+    true,
   )
 
   const calculateTrend = React.useCallback(
@@ -221,76 +220,56 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
-        {organization.feature_settings?.revops_enabled && (
-          <TabsTrigger value="costs">Costs</TabsTrigger>
-        )}
+        <TabsTrigger value="costs">Costs</TabsTrigger>
         {showMembersTab && <TabsTrigger value="members">Members</TabsTrigger>}
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
         <div className="grid grid-cols-2 flex-row gap-4 md:gap-6 xl:flex">
-          {organization.feature_settings?.revops_enabled ? (
-            <>
-              <CustomerTrendStatBox
-                title="Revenue"
-                size="lg"
-                trend={calculateTrend('revenue')}
-              >
-                {typeof metricsData?.totals.revenue === 'number'
-                  ? formatCurrency('statistics')(
-                      metricsData.totals.revenue,
-                      'usd',
-                    )
-                  : '—'}
-              </CustomerTrendStatBox>
-              <CustomerTrendStatBox
-                title="Cost"
-                size="lg"
-                trend={calculateTrend('costs')}
-                trendUpIsBad
-              >
-                {typeof metricsData?.totals.costs === 'number'
-                  ? formatCurrency('subcent')(metricsData.totals.costs, 'usd')
-                  : '—'}
-              </CustomerTrendStatBox>
-              <CustomerTrendStatBox
-                title="Profit"
-                size="lg"
-                trend={calculateTrend('gross_margin')}
-              >
-                {typeof metricsData?.totals.gross_margin === 'number'
-                  ? formatCurrency('statistics')(
-                      metricsData.totals.gross_margin,
-                      'usd',
-                    )
-                  : '—'}
-              </CustomerTrendStatBox>
-              <CustomerTrendStatBox
-                title="Profit Margin"
-                size="lg"
-                trend={calculateTrend('gross_margin_percentage')}
-              >
-                {typeof metricsData?.totals.gross_margin_percentage === 'number'
-                  ? formatPercentage(metricsData.totals.gross_margin_percentage)
-                  : '—'}
-              </CustomerTrendStatBox>
-            </>
-          ) : (
-            <>
-              <StatisticCard title="Lifetime Revenue" size="lg">
-                {typeof metricsData?.totals.cumulative_revenue === 'number'
-                  ? formatCurrency('statistics')(
-                      metricsData.totals.cumulative_revenue,
-                      'usd',
-                    )
-                  : '—'}
-              </StatisticCard>
-              <StatisticCard title="Orders" size="lg">
-                {metricsData?.totals.orders
-                  ? formatScalar(metricsData?.totals.orders)
-                  : '—'}
-              </StatisticCard>
-            </>
-          )}
+          <>
+            <CustomerTrendStatBox
+              title="Revenue"
+              size="lg"
+              trend={calculateTrend('revenue')}
+            >
+              {typeof metricsData?.totals.revenue === 'number'
+                ? formatCurrency('statistics')(
+                    metricsData.totals.revenue,
+                    'usd',
+                  )
+                : '—'}
+            </CustomerTrendStatBox>
+            <CustomerTrendStatBox
+              title="Cost"
+              size="lg"
+              trend={calculateTrend('costs')}
+              trendUpIsBad
+            >
+              {typeof metricsData?.totals.costs === 'number'
+                ? formatCurrency('subcent')(metricsData.totals.costs, 'usd')
+                : '—'}
+            </CustomerTrendStatBox>
+            <CustomerTrendStatBox
+              title="Profit"
+              size="lg"
+              trend={calculateTrend('gross_margin')}
+            >
+              {typeof metricsData?.totals.gross_margin === 'number'
+                ? formatCurrency('statistics')(
+                    metricsData.totals.gross_margin,
+                    'usd',
+                  )
+                : '—'}
+            </CustomerTrendStatBox>
+            <CustomerTrendStatBox
+              title="Profit Margin"
+              size="lg"
+              trend={calculateTrend('gross_margin_percentage')}
+            >
+              {typeof metricsData?.totals.gross_margin_percentage === 'number'
+                ? formatPercentage(metricsData.totals.gross_margin_percentage)
+                : '—'}
+            </CustomerTrendStatBox>
+          </>
           <StatisticCard title="Customer Balance" size="lg">
             {billingWallets && billingWallets.items.length > 0
               ? billingWallets.items.map((wallet) => (
@@ -593,19 +572,17 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         organization={organization}
         dateRange={dateRange}
       />
-      {organization.feature_settings?.revops_enabled && (
-        <TabsContent value="costs">
-          <div className="flex flex-col gap-y-8">
-            <h2 className="text-3xl">Cost Insights</h2>
-            <CostsPage
-              organization={organization}
-              customerId={customer.id}
-              dateRange={dateRange}
-              embedded
-            />
-          </div>
-        </TabsContent>
-      )}
+      <TabsContent value="costs">
+        <div className="flex flex-col gap-y-8">
+          <h2 className="text-3xl">Cost Insights</h2>
+          <CostsPage
+            organization={organization}
+            customerId={customer.id}
+            dateRange={dateRange}
+            embedded
+          />
+        </div>
+      </TabsContent>
       {showMembersTab && (
         <TabsContent value="members" className="flex flex-col gap-y-8">
           <MembersSection

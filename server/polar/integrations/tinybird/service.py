@@ -1097,7 +1097,7 @@ class TinybirdEventsQuery:
             share_col = (primary_col / func.sum(primary_col).over()).label("share")
             order_col = primary_col.desc()
         else:
-            share_col = sqlalchemy.literal(0.0).label("share")
+            share_col = sqlalchemy.literal(0.0).label("share")  # type: ignore[assignment]
             order_col = customer_sums.c.occurrences.desc()
 
         statement = (

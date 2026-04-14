@@ -149,7 +149,7 @@ export const useEventPropertyGroupStats = (
       property,
       { timezone, ...parameters },
     ],
-    queryFn: () =>
+    queryFn: (): Promise<{ items: PropertyGroupStat[] }> =>
       unwrap(
         api.GET('/v1/events/statistics/by-property', {
           params: {
@@ -161,7 +161,91 @@ export const useEventPropertyGroupStats = (
             },
           },
         }),
-      ),
+      ) as unknown as Promise<{ items: PropertyGroupStat[] }>,
+    retry: defaultRetry,
+    enabled,
+  })
+}
+
+export interface CustomerStatItem {
+  customer_id: string | null
+  external_customer_id: string | null
+  name: string | null
+  email: string | null
+  occurrences: number
+  totals: Record<string, string>
+  share: number
+}
+
+export interface VarianceStatItem {
+  event_id: string
+  name: string
+  customer_id: string | null
+  external_customer_id: string | null
+  timestamp: string
+  values: Record<string, string>
+  averages: Record<string, string>
+  p99: Record<string, string>
+}
+
+export const useEventCustomerStats = (
+  organizationId: string,
+  parameters: {
+    start_date: string
+    end_date: string
+    aggregate_fields?: string[]
+    customer_id?: string[] | null
+    limit?: number
+  },
+  enabled: boolean = true,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['events:get_statistics_by_property']['parameters']['query']['timezone']
+  return useQuery({
+    queryKey: [
+      'eventCustomerStats',
+      organizationId,
+      { timezone, ...parameters },
+    ],
+    queryFn: (): Promise<{ items: CustomerStatItem[] }> =>
+      unwrap(
+        api.GET('/v1/events/statistics/by-customer', {
+          params: {
+            query: { organization_id: organizationId, timezone, ...parameters },
+          },
+        }),
+      ) as unknown as Promise<{ items: CustomerStatItem[] }>,
+    retry: defaultRetry,
+    enabled,
+  })
+}
+
+export const useEventVarianceStats = (
+  organizationId: string,
+  parameters: {
+    start_date: string
+    end_date: string
+    aggregate_fields?: string[]
+    customer_id?: string[] | null
+  },
+  enabled: boolean = true,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['events:get_statistics_by_property']['parameters']['query']['timezone']
+  return useQuery({
+    queryKey: [
+      'eventVarianceStats',
+      organizationId,
+      { timezone, ...parameters },
+    ],
+    queryFn: (): Promise<{ items: VarianceStatItem[] }> =>
+      unwrap(
+        api.GET('/v1/events/statistics/by-variance', {
+          params: {
+            query: { organization_id: organizationId, timezone, ...parameters },
+          },
+        }),
+      ) as unknown as Promise<{ items: VarianceStatItem[] }>,
     retry: defaultRetry,
     enabled,
   })

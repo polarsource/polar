@@ -112,6 +112,27 @@ class TinybirdPropertyGroupStats:
     totals: dict[str, float]
 
 
+@dataclass
+class TinybirdCustomerStat:
+    customer_id: str | None
+    external_customer_id: str | None
+    occurrences: int
+    totals: dict[str, float]
+    share: float = 0.0
+
+
+@dataclass
+class TinybirdVarianceStat:
+    event_id: str
+    name: str
+    customer_id: str | None
+    external_customer_id: str | None
+    timestamp: datetime
+    values: dict[str, float]
+    averages: dict[str, float]
+    p99: dict[str, float]
+
+
 def _pop_system_metadata(m: dict[str, Any], is_system: bool, key: str) -> Any:
     v = m.pop(key, None) if is_system else None
     if isinstance(v, float) and v.is_integer():
@@ -1029,6 +1050,161 @@ class TinybirdEventsQuery:
                     occurrences=int(row.get("occurrences", 0) or 0),
                     customers=int(row.get("customers", 0) or 0),
                     totals=totals,
+                )
+            )
+        return results
+
+
+    async def get_customer_stats(
+        self,
+        aggregate_fields: Sequence[str],
+        limit: int = 200,
+    ) -> list[TinybirdCustomerStat]:
+        per_root = self._build_per_root_subquery(aggregate_fields)
+
+        agg_columns: list[Any] = []
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            total_col = per_root.c[f"{label}_total"]
+            agg_columns.append(func.sum(total_col).label(f"{label}_sum"))
+
+        # Subquery that groups by customer and sums each aggregate field
+        customer_sums = (
+            sqlalchemy.select(
+                per_root.c.customer_id.label("customer_id"),
+                per_root.c.external_customer_id.label("external_customer_id"),
+                func.count().label("occurrences"),
+                *agg_columns,
+            )
+            .select_from(per_root)
+            .group_by(per_root.c.customer_id, per_root.c.external_customer_id)
+        ).subquery("customer_sums")
+
+        # Primary field for ordering and share computation
+        if aggregate_fields:
+            primary_label = aggregate_fields[0].replace(".", "_")
+            primary_col = customer_sums.c[f"{primary_label}_sum"]
+            share_col = (
+                primary_col / func.sum(primary_col).over()
+            ).label("share")
+            order_col = primary_col.desc()
+        else:
+            share_col = sqlalchemy.literal(0.0).label("share")
+            order_col = customer_sums.c.occurrences.desc()
+
+        statement = (
+            sqlalchemy.select(customer_sums, share_col)
+            .order_by(order_col)
+            .limit(limit)
+        )
+
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        results = []
+        for row in rows:
+            totals = {
+                field_path.replace(".", "_"): float(
+                    row.get(f"{field_path.replace('.', '_')}_sum", 0) or 0
+                )
+                for field_path in aggregate_fields
+            }
+            results.append(
+                TinybirdCustomerStat(
+                    customer_id=str(row["customer_id"]) if row.get("customer_id") else None,
+                    external_customer_id=row.get("external_customer_id") or None,
+                    occurrences=int(row.get("occurrences", 0) or 0),
+                    totals=totals,
+                    share=float(row.get("share", 0) or 0),
+                )
+            )
+        return results
+
+    async def get_variance_events(
+        self,
+        aggregate_fields: Sequence[str],
+        limit: int = 100,
+    ) -> list[TinybirdVarianceStat]:
+        if not aggregate_fields:
+            return []
+
+        per_root = self._build_per_root_subquery(aggregate_fields)
+        primary_label = aggregate_fields[0].replace(".", "_")
+        primary_total = per_root.c[f"{primary_label}_total"]
+        primary_total_sql = f"per_root.{primary_label}_total"
+
+        # Subquery: per event name → avg and p99 of each aggregate field
+        name_stats_cols: list[Any] = [
+            per_root.c.root_name.label("name"),
+            func.avg(primary_total).label(f"{primary_label}_avg"),
+            literal_column(f"quantile(0.99)({primary_total_sql})").label(f"{primary_label}_p99"),
+        ]
+        for field_path in aggregate_fields[1:]:
+            fl = field_path.replace(".", "_")
+            fc = per_root.c[f"{fl}_total"]
+            fc_sql = f"per_root.{fl}_total"
+            name_stats_cols.append(func.avg(fc).label(f"{fl}_avg"))
+            name_stats_cols.append(literal_column(f"quantile(0.99)({fc_sql})").label(f"{fl}_p99"))
+
+        name_stats = (
+            sqlalchemy.select(*name_stats_cols)
+            .select_from(per_root)
+            .group_by(per_root.c.root_name)
+        ).subquery("name_stats")
+
+        value_cols: list[Any] = []
+        stat_cols: list[Any] = [
+            name_stats.c[f"{primary_label}_avg"],
+            name_stats.c[f"{primary_label}_p99"],
+        ]
+        for field_path in aggregate_fields:
+            fl = field_path.replace(".", "_")
+            value_cols.append(per_root.c[f"{fl}_total"].label(f"{fl}_value"))
+        for field_path in aggregate_fields[1:]:
+            fl = field_path.replace(".", "_")
+            stat_cols.append(name_stats.c[f"{fl}_avg"])
+            stat_cols.append(name_stats.c[f"{fl}_p99"])
+
+        statement = (
+            sqlalchemy.select(
+                per_root.c.root_id.label("event_id"),
+                per_root.c.root_name.label("name"),
+                per_root.c.customer_id.label("customer_id"),
+                per_root.c.external_customer_id.label("external_customer_id"),
+                per_root.c.root_timestamp.label("timestamp"),
+                *value_cols,
+                *stat_cols,
+            )
+            .select_from(per_root)
+            .join(name_stats, per_root.c.root_name == name_stats.c.name)
+            .where(primary_total >= name_stats.c[f"{primary_label}_p99"])
+            .order_by(primary_total.desc())
+            .limit(limit)
+        )
+
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        results = []
+        for row in rows:
+            values: dict[str, float] = {}
+            averages: dict[str, float] = {}
+            p99: dict[str, float] = {}
+            for field_path in aggregate_fields:
+                fl = field_path.replace(".", "_")
+                values[fl] = float(row.get(f"{fl}_value", 0) or 0)
+                averages[fl] = float(row.get(f"{fl}_avg", 0) or 0)
+                p99[fl] = float(row.get(f"{fl}_p99", 0) or 0)
+            results.append(
+                TinybirdVarianceStat(
+                    event_id=str(row["event_id"]),
+                    name=str(row["name"]),
+                    customer_id=str(row["customer_id"]) if row.get("customer_id") else None,
+                    external_customer_id=row.get("external_customer_id") or None,
+                    timestamp=_parse_datetime(row["timestamp"]),
+                    values=values,
+                    averages=averages,
+                    p99=p99,
                 )
             )
         return results

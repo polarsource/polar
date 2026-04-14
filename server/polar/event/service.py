@@ -51,15 +51,19 @@ from polar.worker import enqueue_events, enqueue_job
 
 from .repository import EventRepository
 from .schemas import (
+    CustomerStat,
     EventCreateCustomer,
     EventName,
     EventsIngest,
     EventsIngestResponse,
     EventStatistics,
+    ListCustomerStats,
     ListPropertyGroupStats,
     ListStatisticsTimeseries,
+    ListVarianceEvents,
     PropertyGroupStat,
     StatisticsPeriod,
+    VarianceEvent,
 )
 from .sorting import EventNamesSortProperty, EventSortProperty
 from .system import SystemEvent
@@ -581,6 +585,162 @@ class EventService:
             for row in rows
         ]
         return ListPropertyGroupStats(items=items)
+
+    async def list_customer_stats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        start_date: date,
+        end_date: date,
+        timezone: ZoneInfo,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        limit: int = 200,
+    ) -> ListCustomerStats:
+        start_timestamp = datetime(
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
+        )
+        end_timestamp = datetime(
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
+        )
+
+        organization_ids = await self._get_readable_organization_ids(
+            session, auth_subject, organization_id
+        )
+        if not organization_ids:
+            return ListCustomerStats(items=[])
+
+        customer_repository = CustomerRepository.from_session(session)
+        all_customer_ids: list[uuid.UUID] = list(customer_id or [])
+        all_external_ids: list[str] = list(external_customer_id or [])
+        if customer_id is not None:
+            all_external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    auth_subject, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            all_customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    auth_subject, external_customer_id
+                )
+            )
+
+        tinybird_event_repository = TinybirdEventRepository()
+        rows = await tinybird_event_repository.get_customer_stats(
+            organization_id=organization_ids,
+            aggregate_fields=tuple(aggregate_fields),
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            customer_id=all_customer_ids,
+            external_customer_id=all_external_ids,
+            limit=limit,
+        )
+
+        # Fetch customer details for all rows that have a Polar customer_id
+        row_customer_ids = [
+            uuid.UUID(row.customer_id)
+            for row in rows
+            if row.customer_id
+        ]
+        customers_by_id: dict[uuid.UUID, Customer] = {}
+        if row_customer_ids:
+            customer_stmt = customer_repository.get_base_statement().where(
+                Customer.id.in_(row_customer_ids)
+            )
+            found = await customer_repository.get_all(customer_stmt)
+            customers_by_id = {c.id: c for c in found}
+
+        items = [
+            CustomerStat(
+                customer_id=uuid.UUID(row.customer_id) if row.customer_id else None,
+                external_customer_id=row.external_customer_id,
+                name=customers_by_id[uuid.UUID(row.customer_id)].name
+                if row.customer_id and uuid.UUID(row.customer_id) in customers_by_id
+                else None,
+                email=customers_by_id[uuid.UUID(row.customer_id)].email
+                if row.customer_id and uuid.UUID(row.customer_id) in customers_by_id
+                else None,
+                occurrences=row.occurrences,
+                totals={k: Decimal(str(round(v, 12))) for k, v in row.totals.items()},
+                share=Decimal(str(round(row.share, 6))),
+            )
+            for row in rows
+        ]
+        return ListCustomerStats(items=items)
+
+    async def list_variance_events(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        start_date: date,
+        end_date: date,
+        timezone: ZoneInfo,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        name: Sequence[str] | None = None,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        limit: int = 100,
+    ) -> ListVarianceEvents:
+        start_timestamp = datetime(
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
+        )
+        end_timestamp = datetime(
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
+        )
+
+        organization_ids = await self._get_readable_organization_ids(
+            session, auth_subject, organization_id
+        )
+        if not organization_ids:
+            return ListVarianceEvents(items=[])
+
+        customer_repository = CustomerRepository.from_session(session)
+        all_customer_ids: list[uuid.UUID] = list(customer_id or [])
+        all_external_ids: list[str] = list(external_customer_id or [])
+        if customer_id is not None:
+            all_external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    auth_subject, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            all_customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    auth_subject, external_customer_id
+                )
+            )
+
+        tinybird_event_repository = TinybirdEventRepository()
+        rows = await tinybird_event_repository.get_variance_events(
+            organization_id=organization_ids,
+            aggregate_fields=tuple(aggregate_fields),
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            customer_id=all_customer_ids,
+            external_customer_id=all_external_ids,
+            name=name,
+        )
+
+        items = [
+            VarianceEvent(
+                event_id=uuid.UUID(row.event_id),
+                name=row.name,
+                customer_id=uuid.UUID(row.customer_id) if row.customer_id else None,
+                external_customer_id=row.external_customer_id,
+                timestamp=row.timestamp,
+                values={k: Decimal(str(round(v, 12))) for k, v in row.values.items()},
+                averages={k: Decimal(str(round(v, 12))) for k, v in row.averages.items()},
+                p99={k: Decimal(str(round(v, 12))) for k, v in row.p99.items()},
+            )
+            for row in rows
+        ]
+        return ListVarianceEvents(items=items)
 
     async def list_names(
         self,

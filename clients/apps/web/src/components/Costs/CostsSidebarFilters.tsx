@@ -206,9 +206,11 @@ function EventStatisticsCard({
         </h2>
         <div className="dark:text-polar-500 flex max-w-sm items-center gap-4 font-mono text-gray-500">
           <div className="flex flex-1 items-center justify-start gap-1.5 text-xs">
-            <span>{eventStatistics.occurrences}</span>
             <span>
-              {eventStatistics.occurrences === 1 ? 'Occurrence' : 'Occurrences'}
+              {Intl.NumberFormat('en-US').format(eventStatistics.occurrences)}
+            </span>
+            <span>
+              {eventStatistics.occurrences === 1 ? 'Event' : 'Events'}
             </span>
           </div>
         </div>

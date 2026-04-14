@@ -37,8 +37,10 @@ from .schemas import (
     EventsIngest,
     EventsIngestResponse,
     EventTypeAdapter,
+    ListCustomerStats,
     ListPropertyGroupStats,
     ListStatisticsTimeseries,
+    ListVarianceEvents,
 )
 from .service import event as event_service
 
@@ -258,6 +260,114 @@ async def get_statistics_by_property(
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
+        aggregate_fields=tuple(aggregate_fields),
+        limit=limit,
+    )
+
+
+@router.get(
+    "/statistics/by-customer",
+    summary="Get statistics ranked by customer",
+    tags=[APITag.private],
+    response_model=ListCustomerStats,
+)
+async def get_statistics_by_customer(
+    auth_subject: auth.EventRead,
+    start_date: date = Query(..., description="Start date."),
+    end_date: date = Query(..., description="End date."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the dates. Default is UTC.",
+    ),
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    ),
+    aggregate_fields: Sequence[AggregateField] = Query(
+        default=["_cost.amount"],
+        description="Metadata field paths to aggregate.",
+    ),
+    limit: int = Query(default=200, le=1000),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListCustomerStats:
+    """
+    Get aggregate statistics ranked by customer.
+
+    Returns customers ordered by the primary aggregate field (default `_cost.amount`)
+    descending, summed across all their root events in the time range.
+    """
+    return await event_service.list_customer_stats(
+        session,
+        auth_subject,
+        start_date=start_date,
+        end_date=end_date,
+        timezone=ZoneInfo(timezone),
+        organization_id=organization_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+        aggregate_fields=tuple(aggregate_fields),
+        limit=limit,
+    )
+
+
+@router.get(
+    "/statistics/by-variance",
+    summary="Get high-variance root events",
+    tags=[APITag.private],
+    response_model=ListVarianceEvents,
+)
+async def get_statistics_by_variance(
+    auth_subject: auth.EventRead,
+    start_date: date = Query(..., description="Start date."),
+    end_date: date = Query(..., description="End date."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the dates. Default is UTC.",
+    ),
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    ),
+    name: MultipleQueryFilter[str] | None = Query(
+        None, title="Name Filter", description="Filter by event name."
+    ),
+    aggregate_fields: Sequence[AggregateField] = Query(
+        default=["_cost.amount"],
+        description="Metadata field paths to aggregate.",
+    ),
+    limit: int = Query(default=100, le=1000),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListVarianceEvents:
+    """
+    Get root events whose aggregate value is at or above the p99 for their event name.
+
+    Returns individual traces that are outliers compared to the typical distribution,
+    ordered by value descending. Useful for identifying anomalous or expensive runs.
+    """
+    return await event_service.list_variance_events(
+        session,
+        auth_subject,
+        start_date=start_date,
+        end_date=end_date,
+        timezone=ZoneInfo(timezone),
+        organization_id=organization_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+        name=name,
         aggregate_fields=tuple(aggregate_fields),
         limit=limit,
     )

@@ -724,4 +724,60 @@ class ListPropertyGroupStats(Schema):
     )
 
 
+class CustomerStat(Schema):
+    """Aggregated statistics for a single customer across all their root events."""
+
+    customer_id: UUID4 | None = Field(description="Polar customer ID.")
+    external_customer_id: str | None = Field(description="External customer ID.")
+    name: str | None = Field(description="Customer name.", default=None)
+    email: str | None = Field(description="Customer email.", default=None)
+    occurrences: int = Field(description="Number of root events for this customer.")
+    totals: dict[str, Decimal] = Field(
+        description="Aggregated totals per requested field.",
+        default_factory=dict,
+    )
+    share: Decimal = Field(
+        description="This customer's share of the total cost across all customers (0–1).",
+        default=Decimal(0),
+    )
+
+
+class ListCustomerStats(Schema):
+    """Customer ranking by an aggregate field."""
+
+    items: list[CustomerStat] = Field(
+        description="Customers ordered by the primary aggregate field descending."
+    )
+
+
+class VarianceEvent(Schema):
+    """A root event whose aggregate value is at or above the p99 for its event name."""
+
+    event_id: UUID4 = Field(description="The root event ID.")
+    name: str = Field(description="The event name.")
+    customer_id: UUID4 | None = Field(description="Polar customer ID.")
+    external_customer_id: str | None = Field(description="External customer ID.")
+    timestamp: AwareDatetime = Field(description="Timestamp of the root event.")
+    values: dict[str, Decimal] = Field(
+        description="Aggregate totals for this trace.",
+        default_factory=dict,
+    )
+    averages: dict[str, Decimal] = Field(
+        description="Average per-trace value for this event name.",
+        default_factory=dict,
+    )
+    p99: dict[str, Decimal] = Field(
+        description="p99 per-trace value for this event name.",
+        default_factory=dict,
+    )
+
+
+class ListVarianceEvents(Schema):
+    """Root events with values at or above p99 for their event name."""
+
+    items: list[VarianceEvent] = Field(
+        description="Outlier events ordered by value descending."
+    )
+
+
 EventID = Annotated[UUID4, Path(description="The event ID.")]

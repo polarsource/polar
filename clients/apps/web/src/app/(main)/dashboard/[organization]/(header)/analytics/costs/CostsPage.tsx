@@ -4,14 +4,17 @@ import { EmptyState } from '@/components/CustomerPortal/EmptyState'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import {
+  useEventCustomerStats,
   useEventHierarchyStats,
   useEventPropertyGroupStats,
+  useEventVarianceStats,
 } from '@/hooks/queries/events'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { RankedList, RankedListItem } from './RankedListItem'
 import {
   Tabs,
   TabsContent,
@@ -32,6 +35,7 @@ import {
   Bot,
   Minus,
   TrendingUp,
+  Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -158,22 +162,6 @@ export default function ClientPage({
     [currentTotals, previousTotalsMap],
   )
 
-  // "What needs attention" — high variance spans (p99 >> average)
-  const byVariance = useMemo(
-    () =>
-      [...currentTotals]
-        .map((s) => {
-          const avg = parseFloat(String(s.averages?.['_cost_amount'] ?? '0'))
-          const p99 = parseFloat(String(s.p99?.['_cost_amount'] ?? '0'))
-          const ratio = avg > 0 ? p99 / avg : 0
-          return { ...s, avg, p99, ratio }
-        })
-        .filter((s) => s.ratio >= 3 && s.p99 > 0)
-        .sort((a, b) => b.ratio - a.ratio)
-        .slice(0, 6),
-    [currentTotals],
-  )
-
   const llmDateParams = useMemo(
     () => ({
       start_date: startISO,
@@ -196,6 +184,48 @@ export default function ClientPage({
         : {}),
     }),
     [prevStart, prevEnd, customerIds],
+  )
+
+  const sharedDateParams = useMemo(
+    () => ({
+      start_date: startISO,
+      end_date: endISO,
+      aggregate_fields: ['_cost.amount'],
+      ...(customerIds && customerIds.length > 0
+        ? { customer_id: customerIds }
+        : {}),
+    }),
+    [startISO, endISO, customerIds],
+  )
+
+  const { data: customerStats } = useEventCustomerStats(organization.id, {
+    ...sharedDateParams,
+    limit: 5,
+  })
+
+
+  const { data: varianceStats } = useEventVarianceStats(
+    organization.id,
+    sharedDateParams,
+  )
+
+  const customerRows = useMemo(
+    () =>
+      (customerStats?.items ?? [])
+        .filter(
+          (r) => parseFloat(String(r.totals?.['_cost_amount'] ?? '0')) > 0,
+        )
+        .map((r) => ({
+          ...r,
+          total: parseFloat(String(r.totals?.['_cost_amount'] ?? '0')),
+          label:
+            r.name ??
+            r.email ??
+            r.external_customer_id ??
+            r.customer_id ??
+            'Unknown',
+        })),
+    [customerStats],
   )
 
   const { data: modelStats } = useEventPropertyGroupStats(
@@ -317,28 +347,26 @@ export default function ClientPage({
                 description="No cost events were recorded in this period."
               />
             ) : (
-              <List size="small">
+              <RankedList>
                 {byTotal.map((s, i) => {
-                  const sharePct = Math.round(s.share * 100)
                   const prevTotal = previousTotalsMap.get(s.name) ?? 0
                   const delta = s.total - prevTotal
                   const deltaPct =
                     prevTotal > 0 ? (delta / prevTotal) * 100 : null
                   return (
-                    <ListItem
+                    <RankedListItem
                       key={s.event_type_id}
-                      className="flex-col items-stretch gap-3 py-4"
+                      itemKey={s.event_type_id ?? String(i)}
+                      rank={i + 1}
+                      share={s.share}
                       onSelect={() => router.push(spanHref(s))}
-                    >
-                      {/* Top row */}
-                      <div className="flex items-center gap-4">
-                        <span className="dark:text-polar-500 w-5 shrink-0 text-right text-xs text-gray-500 tabular-nums">
-                          {i + 1}
-                        </span>
+                      label={
                         <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
                           {s.label}
                         </span>
-                        <div className="flex shrink-0 items-center gap-5">
+                      }
+                      stats={
+                        <>
                           {deltaPct !== null && (
                             <TrendBadge
                               delta={delta}
@@ -353,30 +381,17 @@ export default function ClientPage({
                             {s.occurrences.toLocaleString()} events
                           </span>
                           <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                            avg {fmtSub(s.avg, 'usd')}
+                            Avg {fmtSub(s.avg, 'usd')}
                           </span>
-                          <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
+                          <span className="w-24 text-right text-sm tabular-nums dark:text-white">
                             {fmt(s.total, 'usd')}
                           </span>
-                        </div>
-                      </div>
-
-                      {/* Share bar */}
-                      <div className="flex items-center gap-3 pl-9">
-                        <div className="dark:bg-polar-700 relative h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
-                          <div
-                            className="absolute inset-y-0 left-0 rounded-full bg-black transition-all dark:bg-white"
-                            style={{ width: `${sharePct}%` }}
-                          />
-                        </div>
-                        <span className="dark:text-polar-500 w-9 shrink-0 text-right text-xs text-gray-400 tabular-nums">
-                          {sharePct}%
-                        </span>
-                      </div>
-                    </ListItem>
+                        </>
+                      }
+                    />
                   )
                 })}
-              </List>
+              </RankedList>
             )}
           </section>
 
@@ -444,13 +459,80 @@ export default function ClientPage({
             )}
           </section>
 
-          {/* What needs attention */}
+          {/* By Customer */}
+          {!customerId && (
+          <section>
+            <SectionHeader
+              title="By Customer"
+              description="Customers ranked by total cost in this period."
+            />
+            {customerRows.length === 0 ? (
+              <EmptyState
+                icon={<Users />}
+                title="No customer data"
+                description="No cost events attributed to customers in this period."
+              />
+            ) : (
+              <RankedList>
+                {customerRows.map((r, i) => {
+                  const customerHref = r.customer_id
+                    ? `/dashboard/${organization.slug}/customers/${r.customer_id}`
+                    : undefined
+                  return (
+                    <RankedListItem
+                      key={r.customer_id ?? r.external_customer_id ?? String(i)}
+                      itemKey={
+                        r.customer_id ?? r.external_customer_id ?? String(i)
+                      }
+                      rank={i + 1}
+                      share={r.share}
+                      onSelect={
+                        customerHref ? () => router.push(customerHref) : undefined
+                      }
+                      label={
+                        <>
+                          <Avatar
+                            name={r.label}
+                            avatar_url={null}
+                            className="h-9 w-9 shrink-0 text-xs"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium dark:text-white">
+                              {r.label}
+                            </p>
+                            {r.email && r.email !== r.label && (
+                              <p className="dark:text-polar-400 truncate text-xs text-gray-400">
+                                {r.email}
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      }
+                      stats={
+                        <>
+                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                            {r.occurrences.toLocaleString()} events
+                          </span>
+                          <span className="w-24 text-right text-sm tabular-nums dark:text-white">
+                            {fmt(r.total, 'usd')}
+                          </span>
+                        </>
+                      }
+                    />
+                  )
+                })}
+              </RankedList>
+            )}
+          </section>
+          )}
+
+          {/* Anomalies — individual traces at or above p99 for their event name */}
           <section>
             <SectionHeader
               title="Anomalies"
-              description="Spans where p99 cost is 3× or more above the average — a sign of runaway or unpredictable events."
+              description="Individual traces whose total cost is at or above the p99 for their event type."
             />
-            {byVariance.length === 0 ? (
+            {(varianceStats?.items ?? []).length === 0 ? (
               <EmptyState
                 icon={<AlertTriangle />}
                 title="No anomalies"
@@ -458,43 +540,70 @@ export default function ClientPage({
               />
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {byVariance.map((s) => (
-                  <Link
-                    key={s.event_type_id}
-                    href={spanHref(s)}
-                    className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-sm leading-snug font-medium dark:text-white">
-                        {s.label}
-                      </span>
-                      <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
-                        {s.ratio.toLocaleString(undefined, {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
-                        })}
-                        × spike
-                      </span>
-                    </div>
-                    <div className="dark:bg-polar-700 flex overflow-hidden rounded-lg bg-gray-100">
-                      <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
-                        <span className="dark:text-polar-400 text-xs text-gray-500">
-                          avg
-                        </span>
-                        <span className="font-mono text-sm tabular-nums dark:text-white">
-                          {fmtSub(s.avg, 'usd')}
+                {(varianceStats?.items ?? []).map((s) => {
+                  const value = parseFloat(
+                    String(s.values?.['_cost_amount'] ?? '0'),
+                  )
+                  const avg = parseFloat(
+                    String(s.averages?.['_cost_amount'] ?? '0'),
+                  )
+                  const p99 = parseFloat(String(s.p99?.['_cost_amount'] ?? '0'))
+                  {
+                    return (
+                    <Link
+                      key={s.event_id}
+                      href={`/dashboard/${organization.slug}/analytics/events/${s.event_id}`}
+                      className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <span className="text-sm leading-snug font-medium dark:text-white">
+                            {s.name}
+                          </span>
+                          <span className="dark:text-polar-400 font-mono text-xs text-gray-400">
+                            {new Date(s.timestamp).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                          p99
                         </span>
                       </div>
-                      <div className="dark:bg-polar-600 w-px bg-gray-200" />
-                      <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
-                        <span className="text-xs text-amber-500">p99</span>
-                        <span className="font-mono text-sm text-amber-600 tabular-nums dark:text-amber-400">
-                          {fmtSub(s.p99, 'usd')}
-                        </span>
+                      <div className="dark:border-polar-700 flex overflow-hidden rounded-lg border border-gray-200">
+                        <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
+                          <span className="dark:text-polar-400 text-xs text-gray-500">
+                            Avg
+                          </span>
+                          <span className="font-mono text-sm tabular-nums dark:text-white">
+                            {fmtSub(avg, 'usd')}
+                          </span>
+                        </div>
+                        <div className="dark:bg-polar-700 w-px bg-gray-200" />
+                        <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
+                          <span className="text-xs text-red-500">Event</span>
+                          <span className="font-mono text-sm text-red-600 tabular-nums dark:text-red-400">
+                            {fmtSub(value, 'usd')}
+                          </span>
+                        </div>
+                        <div className="dark:bg-polar-700 w-px bg-gray-200" />
+                        <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
+                          <span className="dark:text-polar-400 text-xs text-gray-500">
+                            p99
+                          </span>
+                          <span className="font-mono text-sm tabular-nums dark:text-white">
+                            {fmtSub(p99, 'usd')}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  )
+                  }
+                })}
               </div>
             )}
           </section>
@@ -515,58 +624,44 @@ export default function ClientPage({
                 description="No LLM model cost events were recorded in this period."
               />
             ) : (
-              <List size="small">
-                {modelRows.map((r, i) => {
-                  const sharePct = Math.round(r.share * 100)
-                  return (
-                    <ListItem
-                      key={r.value}
-                      className="flex-col items-stretch gap-3 py-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="dark:text-polar-500 w-5 shrink-0 text-right text-xs text-gray-500 tabular-nums">
-                          {i + 1}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
-                          {r.value}
-                        </span>
-                        <div className="flex shrink-0 items-center gap-5">
-                          {r.pct !== null && (
-                            <TrendBadge
-                              delta={r.delta}
-                              pct={r.pct}
-                              currentStart={dateRange.from}
-                              currentEnd={dateRange.to}
-                              prevStart={prevStart}
-                              prevEnd={prevEnd}
-                            />
-                          )}
-                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                            {r.occurrences.toLocaleString()} events
-                          </span>
-                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                            {r.customers.toLocaleString()} customers
-                          </span>
-                          <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
-                            {fmtSub(r.total, 'usd')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 pl-9">
-                        <div className="dark:bg-polar-700 relative h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
-                          <div
-                            className="absolute inset-y-0 left-0 rounded-full bg-black transition-all dark:bg-white"
-                            style={{ width: `${sharePct}%` }}
+              <RankedList>
+                {modelRows.map((r, i) => (
+                  <RankedListItem
+                    key={r.value}
+                    itemKey={r.value}
+                    rank={i + 1}
+                    share={r.share}
+                    label={
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
+                        {r.value}
+                      </span>
+                    }
+                    stats={
+                      <>
+                        {r.pct !== null && (
+                          <TrendBadge
+                            delta={r.delta}
+                            pct={r.pct}
+                            currentStart={dateRange.from}
+                            currentEnd={dateRange.to}
+                            prevStart={prevStart}
+                            prevEnd={prevEnd}
                           />
-                        </div>
-                        <span className="dark:text-polar-500 w-9 shrink-0 text-right text-xs text-gray-400 tabular-nums">
-                          {sharePct}%
+                        )}
+                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                          {r.occurrences.toLocaleString()} events
                         </span>
-                      </div>
-                    </ListItem>
-                  )
-                })}
-              </List>
+                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                          {r.customers.toLocaleString()} customers
+                        </span>
+                        <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
+                          {fmtSub(r.total, 'usd')}
+                        </span>
+                      </>
+                    }
+                  />
+                ))}
+              </RankedList>
             )}
           </section>
 
@@ -582,60 +677,109 @@ export default function ClientPage({
                 description="No LLM vendor cost events were recorded in this period."
               />
             ) : (
-              <List size="small">
-                {vendorRows.map((r, i) => {
-                  const sharePct = Math.round(r.share * 100)
-                  return (
-                    <ListItem
-                      key={r.value}
-                      className="flex-col items-stretch gap-3 py-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="dark:text-polar-500 w-5 shrink-0 text-right text-xs text-gray-500 tabular-nums">
-                          {i + 1}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
-                          {r.value}
-                        </span>
-                        <div className="flex shrink-0 items-center gap-5">
-                          {r.pct !== null && (
-                            <TrendBadge
-                              delta={r.delta}
-                              pct={r.pct}
-                              currentStart={dateRange.from}
-                              currentEnd={dateRange.to}
-                              prevStart={prevStart}
-                              prevEnd={prevEnd}
-                            />
-                          )}
-                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                            {r.occurrences.toLocaleString()} events
-                          </span>
-                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                            {r.customers.toLocaleString()} customers
-                          </span>
-                          <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
-                            {fmtSub(r.total, 'usd')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 pl-9">
-                        <div className="dark:bg-polar-700 relative h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
-                          <div
-                            className="absolute inset-y-0 left-0 rounded-full bg-black transition-all dark:bg-white"
-                            style={{ width: `${sharePct}%` }}
+              <RankedList>
+                {vendorRows.map((r, i) => (
+                  <RankedListItem
+                    key={r.value}
+                    itemKey={r.value}
+                    rank={i + 1}
+                    share={r.share}
+                    label={
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
+                        {r.value}
+                      </span>
+                    }
+                    stats={
+                      <>
+                        {r.pct !== null && (
+                          <TrendBadge
+                            delta={r.delta}
+                            pct={r.pct}
+                            currentStart={dateRange.from}
+                            currentEnd={dateRange.to}
+                            prevStart={prevStart}
+                            prevEnd={prevEnd}
                           />
-                        </div>
-                        <span className="dark:text-polar-500 w-9 shrink-0 text-right text-xs text-gray-400 tabular-nums">
-                          {sharePct}%
+                        )}
+                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                          {r.occurrences.toLocaleString()} events
                         </span>
-                      </div>
-                    </ListItem>
-                  )
-                })}
-              </List>
+                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                          {r.customers.toLocaleString()} customers
+                        </span>
+                        <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
+                          {fmtSub(r.total, 'usd')}
+                        </span>
+                      </>
+                    }
+                  />
+                ))}
+              </RankedList>
             )}
           </section>
+
+          {!customerId && (
+          <section>
+            <SectionHeader
+              title="By Customer"
+              description="Customers ranked by total LLM cost in this period."
+            />
+            {customerRows.length === 0 ? (
+              <EmptyState
+                icon={<Users />}
+                title="No customer data"
+                description="No LLM cost events attributed to customers in this period."
+              />
+            ) : (
+              <RankedList>
+                {customerRows.map((r, i) => (
+                  <RankedListItem
+                    key={r.customer_id ?? r.external_customer_id ?? String(i)}
+                    itemKey={
+                      r.customer_id ?? r.external_customer_id ?? String(i)
+                    }
+                    rank={i + 1}
+                    share={r.share}
+                    onSelect={
+                      r.customer_id
+                        ? () => router.push(`/dashboard/${organization.slug}/customers/${r.customer_id}`)
+                        : undefined
+                    }
+                    label={
+                      <>
+                        <Avatar
+                          name={r.label}
+                          avatar_url={null}
+                          className="h-9 w-9 shrink-0 text-xs"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium dark:text-white">
+                            {r.label}
+                          </p>
+                          {r.email && r.email !== r.label && (
+                            <p className="dark:text-polar-400 truncate text-xs text-gray-400">
+                              {r.email}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    }
+                    stats={
+                      <>
+                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                          {r.occurrences.toLocaleString()} events
+                        </span>
+                        <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
+                          {fmt(r.total, 'usd')}
+                        </span>
+                      </>
+                    }
+                  />
+                ))}
+              </RankedList>
+            )}
+          </section>
+          )}
         </div>
       </TabsContent>
     </Tabs>

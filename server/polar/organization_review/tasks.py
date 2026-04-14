@@ -53,6 +53,7 @@ async def run_review_agent(
     organization_id: uuid.UUID,
     context: str = ReviewContext.THRESHOLD,
     auto_approve_eligible: bool = False,
+    plain_thread_id: str | None = None,
 ) -> None:
     """Run the organization review agent as a background task.
 
@@ -158,6 +159,17 @@ async def run_review_agent(
                     verdict=report.verdict,
                     risk_score=report.overall_risk_score,
                 )
+
+        # For initial reviews, notify the user of action items via Plain
+        if (
+            review_context == ReviewContext.THRESHOLD
+            and not auto_approve_eligible
+            and report.verdict == ReviewVerdict.DENY
+            and plain_thread_id is not None
+        ):
+            await plain_service.send_initial_review_action_email(
+                session, organization, plain_thread_id
+            )
 
         # For SUBMISSION context: also create OrganizationReview record and act
         if review_context == ReviewContext.SUBMISSION:

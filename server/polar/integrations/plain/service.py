@@ -174,14 +174,15 @@ class PlainService:
 
     async def create_organization_review_thread(
         self, session: AsyncSession, organization: Organization
-    ) -> None:
-        if not self.enabled:
-            return
+    ) -> str | None:
+        """Create a Plain thread for organization review.
 
-        user_repository = UserRepository.from_session(session)
-        admin = await user_repository.get_by_id(organization.account.admin_id)
-        if admin is None:
-            raise AccountAdminDoesNotExistError(organization.account.admin_id)
+        Returns the Plain thread ID, or None if Plain is disabled.
+        """
+        if not self.enabled:
+            return None
+
+        admin = await self._get_account_admin(session, organization)
 
         async with self._get_plain_client() as plain:
             try:
@@ -199,7 +200,6 @@ class PlainService:
                 case _:
                     raise ValueError("Organization is not under review")
 
-            should_send_email = organization.status == OrganizationStatus.INITIAL_REVIEW
             assigned_to = CreateThreadAssignedToInput(
                 user_id=random.choice(SUPPORT_AGENT_IDS)
             )
@@ -237,62 +237,80 @@ class PlainService:
                     organization.account.id, thread_result.error.message
                 )
 
-            # For initial reviews, send the review action checklist as an outbound reply
-            if should_send_email and thread_result.thread is not None:
-                issues = self._check_org_issues(organization, admin)
-                message = self._build_review_message(
-                    organization.name or organization.slug, issues
+            return thread_result.thread.id if thread_result.thread else None
+
+    async def send_initial_review_action_email(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        thread_id: str,
+    ) -> None:
+        """Send the review action checklist as an outbound Plain reply.
+
+        Called after the AI agent denies an initial review, so the user
+        knows what to fix.
+        """
+        if not self.enabled:
+            return
+
+        admin = await self._get_account_admin(session, organization)
+
+        issues = self._check_org_issues(organization, admin)
+        message = self._build_review_message(
+            organization.name or organization.slug, issues
+        )
+
+        async with self._get_plain_client() as plain:
+            reply_result = await plain.reply_to_thread(
+                ReplyToThreadInput(
+                    thread_id=thread_id,
+                    text_content=message,
+                    markdown_content=message,
                 )
-                reply_result = await plain.reply_to_thread(
-                    ReplyToThreadInput(
-                        thread_id=thread_result.thread.id,
-                        text_content=message,
-                        markdown_content=message,
+            )
+            if reply_result.error is not None:
+                log.error(
+                    "Failed to post review action message",
+                    thread_id=thread_id,
+                    slug=organization.slug,
+                    error=reply_result.error.message,
+                )
+
+            email_log_repository = EmailLogRepository.from_session(session)
+            await email_log_repository.create_log(
+                status=EmailLogStatus.failed
+                if reply_result.error
+                else EmailLogStatus.sent,
+                processor=EmailSender.plain,
+                processor_id=thread_id,
+                to_email_addr=admin.email,
+                from_email_addr=DEFAULT_FROM_EMAIL_ADDRESS,
+                from_name=DEFAULT_FROM_NAME,
+                subject="Initial Account Review",
+                email_template="_build_review_message",
+                error=reply_result.error.message if reply_result.error else None,
+            )
+
+            # Snooze the thread if we asked the customer for more details
+            has_action_items = (
+                issues.missing_website
+                or issues.missing_socials
+                or issues.admin_not_verified
+            )
+            if has_action_items:
+                snooze_result = await plain.snooze_thread(
+                    SnoozeThreadInput(
+                        thread_id=thread_id,
+                        status_detail=SnoozeStatusDetail.WAITING_FOR_CUSTOMER,
                     )
                 )
-                if reply_result.error is not None:
+                if snooze_result.error is not None:
                     log.error(
-                        "Failed to post review action message",
-                        thread_id=thread_result.thread.id,
+                        "Failed to snooze thread",
+                        thread_id=thread_id,
                         slug=organization.slug,
-                        error=reply_result.error.message,
+                        error=snooze_result.error.message,
                     )
-
-                email_log_repository = EmailLogRepository.from_session(session)
-                await email_log_repository.create_log(
-                    status=EmailLogStatus.failed
-                    if reply_result.error
-                    else EmailLogStatus.sent,
-                    processor=EmailSender.plain,
-                    processor_id=thread_result.thread.id,
-                    to_email_addr=admin.email,
-                    from_email_addr=DEFAULT_FROM_EMAIL_ADDRESS,
-                    from_name=DEFAULT_FROM_NAME,
-                    subject=title,
-                    email_template="_build_review_message",
-                    error=reply_result.error.message if reply_result.error else None,
-                )
-
-                # Snooze the thread if we asked the customer for more details
-                has_action_items = (
-                    issues.missing_website
-                    or issues.missing_socials
-                    or issues.admin_not_verified
-                )
-                if has_action_items:
-                    snooze_result = await plain.snooze_thread(
-                        SnoozeThreadInput(
-                            thread_id=thread_result.thread.id,
-                            status_detail=SnoozeStatusDetail.WAITING_FOR_CUSTOMER,
-                        )
-                    )
-                    if snooze_result.error is not None:
-                        log.error(
-                            "Failed to snooze thread",
-                            thread_id=thread_result.thread.id,
-                            slug=organization.slug,
-                            error=snooze_result.error.message,
-                        )
 
     async def create_appeal_review_thread(
         self,
@@ -1522,6 +1540,15 @@ class PlainService:
                     nr_threads += 1
             log.info(f"There are {nr_threads} threads for user {customer_email}")
             return nr_threads > 0
+
+    async def _get_account_admin(
+        self, session: AsyncSession, organization: Organization
+    ) -> User:
+        user_repository = UserRepository.from_session(session)
+        admin = await user_repository.get_by_id(organization.account.admin_id)
+        if admin is None:
+            raise AccountAdminDoesNotExistError(organization.account.admin_id)
+        return admin
 
     def _check_org_issues(
         self,

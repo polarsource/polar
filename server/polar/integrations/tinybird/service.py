@@ -1,4 +1,5 @@
 import json
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -322,6 +323,15 @@ async def reconcile_events(
     )
 
     return total_checked, total_missing, missing_ids
+
+
+def _finite(value: Any, default: float = 0.0) -> float:
+    """Convert a value to float, returning default for NaN/Infinity."""
+    try:
+        result = float(value or 0)
+    except (TypeError, ValueError):
+        return default
+    return result if math.isfinite(result) else default
 
 
 def _compile(statement: Select[Any]) -> tuple[str, str]:
@@ -1094,8 +1104,7 @@ class TinybirdEventsQuery:
         if aggregate_fields:
             primary_label = aggregate_fields[0].replace(".", "_")
             primary_col = customer_sums.c[f"{primary_label}_sum"]
-            total = func.nullif(func.sum(primary_col).over(), 0)
-            share_col = func.coalesce(primary_col / total, 0.0).label("share")
+            share_col = (primary_col / func.sum(primary_col).over()).label("share")
             order_col = primary_col.desc()
         else:
             share_col = sqlalchemy.literal(0.0).label("share")  # type: ignore[assignment]
@@ -1124,7 +1133,7 @@ class TinybirdEventsQuery:
                     external_customer_id=row.get("external_customer_id") or None,
                     occurrences=int(row.get("occurrences", 0) or 0),
                     totals=totals,
-                    share=float(row.get("share", 0) or 0),
+                    share=_finite(row.get("share", 0)),
                 )
             )
         return results

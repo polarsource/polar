@@ -26,6 +26,7 @@ from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
 from polar.discount.service import discount as discount_service
 from polar.enums import (
     PaymentProcessor,
+    PayoutAccountType,
     SubscriptionRecurringInterval,
     TaxBehavior,
     TaxBehaviorOption,
@@ -55,6 +56,7 @@ from polar.models.organization import (
 )
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
+from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -62,7 +64,7 @@ from polar.models.product_price import (
 )
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
-from polar.models.user import IdentityVerificationStatus
+from polar.models.user import IdentityVerificationStatus, User
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, create_async_engine
@@ -173,6 +175,36 @@ def create_benefit_schema(
         raise Exception(
             f"Unsupported Benefit type, please go to `create_benefit_schema()` in {__file__} to implement"
         )
+
+
+async def create_fake_payout_account(
+    session: AsyncSession,
+    organization: Organization,
+    admin: User,
+    *,
+    country: str = "US",
+    currency: str = "usd",
+) -> PayoutAccount:
+    """Attach a fake, fully-enabled Stripe PayoutAccount to `organization`.
+
+    Mirrors `tests/fixtures/random_objects.create_payout_account` so seeded orgs
+    pass `Organization.get_ready_payout_account()` checks out of the box.
+    """
+    payout_account = PayoutAccount(
+        type=PayoutAccountType.stripe,
+        admin=admin,
+        stripe_id=f"acct_seed_{organization.slug}",
+        country=country,
+        currency=currency,
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=True,
+    )
+    session.add(payout_account)
+    await session.flush()
+    organization.payout_account = payout_account
+    session.add(organization)
+    return payout_account
 
 
 async def _stamp_event_type_ids(
@@ -1325,6 +1357,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.feature_settings = org_data.get("feature_settings", {})
         session.add(organization)
 
+        # Attach a fake payout account so seeded orgs are payout-ready
+        await create_fake_payout_account(session, organization, user)
+
         # Create OrganizationReview with PASS verdict for ACTIVE organizations
         if organization.status == OrganizationStatus.ACTIVE:
             organization.initially_reviewed_at = utc_now()
@@ -1843,6 +1878,9 @@ async def create_single_org_seed(
         organization_details_snapshot={},
     )
     session.add(organization_review)
+
+    # Attach a fake payout account so the seeded org is payout-ready
+    await create_fake_payout_account(session, organization, user)
 
     # Create a mix of recurring and one-time products
     products_data = [

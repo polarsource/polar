@@ -733,11 +733,7 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
-            organization.status = (
-                OrganizationStatus.ONGOING_REVIEW
-                if organization.initially_reviewed_at is not None
-                else OrganizationStatus.INITIAL_REVIEW
-            )
+            organization.status = OrganizationStatus.REVIEW
             organization.status_updated_at = datetime.now(UTC)
             session.add(organization)
 
@@ -749,8 +745,15 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
-        next_review_threshold: int,
+        next_review_threshold: int | None = None,
+        *,
+        silent: bool = False,
     ) -> Organization:
+        if next_review_threshold is None:
+            next_review_threshold = max(
+                organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
+            )
+
         organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
@@ -778,6 +781,7 @@ class OrganizationService:
             "organization.reviewed",
             organization_id=organization.id,
             initial_review=initial_review,
+            silent=silent,
         )
         return organization
 
@@ -790,28 +794,27 @@ class OrganizationService:
         """Handle AI agent verdict for an ongoing threshold review.
 
         Returns True if auto-approved, False if escalated to human review (Plain ticket created).
-        Only auto-approves when: status is ONGOING_REVIEW and verdict is APPROVE.
+        Only auto-approves when: verdict is APPROVE and org has been initially reviewed.
         """
         is_eligible = (
-            organization.status == OrganizationStatus.ONGOING_REVIEW
+            organization.status
+            in (OrganizationStatus.ONGOING_REVIEW, OrganizationStatus.REVIEW)
+            and organization.initially_reviewed_at is not None
             and verdict == ReviewVerdict.APPROVE
         )
 
         if is_eligible:
-            next_threshold = max(
-                organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
-            )
-            await self.confirm_organization_reviewed(
-                session, organization, next_threshold
-            )
+            await self.confirm_organization_reviewed(session, organization)
             return True
 
         # Not eligible or not approved → create Plain ticket for human review
         # Guard: only create a thread if the org is still under review
         # (it may have been handled already, e.g. on a task retry)
+        # Excludes SNOOZED — snoozed orgs shouldn't get new Plain tickets
         if organization.status in (
             OrganizationStatus.INITIAL_REVIEW,
             OrganizationStatus.ONGOING_REVIEW,
+            OrganizationStatus.REVIEW,
         ):
             await plain_service.create_organization_review_thread(session, organization)
         return False
@@ -840,7 +843,7 @@ class OrganizationService:
         *,
         enqueue_review: bool = True,
     ) -> Organization:
-        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.status = OrganizationStatus.REVIEW
         organization.status_updated_at = datetime.now(UTC)
         session.add(organization)
 

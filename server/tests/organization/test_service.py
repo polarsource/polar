@@ -518,6 +518,7 @@ class TestConfirmOrganizationReviewed:
             "organization.reviewed",
             organization_id=organization.id,
             initial_review=True,
+            silent=False,
         )
 
     async def test_ongoing_review(
@@ -546,6 +547,7 @@ class TestConfirmOrganizationReviewed:
             "organization.reviewed",
             organization_id=organization.id,
             initial_review=False,
+            silent=False,
         )
 
     async def test_overrides_rejected_appeal(

@@ -97,7 +97,12 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             raise OrganizationDoesNotExist(organization_id)
 
         is_auto_approve_eligible = (
-            organization.status == OrganizationStatus.ONGOING_REVIEW
+            organization.status
+            in (
+                OrganizationStatus.ONGOING_REVIEW,
+                OrganizationStatus.REVIEW,
+            )
+            and organization.initially_reviewed_at is not None
         )
 
         if not is_auto_approve_eligible:
@@ -112,7 +117,9 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
 
 @actor(actor_name="organization.reviewed", priority=TaskPriority.LOW)
 async def organization_reviewed(
-    organization_id: uuid.UUID, initial_review: bool = False
+    organization_id: uuid.UUID,
+    initial_review: bool = False,
+    silent: bool = False,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
@@ -125,7 +132,7 @@ async def organization_reviewed(
         await held_balance_service.release_account(session, organization.account)
 
         # Send an email after the initial review
-        if initial_review:
+        if initial_review and not silent:
             admin_user = await repository.get_admin_user(session, organization)
             if admin_user:
                 email = OrganizationReviewedEmail(

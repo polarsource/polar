@@ -196,10 +196,21 @@ class PlainService:
                     title = "Initial Account Review"
                 case OrganizationStatus.ONGOING_REVIEW:
                     title = "Ongoing Account Review"
+                case OrganizationStatus.REVIEW:
+                    if organization.initially_reviewed_at is not None:
+                        title = "Ongoing Account Review"
+                    else:
+                        title = "Initial Account Review"
                 case _:
                     raise ValueError("Organization is not under review")
 
-            should_send_email = organization.status == OrganizationStatus.INITIAL_REVIEW
+            should_send_email = (
+                organization.status == OrganizationStatus.INITIAL_REVIEW
+                or (
+                    organization.status == OrganizationStatus.REVIEW
+                    and organization.initially_reviewed_at is None
+                )
+            )
             assigned_to = CreateThreadAssignedToInput(
                 user_id=random.choice(SUPPORT_AGENT_IDS)
             )

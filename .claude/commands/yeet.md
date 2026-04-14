@@ -26,6 +26,13 @@ Lint, type-check, and create a PR.
 
 5. **Create the PR** using the standard PR creation instructions from the system prompt. Use the full commit history from `main` to draft the PR title and description.
 
+   **PR title must use a conventional commit prefix** — one of: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`, `perf:`, `ci:`, `build:`, `style:`. Choose the prefix that best describes the overall change. Examples:
+   - `feat: add webhook retry with exponential backoff`
+   - `fix: prevent duplicate subscription charges`
+   - `refactor: extract payment validation into service layer`
+
+   This is important because we use **merge queues with squash**, so the PR title becomes the final commit message on `main`.
+
    **Important — this is a public repo.** When writing the PR title and description:
    - **No PII**: Do not include any personally identifiable information such as names, emails, user IDs, API keys, tokens, internal URLs, or customer data — even if they appear in commit messages or diffs.
    - **No stats data**: Do not include specific metrics, revenue figures, user counts, conversion rates, or any other business/analytics data that may appear in the code changes.

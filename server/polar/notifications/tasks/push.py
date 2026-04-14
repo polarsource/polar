@@ -95,17 +95,8 @@ async def notifications_push(notification_id: UUID) -> None:
             notification_type = notifications.parse_payload(notif)
             subject = notification_type.subject()
 
-            try:
-                send_push_message(
-                    token=notification_recipient.expo_push_token,
-                    message=subject,
-                    extra={"notification_id": str(notification_id)},
-                )
-            except Exception as e:
-                log.error(
-                    "notifications.push.send_failed",
-                    error=str(e),
-                    user_id=notification_recipient.user_id,
-                    notification_id=notification_id,
-                )
-                return
+            send_push_message(
+                token=notification_recipient.expo_push_token,
+                message=subject,
+                extra={"notification_id": str(notification_id)},
+            )

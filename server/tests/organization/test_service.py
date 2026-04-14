@@ -432,7 +432,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then
-        assert result.status == OrganizationStatus.INITIAL_REVIEW
+        assert result.status == OrganizationStatus.REVIEW
         assert result.total_balance == 5000
         transaction_sum_mock.assert_called_once()
 
@@ -459,7 +459,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then
-        assert result.status == OrganizationStatus.ONGOING_REVIEW
+        assert result.status == OrganizationStatus.REVIEW
         assert result.total_balance == 5000
         transaction_sum_mock.assert_called_once()
         enqueue_job_mock.assert_called_once_with(
@@ -844,7 +844,7 @@ class TestSetOrganizationUnderReview:
         )
 
         # Then
-        assert result.status == OrganizationStatus.ONGOING_REVIEW
+        assert result.status == OrganizationStatus.REVIEW
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )

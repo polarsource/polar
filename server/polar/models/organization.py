@@ -196,6 +196,8 @@ class OrganizationStatus(StrEnum):
     ONBOARDING_STARTED = "onboarding_started"
     INITIAL_REVIEW = "initial_review"
     ONGOING_REVIEW = "ongoing_review"
+    REVIEW = "review"
+    SNOOZED = "snoozed"
     DENIED = "denied"
     ACTIVE = "active"
     OFFBOARDING = "offboarding"
@@ -206,6 +208,8 @@ class OrganizationStatus(StrEnum):
             OrganizationStatus.ONBOARDING_STARTED: "Onboarding Started",
             OrganizationStatus.INITIAL_REVIEW: "Initial Review",
             OrganizationStatus.ONGOING_REVIEW: "Ongoing Review",
+            OrganizationStatus.REVIEW: "Review",
+            OrganizationStatus.SNOOZED: "Snoozed",
             OrganizationStatus.DENIED: "Denied",
             OrganizationStatus.ACTIVE: "Active",
             OrganizationStatus.OFFBOARDING: "Offboarding",
@@ -213,7 +217,7 @@ class OrganizationStatus(StrEnum):
 
     @classmethod
     def review_statuses(cls) -> set[Self]:
-        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW}  # pyright: ignore
+        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW, cls.REVIEW, cls.SNOOZED}  # pyright: ignore
 
     @classmethod
     def payment_ready_statuses(cls) -> set[Self]:
@@ -288,6 +292,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
     initially_reviewed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
+    )
+
+    snooze_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
     )
 
     total_balance: Mapped[int | None] = mapped_column(

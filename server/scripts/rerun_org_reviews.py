@@ -61,8 +61,6 @@ from polar.worker import JobQueueManager
 
 log = structlog.get_logger()
 
-_MIN_REVIEW_THRESHOLD = 10_000
-
 
 async def process_organizations(
     dry_run: bool = True,
@@ -94,6 +92,7 @@ async def process_organizations(
                     [
                         OrganizationStatus.INITIAL_REVIEW,
                         OrganizationStatus.ONGOING_REVIEW,
+                        OrganizationStatus.REVIEW,
                     ]
                 )
             )
@@ -174,21 +173,17 @@ async def process_organizations(
 
             # Act on verdict
             if report.verdict == ReviewVerdict.APPROVE:
-                next_threshold = max(
-                    organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
-                )
-
                 # confirm_organization_reviewed calls enqueue_job, so we need
                 # the JobQueueManager context to flush jobs to the broker.
                 async with JobQueueManager.open(dramatiq.get_broker(), redis):
                     await organization_service.confirm_organization_reviewed(
-                        session, organization, next_threshold
+                        session, organization
                     )
 
                 stats["approved"] += 1
                 org_log.info(
                     "Auto-approved",
-                    next_threshold=next_threshold,
+                    next_threshold=organization.next_review_threshold,
                 )
             else:
                 # DENY or NEEDS_HUMAN_REVIEW → create Plain ticket

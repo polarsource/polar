@@ -69,7 +69,8 @@ class TestOrganizationUnderReview:
         session.expunge_all()
 
         create_organization_review_thread_mock = mocker.patch(
-            "polar.organization.tasks.plain_service.create_organization_review_thread"
+            "polar.organization.tasks.plain_service.create_organization_review_thread",
+            return_value="thread_123",
         )
 
         await organization_under_review(organization.id)
@@ -93,7 +94,8 @@ class TestOrganizationUnderReview:
         session.expunge_all()
 
         create_organization_review_thread_mock = mocker.patch(
-            "polar.organization.tasks.plain_service.create_organization_review_thread"
+            "polar.organization.tasks.plain_service.create_organization_review_thread",
+            return_value="thread_123",
         )
 
         await organization_under_review(organization.id)

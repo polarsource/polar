@@ -97,16 +97,25 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             raise OrganizationDoesNotExist(organization_id)
 
         is_auto_approve_eligible = (
-            organization.status == OrganizationStatus.ONGOING_REVIEW
+            organization.status
+            in (
+                OrganizationStatus.ONGOING_REVIEW,
+                OrganizationStatus.REVIEW,
+            )
+            and organization.initially_reviewed_at is not None
         )
 
+        plain_thread_id: str | None = None
         if not is_auto_approve_eligible:
-            await plain_service.create_organization_review_thread(session, organization)
+            plain_thread_id = await plain_service.create_organization_review_thread(
+                session, organization
+            )
 
         enqueue_job(
             "organization_review.run_agent",
             organization_id=organization_id,
             auto_approve_eligible=is_auto_approve_eligible,
+            plain_thread_id=plain_thread_id,
         )
 
 

@@ -203,10 +203,10 @@ export default function ClientPage({
     limit: 5,
   })
 
-  const { data: varianceStats } = useEventVarianceStats(
-    organization.id,
-    sharedDateParams,
-  )
+  const { data: varianceStats } = useEventVarianceStats(organization.id, {
+    ...sharedDateParams,
+    limit: 6,
+  })
 
   const customerRows = useMemo(
     () =>

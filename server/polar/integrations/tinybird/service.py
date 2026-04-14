@@ -1094,7 +1094,8 @@ class TinybirdEventsQuery:
         if aggregate_fields:
             primary_label = aggregate_fields[0].replace(".", "_")
             primary_col = customer_sums.c[f"{primary_label}_sum"]
-            share_col = (primary_col / func.sum(primary_col).over()).label("share")
+            total = func.nullif(func.sum(primary_col).over(), 0)
+            share_col = func.coalesce(primary_col / total, 0.0).label("share")
             order_col = primary_col.desc()
         else:
             share_col = sqlalchemy.literal(0.0).label("share")  # type: ignore[assignment]

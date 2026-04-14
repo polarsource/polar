@@ -518,6 +518,34 @@ class TestConfirmOrganizationReviewed:
             "organization.reviewed",
             organization_id=organization.id,
             initial_review=True,
+            silent=False,
+        )
+
+    async def test_initial_review_silent(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization under review
+        organization.status = OrganizationStatus.INITIAL_REVIEW
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        # When
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000, silent=True
+        )
+
+        # Then
+        assert result.status == OrganizationStatus.ACTIVE
+        assert result.initially_reviewed_at is not None
+        assert result.next_review_threshold == 15000
+        enqueue_job_mock.assert_called_once_with(
+            "organization.reviewed",
+            organization_id=organization.id,
+            initial_review=True,
+            silent=True,
         )
 
     async def test_ongoing_review(
@@ -546,6 +574,7 @@ class TestConfirmOrganizationReviewed:
             "organization.reviewed",
             organization_id=organization.id,
             initial_review=False,
+            silent=False,
         )
 
     async def test_overrides_rejected_appeal(

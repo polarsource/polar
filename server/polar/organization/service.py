@@ -749,8 +749,15 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
-        next_review_threshold: int,
+        next_review_threshold: int | None = None,
+        *,
+        silent: bool = False,
     ) -> Organization:
+        if next_review_threshold is None:
+            next_review_threshold = max(
+                organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
+            )
+
         organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
@@ -778,6 +785,7 @@ class OrganizationService:
             "organization.reviewed",
             organization_id=organization.id,
             initial_review=initial_review,
+            silent=silent,
         )
         return organization
 
@@ -798,12 +806,7 @@ class OrganizationService:
         )
 
         if is_eligible:
-            next_threshold = max(
-                organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
-            )
-            await self.confirm_organization_reviewed(
-                session, organization, next_threshold
-            )
+            await self.confirm_organization_reviewed(session, organization)
             return True
 
         # Not eligible or not approved → create Plain ticket for human review

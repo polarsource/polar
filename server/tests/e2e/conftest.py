@@ -8,9 +8,12 @@ Tests are organized by lifecycle phase:
 - lifecycle/     — ongoing subscription events (renewal, retry, cancellation)
 """
 
+from collections.abc import Iterator
 from typing import Any
 from unittest.mock import MagicMock
 
+import dramatiq
+import fakeredis
 import pytest
 import pytest_asyncio
 from pytest_mock import MockerFixture
@@ -63,6 +66,30 @@ def actor_registry() -> dict[str, Any]:
 @pytest.fixture(autouse=True)
 def _set_job_queue_manager() -> None:
     _job_queue_manager.set(JobQueueManager())
+
+
+@pytest.fixture(autouse=True)
+def _isolate_broker_redis() -> Iterator[None]:
+    """Give each test its own broker Redis so ``group().run()`` can't leak
+    messages between parallel pytest-xdist workers.
+    """
+    broker = dramatiq.get_broker()
+    original_client = broker.client  # type: ignore[attr-defined]
+    broker.client = fakeredis.FakeRedis()  # type: ignore[attr-defined]
+    yield
+    broker.client = original_client  # type: ignore[attr-defined]
+
+
+@pytest.fixture(autouse=True)
+def _protect_test_transaction(session: AsyncSession) -> None:
+    """Prevent ``session.rollback()`` inside ``AsyncSessionMaker`` from
+    propagating to the outer test transaction.
+
+    With ``create_savepoint``, the session auto-begins inside its own
+    SAVEPOINT, so ``Session.rollback(_to_root=True)`` stops there
+    instead of rolling back T1.
+    """
+    session.sync_session.join_transaction_mode = "create_savepoint"
 
 
 @pytest.fixture(autouse=True)

@@ -199,13 +199,6 @@ class TaskDrain:
         ignored = DEFAULT_IGNORED_ACTORS | (ignored_actors or set())
         result = DrainResult()
 
-        # Purge stale messages from the broker's real Redis.
-        # group().run() and pipeline enqueue directly to the broker,
-        # bypassing the drain's FakeRedis. Leftover messages from
-        # previous tests or parallel workers would be siphoned into
-        # the current test and cause spurious failures.
-        self._purge_broker_queues()
-
         # Flush the HTTP request's JQM to Redis
         try:
             jqm = JobQueueManager.get()
@@ -272,26 +265,6 @@ class TaskDrain:
             return message_data
 
         return None
-
-    def _purge_broker_queues(self) -> None:
-        """Remove stale messages from the broker's real Redis.
-
-        ``group().run()`` and ``dramatiq.pipeline`` write directly to the
-        broker's Redis.  If a previous test (or a parallel pytest-xdist
-        worker) left messages behind, ``_siphon_broker_messages`` would
-        pull them into the current test and cause spurious failures.
-
-        Called at the *start* of each drain — before the current test's
-        JQM is flushed — so only genuinely stale messages are removed.
-        """
-        broker = dramatiq.get_broker()
-        broker_redis = getattr(broker, "client", None)
-        if broker_redis is None or broker_redis is self._redis:
-            return
-
-        for queue_name in QUEUE_NAMES:
-            broker_redis.delete(f"dramatiq:{queue_name}")
-            broker_redis.delete(f"dramatiq:{queue_name}.msgs")
 
     async def _siphon_broker_messages(self) -> None:
         """Transfer messages from the broker's Redis to the drain's FakeRedis.

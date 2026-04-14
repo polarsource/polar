@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -28,6 +29,18 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mocker.patch("polar.payment_method.service.stripe_service", new=mock)
     mocker.patch("polar.customer_email_update.service.stripe_service", new=mock)
     return mock
+
+
+@pytest_asyncio.fixture
+async def organization_allow_email_change(
+    save_fixture: SaveFixture, organization: Organization
+) -> Organization:
+    organization.customer_portal_settings = {
+        **organization.customer_portal_settings,
+        "customer": {"allow_email_change": True},
+    }
+    await save_fixture(organization)
+    return organization
 
 
 @pytest.mark.asyncio
@@ -216,11 +229,25 @@ class TestRequestEmailUpdate:
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
+    async def test_not_allowed(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-portal/customers/me/email-update/request",
+            json={"email": "brand-new@example.com"},
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_request_email_update(
         self,
         client: AsyncClient,
         mocker: MockerFixture,
         customer: Customer,
+        organization_allow_email_change: Organization,
     ) -> None:
         mocker.patch("polar.customer_email_update.service.enqueue_email_template")
         response = await client.post(
@@ -235,6 +262,7 @@ class TestRequestEmailUpdate:
         self,
         client: AsyncClient,
         customer: Customer,
+        organization_allow_email_change: Organization,
     ) -> None:
         response = await client.post(
             "/v1/customer-portal/customers/me/email-update/request",

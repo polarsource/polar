@@ -115,6 +115,34 @@ Thank you for your business!
             },
             "unicode_vietnamese",
         ),
+        (
+            {
+                "customer_name": "שלום עולם",
+                "customer_address": Address(
+                    line1="רחוב הרצל 1",
+                    city="תל אביב",
+                    postal_code="61000",
+                    country=CountryAlpha2("IL"),
+                ),
+                "customer_additional_info": "עוסק מורשה 123456789",
+                "items": [
+                    InvoiceItem(
+                        description="מנוי שנתי",
+                        quantity=1,
+                        unit_amount=50_00,
+                        amount=50_00,
+                    ),
+                    InvoiceItem(
+                        description="שימוש נוסף",
+                        quantity=2,
+                        unit_amount=25_00,
+                        amount=50_00,
+                    ),
+                ],
+                "notes": "תודה על הרכישה",
+            },
+            "unicode_hebrew",
+        ),
     ],
 )
 def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None:
@@ -126,3 +154,27 @@ def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None
     generator.output(str(path))
 
     assert path.exists()
+
+
+def test_generator_registers_hebrew_fallback_fonts(invoice: Invoice) -> None:
+    generator = InvoiceGenerator(
+        invoice.model_copy(
+            update={
+                "customer_name": "שלום עולם",
+                "items": [
+                    InvoiceItem(
+                        description="מנוי שנתי",
+                        quantity=1,
+                        unit_amount=100_00,
+                        amount=100_00,
+                    )
+                ],
+            }
+        )
+    )
+
+    assert generator.text_shaping is not None
+    assert generator.get_fallback_font("ש") == generator.hebrew_font_name
+    assert generator.get_fallback_font("ש", style="B") == (
+        f"{generator.hebrew_font_name}B"
+    )

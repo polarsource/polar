@@ -226,6 +226,17 @@ class InvoiceGenerator(FPDF):
     font_name: ClassVar[str] = "inter"
     """Font family name."""
 
+    hebrew_regular_font_file = (
+        Path(__file__).parent / "fonts/NotoSansHebrew-Regular.ttf"
+    )
+    """Path to the Hebrew regular fallback font file."""
+
+    hebrew_bold_font_file = Path(__file__).parent / "fonts/NotoSansHebrew-Bold.ttf"
+    """Path to the Hebrew bold fallback font file."""
+
+    hebrew_font_name: ClassVar[str] = "notosanshebrew"
+    """Font family name for Hebrew fallback glyphs."""
+
     base_font_size: ClassVar[int] = 10
     """Base font size in points."""
 
@@ -260,6 +271,12 @@ class InvoiceGenerator(FPDF):
 
         self.add_font(self.font_name, fname=self.regular_font_file)
         self.add_font(self.font_name, fname=self.bold_font_file, style="B")
+        self.add_font(self.hebrew_font_name, fname=self.hebrew_regular_font_file)
+        self.add_font(
+            self.hebrew_font_name, fname=self.hebrew_bold_font_file, style="B"
+        )
+        self.set_fallback_fonts([self.hebrew_font_name], exact_match=False)
+        self.set_text_shaping(use_shaping_engine=True)
         self.set_font(self.font_name, size=self.base_font_size)
 
         self.alias_nb_pages()

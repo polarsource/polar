@@ -225,51 +225,46 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
         <div className="grid grid-cols-2 flex-row gap-4 md:gap-6 xl:flex">
-          <>
-            <CustomerTrendStatBox
-              title="Revenue"
-              size="lg"
-              trend={calculateTrend('revenue')}
-            >
-              {typeof metricsData?.totals.revenue === 'number'
-                ? formatCurrency('statistics')(
-                    metricsData.totals.revenue,
-                    'usd',
-                  )
-                : '—'}
-            </CustomerTrendStatBox>
-            <CustomerTrendStatBox
-              title="Cost"
-              size="lg"
-              trend={calculateTrend('costs')}
-              trendUpIsBad
-            >
-              {typeof metricsData?.totals.costs === 'number'
-                ? formatCurrency('subcent')(metricsData.totals.costs, 'usd')
-                : '—'}
-            </CustomerTrendStatBox>
-            <CustomerTrendStatBox
-              title="Profit"
-              size="lg"
-              trend={calculateTrend('gross_margin')}
-            >
-              {typeof metricsData?.totals.gross_margin === 'number'
-                ? formatCurrency('statistics')(
-                    metricsData.totals.gross_margin,
-                    'usd',
-                  )
-                : '—'}
-            </CustomerTrendStatBox>
-            <CustomerTrendStatBox
-              title="Profit Margin"
-              size="lg"
-              trend={calculateTrend('gross_margin_percentage')}
-            >
-              {typeof metricsData?.totals.gross_margin_percentage === 'number'
-                ? formatPercentage(metricsData.totals.gross_margin_percentage)
-                : '—'}
-            </CustomerTrendStatBox>
-          </>
+          <CustomerTrendStatBox
+            title="Revenue"
+            size="lg"
+            trend={calculateTrend('revenue')}
+          >
+            {typeof metricsData?.totals.revenue === 'number'
+              ? formatCurrency('statistics')(metricsData.totals.revenue, 'usd')
+              : '—'}
+          </CustomerTrendStatBox>
+          <CustomerTrendStatBox
+            title="Cost"
+            size="lg"
+            trend={calculateTrend('costs')}
+            trendUpIsBad
+          >
+            {typeof metricsData?.totals.costs === 'number'
+              ? formatCurrency('subcent')(metricsData.totals.costs, 'usd')
+              : '—'}
+          </CustomerTrendStatBox>
+          <CustomerTrendStatBox
+            title="Profit"
+            size="lg"
+            trend={calculateTrend('gross_margin')}
+          >
+            {typeof metricsData?.totals.gross_margin === 'number'
+              ? formatCurrency('statistics')(
+                  metricsData.totals.gross_margin,
+                  'usd',
+                )
+              : '—'}
+          </CustomerTrendStatBox>
+          <CustomerTrendStatBox
+            title="Profit Margin"
+            size="lg"
+            trend={calculateTrend('gross_margin_percentage')}
+          >
+            {typeof metricsData?.totals.gross_margin_percentage === 'number'
+              ? formatPercentage(metricsData.totals.gross_margin_percentage)
+              : '—'}
+          </CustomerTrendStatBox>
           <StatisticCard title="Customer Balance" size="lg">
             {billingWallets && billingWallets.items.length > 0
               ? billingWallets.items.map((wallet) => (

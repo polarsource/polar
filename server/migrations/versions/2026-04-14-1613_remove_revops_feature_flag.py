@@ -1,8 +1,8 @@
 """remove revops feature flag
 
 Revision ID: a1b2c3d4e5f2
-Revises: 87c3805dd60f
-Create Date: 2026-04-14 12:11:53.792641
+Revises: 3da90b684726
+Create Date: 2026-04-14 16:13:53.792641
 
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a1b2c3d4e5f2"
-down_revision = "87c3805dd60f"
+down_revision = "3da90b684726"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

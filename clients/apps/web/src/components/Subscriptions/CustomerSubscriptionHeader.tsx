@@ -58,9 +58,7 @@ export const CustomerSubscriptionHeader = ({
               <AmountLabel
                 amount={pendingAmount}
                 currency={subscription.currency}
-                interval={
-                  pendingProduct.recurring_interval ?? undefined
-                }
+                interval={pendingProduct.recurring_interval ?? undefined}
                 intervalCount={
                   pendingProduct.recurring_interval_count ?? undefined
                 }

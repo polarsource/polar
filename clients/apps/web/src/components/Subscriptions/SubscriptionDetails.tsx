@@ -171,7 +171,6 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
               : '—'
           }
         />
-
       </div>
 
       {subscription.pending_update && (

@@ -19,9 +19,7 @@ export const ScheduledUpdateSection = ({
   subscription: schemas['Subscription']
 }) => {
   const { organization } = useContext(OrganizationContext)
-  const { data: newProduct } = useProduct(
-    pendingUpdate.product_id ?? undefined,
-  )
+  const { data: newProduct } = useProduct(pendingUpdate.product_id ?? undefined)
 
   return (
     <div className="flex flex-col gap-y-4">

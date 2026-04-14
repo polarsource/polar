@@ -137,9 +137,7 @@ describe('getCustomerSubscriptionBasePrice', () => {
   })
 })
 
-const createProduct = (
-  prices: schemas['ProductPrice'][],
-): schemas['Product'] =>
+const createProduct = (prices: schemas['ProductPrice'][]): schemas['Product'] =>
   ({
     id: 'product-2',
     created_at: '2026-04-10T00:00:00Z',
@@ -158,7 +156,11 @@ const createProduct = (
 
 const createSeatBasedPrice = (
   currency: string,
-  tiers: { min_seats: number; max_seats?: number | null; price_per_seat: number }[],
+  tiers: {
+    min_seats: number
+    max_seats?: number | null
+    price_per_seat: number
+  }[],
 ): schemas['ProductPriceSeatBased'] =>
   ({
     id: `price-seat-${currency}`,

@@ -18,9 +18,7 @@ export function getPendingTotalAmount(
     let remaining = seats
     for (const tier of tiers) {
       const tierCapacity =
-        tier.max_seats != null
-          ? tier.max_seats - tier.min_seats + 1
-          : remaining
+        tier.max_seats != null ? tier.max_seats - tier.min_seats + 1 : remaining
       const seatsInTier = Math.min(remaining, tierCapacity)
       total += seatsInTier * tier.price_per_seat
       remaining -= seatsInTier

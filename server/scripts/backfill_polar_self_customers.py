@@ -1,5 +1,7 @@
 import asyncio
-from dataclasses import dataclass, field
+import uuid
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 import structlog
 import typer
@@ -8,7 +10,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.config import settings
-from polar.integrations.polar.client import PolarSelfClient, PolarSelfClientError
+from polar.integrations.polar.client import (
+    PolarSelfClient,
+    PolarSelfClientError,
+    get_client,
+)
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization, User, UserOrganization
 from polar.postgres import create_async_engine
@@ -22,18 +28,15 @@ cli = typer.Typer()
 
 @dataclass
 class BackfillResult:
-    created: int = 0
+    customers_created: int = 0
+    members_created: int = 0
+    skipped_no_email: int = 0
     errors: int = 0
-    members_created: list[tuple[str, str]] = field(default_factory=list)
 
 
-async def run_backfill(
-    *,
-    session: AsyncSession,
-    client: PolarSelfClient,
-    delay_seconds: float = 0,
-    limit: int | None = None,
-) -> BackfillResult:
+async def _load_active_organizations(
+    session: AsyncSession, *, limit: int | None
+) -> Sequence[Organization]:
     statement = (
         select(Organization)
         .where(
@@ -45,57 +48,115 @@ async def run_backfill(
     if limit is not None:
         statement = statement.limit(limit)
     result = await session.execute(statement)
-    organizations = result.scalars().all()
+    return result.scalars().all()
 
-    backfill_result = BackfillResult()
 
-    for org in organizations:
-        members_stmt = (
-            select(User)
-            .join(UserOrganization, UserOrganization.user_id == User.id)
-            .where(
-                UserOrganization.organization_id == org.id,
-                UserOrganization.deleted_at.is_(None),
-            )
-            .order_by(UserOrganization.created_at)
+async def _load_active_members(
+    session: AsyncSession, organization_id: uuid.UUID
+) -> Sequence[User]:
+    statement = (
+        select(User)
+        .join(UserOrganization, UserOrganization.user_id == User.id)
+        .where(
+            UserOrganization.organization_id == organization_id,
+            UserOrganization.deleted_at.is_(None),
+            User.deleted_at.is_(None),
         )
-        members_result = await session.execute(members_stmt)
-        members = members_result.unique().scalars().all()
-        email = org.email or members[0].email
+        .order_by(UserOrganization.created_at)
+    )
+    result = await session.execute(statement)
+    return result.unique().scalars().all()
 
-        try:
-            await client.create_customer(
-                external_id=str(org.id),
-                email=email,
-                name=org.name,
-            )
-            await client.create_free_subscription(
-                external_customer_id=str(org.id),
-                product_id=settings.POLAR_FREE_PRODUCT_ID,
-            )
-            customer = await client.get_customer_by_external_id(str(org.id))
-            for member in members:
-                await client.add_member(
-                    customer_id=customer.id,
-                    email=member.email,
-                    name=member.public_name,
-                    external_id=str(member.id),
+
+async def run_backfill(
+    *,
+    session: AsyncSession,
+    client: PolarSelfClient,
+    dry_run: bool = False,
+    delay_seconds: float = 0,
+    limit: int | None = None,
+) -> BackfillResult:
+    result = BackfillResult()
+    organizations = await _load_active_organizations(session, limit=limit)
+
+    with Progress() as progress:
+        task = progress.add_task(
+            "[cyan]Backfilling customers...", total=len(organizations)
+        )
+        for organization in organizations:
+            members = await _load_active_members(session, organization.id)
+            email = organization.email or (members[0].email if members else None)
+
+            if email is None:
+                log.warning(
+                    "backfill.skip_no_email",
+                    organization_id=str(organization.id),
                 )
-                backfill_result.members_created.append((str(org.id), str(member.id)))
+                result.skipped_no_email += 1
+                progress.advance(task)
+                continue
+
+            if dry_run:
+                typer.echo(
+                    f"  Would backfill {organization.name} ({organization.id}) "
+                    f"email={email} members={len(members)}"
+                )
+                progress.advance(task)
+                continue
+
+            try:
+                customer = await client.create_customer(
+                    external_id=str(organization.id),
+                    email=email,
+                    name=organization.name,
+                )
+            except PolarSelfClientError:
+                log.error(
+                    "backfill.customer_failed",
+                    organization_id=str(organization.id),
+                )
+                result.errors += 1
+                progress.advance(task)
+                continue
+
+            result.customers_created += 1
+
+            try:
+                await client.create_free_subscription(
+                    external_customer_id=str(organization.id),
+                    product_id=settings.POLAR_FREE_PRODUCT_ID,
+                )
+            except PolarSelfClientError:
+                log.error(
+                    "backfill.subscription_failed",
+                    organization_id=str(organization.id),
+                )
+                result.errors += 1
+
+            for member in members:
+                try:
+                    await client.add_member(
+                        customer_id=customer.id,
+                        email=member.email,
+                        name=member.public_name,
+                        external_id=str(member.id),
+                    )
+                    result.members_created += 1
+                except PolarSelfClientError:
+                    log.error(
+                        "backfill.member_failed",
+                        organization_id=str(organization.id),
+                        user_id=str(member.id),
+                    )
+                    result.errors += 1
                 if delay_seconds > 0:
                     await asyncio.sleep(delay_seconds)
-            backfill_result.created += 1
-        except PolarSelfClientError:
-            backfill_result.errors += 1
-            log.error(
-                "backfill.create_customer_failed",
-                organization_id=str(org.id),
-            )
 
-        if delay_seconds > 0:
-            await asyncio.sleep(delay_seconds)
+            progress.advance(task)
+            if delay_seconds > 0:
+                await asyncio.sleep(delay_seconds)
 
-    return backfill_result
+    return result
 
 
 @cli.command()
@@ -112,69 +173,32 @@ async def backfill(
     """Backfill Polar customers, free subscriptions, and members for all active organizations."""
     configure_script_logging()
 
-    if not settings.POLAR_ACCESS_TOKEN:
-        typer.echo("POLAR_ACCESS_TOKEN is not configured, aborting.")
+    if not settings.POLAR_SELF_ENABLED:
+        typer.echo(
+            "POLAR_ACCESS_TOKEN, POLAR_ORGANIZATION_ID, or POLAR_FREE_PRODUCT_ID "
+            "is not configured, aborting."
+        )
         raise typer.Exit(1)
-
-    client = PolarSelfClient(
-        access_token=settings.POLAR_ACCESS_TOKEN,
-        api_url=settings.POLAR_API_URL,
-    )
 
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
 
     try:
         async with sessionmaker() as session:
-            if dry_run:
-                statement = (
-                    select(Organization)
-                    .where(
-                        Organization.deleted_at.is_(None),
-                        Organization.blocked_at.is_(None),
-                    )
-                    .order_by(Organization.created_at)
-                )
-                if limit is not None:
-                    statement = statement.limit(limit)
-                result = await session.execute(statement)
-                organizations = result.scalars().all()
-                for org in organizations:
-                    members_stmt = (
-                        select(User)
-                        .join(
-                            UserOrganization,
-                            UserOrganization.user_id == User.id,
-                        )
-                        .where(
-                            UserOrganization.organization_id == org.id,
-                            UserOrganization.deleted_at.is_(None),
-                        )
-                    )
-                    members_result = await session.execute(members_stmt)
-                    members = members_result.unique().scalars().all()
-                    email = org.email or members[0].email
-                    typer.echo(
-                        f"  Would create customer: {org.name} ({org.id}) email={email} members={len(members)}"
-                    )
-                return
-
-            with Progress() as progress:
-                task = progress.add_task("[cyan]Backfilling customers...", total=1)
-                backfill_result = await run_backfill(
-                    session=session,
-                    client=client,
-                    delay_seconds=delay_seconds,
-                    limit=limit,
-                )
-                progress.update(task, advance=1)
-
-            typer.echo(
-                f"\nDone: {backfill_result.created} created, "
-                f"{backfill_result.errors} errors, "
-                f"{len(backfill_result.members_created)} members created"
+            result = await run_backfill(
+                session=session,
+                client=get_client(),
+                dry_run=dry_run,
+                delay_seconds=delay_seconds,
+                limit=limit,
             )
 
+        typer.echo(
+            f"\nDone: {result.customers_created} customers, "
+            f"{result.members_created} members, "
+            f"{result.skipped_no_email} skipped (no email), "
+            f"{result.errors} errors"
+        )
     finally:
         await engine.dispose()
 

@@ -61,7 +61,7 @@ export const CurrentPeriodOverview = ({
     : subscription.current_period_end
 
   // Determine header and label based on subscription state
-  let headerTitle = 'Current Period Overview'
+  let headerTitle = 'Next Charge'
   let dateLabel = 'Next Invoice'
 
   if (isTrialing) {

@@ -2,7 +2,9 @@ name: Preview Environments
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, closed]
+    types: [opened, reopened, synchronize]
+  pull_request_target:
+    types: [closed]
   workflow_dispatch:
     inputs:
       action:
@@ -25,24 +27,24 @@ permissions:
 
 jobs:
   preview:
-    name: "Preview: ${{ github.event_name == 'pull_request' && (github.event.action == 'closed' && 'Destroy' || 'Deploy') || github.event.inputs.action }}"
+    name: "Preview: ${{ (github.event_name == 'pull_request_target' && 'Destroy') || (github.event_name == 'pull_request' && 'Deploy') || github.event.inputs.action }}"
     runs-on: ubuntu-latest
     outputs:
       preview_url: ${{ steps.deploy.outputs.preview_url }}
     concurrency:
-      group: preview-pr-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event.inputs.pr_number }}
+      group: preview-pr-${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.number) || github.event.inputs.pr_number }}
       cancel-in-progress: false
     env:
-      PR_NUM: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event.inputs.pr_number }}
-      BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
-      SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      PR_NUM: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.number) || github.event.inputs.pr_number }}
+      BRANCH: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.ref) || github.ref_name }}
+      SHA: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.sha) || github.sha }}
     steps:
       - uses: actions/checkout@v6
 
       - name: Determine action
         id: action
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.action }}" == "closed" ]]; then
+          if [[ "${{ github.event_name }}" == "pull_request_target" && "${{ github.event.action }}" == "closed" ]]; then
             echo "action=destroy" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "action=${{ github.event.inputs.action }}" >> "$GITHUB_OUTPUT"
@@ -216,8 +218,11 @@ jobs:
           exit 1
 
       # --- SSH destroy ---
+      # Non-fatal: if the VM is unreachable we still want the Teardown
+      # step below to run and clean up Tinybird + Postgres resources.
       - name: Destroy preview on VM
         if: steps.action.outputs.action == 'destroy'
+        continue-on-error: true
         env:
           SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
           PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
@@ -234,7 +239,7 @@ jobs:
             "/srv/preview-tools/deploy.sh destroy"
 
       - name: Teardown preview resources
-        if: steps.action.outputs.action == 'destroy'
+        if: always() && steps.action.outputs.action == 'destroy'
         working-directory: ./server
         env:
           POLAR_PREVIEW_BASE_DOMAIN: ${{ vars.POLAR_PREVIEW_BASE_DOMAIN }}
@@ -260,7 +265,6 @@ jobs:
     needs: preview
     if: |
       github.event_name == 'pull_request' &&
-      github.event.action != 'closed' &&
       needs.preview.result == 'success' &&
       needs.preview.outputs.preview_url != ''
     uses: ./.github/workflows/test_e2e.yaml
@@ -274,7 +278,6 @@ jobs:
     needs: preview
     if: |
       github.event_name == 'pull_request' &&
-      github.event.action != 'closed' &&
       needs.preview.result == 'success'
     runs-on: ubuntu-latest
     steps:
@@ -303,8 +306,7 @@ jobs:
     name: "Preview: Delete Comment"
     needs: preview
     if: |
-      github.event_name == 'pull_request' &&
-      github.event.action == 'closed' &&
+      github.event_name == 'pull_request_target' &&
       needs.preview.result == 'success'
     runs-on: ubuntu-latest
     steps:

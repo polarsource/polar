@@ -213,6 +213,10 @@ async def list_organizations(
         status_filter = OrganizationStatus.ONBOARDING_STARTED
     elif status == "offboarding":
         status_filter = OrganizationStatus.OFFBOARDING
+    elif status == "review":
+        status_filter = OrganizationStatus.REVIEW
+    elif status == "snoozed":
+        status_filter = OrganizationStatus.SNOOZED
 
     # Build query
     stmt = (

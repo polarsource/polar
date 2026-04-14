@@ -307,6 +307,8 @@ class LegacyOrganizationStatus(StrEnum):
             ),
             OrganizationStatus.INITIAL_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
             OrganizationStatus.ONGOING_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
+            OrganizationStatus.REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
+            OrganizationStatus.SNOOZED: LegacyOrganizationStatus.UNDER_REVIEW,
             OrganizationStatus.DENIED: LegacyOrganizationStatus.DENIED,
             OrganizationStatus.ACTIVE: LegacyOrganizationStatus.ACTIVE,
             OrganizationStatus.OFFBOARDING: LegacyOrganizationStatus.ACTIVE,

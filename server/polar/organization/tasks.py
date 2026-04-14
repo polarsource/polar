@@ -97,7 +97,12 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             raise OrganizationDoesNotExist(organization_id)
 
         is_auto_approve_eligible = (
-            organization.status == OrganizationStatus.ONGOING_REVIEW
+            organization.status
+            in (
+                OrganizationStatus.ONGOING_REVIEW,
+                OrganizationStatus.REVIEW,
+            )
+            and organization.initially_reviewed_at is not None
         )
 
         plain_thread_id: str | None = None

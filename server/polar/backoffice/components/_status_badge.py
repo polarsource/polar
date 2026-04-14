@@ -50,6 +50,14 @@ def status_badge(
             "class": "badge-warning",
             "aria": "ongoing review status",
         },
+        OrganizationStatus.REVIEW: {
+            "class": "badge-warning",
+            "aria": "review status",
+        },
+        OrganizationStatus.SNOOZED: {
+            "class": "badge-ghost border border-base-300",
+            "aria": "snoozed status",
+        },
         OrganizationStatus.DENIED: {
             "class": "badge-ghost border border-base-300",
             "aria": "denied status",

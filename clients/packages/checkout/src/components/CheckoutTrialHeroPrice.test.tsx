@@ -190,4 +190,68 @@ describe('CheckoutTrialHeroPrice', () => {
       expect(container.textContent).not.toContain('starting')
     })
   })
+
+  describe('recurring interval count', () => {
+    it('reflects quarterly billing (month x3) instead of "/month"', () => {
+      const checkout = createTrialCheckout({
+        amount: 4106,
+        net_amount: 4106,
+        total_amount: 4106,
+        active_trial_interval: 'day',
+        active_trial_interval_count: 7,
+        product: {
+          ...trialProduct,
+          recurring_interval: 'month',
+          recurring_interval_count: 3,
+          trial_interval: 'day',
+          trial_interval_count: 7,
+        },
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$41.06 / 3rd mo')
+      expect(container.textContent).not.toMatch(/\$41\.06\/month/)
+    })
+
+    it('keeps "/month" when recurring_interval_count is 1', () => {
+      const checkout = createTrialCheckout({
+        amount: 999,
+        net_amount: 999,
+        total_amount: 999,
+        product: {
+          ...trialProduct,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+        },
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$9.99/month')
+    })
+
+    it('reflects bi-yearly billing (year x2)', () => {
+      const checkout = createTrialCheckout({
+        amount: 19999,
+        net_amount: 19999,
+        total_amount: 19999,
+        product: {
+          ...trialProduct,
+          recurring_interval: 'year',
+          recurring_interval_count: 2,
+        },
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('$199.99 / 2nd yr')
+    })
+  })
 })

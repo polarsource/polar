@@ -197,6 +197,11 @@ class PlainService:
                     title = "Initial Account Review"
                 case OrganizationStatus.ONGOING_REVIEW:
                     title = "Ongoing Account Review"
+                case OrganizationStatus.REVIEW:
+                    if organization.initially_reviewed_at is not None:
+                        title = "Ongoing Account Review"
+                    else:
+                        title = "Initial Account Review"
                 case _:
                     raise ValueError("Organization is not under review")
 

@@ -294,6 +294,20 @@ class OrganizationListView:
                 badge_variant="warning",
             ),
             Tab(
+                label="Review",
+                url=str(request.url_for("organizations:list")) + "?status=review",
+                active=status_filter == OrganizationStatus.REVIEW,
+                count=status_counts.get(OrganizationStatus.REVIEW, 0),
+                badge_variant="warning",
+            ),
+            Tab(
+                label="Snoozed",
+                url=str(request.url_for("organizations:list")) + "?status=snoozed",
+                active=status_filter == OrganizationStatus.SNOOZED,
+                count=status_counts.get(OrganizationStatus.SNOOZED, 0),
+                badge_variant="warning",
+            ),
+            Tab(
                 label="Active",
                 url=str(request.url_for("organizations:list")) + "?status=active",
                 active=status_filter == OrganizationStatus.ACTIVE,

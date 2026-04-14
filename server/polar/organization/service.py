@@ -417,6 +417,7 @@ class OrganizationService:
 
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
+        polar_self_service.enqueue_delete_customer(organization_id=organization.id)
 
         return organization
 
@@ -570,6 +571,7 @@ class OrganizationService:
 
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
+        polar_self_service.enqueue_delete_customer(organization_id=organization.id)
 
         log.info(
             "organization.deleted",

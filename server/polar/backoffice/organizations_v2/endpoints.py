@@ -2674,7 +2674,11 @@ async def remove_member(
             user_organization as user_organization_service,
         )
 
-        await user_organization_service.remove_member(session, organization.id, user_id)
+        await user_organization_service.remove_member(
+            session,
+            user_id=user_id,
+            organization_id=organization.id,
+        )
     except Exception as e:
         logger.error("Failed to remove member", error=str(e))
         raise HTTPException(status_code=400, detail=str(e))

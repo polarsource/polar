@@ -468,7 +468,11 @@ async def leave_organization(
         raise NotPermitted("Cannot leave organization as the only member.")
 
     # Remove the user from the organization
-    await user_organization_service.remove_member(session, user.id, organization.id)
+    await user_organization_service.remove_member(
+        session,
+        user_id=user.id,
+        organization_id=organization.id,
+    )
 
 
 @router.delete(
@@ -522,7 +526,9 @@ async def remove_member(
 
     try:
         await user_organization_service.remove_member_safe(
-            session, target_user_id, organization.id
+            session,
+            user_id=target_user_id,
+            organization_id=organization.id,
         )
     except UserNotMemberOfOrganization:
         raise ResourceNotFound()

@@ -1555,6 +1555,22 @@ class TestRequestDeletion:
 
 @pytest.mark.asyncio
 class TestSoftDeleteOrganization:
+    async def test_enqueues_polar_self_customer_deletion(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_delete_customer_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_delete_customer"
+        )
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        enqueue_delete_customer_mock.assert_called_once_with(
+            organization_id=organization.id
+        )
+
     async def test_anonymizes_pii_preserves_slug(
         self,
         session: AsyncSession,
@@ -1609,6 +1625,25 @@ class TestSoftDeleteOrganization:
 
         assert result.details == {}
         assert result.socials == []
+
+
+@pytest.mark.asyncio
+class TestDelete:
+    async def test_enqueues_polar_self_customer_deletion(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_delete_customer_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_delete_customer"
+        )
+
+        await organization_service.delete(session, organization)
+
+        enqueue_delete_customer_mock.assert_called_once_with(
+            organization_id=organization.id
+        )
 
 
 @pytest.mark.asyncio

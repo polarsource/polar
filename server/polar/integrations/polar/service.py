@@ -45,10 +45,24 @@ class PolarSelfService:
             external_id=external_id,
         )
 
-    def enqueue_remove_member(self, *, member_id: str) -> None:
+    def enqueue_remove_member(
+        self, *, external_customer_id: str, external_id: str
+    ) -> None:
         if not self.is_configured:
             return
-        enqueue_job("polar_self.remove_member", member_id=member_id)
+        enqueue_job(
+            "polar_self.remove_member",
+            external_customer_id=external_customer_id,
+            external_id=external_id,
+        )
+
+    def enqueue_delete_customer(self, *, organization_id: uuid.UUID) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job(
+            "polar_self.delete_customer",
+            external_id=str(organization_id),
+        )
 
     def enqueue_track_ingestion(self, *, external_customer_id: str, count: int) -> None:
         if not self.is_configured:

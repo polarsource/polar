@@ -11,7 +11,7 @@ from polar.logging import Logger
 
 if TYPE_CHECKING:
     from polar_sdk import Polar as PolarSDK
-    from polar_sdk.models import Customer
+    from polar_sdk.models import Customer, Member
 
 log: Logger = structlog.get_logger()
 
@@ -36,16 +36,15 @@ class PolarSelfClient:
         )
 
     async def create_customer(self, *, external_id: str, email: str, name: str) -> None:
-        from polar_sdk.models import CustomerCreate, CustomerType
+        from polar_sdk.models import CustomerTeamCreate
         from polar_sdk.models.polarerror import PolarError
 
         try:
             await self._sdk.customers.create_async(
-                request=CustomerCreate(
+                request=CustomerTeamCreate(
                     email=email,
                     name=name,
                     external_id=external_id,
-                    type=CustomerType.TEAM,
                 )
             )
         except PolarError as e:
@@ -74,6 +73,13 @@ class PolarSelfClient:
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
         return await self._sdk.customers.get_external_async(external_id=external_id)
 
+    async def get_member_by_external_id(
+        self, *, external_customer_id: str, external_id: str
+    ) -> Member | None:
+        return await self._sdk.members.get_member_by_external_id_async(
+            external_id=external_id,
+        )
+
     async def add_member(
         self, *, customer_id: str, email: str, name: str, external_id: str
     ) -> None:
@@ -92,13 +98,48 @@ class PolarSelfClient:
         except PolarError as e:
             self._handle_error(e, "add_member", external_id=external_id)
 
-    async def remove_member(self, *, member_id: str) -> None:
+    async def remove_member(
+        self, *, external_customer_id: str, external_id: str
+    ) -> None:
         from polar_sdk.models.polarerror import PolarError
 
         try:
-            await self._sdk.members.delete_member_async(id=member_id)
+            await self._sdk.members.delete_member_by_external_id_async(
+                external_id=external_id,
+            )
         except PolarError as e:
-            self._handle_error(e, "remove_member", member_id=member_id)
+            if e.status_code == 404:
+                log.debug(
+                    "polar_self.not_found",
+                    operation="remove_member",
+                    external_customer_id=external_customer_id,
+                    external_id=external_id,
+                )
+                return
+            self._handle_error(
+                e,
+                "remove_member",
+                external_customer_id=external_customer_id,
+                external_id=external_id,
+            )
+
+    async def delete_customer(self, *, external_id: str) -> None:
+        from polar_sdk.models.polarerror import PolarError
+
+        try:
+            await self._sdk.customers.delete_external_async(
+                external_id=external_id,
+                anonymize=True,
+            )
+        except PolarError as e:
+            if e.status_code == 404:
+                log.debug(
+                    "polar_self.not_found",
+                    operation="delete_customer",
+                    external_id=external_id,
+                )
+                return
+            self._handle_error(e, "delete_customer", external_id=external_id)
 
     async def track_event_ingestion(
         self, *, external_customer_id: str, count: int

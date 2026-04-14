@@ -22,6 +22,7 @@ import { useOrganizationSeats } from '@/hooks/queries/seats'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import Pill from '@polar-sh/ui/components/atoms/Pill'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { ArrowUpRightIcon, MoreVertical } from 'lucide-react'
+import { ArrowUpRightIcon, Clock, MoreVertical } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 
@@ -98,6 +99,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
             <h2 className="text-xl font-normal">Subscription</h2>
+            {subscription.pending_update && (
+              <Pill color="yellow">
+                <Clock className="size-3" />
+                <span>Update Pending</span>
+              </Pill>
+            )}
           </div>
         </div>
       }

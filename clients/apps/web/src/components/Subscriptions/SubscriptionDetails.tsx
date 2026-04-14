@@ -10,6 +10,7 @@ import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { DetailRow } from '../Shared/DetailRow'
+import { ScheduledUpdateSection } from './ScheduledUpdateSection'
 import { SubscriptionStatus } from './SubscriptionStatus'
 
 const formatRecurringSchedule = (
@@ -170,7 +171,15 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
               : '—'
           }
         />
+
       </div>
+
+      {subscription.pending_update && (
+        <ScheduledUpdateSection
+          pendingUpdate={subscription.pending_update}
+          subscription={subscription}
+        />
+      )}
 
       {cancellationDate && (
         <div className="flex flex-col gap-y-4">

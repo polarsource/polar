@@ -21,6 +21,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       server: ${{ steps.filter.outputs.server }}
+      clients: ${{ steps.filter.outputs.clients }}
       migrations: ${{ steps.filter.outputs.migrations }}
       tinybird: ${{ steps.filter.outputs.tinybird }}
       server_files: ${{ steps.filter.outputs.server_files }}
@@ -34,6 +35,8 @@ jobs:
             server:
               - 'server/**'
               - '.github/workflows/test_server.yaml'
+            clients:
+              - 'clients/**'
             migrations:
               - 'server/migrations/versions/**'
             tinybird:
@@ -189,6 +192,62 @@ jobs:
       - name: Fail check
         if: steps.check.outputs.has_disallowed == 'true'
         run: exit 1
+
+  deploy-coordination-check:
+    name: "Server: Deploy Coordination Check 🚦"
+    needs: changes
+    if: (needs.changes.outputs.server == 'true' || needs.changes.outputs.clients == 'true') && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for mixed backend + frontend changes
+        id: check
+        run: |
+          if [ "${{ needs.changes.outputs.server }}" = "true" ] && [ "${{ needs.changes.outputs.clients }}" = "true" ]; then
+            echo "mixed=true" >> $GITHUB_OUTPUT
+          else
+            echo "mixed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v4
+        id: fc
+        with:
+          issue-number: ${{ github.event.number }}
+          body-includes: "<!-- __DEPLOY_COORDINATION_CHECK -->"
+
+      - name: Create or update warning comment
+        if: steps.check.outputs.mixed == 'true'
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- __DEPLOY_COORDINATION_CHECK -->
+            ## ⚠️ Deploy Coordination Warning
+
+            This PR changes both **backend** (`server/`) and **frontend** (`clients/`) code. These are deployed independently after merge:
+
+            - **Backend** → Docker build → Render (sandbox → production)
+            - **Frontend** → Vercel (sandbox → production)
+
+            They run in parallel with no ordering guarantee. If the frontend depends on a new backend API, the frontend may be promoted before the backend is ready.
+
+            ### Options
+            1. **Split into two PRs** (recommended for breaking API changes): merge backend first, then frontend
+            2. **Use the manual full deploy**: after merge, trigger the "Build and Deploy (Full)" workflow from the Actions tab — this deploys backend first, then promotes frontend
+            3. **No action needed** if the changes are independently deployable
+
+      - name: Delete resolved comment
+        if: steps.check.outputs.mixed == 'false' && steps.fc.outputs.comment-id != ''
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.fc.outputs.comment-id }}
+            })
 
   test:
     name: "Server: Tests 🐍"

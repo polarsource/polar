@@ -187,7 +187,7 @@ class TinybirdEventRepository:
             return 0, {field.replace(".", "_"): 0.0 for field in aggregate_fields}
 
         tinybird_query = TinybirdEventsQuery(organization_ids)
-        tinybird_query.filter_has_ancestor(ancestor_id)
+        tinybird_query.filter_self_or_descendant(ancestor_id)
         return await tinybird_query.get_descendant_aggregates(aggregate_fields)
 
     async def get_batch_descendant_aggregates(

@@ -228,7 +228,7 @@ export default function EventDetailPage({
             <Field label="Customer">
               <Link
                 href={`/dashboard/${organization.slug}/customers/${event.customer.id}`}
-                className="dark:hover:bg-polar-800 flex flex-row items-center gap-x-3 rounded-lg hover:bg-gray-50 -mx-2 px-2 py-2 transition-colors"
+                className="dark:hover:bg-polar-800 -mx-2 flex flex-row items-center gap-x-3 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
               >
                 <Avatar
                   avatar_url={event.customer.avatar_url}

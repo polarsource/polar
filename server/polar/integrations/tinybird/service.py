@@ -399,6 +399,17 @@ class TinybirdEventsQuery:
         )
         return self
 
+    def filter_self_or_descendant(self, event_id: UUID) -> Self:
+        """Match the event itself OR any event that has event_id as an ancestor."""
+        eid = str(event_id)
+        self._filters.append(
+            or_(
+                events_table.c.id == eid,
+                func.indexOf(events_table.c.ancestors, eid) > 0,
+            )
+        )
+        return self
+
     def filter_root_events(self) -> Self:
         self._filters.append(events_table.c.parent_id.is_(None))
         return self
@@ -1054,7 +1065,6 @@ class TinybirdEventsQuery:
             )
         return results
 
-
     async def get_customer_stats(
         self,
         aggregate_fields: Sequence[str],
@@ -1084,18 +1094,14 @@ class TinybirdEventsQuery:
         if aggregate_fields:
             primary_label = aggregate_fields[0].replace(".", "_")
             primary_col = customer_sums.c[f"{primary_label}_sum"]
-            share_col = (
-                primary_col / func.sum(primary_col).over()
-            ).label("share")
+            share_col = (primary_col / func.sum(primary_col).over()).label("share")
             order_col = primary_col.desc()
         else:
             share_col = sqlalchemy.literal(0.0).label("share")
             order_col = customer_sums.c.occurrences.desc()
 
         statement = (
-            sqlalchemy.select(customer_sums, share_col)
-            .order_by(order_col)
-            .limit(limit)
+            sqlalchemy.select(customer_sums, share_col).order_by(order_col).limit(limit)
         )
 
         sql, template = _compile(statement)
@@ -1111,7 +1117,9 @@ class TinybirdEventsQuery:
             }
             results.append(
                 TinybirdCustomerStat(
-                    customer_id=str(row["customer_id"]) if row.get("customer_id") else None,
+                    customer_id=str(row["customer_id"])
+                    if row.get("customer_id")
+                    else None,
                     external_customer_id=row.get("external_customer_id") or None,
                     occurrences=int(row.get("occurrences", 0) or 0),
                     totals=totals,
@@ -1137,14 +1145,18 @@ class TinybirdEventsQuery:
         name_stats_cols: list[Any] = [
             per_root.c.root_name.label("name"),
             func.avg(primary_total).label(f"{primary_label}_avg"),
-            literal_column(f"quantile(0.99)({primary_total_sql})").label(f"{primary_label}_p99"),
+            literal_column(f"quantile(0.99)({primary_total_sql})").label(
+                f"{primary_label}_p99"
+            ),
         ]
         for field_path in aggregate_fields[1:]:
             fl = field_path.replace(".", "_")
             fc = per_root.c[f"{fl}_total"]
             fc_sql = f"per_root.{fl}_total"
             name_stats_cols.append(func.avg(fc).label(f"{fl}_avg"))
-            name_stats_cols.append(literal_column(f"quantile(0.99)({fc_sql})").label(f"{fl}_p99"))
+            name_stats_cols.append(
+                literal_column(f"quantile(0.99)({fc_sql})").label(f"{fl}_p99")
+            )
 
         name_stats = (
             sqlalchemy.select(*name_stats_cols)
@@ -1199,7 +1211,9 @@ class TinybirdEventsQuery:
                 TinybirdVarianceStat(
                     event_id=str(row["event_id"]),
                     name=str(row["name"]),
-                    customer_id=str(row["customer_id"]) if row.get("customer_id") else None,
+                    customer_id=str(row["customer_id"])
+                    if row.get("customer_id")
+                    else None,
                     external_customer_id=row.get("external_customer_id") or None,
                     timestamp=_parse_datetime(row["timestamp"]),
                     values=values,

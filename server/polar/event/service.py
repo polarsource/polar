@@ -642,9 +642,7 @@ class EventService:
 
         # Fetch customer details for all rows that have a Polar customer_id
         row_customer_ids = [
-            uuid.UUID(row.customer_id)
-            for row in rows
-            if row.customer_id
+            uuid.UUID(row.customer_id) for row in rows if row.customer_id
         ]
         customers_by_id: dict[uuid.UUID, Customer] = {}
         if row_customer_ids:
@@ -735,7 +733,9 @@ class EventService:
                 external_customer_id=row.external_customer_id,
                 timestamp=row.timestamp,
                 values={k: Decimal(str(round(v, 12))) for k, v in row.values.items()},
-                averages={k: Decimal(str(round(v, 12))) for k, v in row.averages.items()},
+                averages={
+                    k: Decimal(str(round(v, 12))) for k, v in row.averages.items()
+                },
                 p99={k: Decimal(str(round(v, 12))) for k, v in row.p99.items()},
             )
             for row in rows

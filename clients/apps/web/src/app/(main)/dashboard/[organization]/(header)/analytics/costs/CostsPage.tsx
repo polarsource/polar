@@ -203,7 +203,6 @@ export default function ClientPage({
     limit: 5,
   })
 
-
   const { data: varianceStats } = useEventVarianceStats(
     organization.id,
     sharedDateParams,
@@ -461,69 +460,73 @@ export default function ClientPage({
 
           {/* By Customer */}
           {!customerId && (
-          <section>
-            <SectionHeader
-              title="By Customer"
-              description="Customers ranked by total cost in this period."
-            />
-            {customerRows.length === 0 ? (
-              <EmptyState
-                icon={<Users />}
-                title="No customer data"
-                description="No cost events attributed to customers in this period."
+            <section>
+              <SectionHeader
+                title="By Customer"
+                description="Customers ranked by total cost in this period."
               />
-            ) : (
-              <RankedList>
-                {customerRows.map((r, i) => {
-                  const customerHref = r.customer_id
-                    ? `/dashboard/${organization.slug}/customers/${r.customer_id}`
-                    : undefined
-                  return (
-                    <RankedListItem
-                      key={r.customer_id ?? r.external_customer_id ?? String(i)}
-                      itemKey={
-                        r.customer_id ?? r.external_customer_id ?? String(i)
-                      }
-                      rank={i + 1}
-                      share={r.share}
-                      onSelect={
-                        customerHref ? () => router.push(customerHref) : undefined
-                      }
-                      label={
-                        <>
-                          <Avatar
-                            name={r.label}
-                            avatar_url={null}
-                            className="h-9 w-9 shrink-0 text-xs"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium dark:text-white">
-                              {r.label}
-                            </p>
-                            {r.email && r.email !== r.label && (
-                              <p className="dark:text-polar-400 truncate text-xs text-gray-400">
-                                {r.email}
+              {customerRows.length === 0 ? (
+                <EmptyState
+                  icon={<Users />}
+                  title="No customer data"
+                  description="No cost events attributed to customers in this period."
+                />
+              ) : (
+                <RankedList>
+                  {customerRows.map((r, i) => {
+                    const customerHref = r.customer_id
+                      ? `/dashboard/${organization.slug}/customers/${r.customer_id}`
+                      : undefined
+                    return (
+                      <RankedListItem
+                        key={
+                          r.customer_id ?? r.external_customer_id ?? String(i)
+                        }
+                        itemKey={
+                          r.customer_id ?? r.external_customer_id ?? String(i)
+                        }
+                        rank={i + 1}
+                        share={r.share}
+                        onSelect={
+                          customerHref
+                            ? () => router.push(customerHref)
+                            : undefined
+                        }
+                        label={
+                          <>
+                            <Avatar
+                              name={r.label}
+                              avatar_url={null}
+                              className="h-9 w-9 shrink-0 text-xs"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium dark:text-white">
+                                {r.label}
                               </p>
-                            )}
-                          </div>
-                        </>
-                      }
-                      stats={
-                        <>
-                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                            {r.occurrences.toLocaleString()} events
-                          </span>
-                          <span className="w-24 text-right text-sm tabular-nums dark:text-white">
-                            {fmt(r.total, 'usd')}
-                          </span>
-                        </>
-                      }
-                    />
-                  )
-                })}
-              </RankedList>
-            )}
-          </section>
+                              {r.email && r.email !== r.label && (
+                                <p className="dark:text-polar-400 truncate text-xs text-gray-400">
+                                  {r.email}
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        }
+                        stats={
+                          <>
+                            <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                              {r.occurrences.toLocaleString()} events
+                            </span>
+                            <span className="w-24 text-right text-sm tabular-nums dark:text-white">
+                              {fmt(r.total, 'usd')}
+                            </span>
+                          </>
+                        }
+                      />
+                    )
+                  })}
+                </RankedList>
+              )}
+            </section>
           )}
 
           {/* Anomalies — individual traces at or above p99 for their event name */}
@@ -550,58 +553,61 @@ export default function ClientPage({
                   const p99 = parseFloat(String(s.p99?.['_cost_amount'] ?? '0'))
                   {
                     return (
-                    <Link
-                      key={s.event_id}
-                      href={`/dashboard/${organization.slug}/analytics/events/${s.event_id}`}
-                      className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex min-w-0 flex-col gap-1">
-                          <span className="text-sm leading-snug font-medium dark:text-white">
-                            {s.name}
-                          </span>
-                          <span className="dark:text-polar-400 font-mono text-xs text-gray-400">
-                            {new Date(s.timestamp).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                        <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                          p99
-                        </span>
-                      </div>
-                      <div className="dark:border-polar-700 flex overflow-hidden rounded-lg border border-gray-200">
-                        <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
-                          <span className="dark:text-polar-400 text-xs text-gray-500">
-                            Avg
-                          </span>
-                          <span className="font-mono text-sm tabular-nums dark:text-white">
-                            {fmtSub(avg, 'usd')}
-                          </span>
-                        </div>
-                        <div className="dark:bg-polar-700 w-px bg-gray-200" />
-                        <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
-                          <span className="text-xs text-red-500">Event</span>
-                          <span className="font-mono text-sm text-red-600 tabular-nums dark:text-red-400">
-                            {fmtSub(value, 'usd')}
-                          </span>
-                        </div>
-                        <div className="dark:bg-polar-700 w-px bg-gray-200" />
-                        <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
-                          <span className="dark:text-polar-400 text-xs text-gray-500">
+                      <Link
+                        key={s.event_id}
+                        href={`/dashboard/${organization.slug}/analytics/events/${s.event_id}`}
+                        className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex min-w-0 flex-col gap-1">
+                            <span className="text-sm leading-snug font-medium dark:text-white">
+                              {s.name}
+                            </span>
+                            <span className="dark:text-polar-400 font-mono text-xs text-gray-400">
+                              {new Date(s.timestamp).toLocaleDateString(
+                                'en-US',
+                                {
+                                  month: 'short',
+                                  day: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: 'numeric',
+                                },
+                              )}
+                            </span>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/20 dark:text-red-400">
                             p99
                           </span>
-                          <span className="font-mono text-sm tabular-nums dark:text-white">
-                            {fmtSub(p99, 'usd')}
-                          </span>
                         </div>
-                      </div>
-                    </Link>
-                  )
+                        <div className="dark:border-polar-700 flex overflow-hidden rounded-lg border border-gray-200">
+                          <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
+                            <span className="dark:text-polar-400 text-xs text-gray-500">
+                              Avg
+                            </span>
+                            <span className="font-mono text-sm tabular-nums dark:text-white">
+                              {fmtSub(avg, 'usd')}
+                            </span>
+                          </div>
+                          <div className="dark:bg-polar-700 w-px bg-gray-200" />
+                          <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
+                            <span className="text-xs text-red-500">Event</span>
+                            <span className="font-mono text-sm text-red-600 tabular-nums dark:text-red-400">
+                              {fmtSub(value, 'usd')}
+                            </span>
+                          </div>
+                          <div className="dark:bg-polar-700 w-px bg-gray-200" />
+                          <div className="flex flex-1 flex-col items-center gap-0.5 px-3 py-2">
+                            <span className="dark:text-polar-400 text-xs text-gray-500">
+                              p99
+                            </span>
+                            <span className="font-mono text-sm tabular-nums dark:text-white">
+                              {fmtSub(p99, 'usd')}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    )
                   }
                 })}
               </div>
@@ -719,66 +725,69 @@ export default function ClientPage({
           </section>
 
           {!customerId && (
-          <section>
-            <SectionHeader
-              title="By Customer"
-              description="Customers ranked by total LLM cost in this period."
-            />
-            {customerRows.length === 0 ? (
-              <EmptyState
-                icon={<Users />}
-                title="No customer data"
-                description="No LLM cost events attributed to customers in this period."
+            <section>
+              <SectionHeader
+                title="By Customer"
+                description="Customers ranked by total LLM cost in this period."
               />
-            ) : (
-              <RankedList>
-                {customerRows.map((r, i) => (
-                  <RankedListItem
-                    key={r.customer_id ?? r.external_customer_id ?? String(i)}
-                    itemKey={
-                      r.customer_id ?? r.external_customer_id ?? String(i)
-                    }
-                    rank={i + 1}
-                    share={r.share}
-                    onSelect={
-                      r.customer_id
-                        ? () => router.push(`/dashboard/${organization.slug}/customers/${r.customer_id}`)
-                        : undefined
-                    }
-                    label={
-                      <>
-                        <Avatar
-                          name={r.label}
-                          avatar_url={null}
-                          className="h-9 w-9 shrink-0 text-xs"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium dark:text-white">
-                            {r.label}
-                          </p>
-                          {r.email && r.email !== r.label && (
-                            <p className="dark:text-polar-400 truncate text-xs text-gray-400">
-                              {r.email}
+              {customerRows.length === 0 ? (
+                <EmptyState
+                  icon={<Users />}
+                  title="No customer data"
+                  description="No LLM cost events attributed to customers in this period."
+                />
+              ) : (
+                <RankedList>
+                  {customerRows.map((r, i) => (
+                    <RankedListItem
+                      key={r.customer_id ?? r.external_customer_id ?? String(i)}
+                      itemKey={
+                        r.customer_id ?? r.external_customer_id ?? String(i)
+                      }
+                      rank={i + 1}
+                      share={r.share}
+                      onSelect={
+                        r.customer_id
+                          ? () =>
+                              router.push(
+                                `/dashboard/${organization.slug}/customers/${r.customer_id}`,
+                              )
+                          : undefined
+                      }
+                      label={
+                        <>
+                          <Avatar
+                            name={r.label}
+                            avatar_url={null}
+                            className="h-9 w-9 shrink-0 text-xs"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium dark:text-white">
+                              {r.label}
                             </p>
-                          )}
-                        </div>
-                      </>
-                    }
-                    stats={
-                      <>
-                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                          {r.occurrences.toLocaleString()} events
-                        </span>
-                        <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
-                          {fmt(r.total, 'usd')}
-                        </span>
-                      </>
-                    }
-                  />
-                ))}
-              </RankedList>
-            )}
-          </section>
+                            {r.email && r.email !== r.label && (
+                              <p className="dark:text-polar-400 truncate text-xs text-gray-400">
+                                {r.email}
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      }
+                      stats={
+                        <>
+                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                            {r.occurrences.toLocaleString()} events
+                          </span>
+                          <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
+                            {fmt(r.total, 'usd')}
+                          </span>
+                        </>
+                      }
+                    />
+                  ))}
+                </RankedList>
+              )}
+            </section>
           )}
         </div>
       </TabsContent>

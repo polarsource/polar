@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { getMetricsRangeDates, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
   differenceInDays,
@@ -6,10 +6,6 @@ import {
   differenceInWeeks,
   differenceInYears,
   parse,
-  startOfDay,
-  subDays,
-  subMonths,
-  subYears,
 } from 'date-fns'
 import { formatPercentage, formatScalar } from './formatters'
 
@@ -119,24 +115,9 @@ export const getChartRangeParams = (
   range: ChartRange,
   createdAt: string | Date,
 ): [Date, Date, schemas['TimeInterval']] => {
-  const endDate = new Date()
-  const parsedCreatedAt = new Date(createdAt)
-  const _getStartDate = (range: ChartRange) => {
-    const now = new Date()
-    switch (range) {
-      case 'all_time':
-        return parsedCreatedAt
-      case '12m':
-        return subYears(now, 1)
-      case '3m':
-        return subMonths(now, 3)
-      case '30d':
-        return startOfDay(subDays(now, 30))
-      case 'today':
-        return startOfDay(now)
-    }
-  }
-  const startDate = _getStartDate(range)
+  const [startDate, endDate] = getMetricsRangeDates(range, {
+    createdAt,
+  })
   const interval = dateRangeToInterval(startDate, endDate)
   return [startDate, endDate, interval]
 }

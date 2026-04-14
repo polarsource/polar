@@ -69,7 +69,7 @@ jobs:
   build-frontend:
     name: "Frontend: Build"
     concurrency:
-      group: deploy-frontend-build-${inputs.environment}
+      group: deploy-frontend-build-${{ inputs.environment }}
       cancel-in-progress: true
     if: inputs.skip-frontend != true
     runs-on: ubuntu-latest
@@ -97,7 +97,7 @@ jobs:
   deploy-backend:
     name: "Backend: Deploy to ${{ inputs.environment }}"
     concurrency:
-      group: deploy-backend-${inputs.environment}
+      group: deploy-backend-${{ inputs.environment }}
       cancel-in-progress: false
     needs: build-frontend
     if: always() && inputs.skip-backend != true
@@ -133,7 +133,7 @@ jobs:
   promote-frontend:
     name: "Frontend: Promote to Production"
     concurrency:
-      group: deploy-frontend-promotion-${inputs.environment}
+      group: deploy-frontend-promotion-${{ inputs.environment }}
       cancel-in-progress: true
     needs: [build-frontend, deploy-backend]
     if: always() && !failure() && !cancelled() && inputs.skip-frontend != true

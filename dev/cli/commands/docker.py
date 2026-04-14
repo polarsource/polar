@@ -234,7 +234,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_callback(
         ctx: typer.Context,
         instance: Annotated[
-            int | None, typer.Option("--instance", "-i", help="Instance number for port isolation (auto-detected if not set)")
+            int | None, typer.Option("--instance", help="Instance number for port isolation (auto-detected if not set)")
         ] = None,
     ) -> None:
         """Isolated Docker development environment."""
@@ -253,10 +253,10 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_up(
         ctx: typer.Context,
         detach: Annotated[
-            bool, typer.Option("--detach", "-d", help="Run in background")
+            bool, typer.Option("--detach", help="Run in background")
         ] = True,
         build: Annotated[
-            bool, typer.Option("--build", "-b", help="Force rebuild images")
+            bool, typer.Option("--build", help="Force rebuild images")
         ] = False,
         monitoring: Annotated[
             bool, typer.Option("--monitoring", help="Include Prometheus and Grafana")
@@ -323,7 +323,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_logs(
         ctx: typer.Context,
         follow: Annotated[
-            bool, typer.Option("--follow", "-f", help="Follow log output")
+            bool, typer.Option("--follow", help="Follow log output")
         ] = True,
         service: Annotated[
             str | None, typer.Argument(help="Service to show logs for")
@@ -418,7 +418,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_cleanup(
         ctx: typer.Context,
         force: Annotated[
-            bool, typer.Option("--force", "-f", help="Skip confirmation")
+            bool, typer.Option("--force", help="Skip confirmation")
         ] = False,
     ) -> None:
         """Stop services and remove all volumes (fresh start)."""

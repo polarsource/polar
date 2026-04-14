@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { getMetricsRangeDates, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
   differenceInDays,
@@ -49,32 +49,44 @@ export const dateRangeToInterval = (startDate: Date, endDate: Date) => {
 }
 
 export const timeRange = (organization: schemas['Organization']) =>
-  ({
-    '24h': {
-      startDate: subDays(new Date(), 1),
-      endDate: new Date(),
-      title: '24h',
-      description: 'Last 24 hours',
-    },
-    '30d': {
-      startDate: subDays(new Date(), 30),
-      endDate: new Date(),
-      title: '30d',
-      description: 'Last 30 days',
-    },
-    '3m': {
-      startDate: subMonths(new Date(), 3),
-      endDate: new Date(),
-      title: '3m',
-      description: 'Last 3 months',
-    },
-    all_time: {
-      startDate: new Date(organization.created_at),
-      endDate: new Date(),
-      title: 'All Time',
-      description: 'All time',
-    },
-  }) as const
+  (() => {
+    const [last24hStartDate, last24hEndDate] = getMetricsRangeDates('24h')
+    const [last30dStartDate, last30dEndDate] = getMetricsRangeDates('30d')
+    const [last3mStartDate, last3mEndDate] = getMetricsRangeDates('3m')
+    const [allTimeStartDate, allTimeEndDate] = getMetricsRangeDates(
+      'all_time',
+      {
+        createdAt: organization.created_at,
+      },
+    )
+
+    return {
+      '24h': {
+        startDate: last24hStartDate,
+        endDate: last24hEndDate,
+        title: '24h',
+        description: 'Last 24 hours',
+      },
+      '30d': {
+        startDate: last30dStartDate,
+        endDate: last30dEndDate,
+        title: '30d',
+        description: 'Last 30 days',
+      },
+      '3m': {
+        startDate: last3mStartDate,
+        endDate: last3mEndDate,
+        title: '3m',
+        description: 'Last 3 months',
+      },
+      all_time: {
+        startDate: allTimeStartDate,
+        endDate: allTimeEndDate,
+        title: 'All Time',
+        description: 'All time',
+      },
+    } as const
+  })()
 
 export const getPreviousParams = (
   startDate: Date,

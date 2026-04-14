@@ -32,6 +32,7 @@ from polar.enums import (
 )
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent as SystemEventEnum
+from polar.event_type.repository import EventTypeRepository
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
 from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
@@ -174,6 +175,24 @@ def create_benefit_schema(
         )
 
 
+async def _stamp_event_type_ids(
+    session: AsyncSession, events: list[dict[str, Any]]
+) -> None:
+    """Stamp event_type_id on each event dict, mirroring the real ingest path."""
+    event_type_repository = EventTypeRepository.from_session(session)
+    cache: dict[tuple[str, Any], Any] = {}
+    for event in events:
+        name = event.get("name")
+        org_id = event.get("organization_id")
+        if not name or not org_id:
+            continue
+        key = (name, org_id)
+        if key not in cache:
+            event_type = await event_type_repository.get_or_create(name, org_id)
+            cache[key] = event_type.id
+        event["event_type_id"] = cache[key]
+
+
 def _build_customer_timeline_events(
     organization_id: Any,
     customer_id: Any,
@@ -283,7 +302,6 @@ def _build_customer_timeline_events(
                     "subscription_id": fake_sub_id,
                     "recurring_interval": str(interval),
                     "recurring_interval_count": 1,
-                    "_cost": {"amount": price_amount / 100, "currency": "usd"},
                 },
             )
         )
@@ -343,7 +361,6 @@ def _build_customer_timeline_events(
                         "subscription_id": fake_sub_id,
                         "recurring_interval": str(interval),
                         "recurring_interval_count": 1,
-                        "_cost": {"amount": price_amount / 100, "currency": "usd"},
                     },
                 )
             )
@@ -437,7 +454,6 @@ def _build_customer_timeline_events(
                             "order_id": fake_order_id,
                             "refunded_amount": price_amount,
                             "currency": "usd",
-                            "_cost": {"amount": price_amount / 100, "currency": "usd"},
                         },
                     )
                 )
@@ -500,7 +516,6 @@ def _build_customer_timeline_events(
                         "currency": "usd",
                         "net_amount": int(otp_price * 0.95),
                         "tax_amount": int(otp_price * 0.05),
-                        "_cost": {"amount": otp_price / 100, "currency": "usd"},
                     },
                 )
             )
@@ -521,6 +536,289 @@ def _build_customer_timeline_events(
                         "customer_name": customer_name,
                         "customer_external_id": None,
                         "updated_fields": {"name": customer_name},
+                    },
+                )
+            )
+
+    return events
+
+
+def _build_user_cost_span_events(
+    organization_id: Any,
+    customer_id: Any,
+    days_back: int = 90,
+) -> list[dict[str, Any]]:
+    """Generate user-event span hierarchies with _cost and _llm metadata.
+
+    Models two span types:
+    - Support flow: support_request → sentiment_analysis, draft_generated, email_sent, support_request_completed
+    - Document flow: document_upload → document_process, s3_upload
+    """
+    events: list[dict[str, Any]] = []
+    now = datetime.now(UTC)
+
+    llm_vendors = [
+        {
+            "vendor": "google",
+            "model": "gemini-1.5-flash",
+            "input_cost_per_m": 0.075,
+            "output_cost_per_m": 0.30,
+        },
+        {
+            "vendor": "google",
+            "model": "gemini-1.5-pro",
+            "input_cost_per_m": 3.50,
+            "output_cost_per_m": 10.50,
+        },
+        {
+            "vendor": "openai",
+            "model": "gpt-4o-mini",
+            "input_cost_per_m": 0.15,
+            "output_cost_per_m": 0.60,
+        },
+        {
+            "vendor": "openai",
+            "model": "gpt-4o",
+            "input_cost_per_m": 2.50,
+            "output_cost_per_m": 10.00,
+        },
+        {
+            "vendor": "anthropic",
+            "model": "claude-3-5-haiku",
+            "input_cost_per_m": 0.80,
+            "output_cost_per_m": 4.00,
+        },
+    ]
+
+    def _llm_child_event(
+        name: str,
+        parent_id: Any,
+        timestamp: datetime,
+        input_tokens: int,
+        output_tokens: int,
+        vendor_config: dict[str, Any],
+        extra_metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        cost = (
+            input_tokens / 1_000_000 * vendor_config["input_cost_per_m"]
+            + output_tokens / 1_000_000 * vendor_config["output_cost_per_m"]
+        )
+        metadata: dict[str, Any] = {
+            "_cost": {"amount": round(cost, 6), "currency": "usd"},
+            "_llm": {
+                "vendor": vendor_config["vendor"],
+                "model": vendor_config["model"],
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens,
+            },
+        }
+        if extra_metadata:
+            metadata.update(extra_metadata)
+        return {
+            "name": name,
+            "source": "user",
+            "timestamp": timestamp,
+            "organization_id": organization_id,
+            "customer_id": customer_id,
+            "parent_id": parent_id,
+            "user_metadata": metadata,
+        }
+
+    def _infra_child_event(
+        name: str,
+        parent_id: Any,
+        timestamp: datetime,
+        cost_amount: float,
+        extra_metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        metadata: dict[str, Any] = {
+            "_cost": {"amount": round(cost_amount, 6), "currency": "usd"},
+        }
+        if extra_metadata:
+            metadata.update(extra_metadata)
+        return {
+            "name": name,
+            "source": "user",
+            "timestamp": timestamp,
+            "organization_id": organization_id,
+            "customer_id": customer_id,
+            "parent_id": parent_id,
+            "user_metadata": metadata,
+        }
+
+    def _no_cost_child_event(
+        name: str,
+        parent_id: Any,
+        timestamp: datetime,
+        extra_metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "name": name,
+            "source": "user",
+            "timestamp": timestamp,
+            "organization_id": organization_id,
+            "customer_id": customer_id,
+            "parent_id": parent_id,
+            "user_metadata": extra_metadata or {},
+        }
+
+    def _root_event(
+        name: str,
+        span_id: Any,
+        timestamp: datetime,
+        extra_metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "id": span_id,
+            "external_id": str(span_id),
+            "name": name,
+            "source": "user",
+            "timestamp": timestamp,
+            "organization_id": organization_id,
+            "customer_id": customer_id,
+            "user_metadata": extra_metadata or {},
+        }
+
+    # Spread events across the past N days
+    num_spans = random.randint(10, 40)
+    for _ in range(num_spans):
+        offset_seconds = random.randint(0, days_back * 86400)
+        span_start = now - timedelta(seconds=offset_seconds)
+        vendor = random.choice(llm_vendors)
+        span_type = random.choice(["support", "document"])
+
+        if span_type == "support":
+            # Support request span:
+            # support_request (root) → sentiment_analysis, draft_generated, email_sent, support_request_completed
+            span_id = generate_uuid()
+            events.append(
+                _root_event(
+                    "support_request",
+                    span_id,
+                    span_start,
+                    {
+                        "ticket_id": str(generate_uuid()),
+                        "channel": random.choice(["email", "chat", "api"]),
+                    },
+                )
+            )
+
+            t = span_start
+
+            # sentiment_analysis child
+            t += timedelta(seconds=random.randint(1, 5))
+            input_tokens = random.randint(200, 1500)
+            output_tokens = random.randint(50, 300)
+            events.append(
+                _llm_child_event(
+                    "sentiment_analysis",
+                    span_id,
+                    t,
+                    input_tokens,
+                    output_tokens,
+                    vendor,
+                    {
+                        "sentiment": random.choice(
+                            ["positive", "neutral", "negative", "frustrated"]
+                        )
+                    },
+                )
+            )
+
+            # draft_generated child
+            t += timedelta(seconds=random.randint(1, 10))
+            input_tokens = random.randint(500, 3000)
+            output_tokens = random.randint(200, 800)
+            events.append(
+                _llm_child_event(
+                    "draft_generated",
+                    span_id,
+                    t,
+                    input_tokens,
+                    output_tokens,
+                    vendor,
+                )
+            )
+
+            # email_sent child (infra cost)
+            t += timedelta(seconds=random.randint(1, 3))
+            events.append(
+                _infra_child_event(
+                    "email_sent",
+                    span_id,
+                    t,
+                    cost_amount=0.000075,  # $0.075 per 1000 emails
+                    extra_metadata={"provider": "sendgrid"},
+                )
+            )
+
+            # support_request_completed child (no cost)
+            t += timedelta(seconds=random.randint(60, 3600))
+            events.append(
+                _no_cost_child_event(
+                    "support_request_completed",
+                    span_id,
+                    t,
+                    {"resolution": random.choice(["resolved", "escalated", "closed"])},
+                )
+            )
+
+        else:
+            # Document processing span:
+            # document_upload (root) → document_process, s3_upload
+            span_id = generate_uuid()
+            doc_id = str(generate_uuid())
+            events.append(
+                _root_event(
+                    "document_upload",
+                    span_id,
+                    span_start,
+                    {
+                        "document_id": doc_id,
+                        "filename": random.choice(
+                            ["report.pdf", "contract.docx", "data.csv", "spec.txt"]
+                        ),
+                        "size_bytes": random.randint(5_000, 5_000_000),
+                    },
+                )
+            )
+
+            t = span_start
+
+            # document_process child (LLM)
+            t += timedelta(seconds=random.randint(1, 10))
+            input_tokens = random.randint(1000, 8000)
+            output_tokens = random.randint(300, 2000)
+            events.append(
+                _llm_child_event(
+                    "document_process",
+                    span_id,
+                    t,
+                    input_tokens,
+                    output_tokens,
+                    vendor,
+                    {
+                        "document_id": doc_id,
+                        "task": random.choice(
+                            ["summarize", "extract", "classify", "translate"]
+                        ),
+                    },
+                )
+            )
+
+            # s3_upload child (infra cost)
+            t += timedelta(seconds=random.randint(1, 5))
+            size_gb = random.uniform(0.001, 0.05)
+            events.append(
+                _infra_child_event(
+                    "s3_upload",
+                    span_id,
+                    t,
+                    cost_amount=round(size_gb * 0.023, 8),  # $0.023 per GB
+                    extra_metadata={
+                        "document_id": doc_id,
+                        "size_gb": round(size_gb, 6),
                     },
                 )
             )
@@ -1326,14 +1624,25 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
                 timeline_events.extend(meter_events)
 
+            # Add user-event cost spans (LLM / infra) for all customers
+            cost_spans = _build_user_cost_span_events(
+                organization_id=organization.id,
+                customer_id=customer.id,
+            )
+            timeline_events.extend(cost_spans)
+
             # Insert all events in batch and sync to Tinybird
             if timeline_events:
+                await _stamp_event_type_ids(session, timeline_events)
                 event_ids, _ = await event_repository.insert_batch(timeline_events)
                 if event_ids:
                     inserted = await event_repository.get_all(
                         select(EventModel).where(EventModel.id.in_(event_ids))
                     )
-                    await tinybird_ingest_events(inserted)
+                    ancestors_by_event = await event_repository.get_ancestors_batch(
+                        event_ids
+                    )
+                    await tinybird_ingest_events(inserted, ancestors_by_event)
 
         # Create seat-based customers with subscriptions and seats
         seat_based_customers = org_data.get("seat_based_customers", [])
@@ -1618,12 +1927,16 @@ async def create_single_org_seed(
 
         if timeline_events:
             event_repository = EventRepository.from_session(session)
+            await _stamp_event_type_ids(session, timeline_events)
             event_ids, _ = await event_repository.insert_batch(timeline_events)
             if event_ids:
                 inserted = await event_repository.get_all(
                     select(EventModel).where(EventModel.id.in_(event_ids))
                 )
-                await tinybird_ingest_events(inserted)
+                ancestors_by_event = await event_repository.get_ancestors_batch(
+                    event_ids
+                )
+                await tinybird_ingest_events(inserted, ancestors_by_event)
 
     await session.commit()
     print(f"✅ Created organization '{name}' ({slug})")

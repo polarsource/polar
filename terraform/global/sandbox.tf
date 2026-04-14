@@ -340,3 +340,16 @@ resource "tfe_variable" "tinybird_read_token_sandbox" {
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "customer_portal_url_overrides_sandbox" {
+  key             = "customer_portal_url_overrides"
+  category        = "terraform"
+  description     = "JSON object mapping organization IDs to custom customer portal URLs for sandbox"
+  sensitive       = false
+  value           = "{}"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

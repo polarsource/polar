@@ -335,6 +335,9 @@ class Settings(BaseSettings):
             ]
         )
 
+    # Customer portal URL overrides per organization
+    CUSTOMER_PORTAL_URL_OVERRIDES: dict[str, str] = {}
+
     # Invoices
     S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"
     S3_PAYOUT_INVOICES_BUCKET_NAME: str = "polar-payout-invoices"

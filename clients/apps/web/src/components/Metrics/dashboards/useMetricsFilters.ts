@@ -1,7 +1,7 @@
 'use client'
 
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { subMonths } from 'date-fns/subMonths'
+import { getMetricsRangeDates } from '@polar-sh/client'
 import {
   createParser,
   parseAsArrayOf,
@@ -27,8 +27,10 @@ export function useMetricsFilters(earliestDateISOString: string) {
     () => fromISODate(earliestDateISOString),
     [earliestDateISOString],
   )
-  const defaultStartDate = useMemo(() => subMonths(new Date(), 1), [])
-  const defaultEndDate = useMemo(() => new Date(), [])
+  const [defaultStartDate, defaultEndDate] = useMemo(
+    () => getMetricsRangeDates('30d'),
+    [],
+  )
 
   const [interval, setInterval] = useQueryState(
     'interval',

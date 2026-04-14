@@ -87,7 +87,7 @@ def _save_stripe_keys(secret_key: str, publishable_key: str, webhook_secret: str
 def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def stripe(
-        listen: bool = typer.Option(False, "--listen", "-l", help="Start webhook forwarding after setup"),
+        listen: bool = typer.Option(False, "--listen", help="Start webhook forwarding after setup"),
     ) -> None:
         """Set up Stripe integration for local development."""
         console.print("\n[bold blue]Stripe Setup[/bold blue]\n")

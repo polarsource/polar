@@ -1676,9 +1676,15 @@ class OrderService:
                 )
                 for key, value in url_params.items()
             }
-            query_string = urlencode(params)
-            url_path = url_path_template.format(organization=organization.slug)
-            url = settings.generate_frontend_url(f"{url_path}?{query_string}")
+            override_url = settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
+                str(organization.id)
+            )
+            if override_url is not None:
+                url = f"{override_url}?{urlencode({'email': recipient_email})}"
+            else:
+                query_string = urlencode(params)
+                url_path = url_path_template.format(organization=organization.slug)
+                url = settings.generate_frontend_url(f"{url_path}?{query_string}")
             email = EmailAdapter.validate_python(
                 {
                     "template": template_name,

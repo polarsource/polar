@@ -125,7 +125,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
         </WellContent>
         <WellFooter>
           <p className="dark:text-polar-500 text-gray-500">
-            Fees are first deducted from any available credits.
+            Fees are first deducted from available credits.
           </p>
         </WellFooter>
       </Well>

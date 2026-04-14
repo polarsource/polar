@@ -49,6 +49,8 @@ dev db reset --force    # Reset without confirmation
 ```bash
 dev status              # Show environment status
 dev doctor              # Check prerequisites and configuration
+dev seed                # Load sample data
+dev seed --reset        # Recreate database and load fresh seed data
 dev help                # Show all commands
 ```
 

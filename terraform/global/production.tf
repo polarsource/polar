@@ -407,6 +407,19 @@ resource "tfe_variable" "polar_free_product_id_production" {
   }
 }
 
+resource "tfe_variable" "customer_portal_url_overrides_production" {
+  key             = "customer_portal_url_overrides"
+  category        = "terraform"
+  description     = "JSON object mapping organization IDs to custom customer portal URLs for production"
+  sensitive       = false
+  value           = "{}"
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "tailscale_authkey_production" {
   key             = "tailscale_authkey"
   category        = "terraform"

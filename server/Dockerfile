@@ -66,6 +66,7 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   git \
   build-essential \
   redis \
+  fonts-noto-cjk \
   libpq-dev \
   # tzdata-legacy is needed to accept legacy timezone names in Python like "Asia/Calcutta"
   tzdata-legacy \

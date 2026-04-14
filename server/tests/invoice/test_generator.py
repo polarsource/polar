@@ -171,7 +171,7 @@ Thank you for your business!
             },
             "unicode_arabic",
         ),
-        (
+        pytest.param(
             {
                 "customer_name": "你好 안녕하세요 日本語",
                 "customer_address": Address(
@@ -198,6 +198,10 @@ Thank you for your business!
                 "notes": "谢谢 / 감사합니다 / ありがとうございます",
             },
             "unicode_cjk",
+            marks=pytest.mark.skipif(
+                not InvoiceGenerator.has_cjk_fallback_fonts(),
+                reason="CJK fallback fonts are not installed",
+            ),
         ),
     ],
 )
@@ -238,7 +242,16 @@ def test_generator_registers_unicode_fallback_fonts(invoice: Invoice) -> None:
     assert generator.get_fallback_font("م", style="B") == (
         f"{generator.arabic_font_name}B"
     )
-    assert generator.get_fallback_font("你") == generator.cjk_font_name
-    assert generator.get_fallback_font("안") == generator.cjk_font_name
-    assert generator.get_fallback_font("日") == generator.cjk_font_name
-    assert generator.get_fallback_font("你", style="B") == generator.cjk_font_name
+    if InvoiceGenerator.has_cjk_fallback_fonts():
+        assert generator.get_fallback_font("你") == generator.cjk_font_name
+        assert generator.get_fallback_font("안") == generator.cjk_font_name
+        assert generator.get_fallback_font("日") == generator.cjk_font_name
+        assert generator.get_fallback_font("你", style="B") == (
+            f"{generator.cjk_font_name}B"
+        )
+        assert generator.get_fallback_font("안", style="B") == (
+            f"{generator.cjk_font_name}B"
+        )
+        assert generator.get_fallback_font("日", style="B") == (
+            f"{generator.cjk_font_name}B"
+        )

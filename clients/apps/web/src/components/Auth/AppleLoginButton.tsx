@@ -2,15 +2,20 @@ import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getAppleAuthorizeURL } from '@/utils/auth'
 import Apple from '@mui/icons-material/Apple'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button, { type ButtonProps } from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 
 interface AppleLoginButtonProps {
   returnTo?: string
   signup?: schemas['UserSignupAttribution']
+  variant?: ButtonProps['variant']
 }
 
-const AppleLoginButton = ({ returnTo, signup }: AppleLoginButtonProps) => {
+const AppleLoginButton = ({
+  returnTo,
+  signup,
+  variant,
+}: AppleLoginButtonProps) => {
   const posthog = usePostHog()
 
   const onClick = () => {
@@ -33,7 +38,7 @@ const AppleLoginButton = ({ returnTo, signup }: AppleLoginButtonProps) => {
       onClick={onClick}
     >
       <Button
-        variant="secondary"
+        variant={variant}
         wrapperClassNames="space-x-3 p-2.5 px-5"
         className="text-md p-5"
         fullWidth

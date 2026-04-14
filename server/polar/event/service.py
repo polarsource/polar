@@ -722,6 +722,7 @@ class EventService:
             customer_id=all_customer_ids,
             external_customer_id=all_external_ids,
             name=name,
+            limit=limit,
         )
 
         items = [

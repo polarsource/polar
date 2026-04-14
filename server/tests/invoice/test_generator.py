@@ -143,6 +143,62 @@ Thank you for your business!
             },
             "unicode_hebrew",
         ),
+        (
+            {
+                "customer_name": "شركة السلام",
+                "customer_address": Address(
+                    line1="١٢٣ شارع النيل",
+                    city="القاهرة",
+                    postal_code="11511",
+                    country=CountryAlpha2("EG"),
+                ),
+                "customer_additional_info": "رقم ضريبي ١٢٣٤٥٦٧٨٩",
+                "items": [
+                    InvoiceItem(
+                        description="اشتراك سنوي",
+                        quantity=1,
+                        unit_amount=75_00,
+                        amount=75_00,
+                    ),
+                    InvoiceItem(
+                        description="رسوم إضافية",
+                        quantity=1,
+                        unit_amount=25_00,
+                        amount=25_00,
+                    ),
+                ],
+                "notes": "شكرًا لثقتكم",
+            },
+            "unicode_arabic",
+        ),
+        (
+            {
+                "customer_name": "你好 안녕하세요 日本語",
+                "customer_address": Address(
+                    line1="静安区南京西路 123 号",
+                    city="서울",
+                    postal_code="04524",
+                    country=CountryAlpha2("KR"),
+                ),
+                "customer_additional_info": "顧客番号 12345",
+                "items": [
+                    InvoiceItem(
+                        description="年間プラン",
+                        quantity=1,
+                        unit_amount=40_00,
+                        amount=40_00,
+                    ),
+                    InvoiceItem(
+                        description="추가 사용량",
+                        quantity=2,
+                        unit_amount=30_00,
+                        amount=60_00,
+                    ),
+                ],
+                "notes": "谢谢 / 감사합니다 / ありがとうございます",
+            },
+            "unicode_cjk",
+        ),
     ],
 )
 def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None:
@@ -156,7 +212,7 @@ def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None
     assert path.exists()
 
 
-def test_generator_registers_hebrew_fallback_fonts(invoice: Invoice) -> None:
+def test_generator_registers_unicode_fallback_fonts(invoice: Invoice) -> None:
     generator = InvoiceGenerator(
         invoice.model_copy(
             update={
@@ -178,3 +234,11 @@ def test_generator_registers_hebrew_fallback_fonts(invoice: Invoice) -> None:
     assert generator.get_fallback_font("ש", style="B") == (
         f"{generator.hebrew_font_name}B"
     )
+    assert generator.get_fallback_font("م") == generator.arabic_font_name
+    assert generator.get_fallback_font("م", style="B") == (
+        f"{generator.arabic_font_name}B"
+    )
+    assert generator.get_fallback_font("你") == generator.cjk_font_name
+    assert generator.get_fallback_font("안") == generator.cjk_font_name
+    assert generator.get_fallback_font("日") == generator.cjk_font_name
+    assert generator.get_fallback_font("你", style="B") == generator.cjk_font_name

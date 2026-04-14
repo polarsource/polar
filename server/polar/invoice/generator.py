@@ -237,6 +237,26 @@ class InvoiceGenerator(FPDF):
     hebrew_font_name: ClassVar[str] = "notosanshebrew"
     """Font family name for Hebrew fallback glyphs."""
 
+    arabic_regular_font_file = (
+        Path(__file__).parent / "fonts/NotoSansArabic-Regular.ttf"
+    )
+    """Path to the Arabic regular fallback font file."""
+
+    arabic_bold_font_file = Path(__file__).parent / "fonts/NotoSansArabic-Bold.ttf"
+    """Path to the Arabic bold fallback font file."""
+
+    arabic_font_name: ClassVar[str] = "notosansarabic"
+    """Font family name for Arabic fallback glyphs."""
+
+    cjk_regular_font_file = Path(__file__).parent / "fonts/NotoSansCJKsc-Regular.otf"
+    """Path to the CJK fallback font file."""
+
+    cjk_bold_font_file = Path(__file__).parent / "fonts/NotoSansCJKsc-Bold.otf"
+    """Path to the CJK bold fallback font file."""
+
+    cjk_font_name: ClassVar[str] = "notosanscjk"
+    """Font family name for CJK fallback glyphs."""
+
     base_font_size: ClassVar[int] = 10
     """Base font size in points."""
 
@@ -275,7 +295,16 @@ class InvoiceGenerator(FPDF):
         self.add_font(
             self.hebrew_font_name, fname=self.hebrew_bold_font_file, style="B"
         )
-        self.set_fallback_fonts([self.hebrew_font_name], exact_match=False)
+        self.add_font(self.arabic_font_name, fname=self.arabic_regular_font_file)
+        self.add_font(
+            self.arabic_font_name, fname=self.arabic_bold_font_file, style="B"
+        )
+        self.add_font(self.cjk_font_name, fname=self.cjk_regular_font_file)
+        self.add_font(self.cjk_font_name, fname=self.cjk_bold_font_file, style="B")
+        self.set_fallback_fonts(
+            [self.hebrew_font_name, self.arabic_font_name, self.cjk_font_name],
+            exact_match=False,
+        )
         self.set_text_shaping(use_shaping_engine=True)
         self.set_font(self.font_name, size=self.base_font_size)
 

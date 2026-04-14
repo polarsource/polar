@@ -133,21 +133,21 @@ export const CustomerPortalSettings = ({
         customer.email &&
         organization.customer_portal_settings.customer?.allow_email_change ===
           true && (
-        <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-          <WellHeader className="flex-row items-center justify-between">
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-xl">Email Address</h3>
-              <p className="dark:text-polar-500 text-gray-500">
-                Change the email associated with your account
-              </p>
-            </div>
-          </WellHeader>
-          <Separator className="dark:bg-polar-700" />
-          <WellContent>
-            <ChangeEmailForm customer={customer} />
-          </WellContent>
-        </Well>
-      )}
+          <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
+            <WellHeader className="flex-row items-center justify-between">
+              <div className="flex flex-col gap-y-2">
+                <h3 className="text-xl">Email Address</h3>
+                <p className="dark:text-polar-500 text-gray-500">
+                  Change the email associated with your account
+                </p>
+              </div>
+            </WellHeader>
+            <Separator className="dark:bg-polar-700" />
+            <WellContent>
+              <ChangeEmailForm customer={customer} />
+            </WellContent>
+          </Well>
+        )}
 
       {customer.type === 'team' &&
         organization.organization_features?.member_model_enabled && (

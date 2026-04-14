@@ -252,12 +252,6 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         repository = CustomerSessionRepository.from_session(session)
         await repository.delete_expired()
 
-    async def delete_customer_sessions(
-        self, session: AsyncSession, customer_id: uuid.UUID
-    ) -> None:
-        repository = CustomerSessionRepository.from_session(session)
-        await repository.delete_by_customer_id(customer_id)
-
     async def revoke_leaked(
         self,
         session: AsyncSession,

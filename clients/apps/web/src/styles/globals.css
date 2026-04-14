@@ -217,8 +217,7 @@
 @layer base {
   html {
     @apply text-gray-900;
-    font-feature-settings:
-      'cv01', 'cv03', 'cv04', 'cv06', 'cv08', 'cv11', 'ss03';
+    font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv06', 'cv11', 'ss03';
   }
 
   html.dark {
@@ -231,7 +230,6 @@
       'cv03',
       'cv04',
       'cv06',
-      'cv08',
       'cv11',
       'ss03',
       'calt' off;

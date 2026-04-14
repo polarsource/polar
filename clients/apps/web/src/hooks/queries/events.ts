@@ -228,6 +228,7 @@ export const useEventVarianceStats = (
     end_date: string
     aggregate_fields?: string[]
     customer_id?: string[] | null
+    limit?: number
   },
   enabled: boolean = true,
 ) => {

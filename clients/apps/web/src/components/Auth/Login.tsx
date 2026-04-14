@@ -3,12 +3,21 @@
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo } from 'react'
+import { Fragment, useEffect, useMemo } from 'react'
 
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import LoginCodeForm from '../Auth/LoginCodeForm'
 import AppleLoginButton from './AppleLoginButton'
 import GoogleLoginButton from './GoogleLoginButton'
+
+type OAuthMethod = 'google' | 'github' | 'apple'
+
+const OAUTH_METHODS: OAuthMethod[] = ['google', 'github', 'apple']
+
+const isOAuthMethod = (
+  value: string | null | undefined,
+): value is OAuthMethod =>
+  !!value && (OAUTH_METHODS as string[]).includes(value)
 
 const Login = ({
   returnTo,
@@ -84,18 +93,44 @@ const Login = ({
     posthog.capture(eventName, loginProps)
   }, [eventName, loginProps, posthog])
 
+  const primaryOAuthMethod: OAuthMethod = isOAuthMethod(lastLoginMethod)
+    ? lastLoginMethod
+    : 'google'
+
+  const orderedOAuthMethods: OAuthMethod[] = [
+    primaryOAuthMethod,
+    ...OAUTH_METHODS.filter((m) => m !== primaryOAuthMethod),
+  ]
+
+  const renderOAuthMethod = (method: OAuthMethod, isPrimary: boolean) => {
+    const variant = isPrimary ? 'default' : 'secondary'
+    switch (method) {
+      case 'google':
+        return <GoogleLoginButton {...loginProps} variant={variant} />
+      case 'github':
+        return (
+          <GithubLoginButton
+            size="large"
+            fullWidth
+            {...loginProps}
+            variant={variant}
+          />
+        )
+      case 'apple':
+        return <AppleLoginButton {...loginProps} variant={variant} />
+    }
+  }
+
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex w-full flex-col gap-y-4">
-        <LastUsedWrapper show={lastLoginMethod === 'github'}>
-          <GithubLoginButton size="large" fullWidth {...loginProps} />
-        </LastUsedWrapper>
-        <LastUsedWrapper show={lastLoginMethod === 'google'}>
-          <GoogleLoginButton {...loginProps} />
-        </LastUsedWrapper>
-        <LastUsedWrapper show={lastLoginMethod === 'apple'}>
-          <AppleLoginButton {...loginProps} />
-        </LastUsedWrapper>
+        {orderedOAuthMethods.map((method, index) => (
+          <Fragment key={method}>
+            <LastUsedWrapper show={lastLoginMethod === method}>
+              {renderOAuthMethod(method, index === 0)}
+            </LastUsedWrapper>
+          </Fragment>
+        ))}
         <div className="flex w-full flex-row items-center gap-6">
           <div className="dark:border-polar-700 grow border-t border-gray-200" />
           <div className="text-sm text-gray-500">or</div>

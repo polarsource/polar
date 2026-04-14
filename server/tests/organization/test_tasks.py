@@ -176,3 +176,32 @@ class TestOrganizationReviewed:
         email_arg = enqueue_email_template_mock.call_args[0][0]
         assert isinstance(email_arg, OrganizationReviewedEmail)
         get_admin_user_mock.assert_called_once()
+
+    async def test_silent_skips_email(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_template_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # Update organization to have active status
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+
+        release_account_mock = mocker.patch.object(
+            held_balance_service,
+            "release_account",
+            spec=HeldBalanceService.release_account,
+        )
+
+        # then
+        session.expunge_all()
+
+        await organization_reviewed(organization.id, initial_review=True, silent=True)
+
+        # Held balances are still released
+        release_account_mock.assert_called_once()
+        # But no email is sent
+        enqueue_email_template_mock.assert_not_called()

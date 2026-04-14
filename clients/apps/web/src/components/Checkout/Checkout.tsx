@@ -1,14 +1,12 @@
 'use client'
 
 import { UploadImage } from '@/components/Image/Image'
-import { Modal } from '@/components/Modal'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
 import { getResizedImage } from '@/utils/getResizedImage'
-import { hasMarkdown, markdownOptions } from '@/utils/markdown'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
@@ -25,7 +23,7 @@ import {
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import { ClientResponseError, type schemas } from '@polar-sh/client'
-import { AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { AcceptedLocale } from '@polar-sh/i18n'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -39,66 +37,13 @@ import {
 } from '@polar-sh/ui/components/ui/dialog'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
-import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Slideshow } from '../Products/Slideshow'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
+import { CheckoutProductDescription } from './CheckoutProductDescription'
 import { twMerge } from 'tailwind-merge'
-
-const TruncatedDescription = ({
-  description,
-  productName,
-  readMoreLabel,
-}: {
-  description: string
-  productName: string
-  readMoreLabel: string
-}) => {
-  const textRef = useRef<HTMLDivElement>(null)
-  const [isClamped, setIsClamped] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  useEffect(() => {
-    const el = textRef.current
-    if (!el) return
-    requestAnimationFrame(() => {
-      setIsClamped(el.scrollHeight > el.clientHeight)
-    })
-  }, [description])
-
-  return (
-    <>
-      <div className="flex flex-col gap-y-1">
-        <div
-          ref={textRef}
-          className="prose dark:prose-invert prose-headings:text-xs prose-p:text-xs prose-ul:text-xs prose-ol:text-xs dark:text-polar-400 line-clamp-2 max-w-none text-left text-xs text-gray-600"
-        >
-          <Markdown options={markdownOptions}>{description}</Markdown>
-        </div>
-        {isClamped && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="dark:text-polar-300 dark:hover:text-polar-200 cursor-pointer self-start text-xs text-gray-500 hover:text-gray-700"
-          >
-            {readMoreLabel}
-          </button>
-        )}
-      </div>
-      <Modal
-        title={productName}
-        isShown={isModalOpen}
-        hide={() => setIsModalOpen(false)}
-        modalContent={
-          <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 p-6 leading-normal text-gray-800">
-            <Markdown options={markdownOptions}>{description}</Markdown>
-          </div>
-        }
-      />
-    </>
-  )
-}
 
 const PaymentNotReadyBanner = ({
   organizationStatus,
@@ -158,7 +103,6 @@ const Checkout = ({
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
-  const t = useTranslations(locale)
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -395,14 +339,7 @@ const Checkout = ({
             {hasProductCheckout(checkout) && (
               <>
                 <div className="flex flex-col gap-y-2">
-                  <div
-                    className={twMerge(
-                      'flex flex-row gap-x-3',
-                      checkout.product.description
-                        ? 'items-start'
-                        : 'items-center',
-                    )}
-                  >
+                  <div className="flex flex-row items-center gap-x-3">
                     {hasMedia && checkout.product.medias[0]?.public_url && (
                       <Dialog>
                         <DialogTrigger
@@ -444,16 +381,6 @@ const Checkout = ({
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {checkout.product.name}
                       </span>
-                      {checkout.product.description &&
-                        !hasMarkdown(checkout.product.description) && (
-                          <TruncatedDescription
-                            description={checkout.product.description}
-                            productName={checkout.product.name}
-                            readMoreLabel={t(
-                              'checkout.productDescription.readMore',
-                            )}
-                          />
-                        )}
                     </div>
                   </div>
                   <span className="text-3xl font-medium">
@@ -502,17 +429,13 @@ const Checkout = ({
                     />
                   </div>
                 )}
-                {checkout.product.description &&
-                  hasMarkdown(checkout.product.description) && (
-                    <div
-                      id="description"
-                      className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800"
-                    >
-                      <Markdown options={markdownOptions}>
-                        {checkout.product.description}
-                      </Markdown>
-                    </div>
-                  )}
+                {checkout.product.description && (
+                  <CheckoutProductDescription
+                    description={checkout.product.description}
+                    productName={checkout.product.name}
+                    locale={locale}
+                  />
+                )}
               </>
             )}
           </div>

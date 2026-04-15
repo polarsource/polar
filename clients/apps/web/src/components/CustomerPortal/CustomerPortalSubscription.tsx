@@ -185,7 +185,6 @@ const CustomerPortalSubscription = ({
           prorationBehavior={
             subscription.product.organization.proration_behavior
           }
-          pendingUpdate={subscription.pending_update}
         />
       )}
 

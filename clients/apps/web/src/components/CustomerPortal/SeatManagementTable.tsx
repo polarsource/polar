@@ -58,7 +58,6 @@ interface SeatManagementTableProps {
   api: Client
   identifier: SeatBasedSubscription | SeatBasedOrder
   prorationBehavior?: schemas['CustomerOrganization']['proration_behavior']
-  pendingUpdate?: schemas['PendingSubscriptionUpdate'] | null
 }
 
 function isSeatBasedSubscription(
@@ -71,7 +70,6 @@ export const SeatManagementTable = ({
   api,
   identifier,
   prorationBehavior,
-  pendingUpdate,
 }: SeatManagementTableProps) => {
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,

@@ -498,13 +498,12 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_get=str(
+                                hx_post=str(
                                     request.url_for(
-                                        "organizations:unsnooze_dialog",
+                                        "organizations:unsnooze",
                                         organization_id=self.org.id,
                                     )
                                 ),
-                                hx_target="#modal",
                             ):
                                 text("Unsnooze → Review")
 

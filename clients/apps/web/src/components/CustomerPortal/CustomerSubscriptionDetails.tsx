@@ -5,7 +5,7 @@ import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   useCustomerCancelSubscription,
   useCustomerUncancelSubscription,
-} from '@/hooks/queries'
+} from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -14,7 +14,7 @@ import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import CustomerPortalSubscription from '../CustomerPortal/CustomerPortalSubscription'
+import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries'
+import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'

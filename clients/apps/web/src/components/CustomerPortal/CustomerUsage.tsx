@@ -1,6 +1,6 @@
 'use client'
 
-import { useCustomerCustomerMeters } from '@/hooks/queries'
+import { useCustomerCustomerMeters } from '@/hooks/queries/customerPortal'
 import Search from '@mui/icons-material/Search'
 import { Client } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'

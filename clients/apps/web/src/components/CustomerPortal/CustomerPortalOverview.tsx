@@ -1,6 +1,6 @@
 'use client'
 
-import { usePortalAuthenticatedUser } from '@/hooks/queries'
+import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'

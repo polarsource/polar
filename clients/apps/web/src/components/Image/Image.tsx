@@ -13,6 +13,6 @@ export const UploadImage = ({
   approximateWidth,
   ...props
 }: ImageProps) => (
-  // eslint-disable-next-line no-restricted-syntax, @next/next/no-img-element
+  // eslint-disable-next-line @next/next/no-img-element
   <img src={getResizedImage(src, approximateWidth)} {...props} />
 )

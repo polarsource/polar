@@ -1,7 +1,7 @@
 'use client'
 
 import { toast } from '@/components/Toast/use-toast'
-import { useCustomerPaymentMethods } from '@/hooks/queries'
+import { useCustomerPaymentMethods } from '@/hooks/queries/customerPortal'
 import { type Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'

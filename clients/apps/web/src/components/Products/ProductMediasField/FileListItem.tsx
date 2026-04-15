@@ -65,7 +65,7 @@ export const FileListItem = ({
           : {}
       }
     >
-      {/* eslint-disable-next-line no-restricted-syntax, @next/next/no-img-element */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageURL}
         alt={file.name}

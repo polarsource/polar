@@ -4,7 +4,7 @@ import {
   useCustomerCancelSubscription,
   useCustomerOrders,
   usePortalAuthenticatedUser,
-} from '@/hooks/queries'
+} from '@/hooks/queries/customerPortal'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -15,7 +15,7 @@ import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
-import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
+import CustomerCancellationModal from './CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { SeatManagementTable } from './SeatManagementTable'

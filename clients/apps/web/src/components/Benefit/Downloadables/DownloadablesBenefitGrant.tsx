@@ -1,4 +1,4 @@
-import { useCustomerDownloadables } from '@/hooks/queries'
+import { useCustomerDownloadables } from '@/hooks/queries/customerPortal'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'

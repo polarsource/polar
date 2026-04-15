@@ -1,5 +1,4 @@
 import AmountLabel from '@/components/Shared/AmountLabel'
-import { useProduct } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
@@ -11,16 +10,14 @@ export const CustomerSubscriptionHeader = ({
   subscription: schemas['CustomerSubscription']
 }) => {
   const pendingUpdate = subscription.pending_update
-  const { data: pendingProduct } = useProduct(
-    pendingUpdate?.product_id ?? undefined,
-  )
+  const hasPendingProduct = pendingUpdate?.product_id != null
 
   const subscriptionBasePrice = useMemo(
     () => getCustomerSubscriptionBasePrice(subscription),
     [subscription],
   )
 
-  if (pendingProduct) {
+  if (hasPendingProduct) {
     return (
       <div className="flex flex-col gap-y-1">
         <div className="flex flex-row items-baseline gap-x-6">

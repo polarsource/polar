@@ -1,4 +1,4 @@
-import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
+import { useCustomerBenefitGrantUpdate } from '@/hooks/queries/customerPortal'
 import { markdownOptions } from '@/utils/markdown'
 import { Client, schemas } from '@polar-sh/client'
 import {

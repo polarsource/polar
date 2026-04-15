@@ -1,6 +1,6 @@
 'use client'
 
-import { useCustomerUpdateSubscription } from '@/hooks/queries'
+import { useCustomerUpdateSubscription } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'

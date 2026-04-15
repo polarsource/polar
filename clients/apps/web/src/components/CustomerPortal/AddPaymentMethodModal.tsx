@@ -1,7 +1,7 @@
 import {
   useAddCustomerPaymentMethod,
   useConfirmCustomerPaymentMethod,
-} from '@/hooks/queries'
+} from '@/hooks/queries/customerPortal'
 import { type Client } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'

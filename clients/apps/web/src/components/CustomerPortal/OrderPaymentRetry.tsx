@@ -3,7 +3,7 @@
 import {
   useCustomerOrderConfirmPayment,
   useCustomerOrderPaymentStatus,
-} from '@/hooks/queries'
+} from '@/hooks/queries/customerPortal'
 import { type Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { PaymentElement } from '@stripe/react-stripe-js'

@@ -1,21 +1,14 @@
 import { nextJsConfig } from '@polar-sh/eslint-config/next-js'
-
-// Elements replaced by Orbit primitives — ban raw JSX usage as a warning.
-// const orbitElementRule = (element, replacement) => ({
-//   selector: `JSXOpeningElement[name.name="${element}"]`,
-//   message: `Use ${replacement} from @polar-sh/orbit instead of <${element}>.`,
-// })
-
-// Ban specific Tailwind utility groups on <Text> className — consumers must use
-// the dedicated prop (variant, color, align, wrap) instead of raw classes.
-// const textClassRule = (pattern, message) => ({
-//   selector: `JSXOpeningElement[name.name="Text"]:has(JSXAttribute[name.name="className"][value.value=/${pattern}/])`,
-//   message,
-// })
+import polarPlugin from './eslint-rules/index.mjs'
 
 /** @type {import("eslint").Linter.Config} */
 export default [
   ...nextJsConfig,
+  {
+    plugins: {
+      polar: polarPlugin,
+    },
+  },
   {
     rules: {
       'react-hooks/set-state-in-effect': 'warn',
@@ -32,38 +25,19 @@ export default [
       'react/no-danger': 'error',
       'react/self-closing-comp': 'warn',
       'react/jsx-no-useless-fragment': 'warn',
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'JSXOpeningElement[name.name="img"]',
-          message:
-            'Use <UploadImage /> from @/components/Image/Image or <StaticImage /> from @/components/Image/StaticImage instead of <img>.',
-        },
-        {
-          selector:
-            'JSXOpeningElement[name.name="Box"] > JSXAttribute[name.name="className"]',
-          message:
-            'Do not use className on <Box />. Use design system props instead.',
-        },
-        {
-          selector:
-            'JSXOpeningElement[name.name="Box"] > JSXAttribute[name.name="style"]',
-          message:
-            'Do not use style on <Box />. Use design system props instead.',
-        },
-      ],
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'next/image',
-              message:
-                'Use <StaticImage /> from @/components/Image/StaticImage instead of next/image.',
-            },
-          ],
-        },
-      ],
+      'polar/no-classname-box': 'error',
+      'polar/no-style-box': 'error',
+      'polar/no-next-image': 'error',
+    },
+  },
+  {
+    files: [
+      'src/components/CustomerPortal/**/*.{ts,tsx}',
+      'src/app/(main)/[organization]/portal/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'polar/no-merchant-queries-in-customer-portal': 'error',
+      'polar/no-merchant-api-calls-in-customer-portal': 'error',
     },
   },
   {
@@ -74,6 +48,7 @@ export default [
       'build/**',
       'next-env.d.ts',
       'e2e/**',
+      'playwright-report/**',
       'babel.config.js',
     ],
   },

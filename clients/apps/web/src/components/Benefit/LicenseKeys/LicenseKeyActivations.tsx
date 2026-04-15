@@ -1,5 +1,5 @@
 import { toast } from '@/components/Toast/use-toast'
-import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
+import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries/customerPortal'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Client, schemas } from '@polar-sh/client'
 import {

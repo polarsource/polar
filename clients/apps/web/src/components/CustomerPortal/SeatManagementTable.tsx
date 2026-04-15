@@ -5,7 +5,7 @@ import {
   useCustomerSeats,
   useResendSeatInvitation,
   useRevokeSeat,
-} from '@/hooks/queries'
+} from '@/hooks/queries/customerPortal'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'

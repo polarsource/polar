@@ -4,7 +4,7 @@ import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import {
   useCustomerPaymentMethods,
   useCustomerUpdateSubscription,
-} from '@/hooks/queries'
+} from '@/hooks/queries/customerPortal'
 import { hasLegacyRecurringPrices } from '@/utils/product'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'

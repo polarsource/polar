@@ -3,7 +3,7 @@
 import {
   useCustomerPortalSession,
   usePortalAuthenticatedUser,
-} from '@/hooks/queries'
+} from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'

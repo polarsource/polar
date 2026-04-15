@@ -1,5 +1,5 @@
 import { toast } from '@/components/Toast/use-toast'
-import { useCustomerLicenseKey } from '@/hooks/queries'
+import { useCustomerLicenseKey } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,

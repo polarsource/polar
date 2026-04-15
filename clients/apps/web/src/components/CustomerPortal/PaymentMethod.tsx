@@ -1,5 +1,5 @@
 import { toast } from '@/components/Toast/use-toast'
-import { useDeleteCustomerPaymentMethod } from '@/hooks/queries'
+import { useDeleteCustomerPaymentMethod } from '@/hooks/queries/customerPortal'
 import type { Client, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Status } from '@polar-sh/ui/components/atoms/Status'

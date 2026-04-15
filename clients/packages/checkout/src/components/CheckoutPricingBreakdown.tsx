@@ -170,10 +170,12 @@ const CheckoutPricingBreakdown = ({
               key={i}
               title={`${row.seats} ${row.seats === 1 ? 'seat' : 'seats'}`}
               subtitle={
+                '· ' +
                 formatCurrency('compact', locale)(
                   row.pricePerSeat,
                   checkout.currency!,
-                ) + ' per seat'
+                ) +
+                ' per seat'
               }
               className="text-gray-600"
             >

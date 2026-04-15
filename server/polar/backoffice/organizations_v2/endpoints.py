@@ -1470,10 +1470,7 @@ async def block_dialog(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if request.method == "POST":
-        # Block the organization (set blocked_at to current time)
-        from datetime import UTC, datetime
-
-        organization.blocked_at = datetime.now(UTC)
+        await organization_service.block_organization(session, organization)
 
         return HXRedirectResponse(
             request,

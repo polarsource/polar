@@ -283,11 +283,11 @@ class OrganizationService:
     ) -> Organization:
         repository = OrganizationRepository.from_session(session)
 
-        # Snapshot before-state for audit BEFORE any attribute mutations
-        audit_update_dict = update_schema.model_dump(
+        # Single model_dump() call — used for both audit diff and DB update
+        full_update_dict = update_schema.model_dump(
             by_alias=True, exclude_unset=True
         )
-        audit_changes = compute_changes(organization, audit_update_dict)
+        audit_changes = compute_changes(organization, full_update_dict)
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
@@ -363,16 +363,16 @@ class OrganizationService:
                 session, organization, update_schema.default_presentment_currency
             )
 
-        update_dict = update_schema.model_dump(
-            by_alias=True,
-            exclude_unset=True,
-            exclude={
+        update_dict = {
+            k: v
+            for k, v in full_update_dict.items()
+            if k not in {
                 "profile_settings",
                 "feature_settings",
                 "subscription_settings",
                 "details",
-            },
-        )
+            }
+        }
 
         # Only store details once to avoid API overrides later w/o review
         # We do allow initial details being set upon creation that will still require review,
@@ -406,7 +406,7 @@ class OrganizationService:
                 k.split(".")[0] in settings_keys for k in audit_changes
             ):
                 action = "settings_updated"
-            if "details" in audit_update_dict:
+            if "details" in full_update_dict:
                 action = "details_submitted"
                 audit_metadata = {"review_context": "submission"}
 

@@ -453,17 +453,18 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               {
                 header: '',
                 accessorKey: 'benefit_action',
-                cell: ({ row: { original } }) => (
-                  <div className="flex justify-end">
-                    <Link
-                      href={`/dashboard/${organization.slug}/products/benefits/${original.benefit.id}`}
-                    >
-                      <Button variant="secondary" size="sm">
-                        View Benefit
-                      </Button>
-                    </Link>
-                  </div>
-                ),
+                cell: ({ row: { original } }) =>
+                  original.benefit.is_deleted ? null : (
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/dashboard/${organization.slug}/products/benefits/${original.benefit.id}`}
+                      >
+                        <Button variant="secondary" size="sm">
+                          View Benefit
+                        </Button>
+                      </Link>
+                    </div>
+                  ),
               },
             ]}
             isLoading={benefitGrantsLoading}

@@ -6999,6 +6999,11 @@ export interface components {
        */
       deletable: boolean
       /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the benefit.
@@ -7101,6 +7106,11 @@ export interface components {
        * @description Whether the benefit is deletable.
        */
       deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
       /**
        * Organization Id
        * Format: uuid4
@@ -7270,6 +7280,11 @@ export interface components {
        */
       deletable: boolean
       /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the benefit.
@@ -7395,6 +7410,11 @@ export interface components {
        */
       deletable: boolean
       /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the benefit.
@@ -7487,6 +7507,11 @@ export interface components {
        * @description Whether the benefit is deletable.
        */
       deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
       /**
        * Organization Id
        * Format: uuid4
@@ -7593,6 +7618,11 @@ export interface components {
        */
       deletable: boolean
       /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the benefit.
@@ -7685,6 +7715,11 @@ export interface components {
        * @description Whether the benefit is deletable.
        */
       deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
       /**
        * Organization Id
        * Format: uuid4
@@ -7783,6 +7818,11 @@ export interface components {
        */
       deletable: boolean
       /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the benefit.
@@ -7872,6 +7912,11 @@ export interface components {
        * @description Whether the benefit is deletable.
        */
       deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
       /**
        * Organization Id
        * Format: uuid4
@@ -8004,6 +8049,11 @@ export interface components {
        * @description Whether the benefit is deletable.
        */
       deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
       /**
        * Organization Id
        * Format: uuid4
@@ -8909,6 +8959,11 @@ export interface components {
        */
       deletable: boolean
       /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the benefit.
@@ -9019,6 +9074,11 @@ export interface components {
        */
       deletable: boolean
       /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the benefit.
@@ -9118,6 +9178,11 @@ export interface components {
        * @description Whether the benefit is deletable.
        */
       deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
       /**
        * Organization Id
        * Format: uuid4
@@ -9236,6 +9301,11 @@ export interface components {
        */
       deletable: boolean
       /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the benefit.
@@ -9329,6 +9399,11 @@ export interface components {
        * @description Whether the benefit is deletable.
        */
       deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is soft-deleted.
+       */
+      is_deleted: boolean
       /**
        * Organization Id
        * Format: uuid4
@@ -18719,12 +18794,7 @@ export interface components {
      *     using OrganizationPublicBase.
      * @enum {string}
      */
-    LegacyOrganizationStatus:
-      | 'created'
-      | 'onboarding_started'
-      | 'under_review'
-      | 'denied'
-      | 'active'
+    LegacyOrganizationStatus: 'created' | 'under_review' | 'denied' | 'active'
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
       | components['schemas']['LegacyRecurringProductPriceCustom']
@@ -23414,9 +23484,6 @@ export interface components {
      */
     OrganizationStatus:
       | 'created'
-      | 'onboarding_started'
-      | 'initial_review'
-      | 'ongoing_review'
       | 'review'
       | 'snoozed'
       | 'denied'
@@ -27356,7 +27423,7 @@ export interface components {
       /**
        * Current Billing Period End
        * Format: date-time
-       * @description Set a new date for the end of the current billing period. The subscription will renew on this date. Needs to be later than the current value.
+       * @description Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.
        *
        *     It is not possible to update the current billing period on a canceled subscription.
        */
@@ -51765,7 +51832,7 @@ export const introspectTokenResponseToken_typeValues: ReadonlyArray<
 > = ['access_token', 'refresh_token']
 export const legacyOrganizationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LegacyOrganizationStatus']
-> = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
+> = ['created', 'under_review', 'denied', 'active']
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
 > = ['custom']
@@ -52704,17 +52771,7 @@ export const organizationSortPropertyValues: ReadonlyArray<
 ]
 export const organizationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationStatus']
-> = [
-  'created',
-  'onboarding_started',
-  'initial_review',
-  'ongoing_review',
-  'review',
-  'snoozed',
-  'denied',
-  'active',
-  'offboarding',
-]
+> = ['created', 'review', 'snoozed', 'denied', 'active', 'offboarding']
 export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
 > = ['invoice', 'prorate', 'next_period']

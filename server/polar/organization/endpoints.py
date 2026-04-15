@@ -423,7 +423,7 @@ async def invite_member(
     await audit_record(
         session,
         organization.id,
-        "organization.member_invited",
+        "member_invited",
         resource_type="organization",
         resource_id=organization.id,
         metadata={
@@ -490,7 +490,7 @@ async def leave_organization(
     await audit_record(
         session,
         organization.id,
-        "organization.member_left",
+        "member_left",
         resource_type="organization",
         resource_id=organization.id,
         metadata={
@@ -563,7 +563,7 @@ async def remove_member(
     await audit_record(
         session,
         organization.id,
-        "organization.member_removed",
+        "member_removed",
         resource_type="organization",
         resource_id=organization.id,
         metadata={

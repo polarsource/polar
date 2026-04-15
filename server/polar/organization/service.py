@@ -224,7 +224,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.created",
+            "created",
             resource_type="organization",
             resource_id=organization.id,
             metadata={
@@ -393,7 +393,7 @@ class OrganizationService:
         organization = await repository.update(organization, update_dict=update_dict)
 
         if audit_changes:
-            action = "organization.updated"
+            action = "updated"
             audit_metadata: dict[str, Any] | None = None
             # Use more specific action names for settings and details
             settings_keys = {
@@ -405,9 +405,9 @@ class OrganizationService:
             if all(
                 k.split(".")[0] in settings_keys for k in audit_changes
             ):
-                action = "organization.settings_updated"
+                action = "settings_updated"
             if "details" in audit_update_dict:
-                action = "organization.details_submitted"
+                action = "details_submitted"
                 audit_metadata = {"review_context": "submission"}
 
             await audit_record(
@@ -470,7 +470,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.deleted",
+            "deleted",
             resource_type="organization",
             resource_id=organization.id,
         )
@@ -559,7 +559,7 @@ class OrganizationService:
             await audit_record(
                 session,
                 organization.id,
-                "organization.deletion_requested",
+                "deletion_requested",
                 resource_type="organization",
                 resource_id=organization.id,
                 metadata={
@@ -642,7 +642,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.deleted",
+            "deleted",
             resource_type="organization",
             resource_id=organization.id,
             metadata={"slug": organization.slug},
@@ -709,7 +709,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.payout_account_set",
+            "payout_account_set",
             resource_type="organization",
             resource_id=organization.id,
             changes={
@@ -778,7 +778,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.member_added",
+            "member_added",
             resource_type="organization",
             resource_id=organization.id,
             metadata={
@@ -847,7 +847,7 @@ class OrganizationService:
             await audit_record(
                 session,
                 organization.id,
-                "organization.review_threshold_triggered",
+                "review_threshold_triggered",
                 resource_type="organization",
                 resource_id=organization.id,
                 changes={
@@ -912,7 +912,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.approved",
+            "approved",
             resource_type="organization",
             resource_id=organization.id,
             changes={
@@ -984,7 +984,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.denied",
+            "denied",
             resource_type="organization",
             resource_id=organization.id,
             changes={
@@ -1026,7 +1026,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.under_review",
+            "under_review",
             resource_type="organization",
             resource_id=organization.id,
             changes={
@@ -1069,7 +1069,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.offboarding",
+            "offboarding",
             resource_type="organization",
             resource_id=organization.id,
             changes={
@@ -1099,7 +1099,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.reactivated",
+            "reactivated",
             resource_type="organization",
             resource_id=organization.id,
             changes={
@@ -1216,7 +1216,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.appeal_submitted",
+            "appeal_submitted",
             resource_type="organization",
             resource_id=organization.id,
             metadata={"appeal_reason": appeal_reason},
@@ -1253,7 +1253,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.appeal_approved",
+            "appeal_approved",
             resource_type="organization",
             resource_id=organization.id,
             changes={
@@ -1291,7 +1291,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.appeal_denied",
+            "appeal_denied",
             resource_type="organization",
             resource_id=organization.id,
         )
@@ -1320,7 +1320,7 @@ class OrganizationService:
         await audit_record(
             session,
             organization.id,
-            "organization.onboarding_completed",
+            "onboarding_completed",
             resource_type="organization",
             resource_id=organization.id,
         )

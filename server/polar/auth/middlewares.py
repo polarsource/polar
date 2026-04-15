@@ -37,7 +37,7 @@ from polar.postgres import AsyncSession
 from polar.sentry import set_sentry_user
 from polar.worker import enqueue_job
 
-from .models import Anonymous, AuthSubject, Subject
+from .models import Anonymous, AuthSubject, Subject, is_user
 from .scope import Scope
 from .service import auth as auth_service
 
@@ -183,8 +183,26 @@ class AuthSubjectMiddleware:
 
         scope["state"]["auth_subject"] = auth_subject
 
+        # Set audit context for non-anonymous subjects
+        if not isinstance(auth_subject.subject, Anonymous):
+            from polar.audit.context import AuditContext
+
+            ip_address = request.client.host if request.client else None
+            if is_user(auth_subject):
+                AuditContext.set(
+                    actor_type="user",
+                    actor_id=auth_subject.subject.id,
+                    actor_name=auth_subject.subject.email,
+                    ip_address=ip_address,
+                )
+
         with logfire.set_baggage(**auth_subject.log_context):
             log.info("Authenticated subject", **auth_subject.log_context)
             set_sentry_user(auth_subject)
             # Other scope types (lifespan, etc.)
             await self.app(scope, receive, send)
+
+        # Clear audit context after request completes
+        from polar.audit.context import AuditContext
+
+        AuditContext.clear()

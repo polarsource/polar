@@ -2,6 +2,7 @@ from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
 from .account_credit import AccountCredit
+from .audit_log import AuditLog
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
@@ -95,6 +96,7 @@ from .webhook_event import WebhookEvent
 __all__ = [
     "Account",
     "AccountCredit",
+    "AuditLog",
     "Benefit",
     "BenefitGrant",
     "BillingEntry",

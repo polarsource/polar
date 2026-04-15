@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.audit.service import record as audit_record
 from polar.auth.models import is_user
 from polar.config import settings
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
@@ -419,6 +420,18 @@ async def invite_member(
     if user_org is None:
         raise ResourceNotFound()
 
+    await audit_record(
+        session,
+        organization.id,
+        "organization.member_invited",
+        resource_type="organization",
+        resource_id=organization.id,
+        metadata={
+            "invited_email": invite_body.email,
+            "user_id": str(user.id),
+        },
+    )
+
     response.status_code = status.HTTP_201_CREATED
     return OrganizationMember.model_validate(user_org)
 
@@ -472,6 +485,18 @@ async def leave_organization(
         session,
         user_id=user.id,
         organization_id=organization.id,
+    )
+
+    await audit_record(
+        session,
+        organization.id,
+        "organization.member_left",
+        resource_type="organization",
+        resource_id=organization.id,
+        metadata={
+            "user_id": str(user.id),
+            "user_email": user.email,
+        },
     )
 
 
@@ -534,6 +559,17 @@ async def remove_member(
         raise ResourceNotFound()
     except CannotRemoveOrganizationAdmin:
         raise NotPermitted("Cannot remove the organization admin.")
+
+    await audit_record(
+        session,
+        organization.id,
+        "organization.member_removed",
+        resource_type="organization",
+        resource_id=organization.id,
+        metadata={
+            "removed_user_id": str(target_user_id),
+        },
+    )
 
 
 @router.post(

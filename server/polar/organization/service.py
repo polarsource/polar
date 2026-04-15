@@ -10,6 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
+from polar.audit.service import compute_changes
+from polar.audit.service import record as audit_record
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
 from polar.customer.repository import CustomerRepository
@@ -219,6 +221,18 @@ class OrganizationService:
 
         enqueue_job("organization.created", organization_id=organization.id)
 
+        await audit_record(
+            session,
+            organization.id,
+            "organization.created",
+            resource_type="organization",
+            resource_id=organization.id,
+            metadata={
+                "name": organization.name,
+                "slug": organization.slug,
+            },
+        )
+
         posthog.auth_subject_event(
             auth_subject,
             "organizations",
@@ -268,6 +282,12 @@ class OrganizationService:
         update_schema: OrganizationUpdate,
     ) -> Organization:
         repository = OrganizationRepository.from_session(session)
+
+        # Snapshot before-state for audit BEFORE any attribute mutations
+        audit_update_dict = update_schema.model_dump(
+            by_alias=True, exclude_unset=True
+        )
+        audit_changes = compute_changes(organization, audit_update_dict)
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
@@ -372,6 +392,34 @@ class OrganizationService:
 
         organization = await repository.update(organization, update_dict=update_dict)
 
+        if audit_changes:
+            action = "organization.updated"
+            audit_metadata: dict[str, Any] | None = None
+            # Use more specific action names for settings and details
+            settings_keys = {
+                "feature_settings", "subscription_settings",
+                "notification_settings", "customer_email_settings",
+                "customer_portal_settings", "checkout_settings",
+                "order_settings",
+            }
+            if all(
+                k.split(".")[0] in settings_keys for k in audit_changes
+            ):
+                action = "organization.settings_updated"
+            if "details" in audit_update_dict:
+                action = "organization.details_submitted"
+                audit_metadata = {"review_context": "submission"}
+
+            await audit_record(
+                session,
+                organization.id,
+                action,
+                resource_type="organization",
+                resource_id=organization.id,
+                changes=audit_changes,
+                metadata=audit_metadata,
+            )
+
         await self._after_update(session, organization)
         return organization
 
@@ -418,6 +466,14 @@ class OrganizationService:
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
         polar_self_service.enqueue_delete_customer(organization_id=organization.id)
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.deleted",
+            resource_type="organization",
+            resource_id=organization.id,
+        )
 
         return organization
 
@@ -500,6 +556,16 @@ class OrganizationService:
                 user_id=auth_subject.subject.id,
                 blocked_reasons=[r.value for r in check_result.blocked_reasons],
             )
+            await audit_record(
+                session,
+                organization.id,
+                "organization.deletion_requested",
+                resource_type="organization",
+                resource_id=organization.id,
+                metadata={
+                    "blocked_reasons": [r.value for r in check_result.blocked_reasons],
+                },
+            )
             return check_result
 
         try:
@@ -573,6 +639,15 @@ class OrganizationService:
         await repository.soft_delete(organization)
         polar_self_service.enqueue_delete_customer(organization_id=organization.id)
 
+        await audit_record(
+            session,
+            organization.id,
+            "organization.deleted",
+            resource_type="organization",
+            resource_id=organization.id,
+            metadata={"slug": organization.slug},
+        )
+
         log.info(
             "organization.deleted",
             organization_id=organization.id,
@@ -623,12 +698,29 @@ class OrganizationService:
                 ]
             )
 
+        old_payout_account_id = organization.payout_account_id
         organization_repository = OrganizationRepository.from_session(session)
-        return await organization_repository.update(
+        organization = await organization_repository.update(
             organization,
             update_dict={"payout_account_id": payout_account.id},
             flush=True,
         )
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.payout_account_set",
+            resource_type="organization",
+            resource_id=organization.id,
+            changes={
+                "payout_account_id": {
+                    "old": str(old_payout_account_id) if old_payout_account_id else None,
+                    "new": str(payout_account.id),
+                },
+            },
+        )
+
+        return organization
 
     async def add_user(
         self,
@@ -683,6 +775,18 @@ class OrganizationService:
                 delay=polar_self_member_delay,
             )
 
+        await audit_record(
+            session,
+            organization.id,
+            "organization.member_added",
+            resource_type="organization",
+            resource_id=organization.id,
+            metadata={
+                "user_id": str(user.id),
+                "user_email": user.email,
+            },
+        )
+
     async def get_next_invoice_number(
         self,
         session: AsyncSession,
@@ -733,11 +837,30 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
+            old_status = organization.status
             organization.status = OrganizationStatus.REVIEW
             organization.status_updated_at = datetime.now(UTC)
             session.add(organization)
 
             enqueue_job("organization.under_review", organization_id=organization.id)
+
+            await audit_record(
+                session,
+                organization.id,
+                "organization.review_threshold_triggered",
+                resource_type="organization",
+                resource_id=organization.id,
+                changes={
+                    "status": {
+                        "old": old_status.value if old_status else None,
+                        "new": OrganizationStatus.REVIEW.value,
+                    },
+                },
+                metadata={
+                    "total_balance": transfers_sum,
+                    "threshold": organization.next_review_threshold,
+                },
+            )
 
         return organization
 
@@ -749,6 +872,8 @@ class OrganizationService:
         *,
         silent: bool = False,
     ) -> Organization:
+        old_status = organization.status
+
         if next_review_threshold is None:
             next_review_threshold = max(
                 organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
@@ -783,6 +908,25 @@ class OrganizationService:
             initial_review=initial_review,
             silent=silent,
         )
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.approved",
+            resource_type="organization",
+            resource_id=organization.id,
+            changes={
+                "status": {
+                    "old": old_status.value if old_status else None,
+                    "new": OrganizationStatus.ACTIVE.value,
+                },
+            },
+            metadata={
+                "initial_review": initial_review,
+                "next_review_threshold": next_review_threshold,
+            },
+        )
+
         return organization
 
     async def handle_ongoing_review_verdict(
@@ -822,6 +966,7 @@ class OrganizationService:
     async def deny_organization(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
+        old_status = organization.status
         organization.status = OrganizationStatus.DENIED
         organization.status_updated_at = datetime.now(UTC)
         session.add(organization)
@@ -829,10 +974,27 @@ class OrganizationService:
         # If there's a pending appeal, mark it as rejected
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
+        had_pending_appeal = False
         if review and review.appeal_submitted_at and review.appeal_decision is None:
             review.appeal_decision = OrganizationReview.AppealDecision.REJECTED
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)
+            had_pending_appeal = True
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.denied",
+            resource_type="organization",
+            resource_id=organization.id,
+            changes={
+                "status": {
+                    "old": old_status.value if old_status else None,
+                    "new": OrganizationStatus.DENIED.value,
+                },
+            },
+            metadata={"had_pending_appeal": had_pending_appeal},
+        )
 
         return organization
 
@@ -843,6 +1005,7 @@ class OrganizationService:
         *,
         enqueue_review: bool = True,
     ) -> Organization:
+        old_status = organization.status
         organization.status = OrganizationStatus.REVIEW
         organization.status_updated_at = datetime.now(UTC)
         session.add(organization)
@@ -859,6 +1022,21 @@ class OrganizationService:
 
         if enqueue_review:
             enqueue_job("organization.under_review", organization_id=organization.id)
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.under_review",
+            resource_type="organization",
+            resource_id=organization.id,
+            changes={
+                "status": {
+                    "old": old_status.value if old_status else None,
+                    "new": OrganizationStatus.REVIEW.value,
+                },
+            },
+        )
+
         return organization
 
     async def set_organization_offboarding(
@@ -873,6 +1051,7 @@ class OrganizationService:
                 "Only organizations under review can be set to offboarding.",
                 403,
             )
+        old_status = organization.status
         organization.status = OrganizationStatus.OFFBOARDING
         organization.status_updated_at = datetime.now(UTC)
 
@@ -886,6 +1065,22 @@ class OrganizationService:
             organization.internal_notes = note
 
         session.add(organization)
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.offboarding",
+            resource_type="organization",
+            resource_id=organization.id,
+            changes={
+                "status": {
+                    "old": old_status.value if old_status else None,
+                    "new": OrganizationStatus.OFFBOARDING.value,
+                },
+            },
+            metadata={"reason": reason} if reason else None,
+        )
+
         return organization
 
     async def reactivate_organization(
@@ -900,6 +1095,21 @@ class OrganizationService:
         organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         session.add(organization)
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.reactivated",
+            resource_type="organization",
+            resource_id=organization.id,
+            changes={
+                "status": {
+                    "old": OrganizationStatus.OFFBOARDING.value,
+                    "new": OrganizationStatus.ACTIVE.value,
+                },
+            },
+        )
+
         return organization
 
     async def get_payment_status(
@@ -1003,6 +1213,15 @@ class OrganizationService:
 
         await plain_service.create_appeal_review_thread(session, organization, review)
 
+        await audit_record(
+            session,
+            organization.id,
+            "organization.appeal_submitted",
+            resource_type="organization",
+            resource_id=organization.id,
+            metadata={"appeal_reason": appeal_reason},
+        )
+
         return review
 
     async def approve_appeal(
@@ -1022,6 +1241,7 @@ class OrganizationService:
         if review.appeal_decision is not None:
             raise ValueError("Appeal has already been reviewed")
 
+        old_status = organization.status
         organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
@@ -1029,6 +1249,20 @@ class OrganizationService:
 
         session.add(organization)
         session.add(review)
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.appeal_approved",
+            resource_type="organization",
+            resource_id=organization.id,
+            changes={
+                "status": {
+                    "old": old_status.value if old_status else None,
+                    "new": OrganizationStatus.ACTIVE.value,
+                },
+            },
+        )
 
         return review
 
@@ -1054,6 +1288,14 @@ class OrganizationService:
 
         session.add(review)
 
+        await audit_record(
+            session,
+            organization.id,
+            "organization.appeal_denied",
+            resource_type="organization",
+            resource_id=organization.id,
+        )
+
         return review
 
     async def mark_ai_onboarding_complete(
@@ -1074,6 +1316,15 @@ class OrganizationService:
                 "ai_onboarding_completed_at": datetime.now(UTC),
             },
         )
+
+        await audit_record(
+            session,
+            organization.id,
+            "organization.onboarding_completed",
+            resource_type="organization",
+            resource_id=organization.id,
+        )
+
         return organization
 
 

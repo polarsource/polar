@@ -1,6 +1,7 @@
 from fastapi import Depends, Request
 from fastapi.exceptions import HTTPException
 
+from polar.audit.context import AuditContext
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.models.user_session import UserSession
@@ -25,5 +26,15 @@ async def get_admin(
 
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")
+
+    # Set audit context for backoffice requests (separate ASGI app,
+    # so AuthSubjectMiddleware doesn't run here)
+    ip_address = request.client.host if request.client else None
+    AuditContext.set(
+        actor_type="admin",
+        actor_id=user.id,
+        actor_name=user.email,
+        ip_address=ip_address,
+    )
 
     return user_session

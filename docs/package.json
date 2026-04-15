@@ -17,7 +17,7 @@
     "mintlify": "^4.2.473"
   },
   "devDependencies": {
-    "@scalar/openapi-parser": "^0.25.7",
+    "@scalar/openapi-parser": "^0.25.8",
     "@types/node": "^24.12.0",
     "js-yaml": "^4.1.1",
     "openapi-sampler": "^1.7.2",

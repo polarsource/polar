@@ -1,5 +1,3 @@
-import type { DeepPartialLocale, LocaleShape, Translations } from '../types'
-
 export default {
   checkout: {
     footer: {
@@ -91,6 +89,19 @@ export default {
         },
       },
       perSeat: 'pro Platz',
+      seats: {
+        label: 'Plätze',
+        numberOfSeats: 'Anzahl der Plätze',
+        count: {
+          '=1': '# Platz',
+          other: '# Plätze',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} Plätze',
+        minimum: 'Mindestens {min} Plätze',
+        maximum: 'Maximal {max} Plätze',
+        updateFailed: 'Plätze konnten nicht aktualisiert werden',
+      },
     },
     trial: {
       ends: 'Testphase endet am {endDate}',
@@ -275,4 +286,4 @@ export default {
     many: '.',
     other: '.',
   },
-} as const satisfies DeepPartialLocale<LocaleShape<Translations>>
+} as const

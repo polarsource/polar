@@ -70,7 +70,6 @@ async function callLLM(
     model: openai('gpt-5.4-mini'),
     system: systemPromptPart,
     prompt: userPromptPart,
-    temperature: 0.3,
   })
 
   // Strip markdown code fences if present

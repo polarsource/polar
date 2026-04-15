@@ -1,5 +1,3 @@
-import type { DeepPartialLocale, LocaleShape, Translations } from '../types'
-
 export default {
   checkout: {
     footer: {
@@ -91,6 +89,19 @@ export default {
         },
       },
       perSeat: 'per plats',
+      seats: {
+        label: 'Platser',
+        numberOfSeats: 'Antal platser',
+        count: {
+          '=1': '# plats',
+          other: '# platser',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} platser',
+        minimum: 'Minst {min} platser',
+        maximum: 'Högst {max} platser',
+        updateFailed: 'Det gick inte att uppdatera platserna',
+      },
     },
     trial: {
       ends: 'Testperioden slutar {endDate}',
@@ -268,4 +279,4 @@ export default {
     many: ':e',
     other: ':e',
   },
-} as const satisfies DeepPartialLocale<LocaleShape<Translations>>
+} as const

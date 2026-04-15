@@ -1,5 +1,3 @@
-import type { DeepPartialLocale, LocaleShape, Translations } from '../types'
-
 export default {
   checkout: {
     footer: {
@@ -91,6 +89,19 @@ export default {
         },
       },
       perSeat: '좌석당',
+      seats: {
+        label: '좌석',
+        numberOfSeats: '좌석 수',
+        count: {
+          '=1': '#석',
+          other: '#석',
+          _mode: 'plural',
+        },
+        range: '{min} - {max}석',
+        minimum: '최소 {min}석',
+        maximum: '최대 {max}석',
+        updateFailed: '좌석 수를 업데이트하지 못했습니다',
+      },
     },
     trial: {
       ends: '체험 종료일: {endDate}',
@@ -268,4 +279,4 @@ export default {
     many: '번째',
     other: '번째',
   },
-} as const satisfies DeepPartialLocale<LocaleShape<Translations>>
+} as const

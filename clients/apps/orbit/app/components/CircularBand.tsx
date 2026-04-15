@@ -10,7 +10,11 @@ interface Ring {
   angle: number;
 }
 
-export const CircularBand = () => {
+interface CircularBandProps {
+  fill?: boolean;
+}
+
+export const CircularBand = ({ fill = false }: CircularBandProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -21,35 +25,53 @@ export const CircularBand = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio ?? 1;
-    const size = canvas.offsetWidth;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    ctx.scale(dpr, dpr);
+    const init = () => {
+      const dpr = window.devicePixelRatio ?? 1;
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      return { w, h };
+    };
 
-    const cx = size / 2;
-    const cy = size / 2;
+    let { w, h } = init();
+
+    const resizeObserver = new ResizeObserver(() => {
+      ({ w, h } = init());
+    });
+    resizeObserver.observe(canvas);
 
     const rings: Ring[] = [
-      { radius: size * 0.06, rayCount: 12, rayLength: size * 0.10, direction: 1,  angle: 0 },
-      { radius: size * 0.16, rayCount: 18, rayLength: size * 0.13, direction: -1, angle: 0 },
-      { radius: size * 0.29, rayCount: 24, rayLength: size * 0.16, direction: 1,  angle: 0 },
-      { radius: size * 0.45, rayCount: 30, rayLength: size * 0.20, direction: -1, angle: 0 },
-      { radius: size * 0.65, rayCount: 36, rayLength: size * 0.50, direction: 1,  angle: 0 },
+      { radius: 0,    rayCount: 12, rayLength: 0, direction: 1,  angle: 0 },
+      { radius: 0,    rayCount: 18, rayLength: 0, direction: -1, angle: 0 },
+      { radius: 0,    rayCount: 24, rayLength: 0, direction: 1,  angle: 0 },
+      { radius: 0,    rayCount: 30, rayLength: 0, direction: -1, angle: 0 },
+      { radius: 0,    rayCount: 36, rayLength: 0, direction: 1,  angle: 0 },
     ];
 
     const speed = 0.0015;
 
     const draw = () => {
-      ctx.clearRect(0, 0, size, size);
+      const size = Math.min(w, h);
+      const cx = w / 2;
+      const cy = h / 2;
 
-      for (const ring of rings) {
-        ring.angle += speed * ring.direction;
+      const radii    = [0.06, 0.16, 0.29, 0.45, 0.65];
+      const lengths  = [0.10, 0.13, 0.16, 0.20, 0.50];
+
+      ctx.clearRect(0, 0, w, h);
+
+      rings.forEach((ring, i) => {
+        ring.radius    = size * radii[i];
+        ring.rayLength = size * lengths[i];
+        ring.angle    += speed * ring.direction;
 
         const step = (Math.PI * 2) / ring.rayCount;
 
-        for (let i = 0; i < ring.rayCount; i++) {
-          const a = ring.angle + i * step;
+        for (let j = 0; j < ring.rayCount; j++) {
+          const a = ring.angle + j * step;
           const x1 = cx + Math.cos(a) * ring.radius;
           const y1 = cy + Math.sin(a) * ring.radius;
           const x2 = cx + Math.cos(a) * (ring.radius + ring.rayLength);
@@ -62,15 +84,27 @@ export const CircularBand = () => {
           ctx.lineWidth = 1;
           ctx.stroke();
         }
-      }
+      });
 
       animRef.current = requestAnimationFrame(draw);
     };
 
     draw();
 
-    return () => cancelAnimationFrame(animRef.current);
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      resizeObserver.disconnect();
+    };
   }, []);
+
+  if (fill) {
+    return (
+      <canvas
+        ref={canvasRef}
+        className="h-full w-full bg-neutral-950"
+      />
+    );
+  }
 
   return (
     <canvas

@@ -56,7 +56,7 @@ class BenefitPublicBase(TimestampedSchema, IDSchema):
         ..., description="Whether the benefit is selectable when creating a product."
     )
     deletable: bool = Field(..., description="Whether the benefit is deletable.")
-    is_deleted: bool = Field(..., description="Whether the benefit is soft-deleted.")
+    is_deleted: bool = Field(..., description="Whether the benefit is deleted.")
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the benefit."
     )

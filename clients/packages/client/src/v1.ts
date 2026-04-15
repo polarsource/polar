@@ -7000,7 +7000,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -7108,7 +7108,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -7281,7 +7281,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -7411,7 +7411,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -7509,7 +7509,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -7619,7 +7619,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -7717,7 +7717,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -7819,7 +7819,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -7914,7 +7914,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -8051,7 +8051,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -8960,7 +8960,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -9075,7 +9075,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -9180,7 +9180,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -9302,7 +9302,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**
@@ -9401,7 +9401,7 @@ export interface components {
       deletable: boolean
       /**
        * Is Deleted
-       * @description Whether the benefit is soft-deleted.
+       * @description Whether the benefit is deleted.
        */
       is_deleted: boolean
       /**

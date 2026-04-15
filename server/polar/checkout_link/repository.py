@@ -34,8 +34,7 @@ class CheckoutLinkRepository(
             )
             .where(
                 CheckoutLink.client_secret == client_secret,
-                Organization.is_deleted.is_(False),
-                Organization.blocked_at.is_(None),
+                Organization.can_authenticate.is_(True),
             )
             .options(*options)
         )

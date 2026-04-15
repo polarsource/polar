@@ -176,7 +176,7 @@ class OrganizationService:
         repository = OrganizationRepository.from_session(session)
         statement = (
             repository.get_base_statement()
-            .where(Organization.blocked_at.is_(None))
+            .where(Organization.status != OrganizationStatus.BLOCKED)
             .where(Organization.id == id)
             .options(*options)
         )
@@ -993,10 +993,10 @@ class OrganizationService:
             return True
 
         # First check basic conditions that don't require account data
-        if (
-            organization.is_blocked()
-            or organization.status == OrganizationStatus.DENIED
-        ):
+        if organization.status in {
+            OrganizationStatus.BLOCKED,
+            OrganizationStatus.DENIED,
+        }:
             return False
 
         # Check grandfathering - if grandfathered, they're ready

@@ -29,6 +29,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncReadSession
@@ -59,7 +60,9 @@ class OrganizationRepository(
         )
 
         if not include_blocked:
-            statement = statement.where(self.model.blocked_at.is_(None))
+            statement = statement.where(
+                self.model.status != OrganizationStatus.BLOCKED
+            )
 
         return await self.get_one_or_none(statement)
 
@@ -81,7 +84,9 @@ class OrganizationRepository(
         )
 
         if not include_blocked:
-            statement = statement.where(self.model.blocked_at.is_(None))
+            statement = statement.where(
+                self.model.status != OrganizationStatus.BLOCKED
+            )
 
         return await self.get_one_or_none(statement)
 
@@ -120,7 +125,7 @@ class OrganizationRepository(
             .where(
                 UserOrganization.user_id == user,
                 UserOrganization.is_deleted.is_(False),
-                Organization.blocked_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
             )
         )
         return await self.get_all(statement)
@@ -132,7 +137,7 @@ class OrganizationRepository(
             self.get_base_statement()
             .where(
                 Organization.account_id == account,
-                Organization.blocked_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
             )
             .options(*options)
         )
@@ -164,7 +169,9 @@ class OrganizationRepository(
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Organization]]:
-        statement = self.get_base_statement().where(Organization.blocked_at.is_(None))
+        statement = self.get_base_statement().where(
+            Organization.status != OrganizationStatus.BLOCKED
+        )
 
         if is_user(auth_subject):
             user = auth_subject.subject

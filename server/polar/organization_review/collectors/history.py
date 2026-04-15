@@ -26,7 +26,7 @@ def collect_history_data(
 
         if org.status == OrganizationStatus.DENIED:
             has_prior_denials = True
-        if org.blocked_at is not None:
+        if org.status == OrganizationStatus.BLOCKED:
             has_blocked_orgs = True
 
         prior_organizations.append(

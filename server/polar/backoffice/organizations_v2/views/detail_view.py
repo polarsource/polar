@@ -262,8 +262,7 @@ class OrganizationDetailView:
                     text("Actions")
 
                 with tag.div(classes="space-y-2"):
-                    # Check if organization is blocked
-                    is_blocked = self.org.blocked_at is not None
+                    is_blocked = self.org.is_blocked()
 
                     # Context-aware actions based on status
                     if is_blocked:

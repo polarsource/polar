@@ -29,6 +29,7 @@ from polar.models import (
     Order,
     Organization,
 )
+from polar.models.organization import OrganizationStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import OrderService
 from polar.postgres import create_async_engine
@@ -80,7 +81,10 @@ def get_query() -> Select[tuple[Order]]:
         .join(Customer, Order.customer_id == Customer.id)
         .join(Organization, Customer.organization_id == Organization.id)
         .where(
-            or_(Organization.blocked_at.is_not(None), Organization.is_deleted.is_(True))
+            or_(
+                Organization.status == OrganizationStatus.BLOCKED,
+                Organization.is_deleted.is_(True),
+            )
         )
     )
 

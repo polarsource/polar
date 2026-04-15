@@ -29,6 +29,7 @@ from polar.models import (
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.tax.calculation import TaxCalculationService
 from polar.tax.calculation.base import TaxabilityReason
@@ -109,7 +110,7 @@ async def create_blocked_product(
         save_fixture,
         account,
         name_prefix="blockedorg",
-        blocked_at=utc_now(),
+        status=OrganizationStatus.BLOCKED,
     )
     product = await create_product(
         save_fixture,
@@ -188,7 +189,7 @@ class TestGet:
         auth_subject: AuthSubject[User],
     ) -> None:
         product = await create_blocked_product(save_fixture, auth_subject)
-        product.organization.blocked_at = None
+        product.organization.status = OrganizationStatus.ACTIVE
         await save_fixture(product)
 
         checkout = await checkout_service.create(
@@ -203,7 +204,7 @@ class TestGet:
         assert response.status_code == 200
 
         session.expunge_all()
-        product.organization.blocked_at = utc_now()
+        product.organization.status = OrganizationStatus.BLOCKED
         await save_fixture(product)
 
         response = await client.get(f"{api_prefix}/{checkout.id}")
@@ -286,7 +287,7 @@ class TestCreateCheckout:
         )
         assert response.status_code == 403
 
-        product.organization.blocked_at = None
+        product.organization.status = OrganizationStatus.ACTIVE
         await save_fixture(product)
 
         response = await client.post(

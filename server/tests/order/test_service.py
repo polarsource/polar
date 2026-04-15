@@ -3507,7 +3507,7 @@ class TestTriggerPayment:
             status=OrderStatus.pending,
         )
 
-        organization.blocked_at = utc_now()
+        organization.status = OrganizationStatus.BLOCKED
         await save_fixture(organization)
 
         await order_service.trigger_payment(session, order, payment_method)

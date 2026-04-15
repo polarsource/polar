@@ -58,6 +58,7 @@ from sqlalchemy.orm import aliased, joinedload
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
 from polar.models.benefit_grant import BenefitGrant
+from polar.models.organization import OrganizationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.organization.tasks import (
     _backfill_benefit_grants,
@@ -122,7 +123,7 @@ async def migrate_organizations(
             select(Organization)
             .where(
                 Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
                 or_(
                     Organization.feature_settings["member_model_enabled"].is_(None),
                     Organization.feature_settings["member_model_enabled"]
@@ -298,7 +299,7 @@ async def repair(
             select(Organization)
             .where(
                 Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
                 Organization.feature_settings["member_model_enabled"]
                 .as_boolean()
                 .is_(True),
@@ -335,7 +336,7 @@ async def repair(
             .select_from(Organization)
             .where(
                 Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
                 Organization.feature_settings["member_model_enabled"]
                 .as_boolean()
                 .is_(True),
@@ -473,7 +474,7 @@ async def prepare(
             select(Organization)
             .where(
                 Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
                 Organization.feature_settings["seat_based_pricing_enabled"]
                 .as_boolean()
                 .is_(True),

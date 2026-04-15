@@ -17,6 +17,7 @@ from polar.kit.db.postgres import create_async_sessionmaker
 from polar.member.schemas import MemberOwnerCreate
 from polar.member.service import member_service
 from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession, create_async_engine
 from polar.redis import Redis, create_redis
 from polar.subscription.schemas import SubscriptionCreateExternalCustomer
@@ -54,7 +55,7 @@ async def _load_active_organizations(
         select(Organization)
         .where(
             Organization.deleted_at.is_(None),
-            Organization.blocked_at.is_(None),
+            Organization.status != OrganizationStatus.BLOCKED,
         )
         .order_by(Organization.created_at)
     )

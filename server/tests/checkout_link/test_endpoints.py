@@ -6,8 +6,8 @@ from polar.auth.scope import Scope
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import CHECKOUT_CLIENT_SECRET_PREFIX
 from polar.enums import SubscriptionRecurringInterval
-from polar.kit.utils import utc_now
 from polar.models import Checkout, CheckoutLink, Product, User, UserOrganization
+from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -213,7 +213,7 @@ class TestRedirect:
             save_fixture,
             account,
             name_prefix="blockedorg",
-            blocked_at=utc_now(),
+            status=OrganizationStatus.BLOCKED,
         )
         product = await create_product(
             save_fixture,

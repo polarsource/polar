@@ -418,12 +418,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_authenticate(self) -> bool:
-        return not self.is_deleted and self.blocked_at is None
+        return not self.is_deleted and self.status != OrganizationStatus.BLOCKED
 
     @can_authenticate.inplace.expression
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
-        return and_(cls.is_deleted.is_(False), cls.blocked_at.is_(None))
+        return and_(cls.is_deleted.is_(False), cls.status != OrganizationStatus.BLOCKED)
 
     def set_status(self, status: OrganizationStatus) -> None:
         self.status = status
@@ -531,9 +531,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         )
 
     def is_blocked(self) -> bool:
-        if self.blocked_at is not None:
-            return True
-        return False
+        return self.status == OrganizationStatus.BLOCKED
 
     def is_active(self) -> bool:
         return self.status == OrganizationStatus.ACTIVE

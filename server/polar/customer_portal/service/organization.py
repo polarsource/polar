@@ -13,8 +13,7 @@ class CustomerOrganizationService(ResourceServiceReader[Organization]):
         statement = (
             select(Organization)
             .where(
-                Organization.is_deleted.is_(False),
-                Organization.blocked_at.is_(None),
+                Organization.can_authenticate.is_(True),
                 Organization.slug == slug,
             )
             .options(

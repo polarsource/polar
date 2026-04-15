@@ -32,6 +32,7 @@ from sqlalchemy import or_, select
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
+from polar.models.organization import OrganizationStatus
 from polar.postgres import create_async_engine
 from polar.worker import enqueue_job
 
@@ -83,7 +84,7 @@ async def prepare(
             select(Organization)
             .where(
                 Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
+                Organization.status != OrganizationStatus.BLOCKED,
                 Organization.feature_settings["seat_based_pricing_enabled"]
                 .as_boolean()
                 .is_(True),

@@ -67,7 +67,9 @@ async def _show_stale_reviews(session: AsyncSession, *, cutoff: datetime) -> int
         console.print("[green]No stale reviews found — all review orgs are recent.")
         return 0
 
-    table = Table(title=f"Stale Reviews (in REVIEW since before {cutoff:%Y-%m-%d %H:%M} UTC)")
+    table = Table(
+        title=f"Stale Reviews (in REVIEW since before {cutoff:%Y-%m-%d %H:%M} UTC)"
+    )
     table.add_column("ID", style="dim")
     table.add_column("Slug")
     table.add_column("Name")
@@ -204,7 +206,9 @@ async def _run_snooze(
 @cli.command()
 @typer_async
 async def snooze_stale_reviews(
-    days: int = typer.Option(14, help="Snooze orgs in REVIEW for more than this many days"),
+    days: int = typer.Option(
+        14, help="Snooze orgs in REVIEW for more than this many days"
+    ),
     execute: bool = typer.Option(
         False, help="Actually run the snooze (default: dry-run)"
     ),

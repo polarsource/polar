@@ -242,7 +242,26 @@ class NumeralTaxService(TaxServiceProtocol):
 
         calculation: NumeralTaxCalculationResponse = response.json()
 
-        tax_jurisdiction = calculation["line_items"][0]["tax_jurisdictions"][0]
+        tax_jurisdictions = calculation["line_items"][0]["tax_jurisdictions"]
+        if len(tax_jurisdictions) == 0:
+            return TaxCalculation(
+                processor_id=calculation["id"],
+                amount=0,
+                currency=currency,
+                tax_behavior=tax_behavior,
+                taxability_reason=TaxabilityReason.not_collecting,
+                tax_rate=TaxRate(
+                    rate_type="percentage",
+                    basis_points=0,
+                    amount=None,
+                    amount_currency=None,
+                    display_name="",
+                    country=address.country,
+                    state=address.get_unprefixed_state(),
+                ),
+            )
+
+        tax_jurisdiction = tax_jurisdictions[0]
         tax_rate = from_numeral_tax_jurisdiction(
             tax_jurisdiction,
             country=address.country,

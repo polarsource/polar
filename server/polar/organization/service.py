@@ -207,8 +207,10 @@ class OrganizationService:
         await session.flush()
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
-            email=organization.email or auth_subject.subject.email,
             name=organization.name,
+            owner_email=auth_subject.subject.email,
+            owner_name=auth_subject.subject.public_name,
+            owner_external_id=str(auth_subject.subject.id),
         )
         await self.add_user(
             session,

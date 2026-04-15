@@ -16,16 +16,23 @@ class PolarSelfService:
         return settings.POLAR_SELF_ENABLED
 
     def enqueue_create_customer(
-        self, *, organization_id: uuid.UUID, email: str, name: str
+        self,
+        *,
+        organization_id: uuid.UUID,
+        name: str,
+        owner_email: str,
+        owner_name: str | None,
+        owner_external_id: str | None,
     ) -> None:
         if not self.is_configured:
             return
         enqueue_job(
             "polar_self.create_customer",
             external_id=str(organization_id),
-            email=email,
             name=name,
-            organization_id=settings.POLAR_ORGANIZATION_ID,
+            owner_email=owner_email,
+            owner_name=owner_name,
+            owner_external_id=owner_external_id,
             product_id=settings.POLAR_FREE_PRODUCT_ID,
         )
 

@@ -40,18 +40,28 @@ class PolarSelfClient:
         )
 
     async def create_customer(
-        self, *, external_id: str, email: str, name: str
+        self,
+        *,
+        external_id: str,
+        name: str,
+        owner_email: str,
+        owner_name: str | None,
+        owner_external_id: str | None,
     ) -> Customer:
-        from polar_sdk.models import CustomerTeamCreate
+        from polar_sdk.models import CustomerTeamCreate, MemberOwnerCreate
         from polar_sdk.models.polarerror import PolarError
 
         with logfire.span("polar.create_customer", external_id=external_id) as span:
             try:
                 return await self._sdk.customers.create_async(
                     request=CustomerTeamCreate(
-                        email=email,
                         name=name,
                         external_id=external_id,
+                        owner=MemberOwnerCreate(
+                            email=owner_email,
+                            name=owner_name,
+                            external_id=owner_external_id,
+                        ),
                     )
                 )
             except PolarError as e:

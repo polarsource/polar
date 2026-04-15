@@ -136,8 +136,10 @@ class TestCreate:
 
         create_customer_mock.assert_called_once_with(
             organization_id=organization.id,
-            email=organization.email or auth_subject.subject.email,
             name=organization.name,
+            owner_email=auth_subject.subject.email,
+            owner_name=auth_subject.subject.public_name,
+            owner_external_id=str(auth_subject.subject.id),
         )
         add_member_mock.assert_called_once_with(
             external_customer_id=str(organization.id),
@@ -149,8 +151,10 @@ class TestCreate:
         assert polar_self_manager.mock_calls == [
             call.enqueue_create_customer(
                 organization_id=organization.id,
-                email=organization.email or auth_subject.subject.email,
                 name=organization.name,
+                owner_email=auth_subject.subject.email,
+                owner_name=auth_subject.subject.public_name,
+                owner_external_id=str(auth_subject.subject.id),
             ),
             call.enqueue_add_member(
                 external_customer_id=str(organization.id),

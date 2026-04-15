@@ -209,7 +209,6 @@ export const useEventCustomerStats = (
     ],
     queryFn: (): Promise<{ items: CustomerStatItem[] }> =>
       unwrap(
-        // @ts-expect-error by-customer isn't in the generated schema while in beta
         api.GET('/v1/events/statistics/by-customer', {
           params: {
             query: { organization_id: organizationId, timezone, ...parameters },
@@ -242,7 +241,6 @@ export const useEventVarianceStats = (
     ],
     queryFn: (): Promise<{ items: VarianceStatItem[] }> =>
       unwrap(
-        // @ts-expect-error by-variance isn't in the generated schema while in beta
         api.GET('/v1/events/statistics/by-variance', {
           params: {
             query: { organization_id: organizationId, timezone, ...parameters },

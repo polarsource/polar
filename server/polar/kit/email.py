@@ -9,7 +9,12 @@ from pydantic_core import PydanticCustomError
 
 from polar.config import settings
 
-if settings.is_testing():
+# We disable email validation locally due to using
+# invalid email domains in the seed script.
+# If you want to enable it, you will need to ensure
+# that the customers / users being created have
+# an email address from a domain with MX records.
+if settings.is_testing() or settings.is_development():
     email_validator.TEST_ENVIRONMENT = True
 
 _email_dns_resolver = caching_resolver()

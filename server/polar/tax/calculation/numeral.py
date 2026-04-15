@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Literal, NotRequired, TypedDict
 
 import httpx
+import logfire
 import structlog
+from opentelemetry import trace
 
 from polar.config import settings
 from polar.enums import TaxBehavior
@@ -25,6 +27,8 @@ from .base import (
 )
 
 log: Logger = structlog.get_logger()
+
+NUMERAL_API_VERSION = "2025-05-12"
 
 
 class NumeralTaxId(TypedDict):
@@ -135,11 +139,21 @@ class NumeralTaxService(TaxServiceProtocol):
         self.client = httpx.AsyncClient(
             base_url="https://api.numeralhq.com",
             headers={
-                "X-API-Version": "2025-05-12",
+                "X-API-Version": NUMERAL_API_VERSION,
                 "Authorization": f"Bearer {settings.NUMERAL_API_KEY}",
             },
         )
 
+    @logfire.instrument(
+        "numeral.calculate",
+        extract_args=[
+            "identifier",
+            "currency",
+            "amount",
+            "tax_behavior",
+            "customer_exempt",
+        ],
+    )
     async def calculate(
         self,
         identifier: uuid.UUID | str,
@@ -151,6 +165,9 @@ class NumeralTaxService(TaxServiceProtocol):
         tax_ids: list[TaxID],
         customer_exempt: bool,
     ) -> TaxCalculation:
+        trace.get_current_span().set_attribute(
+            "numeral.api_version", NUMERAL_API_VERSION
+        )
         customer_type = "BUSINESS" if len(tax_ids) > 0 else "CONSUMER"
         product_category = "EXEMPT" if customer_exempt else tax_code.to_numeral()
 
@@ -241,6 +258,9 @@ class NumeralTaxService(TaxServiceProtocol):
             raise TaxCalculationTechnicalError(str(e)) from e
 
         calculation: NumeralTaxCalculationResponse = response.json()
+        trace.get_current_span().set_attribute(
+            "numeral.calculation_id", calculation["id"]
+        )
 
         tax_jurisdictions = calculation["line_items"][0]["tax_jurisdictions"]
         if len(tax_jurisdictions) == 0:
@@ -281,7 +301,11 @@ class NumeralTaxService(TaxServiceProtocol):
             tax_rate=tax_rate,
         )
 
+    @logfire.instrument("numeral.record")
     async def record(self, calculation_id: str, reference: str) -> str:
+        trace.get_current_span().set_attribute(
+            "numeral.api_version", NUMERAL_API_VERSION
+        )
         try:
             response = await self.client.post(
                 "/tax/transactions",
@@ -307,8 +331,12 @@ class NumeralTaxService(TaxServiceProtocol):
             raise TaxRecordError() from e
 
         transaction: NumeralTaxTransactionResponse = response.json()
+        trace.get_current_span().set_attribute(
+            "numeral.transaction_id", transaction["id"]
+        )
         return transaction["id"]
 
+    @logfire.instrument("numeral.revert")
     async def revert(
         self,
         transaction_id: str,
@@ -316,9 +344,12 @@ class NumeralTaxService(TaxServiceProtocol):
         reverted_amount: int | None = None,
         reverted_tax_amount: int | None = None,
     ) -> str:
+        span = trace.get_current_span()
+        span.set_attribute("numeral.api_version", NUMERAL_API_VERSION)
         refund: NumeralTaxRefundResponse
 
         if reverted_amount is None and reverted_tax_amount is None:
+            span.set_attribute("numeral.refund_type", "full")
             response = await self.client.post(
                 "/tax/refunds",
                 json={
@@ -328,7 +359,10 @@ class NumeralTaxService(TaxServiceProtocol):
             )
             response.raise_for_status()
             refund = response.json()
+            span.set_attribute("numeral.refund_id", refund["id"])
             return refund["id"]
+
+        span.set_attribute("numeral.refund_type", "partial")
 
         assert reverted_amount is not None
         assert reverted_tax_amount is not None
@@ -359,8 +393,10 @@ class NumeralTaxService(TaxServiceProtocol):
         response.raise_for_status()
 
         refund = response.json()
+        span.set_attribute("numeral.refund_id", refund["id"])
         return refund["id"]
 
+    @logfire.instrument("numeral.backfill")
     async def backfill(
         self,
         amount: int,
@@ -371,6 +407,9 @@ class NumeralTaxService(TaxServiceProtocol):
         reference: str,
         transaction_date: datetime,
     ) -> str:
+        trace.get_current_span().set_attribute(
+            "numeral.api_version", NUMERAL_API_VERSION
+        )
         response = await self.client.post(
             "/tax/manual_line_items",
             json={
@@ -392,6 +431,9 @@ class NumeralTaxService(TaxServiceProtocol):
         )
         response.raise_for_status()
         manual_line_item = response.json()
+        trace.get_current_span().set_attribute(
+            "numeral.line_item_id", manual_line_item["line_item_id"]
+        )
         return manual_line_item["line_item_id"]
 
 

@@ -6,12 +6,12 @@ import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import AppealForm from './AppealForm'
 
-interface AIValidationResultProps {
-  organization: schemas['Organization']
-}
-
-const AIValidationResult: React.FC<AIValidationResultProps> = ({
+const AIValidationResult = ({
   organization,
+  isPending,
+}: {
+  organization: schemas['Organization']
+  isPending?: boolean
 }) => {
   const [timedOut, setTimedOut] = useState(false)
   const [hasVerdict, setHasVerdict] = useState(false)
@@ -36,6 +36,15 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   }
 
   const getValidationStatus = () => {
+    if (isPending) {
+      return {
+        type: 'loading',
+        title: 'Retrieving organization status…',
+        message: '',
+        icon: <Loader2 className="h-4 w-4 animate-spin" />,
+      }
+    }
+
     // If we don't have a verdict yet, show loading while polling
     const verdict = reviewStatus.data?.verdict
     if (!verdict && !timedOut && !reviewStatus.isError) {

@@ -31,7 +31,8 @@ export default function ClientPage({
   const { data: payoutAccount } = usePayoutAccount(
     organization.payout_account_id || undefined,
   )
-  const { data: reviewStatus } = useOrganizationReviewStatus(organization.id)
+  const { data: reviewStatus, isPending: isReviewStatusPending } =
+    useOrganizationReviewStatus(organization.id)
 
   const isGrandfathered =
     reviewStatus?.verdict === 'PASS' &&
@@ -188,7 +189,10 @@ export default function ClientPage({
               </p>
             </div>
           ) : (
-            <AIValidationResult organization={organization} />
+            <AIValidationResult
+              organization={organization}
+              isPending={isReviewStatusPending}
+            />
           )}
         </Section>
 

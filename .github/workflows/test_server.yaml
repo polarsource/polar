@@ -292,9 +292,6 @@ jobs:
         with:
           python-version-file: "server/pyproject.toml"
 
-      - name: Install CJK fonts
-        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
-
       - name: 🔧 uv install
         working-directory: ./server
         run: |

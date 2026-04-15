@@ -164,4 +164,31 @@ def run(ctx: Context) -> bool:
     else:
         step_status(True, "Node.js", "not found (will install via nvm)")
 
+    # Tinybird CLI - required by backend tests
+    if check_command_exists("tb"):
+        step_status(True, "Tinybird CLI", "installed")
+    else:
+        console.print("  [yellow]Tinybird CLI not found, installing...[/yellow]")
+        with step_spinner("Installing Tinybird CLI..."):
+            result = run_command(
+                ["bash", "-c", "curl -sSL https://tinybird.co/install.sh | bash"],
+                capture=True,
+            )
+        if result and result.returncode == 0:
+            if check_command_exists("tb"):
+                step_status(True, "Tinybird CLI", "installed")
+            else:
+                # The install script puts tb in ~/.local/bin which may not be in PATH
+                console.print(
+                    "  [dim]tb not found in PATH, running uv tool update-shell"
+                    " to add ~/.local/bin to your shell profile...[/dim]"
+                )
+                run_command(["uv", "tool", "update-shell"], capture=True)
+                step_status(True, "Tinybird CLI", "installed (restart your shell to pick up PATH changes)")
+        else:
+            step_status(False, "Tinybird CLI", "installation failed")
+            if result:
+                console.print(f"[dim]{result.stderr}[/dim]")
+            prereqs_ok = False
+
     return prereqs_ok

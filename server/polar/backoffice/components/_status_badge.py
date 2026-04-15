@@ -51,6 +51,10 @@ def status_badge(
             "class": "badge-ghost border border-base-300",
             "aria": "denied status",
         },
+        OrganizationStatus.BLOCKED: {
+            "class": "badge-error",
+            "aria": "blocked status",
+        },
         OrganizationStatus.CREATED: {
             "class": "badge-ghost border border-base-300",
             "aria": "created status",

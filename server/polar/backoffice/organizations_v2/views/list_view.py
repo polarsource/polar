@@ -306,6 +306,13 @@ class OrganizationListView:
                 badge_variant="error",
             ),
             Tab(
+                label="Blocked",
+                url=str(request.url_for("organizations:list")) + "?status=blocked",
+                active=status_filter == OrganizationStatus.BLOCKED,
+                count=status_counts.get(OrganizationStatus.BLOCKED, 0),
+                badge_variant="error",
+            ),
+            Tab(
                 label="Offboarding",
                 url=str(request.url_for("organizations:list")) + "?status=offboarding",
                 active=status_filter == OrganizationStatus.OFFBOARDING,

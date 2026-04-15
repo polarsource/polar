@@ -197,6 +197,7 @@ class OrganizationStatus(StrEnum):
     SNOOZED = "snoozed"
     DENIED = "denied"
     ACTIVE = "active"
+    BLOCKED = "blocked"
     OFFBOARDING = "offboarding"
 
     def get_display_name(self) -> str:
@@ -206,6 +207,7 @@ class OrganizationStatus(StrEnum):
             OrganizationStatus.SNOOZED: "Snoozed",
             OrganizationStatus.DENIED: "Denied",
             OrganizationStatus.ACTIVE: "Active",
+            OrganizationStatus.BLOCKED: "Blocked",
             OrganizationStatus.OFFBOARDING: "Offboarding",
         }[self]
 

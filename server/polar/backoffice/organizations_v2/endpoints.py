@@ -211,6 +211,8 @@ async def list_organizations(
         status_filter = OrganizationStatus.REVIEW
     elif status == "snoozed":
         status_filter = OrganizationStatus.SNOOZED
+    elif status == "blocked":
+        status_filter = OrganizationStatus.BLOCKED
 
     # Build query
     stmt = (
@@ -227,8 +229,15 @@ async def list_organizations(
     if status_filter:
         stmt = stmt.where(Organization.status == status_filter)
     elif not q:
-        # By default, exclude denied organizations (but not when searching)
-        stmt = stmt.where(Organization.status != OrganizationStatus.DENIED)
+        # By default, exclude denied and blocked organizations (but not when searching)
+        stmt = stmt.where(
+            Organization.status.notin_(
+                [
+                    OrganizationStatus.DENIED,
+                    OrganizationStatus.BLOCKED,
+                ]
+            )
+        )
 
     if q:
         try:

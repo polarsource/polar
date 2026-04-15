@@ -302,6 +302,7 @@ class LegacyOrganizationStatus(StrEnum):
             OrganizationStatus.SNOOZED: LegacyOrganizationStatus.UNDER_REVIEW,
             OrganizationStatus.DENIED: LegacyOrganizationStatus.DENIED,
             OrganizationStatus.ACTIVE: LegacyOrganizationStatus.ACTIVE,
+            OrganizationStatus.BLOCKED: LegacyOrganizationStatus.DENIED,
             OrganizationStatus.OFFBOARDING: LegacyOrganizationStatus.ACTIVE,
         }
         try:

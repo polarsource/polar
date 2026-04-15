@@ -4,7 +4,6 @@ import {
   useCustomerCancelSubscription,
   useCustomerOrders,
   usePortalAuthenticatedUser,
-  useProduct,
 } from '@/hooks/queries'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
@@ -17,7 +16,6 @@ import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
-import { getPendingTotalAmount } from '../Subscriptions/pricing'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { SeatManagementTable } from './SeatManagementTable'
@@ -55,16 +53,6 @@ const CustomerPortalSubscription = ({
   const pendingProduct = products.find(
     (product) => product.id === pendingUpdate?.product_id,
   )
-
-  const pendingSeats = pendingUpdate?.seats ?? subscription.seats ?? 1
-  const pendingAmount =
-    pendingProduct && subscription.currency
-      ? getPendingTotalAmount(
-          pendingProduct as schemas['Product'],
-          subscription.currency,
-          pendingSeats,
-        )
-      : null
 
   const hasInvoices = orders?.items && orders.items.length > 0
 

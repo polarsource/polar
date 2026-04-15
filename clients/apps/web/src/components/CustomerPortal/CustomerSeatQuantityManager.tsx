@@ -8,7 +8,6 @@ import { MinusIcon, PlusIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import { Well, WellContent } from '../Shared/Well'
 
 interface CustomerSeatQuantityManagerProps {
   api: Client
@@ -16,7 +15,6 @@ interface CustomerSeatQuantityManagerProps {
   totalSeats: number
   availableSeats: number
   prorationBehavior?: schemas['CustomerOrganization']['proration_behavior']
-  pendingUpdate?: schemas['PendingSubscriptionUpdate'] | null
   onUpdate?: () => void
 }
 
@@ -26,7 +24,6 @@ export const CustomerSeatQuantityManager = ({
   totalSeats,
   availableSeats,
   prorationBehavior,
-  pendingUpdate,
   onUpdate,
 }: CustomerSeatQuantityManagerProps) => {
   const updateSubscription = useCustomerUpdateSubscription(api)

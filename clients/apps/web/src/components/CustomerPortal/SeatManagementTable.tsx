@@ -194,7 +194,6 @@ export const SeatManagementTable = ({
           totalSeats={totalSeats}
           availableSeats={availableSeats}
           prorationBehavior={prorationBehavior}
-          pendingUpdate={pendingUpdate}
         />
       )}
 

@@ -22,7 +22,6 @@ import { useOrganizationSeats } from '@/hooks/queries/seats'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { ArrowUpRightIcon, Clock, MoreVertical } from 'lucide-react'
+import { ArrowUpRightIcon, MoreVertical } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 

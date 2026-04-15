@@ -1,4 +1,4 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import dotenv from 'dotenv'
 import { execSync } from 'node:child_process'
@@ -39,9 +39,9 @@ const PROMPT_FILE = path.join(CONFIG_DIR, 'prompt.md')
 const LOCKS_FILE = path.join(CONFIG_DIR, 'locks.json')
 const CACHE_FILE = path.join(CONFIG_DIR, '.cache.json')
 
-const google = createGoogleGenerativeAI({
+const openai = createOpenAI({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
-  baseURL: 'https://gateway.pydantic.dev/proxy/google-vertex',
+  baseURL: 'https://gateway-us.pydantic.dev/proxy/chat/',
 })
 
 async function callLLM(
@@ -64,10 +64,10 @@ async function callLLM(
     .replace('{EN_JSON}', JSON.stringify(sourceStrings, null, 2))
     .trim()
 
-  log.step(`Calling Gemini 3 Pro (Preview)...`)
+  log.step(`Calling OpenAI (gpt-5.4-mini)...`)
 
   const { text } = await generateText({
-    model: google('gemini-3-pro-preview'),
+    model: openai('gpt-5.4-mini'),
     system: systemPromptPart,
     prompt: userPromptPart,
     temperature: 0.3,
@@ -84,7 +84,7 @@ async function callLLM(
     return normalizeResponse(parsed)
   } catch {
     throw new Error(
-      `Invalid JSON response from Gemini for ${targetLocale}: ${cleaned}`,
+      `Invalid JSON response from OpenAI for ${targetLocale}: ${cleaned}`,
     )
   }
 }

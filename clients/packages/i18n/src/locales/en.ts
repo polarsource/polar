@@ -92,6 +92,32 @@ export default {
       },
       additionalMeteredUsage: 'Additional metered usage',
       perUnit: '/ unit',
+      perSeat: 'per seat',
+      seats: {
+        label: 'Seats',
+        numberOfSeats: 'Number of seats',
+        count: {
+          _mode: 'plural',
+          '=1': '# seat',
+          other: '# seats',
+        },
+        range: {
+          value: '{min} - {max} seats',
+          _llmContext:
+            'Shown when a seat-based product has both a minimum and maximum seat count. Displayed as: "5 - 100 seats". Always plural.',
+        },
+        minimum: {
+          value: 'Minimum {min} seats',
+          _llmContext:
+            'Shown when a seat-based product has a minimum seat count but no maximum. The {min} value is always > 1 in this context, so the noun is always plural.',
+        },
+        maximum: {
+          value: 'Maximum {max} seats',
+          _llmContext:
+            'Shown when a seat-based product has a maximum seat count but no minimum constraint. The {max} value can be any number, but the message is always rendered with the plural noun.',
+        },
+        updateFailed: 'Failed to update seats',
+      },
       discount: {
         duration: {
           months: {

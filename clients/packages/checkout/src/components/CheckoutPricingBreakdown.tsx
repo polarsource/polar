@@ -168,14 +168,15 @@ const CheckoutPricingBreakdown = ({
           {seatRows?.map((row, i) => (
             <DetailRow
               key={i}
-              title={`${row.seats} ${row.seats === 1 ? 'seat' : 'seats'}`}
+              title={t('checkout.pricing.seats.count', { count: row.seats })}
               subtitle={
                 '· ' +
-                formatCurrency('compact', locale)(
+                formatCurrency('standard', locale)(
                   row.pricePerSeat,
                   checkout.currency!,
                 ) +
-                ' per seat'
+                ' ' +
+                t('checkout.pricing.perSeat')
               }
               className="text-gray-600"
             >

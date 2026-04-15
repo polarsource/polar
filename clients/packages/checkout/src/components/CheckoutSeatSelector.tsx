@@ -2,10 +2,14 @@
 
 import { type schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import type { AcceptedLocale } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import { ErrorResponse } from '../providers/CheckoutProvider'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
@@ -22,24 +26,26 @@ export interface CheckoutSeatSelectorProps {
 const CheckoutSeatSelector = ({
   checkout,
   update,
-  locale,
+  locale = DEFAULT_LOCALE,
   compact = false,
 }: CheckoutSeatSelectorProps) => {
+  const t = useTranslations(locale)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const autoCorrectAttempted = useRef(false)
 
-  const getErrorMessage = (
-    error: ErrorResponse<'checkouts:client_update'> | null,
-  ): string => {
-    if (error && error.error === 'PolarRequestValidationError') {
-      return error.detail[0]?.msg
-    }
+  const getErrorMessage = useCallback(
+    (error: ErrorResponse<'checkouts:client_update'> | null): string => {
+      if (error && error.error === 'PolarRequestValidationError') {
+        return error.detail[0]?.msg
+      }
 
-    return 'Failed to update seats'
-  }
+      return t('checkout.pricing.seats.updateFailed')
+    },
+    [t],
+  )
 
   // Check if the product has seat-based pricing
   const productPrice = checkout.product_price
@@ -92,6 +98,7 @@ const CheckoutSeatSelector = ({
     minimumSeats,
     isUpdating,
     update,
+    getErrorMessage,
   ])
 
   if (!isSeatBased) {
@@ -155,11 +162,14 @@ const CheckoutSeatSelector = ({
   // Build seat limit description
   const getSeatLimitText = () => {
     if (minimumSeats > 1 && hasMaximumLimit) {
-      return `${minimumSeats} - ${maximumSeats} seats`
+      return t('checkout.pricing.seats.range', {
+        min: minimumSeats,
+        max: maximumSeats,
+      })
     } else if (minimumSeats > 1) {
-      return `Minimum ${minimumSeats} seats`
+      return t('checkout.pricing.seats.minimum', { min: minimumSeats })
     } else if (hasMaximumLimit) {
-      return `Maximum ${maximumSeats} seats`
+      return t('checkout.pricing.seats.maximum', { max: maximumSeats })
     }
     return null
   }
@@ -171,7 +181,9 @@ const CheckoutSeatSelector = ({
       <div className="flex flex-col gap-3">
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium dark:text-white">Seats</span>
+            <span className="text-sm font-medium dark:text-white">
+              {t('checkout.pricing.seats.label')}
+            </span>
           </div>
           {isFixedSeats ? (
             <span className="text-sm font-medium dark:text-white">
@@ -275,7 +287,9 @@ const CheckoutSeatSelector = ({
 
       {/* Seat Selector */}
       <div className="flex flex-col gap-2">
-        <label className="text-lg">Number of seats</label>
+        <label className="text-lg">
+          {t('checkout.pricing.seats.numberOfSeats')}
+        </label>
         {isFixedSeats ? (
           <span className="min-w-[3.5rem] text-2xl font-light text-gray-900 dark:text-white">
             {displaySeats}

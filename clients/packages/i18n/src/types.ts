@@ -77,6 +77,19 @@ export type LocaleShape<T> = {
           : T[K]
 }
 
+// A locale shape where every nested key is optional, except plural objects
+// and annotated entries which remain atomic (all-or-nothing). This lets non-
+// English locale files lag behind en.ts without breaking type checking — the
+// CI translation job fills the gaps on every PR, and at runtime missing keys
+// fall back to English via getTranslations' deep merge.
+export type DeepPartialLocale<T> = T extends { _mode: string }
+  ? T
+  : T extends { value: string }
+    ? T
+    : T extends object
+      ? { [K in keyof T]?: DeepPartialLocale<T[K]> }
+      : T
+
 // Get all required interpolation keys for a translation key
 // Plurals always require 'count' + any {placeholders} in the templates
 type InterpolationKeys<K extends TranslationKey> =

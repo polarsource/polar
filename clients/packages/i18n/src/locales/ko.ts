@@ -1,3 +1,5 @@
+import type { DeepPartialLocale, LocaleShape, Translations } from '../types'
+
 export default {
   checkout: {
     footer: {
@@ -88,6 +90,7 @@ export default {
           _mode: 'plural',
         },
       },
+      perSeat: '좌석당',
     },
     trial: {
       ends: '체험 종료일: {endDate}',
@@ -265,4 +268,4 @@ export default {
     many: '번째',
     other: '번째',
   },
-} as const
+} as const satisfies DeepPartialLocale<LocaleShape<Translations>>

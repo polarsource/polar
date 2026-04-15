@@ -40,10 +40,11 @@
   ],
   "devDependencies": {
     "@ai-sdk/google": "^2.0.67",
+    "@ai-sdk/openai": "^3.0.52",
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
-    "ai": "^5.0.171",
+    "ai": "^6.0.154",
     "dotenv": "^16.6.1",
     "react": "^19.2.5",
     "tsup": "^8.5.1",

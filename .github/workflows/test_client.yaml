@@ -70,6 +70,9 @@ jobs:
       - name: 💅 Lint
         run: pnpm run lint
 
+      - name: 🌍 Validate i18n
+        run: pnpm --filter @polar-sh/i18n validate
+
       - name: 👀 Typecheck
         run: pnpm run typecheck
 

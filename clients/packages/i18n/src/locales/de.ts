@@ -1,3 +1,5 @@
+import type { DeepPartialLocale, LocaleShape, Translations } from '../types'
+
 export default {
   checkout: {
     footer: {
@@ -88,6 +90,7 @@ export default {
           _mode: 'plural',
         },
       },
+      perSeat: 'pro Platz',
     },
     trial: {
       ends: 'Testphase endet am {endDate}',
@@ -272,4 +275,4 @@ export default {
     many: '.',
     other: '.',
   },
-} as const
+} as const satisfies DeepPartialLocale<LocaleShape<Translations>>

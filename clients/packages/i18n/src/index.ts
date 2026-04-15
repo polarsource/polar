@@ -6,7 +6,12 @@ export type { TranslateFn, TranslationKey, Translations } from './types'
 
 import type { AcceptedLocale, SupportedLocale } from './config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config'
-import type { LocaleShape, TranslateFn, Translations } from './types'
+import type {
+  DeepPartialLocale,
+  LocaleShape,
+  TranslateFn,
+  Translations,
+} from './types'
 
 export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {
   if (SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
@@ -40,7 +45,12 @@ import ptPT from './locales/pt-PT'
 import sv from './locales/sv'
 import ko from './locales/ko'
 
-const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
+type LocalesRecord = { en: LocaleShape<Translations> } & Record<
+  Exclude<SupportedLocale, 'en'>,
+  DeepPartialLocale<LocaleShape<Translations>>
+>
+
+const translations: LocalesRecord = {
   en,
   nl,
   sv,
@@ -54,12 +64,41 @@ const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
   ko,
 }
 
+const isAtomicLeaf = (v: unknown): boolean => {
+  if (v === null || typeof v !== 'object') return true
+  if ('_mode' in v) return true
+  const value = (v as { value?: unknown }).value
+  if (typeof value === 'string') return true
+  return false
+}
+
+const deepMerge = (base: unknown, override: unknown): unknown => {
+  if (override === undefined) return base
+  if (isAtomicLeaf(override) || isAtomicLeaf(base)) return override
+  const result: Record<string, unknown> = {
+    ...(base as Record<string, unknown>),
+  }
+  for (const key of Object.keys(override as Record<string, unknown>)) {
+    result[key] = deepMerge(
+      (base as Record<string, unknown>)[key],
+      (override as Record<string, unknown>)[key],
+    )
+  }
+  return result
+}
+
+const mergedCache = new Map<SupportedLocale, Translations>()
+
 export function getTranslations(
   locale: AcceptedLocale = DEFAULT_LOCALE,
 ): Translations {
   const translationLocale = getTranslationLocale(locale)
-  return (translations[translationLocale] ??
-    translations[DEFAULT_LOCALE]) as Translations
+  if (translationLocale === DEFAULT_LOCALE) return en
+  const cached = mergedCache.get(translationLocale)
+  if (cached) return cached
+  const merged = deepMerge(en, translations[translationLocale]) as Translations
+  mergedCache.set(translationLocale, merged)
+  return merged
 }
 
 export const useTranslations = (locale: AcceptedLocale): TranslateFn => {

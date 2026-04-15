@@ -38,7 +38,7 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
         ) : (
           <ListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              {props.org.name} doesn&apos;t have any webhooks yet
+              {`${props.org.name} doesn't have any webhooks yet`}
             </p>
           </ListGroup.Item>
         )}

@@ -19,6 +19,7 @@ DECISION_BADGE: dict[str, str] = {
     "APPROVE": "badge-success",
     "DENY": "badge-error",
     "ESCALATE": "badge-warning",
+    "SNOOZE": "badge-info",
 }
 
 

@@ -1607,7 +1607,7 @@ async def snooze_dialog(
         await review_repo.record_human_decision(
             organization_id=organization_id,
             reviewer_id=user_session.user.id,
-            decision=DecisionType.ESCALATE,
+            decision=DecisionType.SNOOZE,
             reason=reason,
         )
 

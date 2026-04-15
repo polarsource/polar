@@ -24,6 +24,7 @@ class DecisionType(StrEnum):
     APPROVE = "APPROVE"
     DENY = "DENY"
     ESCALATE = "ESCALATE"
+    SNOOZE = "SNOOZE"
 
 
 class ReviewContext(StrEnum):

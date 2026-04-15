@@ -40,6 +40,8 @@ export default function ClientPage({
 
   const isDenied = organization.status === 'denied'
 
+  const canAppeal = reviewStatus?.appeal_decision !== 'rejected'
+
   const isActive = ['active', 'review', 'snoozed'].includes(organization.status)
 
   const [hasSubmittedDetails, setHasSubmittedDetails] = useState(
@@ -166,7 +168,7 @@ export default function ClientPage({
               kyc={true}
               onSubmitted={handleDetailsSubmitted}
             />
-          ) : isDenied ? (
+          ) : isDenied && !canAppeal ? (
             <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
               <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
                 <BanIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />

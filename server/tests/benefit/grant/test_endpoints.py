@@ -8,7 +8,6 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
-from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit, create_benefit_grant
 
@@ -58,9 +57,7 @@ class TestListBenefitGrants:
         customer: Customer,
         subscription: Subscription,
     ) -> None:
-        benefit = await create_benefit(
-            save_fixture, organization=organization
-        )
+        benefit = await create_benefit(save_fixture, organization=organization)
         await create_benefit_grant(
             save_fixture,
             customer,

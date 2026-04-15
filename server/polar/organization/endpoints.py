@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.audit.enums import AuditAction, AuditResourceType
 from polar.audit.service import record as audit_record
 from polar.auth.models import is_user
 from polar.config import settings
@@ -423,8 +424,8 @@ async def invite_member(
     await audit_record(
         session,
         organization.id,
-        "member_invited",
-        resource_type="organization",
+        AuditAction.member_invited,
+        resource_type=AuditResourceType.organization,
         resource_id=organization.id,
         metadata={
             "invited_email": invite_body.email,
@@ -490,8 +491,8 @@ async def leave_organization(
     await audit_record(
         session,
         organization.id,
-        "member_left",
-        resource_type="organization",
+        AuditAction.member_left,
+        resource_type=AuditResourceType.organization,
         resource_id=organization.id,
         metadata={
             "user_id": str(user.id),
@@ -563,8 +564,8 @@ async def remove_member(
     await audit_record(
         session,
         organization.id,
-        "member_removed",
-        resource_type="organization",
+        AuditAction.member_removed,
+        resource_type=AuditResourceType.organization,
         resource_id=organization.id,
         metadata={
             "removed_user_id": str(target_user_id),

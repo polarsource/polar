@@ -7,6 +7,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.audit.context import AuditContext, AuditInfo
+from polar.audit.enums import AuditAction, AuditActorType, AuditResourceType
 from polar.models.audit_log import AuditLog
 
 log = structlog.get_logger()
@@ -98,9 +99,9 @@ def _serialize_value(value: Any) -> Any:
 async def record(
     session: AsyncSession,
     organization_id: UUID,
-    action: str,
+    action: AuditAction,
     *,
-    resource_type: str,
+    resource_type: AuditResourceType,
     resource_id: UUID,
     changes: dict[str, dict[str, Any]] | None = None,
     metadata: dict[str, Any] | None = None,
@@ -123,7 +124,7 @@ async def record(
         actor_name = ctx.actor_name
         ip_address = ctx.ip_address
     else:
-        actor_type = "system"
+        actor_type = AuditActorType.system
         actor_id = None
         actor_name = None
         ip_address = None

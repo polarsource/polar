@@ -5,10 +5,12 @@ import typing
 from dataclasses import dataclass
 from uuid import UUID
 
+from polar.audit.enums import AuditActorType
+
 
 @dataclass(frozen=True)
 class AuditInfo:
-    actor_type: str  # "user", "admin", "system"
+    actor_type: AuditActorType
     actor_id: UUID | None
     actor_name: str | None
     ip_address: str | None
@@ -23,7 +25,7 @@ class AuditContext:
     def set(
         cls,
         *,
-        actor_type: str,
+        actor_type: AuditActorType,
         actor_id: UUID | None = None,
         actor_name: str | None = None,
         ip_address: str | None = None,

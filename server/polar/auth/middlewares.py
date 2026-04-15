@@ -6,6 +6,7 @@ from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
 from polar.audit.context import AuditContext
+from polar.audit.enums import AuditActorType
 from polar.customer_session.service import (
     CUSTOMER_SESSION_TOKEN_PREFIX,
 )
@@ -189,14 +190,14 @@ class AuthSubjectMiddleware:
             ip_address = request.client.host if request.client else None
             if is_user(auth_subject):
                 AuditContext.set(
-                    actor_type="user",
+                    actor_type=AuditActorType.user,
                     actor_id=auth_subject.subject.id,
                     actor_name=auth_subject.subject.email,
                     ip_address=ip_address,
                 )
             elif is_organization(auth_subject):
                 AuditContext.set(
-                    actor_type="user",
+                    actor_type=AuditActorType.user,
                     actor_id=None,
                     actor_name=auth_subject.subject.name,
                     ip_address=ip_address,

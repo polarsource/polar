@@ -2,6 +2,7 @@ from fastapi import Depends, Request
 from fastapi.exceptions import HTTPException
 
 from polar.audit.context import AuditContext
+from polar.audit.enums import AuditActorType
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.models.user_session import UserSession
@@ -31,7 +32,7 @@ async def get_admin(
     # so AuthSubjectMiddleware doesn't run here)
     ip_address = request.client.host if request.client else None
     AuditContext.set(
-        actor_type="admin",
+        actor_type=AuditActorType.admin,
         actor_id=user.id,
         actor_name=user.email,
         ip_address=ip_address,

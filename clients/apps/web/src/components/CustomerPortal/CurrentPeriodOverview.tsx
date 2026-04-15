@@ -1,4 +1,3 @@
-import { useProduct } from '@/hooks/queries'
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -7,11 +6,13 @@ import ProductPriceLabel from '../Products/ProductPriceLabel'
 
 interface CurrentPeriodOverviewProps {
   subscription: schemas['CustomerSubscription']
+  products: schemas['CustomerProduct'][]
   api: Client
 }
 
 export const CurrentPeriodOverview = ({
   subscription,
+  products,
   api,
 }: CurrentPeriodOverviewProps) => {
   const { data: subscriptionPreview } = useCustomerSubscriptionChargePreview(
@@ -24,7 +25,7 @@ export const CurrentPeriodOverview = ({
     }
     return subscription.product_id
   }, [subscription])
-  const { data: product } = useProduct(productId)
+  const product = products.find((product) => product.id === productId)
 
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'

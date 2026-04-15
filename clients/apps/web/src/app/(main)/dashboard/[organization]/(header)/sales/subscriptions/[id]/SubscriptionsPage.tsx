@@ -99,12 +99,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
             <h2 className="text-xl font-normal">Subscription</h2>
-            {subscription.pending_update && (
-              <Pill color="yellow">
-                <Clock className="size-3" />
-                <span>Update Pending</span>
-              </Pill>
-            )}
           </div>
         </div>
       }

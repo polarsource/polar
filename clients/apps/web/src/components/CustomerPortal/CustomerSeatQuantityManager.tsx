@@ -8,6 +8,7 @@ import { MinusIcon, PlusIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import { Well, WellContent } from '../Shared/Well'
 
 interface CustomerSeatQuantityManagerProps {
   api: Client
@@ -161,19 +162,6 @@ export const CustomerSeatQuantityManager = ({
           </div>
         </div>
       </div>
-
-      {!hasChanges &&
-        pendingUpdate?.seats != null &&
-        pendingUpdate.seats !== totalSeats && (
-          <span className="dark:text-polar-500 mt-3 text-sm text-gray-500">
-            A change to{' '}
-            <span className="font-medium">
-              {pendingUpdate.seats}{' '}
-              {pendingUpdate.seats === 1 ? 'seat' : 'seats'}
-            </span>{' '}
-            is scheduled for your next billing cycle.
-          </span>
-        )}
 
       {hasChanges && (
         <div className="mt-4 flex flex-col gap-3">

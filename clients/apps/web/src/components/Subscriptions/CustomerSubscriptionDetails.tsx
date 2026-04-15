@@ -17,6 +17,7 @@ import { useState } from 'react'
 import CustomerPortalSubscription from '../CustomerPortal/CustomerPortalSubscription'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
+import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
@@ -62,6 +63,9 @@ const CustomerSubscriptionDetails = ({
   const router = useRouter()
 
   const pendingUpdate = subscription.pending_update
+  const pendingProduct = products.find(
+    (product) => product.id === pendingUpdate?.product_id,
+  )
 
   if (!organization) {
     return null
@@ -70,52 +74,48 @@ const CustomerSubscriptionDetails = ({
   return (
     <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent">
       <CustomerSubscriptionHeader subscription={subscription} />
-      <div className="flex flex-col gap-y-2 text-sm">
-        <div className="flex flex-row items-center justify-between">
-          <span className="dark:text-polar-500 text-gray-500">Status</span>
-          <SubscriptionStatusLabel subscription={subscription} />
-        </div>
+      <div className="flex flex-col text-sm">
+        <DetailRow
+          label="Status"
+          value={<SubscriptionStatusLabel subscription={subscription} />}
+        />
         {subscription.started_at && (
-          <div className="flex flex-row items-center justify-between">
-            <span className="dark:text-polar-500 text-gray-500">
-              Start Date
-            </span>
-            <span>
+          <DetailRow
+            label="Start Date"
+            value={
               <FormattedDateTime
                 datetime={subscription.started_at}
                 dateStyle="long"
               />
-            </span>
-          </div>
+            }
+          />
         )}
         {subscription.trial_end && subscription.status === 'trialing' ? (
-          <div className="flex flex-row items-center justify-between">
-            <span className="dark:text-polar-500 text-gray-500">
-              Trial Ends
-            </span>
-            <span>
+          <DetailRow
+            label="Trial Ends"
+            value={
               <FormattedDateTime
                 datetime={subscription.trial_end}
                 dateStyle="long"
               />
-            </span>
-          </div>
+            }
+          />
         ) : (
           !subscription.ended_at &&
           subscription.current_period_end && (
-            <div className="flex flex-row items-center justify-between">
-              <span className="dark:text-polar-500 text-gray-500">
-                {subscription.cancel_at_period_end
+            <DetailRow
+              label={
+                subscription.cancel_at_period_end
                   ? 'Expiry Date'
-                  : 'Renewal Date'}
-              </span>
-              <span>
+                  : 'Renewal Date'
+              }
+              value={
                 <FormattedDateTime
                   datetime={subscription.current_period_end}
                   dateStyle="long"
                 />
-              </span>
-            </div>
+              }
+            />
           )
         )}
         {subscription.meters.length > 0 && (
@@ -123,46 +123,56 @@ const CustomerSubscriptionDetails = ({
             <span className="text-lg">Metered Usage</span>
             <div className="flex flex-col gap-y-2">
               {subscription.meters.map((subscriptionMeter) => (
-                <div
+                <DetailRow
                   key={subscriptionMeter.meter.id}
-                  className="flex flex-row items-center justify-between"
-                >
-                  <span className="dark:text-polar-500 text-gray-500">
-                    {subscriptionMeter.meter.name}
-                  </span>
-                  <span>
-                    {formatCurrency('compact')(
-                      subscriptionMeter.amount,
-                      subscription.currency,
-                    )}
-                  </span>
-                </div>
+                  label={subscriptionMeter.meter.name}
+                  value={formatCurrency('compact')(
+                    subscriptionMeter.amount,
+                    subscription.currency,
+                  )}
+                />
               ))}
             </div>
           </div>
         )}
-        {pendingUpdate && (
-          <div className="flex flex-row items-center justify-between">
-            <span className="dark:text-polar-500 text-gray-500">
-              Update in effect from
-            </span>
-            <span>
-              <FormattedDateTime
-                datetime={pendingUpdate.applies_at}
-                dateStyle="long"
-              />
-            </span>
-          </div>
-        )}
         {subscription.ended_at && (
-          <div className="flex flex-row items-center justify-between">
-            <span className="dark:text-polar-500 text-gray-500">Expired</span>
-            <span>
+          <DetailRow
+            label="Expired"
+            value={
               <FormattedDateTime
                 datetime={subscription.ended_at}
                 dateStyle="long"
               />
-            </span>
+            }
+          />
+        )}
+
+        {pendingUpdate && (
+          <div className="mt-4 flex flex-col gap-y-2">
+            <h3>Pending Update</h3>
+            <div className="flex flex-col">
+              {pendingProduct && (
+                <DetailRow
+                  label="New Product"
+                  value={`${subscription.product.name} -> ${pendingProduct?.name}`}
+                />
+              )}
+              {pendingUpdate.seats !== null && (
+                <DetailRow
+                  label="Seats"
+                  value={`${subscription.seats} -> ${pendingUpdate.seats}`}
+                />
+              )}
+              <DetailRow
+                label="Update in effect from"
+                value={
+                  <FormattedDateTime
+                    datetime={pendingUpdate.applies_at}
+                    dateStyle="long"
+                  />
+                }
+              />
+            </div>
           </div>
         )}
       </div>
@@ -237,6 +247,7 @@ const CustomerSubscriptionDetails = ({
               api={api}
               customerSessionToken={customerSessionToken}
               subscription={subscription}
+              products={products}
             />
           </div>
         }

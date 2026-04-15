@@ -6,9 +6,11 @@ import { schemas } from '@polar-sh/client'
 
 const ClientPage = ({
   subscription,
+  products,
   customerSessionToken,
 }: {
   subscription: schemas['CustomerSubscription']
+  products: schemas['CustomerProduct'][]
   customerSessionToken: string
 }) => {
   const api = createClientSideAPI(customerSessionToken)
@@ -17,6 +19,7 @@ const ClientPage = ({
       api={api}
       customerSessionToken={customerSessionToken}
       subscription={subscription}
+      products={products}
     />
   )
 }

@@ -26,10 +26,12 @@ const CustomerPortalSubscription = ({
   api,
   customerSessionToken,
   subscription,
+  products,
 }: {
   api: Client
   customerSessionToken: string
   subscription: schemas['CustomerSubscription']
+  products: schemas['CustomerProduct'][]
 }) => {
   const {
     show: showCancelModal,
@@ -50,15 +52,15 @@ const CustomerPortalSubscription = ({
   const cancelSubscription = useCustomerCancelSubscription(api)
 
   const pendingUpdate = subscription.pending_update
-  const { data: pendingProduct } = useProduct(
-    pendingUpdate?.product_id ?? undefined,
+  const pendingProduct = products.find(
+    (product) => product.id === pendingUpdate?.product_id,
   )
 
   const pendingSeats = pendingUpdate?.seats ?? subscription.seats ?? 1
   const pendingAmount =
     pendingProduct && subscription.currency
       ? getPendingTotalAmount(
-          pendingProduct,
+          pendingProduct as schemas['Product'],
           subscription.currency,
           pendingSeats,
         )
@@ -82,63 +84,26 @@ const CustomerPortalSubscription = ({
 
   return (
     <div className="flex flex-col gap-8">
-      {pendingProduct ? (
-        <div className="flex flex-col gap-y-1">
-          <div className="flex flex-row items-baseline gap-x-4 text-gray-400 line-through">
-            <h3 className="text-xl">{subscription.product.name}</h3>
-            <span className="text-xl">
-              {subscription.amount && subscription.currency ? (
-                <AmountLabel
-                  amount={subscription.amount}
-                  currency={subscription.currency}
-                  interval={subscription.recurring_interval}
-                  intervalCount={subscription.recurring_interval_count}
-                />
-              ) : (
-                'Free'
-              )}
-            </span>
-          </div>
-          <div className="flex flex-row items-baseline gap-x-4">
-            <h3 className="text-xl">{pendingProduct.name}</h3>
-            <span className="dark:text-polar-500 text-xl text-gray-500">
-              {pendingAmount !== null ? (
-                <AmountLabel
-                  amount={pendingAmount}
-                  currency={subscription.currency}
-                  interval={subscription.recurring_interval}
-                  intervalCount={subscription.recurring_interval_count}
-                />
-              ) : (
-                'Free'
-              )}
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <h3 className="text-xl">{subscription.product.name}</h3>
-        </div>
-      )}
+      <div>
+        <h3 className="text-xl">{subscription.product.name}</h3>
+      </div>
 
       <div className="flex flex-col text-sm">
-        {!pendingProduct && (
-          <DetailRow
-            label="Amount"
-            value={
-              subscription.amount && subscription.currency ? (
-                <AmountLabel
-                  amount={subscription.amount}
-                  currency={subscription.currency}
-                  interval={subscription.recurring_interval}
-                  intervalCount={subscription.recurring_interval_count}
-                />
-              ) : (
-                'Free'
-              )
-            }
-          />
-        )}
+        <DetailRow
+          label="Amount"
+          value={
+            subscription.amount && subscription.currency ? (
+              <AmountLabel
+                amount={subscription.amount}
+                currency={subscription.currency}
+                interval={subscription.recurring_interval}
+                intervalCount={subscription.recurring_interval_count}
+              />
+            ) : (
+              'Free'
+            )
+          }
+        />
         <DetailRow
           label="Status"
           value={<SubscriptionStatusLabel subscription={subscription} />}
@@ -169,18 +134,6 @@ const CustomerPortalSubscription = ({
             }
           />
         )}
-        {pendingUpdate && (
-          <DetailRow
-            label="Update in effect from"
-            value={
-              <FormattedDateTime
-                datetime={pendingUpdate.applies_at}
-                dateStyle="long"
-                resolution="day"
-              />
-            }
-          />
-        )}
         {subscription.ended_at && (
           <DetailRow
             label="Expired"
@@ -194,6 +147,35 @@ const CustomerPortalSubscription = ({
           />
         )}
       </div>
+
+      {pendingUpdate && (
+        <div className="flex flex-col gap-y-2">
+          <h3>Pending Update</h3>
+          <div className="flex flex-col">
+            {pendingProduct && (
+              <DetailRow
+                label="New Product"
+                value={`${subscription.product.name} -> ${pendingProduct?.name}`}
+              />
+            )}
+            {pendingUpdate.seats !== null && (
+              <DetailRow
+                label="Seats"
+                value={`${subscription.seats} -> ${pendingUpdate.seats}`}
+              />
+            )}
+            <DetailRow
+              label="Update in effect from"
+              value={
+                <FormattedDateTime
+                  datetime={pendingUpdate.applies_at}
+                  dateStyle="long"
+                />
+              }
+            />
+          </div>
+        </div>
+      )}
 
       {/* Cancel button - only shown for users with billing permissions */}
       {!isCancelled && canManageBilling && (

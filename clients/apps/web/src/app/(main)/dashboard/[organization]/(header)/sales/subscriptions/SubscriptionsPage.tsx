@@ -23,10 +23,8 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { RowSelectionState } from '@tanstack/react-table'
-import { Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
@@ -281,7 +279,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Product" />
       ),
-      cell: ({ getValue, row: { original: subscription } }) => {
+      cell: ({ getValue }) => {
         const tier = getValue() as schemas['Product']
         return (
           <div className="flex flex-row items-center gap-2">
@@ -291,12 +289,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 status="Archived"
                 className="bg-red-100 text-xs text-red-500 dark:bg-red-950"
               />
-            )}
-            {subscription.pending_update && (
-              <Pill color="yellow">
-                <Clock className="size-3" />
-                <span>Update Pending</span>
-              </Pill>
             )}
           </div>
         )

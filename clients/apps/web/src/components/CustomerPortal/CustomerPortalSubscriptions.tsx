@@ -60,10 +60,12 @@ export const ActiveSubscriptionsOverview = ({
 interface SubscriptionsOverviewProps {
   organization: schemas['CustomerOrganization']
   subscriptions: schemas['CustomerSubscription'][]
+  products: schemas['CustomerProduct'][]
 }
 
 export const InactiveSubscriptionsOverview = ({
   subscriptions,
+  products,
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
@@ -208,6 +210,7 @@ export const InactiveSubscriptionsOverview = ({
                 api={api}
                 customerSessionToken={customerSessionToken}
                 subscription={selectedSubscription}
+                products={products}
               />
             </div>
           ) : null

@@ -22,19 +22,11 @@ export const ScheduledUpdateSection = ({
   const { data: newProduct } = useProduct(pendingUpdate.product_id ?? undefined)
 
   return (
-    <div className="flex flex-col gap-y-4">
+    <div className="mt-2 flex flex-col gap-y-4">
       <div className="flex flex-row items-center gap-x-2">
         <h3 className="text-lg">Scheduled Update</h3>
-        <Pill color="yellow">
-          <Clock className="size-3" />
-          <span>Pending</span>
-        </Pill>
       </div>
       <div className="flex flex-col gap-y-2">
-        <DetailRow
-          label="Will be applied on"
-          value={<FormattedDateTime datetime={pendingUpdate.applies_at} />}
-        />
         {newProduct && (
           <DetailRow
             label="New Product"
@@ -58,6 +50,10 @@ export const ScheduledUpdateSection = ({
             value={`${subscription.seats ?? 0} -> ${pendingUpdate.seats}`}
           />
         )}
+        <DetailRow
+          label="Will be applied on"
+          value={<FormattedDateTime datetime={pendingUpdate.applies_at} />}
+        />
       </div>
     </div>
   )

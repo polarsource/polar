@@ -92,6 +92,34 @@ else
     sleep 10
 fi
 
+# Auto-discover Tinybird token
+# Always refresh the token from the running Tinybird container, since it
+# generates a new admin token on each startup and any token from server/.env
+# may be stale.
+if [[ -n "${POLAR_TINYBIRD_CLICKHOUSE_URL:-}" ]]; then
+    TINYBIRD_HOST=$(echo "$POLAR_TINYBIRD_CLICKHOUSE_URL" | sed 's|http://||' | cut -d: -f1)
+    TINYBIRD_API="http://${TINYBIRD_HOST}:7181"
+    echo "Fetching Tinybird admin token from ${TINYBIRD_API}..."
+    max_attempts=30
+    attempt=0
+    while true; do
+        TB_TOKEN=$(curl -sf "${TINYBIRD_API}/tokens" 2>/dev/null \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['admin_token'])" 2>/dev/null) && break
+        attempt=$((attempt + 1))
+        if [[ $attempt -ge $max_attempts ]]; then
+            echo "WARNING: Could not fetch Tinybird token after $max_attempts attempts, continuing without it"
+            break
+        fi
+        sleep 2
+    done
+    if [[ -n "${TB_TOKEN:-}" ]]; then
+        export POLAR_TINYBIRD_API_TOKEN="$TB_TOKEN"
+        export POLAR_TINYBIRD_CLICKHOUSE_TOKEN="$TB_TOKEN"
+        export POLAR_TINYBIRD_READ_TOKEN="$TB_TOKEN"
+        echo "Tinybird token configured"
+    fi
+fi
+
 # Load seed data if database is empty (first run) - only for API
 if [[ "${1:-api}" == "api" ]]; then
     # Check if any organizations exist to determine if seeds are needed
@@ -130,31 +158,6 @@ if [[ "${1:-api}" == "worker" ]] && [[ ! -f "$PLAYWRIGHT_MARKER" ]]; then
     echo "Playwright browsers installed"
 elif [[ "${1:-api}" == "worker" ]]; then
     echo "Playwright browsers already installed"
-fi
-
-# Auto-discover Tinybird token if not already set
-if [[ -n "${POLAR_TINYBIRD_CLICKHOUSE_URL:-}" ]] && [[ -z "${POLAR_TINYBIRD_CLICKHOUSE_TOKEN:-}" ]]; then
-    TINYBIRD_HOST=$(echo "$POLAR_TINYBIRD_CLICKHOUSE_URL" | sed 's|http://||' | cut -d: -f1)
-    TINYBIRD_API="http://${TINYBIRD_HOST}:7181"
-    echo "Fetching Tinybird admin token from ${TINYBIRD_API}..."
-    max_attempts=30
-    attempt=0
-    while true; do
-        TB_TOKEN=$(curl -sf "${TINYBIRD_API}/tokens" 2>/dev/null \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['admin_token'])" 2>/dev/null) && break
-        attempt=$((attempt + 1))
-        if [[ $attempt -ge $max_attempts ]]; then
-            echo "WARNING: Could not fetch Tinybird token after $max_attempts attempts, continuing without it"
-            break
-        fi
-        sleep 2
-    done
-    if [[ -n "${TB_TOKEN:-}" ]]; then
-        export POLAR_TINYBIRD_API_TOKEN="$TB_TOKEN"
-        export POLAR_TINYBIRD_CLICKHOUSE_TOKEN="$TB_TOKEN"
-        export POLAR_TINYBIRD_READ_TOKEN="$TB_TOKEN"
-        echo "Tinybird token configured"
-    fi
 fi
 
 # Start the requested service

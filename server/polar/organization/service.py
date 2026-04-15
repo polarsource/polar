@@ -890,9 +890,7 @@ class OrganizationService:
     ) -> Organization:
         """Manually move a snoozed organization back to review."""
         if organization.status != OrganizationStatus.SNOOZED:
-            raise OrganizationError(
-                "Only snoozed organizations can be unsnoozed.", 403
-            )
+            raise OrganizationError("Only snoozed organizations can be unsnoozed.", 403)
 
         organization.set_status(OrganizationStatus.REVIEW)
         session.add(organization)

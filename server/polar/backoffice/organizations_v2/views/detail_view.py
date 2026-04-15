@@ -470,22 +470,16 @@ class OrganizationDetailView:
 
                     elif self.org.status == OrganizationStatus.SNOOZED:
                         if self.org.status_updated_at:
-                            grace_end = (
-                                self.org.status_updated_at + SNOOZE_GRACE_PERIOD
-                            )
+                            grace_end = self.org.status_updated_at + SNOOZE_GRACE_PERIOD
                             now = datetime.now(UTC)
                             with tag.div(
                                 classes="bg-warning/10 border border-warning/20 p-3 rounded-lg text-xs mb-2"
                             ):
                                 with tag.p(classes="font-semibold"):
-                                    text(
-                                        f"Snoozed {self.org.snooze_count} time(s)"
-                                    )
+                                    text(f"Snoozed {self.org.snooze_count} time(s)")
                                 if now < grace_end:
                                     remaining = grace_end - now
-                                    hours = int(
-                                        remaining.total_seconds() // 3600
-                                    )
+                                    hours = int(remaining.total_seconds() // 3600)
                                     minutes = int(
                                         (remaining.total_seconds() % 3600) // 60
                                     )

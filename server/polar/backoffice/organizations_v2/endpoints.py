@@ -1637,9 +1637,7 @@ async def snooze_dialog(
                 text("Snooze Organization")
 
             if organization.snooze_count > 0:
-                with tag.div(
-                    classes="bg-info/10 border border-info/20 p-3 rounded-lg"
-                ):
+                with tag.div(classes="bg-info/10 border border-info/20 p-3 rounded-lg"):
                     with tag.p(classes="text-sm"):
                         text(
                             f"This organization has been snoozed {organization.snooze_count} time(s) before."
@@ -1726,9 +1724,7 @@ async def unsnooze_dialog(
             with tag.p(classes="font-semibold text-info"):
                 text("Unsnooze Organization")
 
-            with tag.div(
-                classes="bg-info/10 border border-info/20 p-4 rounded-lg"
-            ):
+            with tag.div(classes="bg-info/10 border border-info/20 p-4 rounded-lg"):
                 with tag.p(classes="font-semibold mb-2"):
                     text("This action will:")
                 with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):

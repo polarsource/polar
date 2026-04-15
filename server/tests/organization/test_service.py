@@ -2070,9 +2070,7 @@ class TestUnsnoozeOrganization:
         organization.status = OrganizationStatus.SNOOZED
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
-        result = await organization_service.unsnooze_organization(
-            session, organization
-        )
+        result = await organization_service.unsnooze_organization(session, organization)
 
         assert result.status == OrganizationStatus.REVIEW
         assert result.status_updated_at is not None

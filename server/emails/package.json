@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@react-email/preview-server": "^5.2.10",
-    "@types/node": "^24.12.0",
+    "@types/node": "^24.12.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@yao-pkg/pkg": "^6.14.2",

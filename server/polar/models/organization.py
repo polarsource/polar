@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, Self, TypedDict
 from urllib.parse import urlparse
@@ -422,6 +422,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
         return and_(cls.is_deleted.is_(False), cls.blocked_at.is_(None))
+
+    def set_status(self, status: OrganizationStatus) -> None:
+        self.status = status
+        self.status_updated_at = datetime.now(UTC)
 
     @hybrid_property
     def is_under_review(self) -> bool:

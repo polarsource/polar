@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
@@ -67,6 +67,20 @@ if TYPE_CHECKING:
 log = structlog.get_logger()
 
 _MIN_REVIEW_THRESHOLD = 10_000
+SNOOZE_GRACE_PERIOD = timedelta(hours=24)
+
+
+def _append_internal_note(
+    organization: Organization, message: str, *, reason: str | None = None
+) -> None:
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+    note = f"[{timestamp}] {message}"
+    if reason:
+        note += f"\nReason: {reason}"
+    if organization.internal_notes:
+        organization.internal_notes = f"{organization.internal_notes}\n\n{note}"
+    else:
+        organization.internal_notes = note
 
 
 class PaymentStatusResponse(BaseModel):
@@ -726,6 +740,18 @@ class OrganizationService:
         organization.total_balance = transfers_sum
         session.add(organization)
 
+        # If snoozed and grace period has passed, a sale triggers re-review
+        if (
+            organization.status == OrganizationStatus.SNOOZED
+            and organization.status_updated_at is not None
+            and datetime.now(UTC) - organization.status_updated_at
+            >= SNOOZE_GRACE_PERIOD
+        ):
+            organization.set_status(OrganizationStatus.REVIEW)
+            session.add(organization)
+            enqueue_job("organization.under_review", organization_id=organization.id)
+            return organization
+
         if organization.is_under_review:
             return organization
 
@@ -733,8 +759,7 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
-            organization.status = OrganizationStatus.REVIEW
-            organization.status_updated_at = datetime.now(UTC)
+            organization.set_status(OrganizationStatus.REVIEW)
             session.add(organization)
 
             enqueue_job("organization.under_review", organization_id=organization.id)
@@ -831,6 +856,49 @@ class OrganizationService:
 
         return organization
 
+    async def snooze_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        reason: str | None = None,
+    ) -> Organization:
+        """Snooze an organization under review.
+
+        The org stays snoozed until a sale occurs 24h+ after being snoozed,
+        which triggers a transition back to REVIEW via check_review_threshold().
+        """
+        if organization.status != OrganizationStatus.REVIEW:
+            raise OrganizationError(
+                "Only organizations under review can be snoozed.", 403
+            )
+
+        organization.set_status(OrganizationStatus.SNOOZED)
+        organization.snooze_count += 1
+        _append_internal_note(
+            organization,
+            f"Organization snoozed (#{organization.snooze_count}).",
+            reason=reason,
+        )
+        session.add(organization)
+        return organization
+
+    async def unsnooze_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> Organization:
+        """Manually move a snoozed organization back to review."""
+        if organization.status != OrganizationStatus.SNOOZED:
+            raise OrganizationError(
+                "Only snoozed organizations can be unsnoozed.", 403
+            )
+
+        organization.set_status(OrganizationStatus.REVIEW)
+        session.add(organization)
+        enqueue_job("organization.under_review", organization_id=organization.id)
+        return organization
+
     async def set_organization_under_review(
         self,
         session: AsyncSession,
@@ -870,16 +938,9 @@ class OrganizationService:
             )
         organization.status = OrganizationStatus.OFFBOARDING
         organization.status_updated_at = datetime.now(UTC)
-
-        timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
-        note = f"[{timestamp}] Organization set to offboarding."
-        if reason:
-            note += f"\nReason: {reason}"
-        if organization.internal_notes:
-            organization.internal_notes = f"{organization.internal_notes}\n\n{note}"
-        else:
-            organization.internal_notes = note
-
+        _append_internal_note(
+            organization, "Organization set to offboarding.", reason=reason
+        )
         session.add(organization)
         return organization
 

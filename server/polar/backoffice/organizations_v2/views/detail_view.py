@@ -11,6 +11,7 @@ from tagflow import tag, text
 
 from polar.models import Organization, User
 from polar.models.organization import OrganizationStatus
+from polar.organization.service import SNOOZE_GRACE_PERIOD
 from polar.organization_review.schemas import ReviewVerdict
 
 from ...components import (
@@ -368,7 +369,7 @@ class OrganizationDetailView:
                             ):
                                 text("Reactivate")
 
-                    elif self.org.is_under_review:
+                    elif self.org.status == OrganizationStatus.REVIEW:
                         # Compute suggested threshold: double current or $250 min
                         current_threshold = self.org.next_review_threshold or 0
                         suggested_threshold = max(25000, current_threshold * 2)
@@ -421,6 +422,112 @@ class OrganizationDetailView:
                                     type="submit",
                                 ):
                                     text("Approve")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:deny_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Deny")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:snooze_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Snooze")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:offboard_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Set Offboarding")
+
+                    elif self.org.status == OrganizationStatus.SNOOZED:
+                        if self.org.status_updated_at:
+                            grace_end = (
+                                self.org.status_updated_at + SNOOZE_GRACE_PERIOD
+                            )
+                            now = datetime.now(UTC)
+                            with tag.div(
+                                classes="bg-warning/10 border border-warning/20 p-3 rounded-lg text-xs mb-2"
+                            ):
+                                with tag.p(classes="font-semibold"):
+                                    text(
+                                        f"Snoozed {self.org.snooze_count} time(s)"
+                                    )
+                                if now < grace_end:
+                                    remaining = grace_end - now
+                                    hours = int(
+                                        remaining.total_seconds() // 3600
+                                    )
+                                    minutes = int(
+                                        (remaining.total_seconds() % 3600) // 60
+                                    )
+                                    with tag.p():
+                                        text(
+                                            f"Grace period: {hours}h {minutes}m remaining"
+                                        )
+                                else:
+                                    with tag.p():
+                                        text(
+                                            "Grace period ended — next sale triggers re-review"
+                                        )
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:unsnooze_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Unsnooze → Review")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:approve_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Approve")
 
                         with tag.div(classes="w-full"):
                             with button(

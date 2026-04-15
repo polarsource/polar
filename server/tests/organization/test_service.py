@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import call
 
 import pytest
@@ -490,6 +490,80 @@ class TestCheckReviewThreshold:
         # Then
         assert result.status == OrganizationStatus.ACTIVE
         assert result.total_balance == 0
+
+    async def test_snoozed_within_grace_period_stays_snoozed(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: snoozed less than 24h ago
+        organization.status = OrganizationStatus.SNOOZED
+        organization.status_updated_at = datetime.now(UTC) - timedelta(hours=12)
+        organization.next_review_threshold = 1000
+
+        mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=5000,
+        )
+
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then: stays snoozed, no review triggered
+        assert result.status == OrganizationStatus.SNOOZED
+
+    async def test_snoozed_after_grace_period_returns_to_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: snoozed more than 24h ago (grace period expired)
+        organization.status = OrganizationStatus.SNOOZED
+        organization.status_updated_at = datetime.now(UTC) - timedelta(hours=25)
+        organization.next_review_threshold = 1000
+
+        mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=5000,
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then: transitions back to REVIEW and enqueues review job
+        assert result.status == OrganizationStatus.REVIEW
+        assert result.status_updated_at is not None
+        enqueue_job_mock.assert_called_once_with(
+            "organization.under_review", organization_id=organization.id
+        )
+
+    async def test_snoozed_without_status_updated_at_stays_snoozed(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: snoozed but status_updated_at is None (edge case)
+        organization.status = OrganizationStatus.SNOOZED
+        organization.status_updated_at = None
+        organization.next_review_threshold = 1000
+
+        mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=5000,
+        )
+
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then: stays snoozed (can't compute grace period)
+        assert result.status == OrganizationStatus.SNOOZED
 
 
 @pytest.mark.asyncio
@@ -1912,6 +1986,109 @@ class TestReactivateOrganization:
 
         with pytest.raises(Exception, match="Only offboarding organizations"):
             await organization_service.reactivate_organization(session, organization)
+
+
+@pytest.mark.asyncio
+class TestSnoozeOrganization:
+    async def test_from_review(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        organization.snooze_count = 0
+
+        result = await organization_service.snooze_organization(session, organization)
+
+        assert result.status == OrganizationStatus.SNOOZED
+        assert result.snooze_count == 1
+        assert result.status_updated_at is not None
+
+    async def test_increments_snooze_count(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        organization.snooze_count = 3
+
+        result = await organization_service.snooze_organization(session, organization)
+
+        assert result.snooze_count == 4
+
+    async def test_from_non_review_raises(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+
+        with pytest.raises(Exception, match="Only organizations under review"):
+            await organization_service.snooze_organization(session, organization)
+
+    async def test_with_reason_appends_internal_notes(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        organization.snooze_count = 0
+        organization.internal_notes = None
+
+        result = await organization_service.snooze_organization(
+            session, organization, reason="Merchant not responding"
+        )
+
+        assert result.internal_notes is not None
+        assert "Merchant not responding" in result.internal_notes
+        assert "snoozed (#1)" in result.internal_notes
+
+    async def test_appends_to_existing_notes(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        organization.snooze_count = 0
+        organization.internal_notes = "Previous note"
+
+        result = await organization_service.snooze_organization(session, organization)
+
+        assert result.internal_notes is not None
+        assert "Previous note" in result.internal_notes
+        assert "snoozed (#1)" in result.internal_notes
+
+
+@pytest.mark.asyncio
+class TestUnsnoozeOrganization:
+    async def test_from_snoozed(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.SNOOZED
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.unsnooze_organization(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.REVIEW
+        assert result.status_updated_at is not None
+        enqueue_job_mock.assert_called_once_with(
+            "organization.under_review", organization_id=organization.id
+        )
+
+    async def test_from_non_snoozed_raises(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+
+        with pytest.raises(Exception, match="Only snoozed organizations"):
+            await organization_service.unsnooze_organization(session, organization)
 
 
 @pytest.mark.asyncio

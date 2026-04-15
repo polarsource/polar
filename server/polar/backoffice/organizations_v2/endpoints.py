@@ -1581,6 +1581,181 @@ async def under_review_dialog(
 
 
 @router.api_route(
+    "/{organization_id}/snooze-dialog",
+    name="organizations:snooze_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def snooze_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Snooze an organization under review."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        form_data = await request.form()
+        reason = str(form_data.get("reason", "")).strip() or None
+
+        review_repo = OrganizationReviewRepository(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision=DecisionType.ESCALATE,
+            reason=reason,
+        )
+
+        await organization_service.snooze_organization(
+            session, organization, reason=reason
+        )
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    with modal("Snooze Organization", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:snooze_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            classes="flex flex-col gap-4",
+        ):
+            with tag.p(classes="font-semibold text-warning"):
+                text("Snooze Organization")
+
+            if organization.snooze_count > 0:
+                with tag.div(
+                    classes="bg-info/10 border border-info/20 p-3 rounded-lg"
+                ):
+                    with tag.p(classes="text-sm"):
+                        text(
+                            f"This organization has been snoozed {organization.snooze_count} time(s) before."
+                        )
+
+            with tag.div(
+                classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Change the organization status to Snoozed")
+                    with tag.li():
+                        text("Payments will continue to be accepted")
+                    with tag.li():
+                        text("Payouts remain blocked")
+                    with tag.li():
+                        text(
+                            "Org returns to Review automatically when a sale occurs 24h+ after snoozing"
+                        )
+
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason for snoozing (optional)")
+                with tag.textarea(
+                    name="reason",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="e.g. Merchant not responding to review questions",
+                    rows="3",
+                ):
+                    pass
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="warning", type="submit"):
+                    text("Snooze")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/unsnooze-dialog",
+    name="organizations:unsnooze_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def unsnooze_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Unsnooze an organization back to review."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        review_repo = OrganizationReviewRepository(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision=DecisionType.ESCALATE,
+        )
+
+        await organization_service.unsnooze_organization(session, organization)
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    with modal("Unsnooze Organization", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p(classes="font-semibold text-info"):
+                text("Unsnooze Organization")
+
+            with tag.div(
+                classes="bg-info/10 border border-info/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Move the organization back to Review status")
+                    with tag.li():
+                        text("Trigger a new review cycle")
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(
+                    hx_post=str(
+                        request.url_for(
+                            "organizations:unsnooze_dialog",
+                            organization_id=organization_id,
+                        )
+                    ),
+                ):
+                    with button(variant="info", type="submit"):
+                        text("Unsnooze → Review")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/offboard-dialog",
     name="organizations:offboard_dialog",
     methods=["GET", "POST"],

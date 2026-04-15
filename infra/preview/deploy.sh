@@ -118,6 +118,9 @@ deploy() {
 
         log "Building email renderer"
         uv run task emails
+
+        log "Building backoffice assets"
+        uv run task backoffice
     fi
 
     # --- Backend .env (must be written before migrations) ---

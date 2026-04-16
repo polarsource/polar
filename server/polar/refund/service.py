@@ -207,9 +207,6 @@ class RefundService:
     ) -> Refund:
         repository = RefundRepository.from_session(session)
 
-        # Check if refunds are blocked at order level or organization level.
-        # Refunds are also blocked once an organization reaches the terminal
-        # OFFBOARDED state.
         if (
             order.refunds_blocked
             or order.organization.refunds_blocked

@@ -2037,7 +2037,6 @@ class TestTransitionExpiredOffboardingOrganizations:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        # Organization offboarded just a moment ago — should NOT transition.
         organization.status = OrganizationStatus.OFFBOARDING
         organization.status_updated_at = datetime.now(UTC) - timedelta(days=10)
         await save_fixture(organization)
@@ -2056,7 +2055,6 @@ class TestTransitionExpiredOffboardingOrganizations:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        # Organization offboarding for longer than the retention period.
         organization.status = OrganizationStatus.OFFBOARDING
         organization.status_updated_at = datetime.now(UTC) - timedelta(days=121)
         await save_fixture(organization)
@@ -2216,8 +2214,8 @@ class TestOffboardingPaymentReady:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Offboarded organizations must no longer accept payments."""
-        # Even grandfathered organizations must be blocked from new payments.
+        """Offboarded organizations must no longer accept payments, even when
+        grandfathered."""
         organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.OFFBOARDED
         await save_fixture(organization)

@@ -231,16 +231,9 @@ async def list_organizations(
     if status_filter:
         stmt = stmt.where(Organization.status == status_filter)
     elif not q:
-        # By default, exclude terminal statuses (denied, blocked, offboarded)
-        # from the list (but not when searching).
+        # Hide terminal statuses from the default list (not when searching).
         stmt = stmt.where(
-            Organization.status.notin_(
-                [
-                    OrganizationStatus.DENIED,
-                    OrganizationStatus.BLOCKED,
-                    OrganizationStatus.OFFBOARDED,
-                ]
-            )
+            Organization.status.notin_(OrganizationStatus.terminal_statuses())
         )
 
     if q:

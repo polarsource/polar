@@ -985,8 +985,7 @@ class OrganizationService:
                 "Only offboarding organizations can be set to offboarded.",
                 403,
             )
-        organization.status = OrganizationStatus.OFFBOARDED
-        organization.status_updated_at = datetime.now(UTC)
+        organization.set_status(OrganizationStatus.OFFBOARDED)
         _append_internal_note(
             organization,
             "Organization automatically moved to offboarded after "
@@ -1043,13 +1042,11 @@ class OrganizationService:
         if settings.ENV == Environment.sandbox:
             return True
 
-        # First check basic conditions that don't require account data.
-        # OFFBOARDED is a terminal state that blocks all new payments, even
-        # for grandfathered organizations.
+        # Terminal statuses block all new payments, even for grandfathered
+        # organizations.
         if (
             organization.is_blocked()
-            or organization.status == OrganizationStatus.DENIED
-            or organization.status == OrganizationStatus.OFFBOARDED
+            or organization.status in OrganizationStatus.terminal_statuses()
         ):
             return False
 

@@ -199,7 +199,7 @@ async def transition_offboarding_to_offboarded() -> None:
             log.info(
                 "organization.transition_offboarding_to_offboarded",
                 count=len(transitioned),
-                organization_ids=[str(o.id) for o in transitioned],
+                organization_ids=[str(o.id) for o in transitioned[:20]],
             )
 
 

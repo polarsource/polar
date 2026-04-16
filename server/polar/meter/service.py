@@ -565,10 +565,18 @@ class MeterService:
             if customer_price is None:
                 continue
 
+            # Polar never charges during a trial: skip trial events so no
+            # billable BillingEntry rows exist. The watermark still advances,
+            # so these events aren't retried once the trial converts.
+            subscription = customer_price.subscription_product_price.subscription
+            if (
+                subscription.trial_end is not None
+                and event.ingested_at < subscription.trial_end
+            ):
+                continue
+
             # Get the paying customer (billing manager) from the subscription
-            paying_customer = (
-                customer_price.subscription_product_price.subscription.customer
-            )
+            paying_customer = subscription.customer
 
             entry = await self._create_subscription_holder_billing_entry(
                 session,

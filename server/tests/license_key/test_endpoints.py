@@ -14,6 +14,7 @@ from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.repository import LicenseKeyRepository
 from polar.license_key.service import license_key as license_key_service
 from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
@@ -199,6 +200,78 @@ class TestLicenseKeyEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["pagination"]["total_count"] == count
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_list_filter_by_status(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted_a = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        _, granted_b = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+
+        repository = LicenseKeyRepository.from_session(session)
+        revoked_lk = await repository.get_by_id(UUID(granted_b["license_key_id"]))
+        assert revoked_lk is not None
+        revoked_lk.status = LicenseKeyStatus.revoked
+        session.add(revoked_lk)
+        await session.flush()
+
+        response = await client.get(
+            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"&status={LicenseKeyStatus.granted.value}",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        ids = {item["id"] for item in data["items"]}
+        assert granted_a["license_key_id"] in ids
+        assert granted_b["license_key_id"] not in ids
+
+        response = await client.get(
+            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"&status={LicenseKeyStatus.revoked.value}",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        ids = {item["id"] for item in data["items"]}
+        assert granted_b["license_key_id"] in ids
+        assert granted_a["license_key_id"] not in ids
+
+        response = await client.get(
+            f"/v1/license-keys/?organization_id={str(organization.id)}"
+            f"&status={LicenseKeyStatus.granted.value}"
+            f"&status={LicenseKeyStatus.revoked.value}",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        ids = {item["id"] for item in data["items"]}
+        assert granted_a["license_key_id"] in ids
+        assert granted_b["license_key_id"] in ids
 
     @pytest.mark.parametrize(
         "activate_path",

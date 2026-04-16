@@ -7,6 +7,7 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import LicenseKey, LicenseKeyActivation
+from polar.models.license_key import LicenseKeyStatus
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_read_session, get_db_session
@@ -50,6 +51,11 @@ async def list(
     benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
         None, title="BenefitID Filter", description="Filter by benefit ID."
     ),
+    status: MultipleQueryFilter[LicenseKeyStatus] | None = Query(
+        None,
+        title="LicenseKeyStatus Filter",
+        description="Filter by license key status.",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[LicenseKeyRead]:
     """Get license keys connected to the given organization & filters."""
@@ -58,6 +64,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         benefit_id=benefit_id,
+        status=status,
         pagination=pagination,
     )
 

@@ -20,6 +20,7 @@ from polar.models import (
     Organization,
     User,
 )
+from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import LicenseKeyRepository
@@ -43,6 +44,7 @@ class LicenseKeyService:
         pagination: PaginationParams,
         organization_id: Sequence[UUID] | None = None,
         benefit_id: Sequence[UUID] | None = None,
+        status: Sequence[LicenseKeyStatus] | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
         repository = LicenseKeyRepository.from_session(session)
         statement = (
@@ -56,6 +58,9 @@ class LicenseKeyService:
 
         if benefit_id is not None:
             statement = statement.where(LicenseKey.benefit_id.in_(benefit_id))
+
+        if status is not None:
+            statement = statement.where(LicenseKey.status.in_(status))
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page

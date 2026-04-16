@@ -3,10 +3,12 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import ClassVar, Self
 
+import arabic_reshaper
 import pycountry
 from babel.dates import format_date as _format_date
 from babel.numbers import format_decimal as _format_decimal
 from babel.numbers import format_percent as _format_percent
+from bidi.algorithm import get_display
 from fpdf import FPDF
 from fpdf.enums import Align, TableBordersLayout, XPos, YPos
 from fpdf.fonts import FontFace
@@ -323,13 +325,20 @@ class InvoiceGenerator(FPDF):
                 self.add_font(self.cjk_font_name, fname=cjk_bold_font_file, style="B")
             fallback_fonts.append(self.cjk_font_name)
         self.set_fallback_fonts(fallback_fonts, exact_match=False)
-        self.set_text_shaping(use_shaping_engine=True)
         self.set_font(self.font_name, size=self.base_font_size)
 
         self.alias_nb_pages()
         self.data = data
         self.heading_title = heading_title
         self.add_sandbox_warning = add_sandbox_warning
+
+    def _shape_text(self, text: str) -> str:
+        lines = text.split("\n")
+        shaped = []
+        for line in lines:
+            reshaped = arabic_reshaper.reshape(line)
+            shaped.append(get_display(reshaped))
+        return "\n".join(shaped)
 
     def cell_height(self, font_size: float | None = None) -> float:
         font_size = font_size or self.base_font_size
@@ -364,7 +373,7 @@ class InvoiceGenerator(FPDF):
         # Title
         self.set_font(style="B", size=18)
         self.cell(
-            text=self.heading_title,
+            text=self._shape_text(self.heading_title),
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
@@ -380,12 +389,15 @@ class InvoiceGenerator(FPDF):
         for heading_item in self.data.heading_items:
             self.set_font(style="B")
             self.cell(
-                label_width, self.cell_height(), text=heading_item.label, align=Align.L
+                label_width,
+                self.cell_height(),
+                text=self._shape_text(heading_item.label),
+                align=Align.L,
             )
             self.set_font(style="")
             self.cell(
                 h=self.cell_height(),
-                text=heading_item.display_value,
+                text=self._shape_text(heading_item.display_value),
                 new_x=XPos.LMARGIN,
                 new_y=YPos.NEXT,
             )
@@ -399,7 +411,7 @@ class InvoiceGenerator(FPDF):
         self.multi_cell(
             80,
             self.cell_height(),
-            text=self.data.seller_name,
+            text=self._shape_text(self.data.seller_name),
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
@@ -407,7 +419,7 @@ class InvoiceGenerator(FPDF):
         self.multi_cell(
             80,
             self.cell_height(),
-            text=self.data.seller_address.to_text(),
+            text=self._shape_text(self.data.seller_address.to_text()),
             new_x=XPos.LEFT,
             new_y=YPos.NEXT,
         )
@@ -415,7 +427,7 @@ class InvoiceGenerator(FPDF):
             self.multi_cell(
                 80,
                 self.cell_height(),
-                text=self.data.seller_additional_info,
+                text=self._shape_text(self.data.seller_additional_info),
                 markdown=True,
             )
         left_seller_end_y = self.get_y()
@@ -430,7 +442,7 @@ class InvoiceGenerator(FPDF):
         self.multi_cell(
             80,
             self.cell_height(),
-            text=self.data.customer_name,
+            text=self._shape_text(self.data.customer_name),
             new_x=XPos.LEFT,
             new_y=YPos.NEXT,
         )
@@ -438,7 +450,7 @@ class InvoiceGenerator(FPDF):
         self.multi_cell(
             80,
             self.cell_height(),
-            self.data.customer_address.to_text(),
+            self._shape_text(self.data.customer_address.to_text()),
             new_x=XPos.LEFT,
             new_y=YPos.NEXT,
         )
@@ -446,7 +458,7 @@ class InvoiceGenerator(FPDF):
             self.multi_cell(
                 80,
                 self.cell_height(),
-                text=self.data.customer_additional_info,
+                text=self._shape_text(self.data.customer_additional_info),
                 markdown=True,
             )
         right_seller_end_y = self.get_y()
@@ -474,7 +486,11 @@ class InvoiceGenerator(FPDF):
             # Body
             for item in self.data.items:
                 row = table.row()
-                row.cell(textwrap.shorten(item.description, width=90, placeholder="…"))
+                row.cell(
+                    self._shape_text(
+                        textwrap.shorten(item.description, width=90, placeholder="…")
+                    )
+                )
                 row.cell(format_number(item.quantity))
                 row.cell(format_currency(item.unit_amount, self.data.currency))
                 row.cell(format_currency(item.amount, self.data.currency))
@@ -493,7 +509,7 @@ class InvoiceGenerator(FPDF):
             for total_item in self.data.totals_items:
                 self.set_font(style="B")
                 row = totals_table.row()
-                row.cell(total_item.label)
+                row.cell(self._shape_text(total_item.label))
                 self.set_font(style="")
                 row.cell(format_currency(total_item.amount, total_item.currency))
 
@@ -504,7 +520,7 @@ class InvoiceGenerator(FPDF):
             self.multi_cell(
                 w=0,
                 h=self.cell_height(),
-                text=self.data.notes,
+                text=self._shape_text(self.data.notes),
                 markdown=True,
             )
 

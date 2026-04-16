@@ -233,7 +233,7 @@ def test_generator_registers_unicode_fallback_fonts(invoice: Invoice) -> None:
         )
     )
 
-    assert generator.text_shaping is not None
+    assert generator.text_shaping is None
     assert generator.get_fallback_font("ש") == generator.hebrew_font_name
     assert generator.get_fallback_font("ש", style="B") == (
         f"{generator.hebrew_font_name}B"

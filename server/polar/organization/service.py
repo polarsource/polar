@@ -997,7 +997,7 @@ class OrganizationService:
     async def transition_expired_offboarding_organizations(
         self,
         session: AsyncSession,
-    ) -> list[Organization]:
+    ) -> Sequence[Organization]:
         """
         Move organizations from OFFBOARDING to OFFBOARDED once they have
         spent the retention period in the offboarding state.
@@ -1011,11 +1011,9 @@ class OrganizationService:
         )
         organizations = await repository.get_all(statement)
 
-        transitioned: list[Organization] = []
         for organization in organizations:
             await self.set_organization_offboarded(session, organization)
-            transitioned.append(organization)
-        return transitioned
+        return organizations
 
     async def get_payment_status(
         self,

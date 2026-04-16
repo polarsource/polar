@@ -262,6 +262,92 @@ class TestUpdateOrganization:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth
+    async def test_update_customer_portal_settings_without_customer_key(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Regression test: orgs created before `customer.allow_email_change`
+        # was added have no "customer" key in customer_portal_settings.
+        # The frontend form sends the full settings on any toggle without
+        # necessarily providing a "customer" value, which previously failed
+        # validation with a 422.
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    "usage": {"show": True},
+                    "subscription": {
+                        "update_seats": False,
+                        "update_plan": True,
+                    },
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["subscription"]["update_seats"] is False
+        assert settings["subscription"]["update_plan"] is True
+
+    @pytest.mark.auth
+    async def test_update_customer_portal_settings_with_empty_customer(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Regression test: react-hook-form registers the
+        # `customer.allow_email_change` field but existing orgs have no
+        # value, so the form serializes `customer: {}` (undefined stripped
+        # by JSON). allow_email_change must be NotRequired so this validates.
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    "usage": {"show": True},
+                    "subscription": {
+                        "update_seats": False,
+                        "update_plan": True,
+                    },
+                    "customer": {},
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.json()["customer_portal_settings"]["subscription"]["update_seats"]
+            is False
+        )
+
+    @pytest.mark.auth
+    async def test_update_customer_portal_settings_with_full_customer(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    "usage": {"show": True},
+                    "subscription": {
+                        "update_seats": True,
+                        "update_plan": True,
+                    },
+                    "customer": {"allow_email_change": True},
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["customer"]["allow_email_change"] is True
+
 
 @pytest.mark.asyncio
 class TestInviteOrganization:

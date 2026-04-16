@@ -1,6 +1,7 @@
 'use client'
 
 import { LicenseKeyDetails } from '@/components/Benefit/LicenseKeys/LicenseKeyDetails'
+import LicenseKeyStatusSelect from '@/components/Benefit/LicenseKeys/LicenseKeyStatusSelect'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
 import { toast } from '@/components/Toast/use-toast'
 import {
@@ -42,6 +43,7 @@ export const LicenseKeysPage = ({
   const searchParamsMap = useSearchParams()
   const searchParams = Object.fromEntries(searchParamsMap.entries())
   const { pagination, sorting } = parseSearchParams(searchParams)
+  const status = searchParams['status'] ?? 'any'
 
   const [statusLoading, setStatusLoading] = useState(false)
   const [selectedLicenseKeys, setSelectedLicenseKeys] =
@@ -51,6 +53,9 @@ export const LicenseKeysPage = ({
     organization_id: organization.id,
     benefit_id: benefit.id,
     ...getAPIParams(pagination, sorting),
+    ...(status !== 'any'
+      ? { status: status as schemas['LicenseKeyStatus'] }
+      : {}),
   })
 
   const { data: selectedLicenseKey } = useLicenseKey(
@@ -60,8 +65,12 @@ export const LicenseKeysPage = ({
   const getSearchParams = (
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
+    status: string,
   ) => {
     const params = serializeSearchParams(pagination, sorting)
+    if (status !== 'any') {
+      params.append('status', status)
+    }
     return params
   }
 
@@ -87,6 +96,7 @@ export const LicenseKeysPage = ({
       `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
         updatedPagination,
         sorting,
+        status,
       )}`,
     )
   }
@@ -105,6 +115,17 @@ export const LicenseKeysPage = ({
       `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
         pagination,
         updatedSorting,
+        status,
+      )}`,
+    )
+  }
+
+  const setStatus = (status: string) => {
+    router.push(
+      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
+        pagination,
+        sorting,
+        status,
       )}`,
     )
   }
@@ -217,7 +238,16 @@ export const LicenseKeysPage = ({
       </TabsList>
       <TabsContent value="license-keys">
         <div className="flex flex-col gap-y-6">
-          <h2 className="text-xl">License Keys</h2>
+          <div className="flex flex-row items-center justify-between gap-4">
+            <h2 className="text-xl">License Keys</h2>
+            <div className="w-auto">
+              <LicenseKeyStatusSelect
+                statuses={['granted', 'disabled', 'revoked']}
+                value={status}
+                onChange={setStatus}
+              />
+            </div>
+          </div>
           <LicenseKeysList
             isLoading={isLoading}
             rowCount={licenseKeys?.pagination.total_count ?? 0}

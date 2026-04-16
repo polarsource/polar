@@ -23488,6 +23488,7 @@ export interface components {
       | 'snoozed'
       | 'denied'
       | 'active'
+      | 'blocked'
       | 'offboarding'
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
@@ -35923,6 +35924,11 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by benefit ID. */
         benefit_id?: string | string[] | null
+        /** @description Filter by license key status. */
+        status?:
+          | components['schemas']['LicenseKeyStatus']
+          | components['schemas']['LicenseKeyStatus'][]
+          | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -52771,7 +52777,15 @@ export const organizationSortPropertyValues: ReadonlyArray<
 ]
 export const organizationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationStatus']
-> = ['created', 'review', 'snoozed', 'denied', 'active', 'offboarding']
+> = [
+  'created',
+  'review',
+  'snoozed',
+  'denied',
+  'active',
+  'blocked',
+  'offboarding',
+]
 export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
 > = ['invoice', 'prorate', 'next_period']

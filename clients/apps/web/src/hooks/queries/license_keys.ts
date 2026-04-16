@@ -45,6 +45,7 @@ export const useLicenseKey = (id?: string) =>
 export const useOrganizationLicenseKeys = ({
   organization_id,
   benefit_id,
+  status,
   page,
   limit,
 }: NonNullable<operations['license_keys:list']['parameters']['query']>) =>
@@ -53,7 +54,7 @@ export const useOrganizationLicenseKeys = ({
       'license_keys',
       'organization',
       organization_id,
-      { page, limit, benefit_id },
+      { page, limit, benefit_id, status },
     ],
     queryFn: () =>
       unwrap(
@@ -62,6 +63,7 @@ export const useOrganizationLicenseKeys = ({
             query: {
               organization_id,
               benefit_id,
+              status,
               page,
               limit,
             },

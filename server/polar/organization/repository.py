@@ -60,9 +60,7 @@ class OrganizationRepository(
         )
 
         if not include_blocked:
-            statement = statement.where(
-                self.model.status != OrganizationStatus.BLOCKED
-            )
+            statement = statement.where(self.model.status != OrganizationStatus.BLOCKED)
 
         return await self.get_one_or_none(statement)
 
@@ -84,9 +82,7 @@ class OrganizationRepository(
         )
 
         if not include_blocked:
-            statement = statement.where(
-                self.model.status != OrganizationStatus.BLOCKED
-            )
+            statement = statement.where(self.model.status != OrganizationStatus.BLOCKED)
 
         return await self.get_one_or_none(statement)
 

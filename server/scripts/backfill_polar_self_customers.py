@@ -1,12 +1,13 @@
+import traceback
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import dramatiq
 import structlog
 import typer
 from rich.progress import Progress
-from sqlalchemy import select
+from sqlalchemy import String, cast, select
 
 from polar import tasks  # noqa: F401
 from polar.auth.models import AuthSubject
@@ -35,9 +36,9 @@ class BackfillResult:
     customers_created: int = 0
     members_created: int = 0
     subscriptions_created: int = 0
-    skipped_existing: int = 0
     skipped_no_members: int = 0
     errors: int = 0
+    error_details: list[tuple[str, str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -48,7 +49,10 @@ class _OrganizationTally:
 
 
 async def _load_active_organizations(
-    session: AsyncSession, *, limit: int | None
+    session: AsyncSession,
+    *,
+    exclude_external_ids: set[str],
+    limit: int | None,
 ) -> Sequence[Organization]:
     statement = (
         select(Organization)
@@ -58,6 +62,10 @@ async def _load_active_organizations(
         )
         .order_by(Organization.created_at)
     )
+    if exclude_external_ids:
+        statement = statement.where(
+            cast(Organization.id, String).notin_(exclude_external_ids)
+        )
     if limit is not None:
         statement = statement.limit(limit)
     result = await session.execute(statement)
@@ -177,7 +185,9 @@ async def run_backfill(
     existing_external_ids = await _load_existing_external_ids(session, self_org.id)
     typer.echo(f"  Found {len(existing_external_ids)} existing customers")
 
-    organizations = await _load_active_organizations(session, limit=limit)
+    organizations = await _load_active_organizations(
+        session, exclude_external_ids=existing_external_ids, limit=limit
+    )
     typer.echo(f"Loaded {len(organizations)} candidate organizations")
 
     async def commit_and_flush() -> None:
@@ -192,11 +202,6 @@ async def run_backfill(
             "[cyan]Creating customers...", total=len(organizations)
         )
         for organization in organizations:
-            if str(organization.id) in existing_external_ids:
-                result.skipped_existing += 1
-                progress.advance(task)
-                continue
-
             members = await _load_active_members(session, organization.id)
             if not members:
                 log.warning(
@@ -225,13 +230,15 @@ async def run_backfill(
                         organization=organization,
                         members=members,
                     )
-            except Exception as e:
-                log.error(
-                    "backfill.error",
-                    organization_id=str(organization.id),
-                    error=str(e),
-                )
+            except Exception:
                 result.errors += 1
+                result.error_details.append(
+                    (
+                        str(organization.id),
+                        organization.name,
+                        traceback.format_exc(),
+                    )
+                )
 
             if tally is not None:
                 result.customers_created += tally.customers
@@ -288,12 +295,17 @@ async def backfill(
             f"\nDone: {result.customers_created} customers, "
             f"{result.members_created} members, "
             f"{result.subscriptions_created} subscriptions, "
-            f"{result.skipped_existing} skipped (existing), "
             f"{result.skipped_no_members} skipped (no members), "
             f"{result.errors} errors"
         )
+        if result.error_details:
+            typer.echo("\nErrors:")
+            for org_id, org_name, tb in result.error_details:
+                typer.echo(f"\n  {org_name} ({org_id}):")
+                for line in tb.rstrip().splitlines():
+                    typer.echo(f"    {line}")
     finally:
-        await redis.close()
+        await redis.aclose()  # type: ignore[attr-defined]
         await engine.dispose()
 
 

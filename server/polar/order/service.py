@@ -1019,8 +1019,7 @@ class OrderService:
             or organization.status in OrganizationStatus.terminal_statuses()
         ):
             log.info(
-                "Organization is blocked or in a terminal status, "
-                "skipping payment",
+                "Organization is blocked or in a terminal status, skipping payment",
                 order_id=order.id,
                 organization_id=organization.id,
                 organization_status=organization.status,

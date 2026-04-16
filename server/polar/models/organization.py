@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, NotRequired, Self, TypedDict
+from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
 from urllib.parse import urlparse
 from uuid import UUID
 
+from pydantic.json_schema import WithJsonSchema
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
@@ -24,7 +25,6 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.config import settings
 from polar.enums import (
     InvoiceNumbering,
-    PublicSubscriptionProrationBehavior,
     SubscriptionProrationBehavior,
     TaxBehaviorOption,
 )
@@ -83,7 +83,16 @@ _default_notification_settings: OrganizationNotificationSettings = {
 
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
-    proration_behavior: PublicSubscriptionProrationBehavior
+    proration_behavior: Annotated[
+        SubscriptionProrationBehavior,
+        WithJsonSchema(
+            {
+                "enum": ["invoice", "prorate", "next_period"],
+                "title": "PublicSubscriptionProrationBehavior",
+                "type": "string",
+            }
+        ),
+    ]
     benefit_revocation_grace_period: int
     prevent_trial_abuse: bool
     # Legacy - to be removed separately

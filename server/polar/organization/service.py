@@ -13,7 +13,7 @@ from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
 from polar.customer.repository import CustomerRepository
-from polar.enums import InvoiceNumbering
+from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
@@ -347,6 +347,29 @@ class OrganizationService:
                 )
 
         if update_schema.subscription_settings is not None:
+            if (
+                update_schema.subscription_settings.get("proration_behavior")
+                == SubscriptionProrationBehavior.reset
+                and not organization.feature_settings.get(
+                    "reset_proration_behavior_enabled"
+                )
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": (
+                                "body",
+                                "subscription_settings",
+                                "proration_behavior",
+                            ),
+                            "msg": "The 'reset' proration behavior is not enabled for this organization.",
+                            "input": update_schema.subscription_settings[
+                                "proration_behavior"
+                            ],
+                        }
+                    ]
+                )
             organization.subscription_settings = update_schema.subscription_settings
 
         if update_schema.notification_settings is not None:

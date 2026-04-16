@@ -11,6 +11,7 @@ from polar.config import Environment, settings
 from polar.enums import (
     InvoiceNumbering,
     PayoutAccountType,
+    SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
 )
 from polar.exceptions import PolarRequestValidationError
@@ -19,6 +20,7 @@ from polar.models.account import Account
 from polar.models.organization import (
     OrganizationNotificationSettings,
     OrganizationStatus,
+    OrganizationSubscriptionSettings,
 )
 from polar.models.organization_review import OrganizationReview
 from polar.organization.schemas import (
@@ -1846,6 +1848,67 @@ class TestUpdateSeatBasedPricing:
         )
 
         assert result.feature_settings["seat_based_pricing_enabled"] is True
+
+
+@pytest.mark.asyncio
+class TestResetProrationBehavior:
+    async def test_cant_set_without_feature_flag(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "reset_proration_behavior_enabled": False,
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.update(
+                session,
+                organization,
+                OrganizationUpdate(
+                    subscription_settings=OrganizationSubscriptionSettings(
+                        allow_multiple_subscriptions=False,
+                        proration_behavior=SubscriptionProrationBehavior.reset,
+                        benefit_revocation_grace_period=0,
+                        prevent_trial_abuse=False,
+                        allow_customer_updates=True,
+                    ),
+                ),
+            )
+
+    async def test_can_set_with_feature_flag(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "reset_proration_behavior_enabled": True,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                subscription_settings=OrganizationSubscriptionSettings(
+                    allow_multiple_subscriptions=False,
+                    proration_behavior=SubscriptionProrationBehavior.reset,
+                    benefit_revocation_grace_period=0,
+                    prevent_trial_abuse=False,
+                    allow_customer_updates=True,
+                ),
+            ),
+        )
+
+        assert (
+            result.subscription_settings["proration_behavior"]
+            == SubscriptionProrationBehavior.reset
+        )
 
 
 @pytest.mark.asyncio

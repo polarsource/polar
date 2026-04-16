@@ -748,7 +748,7 @@ class TestUpdateProductProrations:
         call_proration, org_proration = proration_behavior
         expected_proration = call_proration or org_proration
 
-        organization.subscription_settings["proration_behavior"] = org_proration  # type: ignore
+        organization.subscription_settings["proration_behavior"] = org_proration
         session.add(organization)
         await session.flush()
 

@@ -49,7 +49,9 @@ const OrganizationSubscriptionSettings: React.FC<
 
       toast({
         title: 'Subscription Settings Update Failed',
-        description: `Error updating subscription settings: ${error.detail}`,
+        description: isValidationError(error.detail)
+          ? 'Please check the form for errors'
+          : `Error updating subscription settings: ${error.detail}`,
       })
 
       return

@@ -12,11 +12,11 @@ from polar.transaction.repository import TransactionRepository
 
 from .generator import (
     Invoice,
-    InvoiceGenerator,
     InvoiceHeadingItem,
     InvoiceItem,
     InvoiceTotalsItem,
 )
+from .render import render_invoice_pdf
 
 
 class InvoiceError(PolarError): ...
@@ -34,9 +34,7 @@ class MissingAccountBillingDetails(InvoiceError):
 class InvoiceService:
     async def create_order_invoice(self, order: Order) -> str:
         invoice = Invoice.from_order(order)
-        generator = InvoiceGenerator(invoice)
-        generator.generate()
-        invoice_bytes = generator.output()
+        invoice_bytes = await render_invoice_pdf(invoice)
 
         s3 = S3Service(settings.S3_CUSTOMER_INVOICES_BUCKET_NAME)
         return s3.upload(
@@ -161,9 +159,9 @@ class InvoiceService:
             else [],
         )
 
-        generator = InvoiceGenerator(invoice, heading_title="Reverse Invoice")
-        generator.generate()
-        invoice_bytes = generator.output()
+        invoice_bytes = await render_invoice_pdf(
+            invoice, heading_title="Reverse Invoice"
+        )
         s3 = S3Service(settings.S3_PAYOUT_INVOICES_BUCKET_NAME)
         return s3.upload(
             bytes(invoice_bytes),

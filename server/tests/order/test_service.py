@@ -2221,6 +2221,7 @@ class TestCreateOrderBalance:
 class TestSendConfirmationEmail:
     async def test_billing_not_set(
         self,
+        mocker: MockerFixture,
         enqueue_email_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -2228,6 +2229,10 @@ class TestSendConfirmationEmail:
         customer: Customer,
         organization: Organization,
     ) -> None:
+        create_order_invoice_mock = mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
         order = await create_order(
             save_fixture,
             product=product,
@@ -2237,6 +2242,7 @@ class TestSendConfirmationEmail:
         await order_service.send_confirmation_email(session, order)
 
         assert order.invoice_path is None
+        create_order_invoice_mock.assert_not_called()
         enqueue_email_mock.assert_called_once()
         assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]
@@ -2244,6 +2250,7 @@ class TestSendConfirmationEmail:
 
     async def test_billing_set(
         self,
+        mocker: MockerFixture,
         enqueue_email_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -2251,6 +2258,16 @@ class TestSendConfirmationEmail:
         customer: Customer,
         organization: Organization,
     ) -> None:
+        create_order_invoice_mock = mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+            return_value="invoices/mock-invoice.pdf",
+        )
+        get_order_invoice_url_mock = mocker.patch(
+            "polar.order.service.invoice_service.get_order_invoice_url",
+            new_callable=AsyncMock,
+            return_value=("https://mock-s3/invoices/mock-invoice.pdf", utc_now()),
+        )
         order = await create_order(
             save_fixture,
             product=product,
@@ -2262,6 +2279,8 @@ class TestSendConfirmationEmail:
         await order_service.send_confirmation_email(session, order)
 
         assert order.invoice_path is not None
+        create_order_invoice_mock.assert_called_once_with(order)
+        get_order_invoice_url_mock.assert_called_once()
         enqueue_email_mock.assert_called_once()
         assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]

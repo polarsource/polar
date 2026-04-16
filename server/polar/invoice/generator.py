@@ -1,7 +1,7 @@
 import textwrap
 from datetime import date, datetime
 from pathlib import Path
-from typing import ClassVar, Self
+from typing import TYPE_CHECKING, ClassVar, Self
 
 import arabic_reshaper
 import pycountry
@@ -18,8 +18,10 @@ from polar.config import Environment, settings
 from polar.kit.address import Address
 from polar.kit.currency import format_currency
 from polar.kit.utils import utc_now
-from polar.models import Order
-from polar.tax.calculation import TaxabilityReason, TaxRate
+from polar.tax.calculation.base import TaxabilityReason, TaxRate
+
+if TYPE_CHECKING:
+    from polar.models import Order
 
 
 def format_number(n: int) -> str:
@@ -179,7 +181,7 @@ class Invoice(BaseModel):
         return items
 
     @classmethod
-    def from_order(cls, order: Order) -> Self:
+    def from_order(cls, order: "Order") -> Self:
         assert order.billing_name is not None
         assert order.billing_address is not None
         assert order.invoice_number is not None

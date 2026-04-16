@@ -703,9 +703,6 @@ class TestHandleOngoingReviewVerdict:
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        plain_mock = mocker.patch(
-            "polar.organization.service.plain_service.create_organization_review_thread"
-        )
 
         # When: verdict is APPROVE
         result = await organization_service.handle_ongoing_review_verdict(
@@ -717,7 +714,6 @@ class TestHandleOngoingReviewVerdict:
         assert organization.status == OrganizationStatus.ACTIVE
         assert organization.next_review_threshold == 100_000
         enqueue_job_mock.assert_called_once()
-        plain_mock.assert_not_called()
 
     async def test_escalate_on_deny_verdict(
         self,
@@ -731,46 +727,15 @@ class TestHandleOngoingReviewVerdict:
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        plain_mock = mocker.patch(
-            "polar.organization.service.plain_service.create_organization_review_thread"
-        )
 
         # When: verdict is DENY
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.DENY
         )
 
-        # Then: escalated, Plain ticket created, status unchanged
+        # Then: escalated to backoffice (status unchanged), no auto-approval side effects
         assert result is False
         assert organization.status == OrganizationStatus.REVIEW
-        plain_mock.assert_called_once_with(session, organization)
-        enqueue_job_mock.assert_not_called()
-
-    async def test_escalate_on_needs_human_review(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        # Given: org is REVIEW with threshold=$500
-        organization.status = OrganizationStatus.REVIEW
-        organization.next_review_threshold = 50_000
-        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
-
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        plain_mock = mocker.patch(
-            "polar.organization.service.plain_service.create_organization_review_thread"
-        )
-
-        # When: verdict is DENY
-        result = await organization_service.handle_ongoing_review_verdict(
-            session, organization, ReviewVerdict.DENY
-        )
-
-        # Then: escalated, Plain ticket created
-        assert result is False
-        assert organization.status == OrganizationStatus.REVIEW
-        plain_mock.assert_called_once_with(session, organization)
         enqueue_job_mock.assert_not_called()
 
     async def test_auto_approve_low_threshold(
@@ -785,9 +750,6 @@ class TestHandleOngoingReviewVerdict:
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        plain_mock = mocker.patch(
-            "polar.organization.service.plain_service.create_organization_review_thread"
-        )
 
         # When: verdict is APPROVE
         result = await organization_service.handle_ongoing_review_verdict(
@@ -799,7 +761,6 @@ class TestHandleOngoingReviewVerdict:
         assert organization.status == OrganizationStatus.ACTIVE
         assert organization.next_review_threshold == 10_000
         enqueue_job_mock.assert_called_once()
-        plain_mock.assert_not_called()
 
     async def test_auto_approve_zero_threshold(
         self,
@@ -813,9 +774,6 @@ class TestHandleOngoingReviewVerdict:
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        plain_mock = mocker.patch(
-            "polar.organization.service.plain_service.create_organization_review_thread"
-        )
 
         # When: verdict is APPROVE
         result = await organization_service.handle_ongoing_review_verdict(
@@ -827,7 +785,6 @@ class TestHandleOngoingReviewVerdict:
         assert organization.status == OrganizationStatus.ACTIVE
         assert organization.next_review_threshold == 10_000
         enqueue_job_mock.assert_called_once()
-        plain_mock.assert_not_called()
 
     async def test_not_eligible_no_initial_review(
         self,
@@ -840,19 +797,15 @@ class TestHandleOngoingReviewVerdict:
         organization.next_review_threshold = 50_000
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        plain_mock = mocker.patch(
-            "polar.organization.service.plain_service.create_organization_review_thread"
-        )
 
         # When: verdict is APPROVE but org hasn't been initially reviewed
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.APPROVE
         )
 
-        # Then: not eligible, escalated to Plain
+        # Then: not eligible for auto-approval, stays under review for backoffice handling
         assert result is False
         assert organization.status == OrganizationStatus.REVIEW
-        plain_mock.assert_called_once_with(session, organization)
         enqueue_job_mock.assert_not_called()
 
     async def test_not_eligible_wrong_status(
@@ -867,18 +820,14 @@ class TestHandleOngoingReviewVerdict:
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-        plain_mock = mocker.patch(
-            "polar.organization.service.plain_service.create_organization_review_thread"
-        )
 
         # When: verdict is APPROVE but status is ACTIVE (not REVIEW)
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.APPROVE
         )
 
-        # Then: not eligible, but org is not under review so no Plain thread
+        # Then: not eligible for auto-approval
         assert result is False
-        plain_mock.assert_not_called()
         enqueue_job_mock.assert_not_called()
 
 

@@ -131,7 +131,6 @@ class TestRunReviewAgentGrandfathered:
                 new_callable=AsyncMock,
                 return_value=agent_result,
             ),
-            patch("polar.organization_review.tasks.plain_service"),
         ):
             await _run_review_agent(
                 organization.id,
@@ -190,7 +189,6 @@ class TestRunReviewAgentGrandfathered:
                 new_callable=AsyncMock,
                 return_value=agent_result,
             ),
-            patch("polar.organization_review.tasks.plain_service"),
         ):
             await _run_review_agent(
                 organization.id,
@@ -233,7 +231,6 @@ class TestRunReviewAgentGrandfathered:
                 new_callable=AsyncMock,
                 return_value=agent_result,
             ),
-            patch("polar.organization_review.tasks.plain_service"),
         ):
             await _run_review_agent(
                 organization.id,
@@ -287,7 +284,6 @@ class TestRunReviewAgentGrandfathered:
                 new_callable=AsyncMock,
                 return_value=agent_result,
             ),
-            patch("polar.organization_review.tasks.plain_service"),
         ):
             await _run_review_agent(
                 organization.id,

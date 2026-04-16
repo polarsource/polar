@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,7 +9,7 @@ from polar.email.schemas import OrganizationReviewedEmail
 from polar.held_balance.service import HeldBalanceService
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Account, Organization, User
+from polar.models import Organization, User
 from polar.models.organization import OrganizationStatus
 from polar.organization.tasks import (
     OrganizationDoesNotExist,
@@ -68,39 +69,40 @@ class TestOrganizationUnderReview:
         # then
         session.expunge_all()
 
-        create_organization_review_thread_mock = mocker.patch(
-            "polar.organization.tasks.plain_service.create_organization_review_thread",
-            return_value="thread_123",
-        )
+        enqueue_job_mock = mocker.patch("polar.organization.tasks.enqueue_job")
 
         await organization_under_review(organization.id)
 
-        create_organization_review_thread_mock.assert_called_once()
+        enqueue_job_mock.assert_called_once_with(
+            "organization_review.run_agent",
+            organization_id=organization.id,
+            auto_approve_eligible=False,
+        )
 
-    async def test_existing_organization_with_account(
+    async def test_auto_approve_eligible(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        account: Account,
         user: User,
     ) -> None:
-        # Update organization to have under review status
+        # Org under review and previously reviewed → auto-approve eligible
         organization.status = OrganizationStatus.REVIEW
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
         await save_fixture(organization)
 
-        # then
         session.expunge_all()
 
-        create_organization_review_thread_mock = mocker.patch(
-            "polar.organization.tasks.plain_service.create_organization_review_thread",
-            return_value="thread_123",
-        )
+        enqueue_job_mock = mocker.patch("polar.organization.tasks.enqueue_job")
 
         await organization_under_review(organization.id)
 
-        create_organization_review_thread_mock.assert_called_once()
+        enqueue_job_mock.assert_called_once_with(
+            "organization_review.run_agent",
+            organization_id=organization.id,
+            auto_approve_eligible=True,
+        )
 
 
 @pytest.mark.asyncio

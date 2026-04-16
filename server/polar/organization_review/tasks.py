@@ -2,12 +2,10 @@ import uuid
 from datetime import UTC, datetime
 
 import structlog
-from sqlalchemy.orm import joinedload
 
 from polar.config import Environment, settings
 from polar.exceptions import PolarTaskError
-from polar.integrations.plain.service import plain as plain_service
-from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
     OrganizationRepository,
@@ -53,7 +51,7 @@ async def run_review_agent(
     organization_id: uuid.UUID,
     context: str = ReviewContext.THRESHOLD,
     auto_approve_eligible: bool = False,
-    plain_thread_id: str | None = None,
+    plain_thread_id: str | None = None,  # kept for in-flight job compatibility
 ) -> None:
     """Run the organization review agent as a background task.
 
@@ -67,11 +65,7 @@ async def run_review_agent(
 
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
-        organization = await repository.get_by_id(
-            organization_id,
-            include_blocked=True,
-            options=(joinedload(Organization.account),),
-        )
+        organization = await repository.get_by_id(organization_id, include_blocked=True)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
@@ -86,9 +80,6 @@ async def run_review_agent(
                     "organization_review.threshold.agent_failed",
                     organization_id=str(organization_id),
                     slug=organization.slug,
-                )
-                await plain_service.create_organization_review_thread(
-                    session, organization
                 )
                 return
             raise
@@ -135,9 +126,6 @@ async def run_review_agent(
                     slug=organization.slug,
                     verdict=report.verdict.value,
                 )
-                await plain_service.create_organization_review_thread(
-                    session, organization
-                )
 
         if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
             auto_approved = await organization_service.handle_ongoing_review_verdict(
@@ -159,17 +147,6 @@ async def run_review_agent(
                     verdict=report.verdict,
                     risk_score=report.overall_risk_score,
                 )
-
-        # For initial reviews, notify the user of action items via Plain
-        if (
-            review_context == ReviewContext.THRESHOLD
-            and not auto_approve_eligible
-            and report.verdict == ReviewVerdict.DENY
-            and plain_thread_id is not None
-        ):
-            await plain_service.send_initial_review_action_email(
-                session, organization, plain_thread_id
-            )
 
         # For SUBMISSION context: also create OrganizationReview record and act
         if review_context == ReviewContext.SUBMISSION:

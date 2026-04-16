@@ -829,7 +829,8 @@ class OrganizationService:
     ) -> bool:
         """Handle AI agent verdict for an ongoing threshold review.
 
-        Returns True if auto-approved, False if escalated to human review (Plain ticket created).
+        Returns True if auto-approved, False if the org must be handled by a
+        human operator in the backoffice.
         Only auto-approves when: verdict is APPROVE and org has been initially reviewed.
         """
         is_eligible = (
@@ -842,12 +843,6 @@ class OrganizationService:
             await self.confirm_organization_reviewed(session, organization)
             return True
 
-        # Not eligible or not approved → create Plain ticket for human review
-        # Guard: only create a thread if the org is still under review
-        # (it may have been handled already, e.g. on a task retry)
-        # Excludes SNOOZED — snoozed orgs shouldn't get new Plain tickets
-        if organization.status == OrganizationStatus.REVIEW:
-            await plain_service.create_organization_review_thread(session, organization)
         return False
 
     async def deny_organization(

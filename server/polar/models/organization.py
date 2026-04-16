@@ -147,7 +147,7 @@ class CustomerPortalSubscriptionSettings(TypedDict):
 
 
 class CustomerPortalCustomerSettings(TypedDict):
-    allow_email_change: bool
+    allow_email_change: NotRequired[bool]
 
 
 class OrganizationCustomerPortalSettings(TypedDict):

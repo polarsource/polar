@@ -115,6 +115,15 @@ export const setProductValidationErrors = <TFieldValues extends FieldValues>(
   })
 }
 
+export const extractApiErrorMessage = (
+  error: { detail?: string | { msg?: string }[] | unknown },
+  fallback: string = 'An unexpected error occurred',
+): string => {
+  if (typeof error?.detail === 'string') return error.detail
+  if (Array.isArray(error?.detail)) return error.detail[0]?.msg || fallback
+  return fallback
+}
+
 export const apiErrorToast = (
   error:
     | schemas['HTTPValidationError']
@@ -123,21 +132,11 @@ export const apiErrorToast = (
   toast: ReturnType<typeof useToast>['toast'],
   options: Parameters<ReturnType<typeof useToast>['toast']>[0] = {},
 ): void => {
-  if (
-    'error' in error &&
-    (error.error === 'ResourceNotFound' || error.error === 'NotPermitted')
-  ) {
-    // ResourceNotFound or NotPermitted
-    toast({ title: 'Error', description: error.detail, ...options })
-  } else {
-    // HTTPValidationError
-    toast({
-      title: 'Error',
-      description: error.detail ? error.detail[0]?.msg : 'An error occurred',
-      ...options,
-    })
-    return
-  }
+  toast({
+    title: 'Error',
+    description: extractApiErrorMessage(error),
+    ...options,
+  })
 }
 
 /**

@@ -1,4 +1,5 @@
 import { useCustomerPortalContext } from '@/components/CustomerPortal/CustomerPortalProvider'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { Client, operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -574,16 +575,6 @@ export const useResendSeatInvitation = (api: Client) =>
       return result
     },
   })
-
-// Member management hooks
-const extractApiErrorMessage = (
-  error: { detail?: string | { msg?: string }[] },
-  fallback: string,
-): string => {
-  if (typeof error?.detail === 'string') return error.detail
-  if (Array.isArray(error?.detail)) return error.detail[0]?.msg || fallback
-  return fallback
-}
 
 export const useCustomerPortalMembers = (api: Client) =>
   useQuery({

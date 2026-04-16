@@ -8,6 +8,18 @@ export default [
     plugins: {
       polar: polarPlugin,
     },
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: [
+            'vitest.config.ts',
+            'playwright.config.ts',
+            '*.config.mjs',
+            'instrumentation-client.ts',
+          ],
+        },
+      },
+    },
   },
   {
     rules: {
@@ -17,6 +29,7 @@ export default [
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/immutability': 'warn',
       'react-hooks/purity': 'warn',
+      'polar/no-toast-error-detail': 'error',
     },
   },
   {
@@ -46,6 +59,8 @@ export default [
       '.next/**',
       'out/**',
       'build/**',
+      'coverage/**',
+      'eslint-rules/**',
       'next-env.d.ts',
       'e2e/**',
       'playwright-report/**',

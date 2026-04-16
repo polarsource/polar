@@ -387,6 +387,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=dict
     )
 
+    @property
+    def is_member_model_enabled(self) -> bool:
+        return self.feature_settings.get("member_model_enabled", False)
+
     #
     # Currency and tax settings
     #

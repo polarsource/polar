@@ -695,6 +695,66 @@ class TestAssignSeat:
         assert seat.member.organization_id == organization.id
 
     @pytest.mark.asyncio
+    async def test_assign_seat_with_email_only_member_model_enabled_does_not_create_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Regression test: when member_model_enabled=True and only an email is
+        provided, no individual Customer should be created for the seat holder.
+        The seat holder is represented as a Member under the billing customer.
+        """
+        from polar.customer.repository import CustomerRepository
+
+        organization = await create_organization(
+            save_fixture,
+            account,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        with patch("polar.customer_seat.service.send_seat_invitation_email"):
+            seat = await seat_service.assign_seat(
+                session, subscription, email="seat@example.com"
+            )
+
+        # Seat is linked to the billing customer via a Member — not a new
+        # individual Customer.
+        assert seat.customer_id == billing_customer.id
+        assert seat.email == "seat@example.com"
+        assert seat.member_id is not None
+
+        await session.refresh(seat, ["member"])
+        assert seat.member is not None
+        assert seat.member.customer_id == billing_customer.id
+        assert seat.member.email == "seat@example.com"
+
+        customer_repository = CustomerRepository.from_session(session)
+        assert (
+            await customer_repository.get_by_email_and_organization(
+                "seat@example.com", organization.id
+            )
+            is None
+        )
+
+    @pytest.mark.asyncio
     async def test_assign_seat_without_member_model_enabled(
         self,
         session: AsyncSession,
@@ -764,7 +824,9 @@ class TestAssignSeat:
         assert seat is not None
         assert seat.email == "seat@example.com"
         assert seat.member_id is not None
-        assert seat.customer_id == seat_customer.id
+        # When member_model_enabled=True, customer_id on the seat is the billing
+        # customer and the seat holder is represented as a Member.
+        assert seat.customer_id == billing_customer.id
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_external_customer_id_backward_compat(
@@ -810,7 +872,9 @@ class TestAssignSeat:
         assert seat is not None
         assert seat.email == "ext-seat@example.com"
         assert seat.member_id is not None
-        assert seat.customer_id == seat_customer.id
+        # When member_model_enabled=True, customer_id on the seat is the billing
+        # customer and the seat holder is represented as a Member.
+        assert seat.customer_id == billing_customer.id
 
     @pytest.mark.asyncio
     async def test_assign_seat_customer_id_not_found_member_model(
@@ -843,7 +907,7 @@ class TestAssignSeat:
             save_fixture, product=product, customer=billing_customer, seats=5
         )
 
-        with pytest.raises(CustomerNotFound):
+        with pytest.raises(InvalidSeatAssignmentRequest):
             await seat_service.assign_seat(
                 session, subscription, customer_id=uuid.uuid4()
             )

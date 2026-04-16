@@ -51,7 +51,7 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
       { radius: 0,    rayCount: 36, rayLength: 0, direction: 1,  angle: 0 },
     ];
 
-    const speed = 0.0015;
+    const speed = 0.00075;
 
     const draw = () => {
       const size = Math.min(w, h);

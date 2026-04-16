@@ -181,10 +181,15 @@ export const VolumetricSlices = () => {
           }
         }
 
-        // Fill the slice's interior with the background colour so deeper
-        // slices are occluded by ones in front.
-        ctx.fillStyle = "#0a0a0a";
+        // Occlude deeper slices without showing a visible fill colour.
+        // destination-out erases any pixels previously drawn under the
+        // fill path, producing a transparent hole that the canvas
+        // background shows through.
+        ctx.save();
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.fillStyle = "#000";
         ctx.fill(fillPath);
+        ctx.restore();
 
         // Stroke the contour on top
         const alpha = 0.45 + sliceT * 0.5;

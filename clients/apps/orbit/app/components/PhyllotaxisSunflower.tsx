@@ -17,7 +17,7 @@ import { GraphicContainer } from './GraphicContainer'
 const GOLDEN_ANGLE = 137.508 * (Math.PI / 180)
 const LERP = 0.03
 const ALPHA_LERP = 0.2
-const CHARS = '01'
+const CHARS = '01 '
 const N_CHARS = CHARS.length
 
 interface Dot {
@@ -71,7 +71,7 @@ export const PhyllotaxisSunflower = () => {
 
     // Orbiter: circles inside the sunflower at ~60% of the dot cloud radius
     const orbitR = maxR * 0.6
-    const orbiterRadius = size * 0.009
+    const orbiterRadius = size * 0.006
 
     // Repel field parameters (ported from original)
     const influenceR = size * 0.5
@@ -85,8 +85,15 @@ export const PhyllotaxisSunflower = () => {
     ctx.textBaseline = 'middle'
 
     let angle = 0
+    let lastTime: number | null = null
+    // Framerate-independent angular speed (rad/sec)
+    const ANG_SPEED = 0.25
 
-    const draw = () => {
+    const draw = (now: number) => {
+      const dt = lastTime === null ? 0 : (now - lastTime) / 1000
+      lastTime = now
+      angle += ANG_SPEED * dt
+
       ctx.clearRect(0, 0, size, size)
 
       const ox = cx + Math.cos(angle) * orbitR
@@ -142,11 +149,10 @@ export const PhyllotaxisSunflower = () => {
       ctx.fillStyle = 'rgba(230, 230, 230, 1)'
       ctx.fill()
 
-      angle += 0.005
       animRef.current = requestAnimationFrame(draw)
     }
 
-    draw()
+    animRef.current = requestAnimationFrame(draw)
 
     return () => cancelAnimationFrame(animRef.current)
   }, [])

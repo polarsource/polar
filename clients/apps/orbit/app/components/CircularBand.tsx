@@ -52,9 +52,18 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
       { radius: 0, rayCount: 36, rayLength: 0, direction: 1, angle: 0 },
     ]
 
-    const speed = 0.00075
+    // Target linear speed at every ring's perimeter, expressed as a
+    // fraction of the canvas size per second. Each ring's angular
+    // velocity is derived from this so all rings move at the same
+    // constant linear velocity regardless of radius or framerate.
+    const LINEAR_SPEED_FRAC = 0.02
 
-    const draw = () => {
+    let lastTime: number | null = null
+
+    const draw = (now: number) => {
+      const dt = lastTime === null ? 0 : (now - lastTime) / 1000
+      lastTime = now
+
       const size = Math.min(w, h)
       const cx = w / 2
       const cy = h / 2
@@ -64,10 +73,16 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
 
       ctx.clearRect(0, 0, w, h)
 
+      // Linear speed in pixels per second
+      const linearSpeedPx = size * LINEAR_SPEED_FRAC
+
       rings.forEach((ring, i) => {
         ring.radius = size * radii[i]
         ring.rayLength = size * lengths[i]
-        ring.angle += speed * ring.direction
+        // ω = v / r — smaller rings rotate faster angularly, but the
+        // edge of every ring sweeps at the same linear speed.
+        const angSpeed = linearSpeedPx / Math.max(1, ring.radius)
+        ring.angle += angSpeed * ring.direction * dt
 
         const step = (Math.PI * 2) / ring.rayCount
 
@@ -90,7 +105,7 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
       animRef.current = requestAnimationFrame(draw)
     }
 
-    draw()
+    animRef.current = requestAnimationFrame(draw)
 
     return () => {
       cancelAnimationFrame(animRef.current)

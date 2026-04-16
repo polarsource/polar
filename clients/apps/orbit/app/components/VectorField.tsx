@@ -47,9 +47,12 @@ export const VectorField = () => {
 
     let time = 0;
 
+    // Opacity range — horizontal lines at MAX_ALPHA, vertical at MIN_ALPHA
+    const MIN_ALPHA = 0.12;
+    const MAX_ALPHA = 0.95;
+
     const draw = () => {
       ctx.clearRect(0, 0, size, size);
-      ctx.strokeStyle = "rgba(220, 220, 220, 0.85)";
       ctx.lineWidth = 1;
       ctx.lineCap = "round";
 
@@ -65,17 +68,24 @@ export const VectorField = () => {
 
           // Rotating spiral/rose field
           const theta = Math.atan2(v, u);
-          const n = 3;           // spiral arm count
-          const k = 4;           // radial winding density
-          const omega = 0.6;     // global rotation speed
+          const n = 3;
+          const k = 4;
+          const omega = 0.6;
           const angle = n * theta + k * r - omega * time;
 
-          const dx = Math.cos(angle) * half;
-          const dy = Math.sin(angle) * half;
+          const ca = Math.cos(angle);
+          const sa = Math.sin(angle);
+          const dx = ca * half;
+          const dy = sa * half;
+
+          // |cos(angle)| = 1 when horizontal, 0 when vertical
+          const horizontalness = Math.abs(ca);
+          const alpha = MIN_ALPHA + horizontalness * (MAX_ALPHA - MIN_ALPHA);
 
           const cx = padding + cellW * (ci + 0.5);
           const cy = padding + cellH * (ri + 0.5);
 
+          ctx.strokeStyle = `rgba(220, 220, 220, ${alpha})`;
           ctx.beginPath();
           ctx.moveTo(cx - dx, cy - dy);
           ctx.lineTo(cx + dx, cy + dy);

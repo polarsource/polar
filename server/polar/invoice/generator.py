@@ -226,6 +226,41 @@ class InvoiceGenerator(FPDF):
     font_name: ClassVar[str] = "inter"
     """Font family name."""
 
+    hebrew_regular_font_file = (
+        Path(__file__).parent / "fonts/NotoSansHebrew-Regular.ttf"
+    )
+    """Path to the Hebrew regular fallback font file."""
+
+    hebrew_bold_font_file = Path(__file__).parent / "fonts/NotoSansHebrew-Bold.ttf"
+    """Path to the Hebrew bold fallback font file."""
+
+    hebrew_font_name: ClassVar[str] = "notosanshebrew"
+    """Font family name for Hebrew fallback glyphs."""
+
+    arabic_regular_font_file = (
+        Path(__file__).parent / "fonts/NotoSansArabic-Regular.ttf"
+    )
+    """Path to the Arabic regular fallback font file."""
+
+    arabic_bold_font_file = Path(__file__).parent / "fonts/NotoSansArabic-Bold.ttf"
+    """Path to the Arabic bold fallback font file."""
+
+    arabic_font_name: ClassVar[str] = "notosansarabic"
+    """Font family name for Arabic fallback glyphs."""
+
+    cjk_regular_font_files: ClassVar[tuple[Path, ...]] = (
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+    )
+    """Candidate paths to the CJK regular fallback font file."""
+
+    cjk_bold_font_files: ClassVar[tuple[Path, ...]] = (
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"),
+    )
+    """Candidate paths to the CJK bold fallback font file."""
+
+    cjk_font_name: ClassVar[str] = "notosanscjk"
+    """Font family name for CJK fallback glyphs."""
+
     base_font_size: ClassVar[int] = 10
     """Base font size in points."""
 
@@ -250,6 +285,17 @@ class InvoiceGenerator(FPDF):
     totals_table_row_height: ClassVar[int] = 6
     """Height of each row in the totals table in points."""
 
+    @classmethod
+    def resolve_font_file(cls, candidates: tuple[Path, ...]) -> Path | None:
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return None
+
+    @classmethod
+    def has_cjk_fallback_fonts(cls) -> bool:
+        return cls.resolve_font_file(cls.cjk_regular_font_files) is not None
+
     def __init__(
         self,
         data: Invoice,
@@ -260,6 +306,24 @@ class InvoiceGenerator(FPDF):
 
         self.add_font(self.font_name, fname=self.regular_font_file)
         self.add_font(self.font_name, fname=self.bold_font_file, style="B")
+        self.add_font(self.hebrew_font_name, fname=self.hebrew_regular_font_file)
+        self.add_font(
+            self.hebrew_font_name, fname=self.hebrew_bold_font_file, style="B"
+        )
+        self.add_font(self.arabic_font_name, fname=self.arabic_regular_font_file)
+        self.add_font(
+            self.arabic_font_name, fname=self.arabic_bold_font_file, style="B"
+        )
+        fallback_fonts = [self.hebrew_font_name, self.arabic_font_name]
+        cjk_regular_font_file = self.resolve_font_file(self.cjk_regular_font_files)
+        if cjk_regular_font_file is not None:
+            self.add_font(self.cjk_font_name, fname=cjk_regular_font_file)
+            cjk_bold_font_file = self.resolve_font_file(self.cjk_bold_font_files)
+            if cjk_bold_font_file is not None:
+                self.add_font(self.cjk_font_name, fname=cjk_bold_font_file, style="B")
+            fallback_fonts.append(self.cjk_font_name)
+        self.set_fallback_fonts(fallback_fonts, exact_match=False)
+        self.set_text_shaping(use_shaping_engine=True)
         self.set_font(self.font_name, size=self.base_font_size)
 
         self.alias_nb_pages()

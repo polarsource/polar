@@ -14,6 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.schemas.customer import CustomerTeamCreate
 from polar.customer.service import customer as customer_service
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.member.schemas import MemberOwnerCreate
 from polar.member.service import member_service
@@ -38,6 +39,7 @@ class BackfillResult:
     members_created: int = 0
     subscriptions_created: int = 0
     skipped_no_members: int = 0
+    skipped_validation: int = 0
     errors: int = 0
     error_details: list[tuple[str, str, str]] = field(default_factory=list)
 
@@ -114,12 +116,12 @@ async def _backfill_organization(
 
     customer = await customer_service.create(
         session,
-        CustomerTeamCreate(
+        CustomerTeamCreate.model_construct(
             type="team",
-            email=owner.email,
+            email=None,
             name=organization.name,
             external_id=str(organization.id),
-            owner=MemberOwnerCreate(
+            owner=MemberOwnerCreate.model_construct(
                 email=owner.email,
                 name=owner.public_name,
                 external_id=str(owner.id),
@@ -231,6 +233,8 @@ async def run_backfill(
                         organization=organization,
                         members=members,
                     )
+            except PolarRequestValidationError:
+                result.skipped_validation += 1
             except Exception:
                 result.errors += 1
                 result.error_details.append(
@@ -297,6 +301,7 @@ async def backfill(
             f"{result.members_created} members, "
             f"{result.subscriptions_created} subscriptions, "
             f"{result.skipped_no_members} skipped (no members), "
+            f"{result.skipped_validation} skipped (validation conflict), "
             f"{result.errors} errors"
         )
         if result.error_details:

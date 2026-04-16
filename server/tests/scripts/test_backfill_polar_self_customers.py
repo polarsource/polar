@@ -10,6 +10,7 @@ from polar.models import (
     Member,
     Organization,
     Subscription,
+    User,
     UserOrganization,
 )
 from polar.worker._enqueue import _job_queue_manager
@@ -192,18 +193,17 @@ class TestBackfillPolarSelfCustomers:
         self_org = await _setup_self_org(save_fixture, account, monkeypatch)
 
         failing_org = await create_organization(save_fixture, account_second)
-        failing_user = await create_user(save_fixture)
+        # User with empty email triggers IndexError in User.public_name
+        # (email[0] on ""), exercising the real except-Exception error path.
+        failing_user = User(
+            email="",
+            email_verified=True,
+            avatar_url="",
+            oauth_accounts=[],
+        )
+        await save_fixture(failing_user)
         await save_fixture(
             UserOrganization(user=failing_user, organization=failing_org)
-        )
-
-        # Block failing_org by occupying its email slot in self_org's unique index.
-        await create_customer(
-            save_fixture,
-            organization=self_org,
-            external_id="blocker-external-id",
-            email=failing_user.email,
-            name="Blocker",
         )
 
         ok_account = await create_account(save_fixture, await create_user(save_fixture))

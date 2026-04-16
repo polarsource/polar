@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FieldValues, UseFormReturn, useWatch } from 'react-hook-form'
+import { deepEqual } from '@/utils/deepEqual'
 import { useDebouncedCallback } from './utils'
 
 interface UseAutoSaveOptions<T extends FieldValues> {
@@ -16,6 +17,7 @@ export function useAutoSave<T extends FieldValues>({
   enabled = true,
 }: UseAutoSaveOptions<T>) {
   const [isSaving, setIsSaving] = useState(false)
+  const lastAttempt = useRef<T | null>(null)
 
   const { control, formState } = form
   const { isDirty } = formState
@@ -23,9 +25,11 @@ export function useAutoSave<T extends FieldValues>({
 
   const debouncedSave = useDebouncedCallback(
     async () => {
+      const data = form.getValues()
+      lastAttempt.current = data
+
       setIsSaving(true)
       try {
-        const data = form.getValues()
         await onSave(data)
       } finally {
         setIsSaving(false)
@@ -40,8 +44,12 @@ export function useAutoSave<T extends FieldValues>({
       return
     }
 
+    if (deepEqual(form.getValues(), lastAttempt.current)) {
+      return
+    }
+
     debouncedSave()
-  }, [formValues, enabled, isDirty, debouncedSave, isSaving])
+  }, [formValues, enabled, isDirty, debouncedSave, isSaving, form])
 
   return { isSaving }
 }

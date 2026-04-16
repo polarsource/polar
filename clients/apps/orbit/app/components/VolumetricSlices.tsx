@@ -3,63 +3,156 @@
 import { useEffect, useRef } from "react";
 import { GraphicContainer } from "./GraphicContainer";
 
-const box = (x: number, y: number, z: number, hx: number, hy: number, hz: number) =>
-  Math.max(Math.abs(x) - hx, Math.abs(y) - hy, Math.abs(z) - hz);
+/**
+ * VolumetricSlices — WebGL implementation. Each horizontal slice through
+ * an animated 4-metaball volume (clipped by a hard box) is rendered as
+ * a quad in 3D space projected isometrically. The fragment shader
+ * evaluates the CSG scalar field per pixel and emits either a smooth
+ * antialiased contour line (where f ≈ 0) or writes depth only (where
+ * f < 0) so closer slices occlude the strokes of deeper ones.
+ */
 
-// --- Metaballs ---
-// Each ball's center drifts along a Lissajous-like path so the whole
-// blob mass flows and merges organically over time.
-interface Ball {
-  r: number;          // effective radius
-  ax: number; ay: number; az: number; // path amplitudes
-  fx: number; fy: number; fz: number; // path frequencies
-  px: number; py: number; pz: number; // phase offsets
+// ---- Ball definitions (kept identical to the CPU version) ----
+const BALLS = [
+  { r: 0.38, a: [0.62, 0.55, 0.68], f: [0.30, 0.45, 0.38], p: [0.0, 1.1, 2.2] },
+  { r: 0.35, a: [0.70, 0.60, 0.55], f: [0.45, 0.28, 0.50], p: [1.7, 0.4, 3.0] },
+  { r: 0.36, a: [0.55, 0.70, 0.50], f: [0.38, 0.52, 0.31], p: [3.2, 2.7, 0.5] },
+  { r: 0.33, a: [0.65, 0.50, 0.65], f: [0.55, 0.34, 0.44], p: [2.1, 3.8, 1.3] },
+];
+
+// ---- GLSL shaders ----
+const VS = /* glsl */ `
+attribute vec2 a_quad;                 // unit quad corners in [-0.5, 0.5]
+
+uniform float u_sliceZ;
+uniform vec2  u_halfXY;                // world-space half-extent for xy
+uniform vec4  u_viewTrig;              // (cosYaw, sinYaw, cosPitch, sinPitch)
+uniform float u_viewScale;             // world -> NDC scale
+uniform float u_depthScale;            // world depth -> NDC depth scale
+
+varying vec2 v_world;
+
+void main() {
+  vec2 xy = a_quad * u_halfXY * 2.0;
+  v_world = xy;
+
+  float cY = u_viewTrig.x, sY = u_viewTrig.y;
+  float cP = u_viewTrig.z, sP = u_viewTrig.w;
+
+  // Match the CPU isometric projection:
+  //   Yaw around world Z (mixing x,y)
+  //   Pitch around world X (mixing y,z)
+  //   World Z is "up" — slices stack along Z.
+  float x1 = xy.x * cY + xy.y * sY;
+  float y1 = -xy.x * sY + xy.y * cY;
+  float y2 = y1 * cP - u_sliceZ * sP;
+  float z2 = y1 * sP + u_sliceZ * cP;
+
+  // Depth uses ONLY slice Z so every pixel within a slice shares one
+  // depth value. Otherwise adjacent slices' per-pixel depths overlap
+  // (because pitch tilts the plane), causing the depth test to produce
+  // dashed/broken occlusion along lines. This gives each slice a single
+  // discrete depth layer and clean front-to-back culling.
+  float sliceDepth = -u_sliceZ * u_depthScale;
+
+  gl_Position = vec4(
+    x1 * u_viewScale,
+    y2 * u_viewScale,
+    sliceDepth,
+    1.0
+  );
+}
+`;
+
+const FS = /* glsl */ `
+#extension GL_OES_standard_derivatives : enable
+precision highp float;
+
+uniform float u_time;
+uniform float u_sliceZ;
+uniform vec3  u_lineColor;
+uniform float u_lineAlpha;
+
+// Ball uniforms: 4 balls × (radius, 3 amp, 3 freq, 3 phase) = 4 × 10 floats
+uniform float u_ballR[4];
+uniform vec3  u_ballA[4];
+uniform vec3  u_ballF[4];
+uniform vec3  u_ballP[4];
+
+varying vec2 v_world;
+
+// Rounded box SDF (iquilezles.org/articles/distfunctions)
+// Radius r subtracted from the half-extents defines rounded corners/edges.
+float boxSdf(vec3 p, vec3 h, float r) {
+  vec3 d = abs(p) - h + vec3(r);
+  return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0) - r;
 }
 
-const BALLS: Ball[] = [
-  { r: 0.38, ax: 0.62, ay: 0.55, az: 0.68, fx: 0.30, fy: 0.45, fz: 0.38, px: 0.0, py: 1.1, pz: 2.2 },
-  { r: 0.35, ax: 0.70, ay: 0.60, az: 0.55, fx: 0.45, fy: 0.28, fz: 0.50, px: 1.7, py: 0.4, pz: 3.0 },
-  { r: 0.36, ax: 0.55, ay: 0.70, az: 0.50, fx: 0.38, fy: 0.52, fz: 0.31, px: 3.2, py: 2.7, pz: 0.5 },
-  { r: 0.33, ax: 0.65, ay: 0.50, az: 0.65, fx: 0.55, fy: 0.34, fz: 0.44, px: 2.1, py: 3.8, pz: 1.3 },
-];
-
-// Scalar field: metaball blob intersected with a hard box.
-//   metaSum  = Σ r² / d²  — classical inverse-squared metaball kernel.
-//   metaSdf  = 1 − metaSum; negative where the ball contributions exceed 1.
-//   boxSdf   clips the blob to a strict rectangular volume.
-const field = (x: number, y: number, z: number, t: number) => {
-  let metaSum = 0;
-  for (const b of BALLS) {
-    const cx = Math.sin(t * b.fx + b.px) * b.ax;
-    const cy = Math.sin(t * b.fy + b.py) * b.ay;
-    const cz = Math.sin(t * b.fz + b.pz) * b.az;
-    const dx = x - cx, dy = y - cy, dz = z - cz;
-    const d2 = dx * dx + dy * dy + dz * dz + 1e-4;
-    metaSum += (b.r * b.r) / d2;
+float metaSum(vec3 p) {
+  float sum = 0.0;
+  for (int i = 0; i < 4; i++) {
+    vec3 c = sin(u_time * u_ballF[i] + u_ballP[i]) * u_ballA[i];
+    vec3 d = p - c;
+    sum += u_ballR[i] * u_ballR[i] / (dot(d, d) + 1e-4);
   }
-  const metaSdf = 1 - metaSum;
-  const boxSdf = box(x, y, z, 0.55, 0.55, 0.7);
-  return Math.max(metaSdf, boxSdf);
+  return sum;
+}
+
+void main() {
+  vec3 p = vec3(v_world, u_sliceZ);
+
+  float metaSdf = 1.0 - metaSum(p);                       // < 0 inside blob
+  float boxS    = boxSdf(p, vec3(0.55, 0.55, 0.7), 0.06);  // < 0 inside box (rounded)
+
+  // Outside the intersection → no color, no depth
+  if (max(metaSdf, boxS) > 0.0) discard;
+
+  // Each SDF's contour is rendered independently using its own smooth
+  // gradient, avoiding the max() ridge artefact where the two surfaces
+  // meet. The box SDF's gradient is a clean axis-aligned vector along
+  // each face, giving a crisp straight segment; the metaball gradient
+  // is smooth, giving a soft curve. Both are combined with max().
+  vec2 gm = vec2(dFdx(metaSdf), dFdy(metaSdf));
+  float metaPx = abs(metaSdf) / max(length(gm), 1e-4);
+  float metaLine = 1.0 - smoothstep(1.2, 2.2, metaPx);
+
+  vec2 gb = vec2(dFdx(boxS), dFdy(boxS));
+  float boxPx = abs(boxS) / max(length(gb), 1e-4);
+  float boxLine = 1.0 - smoothstep(1.2, 2.2, boxPx);
+
+  float line = max(metaLine, boxLine);
+
+  if (line > 0.02) {
+    gl_FragColor = vec4(u_lineColor, u_lineAlpha * line);
+  } else {
+    // Inside solid but not on the line — write depth only so closer
+    // slices can occlude deeper contour strokes. Transparent color
+    // contributes nothing visually.
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+  }
+}
+`;
+
+const compile = (gl: WebGLRenderingContext, type: number, src: string) => {
+  const s = gl.createShader(type)!;
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    throw new Error(gl.getShaderInfoLog(s) ?? "shader compile error");
+  }
+  return s;
 };
 
-// Marching-squares contour edges (line segments per case).
-// Corner order: 0=BL, 1=BR, 2=TR, 3=TL. Edges: 0=bottom,1=right,2=top,3=left.
-const MS_EDGES: number[][] = [
-  [], [0, 3], [0, 1], [1, 3], [1, 2], [0, 3, 1, 2], [0, 2], [2, 3],
-  [2, 3], [0, 2], [0, 1, 2, 3], [1, 2], [1, 3], [0, 1], [0, 3], [],
-];
-
-// Filled-inside polygons. Each case = one or two polygons; indices 0-3 are
-// corners (BL, BR, TR, TL), 4-7 are edges (bottom, right, top, left).
-const MS_FILLS: number[][][] = [
-  [], [[0, 4, 7]], [[1, 5, 4]], [[0, 1, 5, 7]], [[2, 6, 5]],
-  [[0, 4, 7], [2, 6, 5]], [[4, 1, 2, 6]], [[0, 1, 2, 6, 7]],
-  [[3, 7, 6]], [[0, 4, 6, 3]], [[1, 5, 4], [3, 7, 6]],
-  [[0, 1, 5, 6, 3]], [[7, 3, 2, 5]], [[0, 4, 5, 2, 3]],
-  [[7, 3, 2, 1, 4]], [[0, 1, 2, 3]],
-];
-
-const interp = (a: number, b: number) => (a === b ? 0.5 : a / (a - b));
+const link = (gl: WebGLRenderingContext, vs: string, fs: string) => {
+  const p = gl.createProgram()!;
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    throw new Error(gl.getProgramInfoLog(p) ?? "program link error");
+  }
+  return p;
+};
 
 export const VolumetricSlices = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -68,143 +161,133 @@ export const VolumetricSlices = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const gl = canvas.getContext("webgl", {
+      alpha: true,
+      premultipliedAlpha: false,
+      depth: true,
+      antialias: true,
+    });
+    if (!gl) return;
+
+    // fwidth requires derivatives extension in WebGL1
+    gl.getExtension("OES_standard_derivatives");
 
     const dpr = window.devicePixelRatio ?? 1;
-    const size = canvas.offsetWidth;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    const resize = () => {
+      const w = canvas.offsetWidth * dpr;
+      const h = canvas.offsetHeight * dpr;
+      canvas.width = w;
+      canvas.height = h;
+      gl.viewport(0, 0, w, h);
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
 
-    const gridN = 36;
-    const sliceCount = 24;
-    // Sample region slightly larger than the bounding box so MS captures
-    // wall contours where the blob presses against it
-    const xMin = -0.62, xMax = 0.62;
-    const yMin = -0.62, yMax = 0.62;
-    const zMin = -0.78, zMax = 0.78;
-    const cellSizeX = (xMax - xMin) / gridN;
-    const cellSizeY = (yMax - yMin) / gridN;
+    const prog = link(gl, VS, FS);
+    gl.useProgram(prog);
 
-    const fieldCorners = new Float32Array((gridN + 1) * (gridN + 1));
+    const aQuad = gl.getAttribLocation(prog, "a_quad");
+    const uSliceZ = gl.getUniformLocation(prog, "u_sliceZ");
+    const uHalfXY = gl.getUniformLocation(prog, "u_halfXY");
+    const uViewTrig = gl.getUniformLocation(prog, "u_viewTrig");
+    const uViewScale = gl.getUniformLocation(prog, "u_viewScale");
+    const uDepthScale = gl.getUniformLocation(prog, "u_depthScale");
+    const uTime = gl.getUniformLocation(prog, "u_time");
+    const uLineColor = gl.getUniformLocation(prog, "u_lineColor");
+    const uLineAlpha = gl.getUniformLocation(prog, "u_lineAlpha");
 
-    // Proper isometric projection: yaw 45°, pitch ≈ -35.26° (atan(1/√2))
+    // Quad VBO — two triangles via a triangle strip
+    const quadBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5]),
+      gl.STATIC_DRAW,
+    );
+    gl.enableVertexAttribArray(aQuad);
+    gl.vertexAttribPointer(aQuad, 2, gl.FLOAT, false, 0, 0);
+
+    // Seed — different on every mount/refresh so each instance animates
+    // from a different starting configuration.
+    const seed = Math.random() * 1000;
+
+    // Ball uniforms (static per program). Seed is added to each ball's
+    // phase offsets so the Lissajous paths start in fresh positions.
+    const rArr = new Float32Array(BALLS.map((b) => b.r));
+    const aArr = new Float32Array(BALLS.flatMap((b) => b.a));
+    const fArr = new Float32Array(BALLS.flatMap((b) => b.f));
+    const pArr = new Float32Array(
+      BALLS.flatMap((b) => b.p.map((v) => v + seed)),
+    );
+    gl.uniform1fv(gl.getUniformLocation(prog, "u_ballR[0]"), rArr);
+    gl.uniform3fv(gl.getUniformLocation(prog, "u_ballA[0]"), aArr);
+    gl.uniform3fv(gl.getUniformLocation(prog, "u_ballF[0]"), fArr);
+    gl.uniform3fv(gl.getUniformLocation(prog, "u_ballP[0]"), pArr);
+
+    // View parameters — classical isometric
     const yaw = Math.PI / 4;
     const pitch = -Math.atan(Math.SQRT1_2);
-    const cY = Math.cos(yaw), sY = Math.sin(yaw);
-    const cP = Math.cos(pitch), sP = Math.sin(pitch);
-    const scale = size * 0.32;
+    gl.uniform4f(
+      uViewTrig,
+      Math.cos(yaw),
+      Math.sin(yaw),
+      Math.cos(pitch),
+      Math.sin(pitch),
+    );
+    // world extent ±0.62 xy, ±0.78 z; scaled down to leave margin inside
+    // the container, matching the CPU version's visual footprint
+    gl.uniform1f(uViewScale, 0.9);
+    gl.uniform1f(uDepthScale, 0.5);
+    gl.uniform2f(uHalfXY, 0.62, 0.62);
+    gl.uniform3f(uLineColor, 220 / 255, 220 / 255, 220 / 255);
 
-    const project = (x: number, y: number, z: number) => {
-      const x1 = x * cY + y * sY;
-      const y1 = -x * sY + y * cY;
-      const y2 = y1 * cP - z * sP;
-      return { sx: size / 2 + x1 * scale, sy: size / 2 - y2 * scale };
-    };
+    // Blending: standard alpha with premultiplied off; depth test enabled
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+
+    // Slice stack
+    const sliceCount = 28;
+    const zMin = -0.78;
+    const zMax = 0.78;
 
     let time = 0;
+    let lastTime: number | null = null;
 
-    const draw = () => {
-      ctx.clearRect(0, 0, size, size);
+    const frame = (now: number) => {
+      const dt = lastTime === null ? 0 : (now - lastTime) / 1000;
+      lastTime = now;
+      time += dt * 1.2; // speed matching the old code
 
-      // Render slices back-to-front so front slices occlude.
-      // With a downward-looking isometric view, lower z is farther away.
-      for (let s = 0; s < sliceCount; s++) {
-        const sliceT = s / (sliceCount - 1);
-        const z = zMin + sliceT * (zMax - zMin);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // Sample scalar field at every cell corner
-        for (let j = 0; j <= gridN; j++) {
-          const y = yMin + j * cellSizeY;
-          for (let i = 0; i <= gridN; i++) {
-            const x = xMin + i * cellSizeX;
-            fieldCorners[j * (gridN + 1) + i] = field(x, y, z, time);
-          }
-        }
+      gl.uniform1f(uTime, time);
 
-        const fillPath = new Path2D();
-        const strokePath = new Path2D();
+      // Opaque stroke
+      gl.uniform1f(uLineAlpha, 1.0);
 
-        for (let j = 0; j < gridN; j++) {
-          for (let i = 0; i < gridN; i++) {
-            const f00 = fieldCorners[j * (gridN + 1) + i];
-            const f10 = fieldCorners[j * (gridN + 1) + i + 1];
-            const f11 = fieldCorners[(j + 1) * (gridN + 1) + i + 1];
-            const f01 = fieldCorners[(j + 1) * (gridN + 1) + i];
-
-            const mask =
-              (f00 < 0 ? 1 : 0) |
-              (f10 < 0 ? 2 : 0) |
-              (f11 < 0 ? 4 : 0) |
-              (f01 < 0 ? 8 : 0);
-            if (mask === 0) continue;
-
-            const x0 = xMin + i * cellSizeX;
-            const y0 = yMin + j * cellSizeY;
-            const x1 = x0 + cellSizeX;
-            const y1 = y0 + cellSizeY;
-
-            // 8 candidate vertices: 4 corners + 4 edge-midpoints
-            const verts = [
-              project(x0, y0, z),
-              project(x1, y0, z),
-              project(x1, y1, z),
-              project(x0, y1, z),
-              project(x0 + interp(f00, f10) * cellSizeX, y0, z),
-              project(x1, y0 + interp(f10, f11) * cellSizeY, z),
-              project(x0 + interp(f01, f11) * cellSizeX, y1, z),
-              project(x0, y0 + interp(f00, f01) * cellSizeY, z),
-            ];
-
-            // Inside fill polygons (one or two per saddle case)
-            for (const poly of MS_FILLS[mask]) {
-              fillPath.moveTo(verts[poly[0]].sx, verts[poly[0]].sy);
-              for (let p = 1; p < poly.length; p++) {
-                fillPath.lineTo(verts[poly[p]].sx, verts[poly[p]].sy);
-              }
-              fillPath.closePath();
-            }
-
-            // Contour outlines (skip fully-inside cells — they have no edge)
-            if (mask !== 15) {
-              const edges = MS_EDGES[mask];
-              for (let e = 0; e < edges.length; e += 2) {
-                const a = verts[edges[e] + 4];
-                const b = verts[edges[e + 1] + 4];
-                strokePath.moveTo(a.sx, a.sy);
-                strokePath.lineTo(b.sx, b.sy);
-              }
-            }
-          }
-        }
-
-        // Occlude deeper slices without showing a visible fill colour.
-        // destination-out erases any pixels previously drawn under the
-        // fill path, producing a transparent hole that the canvas
-        // background shows through.
-        ctx.save();
-        ctx.globalCompositeOperation = "destination-out";
-        ctx.fillStyle = "#000";
-        ctx.fill(fillPath);
-        ctx.restore();
-
-        // Stroke the contour on top
-        const alpha = 0.45 + sliceT * 0.5;
-        ctx.strokeStyle = `rgba(220, 220, 220, ${alpha})`;
-        ctx.lineWidth = 0.8;
-        ctx.stroke(strokePath);
+      // Render FRONT-to-BACK so depth test correctly culls deeper
+      // slices' contours at pixels already filled by closer slices.
+      for (let s = sliceCount - 1; s >= 0; s--) {
+        const t = s / (sliceCount - 1);
+        const z = zMin + t * (zMax - zMin);
+        gl.uniform1f(uSliceZ, z);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
 
-      time += 0.025;
-      animRef.current = requestAnimationFrame(draw);
+      animRef.current = requestAnimationFrame(frame);
     };
+    animRef.current = requestAnimationFrame(frame);
 
-    draw();
-
-    return () => cancelAnimationFrame(animRef.current);
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      ro.disconnect();
+      gl.deleteBuffer(quadBuf);
+      gl.deleteProgram(prog);
+    };
   }, []);
 
   return (

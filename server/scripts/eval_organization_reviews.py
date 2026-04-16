@@ -41,6 +41,7 @@ from polar.organization_review.eval.dataset import (
     DEFAULT_TOTAL,
     EvalDataset,
     extract_dataset,
+    extract_voting_dataset,
 )
 from polar.organization_review.eval.evaluators import (
     VerdictMatch,
@@ -113,6 +114,59 @@ async def extract(
             typer.echo(f"\n  False approvals (dangerous):  {fa}")
             typer.echo(f"  Matches:                      {match}")
             typer.echo(f"  False denials:                {fd}")
+
+            contexts = Counter(
+                c.metadata.review_context for c in dataset.cases if c.metadata
+            )
+            typer.echo("\nReview context distribution:")
+            for ctx, count in contexts.most_common():
+                typer.echo(f"  {ctx}: {count}")
+    finally:
+        await engine.dispose()
+
+
+@cli.command(name="extract-voting")
+@typer_async
+async def extract_voting(
+    db_uri: str = typer.Option(..., "--db-uri", help="PostgreSQL connection string"),
+    output: Path = typer.Option(
+        "voting_cases.json", "--output", "-o", help="Output JSON file"
+    ),
+    total: int = typer.Option(DEFAULT_TOTAL, help="Target number of cases"),
+) -> None:
+    """Extract eval dataset optimized for voting evaluation.
+
+    Composition: 50% false denials, 30% true denials, 20% true approvals.
+    """
+    engine = create_async_engine(db_uri, pool_size=1, max_overflow=0)
+    sessionmaker = create_async_sessionmaker(engine)
+
+    try:
+        async with sessionmaker() as session:
+            dataset = await extract_voting_dataset(session, total=total)
+
+        dataset.to_file(output)
+        typer.echo(f"\nExtracted {len(dataset.cases)} cases to {output}")
+
+        if dataset.cases:
+            fd = sum(
+                1
+                for c in dataset.cases
+                if c.metadata
+                and c.metadata.agent_verdict == "DENY"
+                and c.metadata.human_decision == "APPROVE"
+            )
+            td = sum(
+                1
+                for c in dataset.cases
+                if c.metadata
+                and c.metadata.agent_verdict == "DENY"
+                and c.metadata.human_decision == "DENY"
+            )
+            ta = len(dataset.cases) - fd - td
+            typer.echo(f"\n  False denials (voting target): {fd}")
+            typer.echo(f"  True denials (must not flip):  {td}")
+            typer.echo(f"  True approvals (sanity check): {ta}")
 
             contexts = Counter(
                 c.metadata.review_context for c in dataset.cases if c.metadata

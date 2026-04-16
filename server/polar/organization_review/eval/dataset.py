@@ -29,7 +29,6 @@ from polar.organization_review.schemas import (
     ActorType,
     DataSnapshot,
     DecisionType,
-    ReviewVerdict,
 )
 
 log = structlog.get_logger(__name__)
@@ -104,25 +103,11 @@ def _feedback_to_case(
     )
 
 
-async def extract_dataset(
-    session: Any,
-    *,
-    total: int = DEFAULT_TOTAL,
-) -> EvalDataset:
-    """Extract a balanced eval dataset, ordered newest first.
+CaseType = Case[EvalInput, str, EvalMetadata]
 
-    Composition:
-    - 50% false approvals (agent APPROVE, human DENY) — dangerous
-    - 25% matches (agent and human agree)
-    - 25% false denials (agent DENY, human APPROVE)
 
-    If fewer false approvals exist than the 50% target, all of them
-    are included and the rest is filled from matches and false denials.
-
-    Args:
-        session: SQLAlchemy async session.
-        total: Target number of cases to extract.
-    """
+async def _fetch_all_cases(session: Any) -> tuple[list[CaseType], int]:
+    """Fetch and parse all human-reviewed cases, newest first."""
     stmt = (
         select(OrganizationReviewFeedback)
         .where(
@@ -140,10 +125,7 @@ async def extract_dataset(
     result = await session.execute(stmt)
     feedbacks = list(result.scalars().all())
 
-    # Parse and categorize
-    false_approvals: list[Case[EvalInput, str, EvalMetadata]] = []
-    false_denials: list[Case[EvalInput, str, EvalMetadata]] = []
-    matches: list[Case[EvalInput, str, EvalMetadata]] = []
+    cases: list[CaseType] = []
     skipped = 0
 
     for fb in feedbacks:
@@ -168,40 +150,124 @@ async def extract_dataset(
             skipped += 1
             continue
 
-        if fb.verdict == ReviewVerdict.APPROVE and fb.decision == DecisionType.DENY:
-            false_approvals.append(case)
-        elif fb.verdict == ReviewVerdict.DENY and fb.decision == DecisionType.APPROVE:
-            false_denials.append(case)
-        else:
-            matches.append(case)
+        cases.append(case)
 
-    # Compose balanced dataset
-    n_fa = min(len(false_approvals), total // 2)
-    n_rest = total - n_fa
-    n_match = min(len(matches), n_rest // 2)
-    n_fd = min(len(false_denials), n_rest - n_match)
+    return cases, skipped
 
-    cases = false_approvals[:n_fa] + matches[:n_match] + false_denials[:n_fd]
 
-    # Fill shortfall from whatever's available
-    if len(cases) < total:
-        remaining = false_approvals[n_fa:] + matches[n_match:] + false_denials[n_fd:]
-        cases.extend(remaining[: total - len(cases)])
+def _balance_and_dedup(
+    buckets: list[tuple[str, list[CaseType], int]],
+    total: int,
+    skipped: int,
+    log_event: str,
+) -> EvalDataset:
+    """Balance buckets by target counts, fill shortfall, and deduplicate names."""
+    selected: list[CaseType] = []
+    remaining: list[CaseType] = []
+    log_kwargs: dict[str, int] = {"total": 0, "skipped": skipped}
+
+    for name, cases, target in buckets:
+        n = min(len(cases), target)
+        selected.extend(cases[:n])
+        remaining.extend(cases[n:])
+        log_kwargs[name] = n
+
+    if len(selected) < total:
+        selected.extend(remaining[: total - len(selected)])
 
     # Deduplicate names (pydantic-evals requires unique case names)
     seen: dict[str, int] = {}
-    for case in cases:
-        name = case.name or "unknown"
-        seen[name] = seen.get(name, 0) + 1
-        if seen[name] > 1:
-            case.name = f"{name} #{seen[name]}"
+    for case in selected:
+        case_name = case.name or "unknown"
+        seen[case_name] = seen.get(case_name, 0) + 1
+        if seen[case_name] > 1:
+            case.name = f"{case_name} #{seen[case_name]}"
 
-    log.info(
-        "dataset.extracted",
-        total=len(cases),
-        false_approvals=n_fa,
-        matches=n_match,
-        false_denials=n_fd,
-        skipped=skipped,
+    log_kwargs["total"] = len(selected)
+    log.info(f"dataset.{log_event}", **log_kwargs)
+    return Dataset(cases=selected)
+
+
+async def extract_dataset(
+    session: Any,
+    *,
+    total: int = DEFAULT_TOTAL,
+) -> EvalDataset:
+    """Extract a balanced eval dataset, ordered newest first.
+
+    Composition:
+    - 50% false approvals (agent APPROVE, human DENY) — dangerous
+    - 25% matches (agent and human agree)
+    - 25% false denials (agent DENY, human APPROVE)
+    """
+    all_cases, skipped = await _fetch_all_cases(session)
+
+    false_approvals: list[CaseType] = []
+    false_denials: list[CaseType] = []
+    matches: list[CaseType] = []
+
+    for case in all_cases:
+        meta = case.metadata
+        if meta and meta.agent_verdict == "DENY" and meta.human_decision == "APPROVE":
+            false_denials.append(case)
+        elif meta and meta.agent_verdict == "APPROVE" and meta.human_decision == "DENY":
+            false_approvals.append(case)
+        else:
+            matches.append(case)
+
+    n_fa = min(len(false_approvals), total // 2)
+    n_rest = total - n_fa
+
+    return _balance_and_dedup(
+        [
+            ("false_approvals", false_approvals, n_fa),
+            ("matches", matches, n_rest // 2),
+            ("false_denials", false_denials, n_rest - n_rest // 2),
+        ],
+        total,
+        skipped,
+        "extracted",
     )
-    return Dataset(cases=cases)
+
+
+async def extract_voting_dataset(
+    session: Any,
+    *,
+    total: int = DEFAULT_TOTAL,
+) -> EvalDataset:
+    """Extract an eval dataset optimized for voting evaluation.
+
+    Composition:
+    - 50% false denials (agent DENY, human APPROVE) — voting should catch these
+    - 30% true denials (agent DENY, human DENY) — voting must NOT flip these
+    - 20% true approvals (agent APPROVE, human APPROVE) — sanity check
+    """
+    all_cases, skipped = await _fetch_all_cases(session)
+
+    false_denials: list[CaseType] = []
+    true_denials: list[CaseType] = []
+    true_approvals: list[CaseType] = []
+
+    for case in all_cases:
+        meta = case.metadata
+        if meta and meta.agent_verdict == "DENY" and meta.human_decision == "APPROVE":
+            false_denials.append(case)
+        elif meta and meta.agent_verdict == "DENY" and meta.human_decision == "DENY":
+            true_denials.append(case)
+        elif (
+            meta
+            and meta.agent_verdict == "APPROVE"
+            and meta.human_decision == "APPROVE"
+        ):
+            true_approvals.append(case)
+
+    return _balance_and_dedup(
+        [
+            ("false_denials", false_denials, total // 2),
+            ("true_denials", true_denials, (total * 3) // 10),
+            ("true_approvals", true_approvals, total - total // 2 - (total * 3) // 10),
+        ],
+        total,
+        skipped,
+        "voting_extracted",
+    )

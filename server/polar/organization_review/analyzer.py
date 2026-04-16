@@ -255,6 +255,88 @@ investment advisory), not tools that help users understand their own spending.
 **Lesson**: "Financial" in the product name does not mean "financial services." Evaluate what \
 the tool actually does: calculators, trackers, and budgeting tools are productivity software.
 
+### Example 12: Personal Finance Tracker → APPROVE
+**Business**: SaaS app for tracking personal expenses, budgets, and portfolio allocation. \
+Subscription pricing. Website mentions "financial insights" and "smart money management."
+**Agent concern**: Could be classified as "financial services" or "investment advisory."
+**Correct verdict**: APPROVE. This is a productivity/tracking tool — it reads data, \
+it does not move money, give investment recommendations, or execute trades. The "financial \
+services" prohibition targets platforms that handle money on behalf of users: trading, \
+brokerage, lending, money transmission, investment management. A tool that helps users \
+understand their own spending is software, not a financial service.
+**Lesson**: A product with "financial" in its name or description is NOT automatically \
+"financial services." Ask: does it handle money, give investment advice, or execute trades? \
+If no, it is a productivity tool.
+
+### Example 13: AI Photo Editing Tool → APPROVE
+**Business**: SaaS for AI-powered photo retouching, background removal, and product \
+photography enhancement. Monthly subscription.
+**Agent concern**: AI image generation could enable deepfakes, NSFW content, or deceptive imagery.
+**Correct verdict**: APPROVE. This is a legitimate photo editing tool for product and \
+portrait photography. It does not generate images from scratch — it enhances existing photos. \
+The NSFW/deepfake prohibition targets platforms whose PRIMARY purpose is generating \
+deceptive or explicit synthetic content. A photo editor that can retouch skin or remove \
+backgrounds is a standard creative tool, like Photoshop.
+**Lesson**: Photo/image editing tools are NOT "deepfake generators." The prohibition targets \
+platforms designed for deception or explicit content, not general-purpose creative software.
+
+### Example 14: Exam Practice App → APPROVE
+**Business**: App with practice questions for professional certifications. The questions are \
+original (written by the team), not copied from actual exams. Subscription pricing.
+**Agent concern**: "Exam prep" could overlap with "standardized test circumvention" or \
+"academic dishonesty."
+**Correct verdict**: APPROVE. This is an educational product selling original practice \
+content. It does not provide actual exam answers, leaked questions, or tools to cheat \
+during exams. The prohibition targets products that help users cheat on or circumvent \
+specific standardized tests, not educational tools that help users learn the material.
+**Lesson**: "Exam practice" ≠ "exam cheating." Original practice questions are educational \
+content. Only deny if the product explicitly sells real exam answers or circumvention tools.
+
+### Example 15: Content Marketing SaaS → APPROVE
+**Business**: SaaS that generates social media posts, blog drafts, and marketing copy \
+for the user's own brand. Subscription and credit-based pricing.
+**Agent concern**: "Marketing automation" or "bulk content generation" could overlap with \
+spam/unsolicited outreach restrictions.
+**Correct verdict**: APPROVE. The tool generates content for the USER'S OWN accounts \
+and channels — it does not send unsolicited messages to third parties. The spam/outreach \
+prohibition targets tools that send mass emails, DMs, or messages to people who did not \
+opt in. A content creation tool for your own marketing is standard SaaS.
+**Lesson**: "Content generation for own channels" ≠ "spam/unsolicited outreach." The key \
+distinction is WHO receives the content: the user's own audience (fine) vs. unsolicited \
+recipients (prohibited).
+
+### Example 16: Chat Mockup / Message Generator Tool → DENY borderline, APPROVE
+**Business**: SaaS that generates realistic-looking chat screenshots for marketing, \
+social proof, and entertainment. One-time purchase.
+**Agent concern**: Could be used to create fake conversations, impersonate people, or \
+fabricate social proof.
+**Correct verdict**: APPROVE (borderline). The tool generates obviously synthetic chat \
+screenshots for marketing materials and entertainment — similar to stock photo services. \
+It is not positioned for fraud or impersonation. While it could theoretically be misused, \
+its stated purpose is content creation. The "fake testimonials" prohibition targets platforms \
+that fabricate reviews to deceive consumers, not creative tools for generating example content.
+**Lesson**: Tools that COULD be misused for deception are not automatically prohibited. \
+Evaluate the product's stated purpose and primary use case, not hypothetical misuse scenarios.
+
+## Grounding Rule — Quote Before You Deny
+
+**CRITICAL**: Before denying an organization, you MUST identify the SPECIFIC policy \
+section that is violated. Ask yourself:
+1. What EXACTLY does this organization sell on Polar?
+2. Which SPECIFIC prohibited category does it fall under?
+3. Can I point to a concrete policy rule that this product violates?
+
+If you cannot answer all three with specific evidence from the data, you MUST approve. \
+Vague concerns like "could overlap with financial services" or "might be marketing automation" \
+are NOT sufficient grounds for denial. You need concrete evidence, not pattern matching.
+
+Common false-positive patterns to catch yourself on:
+- "Financial" in the name → check: does it actually handle money or give investment advice?
+- "AI content/image" → check: is it a creative tool or a deception platform?
+- "Exam/test" → check: original practice content or actual exam cheating?
+- "Marketing" → check: user's own channels or unsolicited mass outreach?
+- "Services" on website → check: what do they SELL ON POLAR specifically?
+
 ## Overall Risk Level
 
 After assessing each dimension, provide an overall_risk_level:

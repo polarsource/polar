@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { GraphicContainer } from "./GraphicContainer";
 
 /**
  * OrbitingSpheres — a large circle plus a stack of nested circles that
@@ -93,9 +94,8 @@ export const OrbitingSpheres = () => {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="aspect-square w-full rounded-sm bg-neutral-950"
-    />
+    <GraphicContainer>
+      <canvas ref={canvasRef} className="h-full w-full" />
+    </GraphicContainer>
   );
 };

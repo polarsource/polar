@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { GraphicContainer } from "./GraphicContainer";
 
 const box = (x: number, y: number, z: number, hx: number, hy: number, hz: number) =>
   Math.max(Math.abs(x) - hx, Math.abs(y) - hy, Math.abs(z) - hz);
@@ -202,9 +203,8 @@ export const VolumetricSlices = () => {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="aspect-square w-full rounded-sm bg-neutral-950"
-    />
+    <GraphicContainer>
+      <canvas ref={canvasRef} className="h-full w-full" />
+    </GraphicContainer>
   );
 };

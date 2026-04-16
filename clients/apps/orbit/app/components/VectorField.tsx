@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { GraphicContainer } from "./GraphicContainer";
 
 /**
  * VectorField — fixed-length line segments on a disk, oriented by a
@@ -92,9 +93,8 @@ export const VectorField = () => {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="aspect-square w-full rounded-sm bg-neutral-950"
-    />
+    <GraphicContainer>
+      <canvas ref={canvasRef} className="h-full w-full" />
+    </GraphicContainer>
   );
 };

@@ -1,10 +1,11 @@
 import { Hero } from './components/Hero'
 import { CircularBand } from './components/CircularBand'
-import { Pinwheel } from './components/Pinwheel'
 import { VectorField } from './components/VectorField'
 import { VolumetricSlices } from './components/VolumetricSlices'
 import { OrbitingSpheres } from './components/OrbitingSpheres'
 import { PhyllotaxisSunflower } from './components/PhyllotaxisSunflower'
+import { EventStream } from './components/EventStream'
+import { TileGrid } from './components/TileGrid'
 
 export default function Home() {
   return (
@@ -15,9 +16,10 @@ export default function Home() {
           <CircularBand />
           <VolumetricSlices />
           <OrbitingSpheres />
-          <Pinwheel />
           <VectorField />
           <PhyllotaxisSunflower />
+          <EventStream />
+          <TileGrid />
         </div>
       </div>
     </div>

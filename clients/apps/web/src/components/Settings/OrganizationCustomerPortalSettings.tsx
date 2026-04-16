@@ -23,7 +23,13 @@ const OrganizationCustomerPortalSettings: React.FC<
   OrganizationCustomerPortalSettingsProps
 > = ({ organization }) => {
   const form = useForm<schemas['OrganizationCustomerPortalSettings']>({
-    defaultValues: organization.customer_portal_settings,
+    defaultValues: {
+      ...organization.customer_portal_settings,
+      customer: {
+        allow_email_change: false,
+        ...organization.customer_portal_settings.customer,
+      },
+    },
   })
   const { control, setError, reset } = form
 

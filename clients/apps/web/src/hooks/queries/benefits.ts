@@ -180,11 +180,13 @@ export const useGrantsForBenefit = ({
   organizationId,
   limit = 30,
   page = 1,
+  isGranted,
 }: {
   benefitId: string
   organizationId: string
   limit?: number
   page?: number
+  isGranted?: boolean
 }) =>
   useQuery({
     queryKey: [
@@ -192,7 +194,7 @@ export const useGrantsForBenefit = ({
       'grants',
       benefitId,
       organizationId,
-      { page, limit },
+      { page, limit, isGranted },
     ],
     queryFn: () => {
       return unwrap(
@@ -203,6 +205,7 @@ export const useGrantsForBenefit = ({
               organization_id: organizationId,
               page,
               limit,
+              ...(isGranted !== undefined ? { is_granted: isGranted } : {}),
             },
           },
         }),

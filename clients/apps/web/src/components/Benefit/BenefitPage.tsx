@@ -17,6 +17,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
 import { BenefitGrantMemberBadge } from './BenefitGrantMemberBadge'
 import { BenefitGrantStatus } from './BenefitGrantStatus'
+import BenefitGrantStatusSelect, {
+  BenefitGrantStatusFilter,
+} from './BenefitGrantStatusSelect'
 
 export interface BenefitPageProps {
   benefit: schemas['Benefit']
@@ -27,12 +30,18 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
   const searchParamsMap = useSearchParams()
   const searchParams = Object.fromEntries(searchParamsMap.entries())
   const { pagination, sorting } = parseSearchParams(searchParams)
+  const grantStatus = (searchParams['grant_status'] ??
+    'any') as BenefitGrantStatusFilter
 
   const getSearchParams = (
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
+    grantStatus: BenefitGrantStatusFilter,
   ) => {
     const params = serializeSearchParams(pagination, sorting)
+    if (grantStatus !== 'any') {
+      params.append('grant_status', grantStatus)
+    }
     return params
   }
 
@@ -42,6 +51,10 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
     benefitId: benefit.id,
     organizationId: organization.id,
     ...getAPIParams(pagination, sorting),
+    // The backend only exposes an `is_granted` boolean filter. `is_granted=false`
+    // actually matches all non-granted rows — revoked, pending, and errored — so
+    // the "Revoked" option may include pending/errored grants in rare cases.
+    ...(grantStatus !== 'any' ? { isGranted: grantStatus === 'granted' } : {}),
   })
 
   const memberColumnEnabled =
@@ -62,6 +75,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
       `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
         updatedPagination,
         sorting,
+        grantStatus,
       )}`,
     )
   }
@@ -80,6 +94,17 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
       `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
         pagination,
         updatedSorting,
+        grantStatus,
+      )}`,
+    )
+  }
+
+  const setGrantStatus = (status: BenefitGrantStatusFilter) => {
+    router.push(
+      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
+        pagination,
+        sorting,
+        status,
       )}`,
     )
   }
@@ -180,7 +205,16 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-xl">Benefit Grants</h2>
+      <div className="flex flex-row items-center justify-between gap-4">
+        <h2 className="text-xl">Benefit Grants</h2>
+        <div className="w-auto">
+          <BenefitGrantStatusSelect
+            statuses={['granted', 'revoked']}
+            value={grantStatus}
+            onChange={setGrantStatus}
+          />
+        </div>
+      </div>
       <DataTable
         data={benefitGrants?.items || []}
         isLoading={isLoading}

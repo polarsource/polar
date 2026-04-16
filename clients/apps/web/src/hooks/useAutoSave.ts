@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
-import { FieldValues, UseFormReturn, useWatch } from 'react-hook-form'
-import { useDebouncedCallback } from './utils'
+import { useEffect, useRef } from 'react'
+import { FieldValues, UseFormReturn } from 'react-hook-form'
 
 interface UseAutoSaveOptions<T extends FieldValues> {
   form: UseFormReturn<T>
@@ -15,33 +14,41 @@ export function useAutoSave<T extends FieldValues>({
   delay = 1000,
   enabled = true,
 }: UseAutoSaveOptions<T>) {
-  const [isSaving, setIsSaving] = useState(false)
+  const onSaveRef = useRef(onSave)
+  useEffect(() => {
+    onSaveRef.current = onSave
+  }, [onSave])
 
-  const { control, formState } = form
-  const { isDirty } = formState
-  const formValues = useWatch({ control })
-
-  const debouncedSave = useDebouncedCallback(
-    async () => {
-      setIsSaving(true)
-      try {
-        const data = form.getValues()
-        await onSave(data)
-      } finally {
-        setIsSaving(false)
-      }
-    },
-    delay,
-    [onSave, form],
-  )
+  const isSavingRef = useRef(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (!enabled || !isDirty || isSaving) {
-      return
+    if (!enabled) return
+
+    // Filter on type === 'change' so programmatic updates like `reset()`
+    // (fired after a successful save) don't re-trigger the autosave loop.
+    const subscription = form.watch((_value, info) => {
+      if (info.type !== 'change') return
+      if (isSavingRef.current) return
+
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      timeoutRef.current = setTimeout(async () => {
+        if (isSavingRef.current) return
+
+        isSavingRef.current = true
+        try {
+          await onSaveRef.current(form.getValues())
+        } catch {
+          // Swallow: consumers handle their own errors via onSave.
+        } finally {
+          isSavingRef.current = false
+        }
+      }, delay)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
-
-    debouncedSave()
-  }, [formValues, enabled, isDirty, debouncedSave, isSaving])
-
-  return { isSaving }
+  }, [form, delay, enabled])
 }

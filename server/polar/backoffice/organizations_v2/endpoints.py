@@ -1353,9 +1353,6 @@ async def unblock_approve_dialog(
                 reason=override_reason,
             )
 
-            # Unblock the organization (set blocked_at to None)
-            organization.blocked_at = None
-
             # Approve the organization
             await organization_service.confirm_organization_reviewed(
                 session, organization, threshold

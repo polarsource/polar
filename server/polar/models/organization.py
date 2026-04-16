@@ -328,7 +328,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    # Time of blocking traffic/activity to given organization
+    # DEPRECATED: Use `status == OrganizationStatus.BLOCKED` instead.
+    # This column is no longer written to and will be dropped in a future migration.
     blocked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,

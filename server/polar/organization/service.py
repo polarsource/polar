@@ -771,8 +771,7 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
     ) -> Organization:
-        """Block an organization, dual-writing blocked_at and status during migration."""
-        organization.blocked_at = datetime.now(UTC)
+        """Block an organization by setting status to BLOCKED."""
         organization.set_status(OrganizationStatus.BLOCKED)
         session.add(organization)
         return organization

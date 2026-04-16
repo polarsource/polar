@@ -1,8 +1,10 @@
 import asyncio
 import random
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal, NotRequired, TypedDict
+from uuid import UUID
 
 import dramatiq
 import typer
@@ -85,6 +87,20 @@ from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
 
 cli = typer.Typer(invoke_without_command=True)
+
+# Chosen to stay well under Tinybird's 10MB payload limit at ~2KB/event.
+TINYBIRD_FLUSH_CHUNK = 2500
+
+
+async def _flush_tinybird_events(
+    events: Sequence[EventModel],
+    ancestors_by_event: dict[UUID, list[str]],
+) -> None:
+    """Send accumulated events to Tinybird, chunked under the payload limit."""
+    for start in range(0, len(events), TINYBIRD_FLUSH_CHUNK):
+        await tinybird_ingest_events(
+            events[start : start + TINYBIRD_FLUSH_CHUNK], ancestors_by_event
+        )
 
 
 class SeatBasedCustomerDict(TypedDict):
@@ -1599,6 +1615,12 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         for p in org_products:
             await session.refresh(p, ["all_prices"])
 
+        # Accumulate events across all customers in this org, then flush to
+        # Tinybird in a single batched call at the end. The per-customer
+        # synchronous ingest (with wait=true) used to dominate seed runtime.
+        pending_tinybird_events: list[EventModel] = []
+        pending_tinybird_ancestors: dict[UUID, list[str]] = {}
+
         num_customers = (
             random.randint(3, 8) if not org_data.get("seat_based_customers") else 0
         )
@@ -1666,7 +1688,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             )
             timeline_events.extend(cost_spans)
 
-            # Insert all events in batch and sync to Tinybird
+            # Insert events in batch; defer Tinybird ingest until all of the
+            # org's customers are processed so we can send one batched call.
             if timeline_events:
                 await _stamp_event_type_ids(session, timeline_events)
                 event_ids, _ = await event_repository.insert_batch(timeline_events)
@@ -1677,7 +1700,12 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     ancestors_by_event = await event_repository.get_ancestors_batch(
                         event_ids
                     )
-                    await tinybird_ingest_events(inserted, ancestors_by_event)
+                    pending_tinybird_events.extend(inserted)
+                    pending_tinybird_ancestors.update(ancestors_by_event)
+
+        await _flush_tinybird_events(
+            pending_tinybird_events, pending_tinybird_ancestors
+        )
 
         # Create seat-based customers with subscriptions and seats
         seat_based_customers = org_data.get("seat_based_customers", [])
@@ -1941,7 +1969,12 @@ async def create_single_org_seed(
     for p in org_products:
         await session.refresh(p, ["all_prices"])
 
-    # Create customers with timeline events
+    # Create customers with timeline events. Accumulate events across
+    # customers and flush to Tinybird once at the end to avoid per-customer
+    # synchronous HTTP round-trips (wait=true is ~4s each).
+    pending_tinybird_events: list[EventModel] = []
+    pending_tinybird_ancestors: dict[UUID, list[str]] = {}
+
     num_customers = random.randint(5, 10)
     for i in range(num_customers):
         customer_email = f"customer_{slug}_{i + 1}@polar.sh"
@@ -1974,7 +2007,12 @@ async def create_single_org_seed(
                 ancestors_by_event = await event_repository.get_ancestors_batch(
                     event_ids
                 )
-                await tinybird_ingest_events(inserted, ancestors_by_event)
+                pending_tinybird_events.extend(inserted)
+                pending_tinybird_ancestors.update(ancestors_by_event)
+
+    await _flush_tinybird_events(
+        pending_tinybird_events, pending_tinybird_ancestors
+    )
 
     await session.commit()
     print(f"✅ Created organization '{name}' ({slug})")

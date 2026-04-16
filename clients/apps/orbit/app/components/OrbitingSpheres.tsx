@@ -50,8 +50,15 @@ export const OrbitingSpheres = () => {
     const satR = size * 0.015;
 
     let angle = 0;
+    let lastTime: number | null = null;
+    // Framerate-independent angular speed (rad/sec)
+    const ANG_SPEED = 0.25;
 
-    const draw = () => {
+    const draw = (now: number) => {
+      const dt = lastTime === null ? 0 : (now - lastTime) / 1000;
+      lastTime = now;
+      angle += ANG_SPEED * dt;
+
       ctx.clearRect(0, 0, size, size);
 
       // Direction unit vector from big sphere's centre toward satellite
@@ -84,11 +91,10 @@ export const OrbitingSpheres = () => {
       ctx.fillStyle = "rgba(220, 220, 220, 0.95)";
       ctx.fill();
 
-      angle += 0.004;
       animRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    animRef.current = requestAnimationFrame(draw);
 
     return () => cancelAnimationFrame(animRef.current);
   }, []);

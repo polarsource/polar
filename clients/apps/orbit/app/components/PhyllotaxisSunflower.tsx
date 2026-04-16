@@ -1,6 +1,7 @@
-"use client";
+'use client'
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react'
+import { GraphicContainer } from './GraphicContainer'
 
 /**
  * PhyllotaxisSunflower — golden-angle phyllotactic arrangement of dots.
@@ -13,19 +14,19 @@ import { useEffect, useRef } from "react";
  * no WebGL, no theming).
  */
 
-const GOLDEN_ANGLE = 137.508 * (Math.PI / 180);
-const LERP = 0.03;
-const ALPHA_LERP = 0.2;
-const CHARS = ".;:-~+<>1742356890$€£%#@";
-const N_CHARS = CHARS.length;
+const GOLDEN_ANGLE = 137.508 * (Math.PI / 180)
+const LERP = 0.03
+const ALPHA_LERP = 0.2
+const CHARS = '01'
+const N_CHARS = CHARS.length
 
 interface Dot {
-  bx: number; // base (target when unperturbed) x
-  by: number;
-  x: number; // current rendered position
-  y: number;
-  charIdx: number; // last character index shown, -1 = none
-  charAlpha: number; // eased opacity of the character
+  bx: number // base (target when unperturbed) x
+  by: number
+  x: number // current rendered position
+  y: number
+  charIdx: number // last character index shown, -1 = none
+  charAlpha: number // eased opacity of the character
 }
 
 const generatePhyllotaxis = (
@@ -35,125 +36,124 @@ const generatePhyllotaxis = (
   cy: number,
 ): Dot[] =>
   Array.from({ length: count }, (_, i) => {
-    const a = (i + 1) * GOLDEN_ANGLE;
-    const r = spread * Math.sqrt(i + 1);
-    const bx = cx + r * Math.cos(a);
-    const by = cy + r * Math.sin(a);
-    return { bx, by, x: bx, y: by, charIdx: -1, charAlpha: 0 };
-  });
+    const a = (i + 1) * GOLDEN_ANGLE
+    const r = spread * Math.sqrt(i + 1)
+    const bx = cx + r * Math.cos(a)
+    const by = cy + r * Math.sin(a)
+    return { bx, by, x: bx, y: by, charIdx: -1, charAlpha: 0 }
+  })
 
 export const PhyllotaxisSunflower = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animRef = useRef<number>(0)
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-    const dpr = window.devicePixelRatio ?? 1;
-    const size = canvas.offsetWidth;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    ctx.scale(dpr, dpr);
+    const dpr = window.devicePixelRatio ?? 1
+    const size = canvas.offsetWidth
+    canvas.width = size * dpr
+    canvas.height = size * dpr
+    ctx.scale(dpr, dpr)
 
-    const cx = size / 2;
-    const cy = size / 2;
+    const cx = size / 2
+    const cy = size / 2
 
     // Crop sunflower to a circle that leaves a margin
-    const maxR = size / 2 - size * 0.10;
-    const spread = size / 37.5;
+    const maxR = size / 2 - size * 0.1
+    const spread = size / 37.5
     const dots = generatePhyllotaxis(400, spread, cx, cy).filter(
       (d) => Math.hypot(d.bx - cx, d.by - cy) <= maxR,
-    );
+    )
 
     // Orbiter: circles inside the sunflower at ~60% of the dot cloud radius
-    const orbitR = maxR * 0.6;
-    const orbiterRadius = size * 0.009;
+    const orbitR = maxR * 0.6
+    const orbiterRadius = size * 0.009
 
     // Repel field parameters (ported from original)
-    const influenceR = size * 0.9;
-    const maxDisp = size * 0.15;
+    const influenceR = size * 0.5
+    const maxDisp = size * 0.1
 
     // Character effect
-    const asciiR = size * 0.32;
-    const asciiPt = Math.max(6, size * 0.022);
-    ctx.font = `${asciiPt}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    const asciiR = size * 0.16
+    const asciiPt = Math.max(6, size * 0.022)
+    ctx.font = `${asciiPt}px ui-monospace, SFMono-Regular, Menlo, monospace`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
 
-    let angle = 0;
+    let angle = 0
 
     const draw = () => {
-      ctx.clearRect(0, 0, size, size);
+      ctx.clearRect(0, 0, size, size)
 
-      const ox = cx + Math.cos(angle) * orbitR;
-      const oy = cy + Math.sin(angle) * orbitR;
+      const ox = cx + Math.cos(angle) * orbitR
+      const oy = cy + Math.sin(angle) * orbitR
 
       // --- Lerp dots toward their target + update character state ---
       for (const d of dots) {
-        let tx = d.bx;
-        let ty = d.by;
+        let tx = d.bx
+        let ty = d.by
 
-        const dx = d.bx - ox;
-        const dy = d.by - oy;
-        const dist = Math.hypot(dx, dy);
+        const dx = d.bx - ox
+        const dy = d.by - oy
+        const dist = Math.hypot(dx, dy)
 
         if (dist > 0.01 && dist < influenceR) {
-          const t = 1 - dist / influenceR;
-          const ease = t * t * t;
-          const disp = ease * maxDisp;
-          tx = d.bx + (dx / dist) * disp;
-          ty = d.by + (dy / dist) * disp;
+          const t = 1 - dist / influenceR
+          const ease = t * t * t
+          const disp = ease * maxDisp
+          tx = d.bx + (dx / dist) * disp
+          ty = d.by + (dy / dist) * disp
         }
 
-        d.x += (tx - d.x) * LERP;
-        d.y += (ty - d.y) * LERP;
+        d.x += (tx - d.x) * LERP
+        d.y += (ty - d.y) * LERP
 
         // Character zone: dots close to the orbiter switch to ASCII
-        const liveDist = Math.hypot(d.x - ox, d.y - oy);
-        const inZone = liveDist < asciiR;
+        const liveDist = Math.hypot(d.x - ox, d.y - oy)
+        const inZone = liveDist < asciiR
         if (inZone) {
-          const ct = 1 - liveDist / asciiR;
-          d.charIdx = Math.min(N_CHARS - 1, Math.floor(ct * N_CHARS));
+          const ct = 1 - liveDist / asciiR
+          d.charIdx = Math.min(N_CHARS - 1, Math.floor(ct * N_CHARS))
         }
-        const targetAlpha = inZone ? 1 : 0;
-        d.charAlpha += (targetAlpha - d.charAlpha) * ALPHA_LERP;
+        const targetAlpha = inZone ? 1 : 0
+        d.charAlpha += (targetAlpha - d.charAlpha) * ALPHA_LERP
       }
 
       // --- Render dots ---
       for (const d of dots) {
         if (d.charAlpha > 0.02 && d.charIdx >= 0) {
-          ctx.fillStyle = `rgba(230, 230, 230, ${d.charAlpha})`;
-          ctx.fillText(CHARS[d.charIdx], d.x, d.y);
+          ctx.fillStyle = `rgba(230, 230, 230, ${d.charAlpha})`
+          ctx.fillText(CHARS[d.charIdx], d.x, d.y)
         } else {
-          ctx.fillStyle = "rgba(230, 230, 230, 0.95)";
-          ctx.beginPath();
-          ctx.arc(d.x, d.y, 1.4, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillStyle = 'rgba(230, 230, 230, 0.95)'
+          ctx.beginPath()
+          ctx.arc(d.x, d.y, 1.4, 0, Math.PI * 2)
+          ctx.fill()
         }
       }
 
       // --- Orbiting repellent ---
-      ctx.beginPath();
-      ctx.arc(ox, oy, orbiterRadius, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(230, 230, 230, 1)";
-      ctx.fill();
+      ctx.beginPath()
+      ctx.arc(ox, oy, orbiterRadius, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(230, 230, 230, 1)'
+      ctx.fill()
 
-      angle += 0.005;
-      animRef.current = requestAnimationFrame(draw);
-    };
+      angle += 0.005
+      animRef.current = requestAnimationFrame(draw)
+    }
 
-    draw();
+    draw()
 
-    return () => cancelAnimationFrame(animRef.current);
-  }, []);
+    return () => cancelAnimationFrame(animRef.current)
+  }, [])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="aspect-square w-full rounded-sm bg-neutral-950"
-    />
-  );
-};
+    <GraphicContainer>
+      <canvas ref={canvasRef} className="h-full w-full" />
+    </GraphicContainer>
+  )
+}

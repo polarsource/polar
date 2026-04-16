@@ -1,0 +1,100 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
+/**
+ * VectorField — fixed-length line segments on a disk, oriented by a
+ * polar-native vector field.
+ *
+ * For each sample point at polar (r, θ):
+ *
+ *   angle(r, θ, t) = n · θ + k · r − ω · t
+ *
+ * This is a rotating logarithmic-spiral / rose field: contour lines of
+ * n·θ + k·r = const form n-armed spirals, and subtracting ω·t makes the
+ * whole structure rotate continuously. The result has natural circular
+ * symmetry — the arms curve outward from center to boundary and the
+ * angular step n sets the number of spiral arms.
+ */
+export const VectorField = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio ?? 1;
+    const size = canvas.offsetWidth;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.scale(dpr, dpr);
+
+    const cols = 32;
+    const rows = 32;
+
+    const padding = size * 0.08;
+    const innerSize = size - padding * 2;
+    const cellW = innerSize / cols;
+    const cellH = innerSize / rows;
+
+    // Fixed line half-length — fits inside a cell
+    const half = Math.min(cellW, cellH) * 0.42;
+
+    let time = 0;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, size, size);
+      ctx.strokeStyle = "rgba(220, 220, 220, 0.85)";
+      ctx.lineWidth = 1;
+      ctx.lineCap = "round";
+
+      for (let ci = 0; ci < cols; ci++) {
+        for (let ri = 0; ri < rows; ri++) {
+          // Normalised coords in [-1, 1]
+          const u = ((ci + 0.5) / cols - 0.5) * 2;
+          const v = ((ri + 0.5) / rows - 0.5) * 2;
+
+          // Clip to a circular region
+          const r = Math.hypot(u, v);
+          if (r > 1) continue;
+
+          // Rotating spiral/rose field
+          const theta = Math.atan2(v, u);
+          const n = 3;           // spiral arm count
+          const k = 4;           // radial winding density
+          const omega = 0.6;     // global rotation speed
+          const angle = n * theta + k * r - omega * time;
+
+          const dx = Math.cos(angle) * half;
+          const dy = Math.sin(angle) * half;
+
+          const cx = padding + cellW * (ci + 0.5);
+          const cy = padding + cellH * (ri + 0.5);
+
+          ctx.beginPath();
+          ctx.moveTo(cx - dx, cy - dy);
+          ctx.lineTo(cx + dx, cy + dy);
+          ctx.stroke();
+        }
+      }
+
+      time += 0.02;
+      animRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => cancelAnimationFrame(animRef.current);
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="aspect-square w-full rounded-sm bg-neutral-950"
+    />
+  );
+};

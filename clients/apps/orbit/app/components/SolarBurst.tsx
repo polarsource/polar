@@ -24,13 +24,13 @@ export const SolarBurst = () => {
 
     const rayCount = 80;
     const innerR = size * 0.13;
-    const rayLength = size * 0.30;
+    const rayLength = size * 0.85;
 
     // How many sawtooth cycles repeat around the full circle
     const cycles = 8;
     const sectionSize = (Math.PI * 2) / cycles;
 
-    let angle = 0;
+    let phase = 0;
 
     const draw = () => {
       ctx.clearRect(0, 0, size, size);
@@ -38,10 +38,11 @@ export const SolarBurst = () => {
       const step = (Math.PI * 2) / rayCount;
 
       for (let i = 0; i < rayCount; i++) {
-        const a = angle + i * step;
+        const a = i * step;
 
-        // Sawtooth: linear ramp 0→1 within each section, hard reset at boundary
-        const t = ((a % sectionSize) + sectionSize) % sectionSize / sectionSize;
+        // Sawtooth phase slides over time — pattern rotates continuously
+        const patternAngle = a - phase;
+        const t = ((patternAngle % sectionSize) + sectionSize) % sectionSize / sectionSize;
         const opacity = 0.08 + t * 0.92;
 
         const x1 = cx + Math.cos(a) * innerR;
@@ -63,7 +64,7 @@ export const SolarBurst = () => {
       ctx.fillStyle = "#0a0a0a";
       ctx.fill();
 
-      angle += 0.0012;
+      phase += 0.0015;
       animRef.current = requestAnimationFrame(draw);
     };
 

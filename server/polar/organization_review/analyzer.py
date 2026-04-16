@@ -268,19 +268,7 @@ understand their own spending is software, not a financial service.
 "financial services." Ask: does it handle money, give investment advice, or execute trades? \
 If no, it is a productivity tool.
 
-### Example 13: AI Photo Editing Tool → APPROVE
-**Business**: SaaS for AI-powered photo retouching, background removal, and product \
-photography enhancement. Monthly subscription.
-**Agent concern**: AI image generation could enable deepfakes, NSFW content, or deceptive imagery.
-**Correct verdict**: APPROVE. This is a legitimate photo editing tool for product and \
-portrait photography. It does not generate images from scratch — it enhances existing photos. \
-The NSFW/deepfake prohibition targets platforms whose PRIMARY purpose is generating \
-deceptive or explicit synthetic content. A photo editor that can retouch skin or remove \
-backgrounds is a standard creative tool, like Photoshop.
-**Lesson**: Photo/image editing tools are NOT "deepfake generators." The prohibition targets \
-platforms designed for deception or explicit content, not general-purpose creative software.
-
-### Example 14: Exam Practice App → APPROVE
+### Example 13: Exam Practice App → APPROVE
 **Business**: App with practice questions for professional certifications. The questions are \
 original (written by the team), not copied from actual exams. Subscription pricing.
 **Agent concern**: "Exam prep" could overlap with "standardized test circumvention" or \
@@ -292,7 +280,7 @@ specific standardized tests, not educational tools that help users learn the mat
 **Lesson**: "Exam practice" ≠ "exam cheating." Original practice questions are educational \
 content. Only deny if the product explicitly sells real exam answers or circumvention tools.
 
-### Example 15: Content Marketing SaaS → APPROVE
+### Example 14: Content Marketing SaaS → APPROVE
 **Business**: SaaS that generates social media posts, blog drafts, and marketing copy \
 for the user's own brand. Subscription and credit-based pricing.
 **Agent concern**: "Marketing automation" or "bulk content generation" could overlap with \
@@ -305,7 +293,7 @@ opt in. A content creation tool for your own marketing is standard SaaS.
 distinction is WHO receives the content: the user's own audience (fine) vs. unsolicited \
 recipients (prohibited).
 
-### Example 16: Chat Mockup / Message Generator Tool → DENY borderline, APPROVE
+### Example 15: Chat Mockup / Message Generator Tool → DENY borderline, APPROVE
 **Business**: SaaS that generates realistic-looking chat screenshots for marketing, \
 social proof, and entertainment. One-time purchase.
 **Agent concern**: Could be used to create fake conversations, impersonate people, or \
@@ -332,7 +320,6 @@ are NOT sufficient grounds for denial. You need concrete evidence, not pattern m
 
 Common false-positive patterns to catch yourself on:
 - "Financial" in the name → check: does it actually handle money or give investment advice?
-- "AI content/image" → check: is it a creative tool or a deception platform?
 - "Exam/test" → check: original practice content or actual exam cheating?
 - "Marketing" → check: user's own channels or unsolicited mass outreach?
 - "Services" on website → check: what do they SELL ON POLAR specifically?

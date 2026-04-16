@@ -199,6 +199,7 @@ class OrganizationStatus(StrEnum):
     ACTIVE = "active"
     BLOCKED = "blocked"
     OFFBOARDING = "offboarding"
+    OFFBOARDED = "offboarded"
 
     def get_display_name(self) -> str:
         return {
@@ -209,6 +210,7 @@ class OrganizationStatus(StrEnum):
             OrganizationStatus.ACTIVE: "Active",
             OrganizationStatus.BLOCKED: "Blocked",
             OrganizationStatus.OFFBOARDING: "Offboarding",
+            OrganizationStatus.OFFBOARDED: "Offboarded",
         }[self]
 
     @classmethod
@@ -221,7 +223,11 @@ class OrganizationStatus(StrEnum):
 
     @classmethod
     def payout_ready_statuses(cls) -> set[Self]:
-        return {cls.ACTIVE}  # pyright: ignore
+        return {cls.ACTIVE, cls.OFFBOARDED}  # pyright: ignore
+
+    @classmethod
+    def terminal_statuses(cls) -> set[Self]:
+        return {cls.DENIED, cls.BLOCKED, cls.OFFBOARDED}  # pyright: ignore
 
 
 class Organization(RateLimitGroupMixin, RecordModel):

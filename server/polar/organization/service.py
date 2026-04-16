@@ -68,6 +68,7 @@ log = structlog.get_logger()
 
 _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_GRACE_PERIOD = timedelta(hours=24)
+OFFBOARDING_RETENTION_PERIOD = timedelta(days=120)
 
 
 def _append_internal_note(
@@ -967,6 +968,56 @@ class OrganizationService:
         session.add(organization)
         return organization
 
+    async def set_organization_offboarded(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> Organization:
+        """
+        Move an offboarding organization to the terminal OFFBOARDED state.
+
+        The OFFBOARDED state allows payouts (so merchants can retrieve any
+        remaining balance) but blocks new payments and refunds. It is
+        terminal — organizations cannot leave it.
+        """
+        if organization.status != OrganizationStatus.OFFBOARDING:
+            raise OrganizationError(
+                "Only offboarding organizations can be set to offboarded.",
+                403,
+            )
+        organization.status = OrganizationStatus.OFFBOARDED
+        organization.status_updated_at = datetime.now(UTC)
+        _append_internal_note(
+            organization,
+            "Organization automatically moved to offboarded after "
+            f"{OFFBOARDING_RETENTION_PERIOD.days} days.",
+        )
+        session.add(organization)
+        return organization
+
+    async def transition_expired_offboarding_organizations(
+        self,
+        session: AsyncSession,
+    ) -> list[Organization]:
+        """
+        Move organizations from OFFBOARDING to OFFBOARDED once they have
+        spent the retention period in the offboarding state.
+        """
+        threshold = datetime.now(UTC) - OFFBOARDING_RETENTION_PERIOD
+        repository = OrganizationRepository.from_session(session)
+        statement = repository.get_base_statement().where(
+            Organization.status == OrganizationStatus.OFFBOARDING,
+            Organization.status_updated_at.is_not(None),
+            Organization.status_updated_at <= threshold,
+        )
+        organizations = await repository.get_all(statement)
+
+        transitioned: list[Organization] = []
+        for organization in organizations:
+            await self.set_organization_offboarded(session, organization)
+            transitioned.append(organization)
+        return transitioned
+
     async def get_payment_status(
         self,
         session: AsyncReadSession,
@@ -992,10 +1043,13 @@ class OrganizationService:
         if settings.ENV == Environment.sandbox:
             return True
 
-        # First check basic conditions that don't require account data
+        # First check basic conditions that don't require account data.
+        # OFFBOARDED is a terminal state that blocks all new payments, even
+        # for grandfathered organizations.
         if (
             organization.is_blocked()
             or organization.status == OrganizationStatus.DENIED
+            or organization.status == OrganizationStatus.OFFBOARDED
         ):
             return False
 

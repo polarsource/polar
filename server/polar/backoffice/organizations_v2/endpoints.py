@@ -207,6 +207,8 @@ async def list_organizations(
         status_filter = OrganizationStatus.CREATED
     elif status == "offboarding":
         status_filter = OrganizationStatus.OFFBOARDING
+    elif status == "offboarded":
+        status_filter = OrganizationStatus.OFFBOARDED
     elif status == "review":
         status_filter = OrganizationStatus.REVIEW
     elif status == "snoozed":
@@ -229,12 +231,14 @@ async def list_organizations(
     if status_filter:
         stmt = stmt.where(Organization.status == status_filter)
     elif not q:
-        # By default, exclude denied and blocked organizations (but not when searching)
+        # By default, exclude terminal statuses (denied, blocked, offboarded)
+        # from the list (but not when searching).
         stmt = stmt.where(
             Organization.status.notin_(
                 [
                     OrganizationStatus.DENIED,
                     OrganizationStatus.BLOCKED,
+                    OrganizationStatus.OFFBOARDED,
                 ]
             )
         )
@@ -1788,6 +1792,12 @@ async def offboard_dialog(
                         text("Change the organization status to Offboarding")
                     with tag.li():
                         text("Block payouts while the organization is offboarding")
+                    with tag.li():
+                        text(
+                            "Automatically move the organization to Offboarded "
+                            "after 120 days, a terminal state that allows "
+                            "payouts but blocks new payments and refunds"
+                        )
 
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):

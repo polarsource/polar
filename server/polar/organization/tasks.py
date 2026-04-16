@@ -22,9 +22,16 @@ from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    TaskPriority,
+    actor,
+    enqueue_job,
+)
 
 from .repository import OrganizationRepository
+from .service import organization as organization_service
 
 log = structlog.get_logger()
 
@@ -169,6 +176,31 @@ async def organization_deletion_requested(
         await plain_service.create_organization_deletion_thread(
             session, organization, user, blocked_reasons
         )
+
+
+@actor(
+    actor_name="organization.transition_offboarding_to_offboarded",
+    cron_trigger=CronTrigger(hour=0, minute=0),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def transition_offboarding_to_offboarded() -> None:
+    """
+    Move organizations that have been OFFBOARDING for longer than the
+    retention period (120 days) to the terminal OFFBOARDED status.
+    """
+    async with AsyncSessionMaker() as session:
+        transitioned = (
+            await organization_service.transition_expired_offboarding_organizations(
+                session
+            )
+        )
+        if transitioned:
+            log.info(
+                "organization.transition_offboarding_to_offboarded",
+                count=len(transitioned),
+                organization_ids=[str(o.id) for o in transitioned],
+            )
 
 
 @actor(

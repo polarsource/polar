@@ -118,6 +118,8 @@ def organization_badge(organization: Organization) -> Generator[None]:
             or organization.status == OrganizationStatus.OFFBOARDING
         ):
             classes("badge-warning")
+        elif organization.status == OrganizationStatus.OFFBOARDED:
+            classes("badge-error")
         else:
             classes("badge-secondary")
         text(organization.status.get_display_name())

@@ -304,6 +304,7 @@ class LegacyOrganizationStatus(StrEnum):
             OrganizationStatus.ACTIVE: LegacyOrganizationStatus.ACTIVE,
             OrganizationStatus.BLOCKED: LegacyOrganizationStatus.DENIED,
             OrganizationStatus.OFFBOARDING: LegacyOrganizationStatus.ACTIVE,
+            OrganizationStatus.OFFBOARDED: LegacyOrganizationStatus.DENIED,
         }
         try:
             return mapping[status]

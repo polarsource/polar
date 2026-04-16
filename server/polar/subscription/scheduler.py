@@ -126,7 +126,12 @@ class SubscriptionJobStore(BaseJobStore):
                 Customer.is_deleted.is_(False),
                 Organization.is_deleted.is_(False),
                 Organization.blocked_at.is_(None),
-                Organization.status != OrganizationStatus.DENIED,
+                Organization.status.notin_(
+                    [
+                        OrganizationStatus.DENIED,
+                        OrganizationStatus.OFFBOARDED,
+                    ]
+                ),
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.active.is_(True),
                 Subscription.current_period_end.is_not(None),

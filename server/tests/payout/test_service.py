@@ -202,6 +202,40 @@ class TestCreate:
 
         payout_transaction_service_mock.create.assert_called_once()
 
+    async def test_valid_offboarded(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        user: User,
+        account: Account,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        """Offboarded organizations must still be able to receive payouts."""
+        organization.status = OrganizationStatus.OFFBOARDED
+        await save_fixture(organization)
+
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        balance_transaction_1 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_1
+        )
+
+        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        balance_transaction_2 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_2
+        )
+
+        payout_transaction_service_mock.create.return_value = Transaction()
+
+        payout = await payout_service.create(session, locker, organization)
+
+        assert payout.account == account
+        assert payout.payout_account == payout_account
+        payout_transaction_service_mock.create.assert_called_once()
+
     async def test_valid_different_currencies(
         self,
         save_fixture: SaveFixture,

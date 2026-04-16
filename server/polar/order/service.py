@@ -1017,9 +1017,10 @@ class OrderService:
         if (
             organization.is_blocked()
             or organization.status == OrganizationStatus.DENIED
+            or organization.status == OrganizationStatus.OFFBOARDED
         ):
             log.info(
-                "Organization is blocked or denied, skipping payment",
+                "Organization is blocked, denied or offboarded, skipping payment",
                 order_id=order.id,
                 organization_id=organization.id,
                 organization_status=organization.status,

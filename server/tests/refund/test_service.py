@@ -923,6 +923,43 @@ class TestOrganizationRefundsBlocked:
 
         assert exc_info.value.order.id == order.id
 
+    async def test_create_refund_blocked_when_organization_offboarded(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Refunds must be blocked for organizations in the OFFBOARDED status."""
+        from polar.models.organization import OrganizationStatus
+        from polar.organization.repository import OrganizationRepository
+
+        org_repository = OrganizationRepository.from_session(session)
+        organization = await org_repository.update(
+            organization, update_dict={"status": OrganizationStatus.OFFBOARDED}
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        create_schema = RefundCreate(
+            order_id=order.id,
+            amount=100,
+            reason=RefundReason.customer_request,
+        )
+
+        from polar.refund.service import RefundsBlocked
+
+        with pytest.raises(RefundsBlocked) as exc_info:
+            await refund_service.create(session, order, create_schema)
+
+        assert exc_info.value.order.id == order.id
+
     async def test_create_refund_allowed_when_organization_not_blocked(
         self,
         session: AsyncSession,

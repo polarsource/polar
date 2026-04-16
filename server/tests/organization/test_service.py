@@ -1989,6 +1989,107 @@ class TestReactivateOrganization:
 
 
 @pytest.mark.asyncio
+class TestSetOrganizationOffboarded:
+    async def test_from_offboarding(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+
+        result = await organization_service.set_organization_offboarded(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDED
+        assert result.status_updated_at is not None
+        assert result.internal_notes is not None
+        assert "offboarded" in result.internal_notes.lower()
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDED,
+        ],
+    )
+    async def test_from_non_offboarding_raises(
+        self,
+        status: OrganizationStatus,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+
+        with pytest.raises(Exception, match="Only offboarding organizations"):
+            await organization_service.set_organization_offboarded(
+                session, organization
+            )
+
+
+@pytest.mark.asyncio
+class TestTransitionExpiredOffboardingOrganizations:
+    async def test_transitions_only_expired(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        # Organization offboarded just a moment ago — should NOT transition.
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=10)
+        await save_fixture(organization)
+
+        result = (
+            await organization_service.transition_expired_offboarding_organizations(
+                session
+            )
+        )
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_transitions_when_retention_period_elapsed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        # Organization offboarding for longer than the retention period.
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=121)
+        await save_fixture(organization)
+
+        result = (
+            await organization_service.transition_expired_offboarding_organizations(
+                session
+            )
+        )
+        assert len(result) == 1
+        assert result[0].id == organization.id
+        assert result[0].status == OrganizationStatus.OFFBOARDED
+
+    async def test_ignores_non_offboarding_statuses(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=200)
+        await save_fixture(organization)
+
+        result = (
+            await organization_service.transition_expired_offboarding_organizations(
+                session
+            )
+        )
+        assert result == []
+        assert organization.status == OrganizationStatus.ACTIVE
+
+
+@pytest.mark.asyncio
 class TestSnoozeOrganization:
     async def test_from_review(
         self,
@@ -2108,6 +2209,24 @@ class TestOffboardingPaymentReady:
         )
 
         assert result is True
+
+    async def test_offboarded_blocks_payments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Offboarded organizations must no longer accept payments."""
+        # Even grandfathered organizations must be blocked from new payments.
+        organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.OFFBOARDED
+        await save_fixture(organization)
+
+        result = await organization_service.is_organization_ready_for_payment(
+            session, organization
+        )
+
+        assert result is False
 
 
 @pytest.mark.asyncio

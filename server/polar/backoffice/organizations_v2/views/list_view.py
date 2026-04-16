@@ -319,6 +319,13 @@ class OrganizationListView:
                 count=status_counts.get(OrganizationStatus.OFFBOARDING, 0),
                 badge_variant="warning",
             ),
+            Tab(
+                label="Offboarded",
+                url=str(request.url_for("organizations:list")) + "?status=offboarded",
+                active=status_filter == OrganizationStatus.OFFBOARDED,
+                count=status_counts.get(OrganizationStatus.OFFBOARDED, 0),
+                badge_variant="error",
+            ),
         ]
 
         with tab_nav(tabs):

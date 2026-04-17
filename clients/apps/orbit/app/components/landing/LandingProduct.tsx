@@ -18,10 +18,10 @@ export const LandingProduct = () => (
   <section id="product" className="border-b border-neutral-800">
     <div className="grid grid-cols-2 divide-x divide-neutral-800">
       {/* Left column — heading */}
-      <div className="flex flex-col justify-between p-8 py-16">
+      <div className="flex flex-col justify-between p-16 py-32">
         <SectionLabel number="002" label="Product" />
         <div className="py-20">
-          <h2 className="text-[clamp(2rem,5vw,4.5rem)] font-extralight leading-[1.05] text-white">
+          <h2 className="text-[clamp(2rem,5vw,4.5rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
             The full stack
             <br />
             for usage-based
@@ -29,14 +29,14 @@ export const LandingProduct = () => (
             billing
           </h2>
         </div>
-        <p className="max-w-sm text-2xl leading-relaxed">
+        <p className="max-w-sm text-2xl leading-snug">
           A single API that replaces your metering pipeline, billing
           engine, invoice generator, and revenue dashboard.
         </p>
       </div>
 
       {/* Right column — numbered feature list */}
-      <div className="flex flex-col p-8 py-16">
+      <div className="flex flex-col p-16 py-32">
         <div className="mb-12 text-base uppercase text-white">
           Capabilities
         </div>
@@ -47,12 +47,12 @@ export const LandingProduct = () => (
               className="flex items-baseline justify-between border-b border-neutral-800 py-5"
             >
               <div className="flex items-baseline gap-6">
-                <span className="font-[family-name:var(--font-geist-mono)] text-base text-neutral-600">
+                <span className="font-[family-name:var(--font-geist-mono)] text-lg text-neutral-200">
                   {f.id}
                 </span>
-                <span className="text-2xl text-white">{f.title}</span>
+                <span className="text-lg text-neutral-200">{f.title}</span>
               </div>
-              <span className="max-w-[45%] text-right text-base text-neutral-500">
+              <span className="max-w-[45%] text-right text-lg text-neutral-200">
                 {f.desc}
               </span>
             </div>

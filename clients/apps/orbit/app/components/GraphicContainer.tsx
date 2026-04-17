@@ -12,7 +12,7 @@ interface GraphicContainerProps {
 }
 
 export const GraphicContainer = ({ children }: GraphicContainerProps) => (
-  <div className="relative aspect-square w-full overflow-hidden rounded-sm bg-neutral-900">
+  <div className="relative aspect-square w-full overflow-hidden rounded-sm">
     {children}
   </div>
 )

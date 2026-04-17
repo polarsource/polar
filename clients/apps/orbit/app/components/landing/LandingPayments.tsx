@@ -29,9 +29,9 @@ export const LandingPayments = () => (
   <section className="border-b border-neutral-800">
     {/* Top row — heading span + intro */}
     <div className="grid grid-cols-3 divide-x divide-neutral-800">
-      <div className="col-span-2 p-8 py-16">
+      <div className="col-span-2 p-16 py-32">
         <SectionLabel number="002.B" label="Payments &amp; SaaS" />
-        <h2 className="mt-12 text-[clamp(2rem,4.5vw,4rem)] font-extralight leading-[1.05] text-white">
+        <h2 className="mt-12 text-[clamp(2rem,4.5vw,4rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
           Not just metering.
           <br />
           The complete
@@ -40,8 +40,8 @@ export const LandingPayments = () => (
         </h2>
       </div>
 
-      <div className="flex flex-col justify-end p-8 py-16">
-        <p className="text-2xl leading-relaxed">
+      <div className="flex flex-col justify-end p-16 py-32">
+        <p className="text-2xl leading-snug">
           Polar is a full payments and billing platform — subscriptions,
           one-time purchases, checkout flows, and customer management —
           built for developers who ship SaaS, APIs, and digital products.
@@ -52,14 +52,14 @@ export const LandingPayments = () => (
     {/* Bottom row — 4 capability cells */}
     <div className="grid grid-cols-4 divide-x divide-neutral-800 border-t border-neutral-800">
       {CAPABILITIES.map((c, i) => (
-        <div key={c.title} className="flex flex-col gap-4 p-8 py-12">
+        <div key={c.title} className="flex flex-col gap-4 p-16 py-32">
           <span className="font-[family-name:var(--font-geist-mono)] text-base text-neutral-600">
             {String(i + 1).padStart(2, '0')}
           </span>
-          <h3 className="text-2xl font-light text-white">
+          <h3 className="text-2xl font-normal text-white">
             {c.title}
           </h3>
-          <p className="text-base leading-relaxed text-neutral-500">
+          <p className="text-base leading-snug text-neutral-500">
             {c.desc}
           </p>
         </div>

@@ -26,7 +26,7 @@ export const LandingFooter = () => (
   <footer className="border-b border-neutral-800">
     <div className="grid grid-cols-4 divide-x divide-neutral-800">
       {COLS.map((col) => (
-        <div key={col.title} className="p-8 py-12">
+        <div key={col.title} className="p-16 py-12">
           <div className="mb-6 text-base uppercase text-white">
             {col.title}
           </div>
@@ -45,7 +45,7 @@ export const LandingFooter = () => (
         </div>
       ))}
     </div>
-    <div className="flex items-center justify-between border-t border-neutral-800 px-8 py-5">
+    <div className="flex items-center justify-between border-t border-neutral-800 px-12 py-5">
       <span className="text-base text-neutral-600">
         &copy; 2026 Polar Software Inc.
       </span>

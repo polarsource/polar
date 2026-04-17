@@ -2,7 +2,7 @@
  * LandingNav — minimal top nav. Logo left, sparse links right.
  */
 export const LandingNav = () => (
-  <nav className="flex w-full items-center justify-between border-b border-neutral-800 px-8 py-5">
+  <nav className="flex w-full items-center justify-between border-b border-neutral-800 px-12 py-5">
     <div className="text-base font-medium uppercase text-white">
       Polar
     </div>

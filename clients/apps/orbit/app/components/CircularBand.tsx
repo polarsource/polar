@@ -106,7 +106,7 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
   }, [])
 
   if (fill) {
-    return <canvas ref={canvasRef} className="h-full w-full bg-neutral-950" />
+    return <canvas ref={canvasRef} className="h-full w-full" />
   }
 
   return (

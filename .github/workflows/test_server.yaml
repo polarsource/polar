@@ -292,7 +292,15 @@ jobs:
         with:
           python-version-file: "server/pyproject.toml"
 
+      - name: Cache CJK fonts
+        id: cjk-fonts-cache
+        uses: actions/cache@v5
+        with:
+          path: /usr/share/fonts/opentype/noto
+          key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
+
       - name: Install CJK fonts
+        if: steps.cjk-fonts-cache.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
 
       - name: 🔧 uv install

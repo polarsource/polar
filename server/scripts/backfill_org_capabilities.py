@@ -79,8 +79,7 @@ async def _show_drift(session: AsyncSession) -> int:
         *[
             (
                 Organization.status == status,
-                Organization.capabilities
-                != bindparam(f"caps_{i}", caps, type_=JSONB),
+                Organization.capabilities != bindparam(f"caps_{i}", caps, type_=JSONB),
             )
             for i, (status, caps) in enumerate(STATUS_CAPABILITIES.items())
         ],
@@ -156,9 +155,7 @@ async def backfill(
     execute: bool = typer.Option(
         False, help="Actually run the backfill (default: dry-run)"
     ),
-    verify: bool = typer.Option(
-        False, help="Only run verification checks, no changes"
-    ),
+    verify: bool = typer.Option(False, help="Only run verification checks, no changes"),
     batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
@@ -197,9 +194,7 @@ async def backfill(
                 await _show_status_summary(session)
                 console.print()
                 null_count = await _count_null(session)
-                console.print(
-                    f"[yellow]{null_count} row(s) would be backfilled."
-                )
+                console.print(f"[yellow]{null_count} row(s) would be backfilled.")
             return
 
         console.rule("[bold]Executing backfill: organizations.capabilities")
@@ -210,9 +205,7 @@ async def backfill(
             await _show_status_summary(session)
             console.print()
 
-        total = await _run_backfill(
-            batch_size=batch_size, sleep_seconds=sleep_seconds
-        )
+        total = await _run_backfill(batch_size=batch_size, sleep_seconds=sleep_seconds)
 
         log.info("Backfill complete", total_updated=total)
         console.print()

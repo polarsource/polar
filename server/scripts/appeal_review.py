@@ -429,8 +429,8 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
                 parts.append("Social Links: none")
             if org_data.created_at:
                 parts.append(f"Created: {org_data.created_at.strftime('%Y-%m-%d')}")
-            if org_data.blocked_at:
-                parts.append(f"BLOCKED at: {org_data.blocked_at.strftime('%Y-%m-%d')}")
+            if org_data.is_blocked:
+                parts.append("BLOCKED")
 
             log.info("tool.get_organization", slug=deps.org_slug)
             return "\n".join(parts)
@@ -665,7 +665,7 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
                         flags.append(f"verdict={po.review_verdict}")
                     if po.appeal_decision:
                         flags.append(f"appeal={po.appeal_decision}")
-                    if po.blocked_at:
+                    if po.is_blocked:
                         flags.append("BLOCKED")
                     flag_str = f" [{', '.join(flags)}]" if flags else ""
                     parts.append(f"- {po.slug} (status={po.status}){flag_str}")

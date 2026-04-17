@@ -1,7 +1,6 @@
 import { LandingNav } from './components/landing/LandingNav'
 import { LandingHero } from './components/landing/LandingHero'
 import { LandingProduct } from './components/landing/LandingProduct'
-import { LandingPayments } from './components/landing/LandingPayments'
 import { LandingArchitecture } from './components/landing/LandingArchitecture'
 import { LandingMetrics } from './components/landing/LandingMetrics'
 import { LandingCTA } from './components/landing/LandingCTA'
@@ -14,7 +13,6 @@ export default function Home() {
       <LandingHero />
       <LandingArchitecture />
       <LandingProduct />
-      <LandingPayments />
       <LandingMetrics />
       <LandingCTA />
       <LandingFooter />

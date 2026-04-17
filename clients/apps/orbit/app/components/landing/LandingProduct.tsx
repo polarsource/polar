@@ -14,17 +14,17 @@ export const LandingProduct = () => (
       <div className="flex flex-col justify-between p-16 py-32">
         <SectionLabel number="002" label="Product" />
         <div className="py-20">
-          <h2 className="text-[clamp(2rem,5vw,4.5rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
-            The full stack
+          <h2 className="text-[clamp(2rem,5vw,4.5rem)] leading-[1.05] font-normal text-white [font-variation-settings:'opsz'_32]">
+            Not just metering.
             <br />
-            for usage-based
+            The complete
             <br />
-            billing
+            commerce layer.
           </h2>
         </div>
-        <p className="max-w-sm text-2xl leading-snug">
-          A single API that replaces your metering pipeline, billing
-          engine, invoice generator, and revenue dashboard.
+        <p className="max-w-lg text-2xl leading-snug">
+          A single API that replaces your metering pipeline, billing engine,
+          invoice generator, and revenue dashboard.
         </p>
       </div>
 

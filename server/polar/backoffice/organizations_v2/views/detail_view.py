@@ -352,18 +352,6 @@ class OrganizationDetailView:
                             ):
                                 text("Deny")
 
-                    elif self.org.status == OrganizationStatus.OFFBOARDING:
-                        # Reactivation from OFFBOARDING is not yet implemented.
-                        # Blocking remains available from the shared actions.
-                        with tag.div(
-                            classes="bg-warning/10 border border-warning/20 p-3 rounded-lg text-xs"
-                        ):
-                            text(
-                                "Reactivation out of offboarding is not yet "
-                                "implemented. The only action available on "
-                                "this organization is Block."
-                            )
-
                     elif self.org.status == OrganizationStatus.REVIEW:
                         # Compute suggested threshold: double current or $250 min
                         current_threshold = self.org.next_review_threshold or 0

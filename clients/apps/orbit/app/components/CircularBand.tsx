@@ -45,18 +45,16 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
     resizeObserver.observe(canvas)
 
     const rings: Ring[] = [
-      { radius: 0, rayCount: 12, rayLength: 0, direction: 1, angle: 0 },
-      { radius: 0, rayCount: 18, rayLength: 0, direction: -1, angle: 0 },
       { radius: 0, rayCount: 24, rayLength: 0, direction: 1, angle: 0 },
-      { radius: 0, rayCount: 30, rayLength: 0, direction: -1, angle: 0 },
-      { radius: 0, rayCount: 36, rayLength: 0, direction: 1, angle: 0 },
+      { radius: 0, rayCount: 24, rayLength: 0, direction: -1, angle: 0 },
+      { radius: 0, rayCount: 24, rayLength: 0, direction: 1, angle: 0 },
+      { radius: 0, rayCount: 24, rayLength: 0, direction: -1, angle: 0 },
+      { radius: 0, rayCount: 24, rayLength: 0, direction: 1, angle: 0 },
     ]
 
-    // Target linear speed at every ring's perimeter, expressed as a
-    // fraction of the canvas size per second. Each ring's angular
-    // velocity is derived from this so all rings move at the same
-    // constant linear velocity regardless of radius or framerate.
-    const LINEAR_SPEED_FRAC = 0.02
+    // Shared angular speed (rad/sec) — all rings rotate at the same
+    // angular velocity so their spokes line up every cycle.
+    const ANG_SPEED = 0.15
 
     let lastTime: number | null = null
 
@@ -68,21 +66,15 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
       const cx = w / 2
       const cy = h / 2
 
-      const radii = [0.06, 0.16, 0.29, 0.45, 0.65]
-      const lengths = [0.1, 0.13, 0.16, 0.2, 0.5]
+      const radii = [0.14, 0.24, 0.34, 0.47, 0.65]
+      const lengths = [0.10, 0.10, 0.13, 0.18, 0.50]
 
       ctx.clearRect(0, 0, w, h)
-
-      // Linear speed in pixels per second
-      const linearSpeedPx = size * LINEAR_SPEED_FRAC
 
       rings.forEach((ring, i) => {
         ring.radius = size * radii[i]
         ring.rayLength = size * lengths[i]
-        // ω = v / r — smaller rings rotate faster angularly, but the
-        // edge of every ring sweeps at the same linear speed.
-        const angSpeed = linearSpeedPx / Math.max(1, ring.radius)
-        ring.angle += angSpeed * ring.direction * dt
+        ring.angle += ANG_SPEED * ring.direction * dt
 
         const step = (Math.PI * 2) / ring.rayCount
 

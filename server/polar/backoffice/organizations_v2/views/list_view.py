@@ -1,6 +1,7 @@
 """Enhanced organization list view with tabs and quick actions."""
 
 import contextlib
+import json
 from collections.abc import Generator
 from datetime import UTC, datetime
 
@@ -90,8 +91,6 @@ class OrganizationListView:
         if status_filter is not None:
             hx_vals_dict["status"] = status_filter.value
 
-        import json
-
         hx_vals = json.dumps(hx_vals_dict)
 
         with tag.th(
@@ -116,6 +115,32 @@ class OrganizationListView:
                     text(indicator)
 
         yield
+
+    def load_more_button(
+        self,
+        request: Request,
+        page: int,
+        current_sort: str,
+        current_direction: str,
+        status_filter: OrganizationStatus | None,
+    ) -> None:
+        hx_vals: dict[str, str | int] = {
+            "page": page + 1,
+            "sort": current_sort,
+            "direction": current_direction,
+        }
+        if status_filter is not None:
+            hx_vals["status"] = status_filter.value
+        with tag.div(classes="flex justify-center mt-6"):
+            with button(
+                variant="secondary",
+                hx_get=str(request.url_for("organizations:list")),
+                hx_vals=json.dumps(hx_vals),
+                hx_include="#filter-form",
+                hx_target="#org-list",
+                hx_swap="beforeend",
+            ):
+                text("Load More")
 
     @contextlib.contextmanager
     def organization_row(self, request: Request, org: Organization) -> Generator[None]:
@@ -540,17 +565,10 @@ class OrganizationListView:
                             with self.organization_row(request, org):
                                 pass
 
-                # Pagination
                 if has_more:
-                    with tag.div(classes="flex justify-center mt-6"):
-                        with button(
-                            variant="secondary",
-                            hx_get=str(request.url_for("organizations:list"))
-                            + f"?page={page + 1}",
-                            hx_target="#org-list",
-                            hx_swap="beforeend",
-                        ):
-                            text("Load More")
+                    self.load_more_button(
+                        request, page, current_sort, current_direction, status_filter
+                    )
 
         yield
 
@@ -560,7 +578,6 @@ class OrganizationListView:
         request: Request,
         organizations: list[Organization],
         status_filter: OrganizationStatus | None,
-        status_counts: dict[OrganizationStatus, int],
         page: int,
         has_more: bool,
         current_sort: str = "priority",
@@ -651,17 +668,10 @@ class OrganizationListView:
                             with self.organization_row(request, org):
                                 pass
 
-                # Pagination
                 if has_more:
-                    with tag.div(classes="flex justify-center mt-6"):
-                        with button(
-                            variant="secondary",
-                            hx_get=str(request.url_for("organizations:list"))
-                            + f"?page={page + 1}",
-                            hx_target="#org-list",
-                            hx_swap="beforeend",
-                        ):
-                            text("Load More")
+                    self.load_more_button(
+                        request, page, current_sort, current_direction, status_filter
+                    )
 
         yield
 

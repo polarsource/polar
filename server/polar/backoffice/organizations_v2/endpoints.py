@@ -386,7 +386,6 @@ async def list_organizations(
             request,
             organizations,
             status_filter,
-            status_counts,
             page,
             has_more,
             sort,

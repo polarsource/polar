@@ -1,7 +1,7 @@
 'use client'
 
 import { EventStream } from '../EventStream'
-import { VectorField } from '../VectorField'
+import { MagneticBubbles } from '../MagneticBubbles'
 import { VolumetricSlices } from '../VolumetricSlices'
 import { OrbitingSpheres } from '../OrbitingSpheres'
 import { SectionLabel } from './SectionLabel'
@@ -46,7 +46,7 @@ export const LandingArchitecture = () => (
           {/* Graphic */}
           <div className="aspect-square w-full">
             {i === 0 && <EventStream />}
-            {i === 1 && <VectorField />}
+            {i === 1 && <MagneticBubbles />}
             {i === 2 && <VolumetricSlices />}
             {i === 3 && <OrbitingSpheres />}
           </div>

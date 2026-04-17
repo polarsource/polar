@@ -116,31 +116,54 @@ class OrganizationListView:
 
         yield
 
-    def load_more_button(
+    def pagination_controls(
         self,
         request: Request,
         page: int,
+        has_more: bool,
         current_sort: str,
         current_direction: str,
         status_filter: OrganizationStatus | None,
     ) -> None:
-        hx_vals: dict[str, str | int] = {
-            "page": page + 1,
+        """Render Previous/Next pagination buttons.
+
+        Uses the limit+1 has_more detection so we never pay for a COUNT(*) just
+        to render the page controls — works for tables of arbitrary size.
+        """
+        if page <= 1 and not has_more:
+            return
+
+        common_vals: dict[str, str | int] = {
             "sort": current_sort,
             "direction": current_direction,
         }
         if status_filter is not None:
-            hx_vals["status"] = status_filter.value
-        with tag.div(classes="flex justify-center mt-6"):
-            with button(
-                variant="secondary",
+            common_vals["status"] = status_filter.value
+
+        def _nav_button(target_page: int, label: str, disabled: bool) -> None:
+            if disabled:
+                with tag.button(
+                    type="button", classes="join-item btn btn-sm", disabled=True
+                ):
+                    text(label)
+                return
+            hx_vals = {**common_vals, "page": target_page}
+            with tag.button(
+                type="button",
+                classes="join-item btn btn-sm",
                 hx_get=str(request.url_for("organizations:list")),
                 hx_vals=json.dumps(hx_vals),
                 hx_include="#filter-form",
                 hx_target="#org-list",
-                hx_swap="beforeend",
             ):
-                text("Load More")
+                text(label)
+
+        with tag.div(classes="flex justify-between items-center mt-6"):
+            with tag.div(classes="text-sm text-base-content/60"):
+                text(f"Page {page}")
+            with tag.div(classes="join"):
+                _nav_button(page - 1, "← Previous", disabled=page <= 1)
+                _nav_button(page + 1, "Next →", disabled=not has_more)
 
     @contextlib.contextmanager
     def organization_row(self, request: Request, org: Organization) -> Generator[None]:
@@ -565,10 +588,14 @@ class OrganizationListView:
                             with self.organization_row(request, org):
                                 pass
 
-                if has_more:
-                    self.load_more_button(
-                        request, page, current_sort, current_direction, status_filter
-                    )
+                self.pagination_controls(
+                    request,
+                    page,
+                    has_more,
+                    current_sort,
+                    current_direction,
+                    status_filter,
+                )
 
         yield
 
@@ -668,10 +695,14 @@ class OrganizationListView:
                             with self.organization_row(request, org):
                                 pass
 
-                if has_more:
-                    self.load_more_button(
-                        request, page, current_sort, current_direction, status_filter
-                    )
+                self.pagination_controls(
+                    request,
+                    page,
+                    has_more,
+                    current_sort,
+                    current_direction,
+                    status_filter,
+                )
 
         yield
 

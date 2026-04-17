@@ -172,7 +172,7 @@ async def list_organizations(
     sort: str = Query("priority"),
     direction: str = Query("asc"),
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=100),
     # Advanced filters
     country: str | None = Query(""),
     risk_level: str | None = Query(""),
@@ -371,17 +371,9 @@ async def list_organizations(
     if has_more:
         organizations = organizations[:limit]
 
-    # Get status counts for tabs
-    status_counts = await list_view.get_status_counts()
-
-    # Get distinct countries for filter dropdown
-    countries = await list_view.get_distinct_countries()
-
-    # Check if this is an HTMX request targeting just the table
     is_htmx_table_request = request.headers.get("HX-Target") == "org-list"
 
     if is_htmx_table_request:
-        # Only return the table content
         with list_view.render_table_only(
             request,
             organizations,
@@ -393,7 +385,8 @@ async def list_organizations(
         ):
             pass
     else:
-        # Render full page with layout
+        status_counts = await list_view.get_status_counts()
+        countries = await list_view.get_distinct_countries()
         with layout(
             request,
             [("Organizations", str(request.url))],

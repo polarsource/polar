@@ -47,7 +47,7 @@ export const LandingProduct = () => (
               className="flex items-baseline justify-between border-b border-neutral-800 py-5"
             >
               <div className="flex items-baseline gap-6">
-                <span className="font-[family-name:var(--font-geist-mono)] text-lg text-neutral-200">
+                <span className="font-[family-name:var(--font-mono)] text-lg text-neutral-200">
                   {f.id}
                 </span>
                 <span className="text-lg text-neutral-200">{f.title}</span>

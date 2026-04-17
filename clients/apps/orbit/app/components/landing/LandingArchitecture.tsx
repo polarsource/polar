@@ -23,9 +23,9 @@ export const LandingArchitecture = () => (
   <section id="architecture" className="border-b border-neutral-800">
     {/* Top row — heading */}
     <div className="grid grid-cols-2 divide-x divide-neutral-800 border-b border-neutral-800">
-      <div className="p-16 py-16">
+      <div className="p-16 py-32">
         <SectionLabel number="003" label="Architecture" />
-        <h2 className="mt-12 text-[clamp(2rem,5vw,4.5rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
+        <h2 className="mt-16 text-[clamp(2rem,5vw,4.5rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
           Four layers.
           <br />
           One pipeline.
@@ -51,8 +51,8 @@ export const LandingArchitecture = () => (
             {i === 3 && <OrbitingSpheres />}
           </div>
           {/* Label */}
-          <div className="flex gap-3 border-t border-neutral-800 p-12">
-            <span className="font-[family-name:var(--font-geist-mono)] text-base text-neutral-500">
+          <div className="flex gap-3 border-t border-neutral-800 p-12 py-8">
+            <span className="font-[family-name:var(--font-mono)] text-base text-neutral-500">
               {l.id}
             </span>
             <div>

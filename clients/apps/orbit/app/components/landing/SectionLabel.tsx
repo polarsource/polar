@@ -9,10 +9,10 @@ export const SectionLabel = ({
   label?: string;
 }) => (
   <div className="flex items-center gap-4 text-base text-white">
-    <span className="font-[family-name:var(--font-geist-mono)]">{number}</span>
+    <span className="font-[family-name:var(--font-mono)]">{number}</span>
     {label && (
       <>
-        <span className="h-px w-8 bg-neutral-700" />
+        <span className="h-px w-8 bg-white" />
         <span>{label}</span>
       </>
     )}

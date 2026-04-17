@@ -17,7 +17,9 @@ export const LandingHero = () => (
 
     {/* Right — text */}
     <div className="flex flex-col justify-between p-16">
-      <SectionLabel number="001" />
+      <div className="flex flex-col gap-4">
+        <SectionLabel number="001" label="Billing infrastructure for AI products" />
+      </div>
 
       <div>
         <h1 className="text-[clamp(3rem,6vw,6rem)] font-normal [font-variation-settings:'opsz'_32] leading-[0.95] text-white">
@@ -27,9 +29,12 @@ export const LandingHero = () => (
         </h1>
       </div>
 
-      <p className="max-w-md text-lg text-neutral-500">
-        Billing infrastructure for AI products.
-      </p>
+      <a
+        href="#get-started"
+        className="w-fit border border-white px-8 py-4 text-base font-medium text-white transition hover:bg-white hover:text-black"
+      >
+        Get Started
+      </a>
     </div>
   </section>
 )

@@ -6,6 +6,8 @@ import { OrbitingSpheres } from './components/OrbitingSpheres'
 import { PhyllotaxisSunflower } from './components/PhyllotaxisSunflower'
 import { EventStream } from './components/EventStream'
 import { TileGrid } from './components/TileGrid'
+import { MagneticBubbles } from './components/MagneticBubbles'
+import { ShapeGrid } from './components/ShapeGrid'
 
 export default function Home() {
   return (
@@ -16,9 +18,11 @@ export default function Home() {
           <CircularBand />
           <VolumetricSlices />
           <OrbitingSpheres />
-          <VectorField />
+          <MagneticBubbles />
+          <ShapeGrid />
           <PhyllotaxisSunflower />
           <EventStream />
+          <VectorField />
           <TileGrid />
         </div>
       </div>

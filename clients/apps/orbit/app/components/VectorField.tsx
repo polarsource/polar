@@ -47,9 +47,10 @@ export const VectorField = () => {
 
     let time = 0;
 
-    // Opacity range — horizontal lines at MAX_ALPHA, vertical at MIN_ALPHA
-    const MIN_ALPHA = 0.12;
-    const MAX_ALPHA = 0.95;
+    // Pre-blended gray range — horizontal lines bright, vertical faded
+    // (no alpha channel; colors match bg-neutral-900 ≈ rgb(23,23,23))
+    const MIN_GRAY = 47;   // vertical lines (was alpha 0.12)
+    const MAX_GRAY = 190;  // horizontal lines (was alpha 0.85)
 
     const draw = () => {
       ctx.clearRect(0, 0, size, size);
@@ -80,12 +81,12 @@ export const VectorField = () => {
 
           // |cos(angle)| = 1 when horizontal, 0 when vertical
           const horizontalness = Math.abs(ca);
-          const alpha = MIN_ALPHA + horizontalness * (MAX_ALPHA - MIN_ALPHA);
+          const gray = Math.round(MIN_GRAY + horizontalness * (MAX_GRAY - MIN_GRAY));
 
           const cx = padding + cellW * (ci + 0.5);
           const cy = padding + cellH * (ri + 0.5);
 
-          ctx.strokeStyle = `rgba(220, 220, 220, ${alpha})`;
+          ctx.strokeStyle = `rgb(${gray}, ${gray}, ${gray})`;
           ctx.beginPath();
           ctx.moveTo(cx - dx, cy - dy);
           ctx.lineTo(cx + dx, cy + dy);

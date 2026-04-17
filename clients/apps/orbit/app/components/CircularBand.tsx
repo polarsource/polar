@@ -88,7 +88,7 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
           ctx.beginPath()
           ctx.moveTo(x1, y1)
           ctx.lineTo(x2, y2)
-          ctx.strokeStyle = 'rgba(220, 220, 220, 0.85)'
+          ctx.strokeStyle = 'rgb(190, 190, 190)'
           ctx.lineWidth = 1
           ctx.stroke()
         }

@@ -240,7 +240,7 @@ export const VolumetricSlices = () => {
     gl.uniform1f(uViewScale, 0.9)
     gl.uniform1f(uDepthScale, 0.5)
     gl.uniform2f(uHalfXY, 0.62, 0.62)
-    gl.uniform3f(uLineColor, 220 / 255, 220 / 255, 220 / 255)
+    gl.uniform3f(uLineColor, 190 / 255, 190 / 255, 190 / 255)
 
     // Blending: standard alpha with premultiplied off; depth test enabled
     gl.enable(gl.BLEND)

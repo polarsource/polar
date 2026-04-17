@@ -47,7 +47,7 @@ export const TileGrid = () => {
       r: number,
     ) => {
       // Fill the tile with the foreground
-      ctx.fillStyle = 'rgba(232, 230, 222, 0.95)'
+      ctx.fillStyle = 'rgb(190, 190, 190)'
       ctx.fillRect(tx, ty, s, s)
 
       // Cut out the circle (in bg color) clipped to the tile so it

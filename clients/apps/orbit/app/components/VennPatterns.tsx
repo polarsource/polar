@@ -19,11 +19,11 @@ type PatternFn = (
 // Pattern: dots
 const dots: PatternFn = (ctx, cx, cy, size) => {
   const s = size * 0.5;
-  const step = size * 0.018;
+  const step = size * 0.01;
   for (let x = cx - s; x < cx + s; x += step) {
     for (let y = cy - s; y < cy + s; y += step) {
       ctx.beginPath();
-      ctx.arc(x, y, size * 0.002, 0, Math.PI * 2);
+      ctx.arc(x, y, size * 0.0012, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -85,7 +85,7 @@ export const VennPatterns = () => {
         ctx.save();
         ctx.clip(paths[a]);
         ctx.clip(paths[b]);
-        ctx.fillStyle = "rgb(70, 70, 70)";
+        ctx.fillStyle = "rgb(190, 190, 190)";
         dots(ctx, cx, cy, size);
         ctx.restore();
       }

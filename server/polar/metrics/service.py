@@ -409,17 +409,21 @@ class MetricsService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
     ) -> list[uuid.UUID]:
-        if organization_id is not None and len(organization_id) > 0:
-            return list(organization_id)
         if is_organization(auth_subject):
-            return [auth_subject.subject.id]
-        if is_user(auth_subject):
+            accessible: list[uuid.UUID] = [auth_subject.subject.id]
+        elif is_user(auth_subject):
             stmt = select(UserOrganization.organization_id).where(
                 UserOrganization.user_id == auth_subject.subject.id,
                 UserOrganization.is_deleted.is_(False),
             )
-            return list(await session.scalars(stmt))
-        return []
+            accessible = list(await session.scalars(stmt))
+        else:
+            return []
+
+        if organization_id is not None and len(organization_id) > 0:
+            accessible_set = set(accessible)
+            return [oid for oid in organization_id if oid in accessible_set]
+        return accessible
 
     async def _resolve_tinybird_filters(
         self,

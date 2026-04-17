@@ -552,8 +552,9 @@ async def get(
                 datatable.DatatableDateTimeColumn(
                     "deleted_at", "Membership Deleted At"
                 ),
-                datatable.DatatableDateTimeColumn(
-                    "organization.blocked_at", "Blocked At"
+                datatable.DatatableAttrColumn(
+                    "organization.status",
+                    "Status",
                 ),
                 datatable.DatatableAttrColumn(
                     "organization.slug",

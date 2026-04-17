@@ -338,11 +338,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
 
     # DEPRECATED: Use `status == OrganizationStatus.BLOCKED` instead.
-    # This column is no longer written to and will be dropped in a future migration.
+    # `deferred=True` so default SELECTs don't include it, allowing the
+    # column to be dropped in a follow-up migration without a CD race.
     blocked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
         default=None,
+        deferred=True,
     )
 
     # Flag to block refunds for all orders in this organization

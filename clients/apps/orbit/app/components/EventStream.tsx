@@ -4,10 +4,10 @@ import { useEffect, useRef } from "react";
 import { GraphicContainer } from "./GraphicContainer";
 
 /**
- * EventStream — 0s and 1s flow in through a hole on the right side of
- * a central circular chamber, accumulate inside, and get squeezed out
- * through an equal-sized hole on the left under pairwise repulsion
- * "pressure". Pure canvas 2D.
+ * EventStream — 0s and 1s spawn at the center of a circular chamber
+ * and push each other apart via the same mass-weighted, cubic-eased,
+ * minimum-gap physics as MagneticBubbles. Brownian drift keeps the
+ * cluster alive; a gentle center pull keeps it cohesive.
  */
 
 const CHARS = "01";
@@ -17,6 +17,7 @@ interface Particle {
   y: number;
   vx: number;
   vy: number;
+  r: number;
   ch: string;
   age: number;
 }
@@ -38,51 +39,55 @@ export const EventStream = () => {
     ctx.scale(dpr, dpr);
 
     const fontSize = Math.max(8, size * 0.022);
-    const mono = getComputedStyle(canvas).getPropertyValue("--font-mono").trim() || "monospace";
+    const mono =
+      getComputedStyle(canvas).getPropertyValue("--font-mono").trim() ||
+      "monospace";
     ctx.font = `${fontSize}px ${mono}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // Collision radius — half-glyph-ish
-    const radius = fontSize * 0.55;
-    // Repellent distance — generous breathing room between digits
-    const minDist = radius * 7.5;
+    // Each character acts as a bubble with this collision radius
+    const charR = fontSize * 0.5;
 
-    // Chamber — circle in the middle
+    // Chamber
     const cCx = size * 0.5;
     const cCy = size * 0.5;
-    const cR = size * 0.3;
+    const cR = size * 0.38;
 
-
-    // Entry — particles are born at the center of the chamber with a
-    // small jitter. Pressure from pairwise repulsion pushes them
-    // outward and they exit through the left hole.
-    const entryX = cCx;
-    const entryY = cCy;
-    const spawnJitter = fontSize * 0.9;
+    const spawnJitter = size * 0.15;
 
     const particles: Particle[] = [];
-    const MAX_PARTICLES = 260;
+    const MAX_PARTICLES = 200;
     const LIFESPAN = 600;
     const SPAWN_EVERY = 3;
-    const DAMPING = 0.9;
+
+    // Physics — ported from MagneticBubbles
+    const DAMPING = 0.96;
+    const CENTER_PULL = 0.0002;
+    const REPEL_STRENGTH = 0.4;
+    const DRIFT_STRENGTH = 0.25;
+    const MIN_GAP = size * 0.02;
 
     let frame = 0;
+    let lastTime: number | null = null;
 
-    // Spawn at the chamber center with small jitter; zero initial
-    // velocity — pairwise repulsion pushes them apart naturally.
     const spawn = () => {
       particles.push({
-        x: entryX + (Math.random() - 0.5) * spawnJitter,
-        y: entryY + (Math.random() - 0.5) * spawnJitter,
+        x: cCx + (Math.random() - 0.5) * spawnJitter,
+        y: cCy + (Math.random() - 0.5) * spawnJitter,
         vx: 0,
         vy: 0,
+        r: charR,
         ch: CHARS[Math.floor(Math.random() * CHARS.length)],
         age: 0,
       });
     };
 
-    const draw = () => {
+    const draw = (now: number) => {
+      const dt =
+        lastTime === null ? 0 : Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
       ctx.clearRect(0, 0, size, size);
 
       frame++;
@@ -90,77 +95,94 @@ export const EventStream = () => {
         spawn();
       }
 
-      // Remove particles that have aged out OR drifted far off-canvas
+      // Remove dead particles
       for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        if (p.age > LIFESPAN || p.x < -fontSize * 2 || p.x > size + fontSize * 2 ||
-            p.y < -fontSize * 2 || p.y > size + fontSize * 2) {
-          particles.splice(i, 1);
-        }
+        if (particles[i].age > LIFESPAN) particles.splice(i, 1);
       }
 
       for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        p.age++;
+        const a = particles[i];
+        a.age++;
 
-        // Pairwise repulsion — cubic-bezier-eased force so nearby
-        // particles push each other apart with a smooth, organic feel.
+        // Brownian drift
+        a.vx += (Math.random() - 0.5) * DRIFT_STRENGTH;
+        a.vy += (Math.random() - 0.5) * DRIFT_STRENGTH;
+
+        // Gentle center pull
+        a.vx += (cCx - a.x) * CENTER_PULL;
+        a.vy += (cCy - a.y) * CENTER_PULL;
+
+        // Pairwise repulsion — mass-weighted, cubic-eased, with min gap
         for (let j = i + 1; j < particles.length; j++) {
-          const q = particles[j];
-          const rx = p.x - q.x;
-          const ry = p.y - q.y;
+          const b = particles[j];
+          const rx = a.x - b.x;
+          const ry = a.y - b.y;
           const d2 = rx * rx + ry * ry;
-          if (d2 < minDist * minDist && d2 > 0.0001) {
+          const gappedDist = a.r + b.r + MIN_GAP;
+
+          if (d2 < gappedDist * gappedDist * 4 && d2 > 0.01) {
             const d = Math.sqrt(d2);
             const nx = rx / d;
             const ny = ry / d;
 
-            // Normalised closeness: 0 at edge of influence, 1 at overlap
-            const t = 1 - d / minDist;
-            // Cubic ease-in — gentle when far, strong when close
-            const eased = t * t * t;
-            const force = eased * 0.45;
+            const t = 1 - d / (gappedDist * 2);
+            const force = t * t * t * REPEL_STRENGTH;
 
-            p.vx += nx * force;
-            p.vy += ny * force;
-            q.vx -= nx * force;
-            q.vy -= ny * force;
+            const mA = a.r * a.r;
+            const mB = b.r * b.r;
+            const total = mA + mB;
+            a.vx += nx * force * (mB / total);
+            a.vy += ny * force * (mB / total);
+            b.vx -= nx * force * (mA / total);
+            b.vy -= ny * force * (mA / total);
+
+            // Hard separation — enforces minimum gap
+            if (d < gappedDist) {
+              const overlap = (gappedDist - d) * 0.4;
+              a.x += nx * overlap * (mB / total);
+              a.y += ny * overlap * (mB / total);
+              b.x -= nx * overlap * (mA / total);
+              b.y -= ny * overlap * (mA / total);
+            }
           }
         }
 
         // Integrate
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vx *= DAMPING;
-        p.vy *= DAMPING;
+        a.x += a.vx * dt * 60;
+        a.y += a.vy * dt * 60;
+        a.vx *= DAMPING;
+        a.vy *= DAMPING;
 
-        // Sealed circular chamber — any escape is pushed back to the wall
-        const dxC = p.x - cCx;
-        const dyC = p.y - cCy;
+        // Circular chamber boundary
+        const dxC = a.x - cCx;
+        const dyC = a.y - cCy;
         const dC = Math.hypot(dxC, dyC);
-        if (dC > cR) {
+        const maxDist = cR - a.r;
+        if (dC > maxDist && maxDist > 0) {
           const nx = dxC / dC;
           const ny = dyC / dC;
-          p.x = cCx + nx * cR;
-          p.y = cCy + ny * cR;
-          const radVel = p.vx * nx + p.vy * ny;
+          a.x = cCx + nx * maxDist;
+          a.y = cCy + ny * maxDist;
+          const radVel = a.vx * nx + a.vy * ny;
           if (radVel > 0) {
-            p.vx -= radVel * nx;
-            p.vy -= radVel * ny;
+            a.vx -= radVel * nx;
+            a.vy -= radVel * ny;
           }
         }
       }
 
-      // Render glyphs
-      ctx.fillStyle = "rgb(190, 190, 190)";
+      // Render — opacity decays over lifetime
       for (const p of particles) {
+        const life = 1 - p.age / LIFESPAN;
+        const gray = Math.round(190 * life);
+        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
         ctx.fillText(p.ch, p.x, p.y);
       }
 
       animRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    animRef.current = requestAnimationFrame(draw);
 
     return () => cancelAnimationFrame(animRef.current);
   }, []);

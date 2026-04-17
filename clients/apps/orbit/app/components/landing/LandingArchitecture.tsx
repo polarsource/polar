@@ -32,7 +32,7 @@ export const LandingArchitecture = () => (
         </h2>
       </div>
       <div className="flex items-end p-16 py-32">
-        <p className="max-w-md text-lg leading-snug text-neutral-400">
+        <p className="max-w-md text-2xl leading-snug text-white">
           Every inference event flows through four discrete stages —
           each one observable, configurable, and independently scalable.
         </p>
@@ -51,14 +51,13 @@ export const LandingArchitecture = () => (
             {i === 3 && <OrbitingSpheres />}
           </div>
           {/* Label */}
-          <div className="flex gap-3 border-t border-neutral-800 p-12 py-8">
-            <span className="font-[family-name:var(--font-mono)] text-base text-neutral-500">
+          <div className="flex items-center gap-3 border-t border-neutral-800 p-12 py-8">
+            <span className="font-[family-name:var(--font-mono)] text-lg text-white">
               {l.id}
             </span>
-            <div>
-              <div className="text-base text-white">{l.name}</div>
-              <div className="text-base text-neutral-500">{l.desc}</div>
-            </div>
+            <span className="text-lg text-white">
+              {l.name} — {l.desc}
+            </span>
           </div>
         </div>
       ))}

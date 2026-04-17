@@ -29,6 +29,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.product.schemas import ProductID
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth
@@ -96,6 +97,7 @@ async def get(
         ),
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
+    redis: Redis | None = Depends(get_redis),
 ) -> MetricsResponse:
     """
     Get metrics about your orders and subscriptions.
@@ -144,6 +146,7 @@ async def get(
         billing_type=billing_type,
         customer_id=customer_id,
         metrics=metrics,
+        redis=redis,
     )
 
 
@@ -193,6 +196,7 @@ async def export(
         ),
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
+    redis: Redis | None = Depends(get_redis),
 ) -> Response:
     """Export metrics as a CSV file."""
     if metrics is not None:
@@ -237,6 +241,7 @@ async def export(
             billing_type=billing_type,
             customer_id=customer_id,
             metrics=metrics,
+            redis=redis,
         )
 
         csv_writer = IterableCSVWriter(dialect="excel")

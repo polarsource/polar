@@ -1,9 +1,13 @@
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
+from redis.exceptions import RedisError
 
 from polar.auth.scope import Scope
 from polar.kit.time_queries import TimeInterval
+from polar.metrics.service import metrics as metrics_service
 from polar.models import UserOrganization
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 
 
@@ -218,6 +222,88 @@ class TestMetricsFiltering:
         assert json["metrics"]["orders"] is not None
         assert json["metrics"]["active_subscriptions"] is not None
         assert json["metrics"]["gross_margin"] is not None
+
+
+@pytest.mark.asyncio
+class TestGetMetricsCache:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
+    )
+    async def test_identical_request_served_from_cache(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+    ) -> None:
+        pg_spy = mocker.spy(metrics_service, "_get_metrics_from_pg")
+        tb_spy = mocker.spy(metrics_service, "_get_metrics_from_tinybird")
+        params = {
+            "start_date": "2024-01-01",
+            "end_date": "2024-12-31",
+            "interval": "month",
+        }
+
+        first = await client.get("/v1/metrics/", params=params)
+        second = await client.get("/v1/metrics/", params=params)
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert first.json() == second.json()
+        assert pg_spy.call_count == 1
+        assert tb_spy.call_count == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
+    )
+    async def test_different_params_miss_cache(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+    ) -> None:
+        pg_spy = mocker.spy(metrics_service, "_get_metrics_from_pg")
+
+        first = await client.get(
+            "/v1/metrics/",
+            params={
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "interval": "month",
+            },
+        )
+        second = await client.get(
+            "/v1/metrics/",
+            params={
+                "start_date": "2024-01-01",
+                "end_date": "2024-06-30",
+                "interval": "month",
+            },
+        )
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert pg_spy.call_count == 2
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
+    )
+    async def test_redis_failure_does_not_break_endpoint(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+        redis: Redis,
+    ) -> None:
+        mocker.patch.object(redis, "get", side_effect=RedisError("boom"))
+        mocker.patch.object(redis, "set", side_effect=RedisError("boom"))
+
+        response = await client.get(
+            "/v1/metrics/",
+            params={
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "interval": "month",
+            },
+        )
+
+        assert response.status_code == 200
 
 
 @pytest.mark.asyncio

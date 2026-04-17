@@ -22,7 +22,9 @@ from polar.models import (
 from polar.models.product import ProductBillingType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.redis import Redis
 
+from .cache import build_cache_key, get_cached_metrics, set_cached_metrics
 from .metrics import (
     METRICS,
     METRICS_POST_COMPUTE,
@@ -177,7 +179,40 @@ class MetricsService:
         customer_id: Sequence[uuid.UUID] | None = None,
         metrics: Sequence[str] | None = None,
         now: datetime | None = None,
+        redis: Redis | None = None,
     ) -> MetricsResponse:
+        pg_slugs, tb_slugs, meta_slugs = _expand_metrics_with_dependencies(metrics)
+
+        tb_filters = await self._resolve_tinybird_filters(
+            session,
+            auth_subject,
+            organization_id=organization_id,
+            product_id=product_id,
+            billing_type=billing_type,
+            customer_id=customer_id,
+            tb_needed=tb_slugs,
+        )
+
+        cache_key: str | None = None
+        if redis is not None and now is None:
+            cache_key = build_cache_key(
+                start_date=start_date,
+                end_date=end_date,
+                timezone=timezone,
+                interval=interval,
+                organization_ids=tb_filters.org_ids,
+                product_ids=tb_filters.product_id,
+                customer_ids=tb_filters.customer_ids,
+                external_customer_ids=tb_filters.external_customer_id,
+                billing_type=billing_type,
+                metrics=metrics,
+            )
+            with logfire.span("Get metrics cache", cache_key=cache_key) as span:
+                cached = await get_cached_metrics(redis, cache_key)
+                span.set_attribute("cache_hit", cached is not None)
+            if cached is not None:
+                return cached
+
         await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
         await session.execute(text("SET LOCAL plan_cache_mode = 'force_custom_plan'"))
         start_timestamp = datetime(
@@ -202,8 +237,6 @@ class MetricsService:
 
         now_dt = now or datetime.now(tz=timezone)
 
-        pg_slugs, tb_slugs, meta_slugs = _expand_metrics_with_dependencies(metrics)
-
         filtered_pg_metrics = [m for m in METRICS_POSTGRES if m.slug in pg_slugs]
         filtered_tb_metrics = [m for m in METRICS_TINYBIRD if m.slug in tb_slugs]
         filtered_post_compute = [
@@ -216,16 +249,6 @@ class MetricsService:
         pg_query_fns: list[QueryCallable] = [
             fn for qt, fn in QUERY_TO_FUNCTION.items() if qt in required_queries
         ]
-
-        tb_filters = await self._resolve_tinybird_filters(
-            session,
-            auth_subject,
-            organization_id=organization_id,
-            product_id=product_id,
-            billing_type=billing_type,
-            customer_id=customer_id,
-            tb_needed=tb_slugs,
-        )
 
         pg_coro = self._get_metrics_from_pg(
             session,
@@ -314,13 +337,19 @@ class MetricsService:
                 for p in periods
             ]
 
-        return MetricsResponse.model_validate(
+        response = MetricsResponse.model_validate(
             {
                 "periods": periods,
                 "totals": totals,
                 "metrics": {m.slug: m for m in filtered_all_metrics},
             }
         )
+
+        if redis is not None and cache_key is not None:
+            with logfire.span("Set metrics cache", cache_key=cache_key):
+                await set_cached_metrics(redis, cache_key, response)
+
+        return response
 
     async def _get_metrics_from_pg(
         self,

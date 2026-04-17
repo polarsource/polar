@@ -211,9 +211,7 @@ async def get_thread_state(
     return status, answered
 
 
-async def is_thread_answered(
-    http_client: httpx.AsyncClient, thread_id: str
-) -> bool:
+async def is_thread_answered(http_client: httpx.AsyncClient, thread_id: str) -> bool:
     """Check if a thread already has a staff reply (userActor) or outbound email."""
     _, answered = await get_thread_state(http_client, thread_id)
     return answered

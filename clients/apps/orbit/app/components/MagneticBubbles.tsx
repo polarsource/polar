@@ -66,10 +66,10 @@ export const MagneticBubbles = () => {
     })
 
     // Physics constants
-    const DAMPING = 0.92
-    const CENTER_PULL = 0.0004
-    const REPEL_STRENGTH = 0.6
-    const DRIFT_STRENGTH = 0.04
+    const DAMPING = 0.96
+    const CENTER_PULL = 0.0002
+    const REPEL_STRENGTH = 0.4
+    const DRIFT_STRENGTH = 0.25
     // Minimum gap between any two bubble edges (in pixels)
     const MIN_GAP = size * 0.035
 

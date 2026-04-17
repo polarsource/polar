@@ -5,6 +5,7 @@ import "./globals.css";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  axes: ["opsz"],
 });
 
 const geistMono = Geist_Mono({
@@ -27,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)] bg-black text-neutral-400">
+      <body className={`${inter.className} min-h-full flex flex-col bg-black text-neutral-400`}>
         {children}
       </body>
     </html>

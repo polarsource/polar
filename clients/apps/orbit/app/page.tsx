@@ -12,9 +12,9 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-black">
       <LandingNav />
       <LandingHero />
+      <LandingArchitecture />
       <LandingProduct />
       <LandingPayments />
-      <LandingArchitecture />
       <LandingMetrics />
       <LandingCTA />
       <LandingFooter />

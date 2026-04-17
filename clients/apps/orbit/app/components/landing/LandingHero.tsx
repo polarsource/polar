@@ -16,11 +16,11 @@ export const LandingHero = () => (
     </div>
 
     {/* Right — text */}
-    <div className="flex flex-col justify-between p-12">
+    <div className="flex flex-col justify-between p-16">
       <SectionLabel number="001" />
 
       <div>
-        <h1 className="text-[clamp(3rem,6vw,6rem)] font-extralight leading-[0.95] text-white">
+        <h1 className="text-[clamp(3rem,6vw,6rem)] font-normal [font-variation-settings:'opsz'_32] leading-[0.95] text-white">
           From Inference
           <br />
           to Invoice

@@ -1,70 +1,67 @@
 'use client'
 
+import { EventStream } from '../EventStream'
+import { VectorField } from '../VectorField'
 import { VolumetricSlices } from '../VolumetricSlices'
 import { OrbitingSpheres } from '../OrbitingSpheres'
 import { SectionLabel } from './SectionLabel'
 
 /**
- * LandingArchitecture — three-column grid showing the platform's
- * layered architecture. Left: large heading + description.
- * Center: VolumetricSlices graphic. Right: OrbitingSpheres graphic.
+ * LandingArchitecture — heading row + four-column graphic row,
+ * one graphic per architecture layer. Each visual alludes to its
+ * layer's function.
  */
 
 const LAYERS = [
-  { id: '01', name: 'Events', desc: 'Raw inference logs ingested via a single HTTP endpoint' },
-  { id: '02', name: 'Meters', desc: 'Configurable aggregation windows and grouping keys' },
-  { id: '03', name: 'Prices', desc: 'Flexible pricing models attached to meters' },
-  { id: '04', name: 'Invoices', desc: 'Automatically generated and delivered on your schedule' },
+  { id: '01', name: 'Events', desc: 'Ingest raw inference logs' },
+  { id: '02', name: 'Meters', desc: 'Aggregate into billable usage' },
+  { id: '03', name: 'Prices', desc: 'Apply pricing models' },
+  { id: '04', name: 'Invoices', desc: 'Generate and deliver' },
 ]
 
 export const LandingArchitecture = () => (
   <section id="architecture" className="border-b border-neutral-800">
-    <div className="grid grid-cols-3 divide-x divide-neutral-800">
-      {/* Left — text */}
-      <div className="flex flex-col justify-between p-8 py-16">
+    {/* Top row — heading */}
+    <div className="grid grid-cols-2 divide-x divide-neutral-800 border-b border-neutral-800">
+      <div className="p-16 py-16">
         <SectionLabel number="003" label="Architecture" />
+        <h2 className="mt-12 text-[clamp(2rem,5vw,4.5rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
+          Four layers.
+          <br />
+          One pipeline.
+        </h2>
+      </div>
+      <div className="flex items-end p-16 py-32">
+        <p className="max-w-md text-lg leading-snug text-neutral-400">
+          Every inference event flows through four discrete stages —
+          each one observable, configurable, and independently scalable.
+        </p>
+      </div>
+    </div>
 
-        <div className="py-16">
-          <h2 className="mb-8 text-[clamp(1.8rem,3.5vw,3rem)] font-extralight leading-[1.1] text-white">
-            Four layers.
-            <br />
-            One pipeline.
-          </h2>
-
-          <div className="flex flex-col gap-0">
-            {LAYERS.map((l) => (
-              <div
-                key={l.id}
-                className="flex gap-4 border-t border-neutral-800 py-4"
-              >
-                <span className="font-[family-name:var(--font-geist-mono)] text-base text-neutral-600">
-                  {l.id}
-                </span>
-                <div>
-                  <div className="text-2xl text-white">{l.name}</div>
-                  <div className="mt-1 text-base text-neutral-500">{l.desc}</div>
-                </div>
-              </div>
-            ))}
+    {/* Bottom row — 4 graphics, one per layer */}
+    <div className="grid grid-cols-4 divide-x divide-neutral-800">
+      {LAYERS.map((l, i) => (
+        <div key={l.id} className="flex flex-col">
+          {/* Graphic */}
+          <div className="aspect-square w-full">
+            {i === 0 && <EventStream />}
+            {i === 1 && <VectorField />}
+            {i === 2 && <VolumetricSlices />}
+            {i === 3 && <OrbitingSpheres />}
+          </div>
+          {/* Label */}
+          <div className="flex gap-3 border-t border-neutral-800 p-12">
+            <span className="font-[family-name:var(--font-geist-mono)] text-base text-neutral-500">
+              {l.id}
+            </span>
+            <div>
+              <div className="text-base text-white">{l.name}</div>
+              <div className="text-base text-neutral-500">{l.desc}</div>
+            </div>
           </div>
         </div>
-
-        <div />
-      </div>
-
-      {/* Center — VolumetricSlices */}
-      <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <VolumetricSlices />
-        </div>
-      </div>
-
-      {/* Right — OrbitingSpheres */}
-      <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <OrbitingSpheres />
-        </div>
-      </div>
+      ))}
     </div>
   </section>
 )

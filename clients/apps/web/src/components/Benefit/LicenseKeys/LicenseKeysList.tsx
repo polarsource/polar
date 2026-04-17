@@ -83,6 +83,7 @@ export const LicenseKeysList = ({
     {
       id: 'status',
       accessorKey: 'status',
+      enableSorting: false,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),

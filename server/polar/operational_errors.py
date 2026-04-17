@@ -84,6 +84,13 @@ def _tinybird_operational_error_matcher(exc: BaseException) -> bool:
     return isinstance(exc, TinybirdOperationalError)
 
 
+def _polar_self_client_operational_error_matcher(exc: BaseException) -> bool:
+    # Import deferred to avoid circular dependency with polar.worker
+    from polar.integrations.polar.client import PolarSelfClientOperationalError
+
+    return isinstance(exc, PolarSelfClientOperationalError)
+
+
 _operation_error_matchers: dict[str, OperationalErrorMatcher] = {
     "sql_timeout_error": _sql_timeout_error_matcher,
     "sql_lock_not_available_error": _sql_lock_not_available_error_matcher,
@@ -92,6 +99,7 @@ _operation_error_matchers: dict[str, OperationalErrorMatcher] = {
     "external_event_already_handled": _external_event_already_handled_error_matcher,
     "loops_client_operational_error": _loops_client_operational_error_matcher,
     "tinybird_operational_error": _tinybird_operational_error_matcher,
+    "polar_self_client_operational_error": _polar_self_client_operational_error_matcher,
 }
 
 

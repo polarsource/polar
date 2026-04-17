@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, NoReturn
 
+import httpx
 import logfire
 
 from polar.config import settings
@@ -17,6 +18,10 @@ class PolarSelfClientError(InternalPolarError):
         super().__init__(message)
 
 
+class PolarSelfClientOperationalError(PolarSelfClientError):
+    """Raised for transient/retryable SDK errors (429, 5xx, network)."""
+
+
 def _import_sdk() -> type[PolarSDK]:
     from polar_sdk import Polar as PolarSDK
 
@@ -26,9 +31,19 @@ def _import_sdk() -> type[PolarSDK]:
 def _raise_error(span: Any, error: Any, operation: str) -> NoReturn:
     span.set_attribute("http.status_code", error.status_code)
     span.set_attribute("error.body", str(error.body))
-    raise PolarSelfClientError(
-        f"{operation} failed with status {error.status_code}"
-    ) from error
+    message = f"{operation} failed with status {error.status_code}"
+    if error.status_code == 429 or error.status_code >= 500:
+        raise PolarSelfClientOperationalError(message) from error
+    raise PolarSelfClientError(message) from error
+
+
+def _raise_network_error(
+    span: Any, exc: httpx.RequestError, operation: str
+) -> NoReturn:
+    span.set_attribute("error.type", type(exc).__name__)
+    raise PolarSelfClientOperationalError(
+        f"{operation} failed with network error: {type(exc).__name__}: {exc}"
+    ) from exc
 
 
 class PolarSelfClient:
@@ -58,6 +73,8 @@ class PolarSelfClient:
                 if e.status_code != 409:
                     _raise_error(span, e, "create_customer")
                 span.set_attribute("conflict", True)
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "create_customer")
 
             try:
                 return await self._sdk.customers.get_external_async(
@@ -65,6 +82,8 @@ class PolarSelfClient:
                 )
             except PolarError as e:
                 _raise_error(span, e, "create_customer.fetch_existing")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "create_customer.fetch_existing")
 
     async def create_free_subscription(
         self, *, external_customer_id: str, product_id: str
@@ -89,6 +108,8 @@ class PolarSelfClient:
                     span.set_attribute("conflict", True)
                     return
                 _raise_error(span, e, "create_free_subscription")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "create_free_subscription")
 
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
         return await self._sdk.customers.get_external_async(external_id=external_id)
@@ -125,6 +146,8 @@ class PolarSelfClient:
                     span.set_attribute("conflict", True)
                     return
                 _raise_error(span, e, "add_member")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "add_member")
 
     async def remove_member(
         self, *, external_customer_id: str, external_id: str
@@ -145,6 +168,8 @@ class PolarSelfClient:
                     span.set_attribute("not_found", True)
                     return
                 _raise_error(span, e, "remove_member")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "remove_member")
 
     async def delete_customer(self, *, external_id: str) -> None:
         from polar_sdk.models.polarerror import PolarError
@@ -160,6 +185,8 @@ class PolarSelfClient:
                     span.set_attribute("not_found", True)
                     return
                 _raise_error(span, e, "delete_customer")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "delete_customer")
 
     async def track_event_ingestion(
         self, *, external_customer_id: str, count: int
@@ -189,6 +216,8 @@ class PolarSelfClient:
                     span.set_attribute("conflict", True)
                     return
                 _raise_error(span, e, "track_event_ingestion")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "track_event_ingestion")
 
 
 _client: PolarSelfClient | None = None

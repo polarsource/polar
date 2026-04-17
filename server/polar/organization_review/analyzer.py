@@ -822,7 +822,7 @@ class ReviewAnalyzer:
                     flags.append(f"verdict={po.review_verdict}")
                 if po.appeal_decision:
                     flags.append(f"appeal={po.appeal_decision}")
-                if po.blocked_at:
+                if po.is_blocked:
                     flags.append("BLOCKED")
                 flag_str = f" [{', '.join(flags)}]" if flags else ""
                 parts.append(f"- {po.slug} (status={po.status}){flag_str}")

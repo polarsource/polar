@@ -23,13 +23,12 @@ def _build_org(
     slug: str = "test-org",
     status: OrganizationStatus = OrganizationStatus.ACTIVE,
     review: MagicMock | None = None,
-    blocked_at: datetime | None = None,
 ) -> MagicMock:
     org = MagicMock()
     org.slug = slug
     org.status = status
     org.review = review
-    org.blocked_at = blocked_at
+    org.is_blocked.return_value = status == OrganizationStatus.BLOCKED
     return org
 
 
@@ -116,14 +115,12 @@ class TestCollectHistoryData:
 
     def test_blocked_org_sets_has_blocked_orgs(self) -> None:
         user = _build_user()
-        org = _build_org(
-            status=OrganizationStatus.BLOCKED,
-            blocked_at=datetime(2024, 1, 1),
-        )
+        org = _build_org(status=OrganizationStatus.BLOCKED)
 
         result = collect_history_data(user, [org])
 
         assert result.has_blocked_orgs is True
+        assert result.prior_organizations[0].is_blocked is True
 
     def test_user_blocked_at(self) -> None:
         blocked = datetime(2024, 6, 15)
@@ -147,7 +144,6 @@ class TestCollectHistoryData:
         org3 = _build_org(
             slug="org-3",
             status=OrganizationStatus.BLOCKED,
-            blocked_at=datetime(2024, 3, 1),
         )
 
         result = collect_history_data(user, [org1, org2, org3])

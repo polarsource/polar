@@ -92,7 +92,7 @@ class OrganizationData(Schema):
     socials: list[dict[str, str]] = Field(default_factory=list)
     created_at: datetime | None = None
     details_submitted_at: datetime | None = None
-    blocked_at: datetime | None = None
+    is_blocked: bool = False
 
 
 class ProductData(Schema):
@@ -155,7 +155,7 @@ class PriorOrganization(Schema):
     status: str
     review_verdict: str | None = None
     appeal_decision: str | None = None
-    blocked_at: datetime | None = None
+    is_blocked: bool = False
 
 
 class HistoryData(Schema):

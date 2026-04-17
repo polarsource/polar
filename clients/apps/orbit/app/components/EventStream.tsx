@@ -171,11 +171,9 @@ export const EventStream = () => {
         }
       }
 
-      // Render — opacity decays over lifetime
+      // Render
+      ctx.fillStyle = "rgb(190, 190, 190)";
       for (const p of particles) {
-        const life = 1 - p.age / LIFESPAN;
-        const gray = Math.round(190 * life);
-        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
         ctx.fillText(p.ch, p.x, p.y);
       }
 

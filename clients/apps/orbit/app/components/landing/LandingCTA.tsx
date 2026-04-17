@@ -2,7 +2,7 @@
 
 import { SectionLabel } from './SectionLabel'
 import { SectionHeading } from './SectionHeading'
-import { PhyllotaxisSunflower } from '../PhyllotaxisSunflower'
+import { WaveBars } from '../WaveBars'
 
 /**
  * LandingCTA — two-column: left has TerrainSphere graphic,
@@ -13,7 +13,7 @@ export const LandingCTA = () => (
     <div className="grid grid-cols-2 divide-x divide-neutral-800">
       {/* Left — graphic */}
       <div className="relative overflow-hidden">
-        <PhyllotaxisSunflower />
+        <WaveBars />
       </div>
 
       {/* Right — text + buttons */}

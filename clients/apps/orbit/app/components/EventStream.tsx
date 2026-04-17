@@ -38,7 +38,8 @@ export const EventStream = () => {
     ctx.scale(dpr, dpr);
 
     const fontSize = Math.max(8, size * 0.022);
-    ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    const mono = getComputedStyle(canvas).getPropertyValue("--font-mono").trim() || "monospace";
+    ctx.font = `${fontSize}px ${mono}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 

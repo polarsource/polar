@@ -70,7 +70,7 @@ def enable_payments(slug: str) -> None:
                     typer.echo("Set organization details.")
 
                 organization.details_submitted_at = utc_now()
-                organization.set_status(OrganizationStatus.ACTIVE)
+                organization.status = OrganizationStatus.ACTIVE
                 organization.initially_reviewed_at = utc_now()
                 session.add(organization)
 

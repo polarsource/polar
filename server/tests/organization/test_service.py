@@ -17,7 +17,6 @@ from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
 from polar.models.organization import (
-    STATUS_CAPABILITIES,
     OrganizationNotificationSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
@@ -2140,32 +2139,3 @@ class TestSetPayoutAccount:
             await organization_service.set_payout_account(
                 session, auth_subject, organization, uuid.uuid4()
             )
-
-
-@pytest.mark.asyncio
-class TestSetStatusCapabilities:
-    @pytest.mark.parametrize("status", list(OrganizationStatus))
-    async def test_set_status_writes_capabilities(
-        self,
-        status: OrganizationStatus,
-        organization: Organization,
-    ) -> None:
-        organization.set_status(status)
-
-        assert organization.status == status
-        assert organization.capabilities == STATUS_CAPABILITIES[status]
-
-    async def test_set_status_overwrites_prior_overrides(
-        self,
-        organization: Organization,
-    ) -> None:
-        organization.set_status(OrganizationStatus.ACTIVE)
-        assert organization.capabilities is not None
-        organization.capabilities = {**organization.capabilities, "payouts": False}
-
-        organization.set_status(OrganizationStatus.BLOCKED)
-
-        assert (
-            organization.capabilities
-            == STATUS_CAPABILITIES[OrganizationStatus.BLOCKED]
-        )

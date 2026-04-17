@@ -816,7 +816,8 @@ class OrganizationService:
                 organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
             )
 
-        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.status = OrganizationStatus.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
 
         initial_review = False
@@ -873,7 +874,8 @@ class OrganizationService:
     async def deny_organization(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        organization.set_status(OrganizationStatus.DENIED)
+        organization.status = OrganizationStatus.DENIED
+        organization.status_updated_at = datetime.now(UTC)
         session.add(organization)
 
         # If there's a pending appeal, mark it as rejected
@@ -934,7 +936,8 @@ class OrganizationService:
         *,
         enqueue_review: bool = True,
     ) -> Organization:
-        organization.set_status(OrganizationStatus.REVIEW)
+        organization.status = OrganizationStatus.REVIEW
+        organization.status_updated_at = datetime.now(UTC)
         session.add(organization)
 
         # Record a human ESCALATE decision so the agent knows not to auto-act
@@ -963,7 +966,8 @@ class OrganizationService:
                 "Only organizations under review can be set to offboarding.",
                 403,
             )
-        organization.set_status(OrganizationStatus.OFFBOARDING)
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status_updated_at = datetime.now(UTC)
         _append_internal_note(
             organization, "Organization set to offboarding.", reason=reason
         )
@@ -979,7 +983,8 @@ class OrganizationService:
             raise OrganizationError(
                 "Only offboarding organizations can be reactivated.", 403
             )
-        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.status = OrganizationStatus.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
         session.add(organization)
         return organization
 
@@ -1103,7 +1108,8 @@ class OrganizationService:
         if review.appeal_decision is not None:
             raise ValueError("Appeal has already been reviewed")
 
-        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.status = OrganizationStatus.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)
 

@@ -245,7 +245,7 @@ class OrganizationCapabilities(TypedDict):
 STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
     OrganizationStatus.CREATED: {
         "checkout_payments": False,
-        "subscription_renewals": True,
+        "subscription_renewals": False,
         "payouts": False,
         "refunds": False,
         "api_access": True,

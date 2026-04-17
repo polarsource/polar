@@ -1,19 +1,12 @@
+'use client'
+
+import { Stream } from '@cloudflare/stream-react'
 import { SectionLabel } from './SectionLabel'
 
 /**
- * LandingProduct — product overview in a strict two-column grid with
- * numbered feature list and large display heading.
+ * LandingProduct — two-column layout. Left: heading + description.
+ * Right: product demo video.
  */
-
-const FEATURES = [
-  { id: '2.1', title: 'Event Ingestion', desc: 'Stream billions of usage events in real time' },
-  { id: '2.2', title: 'Metering', desc: 'Aggregate raw events into billable usage' },
-  { id: '2.3', title: 'Pricing Models', desc: 'Per-unit, tiered, graduated, package — all built in' },
-  { id: '2.4', title: 'Wallets', desc: 'Prepaid balances with automatic drawdown' },
-  { id: '2.5', title: 'Invoicing', desc: 'Automated invoices with line-item granularity' },
-  { id: '2.6', title: 'Revenue Analytics', desc: 'Real-time MRR, churn, and usage dashboards' },
-]
-
 export const LandingProduct = () => (
   <section id="product" className="border-b border-neutral-800">
     <div className="grid grid-cols-2 divide-x divide-neutral-800">
@@ -35,28 +28,16 @@ export const LandingProduct = () => (
         </p>
       </div>
 
-      {/* Right column — numbered feature list */}
-      <div className="flex flex-col p-16 py-32">
-        <div className="mb-12 text-base uppercase text-white">
-          Capabilities
-        </div>
-        <div className="flex flex-1 flex-col">
-          {FEATURES.map((f) => (
-            <div
-              key={f.id}
-              className="flex items-baseline justify-between border-b border-neutral-800 py-5"
-            >
-              <div className="flex items-baseline gap-6">
-                <span className="font-[family-name:var(--font-mono)] text-lg text-neutral-200">
-                  {f.id}
-                </span>
-                <span className="text-lg text-neutral-200">{f.title}</span>
-              </div>
-              <span className="max-w-[45%] text-right text-lg text-neutral-200">
-                {f.desc}
-              </span>
-            </div>
-          ))}
+      {/* Right column — video */}
+      <div className="relative flex items-center">
+        <div className="relative aspect-video w-full overflow-hidden">
+          <Stream
+            src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
+            autoplay
+            muted
+            loop
+            className="absolute inset-0 h-full w-full"
+          />
         </div>
       </div>
     </div>

@@ -233,6 +233,75 @@ class OrganizationStatus(StrEnum):
         return {cls.ACTIVE}  # pyright: ignore
 
 
+class OrganizationCapabilities(TypedDict):
+    checkout_payments: bool
+    subscription_renewals: bool
+    payouts: bool
+    refunds: bool
+    api_access: bool
+    dashboard_access: bool
+
+
+STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
+    OrganizationStatus.CREATED: {
+        "checkout_payments": False,
+        "subscription_renewals": True,
+        "payouts": False,
+        "refunds": False,
+        "api_access": True,
+        "dashboard_access": True,
+    },
+    OrganizationStatus.REVIEW: {
+        "checkout_payments": True,
+        "subscription_renewals": True,
+        "payouts": False,
+        "refunds": True,
+        "api_access": True,
+        "dashboard_access": True,
+    },
+    OrganizationStatus.SNOOZED: {
+        "checkout_payments": True,
+        "subscription_renewals": True,
+        "payouts": False,
+        "refunds": True,
+        "api_access": True,
+        "dashboard_access": True,
+    },
+    OrganizationStatus.ACTIVE: {
+        "checkout_payments": True,
+        "subscription_renewals": True,
+        "payouts": True,
+        "refunds": True,
+        "api_access": True,
+        "dashboard_access": True,
+    },
+    OrganizationStatus.DENIED: {
+        "checkout_payments": False,
+        "subscription_renewals": False,
+        "payouts": False,
+        "refunds": False,
+        "api_access": True,
+        "dashboard_access": True,
+    },
+    OrganizationStatus.OFFBOARDING: {
+        "checkout_payments": True,
+        "subscription_renewals": True,
+        "payouts": False,
+        "refunds": True,
+        "api_access": True,
+        "dashboard_access": True,
+    },
+    OrganizationStatus.BLOCKED: {
+        "checkout_payments": False,
+        "subscription_renewals": False,
+        "payouts": False,
+        "refunds": False,
+        "api_access": False,
+        "dashboard_access": False,
+    },
+}
+
+
 class Organization(RateLimitGroupMixin, RecordModel):
     __tablename__ = "organizations"
     __table_args__ = (
@@ -351,6 +420,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=False,
     )
 
+    capabilities: Mapped[OrganizationCapabilities | None] = mapped_column(
+        JSONB,
+        nullable=True,
+        default=lambda: {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]},
+    )
+
     country: Mapped[str | None] = mapped_column(String(2), nullable=True, default=None)
 
     profile_settings: Mapped[dict[str, Any]] = mapped_column(
@@ -442,6 +517,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def set_status(self, status: OrganizationStatus) -> None:
         self.status = status
         self.status_updated_at = datetime.now(UTC)
+        self.capabilities = {**STATUS_CAPABILITIES[status]}
 
     @hybrid_property
     def is_under_review(self) -> bool:

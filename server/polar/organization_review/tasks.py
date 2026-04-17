@@ -196,8 +196,7 @@ async def run_review_agent(
 
             # Auto-deny on DENY — human will review the denial
             if report.verdict == ReviewVerdict.DENY:
-                organization.status = OrganizationStatus.DENIED
-                organization.status_updated_at = datetime.now(UTC)
+                organization.set_status(OrganizationStatus.DENIED)
                 session.add(organization)
 
                 await review_repository.record_agent_decision(

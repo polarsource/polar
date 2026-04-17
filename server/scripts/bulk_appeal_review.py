@@ -60,7 +60,10 @@ from plain_client import (  # noqa: E402
 
 from polar.config import settings  # noqa: E402
 from polar.kit.db.postgres import create_async_sessionmaker  # noqa: E402
-from polar.organization.repository import OrganizationRepository  # noqa: E402
+from polar.organization.repository import (  # noqa: E402
+    OrganizationRepository,
+    OrganizationReviewRepository,
+)
 from polar.organization.service import (  # noqa: E402
     organization as organization_service,
 )
@@ -77,6 +80,7 @@ SLUG_PATTERN = re.compile(r"Organization Appeal - (\S+)")
 TIMELINE_QUERY = """
 query ThreadTimeline($threadId: ID!) {
   thread(threadId: $threadId) {
+    status
     timelineEntries(first: 50) {
       edges {
         node {
@@ -162,31 +166,34 @@ async def get_appeal_threads(plain: Plain) -> list[dict[str, str]]:
     return threads
 
 
-async def is_thread_answered(plain_token: str, thread_id: str) -> bool:
-    """Check if a thread already has a staff reply (userActor) or outbound email."""
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://core-api.uk.plain.com/graphql/v1",
-            headers={
-                "Authorization": f"Bearer {plain_token}",
-                "Content-Type": "application/json",
-            },
-            json={"query": TIMELINE_QUERY, "variables": {"threadId": thread_id}},
-            timeout=15.0,
-        )
+async def get_thread_state(
+    http_client: httpx.AsyncClient, thread_id: str
+) -> tuple[str | None, bool]:
+    """Fetch (status, has_staff_reply) for a thread.
+
+    Returns (None, True) on any error so callers err on the side of skipping.
+    """
+    response = await http_client.post(
+        "https://core-api.uk.plain.com/graphql/v1",
+        headers={"Content-Type": "application/json"},
+        json={"query": TIMELINE_QUERY, "variables": {"threadId": thread_id}},
+        timeout=15.0,
+    )
 
     if response.status_code != 200:
         log.warning(
             "Failed to fetch timeline", thread_id=thread_id, status=response.status_code
         )
-        return True  # Treat errors as "answered" to skip safely
+        return None, True
 
     data = response.json()
     thread_data = data.get("data", {}).get("thread")
     if not thread_data:
-        return True
+        return None, True
 
+    status = thread_data.get("status")
     entries = thread_data.get("timelineEntries", {}).get("edges", [])
+    answered = False
     for edge in entries:
         node = edge.get("node", {})
         actor = node.get("actor", {})
@@ -198,9 +205,33 @@ async def is_thread_answered(plain_token: str, thread_id: str) -> bool:
             "ChatEntry",
             "EmailEntry",
         ):
-            return True
+            answered = True
+            break
 
-    return False
+    return status, answered
+
+
+async def is_thread_answered(
+    http_client: httpx.AsyncClient, thread_id: str
+) -> bool:
+    """Check if a thread already has a staff reply (userActor) or outbound email."""
+    _, answered = await get_thread_state(http_client, thread_id)
+    return answered
+
+
+async def is_appeal_already_decided(session_maker: Any, slug: str) -> bool:
+    """Return True if the appeal has already been approved or denied in the DB.
+
+    Covers the case where a human used the backoffice without replying in Plain.
+    """
+    async with session_maker() as session:
+        org_repo = OrganizationRepository.from_session(session)
+        org = await org_repo.get_by_slug(slug)
+        if org is None:
+            return False
+        review_repo = OrganizationReviewRepository.from_session(session)
+        review = await review_repo.get_by_organization(org.id)
+        return review is not None and review.appeal_decision is not None
 
 
 async def handle_org(
@@ -318,7 +349,7 @@ async def process_appeals(
             unanswered: list[dict[str, str]] = []
             for thread_data in all_threads:
                 answered = await is_thread_answered(
-                    plain_token, thread_data["thread_id"]
+                    http_client, thread_data["thread_id"]
                 )
                 if not answered:
                     unanswered.append(thread_data)
@@ -381,6 +412,31 @@ async def process_appeals(
                             slug=slug,
                             action=result.action,
                             draft_email_preview=result.draft_email[:200],
+                        )
+                        continue
+
+                    # The job can run for hours (AI review + website scraping
+                    # per org), so a human may have replied or decided the
+                    # appeal between the initial filter and now. Re-check to
+                    # avoid sending a contradicting automated reply.
+                    current_status, already_answered = await get_thread_state(
+                        http_client, thread_id
+                    )
+                    if already_answered or current_status != ThreadStatus.TODO.value:
+                        log.info(
+                            "Skipping reply — thread state changed during run",
+                            thread_id=thread_id,
+                            slug=slug,
+                            status=current_status,
+                            answered=already_answered,
+                        )
+                        continue
+
+                    if await is_appeal_already_decided(session_maker, slug):
+                        log.info(
+                            "Skipping reply — appeal already decided in DB",
+                            thread_id=thread_id,
+                            slug=slug,
                         )
                         continue
 

@@ -2010,9 +2010,7 @@ async def create_single_org_seed(
                 pending_tinybird_events.extend(inserted)
                 pending_tinybird_ancestors.update(ancestors_by_event)
 
-    await _flush_tinybird_events(
-        pending_tinybird_events, pending_tinybird_ancestors
-    )
+    await _flush_tinybird_events(pending_tinybird_events, pending_tinybird_ancestors)
 
     await session.commit()
     print(f"✅ Created organization '{name}' ({slug})")

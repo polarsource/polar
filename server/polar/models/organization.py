@@ -242,6 +242,19 @@ class OrganizationCapabilities(TypedDict):
     dashboard_access: bool
 
 
+class InvalidStatusTransitionError(PolarError):
+    def __init__(
+        self, current: "OrganizationStatus", target: "OrganizationStatus"
+    ) -> None:
+        self.current = current
+        self.target = target
+        super().__init__(
+            f"Cannot transition organization status from "
+            f"{current.get_display_name()} to {target.get_display_name()}.",
+            400,
+        )
+
+
 STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
     OrganizationStatus.CREATED: {
         "checkout_payments": False,
@@ -299,6 +312,62 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
         "api_access": False,
         "dashboard_access": False,
     },
+}
+
+
+# DENIED → ACTIVE and BLOCKED → ACTIVE additionally require a reason,
+# enforced at the service layer.
+ALLOWED_STATUS_TRANSITIONS: dict[
+    OrganizationStatus, frozenset[OrganizationStatus]
+] = {
+    OrganizationStatus.CREATED: frozenset(
+        {
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+        }
+    ),
+    OrganizationStatus.REVIEW: frozenset(
+        {
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDING,
+            OrganizationStatus.BLOCKED,
+        }
+    ),
+    OrganizationStatus.SNOOZED: frozenset(
+        {
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+        }
+    ),
+    OrganizationStatus.ACTIVE: frozenset(
+        {
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+        }
+    ),
+    OrganizationStatus.DENIED: frozenset(
+        {
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.BLOCKED,
+        }
+    ),
+    OrganizationStatus.OFFBOARDING: frozenset(
+        {
+            OrganizationStatus.BLOCKED,
+        }
+    ),
+    OrganizationStatus.BLOCKED: frozenset(
+        {
+            OrganizationStatus.ACTIVE,
+        }
+    ),
 }
 
 
@@ -517,6 +586,11 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return and_(cls.is_deleted.is_(False), cls.status != OrganizationStatus.BLOCKED)
 
     def set_status(self, status: OrganizationStatus) -> None:
+        if (
+            status != self.status
+            and status not in ALLOWED_STATUS_TRANSITIONS[self.status]
+        ):
+            raise InvalidStatusTransitionError(self.status, status)
         self.status = status
         self.status_updated_at = datetime.now(UTC)
         self.capabilities = {**STATUS_CAPABILITIES[status]}

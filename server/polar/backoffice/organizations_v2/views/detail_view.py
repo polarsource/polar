@@ -353,20 +353,16 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.status == OrganizationStatus.OFFBOARDING:
-                        with tag.div(classes="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:reactivate_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                text("Reactivate")
+                        # Reactivation from OFFBOARDING is not yet implemented.
+                        # Blocking remains available from the shared actions.
+                        with tag.div(
+                            classes="bg-warning/10 border border-warning/20 p-3 rounded-lg text-xs"
+                        ):
+                            text(
+                                "Reactivation out of offboarding is not yet "
+                                "implemented. The only action available on "
+                                "this organization is Block."
+                            )
 
                     elif self.org.status == OrganizationStatus.REVIEW:
                         # Compute suggested threshold: double current or $250 min
@@ -535,21 +531,6 @@ class OrganizationDetailView:
                                 hx_target="#modal",
                             ):
                                 text("Deny")
-
-                        with tag.div(classes="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:offboard_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                text("Set Offboarding")
 
                     elif self.org.status == OrganizationStatus.CREATED:
                         with tag.div(classes="w-full"):

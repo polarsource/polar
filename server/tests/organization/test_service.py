@@ -17,6 +17,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
 from polar.models.organization import (
+    InvalidStatusTransitionError,
     OrganizationNotificationSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
@@ -27,6 +28,7 @@ from polar.organization.schemas import (
     OrganizationFeatureSettings,
     OrganizationUpdate,
 )
+from polar.organization.service import OrganizationError
 from polar.organization.service import organization as organization_service
 from polar.organization_review.schemas import ReviewVerdict
 from polar.postgres import AsyncSession
@@ -658,9 +660,9 @@ class TestConfirmOrganizationReviewed:
 
         mocker.patch("polar.organization.service.enqueue_job")
 
-        # When: operator manually approves the org
+        # When: operator manually approves the org with a reason
         result = await organization_service.confirm_organization_reviewed(
-            session, organization, 15000
+            session, organization, 15000, reason="Appeal re-examined"
         )
 
         # Then: appeal decision is overridden to approved
@@ -1891,20 +1893,12 @@ class TestResetProrationBehavior:
 
 @pytest.mark.asyncio
 class TestSetOrganizationOffboarding:
-    @pytest.mark.parametrize(
-        "status",
-        [
-            OrganizationStatus.REVIEW,
-            OrganizationStatus.SNOOZED,
-        ],
-    )
-    async def test_from_review_statuses(
+    async def test_from_review(
         self,
-        status: OrganizationStatus,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.status = status
+        organization.status = OrganizationStatus.REVIEW
 
         result = await organization_service.set_organization_offboarding(
             session, organization
@@ -1916,6 +1910,7 @@ class TestSetOrganizationOffboarding:
     @pytest.mark.parametrize(
         "status",
         [
+            OrganizationStatus.SNOOZED,
             OrganizationStatus.ACTIVE,
             OrganizationStatus.DENIED,
             OrganizationStatus.CREATED,
@@ -1953,28 +1948,24 @@ class TestSetOrganizationOffboarding:
 
 @pytest.mark.asyncio
 class TestReactivateOrganization:
-    async def test_from_offboarding(
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.OFFBOARDING,
+            OrganizationStatus.ACTIVE,
+        ],
+    )
+    async def test_always_raises_not_implemented(
         self,
+        status: OrganizationStatus,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status = status
 
-        result = await organization_service.reactivate_organization(
-            session, organization
-        )
-
-        assert result.status == OrganizationStatus.ACTIVE
-        assert result.status_updated_at is not None
-
-    async def test_from_non_offboarding_raises(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        organization.status = OrganizationStatus.ACTIVE
-
-        with pytest.raises(Exception, match="Only offboarding organizations"):
+        with pytest.raises(
+            Exception, match="Offboarding reactivation is not yet implemented"
+        ):
             await organization_service.reactivate_organization(session, organization)
 
 
@@ -2139,3 +2130,130 @@ class TestSetPayoutAccount:
             await organization_service.set_payout_account(
                 session, auth_subject, organization, uuid.uuid4()
             )
+
+
+@pytest.mark.asyncio
+class TestStatusTransitions:
+    """Tests for the organization status transition rules enforced in
+    Organization.set_status()."""
+
+    @pytest.mark.parametrize(
+        "current",
+        [
+            OrganizationStatus.CREATED,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDING,
+        ],
+    )
+    async def test_every_status_can_go_to_blocked(
+        self,
+        current: OrganizationStatus,
+        organization: Organization,
+    ) -> None:
+        organization.status = current
+        organization.set_status(OrganizationStatus.BLOCKED)
+        assert organization.status == OrganizationStatus.BLOCKED
+
+    async def test_review_can_go_to_offboarding(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        organization.set_status(OrganizationStatus.OFFBOARDING)
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    @pytest.mark.parametrize(
+        "current",
+        [
+            OrganizationStatus.CREATED,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+        ],
+    )
+    async def test_only_review_can_go_to_offboarding(
+        self,
+        current: OrganizationStatus,
+        organization: Organization,
+    ) -> None:
+        organization.status = current
+        with pytest.raises(InvalidStatusTransitionError):
+            organization.set_status(OrganizationStatus.OFFBOARDING)
+
+    @pytest.mark.parametrize(
+        "current",
+        [OrganizationStatus.DENIED, OrganizationStatus.BLOCKED],
+    )
+    async def test_reactivation_requires_reason(
+        self,
+        current: OrganizationStatus,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = current
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        with pytest.raises(OrganizationError):
+            await organization_service.confirm_organization_reviewed(
+                session, organization, 15000
+            )
+
+    @pytest.mark.parametrize(
+        "current, expected_note_fragment",
+        [
+            (OrganizationStatus.DENIED, "reactivated from denied"),
+            (OrganizationStatus.BLOCKED, "unblocked"),
+        ],
+    )
+    async def test_reactivation_with_reason_succeeds(
+        self,
+        current: OrganizationStatus,
+        expected_note_fragment: str,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = current
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000, reason="Merchant provided additional docs"
+        )
+
+        assert result.status == OrganizationStatus.ACTIVE
+        assert result.internal_notes is not None
+        assert expected_note_fragment in result.internal_notes
+        assert "Merchant provided additional docs" in result.internal_notes
+
+    async def test_self_transition_is_noop(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.BLOCKED
+        organization.set_status(OrganizationStatus.BLOCKED)
+        assert organization.status == OrganizationStatus.BLOCKED
+
+    @pytest.mark.parametrize(
+        "target",
+        [
+            OrganizationStatus.CREATED,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDING,
+        ],
+    )
+    async def test_blocked_only_transitions_to_active(
+        self,
+        target: OrganizationStatus,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.BLOCKED
+        with pytest.raises(InvalidStatusTransitionError):
+            organization.set_status(target)

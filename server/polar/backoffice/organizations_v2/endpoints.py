@@ -1072,9 +1072,9 @@ async def approve_denied_dialog(
 
         override_reason = str(data.get("override_reason", "")).strip() or None
 
-        if is_override and not override_reason:
+        if not override_reason:
             error_message = (
-                "A reason is required when overriding the AI recommendation."
+                "A reason is required when reactivating a denied organization."
             )
         else:
             # Record review decision before approving denied org
@@ -1087,7 +1087,7 @@ async def approve_denied_dialog(
 
             # Approve the organization
             await organization_service.confirm_organization_reviewed(
-                session, organization, threshold
+                session, organization, threshold, reason=override_reason
             )
 
             return HXRedirectResponse(
@@ -1103,21 +1103,20 @@ async def approve_denied_dialog(
     reason_label = (
         "Reason for override (required)"
         if is_override
-        else "Reason for approval (optional)"
+        else "Reason for reactivation (required)"
     )
     reason_placeholder = (
         "Why are you overriding the AI recommendation?"
         if is_override
-        else "Why are you approving this organization?"
+        else "Why are you reactivating this denied organization?"
     )
     textarea_attrs: dict[str, Any] = {
         "name": "override_reason",
         "classes": "textarea textarea-bordered w-full",
         "placeholder": reason_placeholder,
         "rows": "3",
+        "required": True,
     }
-    if is_override:
-        textarea_attrs["required"] = True
 
     with modal("Approve Denied Organization", open=True):
         with tag.form(
@@ -1332,10 +1331,8 @@ async def unblock_approve_dialog(
 
         override_reason = str(data.get("override_reason", "")).strip() or None
 
-        if is_override and not override_reason:
-            error_message = (
-                "A reason is required when overriding the AI recommendation."
-            )
+        if not override_reason:
+            error_message = "A reason is required when unblocking an organization."
         else:
             # Record review decision before unblocking
             await review_repo.record_human_decision(
@@ -1347,7 +1344,7 @@ async def unblock_approve_dialog(
 
             # Approve the organization
             await organization_service.confirm_organization_reviewed(
-                session, organization, threshold
+                session, organization, threshold, reason=override_reason
             )
 
             return HXRedirectResponse(
@@ -1363,21 +1360,20 @@ async def unblock_approve_dialog(
     reason_label = (
         "Reason for override (required)"
         if is_override
-        else "Reason for approval (optional)"
+        else "Reason for unblocking (required)"
     )
     reason_placeholder = (
         "Why are you overriding the AI recommendation?"
         if is_override
-        else "Why are you approving this organization?"
+        else "Why are you unblocking this organization?"
     )
     textarea_attrs: dict[str, Any] = {
         "name": "override_reason",
         "classes": "textarea textarea-bordered w-full",
         "placeholder": reason_placeholder,
         "rows": "3",
+        "required": True,
     }
-    if is_override:
-        textarea_attrs["required"] = True
 
     with modal("Unblock & Approve Organization", open=True):
         with tag.form(
@@ -1796,77 +1792,6 @@ async def offboard_dialog(
                         text("Cancel")
                 with button(variant="warning", type="submit"):
                     text("Set Offboarding")
-
-    return None
-
-
-@router.api_route(
-    "/{organization_id}/reactivate-dialog",
-    name="organizations:reactivate_dialog",
-    methods=["GET", "POST"],
-    response_model=None,
-)
-async def reactivate_dialog(
-    request: Request,
-    organization_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
-) -> HXRedirectResponse | None:
-    """Reactivate an offboarding organization dialog and action."""
-    repository = OrganizationRepository(session)
-
-    organization = await repository.get_by_id(organization_id, include_blocked=True)
-    if not organization:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
-    if request.method == "POST":
-        review_repo = OrganizationReviewRepository.from_session(session)
-        await review_repo.record_human_decision(
-            organization_id=organization_id,
-            reviewer_id=user_session.user.id,
-            decision=DecisionType.APPROVE,
-        )
-
-        await organization_service.reactivate_organization(session, organization)
-
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            ),
-            303,
-        )
-
-    with modal("Reactivate Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p(classes="font-semibold text-success"):
-                text("Reactivate Organization")
-
-            with tag.div(
-                classes="bg-success/10 border border-success/20 p-4 rounded-lg"
-            ):
-                with tag.p(classes="font-semibold mb-2"):
-                    text("This action will:")
-                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
-                    with tag.li():
-                        text("Change the organization status back to Active")
-                    with tag.li():
-                        text("Re-enable payouts for the organization")
-
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
-                with tag.form(
-                    hx_post=str(
-                        request.url_for(
-                            "organizations:reactivate_dialog",
-                            organization_id=organization_id,
-                        )
-                    ),
-                ):
-                    with button(variant="success", type="submit"):
-                        text("Reactivate")
 
     return None
 

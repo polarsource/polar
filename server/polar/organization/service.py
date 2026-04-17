@@ -221,14 +221,16 @@ class OrganizationService:
         await session.flush()
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
-            email=organization.email or auth_subject.subject.email,
             name=organization.name,
+            owner_external_id=str(auth_subject.subject.id),
+            owner_email=auth_subject.subject.email,
+            owner_name=auth_subject.subject.public_name,
         )
         await self.add_user(
             session,
             organization,
             auth_subject.subject,
-            polar_self_member_delay=polar_self_service.INITIAL_MEMBER_DELAY_MS,
+            enqueue_polar_self_member=False,
         )
 
         enqueue_job("organization.created", organization_id=organization.id)
@@ -674,6 +676,7 @@ class OrganizationService:
         user: User,
         *,
         polar_self_member_delay: int | None = None,
+        enqueue_polar_self_member: bool = True,
     ) -> None:
         nested = await session.begin_nested()
         try:
@@ -712,13 +715,14 @@ class OrganizationService:
             await session.flush()
         finally:
             await loops_service.user_organization_added(session, user)
-            polar_self_service.enqueue_add_member(
-                external_customer_id=str(organization.id),
-                email=user.email,
-                name=user.public_name,
-                external_id=str(user.id),
-                delay=polar_self_member_delay,
-            )
+            if enqueue_polar_self_member:
+                polar_self_service.enqueue_add_member(
+                    external_customer_id=str(organization.id),
+                    email=user.email,
+                    name=user.public_name,
+                    external_id=str(user.id),
+                    delay=polar_self_member_delay,
+                )
 
     async def get_next_invoice_number(
         self,

@@ -7,13 +7,21 @@ from .client import get_client
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
 async def create_customer(
-    external_id: str, email: str, name: str, organization_id: str, product_id: str
+    external_id: str,
+    name: str,
+    organization_id: str,
+    product_id: str,
+    owner_external_id: str,
+    owner_email: str,
+    owner_name: str,
 ) -> None:
     client = get_client()
     await client.create_customer(
         external_id=external_id,
-        email=email,
         name=name,
+        owner_external_id=owner_external_id,
+        owner_email=owner_email,
+        owner_name=owner_name,
     )
     await client.create_free_subscription(
         external_customer_id=external_id,

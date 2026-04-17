@@ -1,6 +1,5 @@
 import uuid
 from datetime import UTC, datetime, timedelta
-from unittest.mock import call
 
 import pytest
 from pydantic import ValidationError
@@ -114,21 +113,18 @@ class TestCreate:
         )
 
     @pytest.mark.auth
-    async def test_enqueues_polar_self_customer_before_initial_member(
+    async def test_enqueues_polar_self_customer_with_owner(
         self,
         mocker: MockerFixture,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
     ) -> None:
-        polar_self_manager = mocker.MagicMock()
         create_customer_mock = mocker.patch(
             "polar.organization.service.polar_self_service.enqueue_create_customer"
         )
-        polar_self_manager.attach_mock(create_customer_mock, "enqueue_create_customer")
         add_member_mock = mocker.patch(
             "polar.organization.service.polar_self_service.enqueue_add_member"
         )
-        polar_self_manager.attach_mock(add_member_mock, "enqueue_add_member")
 
         organization = await organization_service.create(
             session,
@@ -138,30 +134,12 @@ class TestCreate:
 
         create_customer_mock.assert_called_once_with(
             organization_id=organization.id,
-            email=organization.email or auth_subject.subject.email,
             name=organization.name,
+            owner_external_id=str(auth_subject.subject.id),
+            owner_email=auth_subject.subject.email,
+            owner_name=auth_subject.subject.public_name,
         )
-        add_member_mock.assert_called_once_with(
-            external_customer_id=str(organization.id),
-            email=auth_subject.subject.email,
-            name=auth_subject.subject.public_name,
-            external_id=str(auth_subject.subject.id),
-            delay=1000,
-        )
-        assert polar_self_manager.mock_calls == [
-            call.enqueue_create_customer(
-                organization_id=organization.id,
-                email=organization.email or auth_subject.subject.email,
-                name=organization.name,
-            ),
-            call.enqueue_add_member(
-                external_customer_id=str(organization.id),
-                email=auth_subject.subject.email,
-                name=auth_subject.subject.public_name,
-                external_id=str(auth_subject.subject.id),
-                delay=1000,
-            ),
-        ]
+        add_member_mock.assert_not_called()
 
     @pytest.mark.auth
     async def test_valid_with_feature_settings(

@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 import dramatiq
 import structlog
@@ -35,10 +36,26 @@ class SubscriptionJobStore(BaseJobStore):
         return None
 
     def get_due_jobs(self, now: datetime.datetime) -> list[Job]:
-        statement = self.scheduling_statement().where(
-            Subscription.current_period_end <= now,
+        # Atomic claim: concurrent scheduler instances must not each enqueue
+        # ``subscription.cycle`` for the same subscription.
+        claim_subquery = (
+            self.scheduling_statement()
+            .where(Subscription.current_period_end <= now)
+            .with_only_columns(Subscription.id)
+            .with_for_update(skip_locked=True, of=Subscription)
         )
-        jobs = self._list_jobs_from_statement(statement)
+        claim_statement = (
+            update(Subscription)
+            .where(Subscription.id.in_(claim_subquery))
+            .values(scheduler_locked_at=utc_now())
+            .returning(Subscription.id, Subscription.current_period_end)
+            .execution_options(synchronize_session=False)
+        )
+        jobs: list[Job] = []
+        with self.engine.begin() as connection:
+            result = connection.execute(claim_statement)
+            for subscription_id, current_period_end in result:
+                jobs.append(self._build_job(subscription_id, current_period_end))
         log.debug("Due jobs", count=len(jobs))
         return jobs
 
@@ -61,14 +78,8 @@ class SubscriptionJobStore(BaseJobStore):
         return jobs
 
     def remove_job(self, job_id: str) -> None:
+        # The row was already claimed by ``get_due_jobs``; just enqueue.
         subscription_id = job_id.split(":")[-1]
-        statement = (
-            update(Subscription)
-            .where(Subscription.id == subscription_id)
-            .values(scheduler_locked_at=utc_now())
-        )
-        with self.engine.begin() as connection:
-            connection.execute(statement)
         actor = dramatiq.get_broker().get_actor("subscription.cycle")
         actor.send(subscription_id=subscription_id)
 
@@ -93,22 +104,26 @@ class SubscriptionJobStore(BaseJobStore):
             )
             for result in results.yield_per(250):
                 subscription_id, current_period_end = result._tuple()
-                trigger = DateTrigger(current_period_end, datetime.UTC)
-                job_kwargs = {
-                    **(self._scheduler._job_defaults if self._scheduler else {}),
-                    "trigger": trigger,
-                    "executor": self.executor,
-                    "func": lambda: None,
-                    "args": (),
-                    "kwargs": {},
-                    "id": f"subscriptions:cycle:{subscription_id}",
-                    "name": None,
-                    "next_run_time": trigger.run_date,
-                    "misfire_grace_time": None,
-                }
-                job = Job(self._scheduler, **job_kwargs)
-                jobs.append(job)
+                jobs.append(self._build_job(subscription_id, current_period_end))
         return jobs
+
+    def _build_job(
+        self, subscription_id: uuid.UUID, current_period_end: datetime.datetime
+    ) -> Job:
+        trigger = DateTrigger(current_period_end, datetime.UTC)
+        job_kwargs = {
+            **(self._scheduler._job_defaults if self._scheduler else {}),
+            "trigger": trigger,
+            "executor": self.executor,
+            "func": lambda: None,
+            "args": (),
+            "kwargs": {},
+            "id": f"subscriptions:cycle:{subscription_id}",
+            "name": None,
+            "next_run_time": trigger.run_date,
+            "misfire_grace_time": None,
+        }
+        return Job(self._scheduler, **job_kwargs)
 
     @staticmethod
     def scheduling_statement() -> Select[tuple[Subscription]]:

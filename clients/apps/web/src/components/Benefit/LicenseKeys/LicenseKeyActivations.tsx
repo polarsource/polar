@@ -1,5 +1,6 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries/customerPortal'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Client, schemas } from '@polar-sh/client'
 import {
@@ -47,7 +48,7 @@ export const LicenseKeyActivations = ({
             title: t(
               'checkout.benefits.licenseKey.activationDeactivationFailed',
             ),
-            description: `${error.message}`,
+            description: extractApiErrorMessage(error),
           })
         })
     },

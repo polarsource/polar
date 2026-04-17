@@ -5,6 +5,7 @@ import {
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { useDeleteBenefit } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
@@ -78,7 +79,7 @@ export const BenefitRow = ({
       if (error) {
         toast({
           title: 'Benefit Deletion Failed',
-          description: `Error deleting benefit: ${error.detail}`,
+          description: `Error deleting benefit: ${extractApiErrorMessage(error)}`,
         })
         return
       }

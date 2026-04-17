@@ -6,10 +6,8 @@ function isSafeToastType(type, checker) {
   }
   const flags = type.getFlags()
 
-  // String, StringLiteral, TemplateLiteral = safe (renders as text)
-  // Null, Undefined, Void = safe (renders as nothing in React)
-  // TypeFlags: String=4, StringLiteral=128, TemplateLiteral=134217728,
-  //            Null=65536, Undefined=32768, Void=16384
+  // String=4, StringLiteral=128, TemplateLiteral=134217728,
+  // Null=65536, Undefined=32768, Void=16384
   return (flags & (4 | 128 | 134217728 | 65536 | 32768 | 16384)) !== 0
 }
 
@@ -81,7 +79,7 @@ const noToastErrorDetail = {
       nonStringInToast:
         'Expression of type `{{ type }}` in toast {{ property }} may render as [object Object]. Use extractApiErrorMessage(error) from @/utils/api/errors for error objects, or ensure the value is a string.',
       noDetailInToast:
-        'Do not use .detail in toast messages — its shape is unpredictable and may render as [object Object]. Use extractApiErrorMessage(error) from @/utils/api/errors instead.',
+        'This shape is unpredictable and may render as [object Object]. Use extractApiErrorMessage(error) from @/utils/api/errors instead.',
     },
   },
   create(context) {

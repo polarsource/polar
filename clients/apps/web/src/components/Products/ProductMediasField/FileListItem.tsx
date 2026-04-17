@@ -1,4 +1,5 @@
 import { useDeleteFile } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { twMerge } from 'tailwind-merge'
@@ -36,7 +37,7 @@ export const FileListItem = ({
       .catch((e) => {
         toast({
           title: 'File Deletion Failed',
-          description: `Error deleting file: ${e.message}`,
+          description: `Error deleting file: ${extractApiErrorMessage(e)}`,
         })
       })
   }

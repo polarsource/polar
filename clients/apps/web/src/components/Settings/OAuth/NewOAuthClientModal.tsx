@@ -1,6 +1,7 @@
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateOAuth2Client } from '@/hooks/queries/oauth'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -59,7 +60,7 @@ export const NewOAuthClientModal = ({
       if (error) {
         toast({
           title: 'OAuth App Creation Failed',
-          description: `Error creating OAuth App: ${error.detail}`,
+          description: `Error creating OAuth App: ${extractApiErrorMessage(error)}`,
         })
         return
       }

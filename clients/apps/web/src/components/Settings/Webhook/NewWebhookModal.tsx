@@ -3,6 +3,7 @@
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateWebhookEndpoint } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -35,7 +36,7 @@ export default function NewWebhookModal({
       if (error) {
         toast({
           title: 'Webhook Endpoint Creation Failed',
-          description: `Error creating Webhook Endpoint: ${error.detail}`,
+          description: `Error creating Webhook Endpoint: ${extractApiErrorMessage(error)}`,
         })
         return
       }

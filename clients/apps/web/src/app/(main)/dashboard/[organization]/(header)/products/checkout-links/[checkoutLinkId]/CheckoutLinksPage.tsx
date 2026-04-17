@@ -6,6 +6,7 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useDeleteCheckoutLink } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
@@ -43,7 +44,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       if (error) {
         toast({
           title: 'Checkout Link Deletion Failed',
-          description: `Error deleting checkout link: ${error.detail}`,
+          description: `Error deleting checkout link: ${extractApiErrorMessage(error)}`,
         })
         return
       }

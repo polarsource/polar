@@ -18,6 +18,7 @@ import {
   useSubscription,
   useUncancelSubscription,
 } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { schemas } from '@polar-sh/client'
@@ -83,7 +84,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     } catch (error) {
       toast({
         title: 'Error',
-        description: `Failed to uncancel the subscription: ${error}`,
+        description: `Failed to uncancel the subscription: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
       })
     }
   }

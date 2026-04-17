@@ -5,6 +5,7 @@ import {
   useListOrganizations,
   usePersonalAccessTokens,
 } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -32,7 +33,7 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
       if (error) {
         toast({
           title: 'Access Token Deletion Failed',
-          description: `Error deleting access token: ${error.detail}`,
+          description: `Error deleting access token: ${extractApiErrorMessage(error)}`,
         })
         return
       }

@@ -61,6 +61,7 @@ export default [
       'build/**',
       'coverage/**',
       'eslint-rules/**',
+      'src/app/.well-known/**',
       'next-env.d.ts',
       'e2e/**',
       'playwright-report/**',

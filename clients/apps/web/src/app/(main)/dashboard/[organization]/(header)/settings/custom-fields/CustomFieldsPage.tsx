@@ -7,6 +7,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useDeleteCustomField } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -117,7 +118,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         if (error) {
           toast({
             title: 'Custom Field Deletion Failed',
-            description: `Error deleting custom field ${customField.name}: ${error.detail}`,
+            description: `Error deleting custom field ${customField.name}: ${extractApiErrorMessage(error)}`,
           })
         }
         toast({

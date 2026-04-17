@@ -19,6 +19,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 
 import { usePatchFile } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 
 import { FileObject } from '@/components/FileUpload'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
@@ -203,7 +204,7 @@ export const FileListItem = ({
       if (result.error) {
         toast({
           title: 'File Update Failed',
-          description: `Error updating file ${file.name}: ${result.error.detail}`,
+          description: `Error updating file ${file.name}: ${extractApiErrorMessage(result.error)}`,
         })
         return
       }
@@ -236,7 +237,7 @@ export const FileListItem = ({
       if (response.error) {
         toast({
           title: 'File Deletion Failed',
-          description: `Error deleting file ${file.name}: ${response.error.detail}`,
+          description: `Error deleting file ${file.name}: ${extractApiErrorMessage(response.error)}`,
         })
         return
       }

@@ -15,6 +15,7 @@ import {
   useResetSecretWebhookEndpoint,
   useWebhookEndpoint,
 } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -70,7 +71,7 @@ export default function ClientPage({
       if (error) {
         toast({
           title: 'Webhook Endpoint Update Failed',
-          description: `Error updating Webhook Endpoint: ${error.detail}`,
+          description: `Error updating Webhook Endpoint: ${extractApiErrorMessage(error)}`,
         })
         return
       }
@@ -101,7 +102,7 @@ export default function ClientPage({
     if (error) {
       toast({
         title: 'Webhook Secret Reset Failed',
-        description: `Error resetting Webhook Secret: ${error.detail}`,
+        description: `Error resetting Webhook Secret: ${extractApiErrorMessage(error)}`,
       })
       return
     }
@@ -129,7 +130,7 @@ export default function ClientPage({
     if (error) {
       toast({
         title: 'Webhook Endpoint Deletion Failed',
-        description: `Error deleting Webhook Endpoint: ${error.detail}`,
+        description: `Error deleting Webhook Endpoint: ${extractApiErrorMessage(error)}`,
       })
       return
     }

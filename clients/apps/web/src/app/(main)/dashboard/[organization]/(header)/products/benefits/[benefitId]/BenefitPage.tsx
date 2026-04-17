@@ -13,6 +13,7 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useDeleteBenefit } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
@@ -82,7 +83,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       if (error) {
         toast({
           title: 'Benefit Deletion Failed',
-          description: `Error deleting benefit ${benefit.description}: ${error.detail}`,
+          description: `Error deleting benefit ${benefit.description}: ${extractApiErrorMessage(error)}`,
         })
         return
       }

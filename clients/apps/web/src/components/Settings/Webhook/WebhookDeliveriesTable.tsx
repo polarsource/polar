@@ -6,6 +6,7 @@ import {
   useListWebhooksDeliveries,
   useRedeliverWebhookEvent,
 } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -298,7 +299,7 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
       if (error) {
         toast({
           title: 'Webhook Event Redelivery Failed',
-          description: `Error redelivering Webhook Event: ${error.detail}`,
+          description: `Error redelivering Webhook Event: ${extractApiErrorMessage(error)}`,
         })
         return
       }

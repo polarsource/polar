@@ -1,6 +1,6 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
@@ -50,7 +50,7 @@ const OrganizationNotificationSettings: React.FC<
 
       toast({
         title: 'Notification Settings Update Failed',
-        description: `Error updating notification settings: ${error.detail}`,
+        description: `Error updating notification settings: ${extractApiErrorMessage(error)}`,
       })
 
       return

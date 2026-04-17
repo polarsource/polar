@@ -9,6 +9,7 @@ import {
 } from '@/components/Settings/Webhook/WebhookForm'
 import { toast } from '@/components/Toast/use-toast'
 import { useEditWebhookEndpoint } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -38,7 +39,7 @@ export default function WebhookContextView({
       if (error) {
         toast({
           title: 'Webhook Endpoint Update Failed',
-          description: `Error updating Webhook Endpoint: ${error.detail}`,
+          description: `Error updating Webhook Endpoint: ${extractApiErrorMessage(error)}`,
         })
         return
       }

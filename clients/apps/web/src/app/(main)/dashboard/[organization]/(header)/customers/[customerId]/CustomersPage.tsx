@@ -13,6 +13,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
 import { useDeleteCustomer } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { useDateRange } from '@/utils/date'
@@ -119,7 +120,7 @@ const CustomerHeader = ({
       if (response.error) {
         toast({
           title: 'Delete Customer Failed',
-          description: `Error deleting customer ${customer.email ?? customer.name ?? 'customer'}: ${response.error.detail}`,
+          description: `Error deleting customer ${customer.email ?? customer.name ?? 'customer'}: ${extractApiErrorMessage(response.error)}`,
         })
         return
       }

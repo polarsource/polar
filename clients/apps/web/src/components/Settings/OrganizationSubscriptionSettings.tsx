@@ -1,6 +1,6 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
@@ -49,9 +49,7 @@ const OrganizationSubscriptionSettings: React.FC<
 
       toast({
         title: 'Subscription Settings Update Failed',
-        description: isValidationError(error.detail)
-          ? 'Please check the form for errors'
-          : `Error updating subscription settings: ${error.detail}`,
+        description: `Error updating subscription settings: ${extractApiErrorMessage(error)}`,
       })
 
       return

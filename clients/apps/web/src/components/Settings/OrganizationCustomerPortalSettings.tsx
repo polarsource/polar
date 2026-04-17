@@ -1,6 +1,6 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
@@ -53,7 +53,7 @@ const OrganizationCustomerPortalSettings: React.FC<
 
       toast({
         title: 'Customer Portal Settings Update Failed',
-        description: `Error updating customer portal settings: ${error.detail}`,
+        description: `Error updating customer portal settings: ${extractApiErrorMessage(error)}`,
       })
 
       return

@@ -2,7 +2,7 @@
 
 import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { setValidationErrors } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import { Form, FormField } from '@polar-sh/ui/components/ui/form'
@@ -42,7 +42,7 @@ export default function FeatureSettings({
 
       toast({
         title: 'Feature Settings Update Failed',
-        description: `Error updating feature settings: ${error.detail}`,
+        description: `Error updating feature settings: ${extractApiErrorMessage(error)}`,
       })
 
       return

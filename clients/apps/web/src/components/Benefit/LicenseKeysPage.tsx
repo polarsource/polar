@@ -9,6 +9,7 @@ import {
   useLicenseKeyUpdate,
   useOrganizationLicenseKeys,
 } from '@/hooks/queries'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -156,7 +157,7 @@ export const LicenseKeysPage = ({
             if (error) {
               toast({
                 title: 'License Key Status Update Failed',
-                description: `Error updating license key status to ${status}: ${error.detail}`,
+                description: `Error updating license key status to ${status}: ${extractApiErrorMessage(error)}`,
               })
               return
             }

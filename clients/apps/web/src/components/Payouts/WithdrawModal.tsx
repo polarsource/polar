@@ -1,3 +1,4 @@
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -75,7 +76,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     if (error) {
       toast({
         title: 'Withdrawal Failed',
-        description: `Error initiating withdrawal: ${error.detail}`,
+        description: `Error initiating withdrawal: ${extractApiErrorMessage(error)}`,
       })
       return
     }

@@ -6,6 +6,7 @@ import {
   useDeleteOAuthClient,
   useUpdateOAuth2Client,
 } from '@/hooks/queries/oauth'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -81,7 +82,7 @@ export const EditOAuthClientModal = ({
       if (error) {
         toast({
           title: 'OAuth App Update Failed',
-          description: `Error updating OAuth App: ${error.detail}`,
+          description: `Error updating OAuth App: ${extractApiErrorMessage(error)}`,
         })
         return
       }
@@ -104,7 +105,7 @@ export const EditOAuthClientModal = ({
     if (error) {
       toast({
         title: 'OAuth App Deletion Failed',
-        description: `Error deleting OAuth App: ${error.detail}`,
+        description: `Error deleting OAuth App: ${extractApiErrorMessage(error)}`,
       })
       return
     }

@@ -2204,7 +2204,7 @@ class TestStatusTransitions:
             )
 
     @pytest.mark.parametrize(
-        "current, expected_note_fragment",
+        ("current", "expected_note_fragment"),
         [
             (OrganizationStatus.DENIED, "reactivated from denied"),
             (OrganizationStatus.BLOCKED, "unblocked"),

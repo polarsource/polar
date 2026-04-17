@@ -317,9 +317,7 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
 
 # DENIED → ACTIVE and BLOCKED → ACTIVE additionally require a reason,
 # enforced at the service layer.
-ALLOWED_STATUS_TRANSITIONS: dict[
-    OrganizationStatus, frozenset[OrganizationStatus]
-] = {
+ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatus]] = {
     OrganizationStatus.CREATED: frozenset(
         {
             OrganizationStatus.REVIEW,

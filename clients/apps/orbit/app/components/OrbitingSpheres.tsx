@@ -65,7 +65,7 @@ export const OrbitingSpheres = () => {
       const dx = Math.cos(angle);
       const dy = Math.sin(angle);
 
-      ctx.strokeStyle = "rgba(220, 220, 220, 0.85)";
+      ctx.strokeStyle = "rgb(190, 190, 190)";
       ctx.lineWidth = 1;
 
       // Big sphere
@@ -88,7 +88,7 @@ export const OrbitingSpheres = () => {
       const satY = cy + dy * orbitR;
       ctx.beginPath();
       ctx.arc(satX, satY, satR, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(220, 220, 220, 0.95)";
+      ctx.fillStyle = "rgb(190, 190, 190)";
       ctx.fill();
 
       animRef.current = requestAnimationFrame(draw);

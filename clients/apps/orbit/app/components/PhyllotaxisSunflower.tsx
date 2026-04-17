@@ -131,12 +131,14 @@ export const PhyllotaxisSunflower = () => {
       }
 
       // --- Render dots ---
+      // Pre-blended grays (no alpha): bg ≈ rgb(23,23,23)
       for (const d of dots) {
         if (d.charAlpha > 0.02 && d.charIdx >= 0) {
-          ctx.fillStyle = `rgba(230, 230, 230, ${d.charAlpha})`
+          const g = Math.round(23 + 167 * d.charAlpha)
+          ctx.fillStyle = `rgb(${g}, ${g}, ${g})`
           ctx.fillText(CHARS[d.charIdx], d.x, d.y)
         } else {
-          ctx.fillStyle = 'rgba(230, 230, 230, 0.95)'
+          ctx.fillStyle = 'rgb(190, 190, 190)'
           ctx.beginPath()
           ctx.arc(d.x, d.y, 1.4, 0, Math.PI * 2)
           ctx.fill()
@@ -146,7 +148,7 @@ export const PhyllotaxisSunflower = () => {
       // --- Orbiting repellent ---
       ctx.beginPath()
       ctx.arc(ox, oy, orbiterRadius, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(230, 230, 230, 1)'
+      ctx.fillStyle = 'rgb(190, 190, 190)'
       ctx.fill()
 
       animRef.current = requestAnimationFrame(draw)

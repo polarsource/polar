@@ -151,7 +151,7 @@ export const EventStream = () => {
       }
 
       // Render glyphs
-      ctx.fillStyle = "rgba(230, 230, 230, 0.92)";
+      ctx.fillStyle = "rgb(190, 190, 190)";
       for (const p of particles) {
         ctx.fillText(p.ch, p.x, p.y);
       }

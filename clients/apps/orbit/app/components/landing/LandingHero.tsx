@@ -2,6 +2,7 @@
 
 import { CircularBand } from '../CircularBand'
 import { SectionLabel } from './SectionLabel'
+import { SectionHeading } from './SectionHeading'
 
 /**
  * LandingHero — two-column hero. Left: standalone CircularBand graphic
@@ -22,11 +23,11 @@ export const LandingHero = () => (
       </div>
 
       <div>
-        <h1 className="text-[clamp(3rem,6vw,6rem)] font-normal [font-variation-settings:'opsz'_32] leading-[0.95] text-white">
+        <SectionHeading className="leading-[0.95]">
           From Inference
           <br />
           to Invoice
-        </h1>
+        </SectionHeading>
       </div>
 
       <a

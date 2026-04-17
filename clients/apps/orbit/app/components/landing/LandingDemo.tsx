@@ -2,6 +2,7 @@
 
 import { Stream } from '@cloudflare/stream-react'
 import { SectionLabel } from './SectionLabel'
+import { SectionHeading } from './SectionHeading'
 
 /**
  * LandingDemo — two-column layout. Left: section label + heading.
@@ -13,11 +14,11 @@ export const LandingDemo = () => (
       {/* Left — text */}
       <div className="flex flex-col justify-between p-16 py-32">
         <SectionLabel number="002.C" label="Product" />
-        <h2 className="mt-16 text-[clamp(2rem,5vw,4.5rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
+        <SectionHeading className="mt-16">
           See it
           <br />
           in action
-        </h2>
+        </SectionHeading>
         <p className="max-w-md text-lg leading-snug text-neutral-400">
           The full billing pipeline — from event ingestion to paid invoice.
         </p>

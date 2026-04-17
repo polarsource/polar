@@ -14,7 +14,7 @@ const METRICS = [
 
 export const LandingMetrics = () => (
   <section className="border-b border-neutral-800">
-    <div className="p-16 pb-0">
+    <div className="border-b border-neutral-800 p-16">
       <SectionLabel number="004" label="Performance" />
     </div>
     <div className="grid grid-cols-4 divide-x divide-neutral-800">

@@ -29,20 +29,6 @@ const circ = (
   ctx.stroke()
 }
 
-// Helper — stroke an ellipse
-const ell = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  rx: number,
-  ry: number,
-  rot = 0,
-) => {
-  ctx.beginPath()
-  ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2)
-  ctx.stroke()
-}
-
 // Helper — rounded rect (pill)
 const pill = (
   ctx: CanvasRenderingContext2D,

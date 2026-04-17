@@ -1,4 +1,5 @@
 import { SectionLabel } from './SectionLabel'
+import { SectionHeading } from './SectionHeading'
 
 /**
  * LandingCTA — final call-to-action block with large typography
@@ -9,11 +10,11 @@ export const LandingCTA = () => (
     <div className="grid grid-cols-2 divide-x divide-neutral-800">
       <div className="flex flex-col justify-between p-16 py-48">
         <SectionLabel number="005" label="Get Started" />
-        <h2 className="mt-16 text-[clamp(2rem,5vw,4.5rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
+        <SectionHeading className="mt-16">
           Start billing
           <br />
           in minutes
-        </h2>
+        </SectionHeading>
       </div>
 
       <div className="flex flex-col justify-end gap-6 p-16 py-48">

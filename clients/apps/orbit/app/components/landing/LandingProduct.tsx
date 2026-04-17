@@ -2,6 +2,7 @@
 
 import { Stream } from '@cloudflare/stream-react'
 import { SectionLabel } from './SectionLabel'
+import { SectionHeading } from './SectionHeading'
 
 /**
  * LandingProduct — two-column layout. Left: heading + description.
@@ -14,13 +15,13 @@ export const LandingProduct = () => (
       <div className="flex flex-col justify-between p-16 py-32">
         <SectionLabel number="002" label="Product" />
         <div className="py-20">
-          <h2 className="text-[clamp(2rem,5vw,4.5rem)] leading-[1.05] font-normal text-white [font-variation-settings:'opsz'_32]">
+          <SectionHeading>
             Not just metering.
             <br />
             The complete
             <br />
             commerce layer.
-          </h2>
+          </SectionHeading>
         </div>
         <p className="max-w-lg text-2xl leading-snug">
           A single API that replaces your metering pipeline, billing engine,

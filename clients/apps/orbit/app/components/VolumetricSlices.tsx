@@ -1,7 +1,7 @@
-"use client";
+'use client'
 
-import { useEffect, useRef } from "react";
-import { GraphicContainer } from "./GraphicContainer";
+import { useEffect, useRef } from 'react'
+import { GraphicContainer } from './GraphicContainer'
 
 /**
  * VolumetricSlices — WebGL implementation. Each horizontal slice through
@@ -14,11 +14,11 @@ import { GraphicContainer } from "./GraphicContainer";
 
 // ---- Ball definitions (kept identical to the CPU version) ----
 const BALLS = [
-  { r: 0.38, a: [0.62, 0.55, 0.68], f: [0.30, 0.45, 0.38], p: [0.0, 1.1, 2.2] },
-  { r: 0.35, a: [0.70, 0.60, 0.55], f: [0.45, 0.28, 0.50], p: [1.7, 0.4, 3.0] },
-  { r: 0.36, a: [0.55, 0.70, 0.50], f: [0.38, 0.52, 0.31], p: [3.2, 2.7, 0.5] },
-  { r: 0.33, a: [0.65, 0.50, 0.65], f: [0.55, 0.34, 0.44], p: [2.1, 3.8, 1.3] },
-];
+  { r: 0.38, a: [0.62, 0.55, 0.68], f: [0.3, 0.45, 0.38], p: [0.0, 1.1, 2.2] },
+  { r: 0.35, a: [0.7, 0.6, 0.55], f: [0.45, 0.28, 0.5], p: [1.7, 0.4, 3.0] },
+  { r: 0.36, a: [0.55, 0.7, 0.5], f: [0.38, 0.52, 0.31], p: [3.2, 2.7, 0.5] },
+  { r: 0.33, a: [0.65, 0.5, 0.65], f: [0.55, 0.34, 0.44], p: [2.1, 3.8, 1.3] },
+]
 
 // ---- GLSL shaders ----
 const VS = /* glsl */ `
@@ -62,7 +62,7 @@ void main() {
     1.0
   );
 }
-`;
+`
 
 const FS = /* glsl */ `
 #extension GL_OES_standard_derivatives : enable
@@ -131,168 +131,168 @@ void main() {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
   }
 }
-`;
+`
 
 const compile = (gl: WebGLRenderingContext, type: number, src: string) => {
-  const s = gl.createShader(type)!;
-  gl.shaderSource(s, src);
-  gl.compileShader(s);
+  const s = gl.createShader(type)!
+  gl.shaderSource(s, src)
+  gl.compileShader(s)
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    throw new Error(gl.getShaderInfoLog(s) ?? "shader compile error");
+    throw new Error(gl.getShaderInfoLog(s) ?? 'shader compile error')
   }
-  return s;
-};
+  return s
+}
 
 const link = (gl: WebGLRenderingContext, vs: string, fs: string) => {
-  const p = gl.createProgram()!;
-  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
-  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
-  gl.linkProgram(p);
+  const p = gl.createProgram()!
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs))
+  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs))
+  gl.linkProgram(p)
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-    throw new Error(gl.getProgramInfoLog(p) ?? "program link error");
+    throw new Error(gl.getProgramInfoLog(p) ?? 'program link error')
   }
-  return p;
-};
+  return p
+}
 
 export const VolumetricSlices = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animRef = useRef<number>(0)
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const gl = canvas.getContext("webgl", {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const gl = canvas.getContext('webgl', {
       alpha: true,
       premultipliedAlpha: false,
       depth: true,
       antialias: true,
-    });
-    if (!gl) return;
+    })
+    if (!gl) return
 
     // fwidth requires derivatives extension in WebGL1
-    gl.getExtension("OES_standard_derivatives");
+    gl.getExtension('OES_standard_derivatives')
 
-    const dpr = window.devicePixelRatio ?? 1;
+    const dpr = window.devicePixelRatio ?? 1
     const resize = () => {
-      const w = canvas.offsetWidth * dpr;
-      const h = canvas.offsetHeight * dpr;
-      canvas.width = w;
-      canvas.height = h;
-      gl.viewport(0, 0, w, h);
-    };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
+      const w = canvas.offsetWidth * dpr
+      const h = canvas.offsetHeight * dpr
+      canvas.width = w
+      canvas.height = h
+      gl.viewport(0, 0, w, h)
+    }
+    resize()
+    const ro = new ResizeObserver(resize)
+    ro.observe(canvas)
 
-    const prog = link(gl, VS, FS);
-    gl.useProgram(prog);
+    const prog = link(gl, VS, FS)
+    gl.useProgram(prog)
 
-    const aQuad = gl.getAttribLocation(prog, "a_quad");
-    const uSliceZ = gl.getUniformLocation(prog, "u_sliceZ");
-    const uHalfXY = gl.getUniformLocation(prog, "u_halfXY");
-    const uViewTrig = gl.getUniformLocation(prog, "u_viewTrig");
-    const uViewScale = gl.getUniformLocation(prog, "u_viewScale");
-    const uDepthScale = gl.getUniformLocation(prog, "u_depthScale");
-    const uTime = gl.getUniformLocation(prog, "u_time");
-    const uLineColor = gl.getUniformLocation(prog, "u_lineColor");
-    const uLineAlpha = gl.getUniformLocation(prog, "u_lineAlpha");
+    const aQuad = gl.getAttribLocation(prog, 'a_quad')
+    const uSliceZ = gl.getUniformLocation(prog, 'u_sliceZ')
+    const uHalfXY = gl.getUniformLocation(prog, 'u_halfXY')
+    const uViewTrig = gl.getUniformLocation(prog, 'u_viewTrig')
+    const uViewScale = gl.getUniformLocation(prog, 'u_viewScale')
+    const uDepthScale = gl.getUniformLocation(prog, 'u_depthScale')
+    const uTime = gl.getUniformLocation(prog, 'u_time')
+    const uLineColor = gl.getUniformLocation(prog, 'u_lineColor')
+    const uLineAlpha = gl.getUniformLocation(prog, 'u_lineAlpha')
 
     // Quad VBO — two triangles via a triangle strip
-    const quadBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+    const quadBuf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf)
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array([-0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5]),
       gl.STATIC_DRAW,
-    );
-    gl.enableVertexAttribArray(aQuad);
-    gl.vertexAttribPointer(aQuad, 2, gl.FLOAT, false, 0, 0);
+    )
+    gl.enableVertexAttribArray(aQuad)
+    gl.vertexAttribPointer(aQuad, 2, gl.FLOAT, false, 0, 0)
 
     // Seed — different on every mount/refresh so each instance animates
     // from a different starting configuration.
-    const seed = Math.random() * 1000;
+    const seed = Math.random() * 1000
 
     // Ball uniforms (static per program). Seed is added to each ball's
     // phase offsets so the Lissajous paths start in fresh positions.
-    const rArr = new Float32Array(BALLS.map((b) => b.r));
-    const aArr = new Float32Array(BALLS.flatMap((b) => b.a));
-    const fArr = new Float32Array(BALLS.flatMap((b) => b.f));
+    const rArr = new Float32Array(BALLS.map((b) => b.r))
+    const aArr = new Float32Array(BALLS.flatMap((b) => b.a))
+    const fArr = new Float32Array(BALLS.flatMap((b) => b.f))
     const pArr = new Float32Array(
       BALLS.flatMap((b) => b.p.map((v) => v + seed)),
-    );
-    gl.uniform1fv(gl.getUniformLocation(prog, "u_ballR[0]"), rArr);
-    gl.uniform3fv(gl.getUniformLocation(prog, "u_ballA[0]"), aArr);
-    gl.uniform3fv(gl.getUniformLocation(prog, "u_ballF[0]"), fArr);
-    gl.uniform3fv(gl.getUniformLocation(prog, "u_ballP[0]"), pArr);
+    )
+    gl.uniform1fv(gl.getUniformLocation(prog, 'u_ballR[0]'), rArr)
+    gl.uniform3fv(gl.getUniformLocation(prog, 'u_ballA[0]'), aArr)
+    gl.uniform3fv(gl.getUniformLocation(prog, 'u_ballF[0]'), fArr)
+    gl.uniform3fv(gl.getUniformLocation(prog, 'u_ballP[0]'), pArr)
 
     // View parameters — classical isometric
-    const yaw = Math.PI / 4;
-    const pitch = -Math.atan(Math.SQRT1_2);
+    const yaw = Math.PI / 4
+    const pitch = -Math.atan(Math.SQRT1_2)
     gl.uniform4f(
       uViewTrig,
       Math.cos(yaw),
       Math.sin(yaw),
       Math.cos(pitch),
       Math.sin(pitch),
-    );
+    )
     // world extent ±0.62 xy, ±0.78 z; scaled down to leave margin inside
     // the container, matching the CPU version's visual footprint
-    gl.uniform1f(uViewScale, 0.9);
-    gl.uniform1f(uDepthScale, 0.5);
-    gl.uniform2f(uHalfXY, 0.62, 0.62);
-    gl.uniform3f(uLineColor, 220 / 255, 220 / 255, 220 / 255);
+    gl.uniform1f(uViewScale, 0.9)
+    gl.uniform1f(uDepthScale, 0.5)
+    gl.uniform2f(uHalfXY, 0.62, 0.62)
+    gl.uniform3f(uLineColor, 220 / 255, 220 / 255, 220 / 255)
 
     // Blending: standard alpha with premultiplied off; depth test enabled
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
 
     // Slice stack
-    const sliceCount = 28;
-    const zMin = -0.78;
-    const zMax = 0.78;
+    const sliceCount = 24
+    const zMin = -0.78
+    const zMax = 0.78
 
-    let time = 0;
-    let lastTime: number | null = null;
+    let time = 0
+    let lastTime: number | null = null
 
     const frame = (now: number) => {
-      const dt = lastTime === null ? 0 : (now - lastTime) / 1000;
-      lastTime = now;
-      time += dt * 1.2; // speed matching the old code
+      const dt = lastTime === null ? 0 : (now - lastTime) / 1000
+      lastTime = now
+      time += dt * 1.2 // speed matching the old code
 
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-      gl.uniform1f(uTime, time);
+      gl.uniform1f(uTime, time)
 
       // Opaque stroke
-      gl.uniform1f(uLineAlpha, 1.0);
+      gl.uniform1f(uLineAlpha, 1.0)
 
       // Render FRONT-to-BACK so depth test correctly culls deeper
       // slices' contours at pixels already filled by closer slices.
       for (let s = sliceCount - 1; s >= 0; s--) {
-        const t = s / (sliceCount - 1);
-        const z = zMin + t * (zMax - zMin);
-        gl.uniform1f(uSliceZ, z);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        const t = s / (sliceCount - 1)
+        const z = zMin + t * (zMax - zMin)
+        gl.uniform1f(uSliceZ, z)
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
       }
 
-      animRef.current = requestAnimationFrame(frame);
-    };
-    animRef.current = requestAnimationFrame(frame);
+      animRef.current = requestAnimationFrame(frame)
+    }
+    animRef.current = requestAnimationFrame(frame)
 
     return () => {
-      cancelAnimationFrame(animRef.current);
-      ro.disconnect();
-      gl.deleteBuffer(quadBuf);
-      gl.deleteProgram(prog);
-    };
-  }, []);
+      cancelAnimationFrame(animRef.current)
+      ro.disconnect()
+      gl.deleteBuffer(quadBuf)
+      gl.deleteProgram(prog)
+    }
+  }, [])
 
   return (
     <GraphicContainer>
       <canvas ref={canvasRef} className="h-full w-full" />
     </GraphicContainer>
-  );
-};
+  )
+}

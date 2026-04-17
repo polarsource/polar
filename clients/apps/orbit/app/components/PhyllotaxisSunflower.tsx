@@ -17,7 +17,7 @@ import { GraphicContainer } from './GraphicContainer'
 const GOLDEN_ANGLE = 137.508 * (Math.PI / 180)
 const LERP = 0.03
 const ALPHA_LERP = 0.2
-const CHARS = '01 '
+const CHARS = '$€¥£ '
 const N_CHARS = CHARS.length
 
 interface Dot {
@@ -79,8 +79,9 @@ export const PhyllotaxisSunflower = () => {
 
     // Character effect
     const asciiR = size * 0.16
-    const asciiPt = Math.max(6, size * 0.022)
-    ctx.font = `${asciiPt}px ui-monospace, SFMono-Regular, Menlo, monospace`
+    const asciiPt = Math.max(5, size * 0.014)
+    const mono = getComputedStyle(canvas).getPropertyValue('--font-mono').trim() || 'monospace'
+    ctx.font = `${asciiPt}px ${mono}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 

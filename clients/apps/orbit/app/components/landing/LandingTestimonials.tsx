@@ -40,6 +40,19 @@ export const LandingTestimonials = () => (
     <div className="grid grid-cols-4 divide-x divide-neutral-800">
       {TESTIMONIALS.map((t) => (
         <div key={t.name} className="flex flex-col justify-between p-12 py-16">
+          {/* Outward arrow */}
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            className="mb-8 text-white"
+          >
+            <path d="M7 17L17 7" />
+            <path d="M7 7H17V17" />
+          </svg>
           <p className="text-3xl leading-snug text-white">
             {t.quote}
           </p>

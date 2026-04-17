@@ -6,7 +6,16 @@ import type {
   SpacingToken,
 } from '../tokens/tokens.stylex'
 
-export type ResponsiveValue<T> = T | Partial<Record<'base' | BreakpointKey, T>>
+export type PseudoState =
+  | 'hover'
+  | 'focus'
+  | 'active'
+  | 'focusVisible'
+  | 'focusWithin'
+
+export type ResponsiveValue<T> =
+  | T
+  | Partial<Record<'base' | BreakpointKey | PseudoState, T>>
 
 export interface SpacingProps {
   padding?: ResponsiveValue<SpacingToken>

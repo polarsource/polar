@@ -60,7 +60,19 @@ import {
   userSelectStyles,
   visibilityStyles,
 } from './box-styles'
-import type { BoxStyleProps, ResponsiveValue } from './types'
+import type { BoxStyleProps, PseudoState, ResponsiveValue } from './types'
+
+const PSEUDO_SELECTOR_MAP: Record<PseudoState, string> = {
+  hover: ':hover',
+  focus: ':focus',
+  active: ':active',
+  focusVisible: ':focus-visible',
+  focusWithin: ':focus-within',
+}
+
+function isPseudoState(key: string): key is PseudoState {
+  return key in PSEUDO_SELECTOR_MAP
+}
 
 // --- Helpers ---
 
@@ -218,6 +230,7 @@ export function resolveBoxStyles(
   const sxStyles: stylex.StyleXStyles[] = []
   const inlineStyle: Record<string, string | number> = {}
   const breakpointStyles: Record<number, Record<string, string | number>> = {}
+  const pseudoStyles: Record<string, Record<string, string | number>> = {}
 
   function addTokenProp<T extends string>(
     styleMap: StyleMap,
@@ -233,6 +246,10 @@ export function resolveBoxStyles(
         if (bp === 'base') {
           const style = styleMap[v as string]
           if (style) sxStyles.push(style)
+        } else if (isPseudoState(bp)) {
+          const selector = PSEUDO_SELECTOR_MAP[bp]
+          if (!pseudoStyles[selector]) pseudoStyles[selector] = {}
+          pseudoStyles[selector][cssProp] = transform(v as T)
         } else {
           const bpPx = breakpoints[bp as BreakpointKey]
           if (bpPx !== undefined) {
@@ -264,6 +281,10 @@ export function resolveBoxStyles(
           // Inline styles have infinite specificity and would block any override.
           if (!breakpointStyles[0]) breakpointStyles[0] = {}
           breakpointStyles[0][cssProp] = cssValue
+        } else if (isPseudoState(bp)) {
+          const selector = PSEUDO_SELECTOR_MAP[bp]
+          if (!pseudoStyles[selector]) pseudoStyles[selector] = {}
+          pseudoStyles[selector][cssProp] = cssValue
         } else {
           const bpPx = breakpoints[bp as BreakpointKey]
           if (bpPx !== undefined) {
@@ -493,29 +514,40 @@ export function resolveBoxStyles(
   addTokenProp(userSelectStyles, 'user-select', props.userSelect, (v) => v)
   addTokenProp(textAlignStyles, 'text-align', props.textAlign, (v) => v)
 
-  // --- Build responsive CSS for breakpoint values ---
+  // --- Build scoped CSS for breakpoint + pseudo-state values ---
   const bpKeys = Object.keys(breakpointStyles)
     .map(Number)
     .sort((a, b) => a - b)
+  const pseudoKeys = Object.keys(pseudoStyles)
   let responsiveCSS: string | null = null
 
-  if (bpKeys.length > 0) {
+  if (bpKeys.length > 0 || pseudoKeys.length > 0) {
+    // StyleX uses :not(#\#) x3 for specificity (3,1,0). We use x4 to ensure
+    // scoped overrides always win over the base StyleX atomic classes.
     const selector = `.${scopeClass}:not(#\\#):not(#\\#):not(#\\#):not(#\\#)`
-    responsiveCSS = bpKeys
-      .map((bp) => {
-        const entries = Object.entries(breakpointStyles[bp])
-          .map(([k, v]) => `${toKebab(k)}: ${v}`)
-          .join('; ')
-        // Breakpoint 0 = base styles for responsive arbitrary props (no media query).
-        // Higher breakpoints are wrapped in @media so they cascade over the base.
-        // StyleX uses :not(#\#) x3 for specificity (3,1,0). We use x4 to ensure
-        // responsive overrides always win over the base StyleX atomic classes.
-        if (bp === 0) {
-          return `${selector} { ${entries} }`
-        }
-        return `@media (min-width: ${bp}px) { ${selector} { ${entries} } }`
-      })
-      .join(' ')
+    const parts: string[] = []
+
+    for (const bp of bpKeys) {
+      const entries = Object.entries(breakpointStyles[bp])
+        .map(([k, v]) => `${toKebab(k)}: ${v}`)
+        .join('; ')
+      // Breakpoint 0 = base styles for responsive arbitrary props (no media query).
+      // Higher breakpoints are wrapped in @media so they cascade over the base.
+      if (bp === 0) {
+        parts.push(`${selector} { ${entries} }`)
+      } else {
+        parts.push(`@media (min-width: ${bp}px) { ${selector} { ${entries} } }`)
+      }
+    }
+
+    for (const pseudo of pseudoKeys) {
+      const entries = Object.entries(pseudoStyles[pseudo])
+        .map(([k, v]) => `${toKebab(k)}: ${v}`)
+        .join('; ')
+      parts.push(`${selector}${pseudo} { ${entries} }`)
+    }
+
+    responsiveCSS = parts.join(' ')
   }
 
   return {

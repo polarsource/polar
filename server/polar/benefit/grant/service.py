@@ -9,6 +9,7 @@ from dramatiq import group
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.auth.models import AuthSubject
 from polar.benefit.strategies import BenefitRetriableError
 from polar.customer.repository import CustomerRepository
 from polar.event.service import event as event_service
@@ -20,7 +21,15 @@ from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
-from polar.models import Benefit, BenefitGrant, Customer, Member, Product
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    Customer,
+    Member,
+    Organization,
+    Product,
+    User,
+)
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
@@ -139,8 +148,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def list_by_organization(
         self,
         session: AsyncSession,
-        organization_id: UUID,
+        auth_subject: AuthSubject[User | Organization],
         *,
+        organization_id: Sequence[UUID] | None = None,
         is_granted: bool | None = None,
         customer_id: Sequence[UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
@@ -151,19 +161,18 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     ) -> tuple[Sequence[BenefitGrant], int]:
         repository = BenefitGrantRepository.from_session(session)
         statement = (
-            select(BenefitGrant)
-            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            repository.get_readable_statement(auth_subject)
             .join(Customer, BenefitGrant.customer_id == Customer.id)
-            .where(
-                Benefit.organization_id == organization_id,
-                BenefitGrant.is_deleted.is_(False),
-            )
+            .where(BenefitGrant.is_deleted.is_(False))
             .options(
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
                 joinedload(BenefitGrant.member),
             )
         )
+
+        if organization_id is not None:
+            statement = statement.where(Benefit.organization_id.in_(organization_id))
 
         if is_granted is not None:
             statement = statement.where(BenefitGrant.is_granted.is_(is_granted))

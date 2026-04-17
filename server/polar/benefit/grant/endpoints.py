@@ -46,25 +46,11 @@ async def list(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitGrant]:
-    """List benefit grants across all benefits for the authenticated organization."""
-
-    # Extract the first organization_id if provided, otherwise use the auth subject's organization
-    if organization_id is not None and len(organization_id) > 0:
-        org_id = organization_id[0]
-    else:
-        # Use the authenticated organization
-        if hasattr(auth_subject.subject, "id"):
-            org_id = auth_subject.subject.id
-        else:
-            # If auth subject doesn't have organization, we need to handle this case
-            # For now, require organization_id to be provided
-            from polar.exceptions import BadRequest
-
-            raise BadRequest("organization_id parameter is required")
-
+    """List benefit grants across all benefits accessible to the authenticated subject."""
     results, count = await benefit_grant_service.list_by_organization(
         session,
-        org_id,
+        auth_subject,
+        organization_id=organization_id,
         is_granted=is_granted,
         customer_id=customer_id,
         external_customer_id=external_customer_id,

@@ -7,6 +7,7 @@ from httpx import AsyncClient
 from polar.discount.repository import DiscountRepository
 from polar.models import Organization, UserOrganization
 from polar.models.discount import (
+    Discount,
     DiscountDuration,
     DiscountFixed,
     DiscountPercentage,
@@ -15,6 +16,20 @@ from polar.models.discount import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount
+
+
+async def _create_foreign_discount(
+    save_fixture: SaveFixture, organization: Organization
+) -> Discount:
+    return await create_discount(
+        save_fixture,
+        type=DiscountType.percentage,
+        basis_points=1000,
+        duration=DiscountDuration.once,
+        organization=organization,
+        name="Foreign",
+        code="FOREIGN",
+    )
 
 
 @pytest.mark.asyncio
@@ -74,6 +89,22 @@ class TestListDiscounts:
         )
         assert fixed_item["type"] == "fixed"
         assert isinstance(fixed_discount, DiscountFixed)
+
+    @pytest.mark.auth
+    async def test_foreign_organization_id_filter_returns_empty(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization_second: Organization,
+    ) -> None:
+        await _create_foreign_discount(save_fixture, organization_second)
+
+        response = await client.get(
+            "/v1/discounts/",
+            params={"organization_id": str(organization_second.id)},
+        )
+        assert response.status_code == 200
+        assert response.json()["items"] == []
 
 
 @pytest.mark.asyncio
@@ -227,10 +258,6 @@ class TestCreateDiscount:
         client: AsyncClient,
         organization_second: Organization,
     ) -> None:
-        """
-        A user must not be able to create a discount in an organization
-        they're not a member of, even with the full valid payload.
-        """
         response = await client.post(
             "/v1/discounts/",
             json={
@@ -262,15 +289,8 @@ class TestUpdateDiscount:
         client: AsyncClient,
         organization_second: Organization,
     ) -> None:
-        """A user must not be able to update a foreign org's discount."""
-        foreign_discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.once,
-            organization=organization_second,
-            name="Foreign",
-            code="FOREIGN",
+        foreign_discount = await _create_foreign_discount(
+            save_fixture, organization_second
         )
 
         response = await client.patch(
@@ -293,47 +313,9 @@ class TestDeleteDiscount:
         client: AsyncClient,
         organization_second: Organization,
     ) -> None:
-        """A user must not be able to delete a foreign org's discount."""
-        foreign_discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.once,
-            organization=organization_second,
-            name="Foreign",
-            code="FOREIGN",
+        foreign_discount = await _create_foreign_discount(
+            save_fixture, organization_second
         )
 
         response = await client.delete(f"/v1/discounts/{foreign_discount.id}")
         assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-class TestListDiscountsCrossOrg:
-    @pytest.mark.auth
-    async def test_foreign_discount_not_listed(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization_second: Organization,
-    ) -> None:
-        """
-        A discount owned by an organization the caller can't access must not
-        appear in the list, even if an organization_id filter is supplied.
-        """
-        await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.once,
-            organization=organization_second,
-            name="Foreign",
-            code="FOREIGN",
-        )
-
-        response = await client.get(
-            "/v1/discounts/",
-            params={"organization_id": str(organization_second.id)},
-        )
-        assert response.status_code == 200
-        assert response.json()["items"] == []

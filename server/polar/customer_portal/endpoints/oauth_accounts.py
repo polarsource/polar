@@ -94,9 +94,8 @@ async def authorize(
     elif is_customer(auth_subject):
         state["customer_id"] = str(auth_subject.subject.id)
     else:
-        # Anonymous callers must not be able to initiate an OAuth flow for an
-        # arbitrary customer — the callback would create a customer session
-        # for whatever customer_id is stored in the signed state.
+        # The callback mints a customer session from the signed state's
+        # customer_id, so that id must come from an authenticated subject.
         raise Unauthorized()
 
     encoded_state = jwt.encode(

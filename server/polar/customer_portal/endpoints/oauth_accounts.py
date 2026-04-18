@@ -8,7 +8,6 @@ from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.exceptions import GetProfileError
 from httpx_oauth.oauth2 import BaseOAuth2, GetAccessTokenError
-from pydantic import UUID4
 
 from polar.auth.models import Customer, Member, is_anonymous, is_customer, is_member
 from polar.benefit.grant.repository import BenefitGrantRepository
@@ -16,7 +15,7 @@ from polar.benefit.strategies.base.service import BenefitActionRequiredError
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.exceptions import NotPermitted, PolarError
+from polar.exceptions import NotPermitted, PolarError, Unauthorized
 from polar.integrations.discord.oauth import user_client as discord_user_client
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
@@ -81,7 +80,6 @@ async def authorize(
     return_to: ReturnTo,
     auth_subject: auth.CustomerPortalOAuthAccount,
     platform: CustomerOAuthPlatform = Query(...),
-    customer_id: UUID4 = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> AuthorizeResponse:
     state: dict[str, str] = {
@@ -96,7 +94,10 @@ async def authorize(
     elif is_customer(auth_subject):
         state["customer_id"] = str(auth_subject.subject.id)
     else:
-        state["customer_id"] = str(customer_id)
+        # Anonymous callers must not be able to initiate an OAuth flow for an
+        # arbitrary customer — the callback would create a customer session
+        # for whatever customer_id is stored in the signed state.
+        raise Unauthorized()
 
     encoded_state = jwt.encode(
         data=state, secret=settings.SECRET, type="customer_oauth"

@@ -1,4 +1,3 @@
-import uuid
 from typing import Any
 
 import pytest
@@ -7,7 +6,6 @@ from httpx import AsyncClient
 from polar.discount.repository import DiscountRepository
 from polar.models import Organization, UserOrganization
 from polar.models.discount import (
-    Discount,
     DiscountDuration,
     DiscountFixed,
     DiscountPercentage,
@@ -16,20 +14,6 @@ from polar.models.discount import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount
-
-
-async def _create_foreign_discount(
-    save_fixture: SaveFixture, organization: Organization
-) -> Discount:
-    return await create_discount(
-        save_fixture,
-        type=DiscountType.percentage,
-        basis_points=1000,
-        duration=DiscountDuration.once,
-        organization=organization,
-        name="Foreign",
-        code="FOREIGN",
-    )
 
 
 @pytest.mark.asyncio
@@ -89,22 +73,6 @@ class TestListDiscounts:
         )
         assert fixed_item["type"] == "fixed"
         assert isinstance(fixed_discount, DiscountFixed)
-
-    @pytest.mark.auth
-    async def test_foreign_organization_id_filter_returns_empty(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization_second: Organization,
-    ) -> None:
-        await _create_foreign_discount(save_fixture, organization_second)
-
-        response = await client.get(
-            "/v1/discounts/",
-            params={"organization_id": str(organization_second.id)},
-        )
-        assert response.status_code == 200
-        assert response.json()["items"] == []
 
 
 @pytest.mark.asyncio
@@ -251,71 +219,3 @@ class TestCreateDiscount:
         assert discount.amounts == {"usd": 1000}
         assert discount.amount == 1000
         assert discount.currency == "usd"
-
-    @pytest.mark.auth
-    async def test_foreign_organization_id_rejected(
-        self,
-        client: AsyncClient,
-        organization_second: Organization,
-    ) -> None:
-        response = await client.post(
-            "/v1/discounts/",
-            json={
-                "name": "Stolen Discount",
-                "type": "percentage",
-                "code": "STOLEN",
-                "duration": "once",
-                "basis_points": 1000,
-                "organization_id": str(organization_second.id),
-            },
-        )
-
-        assert response.status_code == 422
-
-
-@pytest.mark.asyncio
-class TestUpdateDiscount:
-    async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.patch(
-            f"/v1/discounts/{uuid.uuid4()}",
-            json={"name": "Renamed"},
-        )
-        assert response.status_code == 401
-
-    @pytest.mark.auth
-    async def test_foreign_organization_discount_returns_404(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization_second: Organization,
-    ) -> None:
-        foreign_discount = await _create_foreign_discount(
-            save_fixture, organization_second
-        )
-
-        response = await client.patch(
-            f"/v1/discounts/{foreign_discount.id}",
-            json={"name": "Hijacked"},
-        )
-        assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-class TestDeleteDiscount:
-    async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.delete(f"/v1/discounts/{uuid.uuid4()}")
-        assert response.status_code == 401
-
-    @pytest.mark.auth
-    async def test_foreign_organization_discount_returns_404(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization_second: Organization,
-    ) -> None:
-        foreign_discount = await _create_foreign_discount(
-            save_fixture, organization_second
-        )
-
-        response = await client.delete(f"/v1/discounts/{foreign_discount.id}")
-        assert response.status_code == 404

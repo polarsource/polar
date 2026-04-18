@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 import pytest
@@ -219,3 +220,120 @@ class TestCreateDiscount:
         assert discount.amounts == {"usd": 1000}
         assert discount.amount == 1000
         assert discount.currency == "usd"
+
+    @pytest.mark.auth
+    async def test_foreign_organization_id_rejected(
+        self,
+        client: AsyncClient,
+        organization_second: Organization,
+    ) -> None:
+        """
+        A user must not be able to create a discount in an organization
+        they're not a member of, even with the full valid payload.
+        """
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Stolen Discount",
+                "type": "percentage",
+                "code": "STOLEN",
+                "duration": "once",
+                "basis_points": 1000,
+                "organization_id": str(organization_second.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+class TestUpdateDiscount:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.patch(
+            f"/v1/discounts/{uuid.uuid4()}",
+            json={"name": "Renamed"},
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_foreign_organization_discount_returns_404(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization_second: Organization,
+    ) -> None:
+        """A user must not be able to update a foreign org's discount."""
+        foreign_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization_second,
+            name="Foreign",
+            code="FOREIGN",
+        )
+
+        response = await client.patch(
+            f"/v1/discounts/{foreign_discount.id}",
+            json={"name": "Hijacked"},
+        )
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestDeleteDiscount:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.delete(f"/v1/discounts/{uuid.uuid4()}")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_foreign_organization_discount_returns_404(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization_second: Organization,
+    ) -> None:
+        """A user must not be able to delete a foreign org's discount."""
+        foreign_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization_second,
+            name="Foreign",
+            code="FOREIGN",
+        )
+
+        response = await client.delete(f"/v1/discounts/{foreign_discount.id}")
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestListDiscountsCrossOrg:
+    @pytest.mark.auth
+    async def test_foreign_discount_not_listed(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization_second: Organization,
+    ) -> None:
+        """
+        A discount owned by an organization the caller can't access must not
+        appear in the list, even if an organization_id filter is supplied.
+        """
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization_second,
+            name="Foreign",
+            code="FOREIGN",
+        )
+
+        response = await client.get(
+            "/v1/discounts/",
+            params={"organization_id": str(organization_second.id)},
+        )
+        assert response.status_code == 200
+        assert response.json()["items"] == []

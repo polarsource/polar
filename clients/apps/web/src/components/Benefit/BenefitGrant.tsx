@@ -146,6 +146,7 @@ const BenefitGrantOAuth = ({
           query: {
             platform,
             return_to: pathname,
+            customer_id: customer.id,
           },
         },
       },
@@ -153,7 +154,7 @@ const BenefitGrantOAuth = ({
     if (data) {
       window.location.href = data.url
     }
-  }, [api, pathname, platform])
+  }, [customer, api, pathname, platform])
 
   const updateBenefitGrant = useCustomerBenefitGrantUpdate(api)
   const [selectedAccountKey, setSelectedAccountKey] = useState<

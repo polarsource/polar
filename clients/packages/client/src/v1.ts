@@ -1382,7 +1382,7 @@ export interface paths {
     }
     /**
      * List Benefit Grants
-     * @description List benefit grants across all benefits for the authenticated organization.
+     * @description List benefit grants across all benefits accessible to the authenticated subject.
      *
      *     **Scopes**: `benefits:read` `benefits:write`
      */
@@ -15011,7 +15011,7 @@ export interface components {
     /** CustomerPortalCustomerSettings */
     CustomerPortalCustomerSettings: {
       /** Allow Email Change */
-      allow_email_change: boolean
+      allow_email_change?: boolean
     }
     /** CustomerPortalCustomerUpdate */
     CustomerPortalCustomerUpdate: {
@@ -23495,7 +23495,7 @@ export interface components {
       /** Allow Multiple Subscriptions */
       allow_multiple_subscriptions: boolean
       /**
-       * Proration Behavior
+       * PublicSubscriptionProrationBehavior
        * @enum {string}
        */
       proration_behavior: 'invoice' | 'prorate' | 'next_period'
@@ -25878,6 +25878,11 @@ export interface components {
        * @description Checkout ID. Used to look up subscription or order from the checkout page.
        */
       checkout_id?: string | null
+      /**
+       * Checkout Client Secret
+       * @description Client secret of the checkout. Required when assigning seats via checkout_id as an anonymous caller (e.g. the checkout confirmation page).
+       */
+      checkout_client_secret?: string | null
       /**
        * Order Id
        * @description Order ID for one-time purchases. Required if subscription_id and checkout_id are not provided.
@@ -39172,7 +39177,6 @@ export interface operations {
     parameters: {
       query: {
         platform: components['schemas']['CustomerOAuthPlatform']
-        customer_id: string
         return_to?: string | null
       }
       header?: never

@@ -20,6 +20,14 @@ class SeatAssign(Schema):
         None,
         description="Checkout ID. Used to look up subscription or order from the checkout page.",
     )
+    checkout_client_secret: str | None = Field(
+        None,
+        description=(
+            "Client secret of the checkout. Required when assigning seats "
+            "via checkout_id as an anonymous caller (e.g. the checkout "
+            "confirmation page)."
+        ),
+    )
     order_id: UUID | None = Field(
         None,
         description="Order ID for one-time purchases. Required if subscription_id and checkout_id are not provided.",

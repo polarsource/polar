@@ -391,6 +391,7 @@ class TestAssignSeat:
             "/v1/customer-seats",
             json={
                 "checkout_id": str(checkout.id),
+                "checkout_client_secret": checkout.client_secret,
                 "email": "checkout-user@example.com",
             },
         )
@@ -399,6 +400,85 @@ class TestAssignSeat:
         data = response.json()
         assert data["status"] == "pending"
         assert data["subscription_id"] == str(subscription_with_seats.id)
+
+    async def test_assign_seat_from_checkout_anonymous_missing_client_secret(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription_with_seats: Subscription,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        from tests.fixtures.random_objects import create_checkout, create_customer
+
+        await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="checkout-user@example.com",
+        )
+
+        await session.refresh(subscription_with_seats.product, ["prices"])
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[subscription_with_seats.product],
+            price=subscription_with_seats.product.prices[0],
+            subscription=subscription_with_seats,
+            seats=5,
+        )
+
+        subscription_with_seats.checkout_id = checkout.id
+        await save_fixture(subscription_with_seats)
+
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "checkout_id": str(checkout.id),
+                "email": "attacker@example.com",
+            },
+        )
+
+        assert response.status_code == 403, f"Error: {response.json()}"
+
+    async def test_assign_seat_from_checkout_anonymous_wrong_client_secret(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription_with_seats: Subscription,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        from tests.fixtures.random_objects import create_checkout, create_customer
+
+        await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="checkout-user@example.com",
+        )
+
+        await session.refresh(subscription_with_seats.product, ["prices"])
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[subscription_with_seats.product],
+            price=subscription_with_seats.product.prices[0],
+            subscription=subscription_with_seats,
+            seats=5,
+        )
+
+        subscription_with_seats.checkout_id = checkout.id
+        await save_fixture(subscription_with_seats)
+
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "checkout_id": str(checkout.id),
+                "checkout_client_secret": "not-the-real-secret",
+                "email": "attacker@example.com",
+            },
+        )
+
+        assert response.status_code == 403, f"Error: {response.json()}"
 
     @pytest.mark.auth(SEAT_AUTH)
     async def test_assign_seat_immediate_claim_success(
@@ -869,6 +949,7 @@ class TestOrderBasedSeats:
             "/v1/customer-seats",
             json={
                 "checkout_id": str(checkout_with_order.id),
+                "checkout_client_secret": checkout_with_order.client_secret,
                 "email": "holder@example.com",
             },
         )

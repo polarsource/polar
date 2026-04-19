@@ -24,7 +24,11 @@ interface EmailInput {
 const CheckoutSeatInvitations = ({
   checkout,
 }: CheckoutSeatInvitationsProps) => {
-  const { seats, id: checkoutId } = checkout
+  const {
+    seats,
+    id: checkoutId,
+    client_secret: checkoutClientSecret,
+  } = checkout
 
   // Check if this is a seat-based product
   const isSeatBased =
@@ -42,7 +46,7 @@ const CheckoutSeatInvitations = ({
   const [isSending, setIsSending] = useState(false)
   const [sentCount, setSentCount] = useState(0)
 
-  const assignSeat = useAssignSeatFromCheckout(checkoutId)
+  const assignSeat = useAssignSeatFromCheckout(checkoutId, checkoutClientSecret)
 
   const availableSeats = (seats || 1) - sentCount
   const canAddMore = emailInputs.length < availableSeats

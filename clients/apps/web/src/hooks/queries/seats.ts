@@ -4,14 +4,17 @@ import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useAssignSeatFromCheckout = (checkoutId: string) => {
+export const useAssignSeatFromCheckout = (
+  checkoutId: string,
+  checkoutClientSecret: string,
+) => {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (
       variables: Omit<
         schemas['SeatAssign'],
-        'checkout_id' | 'immediate_claim'
+        'checkout_id' | 'checkout_client_secret' | 'immediate_claim'
       > & {
         immediate_claim?: boolean
       },
@@ -24,6 +27,7 @@ export const useAssignSeatFromCheckout = (checkoutId: string) => {
         body: JSON.stringify({
           ...variables,
           checkout_id: checkoutId,
+          checkout_client_secret: checkoutClientSecret,
           immediate_claim: variables.immediate_claim ?? false,
         }),
       })

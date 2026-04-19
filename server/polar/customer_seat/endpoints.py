@@ -1,3 +1,4 @@
+import secrets
 from typing import Annotated, cast
 
 from fastapi import Depends, Query, Request
@@ -93,6 +94,20 @@ async def assign_seat(
 
         if not checkout:
             raise ResourceNotFound("Checkout not found")
+
+        if isinstance(auth_subject.subject, Anonymous):
+            if seat_assign.checkout_client_secret is None or not secrets.compare_digest(
+                seat_assign.checkout_client_secret, checkout.client_secret
+            ):
+                raise NotPermitted(
+                    "checkout_client_secret is required and must match the "
+                    "checkout when assigning seats as an anonymous caller."
+                )
+        elif seat_assign.checkout_client_secret is not None:
+            if not secrets.compare_digest(
+                seat_assign.checkout_client_secret, checkout.client_secret
+            ):
+                raise NotPermitted("checkout_client_secret does not match.")
 
         # Try to find subscription first (for recurring purchases)
         subscription = await subscription_repository.get_by_checkout_id(

@@ -30,7 +30,6 @@ from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.member.repository import MemberRepository
 from polar.meter.aggregation import PropertyAggregation
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
@@ -38,6 +37,7 @@ from polar.models import (
     Customer,
     CustomerMeter,
     Event,
+    Member,
     Meter,
     MeterEvent,
     Organization,
@@ -917,7 +917,7 @@ class EventService:
             if isinstance(e, EventCreateCustomer) and e.member_id is not None
         }
         validate_member_id = await self._get_member_validation_function(
-            session, member_ids_in_batch
+            session, auth_subject, member_ids_in_batch
         )
 
         event_type_repository = EventTypeRepository.from_session(session)
@@ -1344,10 +1344,31 @@ class EventService:
     async def _get_member_validation_function(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
         member_ids: set[uuid.UUID],
     ) -> Callable[[int, uuid.UUID], uuid.UUID]:
-        member_repository = MemberRepository.from_session(session)
-        allowed_members = await member_repository.get_existing_ids(member_ids)
+        if not member_ids:
+            allowed_members: set[uuid.UUID] = set()
+        else:
+            statement = select(Member.id).where(
+                Member.is_deleted.is_(False),
+                Member.id.in_(member_ids),
+            )
+            if is_user(auth_subject):
+                statement = statement.where(
+                    Member.organization_id.in_(
+                        select(UserOrganization.organization_id).where(
+                            UserOrganization.user_id == auth_subject.subject.id,
+                            UserOrganization.is_deleted.is_(False),
+                        )
+                    )
+                )
+            else:
+                statement = statement.where(
+                    Member.organization_id == auth_subject.subject.id
+                )
+            result = await session.execute(statement)
+            allowed_members = set(result.scalars().all())
 
         def _validate_member_id(index: int, member_id: uuid.UUID) -> uuid.UUID:
             if member_id not in allowed_members:

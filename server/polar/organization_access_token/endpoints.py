@@ -85,7 +85,10 @@ async def update(
         raise ResourceNotFound()
 
     return await organization_access_token_service.update(
-        session, organization_access_token, organization_access_token_update
+        session,
+        auth_subject,
+        organization_access_token,
+        organization_access_token_update,
     )
 
 

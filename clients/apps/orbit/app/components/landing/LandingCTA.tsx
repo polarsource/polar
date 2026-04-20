@@ -18,7 +18,6 @@ export const LandingCTA = () => (
 
       {/* Right — text + buttons */}
       <div className="flex flex-col justify-between p-16 py-24">
-        <SectionLabel number="006" label="Get Started" />
         <SectionHeading className="mt-16">
           Start billing
           <br />
@@ -26,20 +25,20 @@ export const LandingCTA = () => (
         </SectionHeading>
         <div>
           <p className="max-w-sm text-2xl leading-snug">
-            Integrate once. Polar handles metering, pricing, invoicing,
-            and revenue analytics — so your team ships product, not
-            billing infrastructure.
+            Integrate once. Polar handles metering, pricing, invoicing, and
+            revenue analytics — so your team ships product, not billing
+            infrastructure.
           </p>
           <div className="flex gap-4 pt-8">
             <a
               href="#"
-              className="border border-white px-6 py-3 text-base font-medium uppercase text-white transition hover:bg-white hover:text-black"
+              className="border border-white px-6 py-3 text-base font-medium text-white uppercase transition hover:bg-white hover:text-black"
             >
               Create Account
             </a>
             <a
               href="#"
-              className="border border-neutral-700 px-6 py-3 text-base font-medium uppercase text-neutral-400 transition hover:border-neutral-500 hover:text-white"
+              className="border border-neutral-700 px-6 py-3 text-base font-medium text-neutral-400 uppercase transition hover:border-neutral-500 hover:text-white"
             >
               Read Documentation
             </a>

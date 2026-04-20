@@ -15,25 +15,24 @@ import { SectionHeading } from './SectionHeading'
 
 const LAYERS = [
   { id: '01', name: 'Ingest', desc: 'Stream every call, token, and byte' },
-  { id: '02', name: 'Measure', desc: 'Aggregate raw signals into usage' },
-  { id: '03', name: 'Price', desc: 'Usage meets your pricing logic' },
-  { id: '04', name: 'Settle', desc: 'Invoices out, revenue in' },
+  { id: '02', name: 'Aggregate', desc: 'Raw signals become billable usage' },
+  { id: '03', name: 'Quantify', desc: 'Turn consumption into charges' },
+  { id: '04', name: 'Charge', desc: 'Invoice, collect, and close the loop' },
 ]
 
 export const LandingArchitecture = () => (
-  <section id="architecture" className="border-b border-neutral-800">
+  <section id="architecture">
     {/* Top row — heading */}
-    <div className="grid grid-cols-1 divide-x divide-neutral-800 border-b border-neutral-800 md:grid-cols-2">
+    <div className="grid grid-cols-1 border-b border-neutral-800 md:grid-cols-2">
       <div className="p-16 py-32">
-        <SectionLabel number="001" label="Ingestion-based Billing" />
         <SectionHeading className="mt-16">
-          Four layers.
+          Ingest. Aggregate.
           <br />
-          One pipeline.
+          Quantify. Charge.
         </SectionHeading>
       </div>
       <div className="flex items-end p-16 py-32">
-        <p className="max-w-xl text-3xl leading-snug text-white">
+        <p className="max-w-xl text-4xl leading-snug text-white">
           From the moment a request fires to the moment you get paid — four
           layers, one pipeline, zero glue code.
         </p>
@@ -41,7 +40,7 @@ export const LandingArchitecture = () => (
     </div>
 
     {/* Bottom row — 4 graphics, one per layer */}
-    <div className="grid grid-cols-1 divide-x divide-y divide-neutral-800 md:grid-cols-2 md:divide-y-0 lg:grid-cols-4">
+    <div className="grid grid-cols-1 divide-x divide-y divide-neutral-800 border-b border-neutral-800 md:grid-cols-2 md:divide-y-0 lg:grid-cols-4">
       {LAYERS.map((l, i) => (
         <div key={l.id} className="flex flex-col">
           {/* Graphic */}

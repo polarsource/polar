@@ -19,6 +19,8 @@ type CurrencyItem = { code: string; label: string }
 
 const labelOverrides: Record<string, string> = {
   aed: 'UAE Dirham',
+  bam: 'Bosnian Convertible Mark',
+  xcg: 'Carribean Guilder',
 }
 
 const pinnedCodes = ['usd', 'eur', 'gbp']
@@ -96,7 +98,7 @@ export const CurrencySelector = ({
       placeholder={placeholder}
       searchPlaceholder="Search currencies…"
       emptyLabel="No currencies found"
-      popoverClassName="min-w-[230px]"
+      popoverClassName="min-w-[250px]"
       popoverAlign="end"
       className={disabled ? 'pointer-events-none opacity-50' : className}
     />

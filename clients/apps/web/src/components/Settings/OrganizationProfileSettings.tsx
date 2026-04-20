@@ -92,14 +92,7 @@ interface OrganizationSocialLinksProps {
 const OrganizationSocialLinks = ({
   required,
 }: OrganizationSocialLinksProps) => {
-  const { watch, setValue, formState } =
-    useFormContext<schemas['OrganizationUpdate']>()
-  const socials = watch('socials') || []
-
-  const hasValidSocial = socials.some(
-    (social) => social.url && social.url.trim() !== '',
-  )
-  const showError = required && formState.isSubmitted && !hasValidSocial
+  const { control, formState } = useFormContext<schemas['OrganizationUpdate']>()
 
   const getIcon = (platform: string, className: string) => {
     switch (platform) {
@@ -120,21 +113,12 @@ const OrganizationSocialLinks = ({
     }
   }
 
-  const handleAddSocial = () => {
-    setValue('socials', [...socials, { platform: 'other', url: '' }], {
-      shouldDirty: true,
-    })
-  }
-
-  const handleRemoveSocial = (index: number) => {
-    setValue(
-      'socials',
-      socials.filter((_, i) => i !== index),
-      { shouldDirty: true },
-    )
-  }
-
-  const handleChange = (index: number, value: string) => {
+  const handleChange = (
+    index: number,
+    value: string,
+    socials: schemas['OrganizationSocialLink'][],
+    updateField: (value: schemas['OrganizationSocialLink'][]) => void,
+  ) => {
     if (value.startsWith('http://')) {
       value = value.replace('http://', 'https://')
     }
@@ -161,48 +145,69 @@ const OrganizationSocialLinks = ({
     // Update the socials array
     const updatedSocials = [...socials]
     updatedSocials[index] = { platform: newPlatform, url: value }
-    setValue('socials', updatedSocials, { shouldDirty: true })
+    updateField(updatedSocials)
   }
 
   return (
-    <div className="space-y-3">
-      {socials.map((social, index) => (
-        <div key={index} className="flex items-center gap-3">
-          <div className="flex w-5 justify-center">
-            {getIcon(social.platform, 'text-gray-400 h-4 w-4')}
+    <FormField
+      control={control}
+      name="socials"
+      render={({ field }) => {
+        const socials = field.value || []
+        const hasValidSocial = socials.some(
+          (social) => social.url && social.url.trim() !== '',
+        )
+        const showError = required && formState.isSubmitted && !hasValidSocial
+
+        return (
+          <div className="space-y-3">
+            {socials.map((social, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="flex w-5 justify-center">
+                  {getIcon(social.platform, 'text-gray-400 h-4 w-4')}
+                </div>
+                <Input
+                  type="url"
+                  value={social.url || ''}
+                  onChange={(e) =>
+                    handleChange(index, e.target.value, socials, field.onChange)
+                  }
+                  placeholder="https://"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    field.onChange(socials.filter((_, i) => i !== index))
+                  }}
+                  className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
+                >
+                  <CloseOutlined fontSize="small" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                field.onChange([...socials, { platform: 'other', url: '' }])
+              }}
+            >
+              <AddOutlined fontSize="small" className="mr-1" />
+              Add Social
+            </Button>
+            {showError && (
+              <p className="text-destructive text-sm font-medium">
+                At least one social media link is required
+              </p>
+            )}
           </div>
-          <Input
-            value={social.url || ''}
-            onChange={(e) => handleChange(index, e.target.value)}
-            placeholder="https://"
-            className="flex-1"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => handleRemoveSocial(index)}
-            className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
-          >
-            <CloseOutlined fontSize="small" />
-          </Button>
-        </div>
-      ))}
-      <Button
-        type="button"
-        size="sm"
-        variant="secondary"
-        onClick={handleAddSocial}
-      >
-        <AddOutlined fontSize="small" className="mr-1" />
-        Add Social
-      </Button>
-      {showError && (
-        <p className="text-destructive text-sm font-medium">
-          At least one social media link is required
-        </p>
-      )}
-    </div>
+        )
+      }}
+    />
   )
 }
 

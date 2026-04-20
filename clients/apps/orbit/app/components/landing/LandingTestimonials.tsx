@@ -34,29 +34,27 @@ const TESTIMONIALS = [
 
 export const LandingTestimonials = () => (
   <section className="border-b border-neutral-800">
-    <div className="border-b border-neutral-800 p-16 py-12">
-      <SectionLabel number="005" label="Testimonials" />
-    </div>
     <div className="grid grid-cols-4 divide-x divide-neutral-800">
       {TESTIMONIALS.map((t) => (
-        <div key={t.name} className="flex flex-col justify-between p-12 py-16">
+        <div
+          key={t.name}
+          className="flex flex-col justify-between gap-y-16 p-12 py-16"
+        >
           {/* Outward arrow */}
           <svg
-            width="48"
-            height="48"
+            width="36"
+            height="36"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.2"
-            className="mb-8 text-white"
+            className="text-white"
           >
             <path d="M7 17L17 7" />
             <path d="M7 7H17V17" />
           </svg>
-          <p className="text-3xl leading-snug text-white">
-            {t.quote}
-          </p>
-          <div className="mt-12">
+          <p className="text-3xl leading-snug text-white">{t.quote}</p>
+          <div>
             <div className="text-xl text-white">{t.name}</div>
             <div className="text-xl text-neutral-500">{t.role}</div>
           </div>

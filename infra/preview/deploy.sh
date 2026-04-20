@@ -118,10 +118,12 @@ deploy() {
 
         log "Building email renderer"
         uv run task emails
-
-        log "Building backoffice assets"
-        uv run task backoffice
     fi
+
+    # Built every deploy (not gated on BACKEND_CHANGED): assets are
+    # gitignored so they can be missing even when backend is unchanged.
+    log "Building backoffice assets"
+    uv run task backoffice
 
     # --- Backend .env (must be written before migrations) ---
     log "Writing backend .env"

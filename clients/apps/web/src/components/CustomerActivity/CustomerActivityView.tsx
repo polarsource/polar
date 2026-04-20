@@ -14,11 +14,11 @@ import { useProducts } from '@/hooks/queries'
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { Timeline } from '../Timeline/Timeline'
 import { EmptyState } from '../CustomerPortal/EmptyState'
-import { CUSTOMER_ACTIVITY_TIMELINE } from './constants'
 import {
-  buildCustomerActivityTimeline,
+  CUSTOMER_ACTIVITY_TIMELINE,
   extractProductIdsFromEvents,
-} from './timeline-utils'
+} from './event-config'
+import { buildCustomerActivityTimeline } from './timeline-builder'
 
 const PAGE_SIZE = 100
 const SORT_DIRECTIONS = ['desc', 'asc'] as const
@@ -65,7 +65,7 @@ export const CustomerActivityView = ({
 
   const timelineSections = useMemo(() => {
     return buildCustomerActivityTimeline({
-      sortedEvents: timelineEvents,
+      events: timelineEvents,
       productNamesById,
     })
   }, [timelineEvents, productNamesById])

@@ -45,8 +45,9 @@ export const RadialSpinner = () => {
     // Timing — linear sequence, bezier per-spoke path
     const SPOKE_INTERVAL = 0.2 // constant delay between spokes (linear)
     const PATH_DURATION = 0.8 // how long the tip takes to travel the path
+    const TAIL_DELAY = 0.16 // trailing start follows the tip
     const FULL_CYCLE =
-      (SPOKE_COUNT - 1) * SPOKE_INTERVAL + PATH_DURATION
+      (SPOKE_COUNT - 1) * SPOKE_INTERVAL + PATH_DURATION + TAIL_DELAY
 
     let lastTime: number | null = null
     let time = 0
@@ -77,16 +78,24 @@ export const RadialSpinner = () => {
         // Linear stagger — each spoke fires at a constant interval
         const spokeStart = i * SPOKE_INTERVAL
 
-        // Tip progress: bezier-eased from 0→1 along the path
+        // Leading tip: bezier-eased from 0→1 along the path
         const tipT = (cycleTime - spokeStart) / PATH_DURATION
-        const progress = easeOut(Math.max(0, Math.min(1, tipT)))
+        const tipProgress = easeOut(Math.max(0, Math.min(1, tipT)))
 
-        if (progress <= 0) continue
+        // Trailing start: same bezier, delayed
+        const tailT = (cycleTime - spokeStart - TAIL_DELAY) / PATH_DURATION
+        const tailProgress = easeOut(Math.max(0, Math.min(1, tailT)))
 
-        const r2 = innerR + spokeLen * progress
+        if (tipProgress <= 0) continue
+        if (tailProgress >= 1) continue
 
-        const x1 = cx + Math.cos(angle) * innerR
-        const y1 = cy + Math.sin(angle) * innerR
+        const r1 = innerR + spokeLen * tailProgress
+        const r2 = innerR + spokeLen * tipProgress
+
+        if (r2 - r1 < 0.5) continue
+
+        const x1 = cx + Math.cos(angle) * r1
+        const y1 = cy + Math.sin(angle) * r1
         const x2 = cx + Math.cos(angle) * r2
         const y2 = cy + Math.sin(angle) * r2
 

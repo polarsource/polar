@@ -320,7 +320,6 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
 ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatus]] = {
     OrganizationStatus.CREATED: frozenset(
         {
-            OrganizationStatus.REVIEW,
             OrganizationStatus.ACTIVE,
             OrganizationStatus.DENIED,
             OrganizationStatus.BLOCKED,

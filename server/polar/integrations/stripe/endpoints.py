@@ -38,7 +38,12 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "identity.verification_session.requires_input",
     "identity.verification_session.canceled",
 }
-CONNECT_IMPLEMENTED_WEBHOOKS = {"account.updated", "payout.updated", "payout.paid"}
+CONNECT_IMPLEMENTED_WEBHOOKS = {
+    "account.updated",
+    "payout.updated",
+    "payout.paid",
+    "payout.failed",
+}
 
 
 async def enqueue(session: AsyncSession, event: stripe.Event) -> None:

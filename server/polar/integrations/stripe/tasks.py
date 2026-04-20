@@ -348,6 +348,15 @@ async def payout_paid(event_id: uuid.UUID) -> None:
             await payout_service.update_from_stripe(session, payout)
 
 
+@actor(actor_name="stripe.webhook.payout.failed", priority=TaskPriority.LOW)
+@stripe_api_connection_error_retry
+async def payout_failed(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
+            await payout_service.update_from_stripe(session, payout)
+
+
 @actor(
     actor_name="stripe.webhook.identity.verification_session.verified",
     priority=TaskPriority.HIGH,

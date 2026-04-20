@@ -353,6 +353,17 @@ class OrganizationListView:
                 hx_trigger="submit, change from:.filter-select",
                 hx_target="#org-list",
             ):
+                # Preserve the active status tab across filter submissions.
+                # Without this, changing any filter drops the `status` query
+                # param and the listing falls back to the default view.
+                if status_filter is not None:
+                    with tag.input(
+                        type="hidden",
+                        name="status",
+                        value=status_filter.value,
+                    ):
+                        pass
+
                 # Search bar with filter toggle
                 with tag.div(classes="flex gap-3"):
                     # Search input

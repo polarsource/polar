@@ -36,26 +36,10 @@ class SubscriptionJobStore(BaseJobStore):
         return None
 
     def get_due_jobs(self, now: datetime.datetime) -> list[Job]:
-        # Atomic claim: concurrent scheduler instances must not each enqueue
-        # ``subscription.cycle`` for the same subscription.
-        claim_subquery = (
-            self.scheduling_statement()
-            .where(Subscription.current_period_end <= now)
-            .with_only_columns(Subscription.id)
-            .with_for_update(skip_locked=True, of=Subscription)
+        statement = self.scheduling_statement().where(
+            Subscription.current_period_end <= now,
         )
-        claim_statement = (
-            update(Subscription)
-            .where(Subscription.id.in_(claim_subquery))
-            .values(scheduler_locked_at=utc_now())
-            .returning(Subscription.id, Subscription.current_period_end)
-            .execution_options(synchronize_session=False)
-        )
-        jobs: list[Job] = []
-        with self.engine.begin() as connection:
-            result = connection.execute(claim_statement)
-            for subscription_id, current_period_end in result:
-                jobs.append(self._build_job(subscription_id, current_period_end))
+        jobs = self._list_jobs_from_statement(statement)
         log.debug("Due jobs", count=len(jobs))
         return jobs
 
@@ -78,8 +62,22 @@ class SubscriptionJobStore(BaseJobStore):
         return jobs
 
     def remove_job(self, job_id: str) -> None:
-        # The row was already claimed by ``get_due_jobs``; just enqueue.
+        # Atomic claim: only the instance whose conditional UPDATE flips
+        # ``scheduler_locked_at`` from NULL proceeds to enqueue. Concurrent
+        # schedulers that lose the race see 0 rows and bail out.
         subscription_id = job_id.split(":")[-1]
+        statement = (
+            update(Subscription)
+            .where(
+                Subscription.id == subscription_id,
+                Subscription.scheduler_locked_at.is_(None),
+            )
+            .values(scheduler_locked_at=utc_now())
+            .returning(Subscription.id)
+        )
+        with self.engine.begin() as connection:
+            if connection.execute(statement).first() is None:
+                return
         actor = dramatiq.get_broker().get_actor("subscription.cycle")
         actor.send(subscription_id=subscription_id)
 

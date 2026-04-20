@@ -1,1 +1,16 @@
+# Global code owners
+* @polarsource/engineering
+
+# Backend
+server/** @frankie567
+
+# Infrastructure
+terraform/** @Yopi
+infra/** @Yopi
+
+# Frontend
+clients/apps/web/src/components/Checkout/** @sebastianekstrom
+clients/packages/checkout/** @sebastianekstrom
+
+# Other
 **/legal @victoriabolin @birkjernstrom

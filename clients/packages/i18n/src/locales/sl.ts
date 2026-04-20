@@ -1,0 +1,283 @@
+export default {
+  checkout: {
+    footer: {
+      poweredBy: 'Poganja',
+      merchantOfRecord:
+        'To naročilo obdela naš spletni prodajalec in Merchant of Record, Polar, ki prav tako obravnava vprašanja, povezana z naročilom, in vračila.',
+      mandateSubscriptionTrial:
+        'S klikom na "{buttonLabel}," pooblaščate Polar Software, Inc., našega spletnega prodajalca in Merchant of Record, da ob koncu preizkusnega obdobja in na vsak naslednji datum obračuna bremeni izbrani način plačila za zgoraj prikazan znesek, ter se strinjate s {buyerTermsLink}. Naročnino lahko kadar koli prekličete pred koncem preizkusnega obdobja, da se izognete bremenitvi.',
+      mandateSubscription:
+        'S klikom na "{buttonLabel}," pooblaščate Polar Software, Inc., našega spletnega prodajalca in Merchant of Record, da takoj bremeni izbrani način plačila za zgoraj prikazan znesek in da na vsak naslednji datum obračuna bremeni isti znesek, dokler naročnine ne prekličete, ter se strinjate s {buyerTermsLink}.',
+      mandateOneTime:
+        'S klikom na "{buttonLabel}," pooblaščate Polar Software, Inc., našega spletnega prodajalca in Merchant of Record, da bremeni izbrani način plačila za zgoraj prikazan znesek, ter se strinjate s {buyerTermsLink}. To je enkratno bremenitev.',
+      buyerTermsLink: 'Pogoji za kupce',
+    },
+    form: {
+      email: 'E-pošta',
+      cardholderName: 'Ime imetnika kartice',
+      purchasingAsBusiness: 'Kupujem kot podjetje',
+      addBusinessDetails: 'Dodaj podatke podjetja',
+      removeBusinessDetails: 'Odstrani podatke podjetja',
+      businessName: 'Ime podjetja',
+      billingDetails: 'Podatki podjetja',
+      billingAddress: {
+        label: 'Naslov za obračun',
+        line1: 'Ulica in hišna številka',
+        line2: 'Številka stanovanja ali enote',
+        postalCode: 'Poštna številka',
+        city: 'Mesto',
+        country: 'Država',
+        state: 'Zvezna država',
+        province: 'Pokrajina',
+        stateProvince: 'Zvezna država / pokrajina',
+      },
+      taxId: 'Davčna številka',
+      discountCode: 'Koda za popust',
+      addDiscountCode: 'Dodaj kodo za popust',
+      optional: 'Neobvezno',
+      apply: 'Uporabi',
+      fieldRequired: 'To polje je obvezno',
+    },
+    pricing: {
+      subtotal: 'Vmesni seštevek',
+      taxableAmount: 'Obdavčljivi znesek',
+      taxes: 'Davek',
+      free: 'Brezplačno',
+      payWhatYouWant: 'Plačaj po želji',
+      total: 'Skupaj',
+      everyInterval: {
+        day: {
+          '=1': 'Dnevno',
+          '=2': 'Vsak drugi dan',
+          other: 'Vsakih # dni',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Tedensko',
+          '=2': 'Vsak drugi teden',
+          other: 'Vsakih # tednov',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Mesečno',
+          '=2': 'Vsak drugi mesec',
+          other: 'Vsakih # mesecev',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Letno',
+          '=2': 'Vsako drugo leto',
+          other: 'Vsakih # let',
+          _mode: 'plural',
+        },
+      },
+      additionalMeteredUsage: 'Dodatna poraba po meritvah',
+      perUnit: '/ enoto',
+      perSeat: 'na uporabniško mesto',
+      seats: {
+        label: 'Uporabniška mesta',
+        numberOfSeats: 'Število uporabniških mest',
+        count: {
+          '=1': '# uporabniško mesto',
+          other: '# uporabniška mesta',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} uporabniških mest',
+        minimum: 'Najmanj {min} uporabniških mest',
+        maximum: 'Največ {max} uporabniških mest',
+        updateFailed: 'Posodobitev uporabniških mest ni uspela',
+      },
+      discount: {
+        duration: {
+          months: {
+            '=1': 'za prvi mesec',
+            other: 'za prvih # mesecev',
+            _mode: 'plural',
+          },
+          years: {
+            '=1': 'za prvo leto',
+            other: 'za prvih # let',
+            _mode: 'plural',
+          },
+        },
+        until: 'Do {date}',
+      },
+    },
+    trial: {
+      ends: 'Preizkus se konča {endDate}',
+      duration: {
+        days: {
+          '=1': '#-dnevni preizkus',
+          other: '#-dnevni preizkus',
+          _mode: 'plural',
+        },
+        weeks: {
+          '=1': '#-tedenski preizkus',
+          other: '#-tedenski preizkus',
+          _mode: 'plural',
+        },
+        months: {
+          '=1': '#-mesečni preizkus',
+          other: '#-mesečni preizkus',
+          _mode: 'plural',
+        },
+        years: {
+          '=1': '#-letni preizkus',
+          other: '#-letni preizkus',
+          _mode: 'plural',
+        },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# dan brezplačno',
+            other: '# dni brezplačno',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# mesec brezplačno',
+            other: '# mesecev brezplačno',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# leto brezplačno',
+            other: '# let brezplačno',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/dan',
+          week: '/teden',
+          month: '/mesec',
+          year: '/leto',
+        },
+        then: 'Nato',
+        startingDate: 'od {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Skupaj ob koncu preizkusa',
+        totalWhenDiscountExpires: 'Skupaj ob izteku popusta',
+        totalDueToday: 'Skupaj za plačilo danes',
+      },
+    },
+    pwywForm: {
+      label: 'Določite pošteno ceno',
+      minimum: 'Minimalno {amount}',
+      amountMinimum: 'Znesek mora biti vsaj {min}',
+      amountFreeOrMinimum: 'Znesek mora biti {zero} ali vsaj {min}',
+    },
+    productSwitcher: {
+      billedRecurring: 'Obračunano {frequency}',
+      oneTimePurchase: 'Enkratni nakup',
+      fromPrefix: 'Od',
+    },
+    productDescription: {
+      readMore: 'Preberi več',
+      readLess: 'Preberi manj',
+    },
+    card: {
+      included: 'Vključeno',
+    },
+    benefits: {
+      moreBenefits: {
+        '=1': '# dodatna ugodnost',
+        other: '# dodatnih ugodnosti',
+        _mode: 'plural',
+      },
+      showMoreBenefits: {
+        '=1': 'Prikaži # dodatno ugodnost',
+        other: 'Prikaži # dodatnih ugodnosti',
+        _mode: 'plural',
+      },
+      showLess: 'Prikaži manj',
+      granting: 'Dodeljevanje ugodnosti...',
+      requestNewInvite: 'Zahtevaj novo povabilo',
+      retryIn: {
+        '=1': 'Poskusi znova čez # sekundo',
+        other: 'Poskusi znova čez # sekund',
+        _mode: 'plural',
+      },
+      connectNewAccount: 'Poveži nov račun',
+      requestMyInvite: 'Zahtevaj moje povabilo',
+      github: {
+        connect: 'Poveži račun GitHub',
+        goTo: 'Pojdi na {repository}',
+        selectAccount: 'Izberite račun GitHub',
+      },
+      discord: {
+        connect: 'Poveži račun Discord',
+        open: 'Odpri Discord',
+        selectAccount: 'Izberite račun Discord',
+      },
+      licenseKey: {
+        copy: 'Kopiraj',
+        copiedToClipboard: 'Kopirano v odložišče',
+        copiedToClipboardDescription:
+          'Licenčni ključ je bil kopiran v odložišče',
+        loading: 'Nalaganje...',
+        status: 'Stanje',
+        statusGranted: 'Dodeljeno',
+        statusRevoked: 'Preklicano',
+        statusDisabled: 'Onemogočeno',
+        usage: 'Uporaba',
+        validations: 'Preverjanja',
+        validatedAt: 'Preverjeno ob',
+        neverValidated: 'Nikoli preverjeno',
+        expiryDate: 'Datum poteka',
+        noExpiry: 'Brez poteka',
+        activations: 'Aktivacije',
+        activationDeleted: 'Aktivacija licenčnega ključa izbrisana',
+        activationDeletedDescription: 'Aktivacija je bila uspešno izbrisana',
+        activationDeactivationFailed: 'Deaktivacija aktivacije ni uspela',
+      },
+    },
+    confirmation: {
+      confirmPayment: 'Potrdi plačilo',
+      processingTitle: 'Obdelujemo vaše naročilo',
+      successTitle: 'Vaše naročilo je uspelo!',
+      failedTitle: 'Pri obdelavi vašega naročila je prišlo do težave',
+      processingDescription: 'Prosimo, počakajte, da potrdimo vaše plačilo.',
+      successDescription: 'Zdaj ste upravičeni do ugodnosti za {product}.',
+      failedDescription: 'Poskusite znova ali se obrnite na podporo.',
+    },
+    loading: {
+      processingOrder: 'Obdelava naročila...',
+      processingPayment: 'Obdelava plačila',
+      paymentSuccessful: 'Plačilo uspešno! Pripravljamo vaše izdelke...',
+      confirmationTokenFailed:
+        'Ustvarjanje potrditvenega žetona ni uspelo, poskusite znova pozneje.',
+    },
+    cta: {
+      startTrial: 'Začni preizkus',
+      subscribeNow: 'Naroči se zdaj',
+      payNow: 'Plačaj zdaj',
+      getFree: 'Pridobi brezplačno',
+      paymentsUnavailable: 'Plačila trenutno niso na voljo',
+    },
+  },
+  intervals: {
+    short: {
+      day: 'd',
+      week: 't',
+      month: 'm',
+      year: 'l',
+    },
+  },
+  benefitTypes: {
+    license_keys: 'Licenčni ključi',
+    github_repository: 'Dostop do GitHub repozitorija',
+    discord: 'Povabilo v Discord',
+    downloadables: 'Prenosi datotek',
+    custom: 'Po meri',
+    meter_credit: 'Merilni krediti',
+    feature_flag: 'Zastavica funkcije',
+  },
+  ordinal: {
+    one: '.',
+    two: '.',
+    few: '.',
+    other: '.',
+    zero: '.',
+    many: '.',
+  },
+} as const

@@ -12,6 +12,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
@@ -150,6 +151,7 @@ async def checkout_with_order(
         save_fixture,
         products=[order_with_seats.product],
         customer=order_with_seats.customer,
+        status=CheckoutStatus.succeeded,
     )
     # Link order to checkout
     order_with_seats.checkout_id = checkout.id

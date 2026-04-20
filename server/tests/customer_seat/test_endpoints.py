@@ -14,6 +14,7 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.customer_seat import SeatStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -382,6 +383,7 @@ class TestAssignSeat:
             price=subscription_with_seats.product.prices[0],
             subscription=subscription_with_seats,
             seats=5,
+            status=CheckoutStatus.succeeded,
         )
 
         subscription_with_seats.checkout_id = checkout.id
@@ -479,6 +481,127 @@ class TestAssignSeat:
         )
 
         assert response.status_code == 403, f"Error: {response.json()}"
+
+    async def _create_checkout_for_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription_with_seats: Subscription,
+        status: CheckoutStatus,
+    ) -> Checkout:
+        await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="checkout-user@example.com",
+        )
+        await session.refresh(subscription_with_seats.product, ["prices"])
+        checkout = await create_checkout(
+            save_fixture,
+            products=[subscription_with_seats.product],
+            price=subscription_with_seats.product.prices[0],
+            subscription=subscription_with_seats,
+            seats=5,
+            status=status,
+        )
+        subscription_with_seats.checkout_id = checkout.id
+        await save_fixture(subscription_with_seats)
+        return checkout
+
+    @pytest.mark.parametrize(
+        "checkout_status",
+        [
+            CheckoutStatus.open,
+            CheckoutStatus.expired,
+            CheckoutStatus.confirmed,
+            CheckoutStatus.failed,
+        ],
+    )
+    async def test_assign_seat_from_checkout_anonymous_rejected_when_not_succeeded(
+        self,
+        checkout_status: CheckoutStatus,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription_with_seats: Subscription,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        checkout = await self._create_checkout_for_subscription(
+            save_fixture, session, subscription_with_seats, checkout_status
+        )
+
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "checkout_id": str(checkout.id),
+                "checkout_client_secret": checkout.client_secret,
+                "email": "checkout-user@example.com",
+            },
+        )
+
+        assert response.status_code == 403, f"Error: {response.json()}"
+        assert "successful checkout" in response.json()["detail"].lower()
+
+    async def test_assign_seat_from_checkout_anonymous_rejected_when_expired(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription_with_seats: Subscription,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="checkout-user@example.com",
+        )
+        await session.refresh(subscription_with_seats.product, ["prices"])
+        checkout = await create_checkout(
+            save_fixture,
+            products=[subscription_with_seats.product],
+            price=subscription_with_seats.product.prices[0],
+            subscription=subscription_with_seats,
+            seats=5,
+            status=CheckoutStatus.succeeded,
+            expires_at=datetime.now(UTC) - timedelta(hours=1),
+        )
+        subscription_with_seats.checkout_id = checkout.id
+        await save_fixture(subscription_with_seats)
+
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "checkout_id": str(checkout.id),
+                "checkout_client_secret": checkout.client_secret,
+                "email": "checkout-user@example.com",
+            },
+        )
+
+        assert response.status_code == 403, f"Error: {response.json()}"
+        assert "expired" in response.json()["detail"].lower()
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_assign_seat_from_checkout_rejected_when_not_succeeded_authenticated(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription_with_seats: Subscription,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        checkout = await self._create_checkout_for_subscription(
+            save_fixture, session, subscription_with_seats, CheckoutStatus.expired
+        )
+
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "checkout_id": str(checkout.id),
+                "email": "checkout-user@example.com",
+            },
+        )
+
+        assert response.status_code == 403, f"Error: {response.json()}"
+        assert "successful checkout" in response.json()["detail"].lower()
 
     @pytest.mark.auth(SEAT_AUTH)
     async def test_assign_seat_immediate_claim_success(

@@ -13,6 +13,7 @@ from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.models import CustomerSeat, Order, Product, Subscription
+from polar.models.checkout import CheckoutStatus
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
 from polar.order.repository import OrderRepository
@@ -108,6 +109,14 @@ async def assign_seat(
                 seat_assign.checkout_client_secret, checkout.client_secret
             ):
                 raise NotPermitted("checkout_client_secret does not match.")
+
+        if checkout.status != CheckoutStatus.succeeded:
+            raise NotPermitted("Seats can only be assigned from a successful checkout.")
+
+        if checkout.is_expired:
+            raise NotPermitted(
+                "Seats can no longer be assigned from this checkout because it has expired."
+            )
 
         # Try to find subscription first (for recurring purchases)
         subscription = await subscription_repository.get_by_checkout_id(

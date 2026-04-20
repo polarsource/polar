@@ -67,8 +67,8 @@ export const OrbitingSpheres = () => {
 
       ctx.lineWidth = 1;
 
-      // Big sphere — faint gray
-      ctx.strokeStyle = "rgb(70, 70, 70)";
+      // Big sphere — bright
+      ctx.strokeStyle = "rgb(190, 190, 190)";
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, Math.PI * 2);
       ctx.stroke();

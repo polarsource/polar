@@ -44,11 +44,10 @@ export const ConcentricDraw = () => {
     );
 
     // Timing
-    const RING_INTERVAL = 0.3;
-    const DRAW_DURATION = 0.9;
-    const TAIL_DELAY = 0.2;
+    const RING_INTERVAL = 0.25;
+    const DRAW_DURATION = 2.8;
     const FULL_CYCLE =
-      (RING_COUNT - 1) * RING_INTERVAL + DRAW_DURATION + TAIL_DELAY;
+      (RING_COUNT - 1) * RING_INTERVAL + DRAW_DURATION;
 
     let lastTime: number | null = null;
     let time = 0;
@@ -74,19 +73,16 @@ export const ConcentricDraw = () => {
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Animated stroke — leading tip + trailing start
+        // Animated stroke — fills in from start, stays once complete
         const ringStart = i * RING_INTERVAL;
 
         const tipT = (cycleTime - ringStart) / DRAW_DURATION;
-        const tipProgress = ease(Math.max(0, Math.min(1, tipT)));
+        const progress = ease(Math.max(0, Math.min(1, tipT)));
 
-        const tailT = (cycleTime - ringStart - TAIL_DELAY) / DRAW_DURATION;
-        const tailProgress = ease(Math.max(0, Math.min(1, tailT)));
+        if (progress <= 0) continue;
 
-        if (tipProgress <= 0) continue;
-
-        const startAngle = -Math.PI / 2 + Math.PI * 2 * tailProgress;
-        const endAngle = -Math.PI / 2 + Math.PI * 2 * tipProgress;
+        const startAngle = -Math.PI / 2;
+        const endAngle = -Math.PI / 2 + Math.PI * 2 * progress;
 
         if (endAngle - startAngle < 0.01) continue;
 
@@ -97,11 +93,6 @@ export const ConcentricDraw = () => {
         ctx.stroke();
       }
 
-      // Small center dot
-      ctx.fillStyle = "rgb(190, 190, 190)";
-      ctx.beginPath();
-      ctx.arc(cx, cy, 2, 0, Math.PI * 2);
-      ctx.fill();
 
       animRef.current = requestAnimationFrame(draw);
     };

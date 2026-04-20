@@ -12,6 +12,7 @@ from polar.kit.anonymization import anonymize_email_for_deletion
 from polar.models import NotificationRecipient, User
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
@@ -163,12 +164,21 @@ class UserService:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
         assert verification_session.status == "verified"
-        return await repository.update(
+        user = await repository.update(
             user,
             update_dict={
                 "identity_verification_status": IdentityVerificationStatus.verified
             },
         )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organizations = (
+            await organization_repository.get_all_by_payout_account_admin(user.id)
+        )
+        for organization in organizations:
+            await organization_service.maybe_activate(session, organization)
+
+        return user
 
     async def identity_verification_pending(
         self,

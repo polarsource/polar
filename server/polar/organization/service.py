@@ -864,6 +864,65 @@ class OrganizationService:
         )
         return organization
 
+    async def maybe_activate(
+        self, session: AsyncSession, organization: Organization
+    ) -> bool:
+        """Transition CREATED → ACTIVE only when all onboarding gates pass.
+
+        Gates:
+          1. Details submitted (details + details_submitted_at)
+          2. AI review verdict = PASS
+          3. Payout account: details submitted, charges enabled, payouts enabled
+          4. Payout account admin: identity verified
+
+        Idempotent — safe to call from multiple triggers (AI review, Stripe
+        account.updated, identity verification). Returns True iff the org was
+        transitioned.
+        """
+        if organization.status != OrganizationStatus.CREATED:
+            return False
+
+        if not organization.details_submitted_at or not organization.details:
+            return False
+
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review is None or review.verdict != OrganizationReview.Verdict.PASS:
+            return False
+
+        if organization.payout_account_id is None:
+            return False
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_id(
+            organization.payout_account_id,
+            options=(joinedload(PayoutAccount.admin),),
+        )
+        if payout_account is None:
+            return False
+        if not (
+            payout_account.is_details_submitted
+            and payout_account.is_charges_enabled
+            and payout_account.is_payouts_enabled
+        ):
+            return False
+
+        admin = payout_account.admin
+        if (
+            admin is None
+            or admin.identity_verification_status
+            != IdentityVerificationStatus.verified
+        ):
+            return False
+
+        await self.confirm_organization_reviewed(session, organization, silent=True)
+        log.info(
+            "organization.maybe_activate.activated",
+            organization_id=str(organization.id),
+            slug=organization.slug,
+        )
+        return True
+
     async def handle_ongoing_review_verdict(
         self,
         session: AsyncSession,

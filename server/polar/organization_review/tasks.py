@@ -216,6 +216,4 @@ async def run_review_agent(
                     verdict=report.verdict.value,
                 )
             elif report.verdict == ReviewVerdict.APPROVE:
-                await organization_service.confirm_organization_reviewed(
-                    session, organization, silent=True
-                )
+                await organization_service.maybe_activate(session, organization)

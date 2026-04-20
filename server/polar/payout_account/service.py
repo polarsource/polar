@@ -178,7 +178,19 @@ class PayoutAccountService:
         payout_account.data = stripe_account.to_dict()
 
         repository = PayoutAccountRepository.from_session(session)
-        return await repository.update(payout_account)
+        payout_account = await repository.update(payout_account)
+
+        # Late import: organization.service imports payout_account.service.
+        from polar.organization.service import organization as organization_service
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organizations = await organization_repository.get_all_by_payout_account(
+            payout_account.id
+        )
+        for organization in organizations:
+            await organization_service.maybe_activate(session, organization)
+
+        return payout_account
 
     async def create_manual_account(
         self,

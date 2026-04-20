@@ -44,6 +44,7 @@ import pt from './locales/pt'
 import ptPT from './locales/pt-PT'
 import sv from './locales/sv'
 import ko from './locales/ko'
+import sl from './locales/sl'
 
 type LocalesRecord = { en: LocaleShape<Translations> } & Record<
   Exclude<SupportedLocale, 'en'>,
@@ -62,6 +63,7 @@ const translations: LocalesRecord = {
   pt,
   'pt-PT': ptPT,
   ko,
+  sl,
 }
 
 const isAtomicLeaf = (v: unknown): boolean => {

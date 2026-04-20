@@ -46,7 +46,7 @@ export const useSelectedProducts = (id: string[], includeArchived = false) =>
                 id,
                 is_archived: includeArchived ? null : false,
                 page,
-                limit: 1,
+                limit: 100,
               },
             },
           }),

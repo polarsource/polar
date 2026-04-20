@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from polar.auth.models import AuthSubject
+from polar.customer.repository import CustomerRepository
 from polar.event.system import SYSTEM_EVENT_LABELS
 from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.event_type.repository import EventTypeRepository
@@ -54,6 +55,22 @@ class EventTypeService:
         if not organization_ids:
             return [], 0
 
+        customer_repository = CustomerRepository.from_session(session)
+        all_customer_ids: list[UUID] = list(customer_id or [])
+        all_external_ids: list[str] = list(external_customer_id or [])
+        if customer_id is not None:
+            all_external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    auth_subject, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            all_customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    auth_subject, external_customer_id
+                )
+            )
+
         tinybird_repository = TinybirdEventRepository()
         tinybird_sorting: list[tuple[str, bool]] = []
         for criterion, is_desc in sorting:
@@ -68,8 +85,8 @@ class EventTypeService:
 
         tinybird_stats = await tinybird_repository.get_event_type_stats(
             organization_id=organization_ids,
-            customer_id=customer_id,
-            external_customer_id=external_customer_id,
+            customer_id=all_customer_ids if all_customer_ids else None,
+            external_customer_id=all_external_ids if all_external_ids else None,
             root_events=root_events,
             parent_id=parent_id,
             source=source,

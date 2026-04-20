@@ -154,22 +154,6 @@ async def callback(
     platform = CustomerOAuthPlatform(state_data["platform"])
 
     redirect_url = get_safe_return_url(return_to)
-    # If not authenticated, create a session based on whether this is a member or customer flow
-    if is_anonymous(auth_subject):
-        if member is not None:
-            token, _ = await member_session_service.create_member_session(
-                session, member
-            )
-            redirect_url = add_query_parameters(
-                redirect_url, member_session_token=token
-            )
-        else:
-            token, _ = await customer_session_service.create_customer_session(
-                session, customer
-            )
-            redirect_url = add_query_parameters(
-                redirect_url, customer_session_token=token
-            )
 
     if code is None or error is not None:
         redirect_url = add_query_parameters(
@@ -209,6 +193,23 @@ async def callback(
             for k, v in _get_response_attributes(e.response).items():
                 span.set_attribute(k, v)
         return RedirectResponse(redirect_url, 303)
+
+    # Create a session only after the OAuth provider has confirmed the code.
+    if is_anonymous(auth_subject):
+        if member is not None:
+            token, _ = await member_session_service.create_member_session(
+                session, member
+            )
+            redirect_url = add_query_parameters(
+                redirect_url, member_session_token=token
+            )
+        else:
+            token, _ = await customer_session_service.create_customer_session(
+                session, customer
+            )
+            redirect_url = add_query_parameters(
+                redirect_url, customer_session_token=token
+            )
 
     try:
         profile = await client.get_profile(oauth2_token_data["access_token"])

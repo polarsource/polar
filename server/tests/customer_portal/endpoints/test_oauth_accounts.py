@@ -2,11 +2,19 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 
 from polar.config import settings
 from polar.kit import jwt
-from polar.models import Customer, Organization
+from polar.models import (
+    Customer,
+    CustomerSession,
+    Member,
+    MemberSession,
+    Organization,
+)
 from polar.models.customer import CustomerOAuthPlatform
+from polar.postgres import AsyncSession
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -110,3 +118,127 @@ class TestAuthorize:
         decoded = jwt.decode(token=state, secret=settings.SECRET, type="customer_oauth")
         assert decoded["customer_id"] != str(attacker_customer.id)
         assert "member_id" in decoded
+
+
+def _encode_state(customer_id: str, member_id: str | None = None) -> str:
+    payload: dict[str, str] = {
+        "platform": CustomerOAuthPlatform.discord.value,
+        "return_to": "/",
+        "customer_id": customer_id,
+    }
+    if member_id is not None:
+        payload["member_id"] = member_id
+    return jwt.encode(data=payload, secret=settings.SECRET, type="customer_oauth")
+
+
+@pytest.mark.asyncio
+class TestCallback:
+    """Regression coverage for the replay vector where a crawler captured a
+    customer's OAuth callback URL and obtained a session from the state JWT
+    alone, before the provider's code exchange had been attempted.
+    """
+
+    async def test_anonymous_without_code_does_not_create_customer_session(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        session: AsyncSession,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email="replay-c@example.com"
+        )
+        state = _encode_state(str(customer.id))
+
+        response = await client.get(
+            "/v1/customer-portal/oauth-accounts/callback",
+            params={"state": state},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        location = response.headers["location"]
+        assert "customer_session_token=" not in location
+        assert "member_session_token=" not in location
+
+        existing = (
+            (
+                await session.execute(
+                    select(CustomerSession).where(
+                        CustomerSession.customer_id == customer.id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert existing == []
+
+    async def test_anonymous_without_code_does_not_create_member_session(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        member: Member,
+        session: AsyncSession,
+    ) -> None:
+        state = _encode_state(str(member.customer_id), member_id=str(member.id))
+
+        response = await client.get(
+            "/v1/customer-portal/oauth-accounts/callback",
+            params={"state": state},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        location = response.headers["location"]
+        assert "member_session_token=" not in location
+        assert "customer_session_token=" not in location
+
+        existing = (
+            (
+                await session.execute(
+                    select(MemberSession).where(MemberSession.member_id == member.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert existing == []
+
+    async def test_anonymous_with_provider_error_does_not_create_session(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        session: AsyncSession,
+    ) -> None:
+        """Provider returned ?error=... on the redirect — no session should be created."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="replay-err@example.com"
+        )
+        state = _encode_state(str(customer.id))
+
+        response = await client.get(
+            "/v1/customer-portal/oauth-accounts/callback",
+            params={"state": state, "error": "access_denied"},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        location = response.headers["location"]
+        assert "customer_session_token=" not in location
+        assert "member_session_token=" not in location
+
+        existing = (
+            (
+                await session.execute(
+                    select(CustomerSession).where(
+                        CustomerSession.customer_id == customer.id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert existing == []

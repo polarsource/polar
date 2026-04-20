@@ -1,8 +1,8 @@
 'use client'
 
-import { EventStream } from '../EventStream'
-import { VennPatterns } from '../VennPatterns'
-import { VolumetricSlices } from '../VolumetricSlices'
+import { RadialSpinner } from '../RadialSpinner'
+import { ConcentricDraw } from '../ConcentricDraw'
+import { GaugeSweep } from '../GaugeSweep'
 import { OrbitingSpheres } from '../OrbitingSpheres'
 import { SectionLabel } from './SectionLabel'
 import { SectionHeading } from './SectionHeading'
@@ -46,19 +46,22 @@ export const LandingArchitecture = () => (
         <div key={l.id} className="flex flex-col">
           {/* Graphic */}
           <div className="aspect-square w-full">
-            {i === 0 && <EventStream />}
-            {i === 1 && <VolumetricSlices />}
-            {i === 2 && <VennPatterns />}
+            {i === 0 && <RadialSpinner />}
+            {i === 1 && <GaugeSweep />}
+            {i === 2 && <ConcentricDraw />}
             {i === 3 && <OrbitingSpheres />}
           </div>
           {/* Label */}
-          <div className="flex items-center gap-4 border-t border-neutral-800 p-16 py-12">
-            <span className="font-[family-name:var(--font-mono)] text-xl text-white">
-              {l.id}
-            </span>
-            <span className="text-xl text-white">
-              {l.name} — {l.desc}
-            </span>
+          <div className="flex items-stretch border-t border-neutral-800">
+            <div className="flex aspect-square shrink-0 items-center justify-center self-stretch border-r border-neutral-800">
+              <span className="font-[family-name:var(--font-mono)] text-3xl font-normal text-neutral-300">
+                {l.id}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 px-8 py-8">
+              <span className="text-xl text-white">{l.name}</span>
+              <span className="text-xl text-neutral-500">{l.desc}</span>
+            </div>
           </div>
         </div>
       ))}

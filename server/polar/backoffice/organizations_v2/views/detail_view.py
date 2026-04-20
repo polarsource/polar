@@ -109,6 +109,22 @@ class OrganizationDetailView:
             pass
         yield
 
+    def _render_create_review_ticket_button(self, request: Request) -> None:
+        with tag.div(classes="w-full"):
+            with button(
+                variant="secondary",
+                size="sm",
+                outline=True,
+                hx_post=str(
+                    request.url_for(
+                        "organizations:create_review_ticket",
+                        organization_id=self.org.id,
+                    )
+                ),
+                hx_target="#modal",
+            ):
+                text("Create Review Ticket")
+
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:
         """Render right sidebar with contextual actions and metadata."""
@@ -451,6 +467,8 @@ class OrganizationDetailView:
                             ):
                                 text("Set Offboarding")
 
+                        self._render_create_review_ticket_button(request)
+
                     elif self.org.status == OrganizationStatus.SNOOZED:
                         if self.org.status_updated_at:
                             grace_end = self.org.status_updated_at + SNOOZE_GRACE_PERIOD
@@ -519,6 +537,8 @@ class OrganizationDetailView:
                                 hx_target="#modal",
                             ):
                                 text("Deny")
+
+                        self._render_create_review_ticket_button(request)
 
                     elif self.org.status == OrganizationStatus.CREATED:
                         with tag.div(classes="w-full"):

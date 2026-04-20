@@ -71,6 +71,12 @@ SUPPORT_AGENT_IDS: list[str] = [
     "u_01K0RC6SY9Q8KSVNAYGD7EY6M5",  # Rishi
 ]
 
+PLAIN_WORKSPACE_ID = "w_01JE9TRRX9KT61D8P2CH77XDQM"
+
+
+def plain_thread_url(thread_id: str) -> str:
+    return f"https://app.plain.com/workspace/{PLAIN_WORKSPACE_ID}/thread/{thread_id}"
+
 
 class PlainServiceError(PolarError): ...
 

@@ -44,6 +44,11 @@ from polar.backoffice.organizations.orders_import import orders_import_sse
 from polar.enums import PayoutAccountType
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
+from polar.integrations.plain.service import (
+    AccountReviewThreadCreationError,
+    plain_thread_url,
+)
+from polar.integrations.plain.service import plain as plain_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.sorting import Sorting
 from polar.models import (
@@ -99,6 +104,8 @@ from .views.sections.team_section import TeamSection
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 logger = structlog.getLogger(__name__)
+
+REVIEW_TICKET_TITLE = "Ongoing organization review"
 
 
 class DeletePayoutAccountForm(BaseModel):
@@ -1705,6 +1712,66 @@ async def unsnooze(
         str(request.url_for("organizations:detail", organization_id=organization_id)),
         303,
     )
+
+
+@router.post(
+    "/{organization_id}/review-ticket",
+    name="organizations:create_review_ticket",
+    response_model=None,
+)
+async def create_review_ticket(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    admin_user = await repository.get_admin_user(session, organization)
+    if not admin_user:
+        await add_toast(
+            request, "No admin user found for this organization.", "error"
+        )
+        return
+
+    try:
+        thread_id = await plain_service.create_manual_organization_thread(
+            session, organization, admin_user, REVIEW_TICKET_TITLE
+        )
+    except AccountReviewThreadCreationError as e:
+        logger.error(
+            "Failed to create Plain review ticket",
+            organization_id=str(organization_id),
+            error=str(e),
+        )
+        await add_toast(request, f"Failed to create ticket: {e.message}", "error")
+        return
+
+    if not thread_id:
+        await add_toast(
+            request,
+            "Plain integration is disabled; no ticket was created.",
+            "error",
+        )
+        return
+
+    with modal("Review Ticket Created", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(f'Plain ticket "{REVIEW_TICKET_TITLE}" created successfully.')
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Close")
+                with tag.a(
+                    href=plain_thread_url(thread_id),
+                    target="_blank",
+                    rel="noopener noreferrer",
+                ):
+                    with button(variant="primary"):
+                        text("Open Ticket")
 
 
 @router.api_route(

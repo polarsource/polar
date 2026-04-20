@@ -59,7 +59,6 @@ async def _find_candidates(session: AsyncSession) -> list[Organization]:
         .where(
             Organization.deleted_at.is_(None),
             Organization.status == OrganizationStatus.CREATED,
-            Organization.initially_reviewed_at.is_(None),
             Organization.details_submitted_at.is_not(None),
             OrganizationReview.deleted_at.is_(None),
             OrganizationReview.verdict == OrganizationReview.Verdict.PASS,

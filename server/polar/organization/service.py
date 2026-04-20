@@ -867,19 +867,29 @@ class OrganizationService:
     async def maybe_activate(
         self, session: AsyncSession, organization: Organization
     ) -> bool:
-        """Transition CREATED → ACTIVE only when all onboarding gates pass.
+        """Transition → ACTIVE only when every onboarding gate passes.
 
         Gates:
-          1. Details submitted (details + details_submitted_at)
-          2. AI review verdict = PASS
-          3. Payout account: details submitted, charges enabled, payouts enabled
-          4. Payout account admin: identity verified
+          1. Status can currently transition to ACTIVE (not already ACTIVE,
+             not OFFBOARDING).
+          2. Details submitted (details + details_submitted_at).
+          3. Review is approved: verdict PASS, or verdict FAIL with an
+             APPROVED appeal.
+          4. Payout account: details submitted, charges enabled, payouts
+             enabled.
+          5. Payout account admin: identity verified.
 
         Idempotent — safe to call from multiple triggers (AI review, Stripe
-        account.updated, identity verification). Returns True iff the org was
-        transitioned.
+        account.updated, identity verification, appeal approval). Returns True
+        iff the org was transitioned.
         """
-        if organization.status != OrganizationStatus.CREATED:
+        if organization.status not in (
+            OrganizationStatus.CREATED,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+        ):
             return False
 
         if not organization.details_submitted_at or not organization.details:
@@ -887,7 +897,14 @@ class OrganizationService:
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        if review is None or review.verdict != OrganizationReview.Verdict.PASS:
+        if review is None:
+            return False
+
+        approved = review.verdict == OrganizationReview.Verdict.PASS or (
+            review.verdict == OrganizationReview.Verdict.FAIL
+            and review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
+        )
+        if not approved:
             return False
 
         if organization.payout_account_id is None:
@@ -915,7 +932,16 @@ class OrganizationService:
         ):
             return False
 
-        await self.confirm_organization_reviewed(session, organization, silent=True)
+        reason: str | None = None
+        if organization.status in (
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+        ):
+            reason = review.appeal_reason or "Appeal approved"
+
+        await self.confirm_organization_reviewed(
+            session, organization, reason=reason, silent=True
+        )
         log.info(
             "organization.maybe_activate.activated",
             organization_id=str(organization.id),
@@ -1153,7 +1179,14 @@ class OrganizationService:
     async def approve_appeal(
         self, session: AsyncSession, organization: Organization
     ) -> OrganizationReview:
-        """Approve an organization's appeal and restore payment access."""
+        """Approve an organization's appeal.
+
+        Recording the approval flips the review's ``appeal_decision`` and then
+        delegates to :meth:`maybe_activate` — which runs the remaining gates
+        (payout account ready, admin identity verified) before transitioning
+        DENIED → ACTIVE. If a gate is still missing the org stays DENIED and
+        will activate later when the relevant webhook fires.
+        """
 
         repository = OrganizationReviewRepository.from_session(session)
         review = await repository.get_by_organization(organization.id)
@@ -1167,12 +1200,11 @@ class OrganizationService:
         if review.appeal_decision is not None:
             raise ValueError("Appeal has already been reviewed")
 
-        organization.set_status(OrganizationStatus.ACTIVE)
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)
-
-        session.add(organization)
         session.add(review)
+
+        await self.maybe_activate(session, organization)
 
         return review
 

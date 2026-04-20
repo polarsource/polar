@@ -875,8 +875,7 @@ class OrganizationService:
           2. Details submitted (details + details_submitted_at).
           3. Review is approved: verdict PASS, or verdict FAIL with an
              APPROVED appeal.
-          4. Payout account: details submitted, charges enabled, payouts
-             enabled.
+          4. Payout account is ready (see ``PayoutAccount.is_payout_ready``).
           5. Payout account admin: identity verified.
 
         Idempotent — safe to call from multiple triggers (AI review, Stripe
@@ -915,13 +914,7 @@ class OrganizationService:
             organization.payout_account_id,
             options=(joinedload(PayoutAccount.admin),),
         )
-        if payout_account is None:
-            return False
-        if not (
-            payout_account.is_details_submitted
-            and payout_account.is_charges_enabled
-            and payout_account.is_payouts_enabled
-        ):
+        if payout_account is None or not payout_account.is_payout_ready:
             return False
 
         admin = payout_account.admin

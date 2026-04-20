@@ -27,9 +27,10 @@ import structlog
 import typer
 from rich.console import Console
 from rich.table import Table
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
+from polar.enums import PayoutAccountType
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Organization, PayoutAccount, User
 from polar.models.organization import OrganizationStatus
@@ -63,9 +64,14 @@ async def _find_candidates(session: AsyncSession) -> list[Organization]:
             OrganizationReview.deleted_at.is_(None),
             OrganizationReview.verdict == OrganizationReview.Verdict.PASS,
             PayoutAccount.deleted_at.is_(None),
-            PayoutAccount.is_details_submitted.is_(True),
-            PayoutAccount.is_charges_enabled.is_(True),
-            PayoutAccount.is_payouts_enabled.is_(True),
+            # Mirror PayoutAccount.is_payout_ready — non-Stripe accounts are
+            # always ready; Stripe accounts require payouts enabled and a
+            # connected stripe_id (not cleared by a disconnect).
+            or_(
+                PayoutAccount.type != PayoutAccountType.stripe,
+                (PayoutAccount.is_payouts_enabled.is_(True))
+                & (PayoutAccount.stripe_id.is_not(None)),
+            ),
             User.identity_verification_status == IdentityVerificationStatus.verified,
         )
         .order_by(Organization.details_submitted_at.asc())

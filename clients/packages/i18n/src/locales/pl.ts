@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         'To zamówienie jest przetwarzane przez naszego sprzedawcę formalnego (Merchant of Record), firmę Polar, która zajmuje się również obsługą zapytań dotyczących zamówień i zwrotów.',
       mandateSubscriptionTrial:
-        'Klikając „{buttonLabel}”, upoważniasz Polar Software, Inc., naszego sprzedawcę formalnego, do obciążenia wybranej metody płatności kwotą wskazaną powyżej po zakończeniu okresu próbnego oraz w każdym kolejnym terminie płatności, aż do momentu anulowania. Możesz anulować subskrypcję w dowolnym momencie przed końcem okresu próbnego, aby uniknąć opłat.',
+        'Klikając „{buttonLabel}," upoważniasz Polar Software, Inc., naszego sprzedawcę internetowego i podmiot rozliczający, do obciążenia wybranej metody płatności kwotą pokazana powyżej po zakończeniu okresu próbnego oraz w każdym kolejnym dniu rozliczeniowym, aż do anulowania, oraz zgadzasz się na warunki {buyerTermsLink}. Możesz anulować w dowolnym momencie przed końcem okresu próbnego, aby uniknąć obciążenia.',
       mandateSubscription:
-        'Klikając „{buttonLabel}”, upoważniasz Polar Software, Inc., naszego sprzedawcę formalnego, do natychmiastowego obciążenia wybranej metody płatności kwotą wskazaną powyżej oraz do pobierania tej samej kwoty w każdym kolejnym terminie płatności, aż do momentu anulowania.',
+        'Klikając „{buttonLabel}," upoważniasz Polar Software, Inc., naszego sprzedawcę internetowego i podmiot rozliczający, do natychmiastowego obciążenia wybranej metody płatności kwotą pokazana powyżej oraz do obciążania tą samą kwotą w każdym kolejnym dniu rozliczeniowym, aż do anulowania, oraz zgadzasz się na warunki {buyerTermsLink}.',
       mandateOneTime:
-        'Klikając „{buttonLabel}”, upoważniasz Polar Software, Inc., naszego sprzedawcę formalnego, do obciążenia wybranej metody płatności kwotą wskazaną powyżej. Jest to opłata jednorazowa.',
+        'Klikając „{buttonLabel}," upoważniasz Polar Software, Inc., naszego sprzedawcę internetowego i podmiot rozliczający, do obciążenia wybranej metody płatności kwotą pokazana powyżej oraz zgadzasz się na warunki {buyerTermsLink}. Jest to jednorazowa opłata.',
+      buyerTermsLink: 'Warunki zakupu',
     },
     form: {
       email: 'E-mail',
@@ -35,6 +36,7 @@ export default {
       optional: 'Opcjonalnie',
       apply: 'Zastosuj',
       fieldRequired: 'To pole jest wymagane',
+      addDiscountCode: 'Dodaj kod rabatowy',
     },
     pricing: {
       subtotal: 'Suma częściowa',
@@ -84,6 +86,21 @@ export default {
             _mode: 'plural',
           },
         },
+        until: 'Do {date}',
+      },
+      perSeat: 'za stanowisko',
+      seats: {
+        label: 'Stanowiska',
+        numberOfSeats: 'Liczba stanowisk',
+        count: {
+          '=1': '# stanowisko',
+          other: '# stanowisk',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} stanowisk',
+        minimum: 'Minimum {min} stanowisk',
+        maximum: 'Maksimum {max} stanowisk',
+        updateFailed: 'Nie udało się zaktualizować liczby stanowisk',
       },
     },
     trial: {
@@ -110,6 +127,38 @@ export default {
           _mode: 'plural',
         },
       },
+      hero: {
+        free: {
+          day: {
+            '=1': '# dzień gratis',
+            other: '# dni gratis',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# miesiąc gratis',
+            other: '# miesięcy gratis',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# rok gratis',
+            other: '# lat gratis',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/dzień',
+          week: '/tydzień',
+          month: '/miesiąc',
+          year: '/rok',
+        },
+        then: 'Następnie',
+        startingDate: 'od {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Suma po zakończeniu okresu próbnego',
+        totalWhenDiscountExpires: 'Suma po wygaśnięciu rabatu',
+        totalDueToday: 'Suma do zapłaty dziś',
+      },
     },
     pwywForm: {
       label: 'Zaproponuj uczciwą cenę',
@@ -120,6 +169,7 @@ export default {
     productSwitcher: {
       billedRecurring: 'Rozliczenie: {frequency}',
       oneTimePurchase: 'Płatność jednorazowa',
+      fromPrefix: 'Od',
     },
     card: {
       included: 'W cenie',
@@ -202,6 +252,10 @@ export default {
       getFree: 'Odbierz za darmo',
       paymentsUnavailable: 'Płatności są obecnie niedostępne',
     },
+    productDescription: {
+      readMore: 'Czytaj więcej',
+      readLess: 'Czytaj mniej',
+    },
   },
   intervals: {
     short: {
@@ -212,12 +266,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Niestandardowe',
     license_keys: 'Klucze licencyjne',
     github_repository: 'Dostęp do repozytorium GitHub',
     discord: 'Zaproszenie na Discord',
     downloadables: 'Pliki do pobrania',
-    custom: 'Niestandardowe',
-    meter_credit: 'Kredyty użycia',
+    meter_credit: 'Kredyty',
+    feature_flag: 'Flaga funkcji',
   },
   ordinal: {
     zero: '.',

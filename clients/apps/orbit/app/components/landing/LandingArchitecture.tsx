@@ -23,7 +23,7 @@ const LAYERS = [
 export const LandingArchitecture = () => (
   <section id="architecture" className="border-b border-neutral-800">
     {/* Top row — heading */}
-    <div className="grid grid-cols-2 divide-x divide-neutral-800 border-b border-neutral-800">
+    <div className="grid grid-cols-1 divide-x divide-neutral-800 border-b border-neutral-800 md:grid-cols-2">
       <div className="p-16 py-32">
         <SectionLabel number="001" label="Ingestion-based Billing" />
         <SectionHeading className="mt-16">
@@ -41,7 +41,7 @@ export const LandingArchitecture = () => (
     </div>
 
     {/* Bottom row — 4 graphics, one per layer */}
-    <div className="grid grid-cols-2 divide-x divide-y divide-neutral-800 md:grid-cols-4 md:divide-y-0">
+    <div className="grid grid-cols-1 divide-x divide-y divide-neutral-800 md:grid-cols-2 md:divide-y-0 lg:grid-cols-4">
       {LAYERS.map((l, i) => (
         <div key={l.id} className="flex flex-col">
           {/* Graphic */}

@@ -108,6 +108,12 @@ const EVENT_CONFIG = {
     'Balance dispute reversed',
     'Balance dispute reversed',
   ),
+  'balance.refund_reversal': staticConfig(
+    ReceiptLongOutlined,
+    'warning',
+    'Refund reversed',
+    'Refund reversed',
+  ),
 
   'subscription.created': subscriptionConfig({
     tone: subscriptionPaymentTone,

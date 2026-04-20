@@ -161,7 +161,9 @@ class PayoutAccountService:
         self, session: AsyncSession, *, stripe_account: stripe_lib.Account
     ) -> PayoutAccount:
         repository = PayoutAccountRepository.from_session(session)
-        payout_account = await repository.get_by_stripe_id(stripe_account.id)
+        payout_account = await repository.get_by_stripe_id(
+            stripe_account.id, include_deleted=True
+        )
         if payout_account is None:
             raise PayoutAccountExternalIdDoesNotExist(stripe_account.id)
 

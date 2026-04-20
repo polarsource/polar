@@ -23,6 +23,7 @@ from polar.models.organization import (
     OrganizationSubscriptionSettings,
 )
 from polar.models.organization_review import OrganizationReview
+from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import (
     OrganizationCreate,
     OrganizationFeatureSettings,
@@ -1073,13 +1074,23 @@ class TestSubmitAppeal:
 
 @pytest.mark.asyncio
 class TestApproveAppeal:
-    async def test_approve_appeal_success(
+    async def test_approve_appeal_activates_when_all_gates_pass(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        user: User,
     ) -> None:
-        organization.status = OrganizationStatus.REVIEW
+        organization.status = OrganizationStatus.DENIED
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.details = {"about": "Test"}
+        await save_fixture(organization)
+
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        await create_payout_account(save_fixture, organization, user)
+
         review = OrganizationReview(
             organization_id=organization.id,
             verdict=OrganizationReview.Verdict.FAIL,
@@ -1096,6 +1107,34 @@ class TestApproveAppeal:
         result = await organization_service.approve_appeal(session, organization)
 
         assert organization.status == OrganizationStatus.ACTIVE
+        assert result.appeal_decision == OrganizationReview.AppealDecision.APPROVED
+        assert result.appeal_reviewed_at is not None
+
+    async def test_approve_appeal_records_decision_but_stays_denied_when_gates_missing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["terms_of_service"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="We have fixed the issues",
+        )
+        await save_fixture(review)
+
+        result = await organization_service.approve_appeal(session, organization)
+
+        assert organization.status == OrganizationStatus.DENIED
         assert result.appeal_decision == OrganizationReview.AppealDecision.APPROVED
         assert result.appeal_reviewed_at is not None
 

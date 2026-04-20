@@ -10,6 +10,7 @@ from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.models import (
     Customer,
@@ -436,20 +437,22 @@ class MetricsService:
         customer_id: Sequence[uuid.UUID] | None = None,
         tb_needed: set[str],
     ) -> _TinybirdFilters:
-        external_customer_id: list[str] | None = None
-        if customer_id is not None:
-            stmt = select(Customer.external_id).where(
-                Customer.id.in_(customer_id),
-                Customer.external_id.is_not(None),
-                Customer.external_id != "",
-            )
-            external_ids = [eid for eid in await session.scalars(stmt) if eid]
-            if external_ids:
-                external_customer_id = external_ids
-
         tb_org_ids = await self._get_org_ids_for_subject(
             session, auth_subject, organization_id=organization_id
         )
+
+        external_customer_id: list[str] | None = None
+        if customer_id is not None:
+            customer_repository = CustomerRepository.from_session(session)
+            external_ids = [
+                eid
+                for eid in await customer_repository.get_readable_external_ids_by_ids(
+                    auth_subject, customer_id
+                )
+                if eid
+            ]
+            if external_ids:
+                external_customer_id = external_ids
 
         tb_product_id = product_id
         if billing_type is not None and tb_org_ids:

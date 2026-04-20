@@ -1731,9 +1731,7 @@ async def create_review_ticket(
 
     admin_user = await repository.get_admin_user(session, organization)
     if not admin_user:
-        await add_toast(
-            request, "No admin user found for this organization.", "error"
-        )
+        await add_toast(request, "No admin user found for this organization.", "error")
         return
 
     try:

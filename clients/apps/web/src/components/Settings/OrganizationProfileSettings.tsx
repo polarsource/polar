@@ -600,15 +600,25 @@ const OrganizationProfileSettings: React.FC<
   const updateOrganization = useUpdateOrganization()
 
   const onSave = async (body: schemas['OrganizationUpdate']) => {
-    const emptySocials =
-      body.socials?.filter(
-        (social) => !social.url || social.url.trim() === '',
-      ) || []
+    const isSaveableUrl = (url: string | null | undefined) => {
+      if (!url || url.trim() === '') return false
+      try {
+        const parsed = new URL(url)
+        return (
+          (parsed.protocol === 'https:' || parsed.protocol === 'http:') &&
+          parsed.hostname !== ''
+        )
+      } catch {
+        return false
+      }
+    }
+    // Keep empty / mid-typing URLs in the form but skip them in the payload so
+    // autosave does not reject the whole request on every keystroke.
+    const pendingSocials =
+      body.socials?.filter((social) => !isSaveableUrl(social.url)) || []
     const cleanedBody = {
       ...body,
-      socials: body.socials?.filter(
-        (social) => social.url && social.url.trim() !== '',
-      ),
+      socials: body.socials?.filter((social) => isSaveableUrl(social.url)),
       details: body.details
         ? {
             ...body.details,
@@ -651,7 +661,7 @@ const OrganizationProfileSettings: React.FC<
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
       country: data.country as schemas['CountryAlpha2Input'] | undefined,
-      socials: [...(data.socials || []), ...emptySocials],
+      socials: [...(data.socials || []), ...pendingSocials],
     })
 
     // Refresh the router to get the updated organization data from the server

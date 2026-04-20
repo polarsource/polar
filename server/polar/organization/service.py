@@ -988,14 +988,6 @@ class OrganizationService:
         session.add(organization)
         return organization
 
-    async def reactivate_organization(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> Organization:
-        # Reactivation out of OFFBOARDING is not yet implemented.
-        raise OrganizationError("Offboarding reactivation is not yet implemented.", 400)
-
     async def get_payment_status(
         self,
         session: AsyncReadSession,

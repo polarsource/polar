@@ -1947,29 +1947,6 @@ class TestSetOrganizationOffboarding:
 
 
 @pytest.mark.asyncio
-class TestReactivateOrganization:
-    @pytest.mark.parametrize(
-        "status",
-        [
-            OrganizationStatus.OFFBOARDING,
-            OrganizationStatus.ACTIVE,
-        ],
-    )
-    async def test_always_raises_not_implemented(
-        self,
-        status: OrganizationStatus,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        organization.status = status
-
-        with pytest.raises(
-            Exception, match="Offboarding reactivation is not yet implemented"
-        ):
-            await organization_service.reactivate_organization(session, organization)
-
-
-@pytest.mark.asyncio
 class TestSnoozeOrganization:
     async def test_from_review(
         self,

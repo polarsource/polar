@@ -78,18 +78,13 @@ class OffboardOrganizationForm(forms.BaseForm):
     ]
 
 
-class ReactivateOrganizationForm(forms.BaseForm):
-    action: Annotated[Literal["reactivate"], forms.SkipField]
-
-
 OrganizationStatusForm = Annotated[
     ApproveOrganizationForm
     | DenyOrganizationForm
     | UnderReviewOrganizationForm
     | ApproveOrganizationAppealForm
     | DenyOrganizationAppealForm
-    | OffboardOrganizationForm
-    | ReactivateOrganizationForm,
+    | OffboardOrganizationForm,
     Discriminator("action"),
 ]
 

@@ -1134,16 +1134,6 @@ async def get(
                 await organization_service.set_organization_offboarding(
                     session, organization, reason=reason
                 )
-            elif account_status.action == "reactivate":
-                await review_repo.record_human_decision(
-                    organization_id=id,
-                    reviewer_id=user_session.user.id,
-                    decision=DecisionType.APPROVE,
-                    reason=reason,
-                )
-                await organization_service.reactivate_organization(
-                    session, organization
-                )
             return HXRedirectResponse(request, request.url, 303)
         except PydanticCustomError as e:
             await add_toast(request, str(e.message_template), variant="error")

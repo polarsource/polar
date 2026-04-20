@@ -41,7 +41,7 @@ export const LandingArchitecture = () => (
     </div>
 
     {/* Bottom row — 4 graphics, one per layer */}
-    <div className="grid grid-cols-4 divide-x divide-neutral-800">
+    <div className="grid grid-cols-2 divide-x divide-y divide-neutral-800 md:grid-cols-4 md:divide-y-0">
       {LAYERS.map((l, i) => (
         <div key={l.id} className="flex flex-col">
           {/* Graphic */}
@@ -53,13 +53,13 @@ export const LandingArchitecture = () => (
           </div>
           {/* Label */}
           <div className="flex items-stretch border-t border-neutral-800">
-            <div className="flex aspect-square shrink-0 items-center justify-center self-stretch border-r border-neutral-800">
+            <div className="flex w-20 shrink-0 items-center justify-center self-stretch border-r border-neutral-800">
               <span className="font-[family-name:var(--font-mono)] text-lg font-normal text-neutral-300">
                 {l.id}
               </span>
             </div>
-            <div className="flex flex-col justify-center gap-1 px-8 py-6">
-              <span className="text-xl text-white">{l.name}</span>
+            <div className="flex flex-col justify-center px-6 py-6">
+              <span className="text-base text-white">{l.name}</span>
               <span className="text-base text-neutral-500">{l.desc}</span>
             </div>
           </div>

@@ -25,7 +25,7 @@ export const LandingArchitecture = () => (
     {/* Top row — heading */}
     <div className="grid grid-cols-2 divide-x divide-neutral-800 border-b border-neutral-800">
       <div className="p-16 py-32">
-        <SectionLabel number="002" label="Architecture" />
+        <SectionLabel number="001" label="Ingestion-based Billing" />
         <SectionHeading className="mt-16">
           Four layers.
           <br />
@@ -54,13 +54,13 @@ export const LandingArchitecture = () => (
           {/* Label */}
           <div className="flex items-stretch border-t border-neutral-800">
             <div className="flex aspect-square shrink-0 items-center justify-center self-stretch border-r border-neutral-800">
-              <span className="font-[family-name:var(--font-mono)] text-3xl font-normal text-neutral-300">
+              <span className="font-[family-name:var(--font-mono)] text-lg font-normal text-neutral-300">
                 {l.id}
               </span>
             </div>
-            <div className="flex items-center gap-4 px-8 py-8">
+            <div className="flex flex-col justify-center gap-1 px-8 py-6">
               <span className="text-xl text-white">{l.name}</span>
-              <span className="text-xl text-neutral-500">{l.desc}</span>
+              <span className="text-base text-neutral-500">{l.desc}</span>
             </div>
           </div>
         </div>

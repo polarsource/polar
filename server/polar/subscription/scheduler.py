@@ -1,5 +1,4 @@
 import datetime
-import uuid
 
 import dramatiq
 import structlog
@@ -62,9 +61,7 @@ class SubscriptionJobStore(BaseJobStore):
         return jobs
 
     def remove_job(self, job_id: str) -> None:
-        # Atomic claim: only the instance whose conditional UPDATE flips
-        # ``scheduler_locked_at`` from NULL proceeds to enqueue. Concurrent
-        # schedulers that lose the race see 0 rows and bail out.
+        # Conditional UPDATE dedupes concurrent schedulers: losers see 0 rows.
         subscription_id = job_id.split(":")[-1]
         statement = (
             update(Subscription)
@@ -73,10 +70,9 @@ class SubscriptionJobStore(BaseJobStore):
                 Subscription.scheduler_locked_at.is_(None),
             )
             .values(scheduler_locked_at=utc_now())
-            .returning(Subscription.id)
         )
         with self.engine.begin() as connection:
-            if connection.execute(statement).first() is None:
+            if connection.execute(statement).rowcount == 0:
                 return
         actor = dramatiq.get_broker().get_actor("subscription.cycle")
         actor.send(subscription_id=subscription_id)
@@ -102,26 +98,21 @@ class SubscriptionJobStore(BaseJobStore):
             )
             for result in results.yield_per(250):
                 subscription_id, current_period_end = result._tuple()
-                jobs.append(self._build_job(subscription_id, current_period_end))
+                trigger = DateTrigger(current_period_end, datetime.UTC)
+                job_kwargs = {
+                    **(self._scheduler._job_defaults if self._scheduler else {}),
+                    "trigger": trigger,
+                    "executor": self.executor,
+                    "func": lambda: None,
+                    "args": (),
+                    "kwargs": {},
+                    "id": f"subscriptions:cycle:{subscription_id}",
+                    "name": None,
+                    "next_run_time": trigger.run_date,
+                    "misfire_grace_time": None,
+                }
+                jobs.append(Job(self._scheduler, **job_kwargs))
         return jobs
-
-    def _build_job(
-        self, subscription_id: uuid.UUID, current_period_end: datetime.datetime
-    ) -> Job:
-        trigger = DateTrigger(current_period_end, datetime.UTC)
-        job_kwargs = {
-            **(self._scheduler._job_defaults if self._scheduler else {}),
-            "trigger": trigger,
-            "executor": self.executor,
-            "func": lambda: None,
-            "args": (),
-            "kwargs": {},
-            "id": f"subscriptions:cycle:{subscription_id}",
-            "name": None,
-            "next_run_time": trigger.run_date,
-            "misfire_grace_time": None,
-        }
-        return Job(self._scheduler, **job_kwargs)
 
     @staticmethod
     def scheduling_statement() -> Select[tuple[Subscription]]:

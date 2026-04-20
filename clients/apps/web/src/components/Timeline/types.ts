@@ -1,33 +1,33 @@
-import { ReactNode } from "react";
+import { ReactNode } from 'react'
 
 export interface TimelineGroupEntry {
-  id: string;
-  title: string;
-  description?: string;
-  timestamp: string;
+  id: string
+  title: string
+  description?: string
+  timestamp: string
 }
 
 export interface TimelineEventItem {
-  kind: "event";
-  id: string;
-  title: string;
-  description?: string;
-  timestamp: string;
-  icon?: ReactNode;
+  kind: 'event'
+  id: string
+  title: string
+  description?: string
+  timestamp: string
+  icon?: ReactNode
 }
 
 export interface TimelineGroupItem {
-  kind: "group";
-  id: string;
-  title: string;
-  icon?: ReactNode;
-  timestamp: { start: string; end: string };
-  items: TimelineGroupEntry[];
+  kind: 'group'
+  id: string
+  title: string
+  icon?: ReactNode
+  timestamp: { start: string; end: string }
+  items: TimelineGroupEntry[]
 }
 
-export type TimelineItem = TimelineEventItem | TimelineGroupItem;
+export type TimelineItem = TimelineEventItem | TimelineGroupItem
 
 export interface TimelineSection {
-  formattedDate: string;
-  items: TimelineItem[];
+  formattedDate: string
+  items: TimelineItem[]
 }

@@ -1,27 +1,27 @@
-import FiberManualRecordRounded from "@mui/icons-material/FiberManualRecordRounded";
-import FormattedDateTime from "@polar-sh/ui/components/atoms/FormattedDateTime";
+import FiberManualRecordRounded from '@mui/icons-material/FiberManualRecordRounded'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   cloneElement,
   isValidElement,
   ReactNode,
   useMemo,
   useState,
-} from "react";
-import { twMerge } from "tailwind-merge";
-import { TimelineGroupItem, TimelineItem as TimelineItemType } from "./types";
+} from 'react'
+import { twMerge } from 'tailwind-merge'
+import { TimelineGroupItem, TimelineItem as TimelineItemType } from './types'
 
 export const TimelineItem = ({ item }: { item: TimelineItemType }) => {
-  if (item.kind === "event") {
-    return <TimelineEventItem item={item} />;
+  if (item.kind === 'event') {
+    return <TimelineEventItem item={item} />
   }
 
-  return <TimelineGroup item={item} />;
-};
+  return <TimelineGroup item={item} />
+}
 
 const TimelineEventItem = ({
   item,
 }: {
-  item: Extract<TimelineItemType, { kind: "event" }>;
+  item: Extract<TimelineItemType, { kind: 'event' }>
 }) => {
   return (
     <div className="relative pl-8">
@@ -43,17 +43,17 @@ const TimelineEventItem = ({
         </p>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const TimelineGroup = ({
   item,
 }: {
-  item: Extract<TimelineItemType, { kind: "group" }>;
+  item: Extract<TimelineItemType, { kind: 'group' }>
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const rangeLabel = useMemo(() => groupRangeLabel(item), [item]);
-  const itemCount = item.items.length;
+  const [isExpanded, setIsExpanded] = useState(false)
+  const rangeLabel = useMemo(() => groupRangeLabel(item), [item])
+  const itemCount = item.items.length
 
   return (
     <div className="relative pl-8">
@@ -63,7 +63,7 @@ const TimelineGroup = ({
         className="absolute top-4 left-0 flex size-6 -translate-x-1/2 cursor-pointer items-center justify-center"
         aria-expanded={isExpanded}
         aria-label={
-          isExpanded ? "Collapse grouped items" : "Expand grouped items"
+          isExpanded ? 'Collapse grouped items' : 'Expand grouped items'
         }
       >
         <TimelineStackedIcon icon={item.icon} count={itemCount} />
@@ -102,32 +102,32 @@ const TimelineGroup = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 const TimelineStackedIcon = ({
   icon,
   count,
 }: {
-  icon?: ReactNode;
-  count: number;
+  icon?: ReactNode
+  count: number
 }) => {
-  const stackSize = Math.min(3, Math.max(2, count));
+  const stackSize = Math.min(3, Math.max(2, count))
 
   return (
     <div className="flex items-center justify-center">
       {Array.from({ length: stackSize }).map((_, index) => (
         <div
           key={index}
-          className={twMerge(index > 0 && "-ml-3")}
+          className={twMerge(index > 0 && '-ml-3')}
           style={{ zIndex: stackSize - index }}
         >
           {renderTimelineIcon(icon)}
         </div>
       ))}
     </div>
-  );
-};
+  )
+}
 
 const renderTimelineIcon = (icon?: ReactNode): ReactNode => {
   if (!icon) {
@@ -135,37 +135,37 @@ const renderTimelineIcon = (icon?: ReactNode): ReactNode => {
       <span className="dark:bg-polar-800 dark:ring-polar-900 inline-flex size-6 items-center justify-center rounded-full bg-gray-100 ring-1 ring-white">
         <FiberManualRecordRounded className="dark:text-polar-200 text-sm text-gray-500" />
       </span>
-    );
+    )
   }
 
   if (isValidElement(icon)) {
-    return cloneElement(icon);
+    return cloneElement(icon)
   }
 
-  return icon;
-};
+  return icon
+}
 
 const groupRangeLabel = (group: TimelineGroupItem): string => {
-  const start = new Date(group.timestamp.start);
-  const end = new Date(group.timestamp.end);
+  const start = new Date(group.timestamp.start)
+  const end = new Date(group.timestamp.end)
   const [earliest, latest] =
-    start.getTime() <= end.getTime() ? [start, end] : [end, start];
+    start.getTime() <= end.getTime() ? [start, end] : [end, start]
 
   if (earliest.toDateString() === latest.toDateString()) {
-    return `${earliest.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    })} · ${latest.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    })}`;
+    return `${earliest.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })} · ${latest.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })}`
   }
 
-  return `${earliest.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  })} → ${latest.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  })}`;
-};
+  return `${earliest.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })} → ${latest.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })}`
+}

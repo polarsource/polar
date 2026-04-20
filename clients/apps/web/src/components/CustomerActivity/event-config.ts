@@ -90,12 +90,6 @@ const EVENT_CONFIG = {
     'Meter credited',
     'Meter credited',
   ),
-  'balance.order': staticConfig(
-    ReceiptLongOutlined,
-    'neutral',
-    'Balance charged',
-    'Balance charged',
-  ),
   'balance.credit_order': staticConfig(
     ReceiptLongOutlined,
     'positive',

@@ -1,0 +1,134 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { GraphicContainer } from "./GraphicContainer";
+
+/**
+ * TextRings — concentric rings of text placed along circular paths.
+ * Letter-spacing animates from collapsed (all characters bunched at
+ * one point) to fully distributed around each ring, staggered from
+ * the innermost ring outward with a cubic-bezier ease.
+ */
+
+const WORD = "POLAR";
+
+// Cubic ease-in-out
+const ease = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+const RING_COUNT = 14;
+const MIN_R_FRAC = 0.06;
+const RING_STEP_FRAC = 0.028;
+const MIN_FONT = 12;
+
+export const TextRings = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio ?? 1;
+    const size = canvas.offsetWidth;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.scale(dpr, dpr);
+
+    const cx = size / 2;
+    const cy = size / 2;
+    const mono =
+      getComputedStyle(canvas).getPropertyValue("--font-mono").trim() ||
+      "monospace";
+
+    // Precompute ring data — each ring gets exactly one copy of the word
+    const rings = Array.from({ length: RING_COUNT }, (_, i) => {
+      const radius = size * (MIN_R_FRAC + i * RING_STEP_FRAC);
+      const fontSize = Math.max(MIN_FONT, size * 0.024);
+
+      return {
+        radius,
+        fontSize,
+        text: WORD,
+        charCount: WORD.length,
+        direction: i % 2 === 0 ? 1 : -1,
+        stagger: i * 0.12,
+      };
+    });
+
+    let lastTime: number | null = null;
+    let time = 0;
+
+    const draw = (now: number) => {
+      const dt = lastTime === null ? 0 : (now - lastTime) / 1000;
+      lastTime = now;
+      time += dt;
+
+      ctx.clearRect(0, 0, size, size);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgb(190, 190, 190)";
+
+      for (const ring of rings) {
+        // Oscillating progress: never fully collapses — stays readable
+        const MIN_SPREAD = 0.35;
+        const phase = time * 0.4 - ring.stagger;
+        const raw = (Math.sin(phase) + 1) / 2;
+        const progress = MIN_SPREAD + ease(raw) * (1 - MIN_SPREAD);
+
+        ctx.font = `${ring.fontSize}px ${mono}`;
+
+        // Slow base rotation
+        const drift = time * 0.06 * ring.direction;
+
+        // Arc span for the word at current progress
+        const arcSpan = (ring.charCount / (ring.charCount + 1)) * Math.PI * progress;
+
+        // Draw two arcs per ring — top and bottom — so "POLAR" always
+        // reads left-to-right regardless of orientation.
+
+        // TOP ARC: characters upright, reading L→R = CW across top
+        const topCenter = -Math.PI / 2 + drift;
+        for (let j = 0; j < ring.charCount; j++) {
+          const t = (j / (ring.charCount - 1)) - 0.5; // -0.5 to 0.5
+          const angle = topCenter + t * arcSpan;
+          const x = cx + Math.cos(angle) * ring.radius;
+          const y = cy + Math.sin(angle) * ring.radius;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle + Math.PI / 2);
+          ctx.fillText(ring.text[j], 0, 0);
+          ctx.restore();
+        }
+
+        // BOTTOM ARC: characters inverted, reading L→R = CCW across bottom
+        const botCenter = Math.PI / 2 + drift;
+        for (let j = 0; j < ring.charCount; j++) {
+          const t = (j / (ring.charCount - 1)) - 0.5;
+          const angle = botCenter - t * arcSpan;
+          const x = cx + Math.cos(angle) * ring.radius;
+          const y = cy + Math.sin(angle) * ring.radius;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle - Math.PI / 2);
+          ctx.fillText(ring.text[j], 0, 0);
+          ctx.restore();
+        }
+      }
+
+      animRef.current = requestAnimationFrame(draw);
+    };
+
+    animRef.current = requestAnimationFrame(draw);
+
+    return () => cancelAnimationFrame(animRef.current);
+  }, []);
+
+  return (
+    <GraphicContainer>
+      <canvas ref={canvasRef} className="h-full w-full" />
+    </GraphicContainer>
+  );
+};

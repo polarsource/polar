@@ -2,7 +2,7 @@
 
 import { SectionLabel } from './SectionLabel'
 import { SectionHeading } from './SectionHeading'
-import { WaveBars } from '../WaveBars'
+import { TextRings } from '../TextRings'
 
 /**
  * LandingCTA — two-column: left has TerrainSphere graphic,
@@ -13,7 +13,7 @@ export const LandingCTA = () => (
     <div className="grid grid-cols-2 divide-x divide-neutral-800">
       {/* Left — graphic */}
       <div className="relative overflow-hidden">
-        <WaveBars />
+        <TextRings />
       </div>
 
       {/* Right — text + buttons */}

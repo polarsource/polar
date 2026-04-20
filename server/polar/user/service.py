@@ -172,8 +172,8 @@ class UserService:
         )
 
         organization_repository = OrganizationRepository.from_session(session)
-        organizations = (
-            await organization_repository.get_all_by_payout_account_admin(user.id)
+        organizations = await organization_repository.get_all_by_payout_account_admin(
+            user.id
         )
         for organization in organizations:
             await organization_service.maybe_activate(session, organization)

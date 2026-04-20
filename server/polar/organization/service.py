@@ -927,8 +927,7 @@ class OrganizationService:
         admin = payout_account.admin
         if (
             admin is None
-            or admin.identity_verification_status
-            != IdentityVerificationStatus.verified
+            or admin.identity_verification_status != IdentityVerificationStatus.verified
         ):
             return False
 

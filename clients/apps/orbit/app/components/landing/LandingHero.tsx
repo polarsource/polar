@@ -18,9 +18,7 @@ export const LandingHero = () => (
 
     {/* Right — text */}
     <div className="flex flex-col justify-between p-16">
-      <div className="flex flex-col gap-4">
-        <SectionLabel number="001" label="Billing for AI products" />
-      </div>
+      <div />
 
       <div>
         <SectionHeading className="leading-[0.95]">

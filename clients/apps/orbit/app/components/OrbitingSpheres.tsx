@@ -42,10 +42,10 @@ export const OrbitingSpheres = () => {
 
     const cx = size / 2;
     const cy = size / 2;
-    const R = size * 0.28;
+    const R = size * 0.32;
 
     // Orbit radius for the satellite (distance from large sphere centre)
-    const orbitR = R + size * 0.05;
+    const orbitR = R + size * 0.08;
     // Satellite dot radius
     const satR = size * 0.015;
 
@@ -65,16 +65,16 @@ export const OrbitingSpheres = () => {
       const dx = Math.cos(angle);
       const dy = Math.sin(angle);
 
-      ctx.strokeStyle = "rgb(190, 190, 190)";
       ctx.lineWidth = 1;
 
-      // Big sphere
+      // Big sphere — faint gray
+      ctx.strokeStyle = "rgb(70, 70, 70)";
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Nested inner circles — all tangent at the big sphere's centre (cx, cy)
-      // and extending in the direction of the satellite.
+      // Nested inner circles — bright
+      ctx.strokeStyle = "rgb(190, 190, 190)";
       let r = R * 0.5;
       for (let i = 0; i < DEPTH; i++) {
         ctx.beginPath();

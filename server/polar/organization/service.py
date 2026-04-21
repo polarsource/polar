@@ -14,7 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
-from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.integrations.polar.service import polar_self as polar_self_service
@@ -514,26 +514,15 @@ class OrganizationService:
     ) -> OrganizationDeletionCheckResult:
         """Request deletion of an organization.
 
-        Authorization:
-        - If the organization has an account, only the account admin can delete
-        - If there is no account, any organization member can delete
+        Authorization is handled by the AuthorizeOrgDelete policy dependency
+        at the endpoint level.
 
         Flow:
-        1. Check authorization
-        2. Check for orders/subscriptions -> if blocked, create support ticket
-        3. If has account -> try to delete Stripe account
-        4. If Stripe deletion fails -> create support ticket
-        5. Soft delete organization
+        1. Check for orders/subscriptions -> if blocked, create support ticket
+        2. If has account -> try to delete Stripe account
+        3. If Stripe deletion fails -> create support ticket
+        4. Soft delete organization
         """
-        # Authorization check: only account admin can delete if account exists
-        is_admin = await account_service.is_user_admin(
-            session, organization.account_id, auth_subject.subject
-        )
-        if not is_admin:
-            raise NotPermitted(
-                "Only the account admin can delete an organization with an account"
-            )
-
         check_result = await self.check_can_delete(session, organization)
 
         if not check_result.can_delete_immediately:

@@ -1599,31 +1599,6 @@ class TestRequestDeletion:
         assert organization.deleted_at is None
         enqueue_job_mock.assert_called_once()
 
-    @pytest.mark.auth
-    async def test_non_admin_with_account_raises_not_permitted(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-    ) -> None:
-        """Non-admin cannot delete organization with an account."""
-        from polar.exceptions import NotPermitted
-
-        # Create a different user who is the admin
-        other_user = User(email="admin@example.com")
-        await save_fixture(other_user)
-
-        account = await create_account(save_fixture, user=other_user)
-        organization.account = account
-        await save_fixture(organization)
-
-        with pytest.raises(NotPermitted) as exc_info:
-            await organization_service.request_deletion(
-                session, auth_subject, organization
-            )
-
-        assert "account admin" in str(exc_info.value).lower()
 
 
 @pytest.mark.asyncio

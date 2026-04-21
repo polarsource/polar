@@ -5086,6 +5086,34 @@
             "description": "Filter by checkout ID."
           },
           {
+            "name": "subscription_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "description": "The subscription ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "description": "The subscription ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "SubscriptionID Filter",
+              "description": "Filter by subscription ID."
+            },
+            "description": "Filter by subscription ID."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -8269,6 +8297,267 @@
             "lang": "php",
             "label": "PHP (SDK)",
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Brick\\DateTime\\LocalDate;\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\MetricsGetRequest(\n    startDate: LocalDate::parse('2025-03-14'),\n    endDate: LocalDate::parse('2025-03-18'),\n    interval: Components\\TimeInterval::Hour,\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->metrics->get(\n    request: $request\n);\n\nif ($response->metricsResponse !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/metrics/export": {
+      "get": {
+        "tags": [
+          "metrics",
+          "public",
+          "mcp"
+        ],
+        "summary": "Export Metrics",
+        "description": "Export metrics as a CSV file.\n\n**Scopes**: `metrics:read`",
+        "operationId": "metrics:export",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Start date.",
+              "title": "Start Date"
+            },
+            "description": "Start date."
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "End date.",
+              "title": "End Date"
+            },
+            "description": "End date."
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Timezone to use for the timestamps. Default is UTC.",
+              "default": "UTC",
+              "title": "Timezone"
+            },
+            "description": "Timezone to use for the timestamps. Default is UTC."
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TimeInterval",
+              "description": "Interval between two timestamps."
+            },
+            "description": "Interval between two timestamps."
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "examples": [
+                    "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                  ],
+                  "description": "The organization ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/organizations",
+                    "resourceName": "Organization",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "examples": [
+                      "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                    ],
+                    "description": "The organization ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/organizations",
+                      "resourceName": "Organization",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
+            },
+            "description": "Filter by organization ID."
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "description": "The product ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/products",
+                    "resourceName": "Product",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "description": "The product ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/products",
+                      "resourceName": "Product",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ProductID Filter",
+              "description": "Filter by product ID."
+            },
+            "description": "Filter by product ID."
+          },
+          {
+            "name": "billing_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductBillingType"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductBillingType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ProductBillingType Filter",
+              "description": "Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
+            },
+            "description": "Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "description": "The customer ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "description": "The customer ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CustomerID Filter",
+              "description": "Filter by customer ID."
+            },
+            "description": "Filter by customer ID."
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Metrics",
+              "description": "List of metric slugs to include in the export. If not provided, all metrics are exported."
+            },
+            "description": "List of metric slugs to include in the export. If not provided, all metrics are exported."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "read",
+            "metrics"
+          ]
+        },
+        "x-speakeasy-group": "metrics",
+        "x-speakeasy-name-override": "export",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from datetime import date\nimport polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.export(start_date=date.fromisoformat(\"2026-07-17\"), end_date=date.fromisoformat(\"2024-05-06\"), interval=polar_sdk.TimeInterval.YEAR, timezone=\"UTC\", organization_id=\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\")\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -12941,6 +13230,236 @@
         ]
       }
     },
+    "/v1/members/external/{external_id}": {
+      "get": {
+        "tags": [
+          "members",
+          "public",
+          "mcp"
+        ],
+        "summary": "Get Member by External ID",
+        "description": "Get a member by external ID.\n\n**Scopes**: `members:read` `members:write`",
+        "operationId": "members:get_member_by_external_id",
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The member external ID.",
+              "title": "External Id"
+            },
+            "description": "The member external ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "read",
+            "members"
+          ]
+        },
+        "x-speakeasy-group": "members",
+        "x-speakeasy-name-override": "get_member_by_external_id",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.members.get_member_by_external_id(external_id=\"<id>\")\n\n    # Handle response\n    print(res)"
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "members",
+          "public",
+          "mcp"
+        ],
+        "summary": "Update Member by External ID",
+        "description": "Update a member by external ID.\n\n**Scopes**: `members:write`",
+        "operationId": "members:update_member_by_external_id",
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The member external ID.",
+              "title": "External Id"
+            },
+            "description": "The member external ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "members"
+          ]
+        },
+        "x-speakeasy-group": "members",
+        "x-speakeasy-name-override": "update_member_by_external_id",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.members.update_member_by_external_id(external_id=\"<id>\", member_update={\n        \"name\": \"Jane Doe\",\n    })\n\n    # Handle response\n    print(res)"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "members",
+          "public",
+          "mcp"
+        ],
+        "summary": "Delete Member by External ID",
+        "description": "Delete a member by external ID.\n\n**Scopes**: `members:write`",
+        "operationId": "members:delete_member_by_external_id",
+        "parameters": [
+          {
+            "name": "external_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The member external ID.",
+              "title": "External Id"
+            },
+            "description": "The member external ID."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Member deleted."
+          },
+          "404": {
+            "description": "Member not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "members"
+          ]
+        },
+        "x-speakeasy-group": "members",
+        "x-speakeasy-name-override": "delete_member_by_external_id",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.members.delete_member_by_external_id(external_id=\"<id>\")\n\n    # Use the SDK ..."
+          }
+        ]
+      }
+    },
     "/v1/customer-portal/benefit-grants/": {
       "get": {
         "tags": [
@@ -16901,6 +17420,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OrderNotEligibleForRetry"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Manual retry limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualRetryLimitExceeded"
                 }
               }
             }
@@ -40269,7 +40798,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -40285,7 +40814,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75.0
+              75
             ]
           },
           "meter": {
@@ -40983,7 +41512,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -40999,7 +41528,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75.0
+              75
             ]
           },
           "customer": {
@@ -43493,7 +44022,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -43509,7 +44038,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75.0
+              75
             ]
           }
         },
@@ -43813,7 +44342,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -44447,7 +44976,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -48481,6 +49010,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 128,
             "title": "Name",
             "description": "The name of the event."
           },
@@ -48571,6 +49101,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 128,
             "title": "Name",
             "description": "The name of the event."
           },
@@ -51782,6 +52313,28 @@
         ],
         "title": "ListResource[WebhookEndpoint]"
       },
+      "ManualRetryLimitExceeded": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ManualRetryLimitExceeded",
+            "title": "Error",
+            "examples": [
+              "ManualRetryLimitExceeded"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "ManualRetryLimitExceeded"
+      },
       "Member": {
         "properties": {
           "id": {
@@ -52098,6 +52651,34 @@
             "title": "Name",
             "description": "The name of the meter. Will be shown on customer's invoices and usage."
           },
+          "unit": {
+            "$ref": "#/components/schemas/MeterUnit",
+            "description": "The unit of the meter."
+          },
+          "custom_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Label",
+            "description": "The label for the custom unit."
+          },
+          "custom_multiplier": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Multiplier",
+            "description": "The multiplier to convert from base unit to display scale."
+          },
           "filter": {
             "$ref": "#/components/schemas/Filter",
             "description": "The filter to apply on events that'll be used to calculate the meter."
@@ -52155,6 +52736,7 @@
           "modified_at",
           "id",
           "name",
+          "unit",
           "filter",
           "aggregation",
           "organization_id"
@@ -52196,6 +52778,36 @@
             "minLength": 3,
             "title": "Name",
             "description": "The name of the meter. Will be shown on customer's invoices and usage."
+          },
+          "unit": {
+            "$ref": "#/components/schemas/MeterUnit",
+            "description": "The unit of the meter.",
+            "default": "scalar"
+          },
+          "custom_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Label",
+            "description": "The label for the custom unit, e.g. 'request'. Required when unit is 'custom'."
+          },
+          "custom_multiplier": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Multiplier",
+            "description": "The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided."
           },
           "filter": {
             "$ref": "#/components/schemas/Filter",
@@ -52440,7 +53052,7 @@
             "title": "Total",
             "description": "The total quantity for the period.",
             "examples": [
-              100.0
+              100
             ]
           }
         },
@@ -52464,7 +53076,7 @@
             "title": "Quantity",
             "description": "The quantity for the current period.",
             "examples": [
-              10.0
+              10
             ]
           }
         },
@@ -52643,6 +53255,15 @@
         ],
         "title": "MeterSortProperty"
       },
+      "MeterUnit": {
+        "type": "string",
+        "enum": [
+          "scalar",
+          "token",
+          "custom"
+        ],
+        "title": "MeterUnit"
+      },
       "MeterUpdate": {
         "properties": {
           "metadata": {
@@ -52685,6 +53306,42 @@
             ],
             "title": "Name",
             "description": "The name of the meter. Will be shown on customer's invoices and usage."
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeterUnit"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The unit of the meter."
+          },
+          "custom_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Label",
+            "description": "The label for the custom unit. Required when unit is 'custom'."
+          },
+          "custom_multiplier": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Multiplier",
+            "description": "The multiplier to convert from base unit to display scale. Required when unit is 'custom'."
           },
           "filter": {
             "anyOf": [
@@ -57546,6 +58203,32 @@
               }
             ],
             "description": "Two-letter country code (ISO 3166-1 alpha-2)."
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "ID of the transactions account."
+          },
+          "payout_account_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payout Account Id",
+            "description": "ID of the payout account."
           }
         },
         "type": "object",
@@ -57569,7 +58252,9 @@
           "subscription_settings",
           "notification_settings",
           "customer_email_settings",
-          "customer_portal_settings"
+          "customer_portal_settings",
+          "account_id",
+          "payout_account_id"
         ],
         "title": "Organization"
       },
@@ -58953,6 +59638,12 @@
             ],
             "title": "Overview Metrics",
             "description": "Ordered list of metric slugs shown on the dashboard overview."
+          },
+          "reset_proration_behavior_enabled": {
+            "type": "boolean",
+            "title": "Reset Proration Behavior Enabled",
+            "description": "If this organization has access to reset proration behavior.",
+            "default": false
           }
         },
         "type": "object",
@@ -59052,7 +59743,8 @@
           "initial_review",
           "ongoing_review",
           "denied",
-          "active"
+          "active",
+          "offboarding"
         ],
         "title": "OrganizationStatus"
       },
@@ -59062,12 +59754,14 @@
             "type": "boolean",
             "title": "Allow Multiple Subscriptions"
           },
-          "allow_customer_updates": {
-            "type": "boolean",
-            "title": "Allow Customer Updates"
-          },
           "proration_behavior": {
-            "$ref": "#/components/schemas/SubscriptionProrationBehavior"
+            "type": "string",
+            "enum": [
+              "invoice",
+              "prorate",
+              "next_period"
+            ],
+            "title": "Proration Behavior"
           },
           "benefit_revocation_grace_period": {
             "type": "integer",
@@ -59076,15 +59770,19 @@
           "prevent_trial_abuse": {
             "type": "boolean",
             "title": "Prevent Trial Abuse"
+          },
+          "allow_customer_updates": {
+            "type": "boolean",
+            "title": "Allow Customer Updates"
           }
         },
         "type": "object",
         "required": [
           "allow_multiple_subscriptions",
-          "allow_customer_updates",
           "proration_behavior",
           "benefit_revocation_grace_period",
-          "prevent_trial_abuse"
+          "prevent_trial_abuse",
+          "allow_customer_updates"
         ],
         "title": "OrganizationSubscriptionSettings"
       },
@@ -60833,7 +61531,7 @@
           },
           "size": {
             "type": "integer",
-            "maximum": 1.048576E+7,
+            "maximum": 10485760,
             "title": "Size",
             "description": "Size of the file. A maximum of 10 MB is allowed for this type of file."
           },
@@ -61195,7 +61893,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1E+6,
+                "maximum": 1000000,
                 "minimum": 10,
                 "description": "The price in cents.\nMinimum amounts per currency:\n- USD: $0.50\n- AED: AED2.00\n- ARS: ARS0.50\n- AUD: A$0.50\n- BRL: R$0.50\n- CAD: CA$0.50\n- CHF: CHF0.50\n- COP: COP0.50\n- CZK: CZK15.00\n- DKK: DKK2.50\n- EUR: €0.50\n- GBP: £0.30\n- HKD: HK$4.00\n- HUF: HUF175.00\n- IDR: IDR0.50\n- ILS: ₪0.50\n- INR: ₹60.00\n- JPY: ¥50\n- KRW: ₩50\n- MXN: MX$0.10\n- MYR: MYR2.00\n- NOK: NOK3.00\n- NZD: NZ$0.50\n- PHP: ₱0.50\n- PLN: PLN2.00\n- RON: RON2.00\n- RUB: RUB0.50\n- SEK: SEK3.00\n- SGD: SGD0.50\n- THB: THB0.10\n- ZAR: ZAR0.50"
               },
@@ -61210,7 +61908,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1E+6,
+                "maximum": 1000000,
                 "minimum": 0,
                 "description": "The price in cents.\nMinimum amounts per currency:\n- USD: $0.50\n- AED: AED2.00\n- ARS: ARS0.50\n- AUD: A$0.50\n- BRL: R$0.50\n- CAD: CA$0.50\n- CHF: CHF0.50\n- COP: COP0.50\n- CZK: CZK15.00\n- DKK: DKK2.50\n- EUR: €0.50\n- GBP: £0.30\n- HKD: HK$4.00\n- HUF: HUF175.00\n- IDR: IDR0.50\n- ILS: ₪0.50\n- INR: ₹60.00\n- JPY: ¥50\n- KRW: ₩50\n- MXN: MX$0.10\n- MYR: MYR2.00\n- NOK: NOK3.00\n- NZD: NZ$0.50\n- PHP: ₱0.50\n- PLN: PLN2.00\n- RON: RON2.00\n- RUB: RUB0.50\n- SEK: SEK3.00\n- SGD: SGD0.50\n- THB: THB0.10\n- ZAR: ZAR0.50"
               },
@@ -61475,12 +62173,41 @@
             "type": "string",
             "title": "Name",
             "description": "The name of the meter."
+          },
+          "unit": {
+            "$ref": "#/components/schemas/MeterUnit",
+            "description": "The unit of the meter."
+          },
+          "custom_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Label",
+            "description": "The label for the custom unit."
+          },
+          "custom_multiplier": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Multiplier",
+            "description": "The multiplier to convert from base unit to display scale."
           }
         },
         "type": "object",
         "required": [
           "id",
-          "name"
+          "name",
+          "unit"
         ],
         "title": "ProductPriceMeter",
         "description": "A meter associated to a metered price."
@@ -64586,7 +65313,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -64806,7 +65533,8 @@
         "enum": [
           "invoice",
           "prorate",
-          "next_period"
+          "next_period",
+          "reset"
         ],
         "title": "SubscriptionProrationBehavior"
       },

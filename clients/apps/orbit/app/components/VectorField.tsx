@@ -1,111 +1,112 @@
-"use client";
+'use client'
 
-import { useEffect, useRef } from "react";
-import { GraphicContainer } from "./GraphicContainer";
+import { useEffect, useRef } from 'react'
+import { GraphicContainer } from './GraphicContainer'
 
 /**
- * VectorField — fixed-length line segments on a disk, oriented by a
- * polar-native vector field.
+ * VectorField — grid of arrow segments on a disk, oriented by a
+ * configurable vector field formula. Static render, no animation.
  *
- * For each sample point at polar (r, θ):
- *
- *   angle(r, θ, t) = n · θ + k · r − ω · t
- *
- * This is a rotating logarithmic-spiral / rose field: contour lines of
- * n·θ + k·r = const form n-armed spirals, and subtracting ω·t makes the
- * whole structure rotate continuously. The result has natural circular
- * symmetry — the arms curve outward from center to boundary and the
- * angular step n sets the number of spiral arms.
+ * The field function receives normalised polar coords (r, θ) and
+ * returns the angle of the arrow at that point.
  */
-export const VectorField = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
+
+export type FieldFn = (r: number, theta: number) => number
+
+// Default: uniform rightward field
+const uniformField: FieldFn = () => 0
+
+interface VectorFieldProps {
+  field?: FieldFn
+  cols?: number
+  rows?: number
+}
+
+export const VectorField = ({
+  field = uniformField,
+  cols = 14,
+  rows = 14,
+}: VectorFieldProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvas = canvasRef.current
+    if (!canvas) return
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-    const dpr = window.devicePixelRatio ?? 1;
-    const size = canvas.offsetWidth;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    ctx.scale(dpr, dpr);
+    const dpr = window.devicePixelRatio ?? 1
+    const size = canvas.offsetWidth
+    canvas.width = size * dpr
+    canvas.height = size * dpr
+    ctx.scale(dpr, dpr)
 
-    const cols = 32;
-    const rows = 32;
+    const padding = size * 0.08
+    const innerSize = size - padding * 2
+    const cellW = innerSize / cols
+    const cellH = innerSize / rows
 
-    const padding = size * 0.08;
-    const innerSize = size - padding * 2;
-    const cellW = innerSize / cols;
-    const cellH = innerSize / rows;
+    const half = Math.min(cellW, cellH) * 0.25
 
-    // Fixed line half-length — fits inside a cell
-    const half = Math.min(cellW, cellH) * 0.42;
+    const styles = getComputedStyle(canvas)
+    const strokeColor =
+      styles.getPropertyValue('--color-graphic-stroke').trim() ||
+      'rgb(190, 190, 190)'
 
-    let time = 0;
+    ctx.clearRect(0, 0, size, size)
+    ctx.lineWidth = 1
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = strokeColor
 
-    // Pre-blended gray range — horizontal lines bright, vertical faded
-    // (no alpha channel; colors match bg-white dark:bg-dark-850 ≈ rgb(23,23,23))
-    const MIN_GRAY = 47;   // vertical lines (was alpha 0.12)
-    const MAX_GRAY = 190;  // horizontal lines (was alpha 0.85)
+    for (let ci = 0; ci < cols; ci++) {
+      for (let ri = 0; ri < rows; ri++) {
+        const u = ((ci + 0.5) / cols - 0.5) * 2
+        const v = ((ri + 0.5) / rows - 0.5) * 2
 
-    const draw = () => {
-      ctx.clearRect(0, 0, size, size);
-      ctx.lineWidth = 1;
-      ctx.lineCap = "round";
+        const r = Math.hypot(u, v)
+        if (r > 1) continue
 
-      for (let ci = 0; ci < cols; ci++) {
-        for (let ri = 0; ri < rows; ri++) {
-          // Normalised coords in [-1, 1]
-          const u = ((ci + 0.5) / cols - 0.5) * 2;
-          const v = ((ri + 0.5) / rows - 0.5) * 2;
+        const theta = Math.atan2(v, u)
+        const angle = field(r, theta)
 
-          // Clip to a circular region
-          const r = Math.hypot(u, v);
-          if (r > 1) continue;
+        const ca = Math.cos(angle)
+        const sa = Math.sin(angle)
+        const dx = ca * half
+        const dy = sa * half
 
-          // Rotating spiral/rose field
-          const theta = Math.atan2(v, u);
-          const n = 3;
-          const k = 4;
-          const omega = 0.6;
-          const angle = n * theta + k * r - omega * time;
+        const cx = padding + cellW * (ci + 0.5)
+        const cy = padding + cellH * (ri + 0.5)
 
-          const ca = Math.cos(angle);
-          const sa = Math.sin(angle);
-          const dx = ca * half;
-          const dy = sa * half;
+        // Shaft
+        ctx.beginPath()
+        ctx.moveTo(cx - dx, cy - dy)
+        ctx.lineTo(cx + dx, cy + dy)
+        ctx.stroke()
 
-          // |cos(angle)| = 1 when horizontal, 0 when vertical
-          const horizontalness = Math.abs(ca);
-          const gray = Math.round(MIN_GRAY + horizontalness * (MAX_GRAY - MIN_GRAY));
-
-          const cx = padding + cellW * (ci + 0.5);
-          const cy = padding + cellH * (ri + 0.5);
-
-          ctx.strokeStyle = `rgb(${gray}, ${gray}, ${gray})`;
-          ctx.beginPath();
-          ctx.moveTo(cx - dx, cy - dy);
-          ctx.lineTo(cx + dx, cy + dy);
-          ctx.stroke();
-        }
+        // V-shaped arrowhead at the tip
+        const headLen = half
+        const headAngle = Math.PI / 4
+        const tipX = cx + dx
+        const tipY = cy + dy
+        ctx.beginPath()
+        ctx.moveTo(
+          tipX - Math.cos(angle - headAngle) * headLen,
+          tipY - Math.sin(angle - headAngle) * headLen,
+        )
+        ctx.lineTo(tipX, tipY)
+        ctx.lineTo(
+          tipX - Math.cos(angle + headAngle) * headLen,
+          tipY - Math.sin(angle + headAngle) * headLen,
+        )
+        ctx.stroke()
       }
-
-      time += 0.02;
-      animRef.current = requestAnimationFrame(draw);
-    };
-
-    draw();
-
-    return () => cancelAnimationFrame(animRef.current);
-  }, []);
+    }
+  }, [field, cols, rows])
 
   return (
     <GraphicContainer>
       <canvas ref={canvasRef} className="h-full w-full" />
     </GraphicContainer>
-  );
-};
+  )
+}

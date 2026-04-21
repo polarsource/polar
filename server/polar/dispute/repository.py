@@ -1,9 +1,8 @@
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.enums import PaymentProcessor
 from polar.kit.repository import (
     Options,
@@ -13,7 +12,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Dispute, Payment, UserOrganization
+from polar.models import Dispute, Payment
 from polar.models.dispute import DisputeAlertProcessor
 
 from .sorting import DisputeSortProperty
@@ -81,30 +80,15 @@ class DisputeRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[Dispute]]:
         statement = (
             self.get_base_statement()
             .join(Dispute.payment)
             .options(contains_eager(Dispute.payment))
         )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Payment.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Payment.organization_id == auth_subject.subject.id
-            )
-
+        statement = statement.where(Payment.organization_id.in_(org_ids))
         return statement
 
     def get_eager_options(self) -> Options:

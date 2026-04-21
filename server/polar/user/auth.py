@@ -8,7 +8,6 @@ from polar.auth.scope import Scope
 
 _UserWrite = Authenticator(
     required_scopes={
-        Scope.web_write,
         Scope.user_write,
     },
     allowed_subjects={User},

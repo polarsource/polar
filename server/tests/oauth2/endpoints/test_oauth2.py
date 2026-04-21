@@ -1221,7 +1221,7 @@ class TestOAuth2Token:
             token=token_hash,
             user_agent="tests",
             user=user,
-            scopes={Scope.web_write},
+            scopes=set(Scope),
             expires_at=utc_now() + timedelta(seconds=60),
         )
         await save_fixture(user_session)
@@ -1252,7 +1252,7 @@ class TestOAuth2Token:
             token=token_hash,
             user_agent="tests",
             user=user,
-            scopes={Scope.web_write},
+            scopes=set(Scope),
             expires_at=utc_now() + timedelta(seconds=60),
         )
         await save_fixture(user_session)
@@ -1284,7 +1284,7 @@ class TestOAuth2Token:
             token=token_hash,
             user_agent="tests",
             user=user,
-            scopes={Scope.web_write},
+            scopes=set(Scope),
             expires_at=utc_now() + timedelta(seconds=60),
         )
         await save_fixture(user_session)
@@ -1322,7 +1322,7 @@ class TestOAuth2Token:
             token=token_hash,
             user_agent="tests",
             user=user,
-            scopes={Scope.web_write},
+            scopes=set(Scope),
             expires_at=utc_now() + timedelta(seconds=60),
         )
         await save_fixture(user_session)

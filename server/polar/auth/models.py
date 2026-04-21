@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Generic, TypeGuard, TypeVar
+from typing import Any, Generic, TypeGuard, TypeVar
 
 from polar.enums import RateLimitGroup
 from polar.models import (
@@ -126,6 +126,11 @@ def is_member[S: Subject](
     return isinstance(auth_subject.subject, Member)
 
 
+def is_web_session(auth_subject: AuthSubject[Any]) -> bool:
+    """Check if the auth subject is authenticated via a web session (not API token)."""
+    return auth_subject.session is not None
+
+
 __all__ = [
     # Re-export subject types for convenience
     "Anonymous",
@@ -141,4 +146,5 @@ __all__ = [
     "is_member",
     "is_organization",
     "is_user",
+    "is_web_session",
 ]

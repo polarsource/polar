@@ -69,8 +69,6 @@ def OrgPolicyGuard(
 
     _allowed = allowed_subjects or {User, Organization}
     _scopes = required_scopes or {
-        Scope.web_read,
-        Scope.web_write,
         Scope.organizations_read,
         Scope.organizations_write,
     }
@@ -180,7 +178,7 @@ AuthorizeMembersManage = Annotated[
         OrgPolicyGuard(
             _members_can_manage(),
             allowed_subjects={User},
-            required_scopes={Scope.web_write, Scope.organizations_write},
+            required_scopes={Scope.organizations_write},
         )
     ),
 ]
@@ -190,7 +188,7 @@ AuthorizeOrgDelete = Annotated[
         OrgPolicyGuard(
             _org_can_delete(),
             allowed_subjects={User},
-            required_scopes={Scope.web_write, Scope.organizations_write},
+            required_scopes={Scope.organizations_write},
         )
     ),
 ]
@@ -237,7 +235,7 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> type:
 
     _authenticator = Authenticator(
         allowed_subjects={User},
-        required_scopes={Scope.web_read, Scope.web_write},
+        required_scopes=set(),
     )
 
     async def dependency(
@@ -284,7 +282,7 @@ def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> type:
 
     _authenticator = Authenticator(
         allowed_subjects={User},
-        required_scopes={Scope.web_read, Scope.web_write},
+        required_scopes=set(),
     )
 
     async def dependency(

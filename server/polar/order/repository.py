@@ -8,7 +8,6 @@ from sqlalchemy.orm import joinedload, selectinload
 from polar.auth.models import (
     AuthSubject,
     Member,
-    Organization,
     User,
     is_customer,
     is_member,
@@ -29,13 +28,13 @@ from polar.models import (
     Discount,
     Order,
     OrderItem,
+    Organization,
     Product,
     ProductPrice,
     Subscription,
     UserOrganization,
 )
 from polar.models.order import OrderStatus
-from polar.models.organization import Organization as OrgModel
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrderSortProperty
@@ -101,14 +100,14 @@ class OrderRepository(
             self.get_base_statement()
             .join(Customer, Customer.id == Order.customer_id)
             .join(
-                OrgModel,
-                OrgModel.id == Customer.organization_id,
+                Organization,
+                Organization.id == Customer.organization_id,
             )
             .where(
                 Order.next_payment_attempt_at.is_not(None),
                 Order.next_payment_attempt_at <= utc_now(),
-                OrgModel.is_deleted.is_(False),
-                OrgModel.can_renew_subscriptions.is_(True),
+                Organization.is_deleted.is_(False),
+                Organization.can_renew_subscriptions.is_(True),
             )
             .order_by(Order.next_payment_attempt_at.asc())
             .options(*options)

@@ -6,6 +6,6 @@ import PolarLogoIcon from './PolarLogoIcon'
  */
 export const LandingNav = () => (
   <nav className="flex w-full px-16 py-16">
-    <PolarLogo className="text-white" height={40} />
+    <PolarLogo className="text-neutral-900 dark:text-white" height={40} />
   </nav>
 )

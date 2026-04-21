@@ -24,15 +24,15 @@ export const LandingArchitecture = () => (
   <section id="architecture">
     {/* Top row — heading */}
     <div className="grid grid-cols-1 md:grid-cols-2">
-      <div className="p-16 py-32">
+      <div className="px-16 py-32">
         <SectionHeading>
           Ingest. Aggregate.
           <br />
           Quantify. Charge.
         </SectionHeading>
       </div>
-      <div className="flex flex-col justify-end gap-12 p-16 py-32">
-        <p className="max-w-xl text-4xl leading-snug text-white">
+      <div className="flex flex-col justify-end gap-12 py-32">
+        <p className="max-w-xl text-4xl leading-snug text-neutral-900 dark:text-white">
           From the moment a request fires to the moment you get paid — four
           layers, one pipeline, zero glue code.
         </p>
@@ -46,11 +46,11 @@ export const LandingArchitecture = () => (
     </div>
 
     {/* Bottom row — 4 graphics, one per layer */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+    <div className="mx-2 grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
       {LAYERS.map((l, i) => (
         <div
           key={l.id}
-          className={`flex flex-col ${i % 2 === 0 ? 'bg-dark-850' : 'bg-dark-900'}`}
+          className="dark:bg-dark-900 flex flex-col bg-neutral-50"
         >
           {/* Graphic */}
           <div className="aspect-square w-full">
@@ -60,13 +60,17 @@ export const LandingArchitecture = () => (
             {i === 3 && <OrbitingSpheres />}
           </div>
           {/* Label */}
-          <div className="flex flex-row items-center gap-x-6 bg-white/3 px-8 py-6">
-            <span className="text-5xl font-normal text-neutral-300">
+          <div className="dark:bg-dark-800 flex flex-row items-center gap-x-6 bg-neutral-100 px-8 py-6">
+            <span className="text-5xl font-normal text-black dark:text-neutral-300">
               — {l.id}
             </span>
             <div className="flex flex-col">
-              <span className="text-white">{l.name}</span>
-              <span className="text-neutral-500">{l.desc}</span>
+              <span className="font-medium text-neutral-900 dark:text-neutral-300">
+                {l.name}
+              </span>
+              <span className="dark:text-dark-300 text-neutral-500">
+                {l.desc}
+              </span>
             </div>
           </div>
         </div>

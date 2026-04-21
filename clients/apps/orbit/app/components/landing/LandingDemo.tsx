@@ -9,8 +9,8 @@ import { SectionHeading } from './SectionHeading'
  * Right: product demo video via Cloudflare Stream.
  */
 export const LandingDemo = () => (
-  <section className="border-b border-neutral-800">
-    <div className="grid grid-cols-2 divide-x divide-neutral-800">
+  <section className="border-b border-neutral-200 dark:border-neutral-800">
+    <div className="grid grid-cols-2 divide-x divide-neutral-200 dark:divide-neutral-800">
       {/* Left — text */}
       <div className="flex flex-col justify-between p-16 py-32">
         <SectionLabel number="002.C" label="Product" />

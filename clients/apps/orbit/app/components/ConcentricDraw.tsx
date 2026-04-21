@@ -33,6 +33,10 @@ export const ConcentricDraw = () => {
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     ctx.scale(dpr, dpr);
+
+    const styles = getComputedStyle(canvas)
+    const strokeColor = styles.getPropertyValue('--color-graphic-stroke').trim() || 'rgb(190, 190, 190)'
+    const dimColor = styles.getPropertyValue('--color-graphic-dim').trim() || 'rgb(70, 70, 70)'
     ctx.lineCap = "round";
 
     const cx = size / 2;
@@ -67,7 +71,7 @@ export const ConcentricDraw = () => {
         const circumference = 2 * Math.PI * r;
 
         // Faint background ring
-        ctx.strokeStyle = "rgb(70, 70, 70)";
+        ctx.strokeStyle = dimColor;
         ctx.lineWidth = 1;
         ctx.setLineDash([]);
         ctx.beginPath();
@@ -90,7 +94,7 @@ export const ConcentricDraw = () => {
 
         if (endAngle - startAngle < 0.01) continue;
 
-        ctx.strokeStyle = "rgb(190, 190, 190)";
+        ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(cx, cy, r, startAngle, endAngle);

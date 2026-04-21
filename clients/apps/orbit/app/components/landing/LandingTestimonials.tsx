@@ -41,7 +41,7 @@ export const LandingTestimonials = () => (
           key={t.name}
           className={twMerge(
             'flex flex-col justify-between gap-y-16 p-12 py-24',
-            i % 2 === 0 ? 'bg-neutral-900' : 'bg-neutral-800',
+            i % 2 === 0 ? 'bg-dark-850' : 'bg-dark-800',
           )}
         >
           {/* Outward arrow */}

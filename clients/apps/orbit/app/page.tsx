@@ -7,7 +7,7 @@ import { LandingFooter } from './components/landing/LandingFooter'
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-black">
+    <div className="flex min-h-screen flex-col bg-dark-950">
       <LandingNav />
       <LandingArchitecture />
       <LandingProduct />

@@ -25,7 +25,7 @@ export const Button = ({
       "w-fit rounded-full px-8 py-4 text-base font-bold transition [font-variation-settings:'opsz'_32]",
       variant === 'primary'
         ? 'bg-white text-black hover:bg-neutral-200'
-        : 'bg-neutral-900 font-semibold text-white hover:bg-neutral-800',
+        : 'bg-dark-800 font-semibold text-white hover:bg-dark-700',
       className,
     )}
   >

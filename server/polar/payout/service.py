@@ -179,6 +179,13 @@ class PayoutAlreadyTriggered(PayoutError):
         super().__init__(message)
 
 
+class PayoutCanceled(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = f"Payout {payout.id} has been canceled and cannot be retried."
+        super().__init__(message, 400)
+
+
 class PayoutNotCancelable(PayoutError):
     def __init__(self, payout: Payout) -> None:
         self.payout = payout
@@ -518,6 +525,9 @@ class PayoutService:
         This is useful for cases where Stripe refuses to pay out the full amount,
         because it's too large for the given currency.
         """
+        if payout.status == PayoutStatus.canceled:
+            raise PayoutCanceled(payout)
+
         payout_account = payout.payout_account
         assert payout_account.stripe_id is not None
 

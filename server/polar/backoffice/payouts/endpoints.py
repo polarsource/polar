@@ -275,7 +275,7 @@ async def get(
     if payout is None:
         raise HTTPException(status_code=404)
 
-    can_retry = (
+    can_retry = payout.status != PayoutStatus.canceled and (
         payout.status == PayoutStatus.failed
         or len(payout.attempts) == 0
         or sum(
@@ -411,6 +411,12 @@ async def retry(
 
     if payout is None:
         raise HTTPException(status_code=404)
+
+    if payout.status == PayoutStatus.canceled:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot retry a canceled payout.",
+        )
 
     remaining_amount = payout.account_amount - sum(
         attempt.amount

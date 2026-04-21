@@ -8,26 +8,31 @@ import { ShapeGrid } from '../ShapeGrid'
  * Right: PhyllotaxisSunflower graphic.
  */
 export const LandingProduct = () => (
-  <section id="product" className="border-b border-neutral-800">
-    <div className="grid grid-cols-2 divide-x divide-neutral-800">
-      {/* Left column — heading */}
-      <div className="flex flex-col justify-between p-16 py-32">
-        <SectionHeading>
-          Not just metering.
-          <br />
-          The complete
-          <br />
-          commerce layer.
-        </SectionHeading>
-        <p className="max-w-lg text-2xl leading-snug">
-          A single API that replaces your metering pipeline, billing engine,
-          invoice generator, and revenue dashboard.
-        </p>
-      </div>
+  <section id="product">
+    <div className="flex flex-col items-center gap-y-16 p-16 py-48 text-center">
+      <SectionHeading>
+        Not just usage billing.
+        <br />
+        Polar is your commerce layer.
+      </SectionHeading>
+      <p className="max-w-4xl text-4xl leading-snug">
+        A single API that replaces your metering pipeline, billing engine, cost
+        insights, revenue dashboard & customer management.
+      </p>
 
-      {/* Right column — graphic */}
-      <div className="relative overflow-hidden">
-        <ShapeGrid />
+      <div className="flex flex-row items-center gap-x-6">
+        <a
+          href="#"
+          className="w-fit rounded-full bg-white px-8 py-4 text-base font-bold text-black transition [font-variation-settings:'opsz'_32] hover:bg-neutral-200"
+        >
+          Get Started
+        </a>
+        <a
+          href="#"
+          className="w-fit rounded-full bg-neutral-900 px-8 py-4 text-base font-semibold text-white transition [font-variation-settings:'opsz'_32] hover:bg-neutral-800"
+        >
+          Documentation
+        </a>
       </div>
     </div>
   </section>

@@ -1,3 +1,4 @@
+import { twMerge } from 'tailwind-merge'
 import { SectionLabel } from './SectionLabel'
 
 /**
@@ -33,12 +34,15 @@ const TESTIMONIALS = [
 ]
 
 export const LandingTestimonials = () => (
-  <section className="border-b border-neutral-800">
-    <div className="grid grid-cols-4 divide-x divide-neutral-800">
-      {TESTIMONIALS.map((t) => (
+  <section>
+    <div className="grid grid-cols-4">
+      {TESTIMONIALS.map((t, i) => (
         <div
           key={t.name}
-          className="flex flex-col justify-between gap-y-16 p-12 py-16"
+          className={twMerge(
+            'flex flex-col justify-between gap-y-16 p-12 py-24',
+            i % 2 === 0 ? 'bg-neutral-900' : 'bg-neutral-800',
+          )}
         >
           {/* Outward arrow */}
           <svg

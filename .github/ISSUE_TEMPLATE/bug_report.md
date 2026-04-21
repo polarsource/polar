@@ -1,26 +1,31 @@
 ---
 name: Bug Report
-about: Something not working as expected? Let us look into it.
+about: Track and investigate an unexpected behavior or regression.
 type: "Bug"
 ---
 
 ### Description
 
-<!-- A brief description with a link to the page on the site where you found the issue. -->
+<!-- A brief description of the bug and where it occurs. -->
 
 ### Current Behavior
 
-<!-- A brief description of the current behavior of the issue. -->
+<!-- A brief description of the current behavior. -->
 
 ### Expected Behavior
 
 <!-- A brief description of what you expected to happen. -->
 
-### Screenshots
+### Steps to Reproduce
 
-<!-- Add screenshots, if applicable, to help explain your problem. -->
+<!-- A step-by-step guide to reproduce the issue. -->
 
-### Environment:
+### Context
 
--   Operating System: [e.g., Windows, macOS, Linux]
--   Browser (if applicable): [e.g., Chrome, Firefox, Safari]
+<!--
+Link to relevant observability resources to help investigate the issue:
+
+- **Sentry**: Link to the relevant error or issue in Sentry.
+- **Logfire**: Link to the relevant trace in Logfire.
+- **Metabase**: Link to the relevant query or dashboard in Metabase.
+-->

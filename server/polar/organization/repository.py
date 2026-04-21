@@ -4,7 +4,6 @@ from uuid import UUID
 from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -62,6 +61,22 @@ class OrganizationRepository(
         if not include_blocked:
             statement = statement.where(self.model.status != OrganizationStatus.BLOCKED)
 
+        return await self.get_one_or_none(statement)
+
+    async def get_by_account(self, account_id: UUID) -> Organization | None:
+        """Get the organization that owns the given account."""
+        statement = self.get_base_statement().where(
+            Organization.account_id == account_id
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_payout_account(
+        self, payout_account_id: UUID
+    ) -> Organization | None:
+        """Get the organization that uses the given payout account."""
+        statement = self.get_base_statement().where(
+            Organization.payout_account_id == payout_account_id
+        )
         return await self.get_one_or_none(statement)
 
     async def get_by_id_with_payout_account(
@@ -162,28 +177,13 @@ class OrganizationRepository(
                     / 86400
                 )
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[Organization]]:
         statement = self.get_base_statement().where(
-            Organization.status != OrganizationStatus.BLOCKED
+            Organization.status != OrganizationStatus.BLOCKED,
+            Organization.id.in_(org_ids),
         )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Organization.id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Organization.id == auth_subject.subject.id,
-            )
-
         return statement
 
     async def get_admin_user(

@@ -8,7 +8,6 @@ from httpx import AsyncClient
 from polar.models import (
     Customer,
     CustomerMeter,
-    Meter,
     Organization,
     UserOrganization,
 )

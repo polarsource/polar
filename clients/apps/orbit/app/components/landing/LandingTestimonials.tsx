@@ -35,7 +35,7 @@ const TESTIMONIALS = [
 
 export const LandingTestimonials = () => (
   <section>
-    <div className="grid grid-cols-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
       {TESTIMONIALS.map((t, i) => (
         <div
           key={t.name}

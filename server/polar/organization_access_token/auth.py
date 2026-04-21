@@ -8,8 +8,6 @@ from polar.auth.scope import Scope
 
 _OrganizationAccessTokensRead = Authenticator(
     required_scopes={
-        Scope.web_read,
-        Scope.web_write,
         Scope.organization_access_tokens_read,
         Scope.organization_access_tokens_write,
     },
@@ -21,7 +19,6 @@ OrganizationAccessTokensRead = Annotated[
 
 _OrganizationAccessTokensWrite = Authenticator(
     required_scopes={
-        Scope.web_write,
         Scope.organization_access_tokens_write,
     },
     allowed_subjects={User, Organization},

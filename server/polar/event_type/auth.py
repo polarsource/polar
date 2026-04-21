@@ -9,8 +9,6 @@ from polar.models.organization import Organization
 
 _EventTypeRead = Authenticator(
     required_scopes={
-        Scope.web_read,
-        Scope.web_write,
         Scope.events_read,
         Scope.events_write,
     },
@@ -19,9 +17,7 @@ _EventTypeRead = Authenticator(
 EventTypeRead = Annotated[AuthSubject[User | Organization], Depends(_EventTypeRead)]
 
 _EventTypeWrite = Authenticator(
-    required_scopes={
-        Scope.web_write,
-    },
+    required_scopes=set(),
     allowed_subjects={User, Organization},
 )
 EventTypeWrite = Annotated[AuthSubject[User | Organization], Depends(_EventTypeWrite)]

@@ -111,7 +111,7 @@ class Scope(StrEnum):
         return json_schema
 
 
-RESERVED_SCOPES = {Scope.web_read, Scope.web_write}
+RESERVED_SCOPES: set[Scope] = set()
 SCOPES_SUPPORTED = [s.value for s in Scope if s not in RESERVED_SCOPES]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",

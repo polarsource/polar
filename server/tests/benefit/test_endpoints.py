@@ -38,7 +38,7 @@ class TestListBenefits:
         assert json["pagination"]["total_count"] == 0
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_read}),
+        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.benefits_read}),
     )
     async def test_user_valid(
@@ -55,7 +55,7 @@ class TestListBenefits:
         assert json["pagination"]["total_count"] == 3
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.web_read}),
+        AuthSubjectFixture(subject="organization", scopes=set(Scope)),
         AuthSubjectFixture(subject="organization", scopes={Scope.benefits_read}),
     )
     async def test_organization(

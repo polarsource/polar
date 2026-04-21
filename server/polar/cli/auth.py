@@ -8,8 +8,6 @@ from polar.auth.scope import Scope
 
 _CLIRead = Authenticator(
     required_scopes={
-        Scope.web_read,
-        Scope.web_write,
         Scope.webhooks_read,
         Scope.webhooks_write,
     },

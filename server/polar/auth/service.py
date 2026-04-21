@@ -39,7 +39,7 @@ class AuthService:
             session=session,
             user=user,
             user_agent=request.headers.get("User-Agent", ""),
-            scopes=[Scope.web_read, Scope.web_write],
+            scopes=list(Scope),
         )
 
         return_url = get_safe_return_url(return_to)

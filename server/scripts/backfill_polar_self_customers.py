@@ -16,7 +16,6 @@ from polar.customer.schemas.customer import CustomerTeamCreate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.member.repository import MemberRepository
 from polar.member.schemas import MemberOwnerCreate
 from polar.member.service import member_service
 from polar.models import Customer, Organization, Product, User, UserOrganization
@@ -112,7 +111,7 @@ async def _backfill_organization(
     organization: Organization,
     members: Sequence[tuple[User, UserOrganization]],
 ) -> _OrganizationTally:
-    owner, owner_user_org = members[0]
+    owner, _ = members[0]
     tally = _OrganizationTally()
 
     customer = await customer_service.create(
@@ -129,42 +128,34 @@ async def _backfill_organization(
             ),
         ),
         auth_subject,
+        created_at=organization.created_at,
     )
-    customer.created_at = organization.created_at
     tally.customers += 1
-
-    member_repository = MemberRepository.from_session(session)
-    owner_member = await member_repository.get_by_customer_and_email(
-        session, customer, email=owner.email
-    )
-    if owner_member is not None:
-        owner_member.created_at = owner_user_org.created_at
     tally.members += 1
 
     for user, user_org in members[1:]:
-        created_member = await member_service.create(
+        await member_service.create(
             session,
             auth_subject,
             customer_id=customer.id,
             email=user.email,
             name=user.public_name,
             external_id=str(user.id),
+            created_at=user_org.created_at,
         )
-        created_member.created_at = user_org.created_at
         tally.members += 1
 
-    subscription = await subscription_service.create(
+    await subscription_service.create(
         session,
         SubscriptionCreateExternalCustomer(
             product_id=free_product.id,
             external_customer_id=str(organization.id),
         ),
         auth_subject,
+        created_at=organization.created_at,
     )
-    subscription.created_at = organization.created_at
     tally.subscriptions += 1
 
-    await session.flush()
     return tally
 
 

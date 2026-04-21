@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, overload
 
@@ -584,6 +585,8 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: CustomerCreatedMetadata,
+    *,
+    timestamp: datetime | None = None,
 ) -> Event: ...
 
 
@@ -611,6 +614,8 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionCreatedMetadata,
+    *,
+    timestamp: datetime | None = None,
 ) -> Event: ...
 
 
@@ -772,14 +777,19 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: Any,
+    *,
+    timestamp: datetime | None = None,
 ) -> Event:
-    return Event(
+    event = Event(
         name=name,
         source=EventSource.system,
         customer_id=customer.id,
         organization=organization,
         user_metadata=metadata,
     )
+    if timestamp is not None:
+        event.timestamp = timestamp
+    return event
 
 
 def build_checkout_event(

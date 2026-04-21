@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -291,6 +292,7 @@ class MemberService:
             name=name,
             external_id=external_id,
             role=MemberRole.owner,
+            created_at=customer.created_at,
         )
 
         try:
@@ -496,6 +498,7 @@ class MemberService:
         name: str | None = None,
         external_id: str | None = None,
         role: MemberRole = MemberRole.member,
+        created_at: datetime | None = None,
     ) -> Member:
         """
         Create a new member for a customer.
@@ -569,6 +572,8 @@ class MemberService:
             external_id=external_id,
             role=role,
         )
+        if created_at is not None:
+            member.created_at = created_at
 
         try:
             created_member = await repository.create(member, flush=True)

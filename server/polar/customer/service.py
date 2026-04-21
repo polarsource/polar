@@ -1,6 +1,7 @@
 import builtins
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any
 
 import structlog
@@ -138,6 +139,8 @@ class CustomerService:
         session: AsyncSession,
         customer_create: CustomerIndividualCreate | CustomerTeamCreate,
         auth_subject: AuthSubject[User | Organization],
+        *,
+        created_at: datetime | None = None,
     ) -> Customer:
         organization = await get_payload_organization(
             session, auth_subject, customer_create
@@ -215,6 +218,8 @@ class CustomerService:
             ),
             tax_id=validated_tax_id,
         )
+        if created_at is not None:
+            customer_obj.created_at = created_at
 
         return await self._persist_customer(
             session,

@@ -107,6 +107,7 @@ async def customer_event(
                         "customer_name": customer.name,
                         "customer_external_id": customer.external_id,
                     },
+                    timestamp=customer.created_at,
                 )
             case SystemEvent.customer_deleted:
                 event = build_system_event(

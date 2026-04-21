@@ -347,6 +347,8 @@ class SubscriptionService:
         session: AsyncSession,
         subscription_create: SubscriptionCreate,
         auth_subject: AuthSubject[User | Organization],
+        *,
+        created_at: datetime | None = None,
     ) -> Subscription:
         errors: list[ValidationError] = []
 
@@ -474,6 +476,8 @@ class SubscriptionService:
             user_metadata=subscription_create.metadata,
             pending_update=None,
         )
+        if created_at is not None:
+            subscription.created_at = created_at
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.create(subscription, flush=True)
@@ -850,6 +854,7 @@ class SubscriptionService:
                     recurring_interval_count=subscription.recurring_interval_count,
                     started_at=subscription.started_at.isoformat(),
                 ),
+                timestamp=subscription.created_at,
             ),
         )
 

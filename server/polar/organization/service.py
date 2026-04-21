@@ -896,14 +896,7 @@ class OrganizationService:
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        if review is None:
-            return False
-
-        approved = review.verdict == OrganizationReview.Verdict.PASS or (
-            review.verdict == OrganizationReview.Verdict.FAIL
-            and review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
-        )
-        if not approved:
+        if review is None or not review.is_approved:
             return False
 
         if organization.payout_account_id is None:

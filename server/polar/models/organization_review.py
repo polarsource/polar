@@ -69,5 +69,19 @@ class OrganizationReview(RecordModel):
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise", back_populates="review")
 
+    @property
+    def is_approved(self) -> bool:
+        """Whether the review clears the merchant to operate.
+
+        True when the verdict is PASS, or when the verdict was FAIL but the
+        appeal has been APPROVED by a human reviewer.
+        """
+        if self.verdict == self.Verdict.PASS:
+            return True
+        return (
+            self.verdict == self.Verdict.FAIL
+            and self.appeal_decision == self.AppealDecision.APPROVED
+        )
+
     def __repr__(self) -> str:
         return f"OrganizationReview(id={self.id}, organization_id={self.organization_id}, verdict={self.verdict})"

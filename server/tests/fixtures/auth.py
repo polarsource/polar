@@ -22,7 +22,7 @@ class AuthSubjectFixture:
             "member_billing_manager",
             "member",
         ] = "user",
-        scopes: set[Scope] = {Scope.web_read, Scope.web_write},
+        scopes: set[Scope] = set(Scope),
     ):
         self.subject = subject
         self.scopes = scopes

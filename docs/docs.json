@@ -37,7 +37,7 @@
             "pages": [
               "features/products",
               {
-                "group": "Usage Based Billing",
+                "group": "Usage-based Billing",
                 "pages": [
                   "features/usage-based-billing/introduction",
                   "features/usage-based-billing/event-ingestion",
@@ -58,7 +58,6 @@
               },
               {
                 "group": "Cost Insights",
-                "tag": "Beta",
                 "pages": [
                   "features/cost-insights/introduction",
                   "features/cost-insights/cost-events",

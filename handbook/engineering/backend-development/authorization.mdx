@@ -1,0 +1,180 @@
+---
+title: "Authorization"
+description: "How authorization works in Polar: authentication vs authorization, PolicyGuard, policies, and org-scoped data access."
+---
+
+## Overview
+
+Authorization in Polar is split into two layers:
+
+- **Authentication** (`Authenticator`): "Who are you?" — validates tokens/sessions, resolves the subject (User, Organization, Customer, Member), extracts token scopes.
+- **Authorization** (`server/polar/authz/`): "Are you allowed to do this?" — checks org membership, evaluates policies, enforces access control.
+
+These are separate concerns. Authentication happens via FastAPI's `Authenticator` dependency. Authorization happens via **PolicyGuard** dependencies that resolve resources and check policies before the endpoint body runs.
+
+## PolicyGuard
+
+A PolicyGuard is a FastAPI dependency factory that combines resource resolution and authorization into a single step. When an endpoint declares a PolicyGuard dependency, the framework:
+
+1. Authenticates the subject
+2. Resolves the resource from the path parameter
+3. Checks that the subject has access to the owning organization
+4. Evaluates the policy function
+5. Returns an `AuthorizedOrganization` (or `AuthorizedAccount`, etc.) containing both the resource and the auth subject
+
+If any step fails, the appropriate HTTP error is raised before the endpoint body executes.
+
+```python
+from polar.authz.dependencies import AuthorizeFinanceRead
+
+@router.get("/{id}/account")
+async def get_account(
+    authorized: AuthorizeFinanceRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Account:
+    # authorized.organization is already resolved and access-checked
+    # authorized.auth_subject is the authenticated subject
+    account = await account_service.get_by_organization(
+        session, authorized.organization.id
+    )
+    if account is None:
+        raise ResourceNotFound()
+    return account
+```
+
+### Error behavior
+
+| Scenario | HTTP status | Reason |
+|----------|-------------|--------|
+| No valid credentials | 401 Unauthorized | `Authenticator` rejects the request |
+| Token lacks required scopes | 403 Forbidden | `Authenticator` scope check fails |
+| Resource doesn't exist | 404 Not Found | Resource not found in database |
+| Subject not a member of the org | 404 Not Found | Returns 404 (not 403) to avoid leaking existence |
+| Subject is a member but policy denied | 403 Forbidden | Policy returned a denial reason |
+
+### Guard variants
+
+There are three PolicyGuard variants for different resource types:
+
+| Guard | Resolves by | Use case |
+|-------|-------------|----------|
+| `OrgPolicyGuard` | `{id}` → Organization | Org-scoped endpoints (`/organizations/{id}/...`) |
+| `AccountPolicyGuard` | `{id}` → Account → owning Organization | Account endpoints (`/accounts/{id}`) |
+| `PayoutAccountPolicyGuard` | `{id}` → PayoutAccount → owning Organization | Payout account endpoints (`/payout-accounts/{id}`) |
+
+### Typed dependencies
+
+Pre-built typed dependencies are defined in `server/polar/authz/dependencies.py`:
+
+```python
+AuthorizeFinanceRead    # OrgPolicyGuard + finance.can_read
+AuthorizeFinanceWrite   # OrgPolicyGuard + finance.can_write
+AuthorizeMembersManage  # OrgPolicyGuard + members.can_manage (User-only)
+AuthorizeOrgDelete      # OrgPolicyGuard + organization.can_delete (User-only)
+AuthorizeOrgAccessUser  # OrgPolicyGuard + always allow (User-only)
+AuthorizeAccountRead    # AccountPolicyGuard + finance.can_read
+AuthorizeAccountWrite   # AccountPolicyGuard + finance.can_write
+AuthorizePayoutAccountRead   # PayoutAccountPolicyGuard + finance.can_read
+AuthorizePayoutAccountWrite  # PayoutAccountPolicyGuard + finance.can_write
+```
+
+## Policies
+
+Policies are async functions in `server/polar/authz/policies/`. Each policy receives the database session, auth subject, and organization, and returns either `True` (allowed) or a denial reason string.
+
+```python
+# server/polar/authz/policies/finance.py
+async def can_read(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization],
+    organization: Organization,
+) -> PolicyResult:
+    if is_organization(auth_subject):
+        return True
+    if is_user(auth_subject):
+        if organization.account_id is None:
+            return "Organization has no account"
+        if await account_service.is_user_admin(
+            session, organization.account_id, auth_subject.subject
+        ):
+            return True
+        return "Only the account admin can access financial information"
+    return "Not permitted"
+```
+
+The denial reason string is passed through to the `NotPermitted` exception and appears in the 403 response body.
+
+### Policy files
+
+| File | Functions | Controls access to |
+|------|-----------|-------------------|
+| `policies/finance.py` | `can_read`, `can_write` | Accounts, transactions, payouts |
+| `policies/organization.py` | `can_delete` | Organization deletion |
+| `policies/members.py` | `can_manage` | Inviting, removing, and changing members |
+
+## Org-scoped data access
+
+Repositories are pure data access — they don't check authentication or authorization. Instead, they accept explicit org IDs:
+
+```python
+# Repository — pure data access
+class ProductRepository(RepositoryBase[Product]):
+    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Product]]:
+        return self.get_base_statement().where(
+            Product.organization_id.in_(org_ids)
+        )
+```
+
+Services resolve which orgs the subject can access, then pass the IDs to the repository:
+
+```python
+# Service — resolves org access, delegates to repository
+from polar.authz.service import get_accessible_org_ids
+
+class ProductService:
+    async def list(self, session, auth_subject, ...):
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        repository = ProductRepository.from_session(session)
+        statement = repository.get_by_org_ids_statement(org_ids)
+        ...
+```
+
+`get_accessible_org_ids` returns the set of organization IDs the subject can access:
+- For a **User**: all orgs they're a member of (via `UserOrganization`)
+- For an **Organization** token: just that org's ID
+- For anything else: empty set
+
+## Scopes
+
+Token scopes are checked by the `Authenticator` as a first-pass filter. They represent what the **token** is allowed to do, not what the **user** is allowed to do.
+
+- **Web sessions** have all scopes — the user's permissions are determined entirely by org membership and policies
+- **PATs** (Personal Access Tokens) have user-selected scopes — a CI token might only have `products_read`
+- **OATs** (Organization Access Tokens) have org-selected scopes
+
+PolicyGuard dependencies declare `required_scopes` appropriate to their resource area. For example, `AuthorizeFinanceRead` requires `transactions_read`, `transactions_write`, `payouts_read`, or `payouts_write`.
+
+## Adding a new policy-guarded endpoint
+
+1. **Choose or create a policy function** in `server/polar/authz/policies/`
+2. **Create a typed dependency** in `server/polar/authz/dependencies.py` using the appropriate guard variant
+3. **Use the dependency in the endpoint** — declare it as a parameter, access `.organization` and `.auth_subject` from the result
+
+```python
+# 1. Policy
+async def can_do_thing(session, auth_subject, organization) -> PolicyResult:
+    # your authorization logic
+    return True
+
+# 2. Typed dependency
+AuthorizeDoThing = Annotated[
+    AuthorizedOrganization,
+    Depends(OrgPolicyGuard(can_do_thing)),
+]
+
+# 3. Endpoint
+@router.post("/{id}/thing")
+async def do_thing(authorized: AuthorizeDoThing, ...) -> ...:
+    organization = authorized.organization
+    ...
+```

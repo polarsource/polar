@@ -12,6 +12,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import Anonymous, AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     MINIMUM_PRICE_AMOUNT,
@@ -252,7 +253,8 @@ class CheckoutService:
         ],
     ) -> tuple[Sequence[Checkout], int]:
         repository = CheckoutRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).options(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).options(
             *repository.get_eager_options()
         )
 
@@ -289,8 +291,9 @@ class CheckoutService:
         id: uuid.UUID,
     ) -> Checkout | None:
         repository = CheckoutRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(Checkout.id == id)
             .options(*repository.get_eager_options())
         )

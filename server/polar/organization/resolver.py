@@ -1,11 +1,11 @@
 from typing import Protocol
 
 from pydantic import UUID4
-from sqlalchemy import select
 
 from polar.auth.models import AuthSubject, is_organization
+from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization, User, UserOrganization
+from polar.models import Organization, User
 from polar.postgres import AsyncSession
 
 
@@ -25,8 +25,6 @@ async def get_payload_organization(
     auth_subject: AuthSubject[User | Organization],
     model: OrganizationIDModel,
 ) -> Organization:
-    # Avoids a circular import :(
-
     if is_organization(auth_subject):
         if model.organization_id is not None:
             raise PolarRequestValidationError(
@@ -62,17 +60,26 @@ async def get_payload_organization(
             ]
         )
 
-    statement = select(Organization).where(
-        Organization.id == model.organization_id,
-        Organization.id.in_(
-            select(UserOrganization.organization_id).where(
-                UserOrganization.user_id == auth_subject.subject.id,
-                UserOrganization.is_deleted.is_(False),
-            )
-        ),
-    )
-    result = await session.execute(statement)
-    organization = result.scalar_one_or_none()
+    accessible = await get_accessible_org_ids(session, auth_subject)
+    if model.organization_id not in accessible:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": (
+                        "body",
+                        "organization_id",
+                    ),
+                    "msg": "Organization not found.",
+                    "type": "value_error",
+                    "input": model.organization_id,
+                }
+            ]
+        )
+
+    from polar.organization.repository import OrganizationRepository
+
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(model.organization_id)
 
     if organization is None:
         raise PolarRequestValidationError(

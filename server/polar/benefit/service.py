@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import case, delete
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
@@ -43,7 +44,8 @@ class BenefitService:
         query: str | None = None,
     ) -> tuple[Sequence[Benefit], int]:
         repository = BenefitRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if type is not None:
             statement = statement.where(Benefit.type.in_(type))
@@ -95,8 +97,9 @@ class BenefitService:
         id: uuid.UUID,
     ) -> Benefit | None:
         repository = BenefitRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(Benefit.id == id)
             .options(*repository.get_eager_options())
         )

@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_session.service import customer_session as customer_session_service
@@ -74,7 +75,8 @@ class CustomerService:
         ],
     ) -> tuple[Sequence[Customer], int]:
         repository = CustomerRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if organization_id is not None:
             statement = statement.where(Customer.organization_id.in_(organization_id))
@@ -116,7 +118,8 @@ class CustomerService:
         id: uuid.UUID,
     ) -> Customer | None:
         repository = CustomerRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             Customer.id == id
         )
         return await repository.get_one_or_none(statement)
@@ -128,7 +131,8 @@ class CustomerService:
         external_id: str,
     ) -> Customer | None:
         repository = CustomerRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             Customer.external_id == external_id
         )
         return await repository.get_one_or_none(statement)

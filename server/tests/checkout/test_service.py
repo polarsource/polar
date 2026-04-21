@@ -417,6 +417,7 @@ async def product_seat_based_with_min_max(
 
 
 @pytest.mark.asyncio
+@pytest.mark.auth
 class TestCreate:
     @pytest.mark.auth
     async def test_not_existing_price(
@@ -986,6 +987,7 @@ class TestCreate:
         auth_subject: AuthSubject[User | Organization],
         calculate_tax_mock: AsyncMock,
         organization: Organization,
+        user_organization: UserOrganization,
     ) -> None:
         product = await create_product(
             save_fixture,

@@ -1,9 +1,8 @@
 from uuid import UUID
 
-from sqlalchemy import Select, select, update
+from sqlalchemy import Select, update
 from sqlalchemy.orm import joinedload, selectinload
 
-from polar.auth.models import AuthSubject, User, is_organization, is_user
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -18,7 +17,6 @@ from polar.models import (
     CheckoutProduct,
     Organization,
     Product,
-    UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
 
@@ -76,27 +74,12 @@ class CheckoutRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().all())
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[Checkout]]:
-        statement = self.get_base_statement()
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Checkout.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Checkout.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
+        return self.get_base_statement().where(
+            Checkout.organization_id.in_(org_ids)
+        )
 
     def get_eager_options(self) -> Options:
         return (

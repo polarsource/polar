@@ -14,7 +14,7 @@ from polar.enums import (
     SubscriptionRecurringInterval,
 )
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Customer, Organization, Product, User
+from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.account import Account
 from polar.models.organization import (
     InvalidStatusTransitionError,
@@ -38,7 +38,6 @@ from polar.user_organization.service import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_account,
     create_order,
     create_payout_account,
 )
@@ -1600,7 +1599,6 @@ class TestRequestDeletion:
         enqueue_job_mock.assert_called_once()
 
 
-
 @pytest.mark.asyncio
 class TestSoftDeleteOrganization:
     async def test_enqueues_polar_self_customer_deletion(
@@ -2091,6 +2089,7 @@ class TestSetPayoutAccount:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
+        user_organization: UserOrganization,
         user: User,
     ) -> None:
         """Successfully sets the payout account on an organization."""

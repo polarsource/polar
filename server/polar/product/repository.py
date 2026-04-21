@@ -76,9 +76,7 @@ class ProductRepository(
             selectinload(Product.all_prices),
         )
 
-    def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
-    ) -> Select[tuple[Product]]:
+    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Product]]:
         statement = self.get_base_statement()
         statement = statement.where(Product.organization_id.in_(org_ids))
         return statement

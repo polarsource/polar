@@ -11,12 +11,8 @@ from polar.models import Meter, Organization, User
 class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
     model = Meter
 
-    def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
-    ) -> Select[tuple[Meter]]:
-        return self.get_base_statement().where(
-            Meter.organization_id.in_(org_ids)
-        )
+    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Meter]]:
+        return self.get_base_statement().where(Meter.organization_id.in_(org_ids))
 
     async def get_readable_by_id(
         self,

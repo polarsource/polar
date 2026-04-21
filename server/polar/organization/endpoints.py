@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.auth.models import is_user
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
@@ -265,6 +266,7 @@ async def delete(
     If deletion cannot proceed immediately (has orders, subscriptions, or
     Stripe deletion fails), a support ticket will be created for manual handling.
     """
+    assert is_user(authorized.auth_subject)
     result = await organization_service.request_deletion(
         session, authorized.auth_subject, authorized.organization
     )

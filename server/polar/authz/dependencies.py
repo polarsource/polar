@@ -1,6 +1,6 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 from uuid import UUID
 
 from fastapi import Depends
@@ -45,7 +45,7 @@ def OrgPolicyGuard(
     *,
     allowed_subjects: set[type] | None = None,
     required_scopes: set[Scope] | None = None,
-) -> type:
+) -> Any:
     """Create a FastAPI dependency that authenticates, resolves an organization,
     and checks a policy — all in one step.
 
@@ -223,7 +223,7 @@ class AuthorizedPayoutAccount:
     auth_subject: AuthSubject[User | Organization]
 
 
-def AccountPolicyGuard(policy_fn: PolicyFn) -> type:
+def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     """FastAPI dependency: resolve account by {id}, find owning org, check policy.
 
     Raises:
@@ -270,7 +270,7 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> type:
     return dependency
 
 
-def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> type:
+def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     """FastAPI dependency: resolve payout account by {id}, find owning org, check policy.
 
     Raises:

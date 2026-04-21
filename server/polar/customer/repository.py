@@ -280,9 +280,7 @@ class CustomerRepository(
         external_ids = [r.external_id for r in rows if r.external_id is not None]
         return customer_ids, external_ids
 
-    def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
-    ) -> Select[tuple[Customer]]:
+    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Customer]]:
         statement = self.get_base_statement()
         statement = statement.where(Customer.organization_id.in_(org_ids))
         return statement

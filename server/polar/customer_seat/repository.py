@@ -398,7 +398,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
         Backward-compatible wrapper; prefer get_by_id_and_org_ids.
         """
-        session: AsyncReadSession = self.session  # type: ignore[assignment]
+        session: AsyncReadSession = self.session
         org_ids = await get_accessible_org_ids(session, auth_subject)
         return await self.get_by_id_and_org_ids(org_ids, seat_id, options=options)
 
@@ -414,7 +414,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
         Backward-compatible wrapper; prefer get_by_subscription_and_org_ids.
         """
-        session: AsyncReadSession = self.session  # type: ignore[assignment]
+        session: AsyncReadSession = self.session
         org_ids = await get_accessible_org_ids(session, auth_subject)
         return await self.get_by_subscription_and_org_ids(
             org_ids, seat_id, subscription_id, options=options

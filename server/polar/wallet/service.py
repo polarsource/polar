@@ -95,9 +95,7 @@ class WalletService:
     ) -> Wallet | None:
         repository = WalletRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(
-            Wallet.id == id
-        )
+        statement = repository.get_by_org_ids_statement(org_ids).where(Wallet.id == id)
         return await repository.get_one_or_none(statement)
 
     async def top_up(

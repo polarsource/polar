@@ -1,7 +1,8 @@
 import pytest
 
 from polar.auth.models import AuthSubject
-from polar.authz.policies import finance, members, organization as org_policy
+from polar.authz.policies import finance, members
+from polar.authz.policies import organization as org_policy
 from polar.models import Organization, User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
@@ -54,7 +55,7 @@ class TestFinanceCanRead:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.account_id = None
+        object.__setattr__(organization, "account_id", None)
 
         result = await finance.can_read(session, auth_subject, organization)
         assert isinstance(result, str)

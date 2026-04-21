@@ -9,6 +9,7 @@ import logfire
 from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
@@ -110,7 +111,8 @@ class MetricsService:
         organization_id: Sequence[uuid.UUID] | None = None,
     ) -> Sequence[MetricDashboard]:
         repository = MetricDashboardRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
         if organization_id is not None:
             statement = statement.where(
                 MetricDashboard.organization_id.in_(organization_id)
@@ -124,7 +126,8 @@ class MetricsService:
         id: uuid.UUID,
     ) -> MetricDashboard | None:
         repository = MetricDashboardRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             MetricDashboard.id == id
         )
         return await repository.get_one_or_none(statement)

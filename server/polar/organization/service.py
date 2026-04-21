@@ -1077,56 +1077,21 @@ class OrganizationService:
     ) -> PaymentStatusResponse:
         """Get payment status and onboarding steps for an organization."""
         return PaymentStatusResponse(
-            payment_ready=await self.is_organization_ready_for_payment(
-                session, organization
-            ),
+            payment_ready=self.is_organization_ready_for_payment(organization),
             organization_status=organization.status,
         )
 
-    async def is_organization_ready_for_payment(
-        self, session: AsyncReadSession, organization: Organization
-    ) -> bool:
+    def is_organization_ready_for_payment(self, organization: Organization) -> bool:
+        """Check if an organization is ready to accept payments.
+
+        ``can_accept_payments`` is the single source of truth: it's populated
+        by ``set_status()`` (which only flips to True once an org reaches a
+        payment-ready status), so the per-org account/identity/details
+        prerequisites are already enforced upstream.
         """
-        Check if an organization is ready to accept payments.
-        This method loads the account and admin data as needed, avoiding the need
-        for eager loading in other services like checkout.
-        """
-        # In sandbox environment, always allow payments regardless of account setup
         if settings.ENV == Environment.sandbox:
             return True
-
-        if not organization.can_accept_payments:
-            return False
-
-        # Check grandfathering - if grandfathered, they're ready
-        cutoff_date = datetime(2025, 8, 4, 9, 0, tzinfo=UTC)
-        if organization.created_at <= cutoff_date:
-            return True
-
-        # Details must be submitted (check for empty dict as well)
-        if not organization.details_submitted_at or not organization.details:
-            return False
-
-        # Must have an active payout account
-        if organization.payout_account_id is None:
-            return False
-
-        payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_id(
-            organization.payout_account_id, options=(joinedload(PayoutAccount.admin),)
-        )
-        if not payout_account:
-            return False
-
-        # Check admin identity verification status
-        admin = payout_account.admin
-        if not admin or admin.identity_verification_status not in [
-            IdentityVerificationStatus.verified,
-            IdentityVerificationStatus.pending,
-        ]:
-            return False
-
-        return True
+        return organization.can_accept_payments
 
     async def get_ai_review(
         self, session: AsyncSession, organization: Organization

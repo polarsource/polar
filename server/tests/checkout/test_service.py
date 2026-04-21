@@ -4916,8 +4916,8 @@ class TestConfirm:
         checkout_one_time_fixed: Checkout,
     ) -> None:
         # Make organization not payment ready
-        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = OrganizationStatus.CREATED
+        organization.status = OrganizationStatus.ACTIVE
+        organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(organization)
 
         # Payment confirmation should fail for paid products
@@ -5036,8 +5036,8 @@ class TestConfirm:
         checkout_recurring_fixed: Checkout,
     ) -> None:
         # Make organization not payment ready
-        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = OrganizationStatus.CREATED
+        organization.status = OrganizationStatus.ACTIVE
+        organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(organization)
 
         # Should fail for recurring products
@@ -5183,8 +5183,8 @@ class TestConfirm:
         checkout_discount_percentage_100: Checkout,
     ) -> None:
         # Make organization not payment ready
-        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = OrganizationStatus.CREATED
+        organization.status = OrganizationStatus.ACTIVE
+        organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(organization)
 
         # Verify preconditions: discount makes it free but payment setup needed

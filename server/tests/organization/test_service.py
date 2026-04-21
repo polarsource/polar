@@ -2087,23 +2087,16 @@ class TestUnsnoozeOrganization:
             await organization_service.unsnooze_organization(session, organization)
 
 
-@pytest.mark.asyncio
 class TestOffboardingPaymentReady:
-    async def test_offboarding_allows_payments(
+    def test_offboarding_allows_payments(
         self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         """Offboarding organizations should still be able to accept payments."""
-        # Grandfathered organization so we skip account setup checks
-        organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
-        organization.status = OrganizationStatus.OFFBOARDING
-        await save_fixture(organization)
+        organization.status = OrganizationStatus.REVIEW
+        organization.set_status(OrganizationStatus.OFFBOARDING)
 
-        result = await organization_service.is_organization_ready_for_payment(
-            session, organization
-        )
+        result = organization_service.is_organization_ready_for_payment(organization)
 
         assert result is True
 
@@ -2282,25 +2275,20 @@ class TestCapabilityOverrides:
 
     async def test_checkout_payments_override_blocks_active_org(
         self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        # Grandfathered to skip the account-readiness checks.
-        organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
         organization.set_status(OrganizationStatus.ACTIVE)
         assert organization.capabilities is not None
         organization.capabilities = {
             **organization.capabilities,
             "checkout_payments": False,
         }
-        await save_fixture(organization)
 
         assert organization.can_accept_payments is False
-        ready = await organization_service.is_organization_ready_for_payment(
-            session, organization
+        assert (
+            organization_service.is_organization_ready_for_payment(organization)
+            is False
         )
-        assert ready is False
 
     async def test_can_authenticate_follows_api_access_capability(
         self,

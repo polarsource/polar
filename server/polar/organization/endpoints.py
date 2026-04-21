@@ -309,10 +309,7 @@ async def get_payment_status(
     if organization is None:
         raise ResourceNotFound()
 
-    payment_status = await organization_service.get_payment_status(
-        session,
-        organization,
-    )
+    payment_status = organization_service.get_payment_status(organization)
 
     return OrganizationPaymentStatus(
         payment_ready=payment_status.payment_ready,

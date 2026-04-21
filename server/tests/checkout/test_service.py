@@ -4915,8 +4915,6 @@ class TestConfirm:
         organization: Organization,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        # Make organization not payment ready
-        organization.status = OrganizationStatus.ACTIVE
         organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(organization)
 
@@ -5035,8 +5033,6 @@ class TestConfirm:
         organization: Organization,
         checkout_recurring_fixed: Checkout,
     ) -> None:
-        # Make organization not payment ready
-        organization.status = OrganizationStatus.ACTIVE
         organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(organization)
 
@@ -5182,8 +5178,6 @@ class TestConfirm:
         organization: Organization,
         checkout_discount_percentage_100: Checkout,
     ) -> None:
-        # Make organization not payment ready
-        organization.status = OrganizationStatus.ACTIVE
         organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(organization)
 

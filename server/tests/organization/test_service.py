@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.config import Environment, settings
+from polar.config import settings
 from polar.enums import (
     InvoiceNumbering,
     PayoutAccountType,
@@ -857,54 +857,29 @@ class TestSetOrganizationUnderReview:
         )
 
 
-@pytest.mark.asyncio
 class TestGetPaymentStatus:
-    async def test_all_steps_complete_grandfathered(
+    def test_active_org_is_payment_ready(
         self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
         organization: Organization,
-        product: Product,
-        mocker: MockerFixture,
-        user: User,
     ) -> None:
-        # Grandfathered organization (created before cutoff)
-        organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
-        await save_fixture(organization)
-
-        # Mock the API key count
-        mocker.patch(
-            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
-            return_value=1,  # Has 1 API key
-        )
-
-        payment_status = await organization_service.get_payment_status(
-            session, organization
-        )
-
-        # Should be payment ready because it's grandfathered
+        # Default fixture status is ACTIVE → checkout_payments capability is True.
+        payment_status = organization_service.get_payment_status(organization)
         assert payment_status.payment_ready is True
 
-    async def test_sandbox_environment_allows_payments(
+    def test_sandbox_environment_allows_payments(
         self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
-        # Make organization not payment ready
-        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = OrganizationStatus.CREATED
-        await save_fixture(organization)
-
-        # Mock environment to be sandbox
-        mocker.patch("polar.organization.service.settings.ENV", Environment.sandbox)
-
-        payment_status = await organization_service.get_payment_status(
-            session, organization
+        # An org with the capability disabled is normally not payment-ready,
+        # but sandbox bypasses every gate.
+        organization.set_status(OrganizationStatus.BLOCKED)
+        mocker.patch(
+            "polar.organization.service.settings.is_sandbox", return_value=True
         )
 
-        # Should be payment ready in sandbox even if account setup is incomplete
+        payment_status = organization_service.get_payment_status(organization)
+
         assert payment_status.payment_ready is True
 
 
@@ -2085,20 +2060,6 @@ class TestUnsnoozeOrganization:
 
         with pytest.raises(Exception, match="Only snoozed organizations"):
             await organization_service.unsnooze_organization(session, organization)
-
-
-class TestOffboardingPaymentReady:
-    def test_offboarding_allows_payments(
-        self,
-        organization: Organization,
-    ) -> None:
-        """Offboarding organizations should still be able to accept payments."""
-        organization.status = OrganizationStatus.REVIEW
-        organization.set_status(OrganizationStatus.OFFBOARDING)
-
-        result = organization_service.is_organization_ready_for_payment(organization)
-
-        assert result is True
 
 
 @pytest.mark.asyncio

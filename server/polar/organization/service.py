@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
-from polar.config import Environment, settings
+from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
@@ -1070,11 +1070,7 @@ class OrganizationService:
         session.add(organization)
         return organization
 
-    async def get_payment_status(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-    ) -> PaymentStatusResponse:
+    def get_payment_status(self, organization: Organization) -> PaymentStatusResponse:
         """Get payment status and onboarding steps for an organization."""
         return PaymentStatusResponse(
             payment_ready=self.is_organization_ready_for_payment(organization),
@@ -1082,16 +1078,8 @@ class OrganizationService:
         )
 
     def is_organization_ready_for_payment(self, organization: Organization) -> bool:
-        """Check if an organization is ready to accept payments.
-
-        ``can_accept_payments`` is the single source of truth: it's populated
-        by ``set_status()`` (which only flips to True once an org reaches a
-        payment-ready status), so the per-org account/identity/details
-        prerequisites are already enforced upstream.
-        """
-        if settings.ENV == Environment.sandbox:
-            return True
-        return organization.can_accept_payments
+        """Whether the org can accept payments. Sandbox bypasses the capability."""
+        return settings.is_sandbox() or organization.can_accept_payments
 
     async def get_ai_review(
         self, session: AsyncSession, organization: Organization

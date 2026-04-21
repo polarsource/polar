@@ -416,6 +416,7 @@ class AgentReviewResult(Schema):
     report: ReviewAgentReport
     data_snapshot: DataSnapshot
     model_used: str
+    model_provider: str
     duration_seconds: float
     usage: UsageInfo = Field(default_factory=UsageInfo)
     timed_out: bool = False

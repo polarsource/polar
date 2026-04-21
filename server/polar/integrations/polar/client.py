@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any, NoReturn
 
 import httpx
@@ -229,6 +230,70 @@ class PolarSelfClient:
                 _raise_error(span, e, "track_event_ingestion")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "track_event_ingestion")
+
+    async def track_llm_usage(
+        self,
+        *,
+        external_customer_id: str,
+        event_name: str,
+        vendor: str,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        cost_usd: Decimal,
+    ) -> None:
+        from polar_sdk.models import (
+            CostMetadataInput,
+            EventCreateExternalCustomer,
+            EventsIngest,
+            LLMMetadata,
+        )
+        from polar_sdk.models.polarerror import PolarError
+
+        total_tokens = input_tokens + output_tokens
+        cost_cents = cost_usd * Decimal(100)
+
+        with logfire.span(
+            "polar.track_llm_usage",
+            external_customer_id=external_customer_id,
+            event_name=event_name,
+            vendor=vendor,
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=str(cost_usd),
+        ) as span:
+            try:
+                await self._sdk.events.ingest_async(
+                    request=EventsIngest(
+                        events=[
+                            EventCreateExternalCustomer(
+                                name=event_name,
+                                external_customer_id=external_customer_id,
+                                metadata={
+                                    "_llm": LLMMetadata(
+                                        vendor=vendor,
+                                        model=model,
+                                        input_tokens=input_tokens,
+                                        output_tokens=output_tokens,
+                                        total_tokens=total_tokens,
+                                    ),
+                                    "_cost": CostMetadataInput(
+                                        amount=str(cost_cents),
+                                        currency="usd",
+                                    ),
+                                },
+                            )
+                        ]
+                    )
+                )
+            except PolarError as e:
+                if e.status_code == 409:
+                    span.set_attribute("conflict", True)
+                    return
+                _raise_error(span, e, "track_llm_usage")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "track_llm_usage")
 
 
 _client: PolarSelfClient | None = None

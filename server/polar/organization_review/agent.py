@@ -88,6 +88,7 @@ async def run_organization_review(
             report=report,
             data_snapshot=snapshot,
             model_used=review_analyzer.model_name,
+            model_provider=review_analyzer.model_provider,
             duration_seconds=round(duration, 2),
             usage=usage,
         )

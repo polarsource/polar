@@ -5,6 +5,7 @@ import structlog
 
 from polar.config import Environment, settings
 from polar.exceptions import PolarTaskError
+from polar.integrations.polar.service import polar_self
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
@@ -96,6 +97,16 @@ async def run_review_agent(
             model_used=result.model_used,
             duration_seconds=result.duration_seconds,
             estimated_cost_usd=result.usage.estimated_cost_usd,
+        )
+
+        polar_self.enqueue_track_llm_usage(
+            external_customer_id=str(organization_id),
+            event_name=f"ai.organization_review.{review_context.value}",
+            vendor=result.model_provider,
+            model=result.model_used,
+            input_tokens=result.usage.input_tokens,
+            output_tokens=result.usage.output_tokens,
+            cost_usd=result.usage.estimated_cost_usd,
         )
 
         # Persist agent report to its own table (both contexts)

@@ -76,6 +76,7 @@ def _make_agent_review_result() -> AgentReviewResult:
         report=_make_review_report(),
         data_snapshot=_make_data_snapshot(),
         model_used="gpt-4o-mini",
+        model_provider="openai",
         duration_seconds=2.5,
         usage=UsageInfo(input_tokens=100, output_tokens=50, total_tokens=150),
     )

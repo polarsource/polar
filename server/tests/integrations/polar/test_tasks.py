@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
@@ -7,7 +8,12 @@ from polar_sdk.models.resourcenotfound import ResourceNotFound, ResourceNotFound
 from pytest_mock import MockerFixture
 
 from polar.integrations.polar.client import PolarSelfClient
-from polar.integrations.polar.tasks import add_member, delete_customer, remove_member
+from polar.integrations.polar.tasks import (
+    add_member,
+    delete_customer,
+    remove_member,
+    track_llm_usage,
+)
 
 
 @pytest.mark.asyncio
@@ -178,3 +184,33 @@ class TestDeleteCustomer:
         await delete_customer(external_id="org-123")
 
         client.delete_customer.assert_called_once_with(external_id="org-123")
+
+
+@pytest.mark.asyncio
+class TestTrackLLMUsage:
+    async def test_calls_client_with_decimal_cost(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await track_llm_usage(
+            external_customer_id="org-123",
+            event_name="ai.organization_review.submission",
+            vendor="openai",
+            model="gpt-4o-mini",
+            input_tokens=100,
+            output_tokens=50,
+            cost_usd="0.0123",
+        )
+
+        client.track_llm_usage.assert_called_once_with(
+            external_customer_id="org-123",
+            event_name="ai.organization_review.submission",
+            vendor="openai",
+            model="gpt-4o-mini",
+            input_tokens=100,
+            output_tokens=50,
+            cost_usd=Decimal("0.0123"),
+        )

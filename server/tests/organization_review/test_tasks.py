@@ -75,6 +75,7 @@ def _make_agent_result(
             collected_at=datetime(2026, 1, 1, tzinfo=UTC),
         ),
         model_used=model_used,
+        model_provider="openai",
         duration_seconds=1.0,
         usage=UsageInfo(),
         timed_out=False,

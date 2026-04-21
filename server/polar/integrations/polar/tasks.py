@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from dramatiq import Retry
 
 from polar.worker import TaskPriority, actor, can_retry
@@ -94,4 +96,25 @@ async def track_event_ingestion(
     await get_client().track_event_ingestion(
         external_customer_id=external_customer_id,
         count=count,
+    )
+
+
+@actor(actor_name="polar_self.track_llm_usage", priority=TaskPriority.LOW)
+async def track_llm_usage(
+    external_customer_id: str,
+    event_name: str,
+    vendor: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cost_usd: str,
+) -> None:
+    await get_client().track_llm_usage(
+        external_customer_id=external_customer_id,
+        event_name=event_name,
+        vendor=vendor,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cost_usd=Decimal(cost_usd),
     )

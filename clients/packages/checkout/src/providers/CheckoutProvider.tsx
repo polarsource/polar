@@ -164,12 +164,14 @@ export const CheckoutContext = createContext<CheckoutContextProps>(stub)
 
 interface CheckoutProviderProps {
   clientSecret: string
+  initialCheckout?: schemas['CheckoutPublic']
   server?: 'production' | 'sandbox'
   serverURL?: string
 }
 
 export const CheckoutProvider = ({
   clientSecret,
+  initialCheckout,
   serverURL,
   server,
   children,
@@ -199,10 +201,13 @@ export const CheckoutProvider = ({
   }, [server, serverURL])
 
   const [checkout, setCheckout] = useState<schemas['CheckoutPublic'] | null>(
-    null,
+    initialCheckout ?? null,
   )
 
   useEffect(() => {
+    if (initialCheckout) {
+      return
+    }
     checkoutsClientGet(client, {
       client_secret: clientSecret,
     })
@@ -214,7 +219,7 @@ export const CheckoutProvider = ({
       .catch((error) => {
         throw error
       })
-  }, [client, clientSecret])
+  }, [client, clientSecret, initialCheckout])
 
   const refresh = useCallback(async () => {
     const result = await checkoutsClientGet(client, {

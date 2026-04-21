@@ -88,6 +88,7 @@ export default async function Page(props: {
   return (
     <CheckoutProvider
       clientSecret={checkout.client_secret}
+      initialCheckout={checkout}
       serverURL={getPublicServerURL()}
     >
       <CheckoutFormProvider locale={locale}>

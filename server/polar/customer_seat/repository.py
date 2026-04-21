@@ -4,7 +4,8 @@ from uuid import UUID
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.models import AuthSubject, Organization, User
+from polar.authz.service import get_accessible_org_ids
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
 from polar.models import (
@@ -13,10 +14,10 @@ from polar.models import (
     Order,
     Product,
     Subscription,
-    UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
 from polar.order.repository import OrderRepository
+from polar.postgres import AsyncReadSession
 from polar.subscription.repository import SubscriptionRepository
 
 SeatContainer = Subscription | Order
@@ -327,11 +328,11 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_one_or_none(statement)
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[CustomerSeat]]:
         """
-        Get a statement filtered by authorization.
+        Get a statement filtered by organization IDs.
 
         Seats are readable by users/organizations who have access to the product's organization.
         Handles both subscription-based and order-based seats.
@@ -348,18 +349,43 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             )
         )
 
-        if is_user(auth_subject):
-            user_org_ids = select(UserOrganization.organization_id).where(
-                UserOrganization.user_id == auth_subject.subject.id,
-                UserOrganization.is_deleted.is_(False),
-            )
-            statement = statement.where(Product.organization_id.in_(user_org_ids))
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Product.organization_id == auth_subject.subject.id
-            )
+        statement = statement.where(Product.organization_id.in_(org_ids))
 
         return statement
+
+    async def get_by_id_and_org_ids(
+        self,
+        org_ids: set[UUID],
+        seat_id: UUID,
+        *,
+        options: Options = (),
+    ) -> CustomerSeat | None:
+        """Get a seat by ID filtered by organization IDs."""
+        statement = (
+            self.get_by_org_ids_statement(org_ids)
+            .where(CustomerSeat.id == seat_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_subscription_and_org_ids(
+        self,
+        org_ids: set[UUID],
+        seat_id: UUID,
+        subscription_id: UUID,
+        *,
+        options: Options = (),
+    ) -> CustomerSeat | None:
+        """Get a seat by ID and subscription ID filtered by organization IDs."""
+        statement = (
+            self.get_by_org_ids_statement(org_ids)
+            .where(
+                CustomerSeat.id == seat_id,
+                CustomerSeat.subscription_id == subscription_id,
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
 
     async def get_by_id_and_auth_subject(
         self,
@@ -368,13 +394,13 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         *,
         options: Options = (),
     ) -> CustomerSeat | None:
-        """Get a seat by ID filtered by auth subject."""
-        statement = (
-            self.get_readable_statement(auth_subject)
-            .where(CustomerSeat.id == seat_id)
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
+        """Get a seat by ID filtered by auth subject.
+
+        Backward-compatible wrapper; prefer get_by_id_and_org_ids.
+        """
+        session: AsyncReadSession = self.session
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        return await self.get_by_id_and_org_ids(org_ids, seat_id, options=options)
 
     async def get_by_subscription_and_auth_subject(
         self,
@@ -384,16 +410,15 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         *,
         options: Options = (),
     ) -> CustomerSeat | None:
-        """Get a seat by ID and subscription ID filtered by auth subject."""
-        statement = (
-            self.get_readable_statement(auth_subject)
-            .where(
-                CustomerSeat.id == seat_id,
-                CustomerSeat.subscription_id == subscription_id,
-            )
-            .options(*options)
+        """Get a seat by ID and subscription ID filtered by auth subject.
+
+        Backward-compatible wrapper; prefer get_by_subscription_and_org_ids.
+        """
+        session: AsyncReadSession = self.session
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        return await self.get_by_subscription_and_org_ids(
+            org_ids, seat_id, subscription_id, options=options
         )
-        return await self.get_one_or_none(statement)
 
     async def get_active_seat_for_customer(
         self,

@@ -187,6 +187,7 @@ def frozen_time() -> Generator[datetime, None]:
 
 
 @pytest.mark.asyncio
+@pytest.mark.auth
 class TestCreate:
     async def test_product_does_not_exist(
         self,
@@ -217,6 +218,7 @@ class TestCreate:
         auth_subject: AuthSubject[User],
         product_one_time: Product,
         customer: Customer,
+        user_organization: UserOrganization,
     ) -> None:
         subscription_create = SubscriptionCreateCustomer(
             product_id=product_one_time.id,
@@ -240,6 +242,7 @@ class TestCreate:
         auth_subject: AuthSubject[User],
         product: Product,
         customer: Customer,
+        user_organization: UserOrganization,
     ) -> None:
         subscription_create = SubscriptionCreateCustomer(
             product_id=product.id,
@@ -265,6 +268,7 @@ class TestCreate:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         product_recurring_free_price: Product,
+        user_organization: UserOrganization,
     ) -> None:
         subscription_create = SubscriptionCreateCustomer(
             product_id=product_recurring_free_price.id,
@@ -287,6 +291,7 @@ class TestCreate:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         product_recurring_free_price: Product,
+        user_organization: UserOrganization,
     ) -> None:
         subscription_create = SubscriptionCreateExternalCustomer(
             product_id=product_recurring_free_price.id,
@@ -312,6 +317,7 @@ class TestCreate:
         auth_subject: AuthSubject[User],
         product_recurring_free_price: Product,
         customer: Customer,
+        user_organization: UserOrganization,
     ) -> None:
         subscription_create = SubscriptionCreateCustomer(
             product_id=product_recurring_free_price.id,
@@ -352,6 +358,7 @@ class TestCreate:
         auth_subject: AuthSubject[User],
         product_recurring_free_price: Product,
         customer_external_id: Customer,
+        user_organization: UserOrganization,
     ) -> None:
         assert customer_external_id.external_id is not None
 
@@ -381,6 +388,7 @@ class TestCreate:
         auth_subject: AuthSubject[User],
         product_recurring_free_seat_based: Product,
         customer: Customer,
+        user_organization: UserOrganization,
     ) -> None:
         subscription_create = SubscriptionCreateCustomer(
             product_id=product_recurring_free_seat_based.id,
@@ -412,6 +420,7 @@ class TestCreate:
         auth_subject: AuthSubject[User],
         organization: Organization,
         customer: Customer,
+        user_organization: UserOrganization,
     ) -> None:
         product = await create_product(
             save_fixture,
@@ -445,6 +454,7 @@ class TestCreate:
         auth_subject: AuthSubject[User],
         organization: Organization,
         customer: Customer,
+        user_organization: UserOrganization,
     ) -> None:
         """Product with multi-tier pricing where tier 1 is $0/seat but tier 2 is $10/seat."""
         product = await create_product(

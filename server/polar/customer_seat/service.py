@@ -9,6 +9,7 @@ import structlog
 from sqlalchemy import inspect as sa_inspect
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.sender import send_seat_invitation_email
 from polar.customer_session.service import (
@@ -658,9 +659,10 @@ class SeatService:
         seat_id: uuid.UUID,
     ) -> CustomerSeat | None:
         repository = CustomerSeatRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
 
-        seat = await repository.get_by_id_and_auth_subject(
-            auth_subject,
+        seat = await repository.get_by_id_and_org_ids(
+            org_ids,
             seat_id,
             options=repository.get_eager_options(),
         )

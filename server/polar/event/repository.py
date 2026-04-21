@@ -27,7 +27,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import aliased, joinedload
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
@@ -38,7 +37,6 @@ from polar.models import (
     Event,
     EventType,
     Meter,
-    UserOrganization,
 )
 from polar.models.event import EventSource
 from polar.models.product_price import ProductPriceMeteredUnit
@@ -128,10 +126,10 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return await self.get_one_or_none(statement)
 
     def get_event_names_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+        self, org_ids: set[UUID]
     ) -> Select[tuple[str, EventSource, int, datetime, datetime]]:
         return (
-            self.get_readable_statement(auth_subject)
+            self.get_by_org_ids_statement(org_ids)
             .with_only_columns(
                 Event.name,
                 Event.source,
@@ -142,27 +140,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .group_by(Event.name, Event.source)
         )
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[Event]]:
         statement = self.get_base_statement()
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Event.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Event.organization_id == auth_subject.subject.id
-            )
-
+        statement = statement.where(Event.organization_id.in_(org_ids))
         return statement
 
     def get_customer_id_filter_clause(

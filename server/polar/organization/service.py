@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
 from polar.exceptions import PolarError, PolarRequestValidationError
@@ -143,7 +143,8 @@ class OrganizationService:
         ],
     ) -> tuple[Sequence[Organization], int]:
         repository = OrganizationRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if slug is not None:
             statement = statement.where(Organization.slug == slug)
@@ -163,8 +164,9 @@ class OrganizationService:
         options: Options = (),
     ) -> Organization | None:
         repository = OrganizationRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(Organization.id == id)
             .options(*options)
         )

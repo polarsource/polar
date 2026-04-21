@@ -162,6 +162,14 @@ class OrganizationRepository(
                     / 86400
                 )
 
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
+    ) -> Select[tuple[Organization]]:
+        return self.get_base_statement().where(
+            Organization.id.in_(org_ids),
+            Organization.status != OrganizationStatus.BLOCKED,
+        )
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Organization]]:

@@ -1013,6 +1013,7 @@ class OrderService:
         organization = order.organization
         is_renewal_payment = payment_trigger in {
             PaymentTrigger.retry_dunning,
+            PaymentTrigger.retry_customer,
             PaymentTrigger.retry_payment_method_update,
         }
         capability_enabled = (

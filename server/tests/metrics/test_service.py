@@ -3438,13 +3438,16 @@ class TestGetMetrics:
         # Jan & Feb: only the active sub counts; trialing sub excluded
         jan = metrics.periods[0]
         assert jan.monthly_recurring_revenue == 100_00
+        assert jan.trial_monthly_recurring_revenue == 100_00
 
         feb = metrics.periods[1]
         assert feb.monthly_recurring_revenue == 100_00
+        assert feb.trial_monthly_recurring_revenue == 100_00
 
         # Mar: trial ends in this bucket so both subs count
         mar = metrics.periods[2]
         assert mar.monthly_recurring_revenue == 200_00
+        assert mar.trial_monthly_recurring_revenue == 0
 
     async def test_mrr_subscription_forever_discount(
         self,

@@ -278,8 +278,18 @@ def get_active_subscriptions_cte(
         )
         <= interval.sql_date_trunc(timestamp_column),
     )
+    in_trial = and_(
+        Subscription.trial_end.is_not(None),
+        interval.sql_date_trunc(
+            cast(SQLColumnExpression[datetime], Subscription.trial_end)
+        )
+        > interval.sql_date_trunc(timestamp_column),
+    )
     monthly_recurring_revenue = func.coalesce(
         func.sum(monthly_amount).filter(not_in_trial), 0
+    )
+    trial_monthly_recurring_revenue = func.coalesce(
+        func.sum(monthly_amount).filter(in_trial), 0
     )
     committed_monthly_recurring_revenue = func.coalesce(
         func.sum(monthly_amount).filter(
@@ -320,6 +330,8 @@ def get_active_subscriptions_cte(
             expression: ColumnElement[int] | ColumnElement[float] = (
                 monthly_recurring_revenue
             )
+        elif metric.slug == "trial_monthly_recurring_revenue":
+            expression = trial_monthly_recurring_revenue
         elif metric.slug == "committed_monthly_recurring_revenue":
             expression = committed_monthly_recurring_revenue
         elif metric.slug == "average_revenue_per_user":

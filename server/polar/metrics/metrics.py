@@ -242,6 +242,23 @@ class CommittedMonthlyRecurringRevenueMetric(SQLMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class TrialMonthlyRecurringRevenueMetric(SQLMetric):
+    slug = "trial_monthly_recurring_revenue"
+    display_name = "Trial Monthly Recurring Revenue"
+    type = MetricType.currency
+    query = MetricQuery.active_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        raise NotImplementedError("Computed directly in get_active_subscriptions_cte")
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
 class CheckoutsMetric(SQLMetric):
     slug = "checkouts"
     display_name = "Checkouts"
@@ -839,6 +856,7 @@ METRICS_POSTGRES: list[type[SQLMetric]] = [
     ActiveSubscriptionsMetric,
     CommittedSubscriptionsMetric,
     MonthlyRecurringRevenueMetric,
+    TrialMonthlyRecurringRevenueMetric,
     CommittedMonthlyRecurringRevenueMetric,
     AverageRevenuePerUserMetric,
     CheckoutsMetric,

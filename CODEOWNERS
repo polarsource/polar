@@ -3,6 +3,8 @@
 
 # Backend
 server/** @frankie567
+server/polar/metrics/** @Yopi @pieterbeulque
+server/tests/metrics/** @Yopi @pieterbeulque
 
 # Infrastructure
 terraform/** @Yopi

@@ -269,6 +269,7 @@ class OrganizationListView:
         current_direction: str = "asc",
         countries: list[str] | None = None,
         selected_country: str | None = None,
+        selected_first_reviews: str | None = None,
     ) -> Generator[None]:
         """Render the complete list view."""
 
@@ -515,6 +516,26 @@ class OrganizationListView:
                                         text("Reviewed")
                                     with tag.option(value="none"):
                                         text("No Appeal")
+
+                            # Only meaningful on the Review tab
+                            if status_filter == OrganizationStatus.REVIEW:
+                                with tag.div():
+                                    with tag.label(classes="label"):
+                                        with tag.span(
+                                            classes="label-text text-xs font-semibold"
+                                        ):
+                                            text("First Reviews")
+                                    with tag.select(
+                                        classes="select select-bordered select-sm w-full filter-select",
+                                        name="first_reviews",
+                                    ):
+                                        with tag.option(value=""):
+                                            text("All")
+                                        first_review_attrs = {"value": "true"}
+                                        if selected_first_reviews == "true":
+                                            first_review_attrs["selected"] = ""
+                                        with tag.option(**first_review_attrs):
+                                            text("First Reviews (≤ $10)")
 
         # Organization table
         with tag.div(id="org-list", classes="overflow-x-auto"):

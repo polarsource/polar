@@ -107,6 +107,8 @@ logger = structlog.getLogger(__name__)
 
 REVIEW_TICKET_TITLE = "Ongoing organization review"
 
+FIRST_REVIEWS_MAX_THRESHOLD_CENTS = 1000
+
 
 class DeletePayoutAccountForm(BaseModel):
     reason: str
@@ -185,6 +187,7 @@ async def list_organizations(
     risk_level: str | None = Query(""),
     days_in_status: str | None = Query(""),
     has_appeal: str | None = Query(""),
+    first_reviews: str | None = Query(""),
 ) -> None:
     """
     List organizations with enhanced filtering and smart grouping.
@@ -314,6 +317,13 @@ async def list_organizations(
         elif has_appeal == "none":
             stmt = stmt.where(OrganizationReview.appeal_submitted_at.is_(None))
 
+    if first_reviews == "true":
+        stmt = stmt.where(
+            Organization.status == OrganizationStatus.REVIEW,
+            Organization.initially_reviewed_at.is_(None),
+            Organization.next_review_threshold <= FIRST_REVIEWS_MAX_THRESHOLD_CENTS,
+        )
+
     # Apply sorting
     is_desc = direction == "desc"
 
@@ -410,6 +420,7 @@ async def list_organizations(
                 direction,
                 countries,
                 country,
+                selected_first_reviews=first_reviews,
             ):
                 pass
 

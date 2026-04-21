@@ -16,6 +16,7 @@ from polar.customer.schemas.customer import CustomerTeamCreate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.member.repository import MemberRepository
 from polar.member.schemas import MemberOwnerCreate
 from polar.member.service import member_service
 from polar.models import Customer, Organization, Product, User, UserOrganization
@@ -77,9 +78,9 @@ async def _load_active_organizations(
 
 async def _load_active_members(
     session: AsyncSession, organization_id: uuid.UUID
-) -> Sequence[User]:
+) -> Sequence[tuple[User, UserOrganization]]:
     statement = (
-        select(User)
+        select(User, UserOrganization)
         .join(UserOrganization, UserOrganization.user_id == User.id)
         .where(
             UserOrganization.organization_id == organization_id,
@@ -89,7 +90,7 @@ async def _load_active_members(
         .order_by(UserOrganization.created_at)
     )
     result = await session.execute(statement)
-    return result.unique().scalars().all()
+    return [(row[0], row[1]) for row in result.unique().all()]
 
 
 async def _load_existing_external_ids(
@@ -109,9 +110,9 @@ async def _backfill_organization(
     auth_subject: AuthSubject[Organization],
     free_product: Product,
     organization: Organization,
-    members: Sequence[User],
+    members: Sequence[tuple[User, UserOrganization]],
 ) -> _OrganizationTally:
-    owner = members[0]
+    owner, owner_user_org = members[0]
     tally = _OrganizationTally()
 
     customer = await customer_service.create(
@@ -129,21 +130,30 @@ async def _backfill_organization(
         ),
         auth_subject,
     )
+    customer.created_at = organization.created_at
     tally.customers += 1
+
+    member_repository = MemberRepository.from_session(session)
+    owner_member = await member_repository.get_by_customer_and_email(
+        session, customer, email=owner.email
+    )
+    if owner_member is not None:
+        owner_member.created_at = owner_user_org.created_at
     tally.members += 1
 
-    for member in members[1:]:
-        await member_service.create(
+    for user, user_org in members[1:]:
+        created_member = await member_service.create(
             session,
             auth_subject,
             customer_id=customer.id,
-            email=member.email,
-            name=member.public_name,
-            external_id=str(member.id),
+            email=user.email,
+            name=user.public_name,
+            external_id=str(user.id),
         )
+        created_member.created_at = user_org.created_at
         tally.members += 1
 
-    await subscription_service.create(
+    subscription = await subscription_service.create(
         session,
         SubscriptionCreateExternalCustomer(
             product_id=free_product.id,
@@ -151,8 +161,10 @@ async def _backfill_organization(
         ),
         auth_subject,
     )
+    subscription.created_at = organization.created_at
     tally.subscriptions += 1
 
+    await session.flush()
     return tally
 
 
@@ -218,7 +230,7 @@ async def run_backfill(
             if dry_run:
                 typer.echo(
                     f"  Would create {organization.name} ({organization.id}) "
-                    f"owner={members[0].email} members={len(members)}"
+                    f"owner={members[0][0].email} members={len(members)}"
                 )
                 progress.advance(task)
                 continue

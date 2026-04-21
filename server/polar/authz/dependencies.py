@@ -1,6 +1,6 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends
 
@@ -40,7 +40,7 @@ def OrgPolicyGuard(
     *,
     allowed_subjects: set[type] | None = None,
     required_scopes: set[Scope] | None = None,
-) -> type:
+) -> Any:
     """Create a FastAPI dependency that authenticates, resolves an organization,
     and checks a policy — all in one step.
 
@@ -191,4 +191,14 @@ AuthorizeOrgDelete = Annotated[
 ]
 AuthorizeOrgAccess = Annotated[
     AuthorizedOrganization, Depends(OrgPolicyGuard(_always_allow))
+]
+AuthorizeOrgAccessUser = Annotated[
+    AuthorizedOrganization,
+    Depends(
+        OrgPolicyGuard(
+            _always_allow,
+            allowed_subjects={User},
+            required_scopes={Scope.organizations_write},
+        )
+    ),
 ]

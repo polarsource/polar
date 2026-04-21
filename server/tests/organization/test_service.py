@@ -39,7 +39,6 @@ from polar.user_organization.service import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_account,
     create_order,
     create_payout_account,
 )
@@ -1574,7 +1573,6 @@ class TestRequestDeletion:
         ]
         assert organization.deleted_at is None
         enqueue_job_mock.assert_called_once()
-
 
 
 @pytest.mark.asyncio

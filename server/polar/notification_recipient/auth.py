@@ -8,8 +8,6 @@ from polar.auth.scope import Scope
 
 _NotificationRecipientRead = Authenticator(
     required_scopes={
-        Scope.web_read,
-        Scope.web_write,
         Scope.notification_recipients_read,
         Scope.notification_recipients_write,
     },
@@ -21,7 +19,6 @@ NotificationRecipientRead = Annotated[
 
 _NotificationRecipientWrite = Authenticator(
     required_scopes={
-        Scope.web_write,
         Scope.notification_recipients_write,
     },
     allowed_subjects={User},

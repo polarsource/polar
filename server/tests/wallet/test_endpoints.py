@@ -46,7 +46,7 @@ class TestListWallets:
         assert json["pagination"]["total_count"] == 0
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_read}),
+        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.wallets_read}),
     )
     async def test_user_valid(
@@ -85,7 +85,7 @@ class TestGetWallet:
         assert response.status_code == 404
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_read}),
+        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.wallets_read}),
     )
     async def test_user_valid(

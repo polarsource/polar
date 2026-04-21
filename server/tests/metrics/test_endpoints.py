@@ -19,7 +19,7 @@ class TestGetMetrics:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_read}),
+        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_over_limits(
@@ -37,7 +37,7 @@ class TestGetMetrics:
         assert response.status_code == 422
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_read}),
+        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_user_valid(
@@ -314,7 +314,7 @@ class TestGetMetricsLimits:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_read}),
+        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read}),
     )

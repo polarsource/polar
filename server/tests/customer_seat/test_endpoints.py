@@ -28,12 +28,7 @@ from tests.fixtures.random_objects import (
 
 # Auth fixture with the required scopes for seat endpoints
 SEAT_AUTH = AuthSubjectFixture(
-    scopes={
-        Scope.web_read,
-        Scope.web_write,
-        Scope.subscriptions_read,
-        Scope.subscriptions_write,
-    }
+    scopes=set(Scope),
 )
 
 

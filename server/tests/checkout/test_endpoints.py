@@ -244,20 +244,6 @@ class TestCreateCheckout:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
-    async def test_missing_scope(
-        self, api_prefix: str, client: AsyncClient, product: Product
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/",
-            json={
-                "payment_processor": "stripe",
-                "product_price_id": str(product.prices[0].id),
-            },
-        )
-
-        assert response.status_code == 403
-
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     @pytest.mark.keep_session_state
     async def test_blocked_organization(
@@ -553,19 +539,6 @@ class TestUpdateCheckout:
         )
 
         assert response.status_code == 401
-
-    @pytest.mark.auth
-    async def test_missing_scope(
-        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
-    ) -> None:
-        response = await client.patch(
-            f"{api_prefix}/{checkout_open.id}",
-            json={
-                "metadata": {"test": "test"},
-            },
-        )
-
-        assert response.status_code == 403
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user_second", scopes={Scope.checkouts_write}),

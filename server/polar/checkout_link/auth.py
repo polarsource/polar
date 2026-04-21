@@ -9,8 +9,6 @@ from polar.models.organization import Organization
 
 _CheckoutLinkRead = Authenticator(
     required_scopes={
-        Scope.web_read,
-        Scope.web_write,
         Scope.checkout_links_read,
         Scope.checkout_links_write,
     },
@@ -22,7 +20,6 @@ CheckoutLinkRead = Annotated[
 
 _CheckoutLinkWrite = Authenticator(
     required_scopes={
-        Scope.web_write,
         Scope.checkout_links_write,
     },
     allowed_subjects={User, Organization},

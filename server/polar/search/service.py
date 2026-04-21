@@ -41,39 +41,22 @@ class SearchService:
     def _has_products_scope(self, auth_subject: AuthSubject[User]) -> bool:
         return bool(
             auth_subject.scopes
-            & {
-                Scope.web_read,
-                Scope.web_write,
-                Scope.products_read,
-                Scope.products_write,
-            }
+            & {Scope.products_read, Scope.products_write}
         )
 
     def _has_customers_scope(self, auth_subject: AuthSubject[User]) -> bool:
         return bool(
             auth_subject.scopes
-            & {
-                Scope.web_read,
-                Scope.web_write,
-                Scope.customers_read,
-                Scope.customers_write,
-            }
+            & {Scope.customers_read, Scope.customers_write}
         )
 
     def _has_orders_scope(self, auth_subject: AuthSubject[User]) -> bool:
-        return bool(
-            auth_subject.scopes & {Scope.web_read, Scope.web_write, Scope.orders_read}
-        )
+        return bool(auth_subject.scopes & {Scope.orders_read, Scope.orders_write})
 
     def _has_subscriptions_scope(self, auth_subject: AuthSubject[User]) -> bool:
         return bool(
             auth_subject.scopes
-            & {
-                Scope.web_read,
-                Scope.web_write,
-                Scope.subscriptions_read,
-                Scope.subscriptions_write,
-            }
+            & {Scope.subscriptions_read, Scope.subscriptions_write}
         )
 
     async def search(

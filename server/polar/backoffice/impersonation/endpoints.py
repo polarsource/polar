@@ -54,7 +54,7 @@ async def start_impersonation(
         session=session,
         user=target_user,
         user_agent=request.headers.get("User-Agent", ""),
-        scopes=[Scope.web_read],
+        scopes=list(Scope),
         expire_in=timedelta(minutes=60),
     )
 

@@ -11,18 +11,51 @@ from sqlalchemy import (
     ColumnElement,
     Integer,
     SQLColumnExpression,
+    and_,
     case,
     func,
     or_,
 )
 
-from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.models import Checkout, Subscription
 from polar.models.checkout import CheckoutStatus
 
 from .queries import MetricQuery
 from .queries_tinybird import TinybirdQuery
+
+# `t` is the `timestamp` column of the `active_subscription_buckets` CTE built
+# in queries.py; `t.table.c` gives access to sibling columns (monthly_amount,
+# trial_end, ended_or_ends_at, subscription_id, customer_id).
+
+
+def _not_in_trial(t: ColumnElement[datetime], i: TimeInterval) -> ColumnElement[bool]:
+    buckets = t.table.c
+    return or_(
+        buckets.trial_end.is_(None),
+        i.sql_date_trunc(cast(SQLColumnExpression[datetime], buckets.trial_end))
+        <= i.sql_date_trunc(t),
+    )
+
+
+def _in_trial(t: ColumnElement[datetime], i: TimeInterval) -> ColumnElement[bool]:
+    buckets = t.table.c
+    return and_(
+        buckets.trial_end.is_not(None),
+        i.sql_date_trunc(cast(SQLColumnExpression[datetime], buckets.trial_end))
+        > i.sql_date_trunc(t),
+    )
+
+
+def _not_ended_as_of(
+    t: ColumnElement[datetime], i: TimeInterval, when: datetime
+) -> ColumnElement[bool]:
+    buckets = t.table.c
+    return or_(
+        buckets.ended_or_ends_at.is_(None),
+        i.sql_date_trunc(cast(SQLColumnExpression[datetime], buckets.ended_or_ends_at))
+        < i.sql_date_trunc(when),
+    )
 
 
 class MetricType(StrEnum):
@@ -82,7 +115,7 @@ class ActiveSubscriptionsMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.count(Subscription.id)
+        return func.count(t.table.c.subscription_id)
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -99,18 +132,7 @@ class CommittedSubscriptionsMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            or_(
-                func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
-                i.sql_date_trunc(
-                    cast(
-                        SQLColumnExpression[datetime],
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at),
-                    )
-                )
-                < i.sql_date_trunc(now),
-            )
-        )
+        return func.count(t.table.c.subscription_id).filter(_not_ended_as_of(t, i, now))
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -128,44 +150,7 @@ class MonthlyRecurringRevenueMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.coalesce(
-            func.sum(
-                case(
-                    (
-                        Subscription.recurring_interval
-                        == SubscriptionRecurringInterval.year,
-                        func.round(
-                            Subscription.amount
-                            / (12 * Subscription.recurring_interval_count)
-                        ),
-                    ),
-                    (
-                        Subscription.recurring_interval
-                        == SubscriptionRecurringInterval.month,
-                        func.round(
-                            Subscription.amount / Subscription.recurring_interval_count
-                        ),
-                    ),
-                    (
-                        Subscription.recurring_interval
-                        == SubscriptionRecurringInterval.week,
-                        func.round(
-                            Subscription.amount
-                            * 52
-                            / (12 * Subscription.recurring_interval_count)
-                        ),
-                    ),
-                    (
-                        Subscription.recurring_interval
-                        == SubscriptionRecurringInterval.day,
-                        func.round(
-                            Subscription.amount
-                            * 365
-                            / (12 * Subscription.recurring_interval_count)
-                        ),
-                    ),
-                )
-            ),
-            0,
+            func.sum(t.table.c.monthly_amount).filter(_not_in_trial(t, i)), 0
         )
 
     @classmethod
@@ -183,56 +168,10 @@ class CommittedMonthlyRecurringRevenueMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
+        buckets = t.table.c
         return func.coalesce(
-            func.sum(
-                case(
-                    (
-                        Subscription.recurring_interval
-                        == SubscriptionRecurringInterval.year,
-                        func.round(
-                            Subscription.amount
-                            / (12 * Subscription.recurring_interval_count)
-                        ),
-                    ),
-                    (
-                        Subscription.recurring_interval
-                        == SubscriptionRecurringInterval.month,
-                        func.round(
-                            Subscription.amount / Subscription.recurring_interval_count
-                        ),
-                    ),
-                    (
-                        Subscription.recurring_interval
-                        == SubscriptionRecurringInterval.week,
-                        func.round(
-                            Subscription.amount
-                            * 52
-                            / (12 * Subscription.recurring_interval_count)
-                        ),
-                    ),
-                    (
-                        Subscription.recurring_interval
-                        == SubscriptionRecurringInterval.day,
-                        func.round(
-                            Subscription.amount
-                            * 365
-                            / (12 * Subscription.recurring_interval_count)
-                        ),
-                    ),
-                )
-            ).filter(
-                or_(
-                    func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
-                        None
-                    ),
-                    i.sql_date_trunc(
-                        cast(
-                            SQLColumnExpression[datetime],
-                            func.coalesce(Subscription.ended_at, Subscription.ends_at),
-                        )
-                    )
-                    < i.sql_date_trunc(now),
-                )
+            func.sum(buckets.monthly_amount).filter(
+                and_(_not_in_trial(t, i), _not_ended_as_of(t, i, now))
             ),
             0,
         )
@@ -252,7 +191,9 @@ class TrialMonthlyRecurringRevenueMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        raise NotImplementedError("Computed directly in get_active_subscriptions_cte")
+        return func.coalesce(
+            func.sum(t.table.c.monthly_amount).filter(_in_trial(t, i)), 0
+        )
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -341,51 +282,14 @@ class AverageRevenuePerUserMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
+        subscriber_count = func.count(t.table.c.customer_id.distinct())
+        mrr = func.coalesce(
+            func.sum(t.table.c.monthly_amount).filter(_not_in_trial(t, i)), 0
+        )
         return func.cast(
             case(
-                (func.count(Subscription.customer_id.distinct()) == 0, 0),
-                else_=func.coalesce(
-                    func.sum(
-                        case(
-                            (
-                                Subscription.recurring_interval
-                                == SubscriptionRecurringInterval.year,
-                                func.round(
-                                    Subscription.amount
-                                    / (12 * Subscription.recurring_interval_count)
-                                ),
-                            ),
-                            (
-                                Subscription.recurring_interval
-                                == SubscriptionRecurringInterval.month,
-                                func.round(
-                                    Subscription.amount
-                                    / Subscription.recurring_interval_count
-                                ),
-                            ),
-                            (
-                                Subscription.recurring_interval
-                                == SubscriptionRecurringInterval.week,
-                                func.round(
-                                    Subscription.amount
-                                    * 52
-                                    / (12 * Subscription.recurring_interval_count)
-                                ),
-                            ),
-                            (
-                                Subscription.recurring_interval
-                                == SubscriptionRecurringInterval.day,
-                                func.round(
-                                    Subscription.amount
-                                    * 365
-                                    / (12 * Subscription.recurring_interval_count)
-                                ),
-                            ),
-                        )
-                    ),
-                    0,
-                )
-                / func.count(Subscription.customer_id.distinct()),
+                (subscriber_count == 0, 0),
+                else_=func.round(mrr / subscriber_count),
             ),
             Integer,
         )

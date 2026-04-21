@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Protocol, cast
 from sqlalchemy import (
     CTE,
     ColumnElement,
-    Integer,
     Numeric,
     Select,
     SQLColumnExpression,
@@ -271,75 +270,6 @@ def get_active_subscriptions_cte(
         ),
     )
 
-    not_in_trial = or_(
-        Subscription.trial_end.is_(None),
-        interval.sql_date_trunc(
-            cast(SQLColumnExpression[datetime], Subscription.trial_end)
-        )
-        <= interval.sql_date_trunc(timestamp_column),
-    )
-    in_trial = and_(
-        Subscription.trial_end.is_not(None),
-        interval.sql_date_trunc(
-            cast(SQLColumnExpression[datetime], Subscription.trial_end)
-        )
-        > interval.sql_date_trunc(timestamp_column),
-    )
-    monthly_recurring_revenue = func.coalesce(
-        func.sum(monthly_amount).filter(not_in_trial), 0
-    )
-    trial_monthly_recurring_revenue = func.coalesce(
-        func.sum(monthly_amount).filter(in_trial), 0
-    )
-    committed_monthly_recurring_revenue = func.coalesce(
-        func.sum(monthly_amount).filter(
-            and_(
-                not_in_trial,
-                or_(
-                    func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
-                        None
-                    ),
-                    interval.sql_date_trunc(
-                        cast(
-                            SQLColumnExpression[datetime],
-                            func.coalesce(Subscription.ended_at, Subscription.ends_at),
-                        )
-                    )
-                    < interval.sql_date_trunc(now),
-                ),
-            )
-        ),
-        0,
-    )
-    active_subscriber_count = func.count(Subscription.customer_id.distinct())
-    average_revenue_per_user = func.cast(
-        case(
-            (active_subscriber_count == 0, 0),
-            else_=func.round(monthly_recurring_revenue / active_subscriber_count),
-        ),
-        Integer,
-    )
-
-    active_subscriptions_metrics = [
-        metric for metric in metrics if metric.query == MetricQuery.active_subscriptions
-    ]
-
-    metric_columns: list[ColumnElement[int] | ColumnElement[float]] = []
-    for metric in active_subscriptions_metrics:
-        if metric.slug == "monthly_recurring_revenue":
-            expression: ColumnElement[int] | ColumnElement[float] = (
-                monthly_recurring_revenue
-            )
-        elif metric.slug == "trial_monthly_recurring_revenue":
-            expression = trial_monthly_recurring_revenue
-        elif metric.slug == "committed_monthly_recurring_revenue":
-            expression = committed_monthly_recurring_revenue
-        elif metric.slug == "average_revenue_per_user":
-            expression = average_revenue_per_user
-        else:
-            expression = metric.get_sql_expression(timestamp_column, interval, now)
-        metric_columns.append(func.coalesce(expression, 0).label(metric.slug))
-
     from_clause = timestamp_series.join(
         Subscription,
         isouter=True,
@@ -375,14 +305,39 @@ def get_active_subscriptions_cte(
         ),
     )
 
-    return cte(
+    active_subscription_buckets = cte(
         select(
             timestamp_column.label("timestamp"),
+            Subscription.id.label("subscription_id"),
+            Subscription.customer_id.label("customer_id"),
+            Subscription.trial_end.label("trial_end"),
+            func.coalesce(Subscription.ended_at, Subscription.ends_at).label(
+                "ended_or_ends_at"
+            ),
+            monthly_amount.label("monthly_amount"),
+        ).select_from(from_clause)
+    )
+
+    active_subscriptions_metrics = [
+        metric for metric in metrics if metric.query == MetricQuery.active_subscriptions
+    ]
+
+    buckets_timestamp = active_subscription_buckets.c.timestamp
+    metric_columns = [
+        func.coalesce(
+            metric.get_sql_expression(buckets_timestamp, interval, now), 0
+        ).label(metric.slug)
+        for metric in active_subscriptions_metrics
+    ]
+
+    return cte(
+        select(
+            buckets_timestamp.label("timestamp"),
             *metric_columns,
         )
-        .select_from(from_clause)
-        .group_by(timestamp_column)
-        .order_by(timestamp_column.asc())
+        .select_from(active_subscription_buckets)
+        .group_by(buckets_timestamp)
+        .order_by(buckets_timestamp.asc())
     )
 
 

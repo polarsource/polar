@@ -924,8 +924,20 @@ class OrganizationService:
         ):
             reason = review.appeal_reason or "Appeal approved"
 
+        # On first activation keep the small default threshold so the next
+        # review fires quickly once the merchant starts taking payments.
+        # Reactivations fall back to confirm_organization_reviewed's doubling
+        # logic.
+        next_review_threshold: int | None = None
+        if organization.initially_reviewed_at is None:
+            next_review_threshold = organization.next_review_threshold
+
         await self.confirm_organization_reviewed(
-            session, organization, reason=reason, silent=True
+            session,
+            organization,
+            next_review_threshold=next_review_threshold,
+            reason=reason,
+            silent=True,
         )
         log.info(
             "organization.maybe_activate.activated",

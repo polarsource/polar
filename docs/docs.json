@@ -96,7 +96,15 @@
               "features/refunds",
               "features/analytics",
               "features/customer-management",
-              "features/customer-portal",
+              {
+                "group": "Customer Portal",
+                "pages": [
+                  "features/customer-portal/introduction",
+                  "features/customer-portal/navigate-customers",
+                  "features/customer-portal/settings",
+                  "features/customer-portal/faq"
+                ]
+              },
               {
                 "group": "Finance & Payouts",
                 "pages": [
@@ -765,7 +773,15 @@
     },
     {
       "source": "/documentation/features/customer-portal",
-      "destination": "/features/customer-portal"
+      "destination": "/features/customer-portal/introduction"
+    },
+    {
+      "source": "/features/customer-portal",
+      "destination": "/features/customer-portal/introduction"
+    },
+    {
+      "source": "/docs/features/customer-portal",
+      "destination": "/features/customer-portal/introduction"
     },
     {
       "source": "/documentation/features/finance/accounts",

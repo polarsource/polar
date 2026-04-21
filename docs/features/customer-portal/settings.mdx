@@ -1,0 +1,37 @@
+---
+title: "Customer Portal Settings"
+sidebarTitle: "Settings"
+description: "Configure what customers can do from the Customer Portal"
+---
+
+All Customer Portal settings live under **Settings → Billing → Customer portal** in your Polar dashboard. Each setting is a toggle that enables or disables a specific capability for your customers.
+
+## Show metered usage
+
+Adds a **Usage** tab to the Customer Portal where customers can see their current consumption for each meter on their subscription.
+
+This is only relevant if you've configured [meters](/features/usage-based-billing/meters) on your products. Disabling this toggle hides usage from the portal UI but has no effect on the Customer Portal API — if you're building a custom usage surface in your own app, the [customer meters endpoints](/api-reference/customer-meters/list) continue to work regardless.
+
+## Enable subscription seat management
+
+Allows customers to change the number of seats on their active subscription, and to assign or revoke seats for their teammates, directly from the portal.
+
+This setting is only relevant when you offer [seat-based prices](/features/seat-based-pricing). If you disable it, customers can't change seat counts or manage assignments from the portal — you'll need to build that flow yourself against the [Customer Seats API](/api-reference/customer-seats/assign).
+
+## Allow email address changes
+
+Gives customers the option to change the email address associated with their customer record after purchasing. The new email must be verified through a confirmation link before the change takes effect.
+
+<Note>
+  When this is enabled, you'll probably want to listen for the
+  [`customer.updated`](/api-reference/webhooks/customer.updated) webhook and
+  sync the new email back into your own user system, so the two stay in sync.
+</Note>
+
+## Enable subscription plan changes
+
+Lets customers switch between products on their own — upgrading, downgrading, or moving to a different plan entirely — without contacting you.
+
+Plan changes follow your [proration settings](/guides/proration-for-subscription-changes). If you'd rather handle plan changes yourself (for example, because you gate them behind custom logic in your app), disable this and drive updates through the [Update Subscription](/api-reference/subscriptions/update) endpoint instead.
+
+See also: [Disable subscription changes in the customer portal](/guides/disable-subscription-changes-in-customer-portal).

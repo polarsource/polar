@@ -1,0 +1,64 @@
+---
+title: "Customer Portal"
+sidebarTitle: "Introduction"
+description: "The self-service destination for your customers"
+---
+
+The Customer Portal is a hosted, self-service page where your customers can manage everything related to their relationship with your business — without having to email your support team.
+
+<img className="block dark:hidden" src="/assets/features/customer-portal/overview.light.png" />
+<img className="hidden dark:block" src="/assets/features/customer-portal/overview.dark.png" />
+
+## What customers can do
+
+From the Customer Portal, your customers can:
+
+- View their **active subscriptions** and past **purchase history**
+- **Download and edit invoices** (e.g. add a company name, VAT number, or billing address)
+- **Access benefits** they're entitled to — license keys, file downloads, Discord access, etc.
+- **Cancel active subscriptions** on their own
+- **Update their default payment method** — the primary way for customers to recover from failed payments
+- Optionally, change their email address, switch subscription plans, manage seats, and view metered usage (see [Settings](/features/customer-portal/settings))
+
+## Why it matters
+
+The Customer Portal isn't just a convenience feature — it's a critical piece of your billing stack:
+
+- **Failed payment recovery.** When a subscription renewal fails, the portal is where customers update their card so they don't lose access. Because Polar is PCI-compliant, you never have to handle card details yourself.
+- **Self-service cancellations.** Some jurisdictions (notably California under the [Automatic Renewal Law](https://oag.ca.gov/consumers/auto-renewing-subscriptions)) legally require customers to be able to cancel a subscription the same way they signed up. The Customer Portal satisfies that requirement out of the box.
+- **Invoice access.** Customers can always retrieve and edit their invoices for bookkeeping and tax purposes, without pulling you into a support thread.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Navigate customers to the portal"
+    icon="arrow-up-right-from-square"
+    href="/features/customer-portal/navigate-customers"
+  >
+    Use the default portal URL, generate authenticated links, or rely on the
+    emails Polar already sends.
+  </Card>
+  <Card
+    title="Customer portal settings"
+    icon="sliders"
+    href="/features/customer-portal/settings"
+  >
+    Configure what your customers can do from the portal under Settings →
+    Billing → Customer portal.
+  </Card>
+  <Card
+    title="FAQ"
+    icon="circle-question"
+    href="/features/customer-portal/faq"
+  >
+    Common questions about the Customer Portal.
+  </Card>
+  <Card
+    title="Customer Portal API"
+    icon="code"
+    href="/api-reference/customer-portal/get-customer"
+  >
+    Build your own portal experience on top of the Customer Portal API.
+  </Card>
+</CardGroup>

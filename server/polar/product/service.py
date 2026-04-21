@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject, is_user
+from polar.authz.service import get_accessible_org_ids
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
@@ -78,7 +79,8 @@ class ProductService:
         ],
     ) -> tuple[Sequence[Product], int]:
         repository = ProductRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).join(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).join(
             ProductPrice,
             onclause=(
                 ProductPrice.id
@@ -143,8 +145,9 @@ class ProductService:
         id: uuid.UUID,
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(Product.id == id)
             .options(*repository.get_eager_options())
         )

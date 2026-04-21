@@ -1,9 +1,8 @@
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -12,7 +11,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Benefit, UserOrganization
+from polar.models import Benefit
 from polar.models.product_benefit import ProductBenefit
 
 from .sorting import BenefitSortProperty
@@ -44,26 +43,11 @@ class BenefitRepository(
     def get_eager_options(self) -> Options:
         return (joinedload(Benefit.organization),)
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[Benefit]]:
         statement = self.get_base_statement()
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Benefit.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Benefit.organization_id == auth_subject.subject.id,
-            )
-
+        statement = statement.where(Benefit.organization_id.in_(org_ids))
         return statement
 
     def get_sorting_clause(self, property: BenefitSortProperty) -> SortingClause:

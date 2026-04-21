@@ -3,11 +3,12 @@ from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, String, cast, func, or_, select, update
+from sqlalchemy import Select, String, cast, func, or_, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.models import AuthSubject, Organization, User
+from polar.authz.service import get_accessible_org_ids
 from polar.event.system import CustomerUpdatedFields, SystemEvent
 from polar.kit.address import Address
 from polar.kit.repository import (
@@ -16,7 +17,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Customer, UserOrganization
+from polar.models import Customer
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
 
@@ -181,7 +182,8 @@ class CustomerRepository(
         auth_subject: AuthSubject[User | Organization],
         organization_id: Sequence[UUID] | None,
     ) -> AsyncGenerator[Customer]:
-        statement = self.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(self.session, auth_subject)
+        statement = self.get_by_org_ids_statement(org_ids)
 
         if organization_id is not None:
             statement = statement.where(
@@ -198,8 +200,9 @@ class CustomerRepository(
         *,
         options: Options = (),
     ) -> Customer | None:
+        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
-            self.get_readable_statement(auth_subject)
+            self.get_by_org_ids_statement(org_ids)
             .where(Customer.id == id)
             .options(*options)
         )
@@ -212,8 +215,9 @@ class CustomerRepository(
         *,
         options: Options = (),
     ) -> Customer | None:
+        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
-            self.get_readable_statement(auth_subject)
+            self.get_by_org_ids_statement(org_ids)
             .where(Customer.external_id == external_id)
             .options(*options)
         )
@@ -224,8 +228,9 @@ class CustomerRepository(
         auth_subject: AuthSubject[User | Organization],
         customer_ids: Sequence[UUID],
     ) -> list[str]:
+        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
-            self.get_readable_statement(auth_subject)
+            self.get_by_org_ids_statement(org_ids)
             .with_only_columns(Customer.external_id)
             .where(
                 Customer.id.in_(customer_ids),
@@ -240,8 +245,9 @@ class CustomerRepository(
         auth_subject: AuthSubject[User | Organization],
         external_ids: Sequence[str],
     ) -> list[UUID]:
+        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
-            self.get_readable_statement(auth_subject)
+            self.get_by_org_ids_statement(org_ids)
             .with_only_columns(Customer.id)
             .where(Customer.external_id.in_(external_ids))
         )
@@ -254,8 +260,9 @@ class CustomerRepository(
         organization_ids: Sequence[UUID],
         query: str,
     ) -> tuple[list[UUID], list[str]]:
+        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
-            self.get_readable_statement(auth_subject)
+            self.get_by_org_ids_statement(org_ids)
             .with_only_columns(Customer.id, Customer.external_id)
             .where(
                 Customer.organization_id.in_(organization_ids),
@@ -273,26 +280,11 @@ class CustomerRepository(
         external_ids = [r.external_id for r in rows if r.external_id is not None]
         return customer_ids, external_ids
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[Customer]]:
         statement = self.get_base_statement()
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Customer.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Customer.organization_id == auth_subject.subject.id,
-            )
-
+        statement = statement.where(Customer.organization_id.in_(org_ids))
         return statement
 
     async def increment_invoice_next_number(self, customer_id: UUID) -> int:

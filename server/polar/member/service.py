@@ -79,9 +79,7 @@ class MemberService:
         """Get a member by ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(
-            Member.id == id
-        )
+        statement = repository.get_by_org_ids_statement(org_ids).where(Member.id == id)
         return await repository.get_one_or_none(statement)
 
     async def get_by_external_id(

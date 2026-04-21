@@ -14,12 +14,8 @@ class EventTypeRepository(
 ):
     model = EventType
 
-    def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
-    ) -> Select[tuple[EventType]]:
-        return self.get_base_statement().where(
-            EventType.organization_id.in_(org_ids)
-        )
+    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[EventType]]:
+        return self.get_base_statement().where(EventType.organization_id.in_(org_ids))
 
     async def get_by_name_and_organization(
         self, name: str, organization_id: UUID

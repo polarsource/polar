@@ -106,9 +106,7 @@ class LicenseKeyRepository(
 
         return statement
 
-    def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
-    ) -> Select[tuple[LicenseKey]]:
+    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[LicenseKey]]:
         statement = self.get_base_statement()
         statement = statement.where(LicenseKey.organization_id.in_(org_ids))
         return statement

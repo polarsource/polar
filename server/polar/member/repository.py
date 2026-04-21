@@ -176,9 +176,5 @@ class MemberRepository(
         result = await session.execute(statement)
         return result.scalars().all()
 
-    def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
-    ) -> Select[tuple[Member]]:
-        return self.get_base_statement().where(
-            Member.organization_id.in_(org_ids)
-        )
+    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Member]]:
+        return self.get_base_statement().where(Member.organization_id.in_(org_ids))

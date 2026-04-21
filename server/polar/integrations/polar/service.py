@@ -87,11 +87,11 @@ class PolarSelfService:
             organization_id=settings.POLAR_ORGANIZATION_ID,
         )
 
-    def enqueue_track_llm_usage(
+    def enqueue_track_organization_review_usage(
         self,
         *,
         external_customer_id: str,
-        event_name: str,
+        review_context: str,
         vendor: str,
         model: str,
         input_tokens: int,
@@ -108,9 +108,9 @@ class PolarSelfService:
         if cost_decimal <= 0:
             return
         enqueue_job(
-            "polar_self.track_llm_usage",
+            "polar_self.track_organization_review_usage",
             external_customer_id=external_customer_id,
-            event_name=event_name,
+            review_context=review_context,
             vendor=vendor,
             model=model,
             input_tokens=input_tokens,

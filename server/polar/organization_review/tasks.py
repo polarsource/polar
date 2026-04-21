@@ -99,9 +99,9 @@ async def run_review_agent(
             estimated_cost_usd=result.usage.estimated_cost_usd,
         )
 
-        polar_self.enqueue_track_llm_usage(
+        polar_self.enqueue_track_organization_review_usage(
             external_customer_id=str(organization_id),
-            event_name=f"ai.organization_review.{review_context.value}",
+            review_context=review_context.value,
             vendor=result.model_provider,
             model=result.model_used,
             input_tokens=result.usage.input_tokens,

@@ -118,16 +118,16 @@ class TestEnqueueEventIngestion:
         enqueue.assert_not_called()
 
 
-class TestEnqueueTrackLLMUsage:
+class TestEnqueueTrackOrganizationReviewUsage:
     def _call(
         self,
         *,
         external_customer_id: str = str(ORG_A),
         cost_usd: Decimal | float | None = Decimal("0.0123"),
     ) -> None:
-        polar_self.enqueue_track_llm_usage(
+        polar_self.enqueue_track_organization_review_usage(
             external_customer_id=external_customer_id,
-            event_name="ai.organization_review.submission",
+            review_context="submission",
             vendor="openai",
             model="gpt-4o-mini",
             input_tokens=100,
@@ -179,9 +179,9 @@ class TestEnqueueTrackLLMUsage:
         self._call(cost_usd=Decimal("0.0123"))
 
         enqueue.assert_called_once_with(
-            "polar_self.track_llm_usage",
+            "polar_self.track_organization_review_usage",
             external_customer_id=str(ORG_A),
-            event_name="ai.organization_review.submission",
+            review_context="submission",
             vendor="openai",
             model="gpt-4o-mini",
             input_tokens=100,

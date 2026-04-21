@@ -99,19 +99,22 @@ async def track_event_ingestion(
     )
 
 
-@actor(actor_name="polar_self.track_llm_usage", priority=TaskPriority.LOW)
-async def track_llm_usage(
+@actor(
+    actor_name="polar_self.track_organization_review_usage",
+    priority=TaskPriority.LOW,
+)
+async def track_organization_review_usage(
     external_customer_id: str,
-    event_name: str,
+    review_context: str,
     vendor: str,
     model: str,
     input_tokens: int,
     output_tokens: int,
     cost_usd: str,
 ) -> None:
-    await get_client().track_llm_usage(
+    await get_client().track_organization_review_usage(
         external_customer_id=external_customer_id,
-        event_name=event_name,
+        review_context=review_context,
         vendor=vendor,
         model=model,
         input_tokens=input_tokens,

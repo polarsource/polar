@@ -12,7 +12,7 @@ from polar.integrations.polar.tasks import (
     add_member,
     delete_customer,
     remove_member,
-    track_llm_usage,
+    track_organization_review_usage,
 )
 
 
@@ -187,7 +187,7 @@ class TestDeleteCustomer:
 
 
 @pytest.mark.asyncio
-class TestTrackLLMUsage:
+class TestTrackOrganizationReviewUsage:
     async def test_calls_client_with_decimal_cost(
         self,
         mocker: MockerFixture,
@@ -195,9 +195,9 @@ class TestTrackLLMUsage:
         client = AsyncMock(spec=PolarSelfClient)
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
 
-        await track_llm_usage(
+        await track_organization_review_usage(
             external_customer_id="org-123",
-            event_name="ai.organization_review.submission",
+            review_context="submission",
             vendor="openai",
             model="gpt-4o-mini",
             input_tokens=100,
@@ -205,9 +205,9 @@ class TestTrackLLMUsage:
             cost_usd="0.0123",
         )
 
-        client.track_llm_usage.assert_called_once_with(
+        client.track_organization_review_usage.assert_called_once_with(
             external_customer_id="org-123",
-            event_name="ai.organization_review.submission",
+            review_context="submission",
             vendor="openai",
             model="gpt-4o-mini",
             input_tokens=100,

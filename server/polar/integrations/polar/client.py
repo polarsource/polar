@@ -231,11 +231,11 @@ class PolarSelfClient:
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "track_event_ingestion")
 
-    async def track_llm_usage(
+    async def track_organization_review_usage(
         self,
         *,
         external_customer_id: str,
-        event_name: str,
+        review_context: str,
         vendor: str,
         model: str,
         input_tokens: int,
@@ -252,11 +252,12 @@ class PolarSelfClient:
 
         total_tokens = input_tokens + output_tokens
         cost_cents = cost_usd * Decimal(100)
+        root_external_id = f"organization_review-{external_customer_id}"
 
         with logfire.span(
-            "polar.track_llm_usage",
+            "polar.track_organization_review_usage",
             external_customer_id=external_customer_id,
-            event_name=event_name,
+            review_context=review_context,
             vendor=vendor,
             model=model,
             input_tokens=input_tokens,
@@ -268,8 +269,14 @@ class PolarSelfClient:
                     request=EventsIngest(
                         events=[
                             EventCreateExternalCustomer(
-                                name=event_name,
+                                name="organization_review",
                                 external_customer_id=external_customer_id,
+                                external_id=root_external_id,
+                            ),
+                            EventCreateExternalCustomer(
+                                name=f"organization_review.{review_context}",
+                                external_customer_id=external_customer_id,
+                                parent_id=root_external_id,
                                 metadata={
                                     "_llm": LLMMetadata(
                                         vendor=vendor,
@@ -283,7 +290,7 @@ class PolarSelfClient:
                                         currency="usd",
                                     ),
                                 },
-                            )
+                            ),
                         ]
                     )
                 )
@@ -291,9 +298,9 @@ class PolarSelfClient:
                 if e.status_code == 409:
                     span.set_attribute("conflict", True)
                     return
-                _raise_error(span, e, "track_llm_usage")
+                _raise_error(span, e, "track_organization_review_usage")
             except httpx.RequestError as e:
-                _raise_network_error(span, e, "track_llm_usage")
+                _raise_network_error(span, e, "track_organization_review_usage")
 
 
 _client: PolarSelfClient | None = None

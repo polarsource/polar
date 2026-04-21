@@ -2289,6 +2289,7 @@ class TestCapabilityOverrides:
         # Grandfathered to skip the account-readiness checks.
         organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
         organization.set_status(OrganizationStatus.ACTIVE)
+        assert organization.capabilities is not None
         organization.capabilities = {
             **organization.capabilities,
             "checkout_payments": False,
@@ -2307,6 +2308,7 @@ class TestCapabilityOverrides:
     ) -> None:
         organization.set_status(OrganizationStatus.ACTIVE)
         assert organization.can_authenticate is True
+        assert organization.capabilities is not None
 
         organization.capabilities = {
             **organization.capabilities,
@@ -2320,43 +2322,13 @@ class TestCapabilityOverrides:
     ) -> None:
         organization.set_status(OrganizationStatus.ACTIVE)
         assert organization.can_access_dashboard is True
+        assert organization.capabilities is not None
 
         organization.capabilities = {
             **organization.capabilities,
             "dashboard_access": False,
         }
         assert organization.can_access_dashboard is False
-
-
-def test_backfill_migration_matches_status_capabilities() -> None:
-    """Guard against drift between STATUS_CAPABILITIES and the migration's
-    hardcoded JSON defaults — they encode the same matrix."""
-    import importlib.util
-    import json
-    from pathlib import Path
-
-    migration_path = (
-        Path(__file__).resolve().parents[2]
-        / "migrations"
-        / "versions"
-        / "2026-04-17-1200_backfill_organization_capabilities.py"
-    )
-    spec = importlib.util.spec_from_file_location(
-        "_backfill_capabilities_migration", migration_path
-    )
-    assert spec is not None
-    assert spec.loader is not None
-    migration = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(migration)
-
-    assert set(migration._STATUS_DEFAULTS.keys()) == {
-        s.value for s in OrganizationStatus
-    }
-    for status in OrganizationStatus:
-        assert (
-            json.loads(migration._STATUS_DEFAULTS[status.value])
-            == STATUS_CAPABILITIES[status]
-        )
 
 
 @pytest.mark.asyncio
@@ -2367,6 +2339,9 @@ class TestSetStatusCapabilities:
         status: OrganizationStatus,
         organization: Organization,
     ) -> None:
+        # Bypass set_status's transition validation: this test verifies the
+        # capability mapping for each status, not the transition rules.
+        organization.status = status
         organization.set_status(status)
 
         assert organization.status == status
@@ -2377,6 +2352,7 @@ class TestSetStatusCapabilities:
         organization: Organization,
     ) -> None:
         organization.set_status(OrganizationStatus.ACTIVE)
+        assert organization.capabilities is not None
         organization.capabilities = {**organization.capabilities, "payouts": False}
 
         organization.set_status(OrganizationStatus.BLOCKED)

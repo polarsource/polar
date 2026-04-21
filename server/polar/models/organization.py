@@ -489,9 +489,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=False,
     )
 
-    capabilities: Mapped[OrganizationCapabilities] = mapped_column(
+    capabilities: Mapped[OrganizationCapabilities | None] = mapped_column(
         JSONB,
-        nullable=False,
+        nullable=True,
         default=lambda: {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]},
     )
 
@@ -574,9 +574,16 @@ class Organization(RateLimitGroupMixin, RecordModel):
     # End: Fields synced from GitHub
     #
 
+    def _capability(self, name: str) -> bool:
+        """Read a capability, falling back to the status default if the
+        column hasn't been backfilled yet (rows pre-PR1 deploy)."""
+        if self.capabilities is not None:
+            return self.capabilities[name]  # type: ignore[literal-required]
+        return STATUS_CAPABILITIES[self.status][name]  # type: ignore[literal-required]
+
     @hybrid_property
     def can_authenticate(self) -> bool:
-        return not self.is_deleted and self.capabilities["api_access"]
+        return not self.is_deleted and self._capability("api_access")
 
     @can_authenticate.inplace.expression
     @classmethod
@@ -588,7 +595,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_access_dashboard(self) -> bool:
-        return not self.is_deleted and self.capabilities["dashboard_access"]
+        return not self.is_deleted and self._capability("dashboard_access")
 
     @can_access_dashboard.inplace.expression
     @classmethod
@@ -600,7 +607,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_accept_payments(self) -> bool:
-        return self.capabilities["checkout_payments"]
+        return self._capability("checkout_payments")
 
     @can_accept_payments.inplace.expression
     @classmethod
@@ -609,7 +616,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_renew_subscriptions(self) -> bool:
-        return self.capabilities["subscription_renewals"]
+        return self._capability("subscription_renewals")
 
     @can_renew_subscriptions.inplace.expression
     @classmethod
@@ -618,7 +625,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_payout(self) -> bool:
-        return self.capabilities["payouts"]
+        return self._capability("payouts")
 
     @can_payout.inplace.expression
     @classmethod
@@ -627,7 +634,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_refund(self) -> bool:
-        return self.capabilities["refunds"]
+        return self._capability("refunds")
 
     @can_refund.inplace.expression
     @classmethod

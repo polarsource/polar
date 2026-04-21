@@ -48,7 +48,7 @@ export const VectorField = () => {
     let time = 0;
 
     // Pre-blended gray range — horizontal lines bright, vertical faded
-    // (no alpha channel; colors match bg-neutral-900 ≈ rgb(23,23,23))
+    // (no alpha channel; colors match bg-dark-850 ≈ rgb(23,23,23))
     const MIN_GRAY = 47;   // vertical lines (was alpha 0.12)
     const MAX_GRAY = 190;  // horizontal lines (was alpha 0.85)
 

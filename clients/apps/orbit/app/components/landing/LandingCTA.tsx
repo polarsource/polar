@@ -12,7 +12,7 @@ export const LandingCTA = () => (
   <section className="">
     <div className="grid grid-cols-2">
       {/* Left — graphic */}
-      <div className="relative overflow-hidden bg-neutral-950">
+      <div className="relative overflow-hidden bg-dark-900">
         <TextRings />
       </div>
 

@@ -38,7 +38,9 @@ export const LandingArchitecture = () => (
         </p>
         <div className="flex flex-row items-center gap-x-6">
           <Button href="#">Get Started</Button>
-          <Button href="#" variant="secondary">Documentation</Button>
+          <Button href="#" variant="secondary">
+            Documentation
+          </Button>
         </div>
       </div>
     </div>
@@ -48,7 +50,7 @@ export const LandingArchitecture = () => (
       {LAYERS.map((l, i) => (
         <div
           key={l.id}
-          className={`flex flex-col ${i % 2 === 0 ? 'bg-neutral-900' : 'bg-neutral-950'}`}
+          className={`flex flex-col ${i % 2 === 0 ? 'bg-dark-850' : 'bg-dark-900'}`}
         >
           {/* Graphic */}
           <div className="aspect-square w-full">
@@ -59,7 +61,7 @@ export const LandingArchitecture = () => (
           </div>
           {/* Label */}
           <div className="flex flex-row items-center gap-x-6 bg-white/3 px-8 py-6">
-            <span className="font-mono text-5xl font-normal text-neutral-300">
+            <span className="text-5xl font-normal text-neutral-300">
               — {l.id}
             </span>
             <div className="flex flex-col">

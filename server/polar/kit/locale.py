@@ -19,7 +19,7 @@ Locale = Annotated[
         description=(
             "Locale of the customer, given as an IETF BCP 47 language tag. "
             "Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). "
-            "If `null` or unsupported, the locale will default to `en-US`."
+            "If `null` or unsupported, the locale will default to `en`."
         ),
         examples=["en", "en-US", "fr", "fr-CA"],
     ),

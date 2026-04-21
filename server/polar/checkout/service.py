@@ -607,7 +607,7 @@ class CheckoutService:
         if not product.organization.feature_settings.get(
             "checkout_localization_enabled", False
         ):
-            checkout.locale = "en-US"
+            checkout.locale = "en"
 
         session.add(checkout)
 
@@ -843,7 +843,7 @@ class CheckoutService:
                 if locale is not None and isinstance(locale, str):
                     checkout.locale = locale
         else:
-            checkout.locale = "en-US"
+            checkout.locale = "en"
 
         session.add(checkout)
 
@@ -2091,7 +2091,7 @@ class CheckoutService:
         if not checkout.organization.feature_settings.get(
             "checkout_localization_enabled", False
         ):
-            checkout.locale = "en-US"
+            checkout.locale = "en"
 
         checkout = await self._update_trial_end(checkout)
 

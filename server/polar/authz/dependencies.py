@@ -118,11 +118,30 @@ async def _check_policy(
 
 
 AuthorizeFinanceRead = Annotated[
-    AuthzContext[User | Organization], Depends(OrgPolicyGuard(finance.can_read))
+    AuthzContext[User | Organization],
+    Depends(
+        OrgPolicyGuard(
+            finance.can_read,
+            required_scopes={
+                Scope.transactions_read,
+                Scope.transactions_write,
+                Scope.payouts_read,
+                Scope.payouts_write,
+            },
+        )
+    ),
 ]
 AuthorizeFinanceWrite = Annotated[
     AuthzContext[User | Organization],
-    Depends(OrgPolicyGuard(finance.can_write)),
+    Depends(
+        OrgPolicyGuard(
+            finance.can_write,
+            required_scopes={
+                Scope.transactions_write,
+                Scope.payouts_write,
+            },
+        )
+    ),
 ]
 AuthorizeMembersManage = Annotated[
     AuthzContext[User],
@@ -206,7 +225,12 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
 
     _authenticator = Authenticator(
         allowed_subjects={User},
-        required_scopes={Scope.web_read, Scope.web_write},
+        required_scopes={
+            Scope.transactions_read,
+            Scope.transactions_write,
+            Scope.payouts_read,
+            Scope.payouts_write,
+        },
     )
 
     async def dependency(
@@ -254,7 +278,10 @@ def PayoutAccountPolicyGuard(
 
     _authenticator = Authenticator(
         allowed_subjects={User},
-        required_scopes={Scope.web_read, Scope.web_write},
+        required_scopes={
+            Scope.payouts_read,
+            Scope.payouts_write,
+        },
     )
 
     async def dependency(

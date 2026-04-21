@@ -4,9 +4,8 @@ import { RadialSpinner } from '../RadialSpinner'
 import { ConcentricDraw } from '../ConcentricDraw'
 import { GaugeSweep } from '../GaugeSweep'
 import { OrbitingSpheres } from '../OrbitingSpheres'
-import { SectionLabel } from './SectionLabel'
 import { SectionHeading } from './SectionHeading'
-import { twMerge } from 'tailwind-merge'
+import { Button } from './Button'
 
 /**
  * LandingArchitecture — heading row + four-column graphic row,
@@ -26,17 +25,21 @@ export const LandingArchitecture = () => (
     {/* Top row — heading */}
     <div className="grid grid-cols-1 md:grid-cols-2">
       <div className="p-16 py-32">
-        <SectionHeading className="mt-16">
+        <SectionHeading>
           Ingest. Aggregate.
           <br />
           Quantify. Charge.
         </SectionHeading>
       </div>
-      <div className="flex items-end p-16 py-32">
+      <div className="flex flex-col justify-end gap-12 p-16 py-32">
         <p className="max-w-xl text-4xl leading-snug text-white">
           From the moment a request fires to the moment you get paid — four
           layers, one pipeline, zero glue code.
         </p>
+        <div className="flex flex-row items-center gap-x-6">
+          <Button href="#">Get Started</Button>
+          <Button href="#" variant="secondary">Documentation</Button>
+        </div>
       </div>
     </div>
 
@@ -45,10 +48,7 @@ export const LandingArchitecture = () => (
       {LAYERS.map((l, i) => (
         <div
           key={l.id}
-          className={twMerge(
-            'flex flex-col',
-            i % 2 === 0 ? 'bg-neutral-900' : 'bg-neutral-950',
-          )}
+          className={`flex flex-col ${i % 2 === 0 ? 'bg-neutral-900' : 'bg-neutral-950'}`}
         >
           {/* Graphic */}
           <div className="aspect-square w-full">
@@ -58,15 +58,13 @@ export const LandingArchitecture = () => (
             {i === 3 && <OrbitingSpheres />}
           </div>
           {/* Label */}
-          <div className="flex items-stretch border-t border-neutral-800">
-            <div className="flex w-20 shrink-0 items-center justify-center self-stretch border-r border-neutral-800">
-              <span className="font-mono text-lg font-normal text-neutral-300">
-                {l.id}
-              </span>
-            </div>
-            <div className="flex flex-col justify-center px-6 py-6">
-              <span className="text-base text-white">{l.name}</span>
-              <span className="text-base text-neutral-500">{l.desc}</span>
+          <div className="flex flex-row items-center gap-x-6 bg-white/3 px-8 py-6">
+            <span className="font-mono text-5xl font-normal text-neutral-300">
+              — {l.id}
+            </span>
+            <div className="flex flex-col">
+              <span className="text-white">{l.name}</span>
+              <span className="text-neutral-500">{l.desc}</span>
             </div>
           </div>
         </div>

@@ -128,7 +128,7 @@ def is_member[S: Subject](
 
 def is_web_session(auth_subject: AuthSubject[Any]) -> bool:
     """Check if the auth subject is authenticated via a web session (not API token)."""
-    return auth_subject.session is not None
+    return isinstance(auth_subject.session, UserSession)
 
 
 __all__ = [

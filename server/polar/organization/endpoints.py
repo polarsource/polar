@@ -8,7 +8,7 @@ from polar.auth.models import is_user
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
-    AuthorizeOrgAccess,
+    AuthorizeOrgAccessUser,
     AuthorizeOrgDelete,
 )
 from polar.config import settings
@@ -266,9 +266,17 @@ async def delete(
     If deletion cannot proceed immediately (has orders, subscriptions, or
     Stripe deletion fails), a support ticket will be created for manual handling.
     """
+    # Re-fetch on write session — the guard loaded on a read session
+    from polar.organization.repository import OrganizationRepository
+
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(authorized.organization.id)
+    if organization is None:
+        raise ResourceNotFound()
+
     assert is_user(authorized.auth_subject)
     result = await organization_service.request_deletion(
-        session, authorized.auth_subject, authorized.organization
+        session, authorized.auth_subject, organization
     )
 
     return OrganizationDeletionResponse(
@@ -361,7 +369,13 @@ async def invite_member(
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationMember:
     """Invite a user to join an organization."""
-    organization = authorized.organization
+    # Re-fetch on write session — the guard loaded on a read session
+    from polar.organization.repository import OrganizationRepository
+
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(authorized.organization.id)
+    if organization is None:
+        raise ResourceNotFound()
 
     # Get or create user by email
     user, _ = await user_service.get_by_email_or_create(session, invite_body.email)
@@ -378,6 +392,7 @@ async def invite_member(
     await organization_service.add_user(session, organization, user)
 
     # Get the inviter's email (from auth subject)
+    assert is_user(authorized.auth_subject)
     inviter_email = authorized.auth_subject.subject.email
 
     # Send invitation email
@@ -423,7 +438,7 @@ async def invite_member(
     },
 )
 async def leave_organization(
-    authorized: AuthorizeOrgAccess,
+    authorized: AuthorizeOrgAccessUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Leave an organization.

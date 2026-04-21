@@ -2696,7 +2696,7 @@ async def impersonate_user(
         session=session,
         user=user,
         user_agent=request.headers.get("User-Agent", ""),
-        scopes=[Scope.web_read],  # Read-only
+        scopes=[s for s in Scope if s.value.endswith(":read")],  # Read-only
         expire_in=timedelta(minutes=60),  # Time-limited
     )
 

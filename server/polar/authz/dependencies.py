@@ -167,10 +167,30 @@ def _org_can_delete() -> PolicyFn:
 
 
 AuthorizeFinanceRead = Annotated[
-    AuthorizedOrganization, Depends(OrgPolicyGuard(_finance_can_read()))
+    AuthorizedOrganization,
+    Depends(
+        OrgPolicyGuard(
+            _finance_can_read(),
+            required_scopes={
+                Scope.transactions_read,
+                Scope.transactions_write,
+                Scope.payouts_read,
+                Scope.payouts_write,
+            },
+        )
+    ),
 ]
 AuthorizeFinanceWrite = Annotated[
-    AuthorizedOrganization, Depends(OrgPolicyGuard(_finance_can_write()))
+    AuthorizedOrganization,
+    Depends(
+        OrgPolicyGuard(
+            _finance_can_write(),
+            required_scopes={
+                Scope.transactions_write,
+                Scope.payouts_write,
+            },
+        )
+    ),
 ]
 AuthorizeMembersManage = Annotated[
     AuthorizedOrganization,
@@ -194,6 +214,16 @@ AuthorizeOrgDelete = Annotated[
 ]
 AuthorizeOrgAccess = Annotated[
     AuthorizedOrganization, Depends(OrgPolicyGuard(_always_allow))
+]
+AuthorizeOrgAccessUser = Annotated[
+    AuthorizedOrganization,
+    Depends(
+        OrgPolicyGuard(
+            _always_allow,
+            allowed_subjects={User},
+            required_scopes={Scope.organizations_write},
+        )
+    ),
 ]
 
 
@@ -235,7 +265,12 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
 
     _authenticator = Authenticator(
         allowed_subjects={User},
-        required_scopes=set(),
+        required_scopes={
+            Scope.transactions_read,
+            Scope.transactions_write,
+            Scope.payouts_read,
+            Scope.payouts_write,
+        },
     )
 
     async def dependency(
@@ -282,7 +317,10 @@ def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
 
     _authenticator = Authenticator(
         allowed_subjects={User},
-        required_scopes=set(),
+        required_scopes={
+            Scope.payouts_read,
+            Scope.payouts_write,
+        },
     )
 
     async def dependency(

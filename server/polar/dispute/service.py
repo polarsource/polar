@@ -5,6 +5,7 @@ import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.customer.repository import CustomerRepository
 from polar.enums import PaymentProcessor
@@ -61,7 +62,8 @@ class DisputeService:
         ],
     ) -> tuple[Sequence[Dispute], int]:
         repository = DisputeRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if organization_id is not None:
             statement = statement.where(Payment.organization_id.in_(organization_id))
@@ -85,7 +87,8 @@ class DisputeService:
         id: uuid.UUID,
     ) -> Dispute | None:
         repository = DisputeRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             Dispute.id == id
         )
         return await repository.get_one_or_none(statement)

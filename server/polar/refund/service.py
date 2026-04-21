@@ -8,6 +8,7 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.dispute.repository import DisputeRepository
 from polar.enums import PaymentProcessor
@@ -127,7 +128,8 @@ class RefundService:
         ],
     ) -> tuple[Sequence[Refund], int]:
         repository = RefundRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if id is not None:
             statement = statement.where(Refund.id.in_(id))

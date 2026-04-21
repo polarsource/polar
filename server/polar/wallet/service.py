@@ -4,6 +4,7 @@ from collections.abc import Sequence
 import stripe as stripe_lib
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.authz.service import get_accessible_org_ids
 from polar.enums import PaymentProcessor, TaxBehaviorOption
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -65,7 +66,8 @@ class WalletService:
         ],
     ) -> tuple[Sequence[Wallet], int]:
         repository = WalletRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if organization_id is not None:
             statement = statement.where(Customer.organization_id.in_(organization_id))
@@ -92,7 +94,8 @@ class WalletService:
         id: uuid.UUID,
     ) -> Wallet | None:
         repository = WalletRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             Wallet.id == id
         )
         return await repository.get_one_or_none(statement)

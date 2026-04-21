@@ -7,6 +7,7 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Customer, Member
+from polar.authz.service import get_accessible_org_ids
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
@@ -47,8 +48,9 @@ class LicenseKeyService:
         status: Sequence[LicenseKeyStatus] | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
         repository = LicenseKeyRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .order_by(LicenseKey.created_at.asc())
             .options(*repository.get_eager_options())
         )
@@ -73,8 +75,9 @@ class LicenseKeyService:
         id: UUID,
     ) -> LicenseKey | None:
         repository = LicenseKeyRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(LicenseKey.id == id)
             .options(*repository.get_eager_options())
         )

@@ -101,8 +101,7 @@
                 "pages": [
                   "features/customer-portal/introduction",
                   "features/customer-portal/navigate-customers",
-                  "features/customer-portal/settings",
-                  "features/customer-portal/faq"
+                  "features/customer-portal/settings"
                 ]
               },
               {
@@ -781,6 +780,10 @@
     {
       "source": "/features/customer-portal",
       "destination": "/features/customer-portal/introduction"
+    },
+    {
+      "source": "/features/customer-portal/faq",
+      "destination": "/features/customer-portal/introduction#faq"
     },
     {
       "source": "/docs/features/customer-portal",

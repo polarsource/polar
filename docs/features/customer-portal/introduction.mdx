@@ -48,13 +48,6 @@ The Customer Portal isn't just a convenience feature — it's a critical piece o
     Billing → Customer portal.
   </Card>
   <Card
-    title="FAQ"
-    icon="circle-question"
-    href="/features/customer-portal/faq"
-  >
-    Common questions about the Customer Portal.
-  </Card>
-  <Card
     title="Customer Portal API"
     icon="code"
     href="/api-reference/customer-portal/get-customer"
@@ -62,3 +55,69 @@ The Customer Portal isn't just a convenience feature — it's a critical piece o
     Build your own portal experience on top of the Customer Portal API.
   </Card>
 </CardGroup>
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Can I disable the Customer Portal completely?">
+    **No.** The Customer Portal is always available for your customers, and it
+    can't be turned off.
+
+    This is a deliberate design decision. The portal is how we guarantee that
+    your customers can always:
+
+    - **Access their invoices**, which they often need for tax and bookkeeping
+      reasons.
+    - **Cancel their subscriptions on their own**, which is legally required in
+      some jurisdictions (for example California's [Automatic Renewal Law](https://oag.ca.gov/consumers/auto-renewing-subscriptions),
+      which requires that customers be able to cancel the same way they signed
+      up).
+    - **Update their payment method in a PCI-compliant way**, so they can
+      recover from failed renewals without you having to handle card details.
+
+    You can, however, [fine-tune what customers can do](/features/customer-portal/settings)
+    from the portal — for example, disabling subscription plan changes or email
+    edits.
+  </Accordion>
+  <Accordion title="Can I customize the look and feel of the Customer Portal?">
+    Not the hosted portal at `polar.sh/<your-org-slug>/portal` — it's
+    intentionally consistent across all Polar organizations.
+
+    If you need a branded experience, you can build your own portal on top of
+    the [Customer Portal API](/api-reference/customer-portal/get-customer),
+    which covers the day-to-day actions: viewing subscriptions and orders,
+    downloading invoices, managing benefits and seats, and reading meter usage.
+
+    <Note>
+      Not every action is exposed through the Customer Portal API. Most
+      notably, **updating a default payment method** is only available from the
+      hosted Customer Portal — this is what keeps you PCI-compliant, since card
+      details never touch your servers. Customers you send into a custom portal
+      will still need the hosted one to recover from failed payments.
+    </Note>
+  </Accordion>
+  <Accordion title="How do customers sign in to the portal?">
+    By default, customers authenticate with the email address they used to
+    purchase or subscribe — Polar emails them a one-time code to confirm.
+
+    You can also skip the email step entirely by generating a pre-authenticated
+    link from your own application. See [Navigate customers to the portal](/features/customer-portal/navigate-customers)
+    for details.
+  </Accordion>
+  <Accordion title="Do I need to send customers a link to the portal myself?">
+    You don't have to. Polar already includes a link to the Customer Portal in
+    the transactional emails it sends — order confirmations, subscription
+    renewal notices, failed payment alerts, and more.
+
+    You may still want to link to it from your own app for convenience, but
+    it's not required for customers to be able to reach it.
+  </Accordion>
+  <Accordion title="What happens if a customer's payment method fails?">
+    The customer receives an email from Polar letting them know, with a link to
+    the Customer Portal where they can update their default payment method.
+    Once they do, Polar automatically retries the charge.
+
+    This self-service flow is the primary way customers recover from failed
+    renewals — keep it in mind when you're thinking about churn.
+  </Accordion>
+</AccordionGroup>

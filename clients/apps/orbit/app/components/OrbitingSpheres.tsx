@@ -40,6 +40,10 @@ export const OrbitingSpheres = () => {
     canvas.height = size * dpr;
     ctx.scale(dpr, dpr);
 
+    const styles = getComputedStyle(canvas)
+    const strokeColor = styles.getPropertyValue('--color-graphic-stroke').trim() || 'rgb(190, 190, 190)'
+    const dimColor = styles.getPropertyValue('--color-graphic-dim').trim() || 'rgb(70, 70, 70)'
+
     const cx = size / 2;
     const cy = size / 2;
     const R = size * 0.32;
@@ -68,13 +72,13 @@ export const OrbitingSpheres = () => {
       ctx.lineWidth = 1;
 
       // Big sphere — bright
-      ctx.strokeStyle = "rgb(190, 190, 190)";
+      ctx.strokeStyle = strokeColor;
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, Math.PI * 2);
       ctx.stroke();
 
       // Nested inner circles — bright
-      ctx.strokeStyle = "rgb(190, 190, 190)";
+      ctx.strokeStyle = strokeColor;
       let r = R * 0.5;
       for (let i = 0; i < DEPTH; i++) {
         ctx.beginPath();
@@ -88,7 +92,7 @@ export const OrbitingSpheres = () => {
       const satY = cy + dy * orbitR;
       ctx.beginPath();
       ctx.arc(satX, satY, satR, 0, Math.PI * 2);
-      ctx.fillStyle = "rgb(190, 190, 190)";
+      ctx.fillStyle = strokeColor;
       ctx.fill();
 
       animRef.current = requestAnimationFrame(draw);

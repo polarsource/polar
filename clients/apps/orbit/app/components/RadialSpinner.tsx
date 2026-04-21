@@ -34,6 +34,10 @@ export const RadialSpinner = () => {
     canvas.width = size * dpr
     canvas.height = size * dpr
     ctx.scale(dpr, dpr)
+
+    const styles = getComputedStyle(canvas)
+    const strokeColor = styles.getPropertyValue('--color-graphic-stroke').trim() || 'rgb(190, 190, 190)'
+    const dimColor = styles.getPropertyValue('--color-graphic-dim').trim() || 'rgb(70, 70, 70)'
     ctx.lineCap = 'round'
 
     const cx = size / 2
@@ -60,7 +64,7 @@ export const RadialSpinner = () => {
       ctx.clearRect(0, 0, size, size)
 
       // Faint background paths — always visible
-      ctx.strokeStyle = 'rgb(70, 70, 70)'
+      ctx.strokeStyle = dimColor
       ctx.lineWidth = 1
       for (let i = 0; i < SPOKE_COUNT; i++) {
         const angle = (i / SPOKE_COUNT) * Math.PI * 2 - Math.PI / 2
@@ -99,7 +103,7 @@ export const RadialSpinner = () => {
         const x2 = cx + Math.cos(angle) * r2
         const y2 = cy + Math.sin(angle) * r2
 
-        ctx.strokeStyle = 'rgb(190, 190, 190)'
+        ctx.strokeStyle = strokeColor
         ctx.lineWidth = 1.5
         ctx.beginPath()
         ctx.moveTo(x1, y1)

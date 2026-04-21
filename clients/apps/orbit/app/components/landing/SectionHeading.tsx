@@ -12,7 +12,7 @@ export const SectionHeading = ({
   className?: string
 }) => (
   <h2
-    className={`text-[clamp(3rem,6vw,6rem)] leading-[1.2] font-normal text-white [font-variation-settings:'opsz'_32] ${className}`}
+    className={`text-[clamp(3rem,6vw,6rem)] leading-[1.2] font-normal text-neutral-900 dark:text-white [font-variation-settings:'opsz'_32] ${className}`}
   >
     {children}
   </h2>

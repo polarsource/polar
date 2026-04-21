@@ -10,7 +10,7 @@ import { SectionHeading } from './SectionHeading'
  * on the graphic.
  */
 export const LandingHero = () => (
-  <section className="grid grid-cols-2 divide-x divide-neutral-800 border-b border-neutral-800">
+  <section className="grid grid-cols-2 divide-x divide-neutral-200 dark:divide-neutral-800 border-b border-neutral-200 dark:border-neutral-800">
     {/* Left — graphic, standalone */}
     <div className="relative overflow-hidden">
       <CircularBand fill />
@@ -30,7 +30,7 @@ export const LandingHero = () => (
 
       <a
         href="#get-started"
-        className="w-fit border border-white px-8 py-4 text-base font-medium text-white transition hover:bg-white hover:text-black"
+        className="w-fit border border-neutral-900 dark:border-white px-8 py-4 text-base font-medium text-neutral-900 dark:text-white transition hover:bg-neutral-900 hover:text-white dark:hover:bg-white dark:hover:text-black"
       >
         Get Started
       </a>

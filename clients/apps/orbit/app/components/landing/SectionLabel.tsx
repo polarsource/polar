@@ -8,7 +8,7 @@ export const SectionLabel = ({
   number: string;
   label?: string;
 }) => (
-  <div className="flex items-center gap-4 text-xl text-white">
+  <div className="flex items-center gap-4 text-xl text-neutral-900 dark:text-white">
     <span className="font-[family-name:var(--font-mono)]">{number}</span>
     {label && (
       <>

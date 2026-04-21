@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme inline {
-  --color-background: #050505;
-  --color-foreground: #a0a0a0;
+  --color-background: #fff;
+  --color-foreground: #000;
 
   /* Dark monochrome palette — no saturation, good step contrast,
      caps at mid-gray. Use as: bg-dark-950, text-dark-300, etc. */
@@ -22,6 +22,20 @@
 
   --font-sans: var(--font-inter);
   --font-mono: var(--font-mono);
+
+  /* Graphic stroke colors — read by canvas components via getComputedStyle */
+  --color-graphic-stroke: #000;
+  --color-graphic-dim: #ccc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #000;
+    --color-foreground: #a0a0a0;
+
+    --color-graphic-stroke: #ffffff;
+    --color-graphic-dim: rgb(70, 70, 70);
+  }
 }
 
 body {

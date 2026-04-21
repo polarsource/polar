@@ -35,13 +35,12 @@ const TESTIMONIALS = [
 
 export const LandingTestimonials = () => (
   <section>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+    <div className="mx-2 grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
       {TESTIMONIALS.map((t, i) => (
         <div
           key={t.name}
           className={twMerge(
-            'flex flex-col justify-between gap-y-16 p-12 py-24',
-            i % 2 === 0 ? 'bg-dark-850' : 'bg-dark-800',
+            'flex flex-col justify-between gap-y-16 p-12 py-24 bg-neutral-50 dark:bg-dark-900',
           )}
         >
           {/* Outward arrow */}
@@ -52,14 +51,18 @@ export const LandingTestimonials = () => (
             fill="none"
             stroke="currentColor"
             strokeWidth="1.2"
-            className="text-white"
+            className="text-neutral-900 dark:text-white"
           >
             <path d="M7 17L17 7" />
             <path d="M7 7H17V17" />
           </svg>
-          <p className="text-3xl leading-snug text-white">{t.quote}</p>
+          <p className="text-3xl leading-snug text-neutral-900 dark:text-white">
+            {t.quote}
+          </p>
           <div>
-            <div className="text-xl text-white">{t.name}</div>
+            <div className="text-xl text-neutral-900 dark:text-white">
+              {t.name}
+            </div>
             <div className="text-xl text-neutral-500">{t.role}</div>
           </div>
         </div>

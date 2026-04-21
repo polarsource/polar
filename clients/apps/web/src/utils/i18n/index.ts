@@ -5,7 +5,7 @@ import {
 } from '@polar-sh/i18n'
 import { headers } from 'next/headers'
 
-function parseAcceptLanguageHeader(
+export function parseAcceptLanguageHeader(
   acceptLanguageHeader: string | null,
 ): { code: string; q: number }[] {
   if (!acceptLanguageHeader) return []
@@ -40,7 +40,7 @@ function getPrimaryLanguageForLocale(locale: string): string {
   return locale.split('-')[0].toLowerCase()
 }
 
-function findMatchingLocaleInAcceptLanguageHeader(
+export function findMatchingLocaleInAcceptLanguageHeader(
   acceptLanguageHeader: string | null,
   targetLocale: AcceptedLocale,
 ): AcceptedLocale | null {

@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams
@@ -44,7 +45,8 @@ class MemberService:
     ) -> tuple[Sequence[Member], int]:
         """List members with pagination and filtering."""
         repository = MemberRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
@@ -76,7 +78,8 @@ class MemberService:
     ) -> Member | None:
         """Get a member by ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             Member.id == id
         )
         return await repository.get_one_or_none(statement)
@@ -92,7 +95,8 @@ class MemberService:
     ) -> Member | None:
         """Get a member by external ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             Member.external_id == external_id
         )
 

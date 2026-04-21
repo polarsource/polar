@@ -8,6 +8,7 @@ from sqlalchemy import UnaryExpression, asc, desc
 
 from polar.auth.models import AuthSubject, Organization, is_organization, is_user
 from polar.auth.scope import Scope
+from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.email.schemas import (
     OrganizationAccessTokenLeakedEmail,
@@ -51,7 +52,8 @@ class OrganizationAccessTokenService:
         ],
     ) -> tuple[Sequence[OrganizationAccessToken], int]:
         repository = OrganizationAccessTokenRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if organization_id is not None:
             statement = statement.where(
@@ -90,7 +92,8 @@ class OrganizationAccessTokenService:
         id: UUID,
     ) -> OrganizationAccessToken | None:
         repository = OrganizationAccessTokenRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             OrganizationAccessToken.id == id,
             OrganizationAccessToken.is_deleted.is_(False),
         )

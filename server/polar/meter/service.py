@@ -22,6 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.authz.service import get_accessible_org_ids
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -72,7 +73,8 @@ class MeterService:
         ],
     ) -> tuple[Sequence[Meter], int]:
         repository = MeterRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
 
         if organization_id is not None:
             statement = statement.where(Meter.organization_id.in_(organization_id))
@@ -109,8 +111,9 @@ class MeterService:
         id: uuid.UUID,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(Meter.id == id)
             .options(joinedload(Meter.last_billed_event))
         )

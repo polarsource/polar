@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.kit.db.locking import is_lock_not_available_error
@@ -49,8 +50,9 @@ class CustomerMeterService:
         ],
     ) -> tuple[Sequence[CustomerMeter], int]:
         repository = CustomerMeterRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .join(CustomerMeter.meter)
             .options(contains_eager(CustomerMeter.meter))
         )
@@ -83,8 +85,9 @@ class CustomerMeterService:
         id: uuid.UUID,
     ) -> CustomerMeter | None:
         repository = CustomerMeterRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(CustomerMeter.id == id)
             .options(joinedload(CustomerMeter.meter))
         )

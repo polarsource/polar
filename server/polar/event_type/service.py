@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.event.system import SYSTEM_EVENT_LABELS
 from polar.event.tinybird_repository import TinybirdEventRepository
@@ -26,7 +27,8 @@ class EventTypeService:
         id: UUID,
     ) -> EventType | None:
         repository = EventTypeRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             EventType.id == id
         )
         return await repository.get_one_or_none(statement)

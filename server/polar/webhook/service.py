@@ -11,6 +11,7 @@ from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
@@ -95,7 +96,8 @@ class WebhookService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         repository = WebhookEndpointRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).order_by(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).order_by(
             WebhookEndpoint.created_at.desc()
         )
 
@@ -115,7 +117,8 @@ class WebhookService:
         id: UUID,
     ) -> WebhookEndpoint | None:
         repository = WebhookEndpointRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             WebhookEndpoint.id == id
         )
         return await repository.get_one_or_none(statement)
@@ -215,9 +218,10 @@ class WebhookService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
         repository = WebhookDeliveryRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
 
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .options(joinedload(WebhookDelivery.webhook_event))
             .order_by(desc(WebhookDelivery.created_at))
         )
@@ -285,7 +289,8 @@ class WebhookService:
         id: UUID,
     ) -> None:
         repository = WebhookEventRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             WebhookEvent.id == id
         )
         event = await repository.get_one_or_none(statement)

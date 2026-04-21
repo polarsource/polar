@@ -1,10 +1,9 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select
 from sqlalchemy.orm import contains_eager
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -13,7 +12,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.models import Customer, CustomerMeter, Meter, UserOrganization
+from polar.models import Customer, CustomerMeter, Meter
 
 from .sorting import CustomerMeterSortProperty
 
@@ -85,33 +84,17 @@ class CustomerMeterRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[CustomerMeter]]:
-        statement = (
+        return (
             self.get_base_statement()
             .join(CustomerMeter.customer)
             .options(
                 contains_eager(CustomerMeter.customer),
             )
+            .where(Customer.organization_id.in_(org_ids))
         )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Customer.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Customer.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
 
     def get_sorting_clause(self, property: CustomerMeterSortProperty) -> SortingClause:
         match property:

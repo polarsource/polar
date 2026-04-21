@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select, select
 from sqlalchemy.exc import IntegrityError
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.models import AuthSubject, Organization, User, is_organization
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.models import EventType, UserOrganization
 
@@ -14,27 +14,12 @@ class EventTypeRepository(
 ):
     model = EventType
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[EventType]]:
-        statement = self.get_base_statement()
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                EventType.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                EventType.organization_id == auth_subject.subject.id
-            )
-
-        return statement
+        return self.get_base_statement().where(
+            EventType.organization_id.in_(org_ids)
+        )
 
     async def get_by_name_and_organization(
         self, name: str, organization_id: UUID

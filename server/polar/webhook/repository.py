@@ -5,7 +5,6 @@ from uuid import UUID
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -13,9 +12,6 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import (
-    Organization,
-    User,
-    UserOrganization,
     WebhookDelivery,
     WebhookEndpoint,
     WebhookEvent,
@@ -89,33 +85,17 @@ class WebhookEventRepository(
         )
         return await self.get_all(statement)
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[WebhookEvent]]:
-        statement = (
+        return (
             self.get_base_statement()
             .join(
                 WebhookEndpoint, WebhookEvent.webhook_endpoint_id == WebhookEndpoint.id
             )
             .options(contains_eager(WebhookEvent.webhook_endpoint))
+            .where(WebhookEndpoint.organization_id.in_(org_ids))
         )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                WebhookEndpoint.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                WebhookEndpoint.organization_id == auth_subject.subject.id
-            )
-
-        return statement
 
     async def count_earlier_pending(
         self, event: WebhookEvent, *, age_limit: datetime
@@ -166,34 +146,18 @@ class WebhookDeliveryRepository(
         res = await self.session.execute(statement)
         return res.scalar_one()
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[WebhookDelivery]]:
-        statement = (
+        return (
             self.get_base_statement()
             .join(
                 WebhookEndpoint,
                 WebhookDelivery.webhook_endpoint_id == WebhookEndpoint.id,
             )
             .options(contains_eager(WebhookDelivery.webhook_endpoint))
+            .where(WebhookEndpoint.organization_id.in_(org_ids))
         )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                WebhookEndpoint.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                WebhookEndpoint.organization_id == auth_subject.subject.id
-            )
-
-        return statement
 
 
 class WebhookEndpointRepository(
@@ -203,24 +167,9 @@ class WebhookEndpointRepository(
 ):
     model = WebhookEndpoint
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[WebhookEndpoint]]:
-        statement = self.get_base_statement()
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                WebhookEndpoint.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                WebhookEndpoint.organization_id == auth_subject.subject.id
-            )
-
-        return statement
+        return self.get_base_statement().where(
+            WebhookEndpoint.organization_id.in_(org_ids)
+        )

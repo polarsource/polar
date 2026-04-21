@@ -1,17 +1,16 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, or_, select, update
+from sqlalchemy import Select, or_, update
 from sqlalchemy.orm import contains_eager
 
-from polar.auth.models import AuthSubject, User, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
-from polar.models import Organization, OrganizationAccessToken, UserOrganization
+from polar.models import Organization, OrganizationAccessToken
 from polar.postgres import sql
 
 
@@ -51,27 +50,12 @@ class OrganizationAccessTokenRepository(
         )
         await self.session.execute(statement)
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[OrganizationAccessToken]]:
-        statement = self.get_base_statement()
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                OrganizationAccessToken.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                OrganizationAccessToken.organization_id == auth_subject.subject.id
-            )
-
-        return statement
+        return self.get_base_statement().where(
+            OrganizationAccessToken.organization_id.in_(org_ids)
+        )
 
     async def count_by_organization_id(
         self,

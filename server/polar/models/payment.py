@@ -72,6 +72,16 @@ DUNNING_NON_COUNTING_TRIGGERS: set[PaymentTrigger] = {
     PaymentTrigger.retry_payment_method_update,
 }
 
+# Triggers that drive recurring-billing payments (cycle + dunning + customer-
+# initiated and payment-method-update retries of failed renewals). Gated by
+# ``Organization.can_renew_subscriptions``; ``purchase`` is gated by
+# ``can_accept_payments`` instead.
+RENEWAL_PAYMENT_TRIGGERS: set[PaymentTrigger] = {
+    PaymentTrigger.retry_dunning,
+    PaymentTrigger.retry_customer,
+    PaymentTrigger.retry_payment_method_update,
+}
+
 
 class PaymentStatus(StrEnum):
     pending = "pending"

@@ -242,6 +242,16 @@ class OrganizationCapabilities(TypedDict):
     dashboard_access: bool
 
 
+CapabilityName = Literal[
+    "checkout_payments",
+    "subscription_renewals",
+    "payouts",
+    "refunds",
+    "api_access",
+    "dashboard_access",
+]
+
+
 class InvalidStatusTransitionError(PolarError):
     def __init__(
         self, current: "OrganizationStatus", target: "OrganizationStatus"
@@ -574,12 +584,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     # End: Fields synced from GitHub
     #
 
-    def _capability(self, name: str) -> bool:
-        """Read a capability, falling back to the status default if the
-        column hasn't been backfilled yet (rows pre-PR1 deploy)."""
-        if self.capabilities is not None:
-            return self.capabilities[name]  # type: ignore[literal-required]
-        return STATUS_CAPABILITIES[self.status][name]  # type: ignore[literal-required]
+    def get_effective_capabilities(self) -> OrganizationCapabilities:
+        """Return capabilities, falling back to the status defaults for rows
+        that pre-date the backfill."""
+        return self.capabilities or STATUS_CAPABILITIES[self.status]
+
+    def _capability(self, name: CapabilityName) -> bool:
+        return self.get_effective_capabilities()[name]
 
     @hybrid_property
     def can_authenticate(self) -> bool:
@@ -650,8 +661,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         self.status = status
         self.status_updated_at = datetime.now(UTC)
         self.capabilities = {**STATUS_CAPABILITIES[status]}
-        # Keep the legacy ``refunds_blocked`` column in sync with the
-        # capability until it is dropped in PR5.
+        # Mirror to the legacy column so the two stay in sync.
         self.refunds_blocked = not self.capabilities["refunds"]
 
     @hybrid_property

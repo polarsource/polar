@@ -1095,7 +1095,6 @@ class OrganizationService:
         if settings.ENV == Environment.sandbox:
             return True
 
-        # Capability gate covers BLOCKED/DENIED (and any future override).
         if not organization.can_accept_payments:
             return False
 

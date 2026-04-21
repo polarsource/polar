@@ -61,7 +61,7 @@ from polar.models import (
 from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
 from polar.models.order import Order, OrderStatus
-from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
@@ -3526,10 +3526,10 @@ async def set_refunds_blocked(
             303,
         )
 
-    current_capabilities = (
-        organization.capabilities or STATUS_CAPABILITIES[organization.status]
-    )
-    new_capabilities = {**current_capabilities, "refunds": not blocked}
+    new_capabilities = {
+        **organization.get_effective_capabilities(),
+        "refunds": not blocked,
+    }
     organization = await repository.update(
         organization,
         update_dict={"refunds_blocked": blocked, "capabilities": new_capabilities},

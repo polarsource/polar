@@ -644,8 +644,8 @@ class OrganizationService:
         organization: Organization,
         payout_account_id: uuid.UUID,
     ) -> Organization:
-        payout_account = await payout_account_service.get(
-            session, auth_subject, payout_account_id
+        payout_account = await payout_account_service.get_by_id_and_admin(
+            session, payout_account_id, auth_subject.subject
         )
         if payout_account is None:
             raise PolarRequestValidationError(

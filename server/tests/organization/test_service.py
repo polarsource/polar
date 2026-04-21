@@ -14,7 +14,7 @@ from polar.enums import (
     SubscriptionRecurringInterval,
 )
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Customer, Organization, Product, User
+from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.account import Account
 from polar.models.organization import (
     STATUS_CAPABILITIES,
@@ -2044,6 +2044,7 @@ class TestSetPayoutAccount:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
+        user_organization: UserOrganization,
         user: User,
     ) -> None:
         """Successfully sets the payout account on an organization."""

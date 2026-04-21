@@ -8,6 +8,7 @@ import stripe as stripe_lib
 import structlog
 
 from polar.auth.models import AuthSubject, User
+from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.enums import PayoutAccountType
 from polar.eventstream.service import publish as eventstream_publish
@@ -217,7 +218,8 @@ class PayoutService:
         ],
     ) -> tuple[Sequence[Payout], int]:
         repository = PayoutRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).options(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).options(
             *repository.get_eager_options()
         )
 
@@ -240,8 +242,9 @@ class PayoutService:
         id: uuid.UUID,
     ) -> Payout | None:
         repository = PayoutRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(Payout.id == id)
             .options(*repository.get_eager_options())
         )

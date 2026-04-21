@@ -6,6 +6,7 @@ from collections.abc import Sequence
 import stripe as stripe_lib
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.enums import PayoutAccountType
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe
@@ -82,7 +83,8 @@ class PayoutAccountService:
         auth_subject: AuthSubject[User],
     ) -> Sequence[PayoutAccount]:
         repository = PayoutAccountRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
         return await repository.get_all(statement)
 
     async def get(
@@ -92,8 +94,23 @@ class PayoutAccountService:
         payout_account_id: uuid.UUID,
     ) -> PayoutAccount | None:
         repository = PayoutAccountRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids).where(
             PayoutAccount.id == payout_account_id
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def get_by_id_and_admin(
+        self,
+        session: AsyncReadSession,
+        payout_account_id: uuid.UUID,
+        user: User,
+    ) -> PayoutAccount | None:
+        """Look up a payout account by ID, checking that the user is its admin."""
+        repository = PayoutAccountRepository.from_session(session)
+        statement = repository.get_base_statement().where(
+            PayoutAccount.id == payout_account_id,
+            PayoutAccount.admin_id == user.id,
         )
         return await repository.get_one_or_none(statement)
 

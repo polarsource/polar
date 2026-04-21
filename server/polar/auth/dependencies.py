@@ -224,12 +224,8 @@ WebUserOrAnonymous = Annotated[
     AuthSubject[Anonymous | User], Depends(_WebUserOrAnonymous)
 ]
 
-_WebUserRead = Authenticator(
-    allowed_subjects={User}, required_scopes=None
-)
+_WebUserRead = Authenticator(allowed_subjects={User}, required_scopes=None)
 WebUserRead = Annotated[AuthSubject[User], Depends(_WebUserRead)]
 
-_WebUserWrite = Authenticator(
-    allowed_subjects={User}, required_scopes=None
-)
+_WebUserWrite = Authenticator(allowed_subjects={User}, required_scopes=None)
 WebUserWrite = Annotated[AuthSubject[User], Depends(_WebUserWrite)]

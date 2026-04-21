@@ -7,7 +7,7 @@ import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
 import { getResizedImage } from '@/utils/getResizedImage'
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
+import { ArrowLeft } from 'lucide-react'
 import {
   CheckoutForm,
   CheckoutHeroPrice,
@@ -314,14 +314,16 @@ const Checkout = ({
           href={checkout.return_url}
           className="dark:text-polar-500 text-gray-600"
         >
-          <ArrowBackOutlined fontSize="small" />
+          <ArrowLeft size={20} />
         </Link>
       )}
       <div className="flex flex-row items-center gap-x-2">
         <Avatar
-          avatar_url={checkout.organization.avatar_url}
+          avatar_url={getResizedImage(checkout.organization.avatar_url, 24)}
           name={checkout.organization.name}
           className="h-6 w-6"
+          width={24}
+          height={24}
         />
         <span className="text-sm dark:text-white">
           {checkout.organization.name}

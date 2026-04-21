@@ -11,8 +11,6 @@ export default async function CheckoutLayout({
 }) {
   return (
     <>
-      <link rel="preconnect" href="https://js.stripe.com" crossOrigin="" />
-      <link rel="preconnect" href="https://m.stripe.network" crossOrigin="" />
       <link
         rel="preload"
         href="https://js.stripe.com/basil/stripe.js"

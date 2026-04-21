@@ -263,8 +263,16 @@ async def delete(
     If deletion cannot proceed immediately (has orders, subscriptions, or
     Stripe deletion fails), a support ticket will be created for manual handling.
     """
+    # Re-fetch on write session — the guard loaded on a read session
+    from polar.organization.repository import OrganizationRepository
+
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(authz.organization.id)
+    if organization is None:
+        raise ResourceNotFound()
+
     result = await organization_service.request_deletion(
-        session, authz.auth_subject, authz.organization
+        session, authz.auth_subject, organization
     )
 
     return OrganizationDeletionResponse(
@@ -354,7 +362,13 @@ async def invite_member(
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationMember:
     """Invite a user to join an organization."""
-    organization = authz.organization
+    # Re-fetch on write session — the guard loaded on a read session
+    from polar.organization.repository import OrganizationRepository
+
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(authz.organization.id)
+    if organization is None:
+        raise ResourceNotFound()
 
     # Get or create user by email
     user, _ = await user_service.get_by_email_or_create(session, invite_body.email)

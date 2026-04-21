@@ -7,6 +7,7 @@ from polar.authz.dependencies import (
     AuthorizePayoutAccountRead,
     AuthorizePayoutAccountWrite,
 )
+from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, Pagination
 from polar.models import PayoutAccount
 from polar.openapi import APITag
@@ -64,7 +65,14 @@ async def delete(
     authorized: AuthorizePayoutAccountWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    await payout_account_service.delete(session, authorized.payout_account)
+    # Re-fetch on write session — the guard loaded on a read session
+    from polar.payout_account.repository import PayoutAccountRepository
+
+    repository = PayoutAccountRepository.from_session(session)
+    payout_account = await repository.get_by_id(authorized.payout_account.id)
+    if payout_account is None:
+        raise ResourceNotFound()
+    await payout_account_service.delete(session, payout_account)
 
 
 @router.post("/{id}/onboarding-link", response_model=PayoutAccountLink)

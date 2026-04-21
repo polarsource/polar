@@ -4,6 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models import Organization, User
+from polar.models.organization import OrganizationStatus
 from polar.models.user_organization import UserOrganization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account
@@ -65,6 +66,22 @@ class TestPolicyGuardGetAccount:
 
         response = await client.get(f"/v1/organizations/{organization.id}/account")
         assert response.status_code == 200
+
+    @pytest.mark.auth
+    async def test_blocked_org_returns_404(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.account = await create_account(save_fixture, user=user)
+        organization.status = OrganizationStatus.BLOCKED
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
+        assert response.status_code == 404
 
 
 @pytest.mark.asyncio

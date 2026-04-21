@@ -140,9 +140,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .group_by(Event.name, Event.source)
         )
 
-    def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
-    ) -> Select[tuple[Event]]:
+    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Event]]:
         statement = self.get_base_statement()
         statement = statement.where(Event.organization_id.in_(org_ids))
         return statement

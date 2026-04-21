@@ -6,6 +6,7 @@ from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError, ValidationError
@@ -53,7 +54,8 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         ],
     ) -> tuple[Sequence[CheckoutLink], int]:
         repository = CheckoutLinkRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
         checkout_link_product_load = None
 
         if organization_id is not None:
@@ -102,8 +104,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         id: uuid.UUID,
     ) -> CheckoutLink | None:
         repository = CheckoutLinkRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_readable_statement(auth_subject)
+            repository.get_by_org_ids_statement(org_ids)
             .where(CheckoutLink.id == id)
             .options(*repository.get_eager_options())
         )

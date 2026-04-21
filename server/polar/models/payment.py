@@ -55,6 +55,14 @@ class PaymentTrigger(StrEnum):
     retry_customer = "retry_customer"
     retry_payment_method_update = "retry_payment_method_update"
 
+    def is_renewal_payment(self) -> bool:
+        """Whether this trigger drives a recurring-billing payment (cycle +
+        dunning + retries of failed renewals). ``purchase`` is the only
+        non-renewal trigger and is gated by ``can_accept_payments`` instead
+        of ``can_renew_subscriptions``.
+        """
+        return self is not PaymentTrigger.purchase
+
 
 # Triggers that count toward the dunning ceiling — i.e. failures from these
 # attempts use up the customer's automated retry budget.
@@ -68,16 +76,6 @@ DUNNING_COUNTING_TRIGGERS: set[PaymentTrigger] = {
 # ``DUNNING_COUNTING_TRIGGERS`` these must cover every ``PaymentTrigger``
 # value (enforced by ``test_every_payment_trigger_is_classified``).
 DUNNING_NON_COUNTING_TRIGGERS: set[PaymentTrigger] = {
-    PaymentTrigger.retry_customer,
-    PaymentTrigger.retry_payment_method_update,
-}
-
-# Triggers that drive recurring-billing payments (cycle + dunning + customer-
-# initiated and payment-method-update retries of failed renewals). Gated by
-# ``Organization.can_renew_subscriptions``; ``purchase`` is gated by
-# ``can_accept_payments`` instead.
-RENEWAL_PAYMENT_TRIGGERS: set[PaymentTrigger] = {
-    PaymentTrigger.retry_dunning,
     PaymentTrigger.retry_customer,
     PaymentTrigger.retry_payment_method_update,
 }

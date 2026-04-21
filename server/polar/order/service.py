@@ -70,7 +70,7 @@ from polar.models import (
     WalletTransaction,
 )
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.payment import RENEWAL_PAYMENT_TRIGGERS, PaymentTrigger
+from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -1011,7 +1011,9 @@ class OrderService:
             raise OrderNotPending(order)
 
         organization = order.organization
-        is_renewal_payment = payment_trigger in RENEWAL_PAYMENT_TRIGGERS
+        is_renewal_payment = (
+            payment_trigger is not None and payment_trigger.is_renewal_payment()
+        )
         capability_enabled = (
             organization.can_renew_subscriptions
             if is_renewal_payment

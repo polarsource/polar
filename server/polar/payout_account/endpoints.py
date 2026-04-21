@@ -1,10 +1,12 @@
 from collections.abc import Sequence
-from uuid import UUID
 
 from fastapi import Depends, Query
 
 from polar.auth.dependencies import WebUserRead, WebUserWrite
-from polar.exceptions import ResourceNotFound
+from polar.authz.dependencies import (
+    AuthorizePayoutAccountRead,
+    AuthorizePayoutAccountWrite,
+)
 from polar.kit.pagination import ListResource, Pagination
 from polar.models import PayoutAccount
 from polar.openapi import APITag
@@ -52,48 +54,31 @@ async def create(
 
 @router.get("/{id}", response_model=PayoutAccountSchema)
 async def get(
-    id: UUID,
-    auth_subject: WebUserRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> PayoutAccount:
-    payout_account = await payout_account_service.get(session, auth_subject, id)
-    if payout_account is None:
-        raise ResourceNotFound()
-    return payout_account
+    authorized: AuthorizePayoutAccountRead,
+) -> PayoutAccountSchema:
+    return PayoutAccountSchema.model_validate(authorized.payout_account)
 
 
 @router.delete("/{id}", status_code=204)
 async def delete(
-    id: UUID,
-    auth_subject: WebUserWrite,
+    authorized: AuthorizePayoutAccountWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    payout_account = await payout_account_service.get(session, auth_subject, id)
-    if payout_account is None:
-        raise ResourceNotFound()
-    await payout_account_service.delete(session, payout_account)
+    await payout_account_service.delete(session, authorized.payout_account)
 
 
 @router.post("/{id}/onboarding-link", response_model=PayoutAccountLink)
 async def onboarding_link(
-    id: UUID,
-    auth_subject: WebUserWrite,
+    authorized: AuthorizePayoutAccountWrite,
     return_path: str = Query(...),
-    session: AsyncSession = Depends(get_db_session),
 ) -> PayoutAccountLink:
-    payout_account = await payout_account_service.get(session, auth_subject, id)
-    if payout_account is None:
-        raise ResourceNotFound()
-    return await payout_account_service.onboarding_link(payout_account, return_path)
+    return await payout_account_service.onboarding_link(
+        authorized.payout_account, return_path
+    )
 
 
 @router.post("/{id}/dashboard-link", response_model=PayoutAccountLink)
 async def dashboard_link(
-    id: UUID,
-    auth_subject: WebUserWrite,
-    session: AsyncSession = Depends(get_db_session),
+    authorized: AuthorizePayoutAccountWrite,
 ) -> PayoutAccountLink:
-    payout_account = await payout_account_service.get(session, auth_subject, id)
-    if payout_account is None:
-        raise ResourceNotFound()
-    return await payout_account_service.dashboard_link(payout_account)
+    return await payout_account_service.dashboard_link(authorized.payout_account)

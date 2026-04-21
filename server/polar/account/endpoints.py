@@ -1,12 +1,8 @@
-from uuid import UUID
-
 from fastapi import Depends
 
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.schemas import AccountCredit as AccountCreditSchema
-from polar.auth.dependencies import WebUserRead, WebUserWrite
-from polar.exceptions import ResourceNotFound
-from polar.models import Account
+from polar.authz.dependencies import AuthorizeAccountRead, AuthorizeAccountWrite
 from polar.openapi import APITag
 from polar.postgres import (
     AsyncReadSession,
@@ -25,41 +21,26 @@ router = APIRouter(tags=["accounts", APITag.private])
 
 @router.get("/accounts/{id}", response_model=AccountSchema)
 async def get(
-    id: UUID,
-    auth_subject: WebUserRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> Account:
-    account = await account_service.get(session, auth_subject, id)
-    if account is None:
-        raise ResourceNotFound()
-
-    return account
+    authorized: AuthorizeAccountRead,
+) -> AccountSchema:
+    return AccountSchema.model_validate(authorized.account)
 
 
 @router.patch("/accounts/{id}", response_model=AccountSchema)
 async def patch(
-    id: UUID,
+    authorized: AuthorizeAccountWrite,
     account_update: AccountUpdate,
-    auth_subject: WebUserWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> Account:
-    account = await account_service.get(session, auth_subject, id)
-    if account is None:
-        raise ResourceNotFound()
-
-    return await account_service.update(session, account, account_update)
+) -> AccountSchema:
+    updated = await account_service.update(session, authorized.account, account_update)
+    return AccountSchema.model_validate(updated)
 
 
 @router.get("/accounts/{id}/credits", response_model=list[AccountCreditSchema])
 async def get_credits(
-    id: UUID,
-    auth_subject: WebUserRead,
+    authorized: AuthorizeAccountRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> list[AccountCreditSchema]:
-    account = await account_service.get(session, auth_subject, id)
-    if account is None:
-        raise ResourceNotFound()
-
     credit_repository = AccountCreditRepository.from_session(session)
-    credits = await credit_repository.get_active(account.id)
+    credits = await credit_repository.get_active(authorized.account.id)
     return [AccountCreditSchema.model_validate(credit) for credit in credits]

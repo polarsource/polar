@@ -2,11 +2,18 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models.account import Account
+from polar.models.organization import Organization
+from polar.models.user_organization import UserOrganization
 
 
 @pytest.mark.asyncio
 @pytest.mark.auth
-async def test_update(account: Account, client: AsyncClient) -> None:
+async def test_update(
+    account: Account,
+    organization: Organization,
+    user_organization: UserOrganization,
+    client: AsyncClient,
+) -> None:
     response = await client.patch(
         f"/v1/accounts/{account.id}",
         json={

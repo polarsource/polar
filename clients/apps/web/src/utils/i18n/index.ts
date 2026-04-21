@@ -2,9 +2,7 @@ import {
   type AcceptedLocale,
   DEFAULT_LOCALE,
   isAcceptedLocale,
-  isSupportedLocale,
 } from '@polar-sh/i18n'
-import { match } from 'assert'
 import { headers } from 'next/headers'
 
 function parseAcceptLanguageHeader(

@@ -11,6 +11,7 @@ Run the install script to add the `dev` alias to your shell:
 source ~/.zshrc  # or restart your terminal
 ```
 
+
 Now you can use `dev` from anywhere in the repo.
 
 ## Commands

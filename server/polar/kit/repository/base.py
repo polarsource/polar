@@ -57,7 +57,7 @@ class RepositoryProtocol[M](Protocol):
     ) -> M: ...
 
 
-class RepositoryBase[M]:
+class RepositoryBase[M: ModelIDProtocol[Any]]:
     model: type[M]
 
     def __init__(self, session: AsyncSession | AsyncReadSession) -> None:
@@ -108,7 +108,7 @@ class RepositoryBase[M]:
         offset = (page - 1) * limit
 
         count_statement = select(func.count()).select_from(
-            statement.order_by(None).subquery()
+            statement.with_only_columns(self.model.id).order_by(None).subquery()
         )
         count_result = await self.session.execute(count_statement)
         count = count_result.scalar_one()

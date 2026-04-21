@@ -473,6 +473,16 @@ class Organization(RateLimitGroupMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
+    # DEPRECATED: Use `status == OrganizationStatus.BLOCKED` instead.
+    # Kept mapped so the ORM stays in sync with the DB column on prod. Drop
+    # will happen in a follow-up PR once this fix is fully rolled out.
+    blocked_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
+        deferred=True,
+    )
+
     # Flag to block refunds for all orders in this organization
     refunds_blocked: Mapped[bool] = mapped_column(
         nullable=False,

@@ -6,7 +6,7 @@ from fastapi import Depends, Query
 from pydantic import BaseModel, GetCoreSchemaHandler
 from pydantic._internal._repr import display_as_type
 from pydantic_core import CoreSchema
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, literal, select
 from sqlalchemy.sql._typing import _ColumnsClauseArgument
 
 from polar.config import settings
@@ -76,8 +76,11 @@ async def paginate(
                 results.append(queried_data)
         return results, count
 
+    # Project only a literal in the count subquery so deferred or
+    # recently-dropped columns on the underlying entity are not rendered into
+    # SQL. `deferred=True` does not propagate into `.subquery()` projections.
     count_statement = select(func.count()).select_from(
-        statement.order_by(None).subquery()
+        statement.with_only_columns(literal(1)).order_by(None).subquery()
     )
     count_result = await session.execute(count_statement)
     count = count_result.scalar_one()

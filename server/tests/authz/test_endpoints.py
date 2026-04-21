@@ -5,7 +5,6 @@ from httpx import AsyncClient
 
 from polar.models import Organization, User
 from polar.models.user_organization import UserOrganization
-from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account
 
@@ -24,9 +23,7 @@ class TestPolicyGuardGetAccount:
         client: AsyncClient,
         organization: Organization,
     ) -> None:
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/account"
-        )
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
         assert response.status_code == 404
 
     @pytest.mark.auth
@@ -34,9 +31,7 @@ class TestPolicyGuardGetAccount:
         self,
         client: AsyncClient,
     ) -> None:
-        response = await client.get(
-            f"/v1/organizations/{uuid.uuid4()}/account"
-        )
+        response = await client.get(f"/v1/organizations/{uuid.uuid4()}/account")
         assert response.status_code == 404
 
     @pytest.mark.auth
@@ -52,9 +47,7 @@ class TestPolicyGuardGetAccount:
         organization.account = await create_account(save_fixture, user=other_user)
         await save_fixture(organization)
 
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/account"
-        )
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
         assert response.status_code == 403
         assert "admin" in response.json()["detail"].lower()
 
@@ -70,9 +63,7 @@ class TestPolicyGuardGetAccount:
         organization.account = await create_account(save_fixture, user=user)
         await save_fixture(organization)
 
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/account"
-        )
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
         assert response.status_code == 200
 
 
@@ -90,9 +81,7 @@ class TestPolicyGuardDeleteOrganization:
         client: AsyncClient,
         organization: Organization,
     ) -> None:
-        response = await client.delete(
-            f"/v1/organizations/{organization.id}"
-        )
+        response = await client.delete(f"/v1/organizations/{organization.id}")
         assert response.status_code == 404
 
     @pytest.mark.auth
@@ -108,9 +97,7 @@ class TestPolicyGuardDeleteOrganization:
         organization.account = await create_account(save_fixture, user=other_user)
         await save_fixture(organization)
 
-        response = await client.delete(
-            f"/v1/organizations/{organization.id}"
-        )
+        response = await client.delete(f"/v1/organizations/{organization.id}")
         assert response.status_code == 403
         assert (
             response.json()["detail"]
@@ -159,7 +146,9 @@ class TestPolicyGuardInviteMember:
             json={"email": "newmember@example.com"},
         )
         assert response.status_code == 403
-        assert response.json()["detail"] == "Only organization admins can manage members"
+        assert (
+            response.json()["detail"] == "Only organization admins can manage members"
+        )
 
 
 @pytest.mark.asyncio

@@ -30,7 +30,7 @@ PolicyFn = Callable[
 
 @dataclass(frozen=True)
 class AuthorizedOrganization:
-    """Result of a PolicyGuard dependency.
+    """Result of an OrgPolicyGuard dependency.
 
     Contains both the resolved organization and the authenticated subject,
     so endpoints have a single entry point for auth context.
@@ -40,7 +40,7 @@ class AuthorizedOrganization:
     auth_subject: AuthSubject[User | Organization]
 
 
-def PolicyGuard(
+def OrgPolicyGuard(
     policy_fn: PolicyFn,
     *,
     allowed_subjects: set[type] | None = None,
@@ -169,15 +169,15 @@ def _org_can_delete() -> PolicyFn:
 
 
 AuthorizeFinanceRead = Annotated[
-    AuthorizedOrganization, Depends(PolicyGuard(_finance_can_read()))
+    AuthorizedOrganization, Depends(OrgPolicyGuard(_finance_can_read()))
 ]
 AuthorizeFinanceWrite = Annotated[
-    AuthorizedOrganization, Depends(PolicyGuard(_finance_can_write()))
+    AuthorizedOrganization, Depends(OrgPolicyGuard(_finance_can_write()))
 ]
 AuthorizeMembersManage = Annotated[
     AuthorizedOrganization,
     Depends(
-        PolicyGuard(
+        OrgPolicyGuard(
             _members_can_manage(),
             allowed_subjects={User},
             required_scopes={Scope.web_write, Scope.organizations_write},
@@ -187,7 +187,7 @@ AuthorizeMembersManage = Annotated[
 AuthorizeOrgDelete = Annotated[
     AuthorizedOrganization,
     Depends(
-        PolicyGuard(
+        OrgPolicyGuard(
             _org_can_delete(),
             allowed_subjects={User},
             required_scopes={Scope.web_write, Scope.organizations_write},
@@ -195,7 +195,7 @@ AuthorizeOrgDelete = Annotated[
     ),
 ]
 AuthorizeOrgAccess = Annotated[
-    AuthorizedOrganization, Depends(PolicyGuard(_always_allow))
+    AuthorizedOrganization, Depends(OrgPolicyGuard(_always_allow))
 ]
 
 

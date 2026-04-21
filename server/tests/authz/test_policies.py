@@ -1,7 +1,8 @@
 import pytest
 
 from polar.auth.models import AuthSubject
-from polar.authz.policies import finance, members, organization as org_policy
+from polar.authz.policies import finance, members
+from polar.authz.policies import organization as org_policy
 from polar.models import Organization, User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession

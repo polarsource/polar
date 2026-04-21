@@ -1,4 +1,4 @@
-# Polar Development CLI
+# The Polar Development CLI
 
 A CLI tool to streamline Polar development environment setup and management.
 

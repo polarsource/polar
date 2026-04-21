@@ -54,6 +54,17 @@ dev seed --reset        # Recreate database and load fresh seed data
 dev help                # Show all commands
 ```
 
+### Deploy lock
+
+```bash
+dev lock-deploys "<reason>"   # Block all merges to main (announces in Slack)
+dev unlock-deploys            # Lift the block (announces in Slack)
+```
+
+Uses your `gh` CLI auth to trigger the `deploy-lock.yml` / `deploy-unlock.yml`
+workflows, which toggle a GitHub ruleset. The `/emergency` PR command still
+works because its identity is on the ruleset's bypass list.
+
 
 ## Adding New Steps
 

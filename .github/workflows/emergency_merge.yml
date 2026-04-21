@@ -43,10 +43,17 @@ jobs:
               content: 'rocket',
             });
 
+      - name: Generate App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.EMERGENCY_MERGE_APP_ID }}
+          private-key: ${{ secrets.EMERGENCY_MERGE_APP_PRIVATE_KEY }}
+
       - name: Merge PR
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.EMERGENCY_MERGE_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const prNumber = context.payload.issue.number;
 

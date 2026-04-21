@@ -1,0 +1,46 @@
+name: "Deploy Unlock 🔓"
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  unlock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.EMERGENCY_MERGE_APP_ID }}
+          private-key: ${{ secrets.EMERGENCY_MERGE_APP_PRIVATE_KEY }}
+
+      - name: Disable deploy-lock ruleset
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh api --method PUT \
+            /repos/${{ github.repository }}/rulesets/${{ vars.DEPLOY_LOCK_RULESET_ID }} \
+            -f enforcement=disabled
+
+      - name: Announce in Slack
+        uses: slackapi/slack-github-action@v3
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
+          payload: |
+            {
+              "channel": "C093CJXJXPT",
+              "text": "Deploys unlocked by ${{ github.actor }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":unlock: *Deploys unlocked* by *${{ github.actor }}*"
+                  }
+                }
+              ]
+            }

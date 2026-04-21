@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -27,6 +29,47 @@ async def checkout_link(save_fixture: SaveFixture, product: Product) -> Checkout
         success_url="https://example.com/success",
         user_metadata={"key": "value"},
     )
+
+
+@pytest_asyncio.fixture
+async def checkout_link_organization_second(
+    save_fixture: SaveFixture,
+    product_organization_second: Product,
+) -> CheckoutLink:
+    return await create_checkout_link(
+        save_fixture,
+        products=[product_organization_second],
+        success_url="https://example.com/success",
+    )
+
+
+@pytest.mark.asyncio
+class TestListCheckoutLinks:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/checkout-links/")
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestGetCheckoutLink:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/checkout-links/{uuid.uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_checkout_link(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        checkout_link_organization_second: CheckoutLink,
+    ) -> None:
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link_organization_second.id}"
+        )
+
+        assert response.status_code == 404
 
 
 @pytest.mark.asyncio

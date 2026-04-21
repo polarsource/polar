@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
@@ -26,6 +27,19 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_subscription_with_seats,
 )
+
+
+@pytest_asyncio.fixture
+async def subscription_organization_second(
+    save_fixture: SaveFixture,
+    product_organization_second: Product,
+    customer_organization_second: Customer,
+) -> Subscription:
+    return await create_active_subscription(
+        save_fixture,
+        product=product_organization_second,
+        customer=customer_organization_second,
+    )
 
 
 @pytest.mark.asyncio
@@ -1277,3 +1291,53 @@ class TestSubscriptionUpdateBillingPeriod:
         )
 
         assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+class TestExportSubscriptions:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/subscriptions/export")
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestGetSubscription:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_subscription(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        subscription_organization_second: Subscription,
+    ) -> None:
+        response = await client.get(
+            f"/v1/subscriptions/{subscription_organization_second.id}"
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestGetChargePreview:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}/charge-preview")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_subscription(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        subscription_organization_second: Subscription,
+    ) -> None:
+        response = await client.get(
+            f"/v1/subscriptions/{subscription_organization_second.id}/charge-preview"
+        )
+
+        assert response.status_code == 404

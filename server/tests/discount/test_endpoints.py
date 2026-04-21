@@ -1,10 +1,12 @@
+import uuid
 from typing import Any
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.discount.repository import DiscountRepository
-from polar.models import Organization, UserOrganization
+from polar.models import Discount, Organization, UserOrganization
 from polar.models.discount import (
     DiscountDuration,
     DiscountFixed,
@@ -16,12 +18,39 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount
 
 
+@pytest_asyncio.fixture
+async def discount_organization_second(
+    save_fixture: SaveFixture,
+    organization_second: Organization,
+) -> Discount:
+    return await create_discount(
+        save_fixture,
+        type=DiscountType.percentage,
+        basis_points=1000,
+        duration=DiscountDuration.once,
+        organization=organization_second,
+    )
+
+
 @pytest.mark.asyncio
 class TestListDiscounts:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/discounts/")
 
         assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_does_not_see_other_organization_discounts(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        discount_organization_second: Discount,
+    ) -> None:
+        response = await client.get("/v1/discounts/")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 0
 
     @pytest.mark.auth
     async def test_valid(
@@ -219,3 +248,65 @@ class TestCreateDiscount:
         assert discount.amounts == {"usd": 1000}
         assert discount.amount == 1000
         assert discount.currency == "usd"
+
+
+@pytest.mark.asyncio
+class TestGetDiscount:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/discounts/{uuid.uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_discount(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        discount_organization_second: Discount,
+    ) -> None:
+        response = await client.get(f"/v1/discounts/{discount_organization_second.id}")
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestUpdateDiscount:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.patch(f"/v1/discounts/{uuid.uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_discount(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        discount_organization_second: Discount,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/discounts/{discount_organization_second.id}",
+            json={"name": "Updated"},
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestDeleteDiscount:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.delete(f"/v1/discounts/{uuid.uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_discount(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        discount_organization_second: Discount,
+    ) -> None:
+        response = await client.delete(
+            f"/v1/discounts/{discount_organization_second.id}"
+        )
+
+        assert response.status_code == 404

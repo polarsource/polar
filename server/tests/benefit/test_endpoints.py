@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
@@ -17,6 +18,14 @@ from polar.models.benefit import BenefitType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit, create_benefit_grant
+
+
+@pytest_asyncio.fixture
+async def benefit_second_organization(
+    save_fixture: SaveFixture,
+    organization_second: Organization,
+) -> Benefit:
+    return await create_benefit(save_fixture, organization=organization_second)
 
 
 @pytest.mark.asyncio
@@ -240,6 +249,17 @@ class TestGetBenefit:
         assert json["id"] == str(benefit_organization.id)
         assert "properties" in json
 
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_benefit(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefit_second_organization: Benefit,
+    ) -> None:
+        response = await client.get(f"/v1/benefits/{benefit_second_organization.id}")
+
+        assert response.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestCreateBenefit:
@@ -386,6 +406,23 @@ class TestUpdateBenefit:
         assert "properties" in json
 
     @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_benefit(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefit_second_organization: Benefit,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/benefits/{benefit_second_organization.id}",
+            json={
+                "type": benefit_second_organization.type,
+                "description": "Updated Name",
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
     async def test_can_update_custom_properties(
         self,
         save_fixture: SaveFixture,
@@ -445,6 +482,17 @@ class TestDeleteBenefit:
 
         assert response.status_code == 204
 
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_benefit(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefit_second_organization: Benefit,
+    ) -> None:
+        response = await client.delete(f"/v1/benefits/{benefit_second_organization.id}")
+
+        assert response.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestViewGrants:
@@ -463,6 +511,19 @@ class TestViewGrants:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get(
             f"/v1/benefits/{uuid.uuid4()}/grants",
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_benefit(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefit_second_organization: Benefit,
+    ) -> None:
+        response = await client.get(
+            f"/v1/benefits/{benefit_second_organization.id}/grants",
         )
 
         assert response.status_code == 404

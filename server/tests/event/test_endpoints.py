@@ -4,14 +4,24 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.integrations.tinybird.client import TinybirdClient
 from polar.kit.utils import utc_now
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
-from polar.models import Organization, UserOrganization
+from polar.models import Event, Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event
+
+
+@pytest_asyncio.fixture
+async def event_organization_second(
+    save_fixture: SaveFixture,
+    organization_second: Organization,
+) -> Event:
+    return await create_event(save_fixture, organization=organization_second)
 
 
 @pytest.mark.asyncio
@@ -461,3 +471,63 @@ class TestAggregateFieldsValidation:
         )
 
         assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+class TestGetStatisticsByProperty:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-property")
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestGetStatisticsByCustomer:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-customer")
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestGetStatisticsByVariance:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-variance")
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestListStatisticsTimeseries:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/timeseries")
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestListEventNames:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/names")
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestGetEvent:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/events/{uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_event(
+        self,
+        client: AsyncClient,
+        tinybird_client: TinybirdClient,
+        user_organization: UserOrganization,
+        event_organization_second: Event,
+    ) -> None:
+        response = await client.get(f"/v1/events/{event_organization_second.id}")
+
+        assert response.status_code == 404

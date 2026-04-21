@@ -1,6 +1,8 @@
+import uuid
 from uuid import UUID
 
 import pytest
+import pytest_asyncio
 from dateutil.relativedelta import relativedelta
 from httpx import AsyncClient
 
@@ -13,7 +15,14 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.repository import LicenseKeyRepository
 from polar.license_key.service import license_key as license_key_service
-from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models import (
+    Customer,
+    LicenseKey,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -446,3 +455,179 @@ class TestLicenseKeyEndpoints:
         assert activate.status_code == 403, (
             f"Expected 403 but got {activate.status_code}. Response: {activate.json()}"
         )
+
+
+@pytest_asyncio.fixture
+async def license_key_organization_second(
+    session: AsyncSession,
+    redis: Redis,
+    save_fixture: SaveFixture,
+    organization_second: Organization,
+    product_organization_second: Product,
+    customer_organization_second: Customer,
+) -> LicenseKey:
+    _, granted = await TestLicenseKey.create_benefit_and_grant(
+        session,
+        redis,
+        save_fixture,
+        customer=customer_organization_second,
+        organization=organization_second,
+        product=product_organization_second,
+        properties=BenefitLicenseKeysCreateProperties(prefix="second"),
+    )
+    repository = LicenseKeyRepository.from_session(session)
+    lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+    assert lk is not None
+    return lk
+
+
+@pytest.mark.asyncio
+class TestListLicenseKeys:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/license-keys/")
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestGetLicenseKey:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/license-keys/{uuid.uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_license_key(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.get(
+            f"/v1/license-keys/{license_key_organization_second.id}"
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestUpdateLicenseKey:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.patch(f"/v1/license-keys/{uuid.uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_license_key(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/license-keys/{license_key_organization_second.id}",
+            json={"usage": 1},
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestGetActivation:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(
+            f"/v1/license-keys/{uuid.uuid4()}/activations/{uuid.uuid4()}"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_license_key(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.get(
+            f"/v1/license-keys/{license_key_organization_second.id}"
+            f"/activations/{uuid.uuid4()}"
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestValidateLicenseKey:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/license-keys/validate")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_validate_other_organization_license_key(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": license_key_organization_second.key,
+                "organization_id": str(license_key_organization_second.organization_id),
+            },
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestActivateLicenseKey:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/license-keys/activate")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_activate_other_organization_license_key(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/activate",
+            json={
+                "key": license_key_organization_second.key,
+                "organization_id": str(license_key_organization_second.organization_id),
+                "label": "test",
+            },
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestDeactivateLicenseKey:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/license-keys/deactivate")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_deactivate_other_organization_license_key(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/deactivate",
+            json={
+                "key": license_key_organization_second.key,
+                "organization_id": str(license_key_organization_second.organization_id),
+                "activation_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 404

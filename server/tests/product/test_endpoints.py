@@ -34,6 +34,19 @@ class TestListProducts:
         assert response.status_code == 401
 
     @pytest.mark.auth
+    async def test_user_does_not_see_other_organization_products(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.get("/v1/products/")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth
     async def test_with_benefits(
         self,
         session: AsyncSession,
@@ -78,6 +91,17 @@ class TestGetProduct:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/products/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_product(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product_organization_second.id}")
 
         assert response.status_code == 404
 
@@ -353,6 +377,20 @@ class TestUpdateProduct:
         assert response.status_code == 404
 
     @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_product(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/products/{product_organization_second.id}",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,
@@ -462,6 +500,20 @@ class TestUpdateProductBenefits:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
             f"/v1/products/{uuid.uuid4()}/benefits",
+            json={"benefits": []},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_product(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product_organization_second.id}/benefits",
             json={"benefits": []},
         )
 

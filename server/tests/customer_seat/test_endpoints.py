@@ -1174,6 +1174,49 @@ class TestOrderBasedSeats:
         assert data["can_claim"] is True
 
 
+# Seat endpoints use `SeatWriteOrAnonymous`, a hybrid dependency that returns
+# 403 (not 401) for anonymous callers, since assign/claim flows accept
+# checkout_client_secret or invitation_token. Claim endpoints are
+# intentionally public (token-gated).
+
+
+@pytest.mark.asyncio
+class TestCustomerSeatsAuthentication:
+    async def test_list_seats_anonymous_rejected(
+        self,
+        client: AsyncClient,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        response = await client.get(
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription_with_seats.id)},
+        )
+
+        assert response.status_code == 403
+
+    async def test_revoke_seat_anonymous_rejected(
+        self,
+        client: AsyncClient,
+        customer_seat_claimed: CustomerSeat,
+    ) -> None:
+        response = await client.delete(
+            f"/v1/customer-seats/{customer_seat_claimed.id}",
+        )
+
+        assert response.status_code == 403
+
+    async def test_resend_invitation_anonymous_rejected(
+        self,
+        client: AsyncClient,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        response = await client.post(
+            f"/v1/customer-seats/{customer_seat_pending.id}/resend",
+        )
+
+        assert response.status_code == 403
+
+
 @pytest.mark.asyncio
 class TestMemberEntityInResponse:
     """Tests for member entity nested in seat API responses."""

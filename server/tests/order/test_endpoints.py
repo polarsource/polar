@@ -18,6 +18,19 @@ async def orders(
     return [await create_order(save_fixture, product=product, customer=customer)]
 
 
+@pytest_asyncio.fixture
+async def order_organization_second(
+    save_fixture: SaveFixture,
+    product_organization_second: Product,
+    customer_organization_second: Customer,
+) -> Order:
+    return await create_order(
+        save_fixture,
+        product=product_organization_second,
+        customer=customer_organization_second,
+    )
+
+
 @pytest.mark.asyncio
 class TestListOrders:
     async def test_anonymous(self, client: AsyncClient) -> None:
@@ -308,3 +321,67 @@ class TesGetOrdersStatistics:
 
         json = response.json()
         assert len(json["periods"]) == 12
+
+
+@pytest.mark.asyncio
+class TestUpdateOrder:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.patch(f"/v1/orders/{uuid.uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_order(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        order_organization_second: Order,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/orders/{order_organization_second.id}",
+            json={},
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestGenerateOrderInvoice:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(f"/v1/orders/{uuid.uuid4()}/invoice")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_order(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        order_organization_second: Order,
+    ) -> None:
+        response = await client.post(
+            f"/v1/orders/{order_organization_second.id}/invoice"
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestGetOrderInvoice:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/orders/{uuid.uuid4()}/invoice")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_order(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        order_organization_second: Order,
+    ) -> None:
+        response = await client.get(
+            f"/v1/orders/{order_organization_second.id}/invoice"
+        )
+
+        assert response.status_code == 404

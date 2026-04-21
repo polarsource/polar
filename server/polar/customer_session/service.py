@@ -63,22 +63,20 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         customer_create: CustomerSessionCreate,
     ) -> Customer:
         repository = CustomerRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).options(
-            joinedload(Customer.organization),
-        )
+        options = (joinedload(Customer.organization),)
 
         if isinstance(customer_create, CustomerSessionCustomerIDCreate):
-            statement = statement.where(Customer.id == customer_create.customer_id)
             id_field = "customer_id"
             id_value: uuid.UUID | str = customer_create.customer_id
-        else:
-            statement = statement.where(
-                Customer.external_id == customer_create.external_customer_id
+            customer = await repository.get_readable_by_id(
+                auth_subject, customer_create.customer_id, options=options
             )
+        else:
             id_field = "external_customer_id"
             id_value = customer_create.external_customer_id
-
-        customer = await repository.get_one_or_none(statement)
+            customer = await repository.get_readable_by_external_id(
+                auth_subject, customer_create.external_customer_id, options=options
+            )
 
         if customer is None:
             raise PolarRequestValidationError(

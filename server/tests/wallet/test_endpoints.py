@@ -17,6 +17,16 @@ async def wallets(save_fixture: SaveFixture, customer: Customer) -> list[Wallet]
     return [await create_wallet(save_fixture, type=WalletType.usage, customer=customer)]
 
 
+@pytest_asyncio.fixture
+async def wallet_organization_second(
+    save_fixture: SaveFixture,
+    customer_organization_second: Customer,
+) -> Wallet:
+    return await create_wallet(
+        save_fixture, type=WalletType.usage, customer=customer_organization_second
+    )
+
+
 @pytest.mark.asyncio
 class TestListWallets:
     async def test_anonymous(self, client: AsyncClient) -> None:
@@ -107,22 +117,11 @@ class TestGetWallet:
         assert json["balance"] == 0
 
 
-@pytest_asyncio.fixture
-async def wallet_organization_second(
-    save_fixture: SaveFixture,
-    customer_organization_second: Customer,
-) -> Wallet:
-    return await create_wallet(
-        save_fixture, type=WalletType.usage, customer=customer_organization_second
-    )
-
-
 @pytest.mark.asyncio
 class TestTopUpWallet:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
-            f"/v1/wallets/{uuid.uuid4()}/top-up",
-            json={"amount": 1000, "currency": "usd"},
+            f"/v1/wallets/{uuid.uuid4()}/top-up", json={}
         )
 
         assert response.status_code == 401

@@ -44,14 +44,7 @@ class TestListPayoutAccounts:
 @pytest.mark.asyncio
 class TestCreatePayoutAccount:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/payout-accounts/",
-            json={
-                "type": "stripe",
-                "country": "US",
-                "organization_id": str(uuid.uuid4()),
-            },
-        )
+        response = await client.post("/v1/payout-accounts/", json={})
 
         assert response.status_code == 401
 

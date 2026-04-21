@@ -2,6 +2,7 @@ import uuid
 
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -9,7 +10,7 @@ from polar.models import Organization, Payout, User, UserOrganization
 from polar.models.transaction import TransactionType
 from polar.payout.endpoints import payout_service  # type: ignore[attr-defined]
 from polar.payout.service import PayoutService
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, get_db_sessionmaker
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
@@ -93,13 +94,34 @@ class TestGetCSV:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_payout(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        payout_organization_second: Payout,
+    ) -> None:
+        # The CSV endpoint depends on `get_db_sessionmaker`, which the test
+        # harness doesn't provide. The authz check raises before the
+        # sessionmaker is used, so a stub override is sufficient to let the
+        # dependency resolve.
+        app.dependency_overrides[get_db_sessionmaker] = lambda: None
+        try:
+            response = await client.get(
+                f"/v1/payouts/{payout_organization_second.id}/csv"
+            )
+        finally:
+            app.dependency_overrides.pop(get_db_sessionmaker)
+
+        assert response.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestGenerateInvoice:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
-            f"/v1/payouts/{uuid.uuid4()}/invoice",
-            json={"invoice_number": "INV-001"},
+            f"/v1/payouts/{uuid.uuid4()}/invoice", json={}
         )
 
         assert response.status_code == 401
@@ -143,9 +165,7 @@ class TestGetInvoice:
 @pytest.mark.asyncio
 class TestCreate:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/payouts/", json={"account_id": str(uuid.uuid4())}
-        )
+        response = await client.post("/v1/payouts/", json={})
 
         assert response.status_code == 401
 

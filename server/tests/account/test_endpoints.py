@@ -58,10 +58,7 @@ class TestGetAccountCredits:
 @pytest.mark.asyncio
 class TestPatchAccount:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.patch(
-            f"/v1/accounts/{uuid.uuid4()}",
-            json={"billing_name": "John Doe"},
-        )
+        response = await client.patch(f"/v1/accounts/{uuid.uuid4()}", json={})
 
         assert response.status_code == 401
 

@@ -6,6 +6,7 @@ import { GaugeSweep } from '../GaugeSweep'
 import { OrbitingSpheres } from '../OrbitingSpheres'
 import { SectionLabel } from './SectionLabel'
 import { SectionHeading } from './SectionHeading'
+import { twMerge } from 'tailwind-merge'
 
 /**
  * LandingArchitecture — heading row + four-column graphic row,
@@ -23,7 +24,7 @@ const LAYERS = [
 export const LandingArchitecture = () => (
   <section id="architecture">
     {/* Top row — heading */}
-    <div className="grid grid-cols-1 border-b border-neutral-800 md:grid-cols-2">
+    <div className="grid grid-cols-1 md:grid-cols-2">
       <div className="p-16 py-32">
         <SectionHeading className="mt-16">
           Ingest. Aggregate.
@@ -40,9 +41,15 @@ export const LandingArchitecture = () => (
     </div>
 
     {/* Bottom row — 4 graphics, one per layer */}
-    <div className="grid grid-cols-1 divide-x divide-y divide-neutral-800 border-b border-neutral-800 md:grid-cols-2 md:divide-y-0 lg:grid-cols-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
       {LAYERS.map((l, i) => (
-        <div key={l.id} className="flex flex-col">
+        <div
+          key={l.id}
+          className={twMerge(
+            'flex flex-col',
+            i % 2 === 0 ? 'bg-neutral-900' : 'bg-neutral-950',
+          )}
+        >
           {/* Graphic */}
           <div className="aspect-square w-full">
             {i === 0 && <RadialSpinner />}
@@ -53,7 +60,7 @@ export const LandingArchitecture = () => (
           {/* Label */}
           <div className="flex items-stretch border-t border-neutral-800">
             <div className="flex w-20 shrink-0 items-center justify-center self-stretch border-r border-neutral-800">
-              <span className="font-[family-name:var(--font-mono)] text-lg font-normal text-neutral-300">
+              <span className="font-mono text-lg font-normal text-neutral-300">
                 {l.id}
               </span>
             </div>

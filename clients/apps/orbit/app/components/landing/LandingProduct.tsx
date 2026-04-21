@@ -1,6 +1,5 @@
 'use client'
 
-import { SectionLabel } from './SectionLabel'
 import { SectionHeading } from './SectionHeading'
 import { ShapeGrid } from '../ShapeGrid'
 

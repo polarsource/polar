@@ -34,6 +34,7 @@ export function PolarPostHogProvider({
       bootstrap: {
         distinctID: distinctId,
       },
+      disable_surveys: true,
     })
   }, [distinctId])
 

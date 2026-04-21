@@ -8,6 +8,7 @@ from pydantic._internal._repr import display_as_type
 from pydantic_core import CoreSchema
 from sqlalchemy import Select, func, literal, select
 from sqlalchemy.sql._typing import _ColumnsClauseArgument
+from sqlalchemy.sql.selectable import Subquery
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
@@ -19,6 +20,17 @@ from polar.kit.schemas import ClassName, Schema
 class PaginationParams(NamedTuple):
     page: int
     limit: int
+
+
+def count_subquery(statement: Select[Any]) -> Subquery:
+    """Build a count-safe subquery from a Select.
+
+    `.subquery()` materializes every mapped column of the underlying entity,
+    including those marked `deferred=True`. For count queries we only need
+    row cardinality, so project a literal to avoid referencing (or loading)
+    unused columns.
+    """
+    return statement.with_only_columns(literal(1)).order_by(None).subquery()
 
 
 @overload
@@ -76,12 +88,7 @@ async def paginate(
                 results.append(queried_data)
         return results, count
 
-    # Project only a literal in the count subquery so deferred or
-    # recently-dropped columns on the underlying entity are not rendered into
-    # SQL. `deferred=True` does not propagate into `.subquery()` projections.
-    count_statement = select(func.count()).select_from(
-        statement.with_only_columns(literal(1)).order_by(None).subquery()
-    )
+    count_statement = select(func.count()).select_from(count_subquery(statement))
     count_result = await session.execute(count_statement)
     count = count_result.scalar_one()
 

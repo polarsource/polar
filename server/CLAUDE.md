@@ -86,6 +86,8 @@ class ResourceRepository(
 - `update(object, update_dict)` - Update fields
 - `from_session(session)` - Factory method
 
+**Subqueries must project explicit columns.** `select(Model).subquery()` re-materializes every mapped column — `deferred=True` does NOT propagate. For count subqueries, use `count_subquery(statement)` from `polar.kit.pagination`; otherwise narrow with `.with_only_columns(...)` before calling `.subquery()`. Enforced by `uv run task lint_subquery`.
+
 ## Service Pattern
 
 Services contain business logic and call repositories.

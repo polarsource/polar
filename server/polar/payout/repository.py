@@ -18,6 +18,7 @@ from polar.kit.repository import (
 )
 from polar.kit.utils import utc_now
 from polar.models import Payout, PayoutAccount, PayoutAttempt, Transaction
+from polar.models.payout import PayoutStatus
 from polar.payout.sorting import PayoutSortProperty
 
 
@@ -46,6 +47,7 @@ class PayoutRepository(
             .where(
                 Payout.processor == PayoutAccountType.stripe,
                 Payout.created_at < utc_now() - delay,
+                Payout.status.not_in([PayoutStatus.canceled, PayoutStatus.succeeded]),
                 # Only include payouts that have no attempts yet
                 ~exists(
                     select(PayoutAttempt).where(PayoutAttempt.payout_id == Payout.id)

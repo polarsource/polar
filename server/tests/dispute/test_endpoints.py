@@ -67,8 +67,6 @@ class TestGetDispute:
         user_organization: UserOrganization,
         dispute_organization_second: Dispute,
     ) -> None:
-        response = await client.get(
-            f"/v1/disputes/{dispute_organization_second.id}"
-        )
+        response = await client.get(f"/v1/disputes/{dispute_organization_second.id}")
 
         assert response.status_code == 404

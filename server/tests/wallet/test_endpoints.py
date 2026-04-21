@@ -120,9 +120,7 @@ class TestGetWallet:
 @pytest.mark.asyncio
 class TestTopUpWallet:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.post(
-            f"/v1/wallets/{uuid.uuid4()}/top-up", json={}
-        )
+        response = await client.post(f"/v1/wallets/{uuid.uuid4()}/top-up", json={})
 
         assert response.status_code == 401
 

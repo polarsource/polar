@@ -120,9 +120,7 @@ class TestGetCSV:
 @pytest.mark.asyncio
 class TestGenerateInvoice:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.post(
-            f"/v1/payouts/{uuid.uuid4()}/invoice", json={}
-        )
+        response = await client.post(f"/v1/payouts/{uuid.uuid4()}/invoice", json={})
 
         assert response.status_code == 401
 

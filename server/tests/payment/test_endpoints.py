@@ -51,8 +51,6 @@ class TestGetPayment:
         user_organization: UserOrganization,
         payment_organization_second: Payment,
     ) -> None:
-        response = await client.get(
-            f"/v1/payments/{payment_organization_second.id}"
-        )
+        response = await client.get(f"/v1/payments/{payment_organization_second.id}")
 
         assert response.status_code == 404

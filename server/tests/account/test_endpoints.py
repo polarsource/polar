@@ -11,9 +11,7 @@ from tests.fixtures.random_objects import create_account
 
 
 @pytest_asyncio.fixture
-async def account_other_user(
-    save_fixture: SaveFixture, user_second: User
-) -> Account:
+async def account_other_user(save_fixture: SaveFixture, user_second: User) -> Account:
     return await create_account(save_fixture, user_second)
 
 
@@ -48,9 +46,7 @@ class TestGetAccountCredits:
         client: AsyncClient,
         account_other_user: Account,
     ) -> None:
-        response = await client.get(
-            f"/v1/accounts/{account_other_user.id}/credits"
-        )
+        response = await client.get(f"/v1/accounts/{account_other_user.id}/credits")
 
         assert response.status_code == 404
 

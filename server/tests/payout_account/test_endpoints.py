@@ -15,9 +15,7 @@ async def payout_account_organization_second(
     organization_second: Organization,
     user_second: User,
 ) -> PayoutAccount:
-    return await create_payout_account(
-        save_fixture, organization_second, user_second
-    )
+    return await create_payout_account(save_fixture, organization_second, user_second)
 
 
 @pytest.mark.asyncio

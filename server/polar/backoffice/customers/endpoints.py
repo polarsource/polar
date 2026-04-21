@@ -396,8 +396,14 @@ async def get(
                 if benefit_grants:
                     with datatable.Datatable[BenefitGrant, Any](
                         datatable.DatatableAttrColumn(
+                            "id",
+                            "Grant ID",
+                            clipboard=True,
+                            href_route_name="benefit_grants:get",
+                        ),
+                        datatable.DatatableAttrColumn(
                             "benefit_id",
-                            "ID",
+                            "Benefit ID",
                             clipboard=True,
                             href_route_name="benefits:get",
                         ),

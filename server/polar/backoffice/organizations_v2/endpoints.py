@@ -453,8 +453,13 @@ async def get_organization_detail(
     # Fetch members separately
     members_stmt = (
         select(UserOrganization)
-        .options(joinedload(UserOrganization.user))
-        .where(UserOrganization.organization_id == organization_id)
+        .join(User, User.id == UserOrganization.user_id)
+        .options(contains_eager(UserOrganization.user))
+        .where(
+            UserOrganization.organization_id == organization_id,
+            UserOrganization.is_deleted.is_(False),
+            User.is_deleted.is_(False),
+        )
         .limit(10)
     )
     members_result = await session.execute(members_stmt)

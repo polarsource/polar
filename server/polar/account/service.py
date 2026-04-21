@@ -56,6 +56,14 @@ class AccountService:
 
         return account
 
+    async def get_by_organization(
+        self,
+        session: AsyncReadSession,
+        organization_id: uuid.UUID,
+    ) -> Account | None:
+        repository = AccountRepository.from_session(session)
+        return await repository.get_by_organization(organization_id)
+
     async def is_user_admin(
         self, session: AsyncReadSession, account_id: uuid.UUID, user: User
     ) -> bool:

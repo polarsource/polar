@@ -4,7 +4,12 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
-from polar.auth.models import is_user
+from polar.authz.dependencies import (
+    AuthorizeFinanceRead,
+    AuthorizeMembersManage,
+    AuthorizeOrgAccess,
+    AuthorizeOrgDelete,
+)
 from polar.config import settings
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
 from polar.email.sender import enqueue_email_template
@@ -127,24 +132,13 @@ async def get(
     tags=[APITag.private],
 )
 async def get_account(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsRead,
+    authorized: AuthorizeFinanceRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Account:
     """Get the account for an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    if is_user(auth_subject):
-        user = auth_subject.subject
-        if not await account_service.is_user_admin(
-            session, organization.account_id, user
-        ):
-            raise NotPermitted("You are not the admin of this account")
-
-    account = await account_service.get(session, auth_subject, organization.account_id)
+    account = await account_service.get_by_organization(
+        session, authorized.organization.id
+    )
     if account is None:
         raise ResourceNotFound()
 
@@ -259,8 +253,7 @@ async def update(
     tags=[APITag.private],
 )
 async def delete(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsWriteUser,
+    authorized: AuthorizeOrgDelete,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationDeletionResponse:
     """Request deletion of an organization.
@@ -272,13 +265,8 @@ async def delete(
     If deletion cannot proceed immediately (has orders, subscriptions, or
     Stripe deletion fails), a support ticket will be created for manual handling.
     """
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
     result = await organization_service.request_deletion(
-        session, auth_subject, organization
+        session, authorized.auth_subject, authorized.organization
     )
 
     return OrganizationDeletionResponse(
@@ -365,17 +353,13 @@ async def members(
     tags=[APITag.private],
 )
 async def invite_member(
-    id: OrganizationID,
+    authorized: AuthorizeMembersManage,
     invite_body: OrganizationMemberInvite,
-    auth_subject: auth.OrganizationsWrite,
     response: Response,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationMember:
     """Invite a user to join an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
+    organization = authorized.organization
 
     # Get or create user by email
     user, _ = await user_service.get_by_email_or_create(session, invite_body.email)
@@ -392,7 +376,7 @@ async def invite_member(
     await organization_service.add_user(session, organization, user)
 
     # Get the inviter's email (from auth subject)
-    inviter_email = auth_subject.subject.email
+    inviter_email = authorized.auth_subject.subject.email
 
     # Send invitation email
     email = invite_body.email
@@ -437,8 +421,7 @@ async def invite_member(
     },
 )
 async def leave_organization(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsWriteUser,
+    authorized: AuthorizeOrgAccess,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Leave an organization.
@@ -448,12 +431,8 @@ async def leave_organization(
     """
     from polar.organization.repository import OrganizationRepository
 
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    user = auth_subject.subject
+    organization = authorized.organization
+    user = authorized.auth_subject.subject
 
     # Check if user is the admin
     org_repo = OrganizationRepository.from_session(session)
@@ -463,7 +442,9 @@ async def leave_organization(
         raise NotPermitted("Organization admins cannot leave the organization.")
 
     # Check if user is the only member
-    member_count = await user_organization_service.get_member_count(session, id)
+    member_count = await user_organization_service.get_member_count(
+        session, organization.id
+    )
     if member_count <= 1:
         raise NotPermitted("Cannot leave organization as the only member.")
 
@@ -489,9 +470,8 @@ async def leave_organization(
     },
 )
 async def remove_member(
-    id: OrganizationID,
+    authorized: AuthorizeMembersManage,
     user_id: str,
-    auth_subject: auth.OrganizationsWriteUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Remove a member from an organization.
@@ -501,23 +481,10 @@ async def remove_member(
     """
     from uuid import UUID as UUID_TYPE
 
-    from polar.organization.repository import OrganizationRepository
     from polar.user_organization.service import (
         CannotRemoveOrganizationAdmin,
         UserNotMemberOfOrganization,
     )
-
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    # Check if current user is the admin
-    org_repo = OrganizationRepository.from_session(session)
-    admin_user = await org_repo.get_admin_user(session, organization)
-
-    if not admin_user or admin_user.id != auth_subject.subject.id:
-        raise NotPermitted("Only organization admins can remove members.")
 
     try:
         target_user_id = UUID_TYPE(user_id)
@@ -528,7 +495,7 @@ async def remove_member(
         await user_organization_service.remove_member_safe(
             session,
             user_id=target_user_id,
-            organization_id=organization.id,
+            organization_id=authorized.organization.id,
         )
     except UserNotMemberOfOrganization:
         raise ResourceNotFound()

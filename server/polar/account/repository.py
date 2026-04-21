@@ -46,9 +46,13 @@ class AccountRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Account]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
+    ) -> Select[tuple[Account]]:
         return self.get_base_statement().where(
             Account.id.in_(
-                select(Organization.account_id).where(Organization.id.in_(org_ids))
+                select(Organization.account_id).where(
+                    Organization.id.in_(org_ids)
+                )
             )
         )

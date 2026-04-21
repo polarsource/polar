@@ -74,7 +74,9 @@ class PayoutRepository(
             ),
         )
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Payout]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
+    ) -> Select[tuple[Payout]]:
         return self.get_base_statement().where(
             Payout.payout_account_id.in_(
                 select(Organization.payout_account_id).where(

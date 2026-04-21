@@ -147,7 +147,7 @@ class TestCreate:
         account: Account,
         user: User,
     ) -> None:
-        organization.status = status
+        organization.set_status(status)
         await save_fixture(organization)
 
         payout_account = await create_payout_account(save_fixture, organization, user)

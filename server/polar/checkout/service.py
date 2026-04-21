@@ -299,7 +299,7 @@ class CheckoutService:
         if checkout is None:
             return None
 
-        if checkout.organization.is_blocked():
+        if not checkout.organization.can_accept_payments:
             raise NotPermitted()
 
         return checkout
@@ -367,7 +367,7 @@ class CheckoutService:
                     ]
                 ) from e
 
-        if product.organization.is_blocked():
+        if not product.organization.can_accept_payments:
             raise NotPermitted()
 
         if checkout_create.amount is not None and is_custom_price(price):

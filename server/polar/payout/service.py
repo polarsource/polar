@@ -23,7 +23,6 @@ from polar.kit.sorting import Sorting
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Account, Organization, Payout, PayoutAttempt
-from polar.models.organization import OrganizationStatus
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.organization.repository import OrganizationRepository
@@ -251,7 +250,7 @@ class PayoutService:
     async def estimate(
         self, session: AsyncSession, organization: Organization
     ) -> PayoutEstimate:
-        if organization.status not in OrganizationStatus.payout_ready_statuses():
+        if not organization.can_payout:
             raise OrganizationUnderReview(organization)
 
         account = organization.account
@@ -289,7 +288,7 @@ class PayoutService:
     async def create(
         self, session: AsyncSession, locker: Locker, organization: Organization
     ) -> Payout:
-        if organization.status not in OrganizationStatus.payout_ready_statuses():
+        if not organization.can_payout:
             raise OrganizationUnderReview(organization)
 
         account = organization.account

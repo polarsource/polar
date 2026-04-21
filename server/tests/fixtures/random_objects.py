@@ -110,7 +110,7 @@ from polar.models.event import EventSource
 from polar.models.member import MemberRole
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
@@ -196,6 +196,10 @@ async def create_organization(
         payout_account=None,
         **kwargs,
     )
+    # Set capabilities directly (not via ``set_status``) to avoid stamping
+    # ``status_updated_at`` on fixtures.
+    if "capabilities" not in kwargs:
+        organization.capabilities = {**STATUS_CAPABILITIES[status]}
     await save_fixture(organization)
     return organization
 

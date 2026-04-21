@@ -1095,21 +1095,14 @@ class OrganizationService:
         if settings.ENV == Environment.sandbox:
             return True
 
-        # First check basic conditions that don't require account data
-        if organization.status in {
-            OrganizationStatus.BLOCKED,
-            OrganizationStatus.DENIED,
-        }:
+        # Capability gate covers BLOCKED/DENIED (and any future override).
+        if not organization.can_accept_payments:
             return False
 
         # Check grandfathering - if grandfathered, they're ready
         cutoff_date = datetime(2025, 8, 4, 9, 0, tzinfo=UTC)
         if organization.created_at <= cutoff_date:
             return True
-
-        # For new organizations, check basic conditions first
-        if organization.status not in OrganizationStatus.payment_ready_statuses():
-            return False
 
         # Details must be submitted (check for empty dict as well)
         if not organization.details_submitted_at or not organization.details:

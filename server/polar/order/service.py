@@ -70,7 +70,6 @@ from polar.models import (
     WalletTransaction,
 )
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.organization import OrganizationStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
@@ -1012,15 +1011,25 @@ class OrderService:
             raise OrderNotPending(order)
 
         organization = order.organization
-        if (
-            organization.is_blocked()
-            or organization.status == OrganizationStatus.DENIED
-        ):
+        is_renewal_payment = payment_trigger in {
+            PaymentTrigger.retry_dunning,
+            PaymentTrigger.retry_payment_method_update,
+        }
+        capability_enabled = (
+            organization.can_renew_subscriptions
+            if is_renewal_payment
+            else organization.can_accept_payments
+        )
+        if not capability_enabled:
             log.info(
-                "Organization is blocked or denied, skipping payment",
+                "Organization capability disabled, skipping payment",
                 order_id=order.id,
                 organization_id=organization.id,
-                organization_status=organization.status,
+                capability=(
+                    "subscription_renewals"
+                    if is_renewal_payment
+                    else "checkout_payments"
+                ),
             )
             return
 
@@ -2314,6 +2323,16 @@ class OrderService:
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""
+        # Defensive: capability may have flipped off after the cron picked
+        # this order up. The repository filter normally prevents this.
+        if not order.organization.can_renew_subscriptions:
+            log.info(
+                "Subscription renewals disabled, skipping dunning",
+                order_id=order.id,
+                organization_id=order.organization.id,
+            )
+            return order
+
         if order.subscription is None:
             log.warning(
                 "Order has no subscription, skipping dunning",

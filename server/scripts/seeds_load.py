@@ -1889,7 +1889,7 @@ async def create_single_org_seed(
     )
     organization.email = f"{slug}@polar.sh"
     organization.bio = f"Seeded organization: {name}"
-    organization.status = OrganizationStatus.ACTIVE
+    organization.set_status(OrganizationStatus.ACTIVE)
     organization.details_submitted_at = utc_now()
     organization.initially_reviewed_at = utc_now()
     session.add(organization)

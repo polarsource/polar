@@ -35,6 +35,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.order import OrderStatus
+from polar.models.organization import Organization as OrgModel
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrderSortProperty
@@ -90,13 +91,24 @@ class OrderRepository(
         return await self.get_one_or_none(statement)
 
     async def get_due_dunning_orders(self, *, options: Options = ()) -> Sequence[Order]:
-        """Get orders that are due for dunning retry based on next_payment_attempt_at."""
+        """Get orders that are due for dunning retry based on next_payment_attempt_at.
+
+        Skips orders for organizations whose ``subscription_renewals`` capability
+        is disabled — recurring billing pause covers both cycle and dunning.
+        """
 
         statement = (
             self.get_base_statement()
+            .join(Customer, Customer.id == Order.customer_id)
+            .join(
+                OrgModel,
+                OrgModel.id == Customer.organization_id,
+            )
             .where(
                 Order.next_payment_attempt_at.is_not(None),
                 Order.next_payment_attempt_at <= utc_now(),
+                OrgModel.is_deleted.is_(False),
+                OrgModel.can_renew_subscriptions.is_(True),
             )
             .order_by(Order.next_payment_attempt_at.asc())
             .options(*options)

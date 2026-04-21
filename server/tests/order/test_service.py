@@ -3501,7 +3501,7 @@ class TestTriggerPayment:
             status=OrderStatus.pending,
         )
 
-        organization.status = OrganizationStatus.DENIED
+        organization.set_status(OrganizationStatus.DENIED)
         await save_fixture(organization)
 
         await order_service.trigger_payment(session, order, payment_method)
@@ -3526,7 +3526,7 @@ class TestTriggerPayment:
             status=OrderStatus.pending,
         )
 
-        organization.status = OrganizationStatus.BLOCKED
+        organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(organization)
 
         await order_service.trigger_payment(session, order, payment_method)

@@ -897,7 +897,11 @@ class TestOrganizationRefundsBlocked:
 
         org_repository = OrganizationRepository.from_session(session)
         organization = await org_repository.update(
-            organization, update_dict={"refunds_blocked": True}
+            organization,
+            update_dict={
+                "refunds_blocked": True,
+                "capabilities": {**organization.capabilities, "refunds": False},
+            },
         )
 
         # Create an order

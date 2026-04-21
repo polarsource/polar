@@ -489,9 +489,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=False,
     )
 
-    capabilities: Mapped[OrganizationCapabilities | None] = mapped_column(
+    capabilities: Mapped[OrganizationCapabilities] = mapped_column(
         JSONB,
-        nullable=True,
+        nullable=False,
         default=lambda: {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]},
     )
 
@@ -576,12 +576,63 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_authenticate(self) -> bool:
-        return not self.is_deleted and self.status != OrganizationStatus.BLOCKED
+        return not self.is_deleted and self.capabilities["api_access"]
 
     @can_authenticate.inplace.expression
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
-        return and_(cls.is_deleted.is_(False), cls.status != OrganizationStatus.BLOCKED)
+        return and_(
+            cls.is_deleted.is_(False),
+            cls.capabilities["api_access"].as_boolean().is_(True),
+        )
+
+    @hybrid_property
+    def can_access_dashboard(self) -> bool:
+        return not self.is_deleted and self.capabilities["dashboard_access"]
+
+    @can_access_dashboard.inplace.expression
+    @classmethod
+    def _can_access_dashboard_expression(cls) -> ColumnElement[bool]:
+        return and_(
+            cls.is_deleted.is_(False),
+            cls.capabilities["dashboard_access"].as_boolean().is_(True),
+        )
+
+    @hybrid_property
+    def can_accept_payments(self) -> bool:
+        return self.capabilities["checkout_payments"]
+
+    @can_accept_payments.inplace.expression
+    @classmethod
+    def _can_accept_payments_expression(cls) -> ColumnElement[bool]:
+        return cls.capabilities["checkout_payments"].as_boolean().is_(True)
+
+    @hybrid_property
+    def can_renew_subscriptions(self) -> bool:
+        return self.capabilities["subscription_renewals"]
+
+    @can_renew_subscriptions.inplace.expression
+    @classmethod
+    def _can_renew_subscriptions_expression(cls) -> ColumnElement[bool]:
+        return cls.capabilities["subscription_renewals"].as_boolean().is_(True)
+
+    @hybrid_property
+    def can_payout(self) -> bool:
+        return self.capabilities["payouts"]
+
+    @can_payout.inplace.expression
+    @classmethod
+    def _can_payout_expression(cls) -> ColumnElement[bool]:
+        return cls.capabilities["payouts"].as_boolean().is_(True)
+
+    @hybrid_property
+    def can_refund(self) -> bool:
+        return self.capabilities["refunds"]
+
+    @can_refund.inplace.expression
+    @classmethod
+    def _can_refund_expression(cls) -> ColumnElement[bool]:
+        return cls.capabilities["refunds"].as_boolean().is_(True)
 
     def set_status(self, status: OrganizationStatus) -> None:
         if (
@@ -592,6 +643,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
         self.status = status
         self.status_updated_at = datetime.now(UTC)
         self.capabilities = {**STATUS_CAPABILITIES[status]}
+        # Keep the legacy ``refunds_blocked`` column in sync with the
+        # capability until it is dropped in PR5.
+        self.refunds_blocked = not self.capabilities["refunds"]
 
     @hybrid_property
     def is_under_review(self) -> bool:

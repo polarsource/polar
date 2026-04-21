@@ -189,7 +189,7 @@ class TestGet:
         auth_subject: AuthSubject[User],
     ) -> None:
         product = await create_blocked_product(save_fixture, auth_subject)
-        product.organization.status = OrganizationStatus.ACTIVE
+        product.organization.set_status(OrganizationStatus.ACTIVE)
         await save_fixture(product)
 
         checkout = await checkout_service.create(
@@ -204,7 +204,7 @@ class TestGet:
         assert response.status_code == 200
 
         session.expunge_all()
-        product.organization.status = OrganizationStatus.BLOCKED
+        product.organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(product)
 
         response = await client.get(f"{api_prefix}/{checkout.id}")
@@ -287,7 +287,7 @@ class TestCreateCheckout:
         )
         assert response.status_code == 403
 
-        product.organization.status = OrganizationStatus.ACTIVE
+        product.organization.set_status(OrganizationStatus.ACTIVE)
         await save_fixture(product)
 
         response = await client.post(

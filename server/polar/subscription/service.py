@@ -662,6 +662,16 @@ class SubscriptionService:
         if not subscription.active:
             raise InactiveSubscription(subscription)
 
+        # Defensive: capability may have flipped off between scheduler
+        # pick-up and task execution.
+        if not subscription.organization.can_renew_subscriptions:
+            log.info(
+                "Subscription renewals disabled for organization, skipping cycle",
+                subscription_id=subscription.id,
+                organization_id=subscription.organization.id,
+            )
+            return subscription
+
         revoke = subscription.cancel_at_period_end
         previous_status = subscription.status
         previous_canceled = subscription.canceled

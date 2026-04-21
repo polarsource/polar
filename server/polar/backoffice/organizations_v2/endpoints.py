@@ -3526,8 +3526,10 @@ async def set_refunds_blocked(
             303,
         )
 
+    new_capabilities = {**organization.capabilities, "refunds": not blocked}
     organization = await repository.update(
-        organization, update_dict={"refunds_blocked": blocked}
+        organization,
+        update_dict={"refunds_blocked": blocked, "capabilities": new_capabilities},
     )
 
     action = "blocked" if blocked else "unblocked"

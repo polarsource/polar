@@ -17,6 +17,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
 from polar.models.organization import (
+    STATUS_CAPABILITIES,
     InvalidStatusTransitionError,
     OrganizationNotificationSettings,
     OrganizationStatus,
@@ -2273,3 +2274,113 @@ class TestStatusTransitions:
         organization.status = OrganizationStatus.BLOCKED
         with pytest.raises(InvalidStatusTransitionError):
             organization.set_status(target)
+
+
+@pytest.mark.asyncio
+class TestCapabilityOverrides:
+    """Capability overrides flip enforcement gates without changing status."""
+
+    async def test_checkout_payments_override_blocks_active_org(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        # Grandfathered to skip the account-readiness checks.
+        organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
+        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.capabilities = {
+            **organization.capabilities,
+            "checkout_payments": False,
+        }
+        await save_fixture(organization)
+
+        assert organization.can_accept_payments is False
+        ready = await organization_service.is_organization_ready_for_payment(
+            session, organization
+        )
+        assert ready is False
+
+    async def test_can_authenticate_follows_api_access_capability(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.ACTIVE)
+        assert organization.can_authenticate is True
+
+        organization.capabilities = {
+            **organization.capabilities,
+            "api_access": False,
+        }
+        assert organization.can_authenticate is False
+
+    async def test_can_access_dashboard_follows_dashboard_access_capability(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.ACTIVE)
+        assert organization.can_access_dashboard is True
+
+        organization.capabilities = {
+            **organization.capabilities,
+            "dashboard_access": False,
+        }
+        assert organization.can_access_dashboard is False
+
+
+def test_backfill_migration_matches_status_capabilities() -> None:
+    """Guard against drift between STATUS_CAPABILITIES and the migration's
+    hardcoded JSON defaults — they encode the same matrix."""
+    import importlib.util
+    import json
+    from pathlib import Path
+
+    migration_path = (
+        Path(__file__).resolve().parents[2]
+        / "migrations"
+        / "versions"
+        / "2026-04-17-1200_backfill_organization_capabilities.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "_backfill_capabilities_migration", migration_path
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    assert set(migration._STATUS_DEFAULTS.keys()) == {
+        s.value for s in OrganizationStatus
+    }
+    for status in OrganizationStatus:
+        assert (
+            json.loads(migration._STATUS_DEFAULTS[status.value])
+            == STATUS_CAPABILITIES[status]
+        )
+
+
+@pytest.mark.asyncio
+class TestSetStatusCapabilities:
+    @pytest.mark.parametrize("status", list(OrganizationStatus))
+    async def test_set_status_writes_capabilities(
+        self,
+        status: OrganizationStatus,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(status)
+
+        assert organization.status == status
+        assert organization.capabilities == STATUS_CAPABILITIES[status]
+
+    async def test_set_status_overwrites_prior_overrides(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.capabilities = {**organization.capabilities, "payouts": False}
+
+        organization.set_status(OrganizationStatus.BLOCKED)
+
+        assert (
+            organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.BLOCKED]
+        )

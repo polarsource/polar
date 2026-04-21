@@ -42,7 +42,6 @@ from polar.event.system import (
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.file.s3 import S3_SERVICES
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import (
     STRIPE_METADATA_PAYMENT_TRIGGER,
 )
@@ -70,7 +69,6 @@ from polar.models import (
     User,
     WalletTransaction,
 )
-from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.payment import PaymentTrigger
@@ -1766,6 +1764,9 @@ class OrderService:
         organization = order.organization
         account_repository = AccountRepository.from_session(session)
         account = await account_repository.get_by_organization(organization.id)
+        assert account is not None, (
+            "Organization must have an account to create balance"
+        )
 
         # Retrieve the payment transaction and link it to the order
         payment_transaction = await balance_transaction_service.get_by(
@@ -1781,29 +1782,6 @@ class OrderService:
         payment_transaction.order = order
         payment_transaction.payment_customer = order.customer
         session.add(payment_transaction)
-
-        # Prepare an held balance
-        # It'll be used if the account is not created yet
-        held_balance = HeldBalance(
-            amount=transfer_amount, order=order, payment_transaction=payment_transaction
-        )
-
-        # No account, create the held balance
-        if account is None:
-            held_balance.organization = organization
-
-            # Sanity check: make sure we didn't already create a held balance for this order
-            existing_held_balance = await held_balance_service.get_by(
-                session,
-                payment_transaction_id=payment_transaction.id,
-                organization_id=organization.id,
-            )
-            if existing_held_balance is not None:
-                raise AlreadyBalancedOrder(order, payment_transaction)
-
-            await held_balance_service.create(session, held_balance=held_balance)
-
-            return
 
         # Sanity check: make sure we didn't already create a balance for this order
         existing_balance_transaction = await balance_transaction_service.get_by(

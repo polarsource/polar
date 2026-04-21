@@ -11,7 +11,6 @@ from polar.email.schemas import (
 )
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarTaskError
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -53,28 +52,6 @@ class UserDoesNotExist(OrganizationTaskError):
         self.user_id = user_id
         message = f"The user with id {user_id} does not exist."
         super().__init__(message)
-
-
-@actor(
-    actor_name="organization.held_balance_release",
-    priority=TaskPriority.LOW,
-    time_limit=600_000,
-)
-async def organization_held_balance_release(organization_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.get_by_id(
-            organization_id,
-            options=(joinedload(Organization.account),),
-            include_deleted=True,
-            include_blocked=True,
-        )
-        if organization is None:
-            raise OrganizationDoesNotExist(organization_id)
-        if organization.account is None:
-            raise AccountDoesNotExist(organization.account_id)
-
-        await held_balance_service.release_account(session, organization.account)
 
 
 @actor(actor_name="organization.created", priority=TaskPriority.LOW)
@@ -119,8 +96,6 @@ async def organization_reviewed(
         )
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
-
-        await held_balance_service.release_account(session, organization.account)
 
         # Send an email after the initial review
         if initial_review and not silent:

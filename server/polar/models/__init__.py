@@ -28,7 +28,6 @@ from .event import Event
 from .event_type import EventType
 from .external_event import ExternalEvent
 from .file import File
-from .held_balance import HeldBalance
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
@@ -121,7 +120,6 @@ __all__ = [
     "EventType",
     "ExternalEvent",
     "File",
-    "HeldBalance",
     "IssueReward",
     "LegacyRecurringProductPriceCustom",
     "LegacyRecurringProductPriceFixed",

@@ -6,8 +6,6 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.email.schemas import OrganizationReviewedEmail
-from polar.held_balance.service import HeldBalanceService
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, User
 from polar.models.organization import OrganizationStatus
@@ -127,11 +125,6 @@ class TestOrganizationReviewed:
         organization.status = OrganizationStatus.ACTIVE
         await save_fixture(organization)
 
-        mocker.patch.object(
-            held_balance_service,
-            "release_account",
-            spec=HeldBalanceService.release_account,
-        )
         get_admin_user_mock = mocker.patch(
             "polar.organization.tasks.OrganizationRepository.get_admin_user",
             return_value=user,
@@ -160,11 +153,6 @@ class TestOrganizationReviewed:
         organization.status = OrganizationStatus.ACTIVE
         await save_fixture(organization)
 
-        release_account_mock = mocker.patch.object(
-            held_balance_service,
-            "release_account",
-            spec=HeldBalanceService.release_account,
-        )
         get_admin_user_mock = mocker.patch(
             "polar.organization.tasks.OrganizationRepository.get_admin_user",
             return_value=user,
@@ -175,7 +163,6 @@ class TestOrganizationReviewed:
 
         await organization_reviewed(organization.id, initial_review=True)
 
-        release_account_mock.assert_called_once()
         enqueue_email_template_mock.assert_called_once()
         email_arg = enqueue_email_template_mock.call_args[0][0]
         assert isinstance(email_arg, OrganizationReviewedEmail)
@@ -194,18 +181,10 @@ class TestOrganizationReviewed:
         organization.status = OrganizationStatus.ACTIVE
         await save_fixture(organization)
 
-        release_account_mock = mocker.patch.object(
-            held_balance_service,
-            "release_account",
-            spec=HeldBalanceService.release_account,
-        )
-
         # then
         session.expunge_all()
 
         await organization_reviewed(organization.id, initial_review=True, silent=True)
 
-        # Held balances are still released
-        release_account_mock.assert_called_once()
-        # But no email is sent
+        # No email is sent
         enqueue_email_template_mock.assert_not_called()

@@ -109,8 +109,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             return []
 
         events = Event.__table__
-        p = events.alias("p")
-        c = events.alias("c")
+        resolved = events.alias("resolved")
+        pending = events.alias("pending")
+        descendant = events.alias("descendant")
 
         def _parent_match(
             parent_external_id: ColumnElement[str | None],
@@ -122,80 +123,62 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 cast(parent_id, String) == child_pending,
             )
 
-        # Seed: resolved events that are parents of pending events,
-        # scoped to this batch on either side
-        seeds = (
+        # Base: first-level resolvable events — pending children whose parent is
+        # already resolved. Scoped on either side of the edge so we catch both
+        # "batch inserted the parent (unblocking a pre-existing orphan)" and
+        # "batch inserted the pending child (whose parent already existed)".
+        base = (
             select(
-                p.c.id,
-                p.c.external_id,
-                func.coalesce(p.c.root_id, p.c.id).label("root_id"),
-                p.c.organization_id,
+                pending.c.id,
+                resolved.c.id.label("parent_id"),
+                func.coalesce(resolved.c.root_id, resolved.c.id).label("root_id"),
+                pending.c.external_id,
+                pending.c.organization_id,
             )
             .join(
-                c,
+                resolved,
                 and_(
-                    c.c.organization_id == p.c.organization_id,
+                    resolved.c.organization_id == pending.c.organization_id,
+                    resolved.c.pending_parent_external_id.is_(None),
                     _parent_match(
-                        p.c.external_id, p.c.id, c.c.pending_parent_external_id
+                        resolved.c.external_id,
+                        resolved.c.id,
+                        pending.c.pending_parent_external_id,
                     ),
                 ),
             )
             .where(
-                p.c.pending_parent_external_id.is_(None),
-                c.c.pending_parent_external_id.is_not(None),
-                or_(p.c.id.in_(inserted_ids), c.c.id.in_(inserted_ids)),
-            )
-            .distinct()
-            .cte("seeds")
-        )
-
-        # Walk down from seeds through pending children
-        child = events.alias("child")
-        base = (
-            select(
-                child.c.id,
-                seeds.c.id.label("parent_id"),
-                seeds.c.root_id,
-                child.c.external_id,
-                child.c.organization_id,
-            )
-            .join(
-                seeds,
-                and_(
-                    child.c.organization_id == seeds.c.organization_id,
-                    _parent_match(
-                        seeds.c.external_id,
-                        seeds.c.id,
-                        child.c.pending_parent_external_id,
-                    ),
+                pending.c.pending_parent_external_id.is_not(None),
+                or_(
+                    resolved.c.id.in_(inserted_ids),
+                    pending.c.id.in_(inserted_ids),
                 ),
             )
-            .where(child.c.pending_parent_external_id.is_not(None))
         )
 
         chain = base.cte("chain", recursive=True)
 
-        next_child = events.alias("next_child")
+        # Walk further down: descendants whose parent is already in the chain.
         recursive = (
             select(
-                next_child.c.id,
+                descendant.c.id,
                 chain.c.id.label("parent_id"),
                 chain.c.root_id,
-                next_child.c.external_id,
-                next_child.c.organization_id,
+                descendant.c.external_id,
+                descendant.c.organization_id,
             )
             .join(
                 chain,
                 and_(
-                    next_child.c.organization_id == chain.c.organization_id,
+                    descendant.c.organization_id == chain.c.organization_id,
                     _parent_match(
                         chain.c.external_id,
                         chain.c.id,
-                        next_child.c.pending_parent_external_id,
+                        descendant.c.pending_parent_external_id,
                     ),
                 ),
             )
-            .where(next_child.c.pending_parent_external_id.is_not(None))
+            .where(descendant.c.pending_parent_external_id.is_not(None))
         )
         chain = chain.union_all(recursive)
 

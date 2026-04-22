@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Generate App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.EMERGENCY_MERGE_APP_ID }}
           private-key: ${{ secrets.EMERGENCY_MERGE_APP_PRIVATE_KEY }}

@@ -7,6 +7,7 @@ from fastapi import Request
 from tagflow import tag, text
 
 from polar.models import Organization
+from polar.models.organization import CAPABILITY_METADATA, STATUS_CAPABILITIES
 
 from ....components import button, card
 
@@ -326,6 +327,70 @@ class SettingsSection:
                         classes="text-sm text-base-content/60 text-center py-4"
                     ):
                         text("No social media links configured")
+
+            # Capabilities card
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Capabilities")
+                    with tag.div(classes="text-xs text-base-content/60"):
+                        text("Overrides reset on the next status change.")
+
+                current_caps = self.org.get_effective_capabilities()
+                status_defaults = STATUS_CAPABILITIES[self.org.status]
+
+                with tag.div(classes="space-y-3"):
+                    for capability_key, (
+                        label,
+                        description,
+                    ) in CAPABILITY_METADATA.items():
+                        enabled = current_caps[capability_key]
+                        default_value = status_defaults[capability_key]
+                        is_overridden = enabled != default_value
+                        target_value = not enabled
+                        modal_url = str(
+                            request.url_for(
+                                "organizations:set_capability",
+                                organization_id=self.org.id,
+                                capability=capability_key,
+                            ).include_query_params(
+                                value="true" if target_value else "false"
+                            )
+                        )
+
+                        with tag.div(classes="flex items-center justify-between gap-4"):
+                            with tag.div(classes="flex-1"):
+                                with tag.div(
+                                    classes=(
+                                        "flex items-center gap-2 font-semibold text-sm"
+                                    )
+                                ):
+                                    status_dot = (
+                                        "bg-success" if enabled else "bg-base-300"
+                                    )
+                                    with tag.div(
+                                        classes=f"w-2 h-2 rounded-full {status_dot}"
+                                    ):
+                                        pass
+                                    text(label)
+                                    if is_overridden:
+                                        with tag.span(
+                                            classes="badge badge-ghost badge-sm ml-1"
+                                        ):
+                                            text("overridden")
+                                with tag.div(
+                                    classes="text-xs text-base-content/60 mt-1"
+                                ):
+                                    text(description)
+
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                ghost=True,
+                                hx_get=modal_url,
+                                hx_target="#modal",
+                            ):
+                                text("Disable" if enabled else "Enable")
 
             # Danger zone card
             with card(bordered=True, classes="border-error/20 bg-error/5"):

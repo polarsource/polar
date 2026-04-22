@@ -325,6 +325,36 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
 }
 
 
+CAPABILITY_METADATA: dict[CapabilityName, tuple[str, str]] = {
+    "checkout_payments": (
+        "Checkout payments",
+        "Allow new checkouts and subscriptions.",
+    ),
+    "subscription_renewals": (
+        "Subscription renewals",
+        "Allow recurring billing cycles and dunning retries.",
+    ),
+    "payouts": (
+        "Payouts",
+        "Allow funds to be paid out to the payout account.",
+    ),
+    "refunds": (
+        "Refunds",
+        "Allow refunds to be issued on this organization's orders.",
+    ),
+    "api_access": (
+        "API access",
+        "Allow authenticated API access for team members.",
+    ),
+    "dashboard_access": (
+        "Dashboard access",
+        "Allow team members to sign in and access the dashboard.",
+    ),
+}
+
+CAPABILITY_NAMES: frozenset[str] = frozenset(CAPABILITY_METADATA.keys())
+
+
 # DENIED → ACTIVE and BLOCKED → ACTIVE additionally require a reason,
 # enforced at the service layer.
 ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatus]] = {

@@ -2309,3 +2309,118 @@ class TestSetStatusCapabilities:
         assert (
             organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.BLOCKED]
         )
+
+
+@pytest.mark.asyncio
+class TestSetCapability:
+    async def test_flips_value(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.ACTIVE)
+        assert organization.capabilities is not None
+        assert organization.capabilities["payouts"] is True
+
+        result = await organization_service.set_capability(
+            session,
+            organization,
+            "payouts",
+            False,
+            reason="Investigating suspicious withdrawal pattern",
+        )
+
+        assert result.capabilities is not None
+        assert result.capabilities["payouts"] is False
+        assert result.capabilities["checkout_payments"] is True
+
+    async def test_appends_internal_note_with_reason(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.internal_notes = None
+
+        await organization_service.set_capability(
+            session,
+            organization,
+            "payouts",
+            False,
+            reason="Manual ops hold",
+            admin_email="ops@polar.sh",
+        )
+
+        assert organization.internal_notes is not None
+        assert (
+            "Capability 'payouts' disabled by ops@polar.sh"
+            in organization.internal_notes
+        )
+        assert "Reason: Manual ops hold" in organization.internal_notes
+
+    async def test_noop_when_unchanged(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.internal_notes = None
+        initial = dict(organization.capabilities or {})
+
+        await organization_service.set_capability(
+            session,
+            organization,
+            "payouts",
+            True,
+            reason="Already enabled, should not change",
+        )
+
+        assert organization.capabilities == initial
+        assert organization.internal_notes is None
+
+    async def test_mirrors_refunds_blocked(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.refunds_blocked = False
+
+        await organization_service.set_capability(
+            session,
+            organization,
+            "refunds",
+            False,
+            reason="Fraud investigation in progress",
+        )
+        assert organization.refunds_blocked is True
+
+        await organization_service.set_capability(
+            session,
+            organization,
+            "refunds",
+            True,
+            reason="Investigation resolved, re-enabling refunds",
+        )
+        assert organization.refunds_blocked is False
+
+    async def test_status_transition_resets_override(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.ACTIVE)
+        await organization_service.set_capability(
+            session,
+            organization,
+            "payouts",
+            False,
+            reason="Temporary hold for KYC recheck",
+        )
+        assert organization.capabilities is not None
+        assert organization.capabilities["payouts"] is False
+
+        organization.set_status(OrganizationStatus.REVIEW)
+        assert organization.capabilities is not None
+        # REVIEW default for payouts is False, and checkout_payments defaults True.
+        assert organization.capabilities["checkout_payments"] is True

@@ -11,7 +11,7 @@ This module provides a modern, three-column layout with:
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import stripe as stripe_lib
 import structlog
@@ -61,7 +61,12 @@ from polar.models import (
 from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
 from polar.models.order import Order, OrderStatus
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import (
+    CAPABILITY_METADATA,
+    CAPABILITY_NAMES,
+    CapabilityName,
+    OrganizationStatus,
+)
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
@@ -91,7 +96,7 @@ from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import OrganizationListView
-from .views.modals import DeletePayoutAccountModal
+from .views.modals import DeletePayoutAccountModal, SetCapabilityModal
 from .views.sections._shared import RISK_LEVEL_BADGE, VERDICT_BADGE
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
@@ -122,6 +127,21 @@ class DeletePayoutAccountForm(BaseModel):
 
     @classmethod
     def model_validate_form(cls, data: Any) -> "DeletePayoutAccountForm":
+        return cls.model_validate(dict(data))
+
+
+class SetCapabilityForm(BaseModel):
+    reason: str
+
+    @field_validator("reason")
+    @classmethod
+    def reason_min_length(cls, v: str) -> str:
+        if len(v.strip()) < 10:
+            raise ValueError("Reason must be at least 10 characters.")
+        return v.strip()
+
+    @classmethod
+    def model_validate_form(cls, data: Any) -> "SetCapabilityForm":
         return cls.model_validate(dict(data))
 
 
@@ -3561,6 +3581,94 @@ async def set_refunds_blocked(
         + "?section=settings",
         303,
     )
+
+
+@router.api_route(
+    "/{organization_id}/capabilities/{capability}",
+    name="organizations:set_capability",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def set_capability(
+    request: Request,
+    organization_id: UUID4,
+    capability: str,
+    value: bool,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Render the capability override modal (GET) or apply it (POST)."""
+    if capability not in CAPABILITY_NAMES:
+        raise HTTPException(status_code=404, detail="Unknown capability")
+    capability_name = cast(CapabilityName, capability)
+
+    repository = OrganizationRepository(session)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if organization is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    current_value = organization.get_effective_capabilities()[capability_name]
+
+    settings_url = str(
+        request.url_for(
+            "organizations:detail", organization_id=organization_id
+        ).include_query_params(section="settings")
+    )
+
+    if current_value == value:
+        state = "enabled" if value else "disabled"
+        await add_toast(
+            request,
+            f"Capability '{capability_name}' is already {state}.",
+            "error",
+        )
+        return HXRedirectResponse(request, settings_url, 303)
+
+    label, _ = CAPABILITY_METADATA[capability_name]
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = SetCapabilityForm.model_validate_form(data)
+            await organization_service.set_capability(
+                session,
+                organization,
+                capability_name,
+                value,
+                reason=form.reason,
+                admin_email=user_session.user.email,
+            )
+
+            action_word = "enabled" if value else "disabled"
+            await add_toast(
+                request,
+                f"Capability '{label}' has been {action_word}.",
+                "success",
+            )
+            return HXRedirectResponse(request, settings_url, 303)
+        except ValidationError as e:
+            validation_error = e
+
+    form_action = str(
+        request.url_for(
+            "organizations:set_capability",
+            organization_id=organization_id,
+            capability=capability_name,
+        ).include_query_params(value="true" if value else "false")
+    )
+    modal_view = SetCapabilityModal(
+        organization,
+        capability_name,
+        label,
+        value,
+        form_action,
+        validation_error,
+    )
+    with modal_view.render():
+        pass
+
+    return None
 
 
 __all__ = ["router"]

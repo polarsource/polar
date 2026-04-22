@@ -30,7 +30,12 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.organization import OrganizationDetails, OrganizationStatus
+from polar.models.organization import (
+    CapabilityName,
+    OrganizationCapabilities,
+    OrganizationDetails,
+    OrganizationStatus,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -1192,6 +1197,44 @@ class OrganizationService:
                 "ai_onboarding_completed_at": datetime.now(UTC),
             },
         )
+        return organization
+
+    async def set_capability(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        capability: CapabilityName,
+        value: bool,
+        *,
+        reason: str,
+        admin_email: str | None = None,
+    ) -> Organization:
+        """Override a single capability on an organization.
+
+        The override persists until the next status transition — `set_status`
+        resets `capabilities` from `STATUS_CAPABILITIES`.
+        """
+        current: OrganizationCapabilities = dict(  # type: ignore[assignment]
+            organization.get_effective_capabilities()
+        )
+        if current[capability] == value:
+            return organization
+
+        current[capability] = value
+        organization.capabilities = current
+
+        action = "enabled" if value else "disabled"
+        by = f" by {admin_email}" if admin_email else ""
+        _append_internal_note(
+            organization,
+            f"Capability '{capability}' {action}{by}",
+            reason=reason,
+        )
+
+        if capability == "refunds":
+            organization.refunds_blocked = not value
+
+        session.add(organization)
         return organization
 
 

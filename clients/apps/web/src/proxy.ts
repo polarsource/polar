@@ -205,9 +205,10 @@ export async function proxy(request: NextRequest) {
   }
 
   let user: schemas['UserRead'] | undefined = undefined
+  let api: Awaited<ReturnType<typeof createServerSideAPI>> | undefined
 
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = await createServerSideAPI(
+    api = await createServerSideAPI(
       request.headers,
       RequestCookiesAdapter.seal(request.cookies),
     )
@@ -229,11 +230,48 @@ export async function proxy(request: NextRequest) {
     return getLoginResponse(request)
   }
 
+  // If the first segment isn't one of the user's org slugs then treat
+  // it as a route name and prepend the user's last-visited (or first) org slug.
+
+  // If the first segment matches the `last_visited_org` cookie, skip the API call
+  if (user && api) {
+    const dashboardMatch = request.nextUrl.pathname.match(
+      /^\/dashboard\/([^/]+)(\/.*)?$/,
+    )
+    if (dashboardMatch) {
+      const firstSegment = dashboardMatch[1]
+      const rest = dashboardMatch[2] ?? ''
+      const lastVisitedSlug = request.cookies.get('last_visited_org')?.value
+
+      if (lastVisitedSlug !== firstSegment) {
+        const { data: orgsData } = await api.GET('/v1/organizations/', {
+          params: { query: { limit: 100, sorting: ['name'] } },
+          cache: 'no-cache',
+        })
+        const userOrgs = orgsData?.items ?? []
+
+        if (!userOrgs.some((o) => o.slug === firstSegment)) {
+          if (userOrgs.length === 0) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/onboarding/start'
+            return NextResponse.redirect(url)
+          }
+          const defaultOrg =
+            userOrgs.find((o) => o.slug === lastVisitedSlug) ?? userOrgs[0]
+          const redirectURL = request.nextUrl.clone()
+          redirectURL.pathname = `/dashboard/${defaultOrg.slug}/${firstSegment}${rest}`
+          return NextResponse.redirect(redirectURL)
+        }
+      }
+    }
+  }
+
   const { id: distinctId, isNew: isNewDistinctId } =
     getOrCreateDistinctId(request)
 
   const headers: Record<string, string> = {
     'x-polar-distinct-id': distinctId,
+    'x-pathname': request.nextUrl.pathname,
   }
   if (user) {
     headers['x-polar-user'] = Buffer.from(JSON.stringify(user)).toString(

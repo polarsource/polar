@@ -20,7 +20,7 @@ A PolicyGuard is a FastAPI dependency factory that combines resource resolution 
 2. Resolves the resource from the path parameter
 3. Checks that the subject has access to the owning organization
 4. Evaluates the policy function
-5. Returns an `AuthorizedOrganization` (or `AuthorizedAccount`, etc.) containing both the resource and the auth subject
+5. Returns an `AuthzContext` (or `AuthorizedAccount`, etc.) containing both the resource and the auth subject
 
 If any step fails, the appropriate HTTP error is raised before the endpoint body executes.
 
@@ -29,13 +29,13 @@ from polar.authz.dependencies import AuthorizeFinanceRead
 
 @router.get("/{id}/account")
 async def get_account(
-    authorized: AuthorizeFinanceRead,
+    authz: AuthorizeFinanceRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Account:
-    # authorized.organization is already resolved and access-checked
-    # authorized.auth_subject is the authenticated subject
+    # authz.organization is already resolved and access-checked
+    # authz.auth_subject is the authenticated subject
     account = await account_service.get_by_organization(
-        session, authorized.organization.id
+        session, authz.organization.id
     )
     if account is None:
         raise ResourceNotFound()
@@ -168,13 +168,13 @@ async def can_do_thing(session, auth_subject, organization) -> PolicyResult:
 
 # 2. Typed dependency
 AuthorizeDoThing = Annotated[
-    AuthorizedOrganization,
+    AuthzContext[User | Organization],
     Depends(OrgPolicyGuard(can_do_thing)),
 ]
 
 # 3. Endpoint
 @router.post("/{id}/thing")
-async def do_thing(authorized: AuthorizeDoThing, ...) -> ...:
-    organization = authorized.organization
+async def do_thing(authz: AuthorizeDoThing, ...) -> ...:
+    organization = authz.organization
     ...
 ```

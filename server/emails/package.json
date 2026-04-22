@@ -18,13 +18,13 @@
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.6",
     "commander": "^14.0.3",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@react-email/preview-server": "^5.2.10",
     "@types/node": "^24.12.2",
-    "@types/react": "^19.2.7",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@yao-pkg/pkg": "^6.15.0",
     "openapi-typescript": "^7.13.0",

@@ -250,14 +250,12 @@ class CustomerRepository(
     async def search_by_query(
         self,
         org_ids: set[UUID],
-        organization_ids: Sequence[UUID],
         query: str,
     ) -> tuple[list[UUID], list[str]]:
         statement = (
             self.get_by_org_ids_statement(org_ids)
             .with_only_columns(Customer.id, Customer.external_id)
             .where(
-                Customer.organization_id.in_(organization_ids),
                 or_(
                     cast(Customer.id, String).ilike(f"%{query}%"),
                     Customer.external_id.ilike(f"%{query}%"),

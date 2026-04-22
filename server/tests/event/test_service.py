@@ -700,6 +700,7 @@ class TestIngest:
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_parent_child_same_batch(
         self,
+        enqueue_job_mock: MagicMock,
         enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
@@ -727,6 +728,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
         assert len(events) == 3
@@ -757,6 +759,7 @@ class TestIngest:
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_parent_arrives_after_child_cross_batch(
         self,
+        enqueue_job_mock: MagicMock,
         enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
@@ -773,6 +776,7 @@ class TestIngest:
             ]
         )
         await event_service.ingest(session, auth_subject, child_ingest)
+        await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
         assert len(events) == 1
@@ -790,6 +794,7 @@ class TestIngest:
             ]
         )
         await event_service.ingest(session, auth_subject, parent_ingest)
+        await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         await session.refresh(child)
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
@@ -799,14 +804,25 @@ class TestIngest:
         assert child.root_id == parent.id
         assert child.pending_parent_external_id is None
 
+        # `enqueue_events` only carries the batch's freshly-inserted ids;
+        # orphan resolution happens inside `ingested`, not here.
         assert enqueue_events_mock.call_count == 2
-        second_call_args = set(enqueue_events_mock.call_args_list[1][0])
-        assert parent.id in second_call_args
-        assert child.id in second_call_args
+        assert set(enqueue_events_mock.call_args_list[0][0]) == {child.id}
+        assert set(enqueue_events_mock.call_args_list[1][0]) == {parent.id}
+
+        # The parent's `ingested` run resolves the child and sends both to
+        # Tinybird.
+        tinybird_calls = [
+            c for c in enqueue_job_mock.call_args_list if c.args[0] == "tinybird.ingest"
+        ]
+        assert len(tinybird_calls) == 1
+        tinybird_payload = tinybird_calls[0].args[1]
+        assert {tb["id"] for tb in tinybird_payload} == {str(parent.id), str(child.id)}
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_deep_chain_resolves_when_root_arrives_last(
         self,
+        enqueue_job_mock: MagicMock,
         enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
@@ -831,6 +847,9 @@ class TestIngest:
                         ),
                     ]
                 ),
+            )
+            await event_service.ingested(
+                session, list(enqueue_events_mock.call_args[0])
             )
 
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
@@ -862,6 +881,7 @@ class TestIngest:
                 ]
             ),
         )
+        await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
         by_name = {e.name: e for e in events}
@@ -888,8 +908,24 @@ class TestIngest:
         assert ggc.root_id == p.id
         assert ggc.pending_parent_external_id is None
 
-        final_call_args = set(enqueue_events_mock.call_args_list[-1][0])
-        assert {p.id, c.id, gc.id, ggc.id} == final_call_args
+        # `enqueue_events` only carries the batch's freshly-inserted ids,
+        # so each call has exactly the one event from that batch.
+        assert enqueue_events_mock.call_count == 4
+        assert set(enqueue_events_mock.call_args_list[-1][0]) == {p.id}
+
+        # Resolution propagates inside `p`'s `ingested` run and pulls the
+        # whole orphan chain into the Tinybird payload.
+        last_tinybird_call = next(
+            c
+            for c in reversed(enqueue_job_mock.call_args_list)
+            if c.args[0] == "tinybird.ingest"
+        )
+        assert {tb["id"] for tb in last_tinybird_call.args[1]} == {
+            str(p.id),
+            str(c.id),
+            str(gc.id),
+            str(ggc.id),
+        }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_ingest_with_member_id(

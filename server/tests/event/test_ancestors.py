@@ -201,11 +201,13 @@ class TestGetAncestorsBatch:
 
         await event_service.ingest(session, auth_subject, ingest)
 
-        # Build ancestors (normally done by background worker)
+        # Parent resolution runs in the background `event.ingested` task; drive
+        # it here so `parent_id`/`root_id` are populated before assertions.
         id_result = await session.execute(
             select(Event.id).where(Event.organization_id == organization.id)
         )
         event_ids = [row[0] for row in id_result.all()]
+        await event_service.ingested(session, event_ids)
 
         repository = EventRepository.from_session(session)
         ancestors = await repository.get_ancestors_batch(event_ids)

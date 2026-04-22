@@ -914,16 +914,6 @@ class EventService:
         repository = EventRepository.from_session(session)
         event_ids, duplicates_count = await repository.insert_batch(events)
 
-        resolved_ids = set(await repository.resolve_pending_parents(event_ids))
-        pending_ids = {
-            event_dict["id"]
-            for event_dict in events
-            if event_dict.get("pending_parent_external_id")
-        }
-        ready_ids = [eid for eid in event_ids if eid not in pending_ids] + list(
-            resolved_ids
-        )
-
         # Temporarily: fetch inserted events and create meter_events
         with logfire.span("create_meter_events", event_count=len(event_ids)):
             if event_ids:
@@ -932,7 +922,10 @@ class EventService:
                 )
                 await self._create_meter_events(session, inserted_events)
 
-        enqueue_events(*ready_ids)
+        # Parent resolution and root_id propagation run out-of-band in the
+        # `event.ingested` task — they're not needed on the request path and
+        # can be slow under contention.
+        enqueue_events(*event_ids)
 
         return EventsIngestResponse(
             inserted=len(event_ids), duplicates=duplicates_count
@@ -964,14 +957,32 @@ class EventService:
     async def ingested(
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
     ) -> None:
-        ancestors_by_event = await self._build_ancestors_batch(session, event_ids)
         repository = EventRepository.from_session(session)
+
+        # Resolve parent links and propagate root_id here so it's off the
+        # ingestion hot path. `resolved_ids` includes pre-existing orphan
+        # events whose root_id was just set because an ancestor arrived in
+        # this batch — they also need downstream processing.
+        resolved_ids = await repository.resolve_pending_parents(event_ids)
+        candidate_ids = {*event_ids, *resolved_ids}
+        if not candidate_ids:
+            return
+
+        # Only process events whose chain is complete (root_id set). Events
+        # still pending a parent stay out of Tinybird/meters until a future
+        # batch resolves their root.
         statement = (
             repository.get_base_statement()
-            .where(Event.id.in_(event_ids))
+            .where(Event.id.in_(candidate_ids), Event.root_id.is_not(None))
             .options(*repository.get_eager_options())
         )
         events = await repository.get_all(statement)
+        if not events:
+            return
+
+        complete_ids = [event.id for event in events]
+        ancestors_by_event = await self._build_ancestors_batch(session, complete_ids)
+
         customers: set[Customer] = set()
         organization_ids: set[uuid.UUID] = set()
         for event in events:
@@ -988,15 +999,14 @@ class EventService:
         # await self._create_meter_events(session, events)
 
         await self._activate_matching_customer_meters(
-            session, repository, event_ids, customers
+            session, repository, complete_ids, customers
         )
 
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
 
-        if events:
-            tinybird_events = events_to_tinybird(events, ancestors_by_event)
-            enqueue_job("tinybird.ingest", tinybird_events)
+        tinybird_events = events_to_tinybird(events, ancestors_by_event)
+        enqueue_job("tinybird.ingest", tinybird_events)
 
         polar_self_service.enqueue_event_ingestion(events)
 

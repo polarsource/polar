@@ -46,6 +46,12 @@ from polar.models.product_price import ProductPriceMeteredUnit
 
 from .system import SystemEvent
 
+# Hard cap on parent_id chain depth traversed by resolve_pending_parents.
+# Real chains are tens at most; this exists purely to bail out if a cycle
+# (A.parent_id → B → A) ever sneaks into the data, instead of spinning until
+# statement_timeout kills the worker.
+_MAX_RESOLVE_DEPTH = 1000
+
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     model = Event
@@ -188,6 +194,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.id.label("cur"),
             Event.parent_id.label("parent_id"),
             Event.root_id.label("root_id"),
+            literal(0).label("depth"),
         ).where(Event.id.in_(inserted_ids))
         walk_up = walk_up_anchor.cte("walk_up", recursive=True)
 
@@ -198,22 +205,31 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 p_up.c.id,
                 p_up.c.parent_id,
                 p_up.c.root_id,
+                (walk_up.c.depth + 1).label("depth"),
             )
             .select_from(walk_up.join(p_up, p_up.c.id == walk_up.c.parent_id))
-            .where(walk_up.c.root_id.is_(None))
+            .where(
+                walk_up.c.root_id.is_(None),
+                walk_up.c.depth < _MAX_RESOLVE_DEPTH,
+            )
         )
 
         walk_down_anchor = select(
             walk_up.c.seed.label("cur"),
             walk_up.c.root_id.label("root_id"),
+            literal(0).label("depth"),
         ).where(walk_up.c.root_id.is_not(None))
         walk_down = walk_down_anchor.cte("walk_down", recursive=True)
 
         c_down = Event.__table__.alias("c_down")
         walk_down = walk_down.union_all(
-            select(c_down.c.id, walk_down.c.root_id).select_from(
-                walk_down.join(c_down, c_down.c.parent_id == walk_down.c.cur)
+            select(
+                c_down.c.id,
+                walk_down.c.root_id,
+                (walk_down.c.depth + 1).label("depth"),
             )
+            .select_from(walk_down.join(c_down, c_down.c.parent_id == walk_down.c.cur))
+            .where(walk_down.c.depth < _MAX_RESOLVE_DEPTH)
         )
 
         propagate_root = (

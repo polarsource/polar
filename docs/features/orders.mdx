@@ -1,68 +1,89 @@
 ---
-title: "Orders & Subscriptions"
-sidebarTitle: "Orders & Subscriptions"
+title: "Orders"
+description: "Every paid transaction on Polar is an order."
 ---
 
-## Sales
+An **order** is the record of a single paid transaction on Polar. Every successful checkout, subscription cycle, and subscription change generates an order — it's where the money, the tax, the invoice, and the link back to the [product](/features/products) and [customer](/features/customer-management) live.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/orders/overview.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/orders/overview.dark.png"
-/>
+If [subscriptions](/features/subscriptions/introduction) are the *relationship* with a customer, orders are the *individual payments* inside that relationship.
 
-The sales view shows you all sales in a paginated list.
+## When orders are created
 
-## Order & Subscription Details
+Polar creates an order in all of these cases:
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/orders/detail.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/orders/detail.dark.png"
-/>
+- **One-time purchase** — when a customer checks out a non-recurring product.
+- **Subscription created** — the initial order generated when a customer subscribes.
+- **Subscription renewal** — every billing cycle of an active subscription.
+- **Subscription change** — when a plan or seat update is prorated with `invoice` behavior and charges the difference immediately. See [Proration](/features/subscriptions/proration).
 
-Each sale has metadata attached to it. Common properties like
+Each order carries a `billing_reason` that tells you which of these it is: `purchase`, `subscription_create`, `subscription_cycle`, or `subscription_update`.
 
-- Amount
-- Tax Amount
-- Invoices
-- Customer
-  - Basic Customer Details
-  - Past Orders
+## Order status
 
-## Checkouts
+An order moves through a small set of statuses over its lifetime:
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/orders/checkouts.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/orders/checkouts.dark.png"
-/>
+| Status               | Meaning                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `pending`            | The order has been created and Polar is attempting to collect payment.                    |
+| `paid`               | The payment succeeded.                                                                    |
+| `refunded`           | The order has been fully refunded.                                                        |
+| `partially_refunded` | Part of the order has been refunded. See [Refunds](/features/refunds).                    |
+| `void`               | The order will not be collected (for example, it's been voided after repeated failures). |
 
-You can also have an overview of all checkout sessions. You can filter them by customer email, status and product.
+Free orders — those with a total of zero, typically from a $0 subscription or a 100% discount — are marked `paid` immediately with no payment step.
 
-A checkout can be in the following states:
+## What's on an order
 
-- Open: The checkout session is open and waiting for the customer to complete the payment.
-- Confirmed: The customer clicked the **Pay** or **Subscribe** button and the payment is being processed.
-- Succeeded: The payment was successful and the order was created.
-- Expired: The checkout session expired and the customer can no longer complete it. A new checkout session must be created.
+Every order carries:
 
-If you click on a Checkout, you can have more details on the **payment attempts**, in particular, why a payment has failed or has been declined.
+- **Amounts**: subtotal, discount, tax, net, and total, with the currency it was billed in.
+- **Billing details**: customer billing name and address (editable until the invoice is generated).
+- **Tax details**: taxability reason, tax rate, and the amount collected — useful if you're operating as merchant of record on your own, or reconciling against Polar's [MoR tax handling](/merchant-of-record/introduction).
+- **A link to the product and customer**, and to the subscription if the order came from a subscription.
+- **The invoice**, once it's been generated.
+- **[Custom field data](/features/custom-fields)** captured at checkout.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/orders/checkout.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/orders/checkout.dark.png"
-/>
+## Invoices
+
+Polar generates a PDF invoice for every paid order. You can:
+
+- **Download it** from the order detail page in the dashboard.
+- **Trigger generation** programmatically via [Generate Order Invoice](/api-reference/orders/post-invoice), then fetch the URL with [Get Order Invoice](/api-reference/orders/get-invoice).
+
+Customers can download and edit their own invoices — adding a company name, VAT number, or billing address — from the [Customer Portal](/features/customer-portal/introduction), without pulling you into a support thread.
+
+<Note>
+  Once an invoice has been generated, its billing details are frozen. If you
+  need to correct a name or address after the fact, the customer should edit
+  their invoice from the Customer Portal, which regenerates it.
+</Note>
+
+## Refunds
+
+Orders can be refunded in full or in part from the dashboard, or programmatically via the [Refunds API](/api-reference/refunds/create). Refunds are a separate resource linked to the order — see [Refunds](/features/refunds) for the rules around what's refundable and how it interacts with payouts.
+
+## Webhooks
+
+If you're integrating orders into your own system, Polar emits an event on every state transition:
+
+- [`order.created`](/api-reference/webhooks/order.created) — a new order exists (not necessarily paid yet).
+- [`order.paid`](/api-reference/webhooks/order.paid) — the order has been collected. This is the one most integrations care about.
+- [`order.updated`](/api-reference/webhooks/order.updated) — something changed on the order.
+- [`order.refunded`](/api-reference/webhooks/order.refunded) — a refund was issued against the order.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Subscriptions" icon="rotate" href="/features/subscriptions/introduction">
+    The recurring relationship that generates most orders.
+  </Card>
+  <Card title="Refunds" icon="arrow-rotate-left" href="/features/refunds">
+    How to refund an order, fully or partially.
+  </Card>
+  <Card title="Orders API" icon="code" href="/api-reference/orders/list">
+    List and fetch orders, update billing details, and generate invoices.
+  </Card>
+  <Card title="Customer Portal" icon="user" href="/features/customer-portal/introduction">
+    Where customers view their own orders and download invoices.
+  </Card>
+</CardGroup>

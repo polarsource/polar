@@ -92,6 +92,14 @@
               "features/custom-fields",
               "features/discounts",
               "features/tax-inclusive-pricing",
+              {
+                "group": "Subscriptions",
+                "pages": [
+                  "features/subscriptions/introduction",
+                  "features/subscriptions/manage",
+                  "features/subscriptions/proration"
+                ]
+              },
               "features/orders",
               "features/refunds",
               "features/analytics",
@@ -583,11 +591,8 @@
               "guides/disable-email-editing-in-checkout",
               "guides/grant-meter-credits-after-purchase",
               "guides/grant-meter-credits-before-purchase",
-              "guides/subscription-downgrades",
-              "guides/subscription-upgrades",
               "guides/seat-based-pricing",
-              "guides/theme-switch-in-checkout",
-              "guides/proration-for-subscription-changes"
+              "guides/theme-switch-in-checkout"
             ]
           }
         ]
@@ -776,6 +781,30 @@
     {
       "source": "/guides/disable-subscription-changes-in-customer-portal",
       "destination": "/features/customer-portal/settings"
+    },
+    {
+      "source": "/guides/subscription-upgrades",
+      "destination": "/features/subscriptions/manage"
+    },
+    {
+      "source": "/guides/subscription-downgrades",
+      "destination": "/features/subscriptions/manage"
+    },
+    {
+      "source": "/guides/proration-for-subscription-changes",
+      "destination": "/features/subscriptions/proration"
+    },
+    {
+      "source": "/docs/guides/subscription-upgrades",
+      "destination": "/features/subscriptions/manage"
+    },
+    {
+      "source": "/docs/guides/subscription-downgrades",
+      "destination": "/features/subscriptions/manage"
+    },
+    {
+      "source": "/docs/guides/proration-for-subscription-changes",
+      "destination": "/features/subscriptions/proration"
     },
     {
       "source": "/features/customer-portal",
@@ -971,11 +1000,11 @@
     },
     {
       "source": "/subscriptions",
-      "destination": "/features/orders"
+      "destination": "/features/subscriptions/introduction"
     },
     {
       "source": "/docs/subscriptions",
-      "destination": "/features/orders"
+      "destination": "/features/subscriptions/introduction"
     },
     {
       "source": "/onboarding",

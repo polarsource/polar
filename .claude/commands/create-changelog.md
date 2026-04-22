@@ -1,6 +1,6 @@
 # Create Changelog
 
-Produce a polished changelog entry for `docs/changelog/recent.mdx` covering recently shipped merchant and customer facing features. Delegate research, seeding, and screenshots to subagents in parallel where possible.
+Produce a polished changelog entry for `docs/changelog/recent.mdx` covering recently shipped merchant and customer facing features. Delegate research and screenshots to subagents, and confirm the feature list with the user before writing anything.
 
 ## Arguments
 
@@ -11,33 +11,39 @@ Produce a polished changelog entry for `docs/changelog/recent.mdx` covering rece
 
 ## Style Rules (non-negotiable)
 
-- **No em dashes** (`—`) or en dashes (`–`) in the entry. Use commas, periods, parentheses, or rewrite the sentence.
+- **No em dashes** (`—`) or en dashes (`–`) anywhere in the entry. Use commas, periods, parentheses, or rewrite the sentence.
 - **Never mention Stripe** or other payment processors by name.
 - Each feature: a short title and no more than 5 lines of copy.
 - Write for merchants and customers, not engineers. Say what the reader can now do and why it matters.
-- Use the existing `<Update label="YYYY-MM-DD">` block format. The date is today.
+- Use the `<Update label="YYYY-MM-DD">` block format. The date is today.
 - Reference images as `/assets/changelog/YYYY-MM-DD/<name>.png` with `<img class="border rounded" src="..." />`.
 
 ## What to Include
 
-- Merchant facing features (dashboard, API, webhooks, invoicing).
-- Customer facing features (checkout, customer portal, seats).
-- Localization, currency, and i18n improvements.
+High-signal, externally visible changes:
+- New merchant features (dashboard, API, webhooks, invoicing).
+- New customer features (checkout, customer portal, seats).
+- New localization, currency, or i18n coverage.
 
-## What to Exclude
+## What to Exclude (be strict, err on the side of dropping)
 
-- Bug fixes (`fix:`, `fix(...)`) unless the behavior change is a notable merchant-visible feature.
+- Bug fixes, regressions, and reverts. These are not changelog material.
+- Performance improvements with no visible behavior change (SSR speedups, cache layers, faster filter batching, infra tuning).
+- Security hardening that does not change what users can do (tighter auth on an existing flow, secret requirement for an internal handshake, rate limit changes).
 - Backoffice and admin-only work.
-- Internal refactors, migrations, backfills, column drops, capability rollouts.
-- Dependency bumps, CI/CD, dx, test additions.
+- Internal refactors, migrations, backfills, column drops, capability rollouts, model additions.
+- Dependency bumps, CI/CD, dx, test additions, lint changes.
 - Legal or policy text updates.
-- Organization status, review, or onboarding lifecycle plumbing.
+- Organization status, review, appeal, or onboarding lifecycle plumbing.
+- **Docs-only changes.** If the PR only touches `docs/` or `handbook/`, the feature likely shipped weeks ago. Do not include it. Verify by grepping the code for the feature before including it.
+
+When in doubt, leave it out. It is much better to ship a short changelog than a bloated one.
 
 ## Steps
 
 ### 1. Gather commits
 
-Resolve the range from `$ARGUMENTS` and get the list of merged PRs:
+Resolve the range from `$ARGUMENTS` and list the merged PRs:
 
 ```bash
 git log --since="7 days ago" --pretty=format:"%h|%ad|%s" --date=short --no-merges
@@ -49,55 +55,51 @@ If the user gave a date range, use `--since` and `--until` accordingly.
 
 Launch a `general-purpose` subagent with the full commit list. Tell it to:
 
-- Filter the list using the include / exclude rules above.
-- For each candidate PR, run `gh pr view <n>` and inspect changed files to understand the feature.
+- Filter the list using the include and exclude rules above. Be conservative.
+- For each candidate, run `gh pr view <n>` and inspect changed files to confirm the feature is real, user-visible, and shipped in this window (not a docs update for a feature that shipped earlier).
 - Classify each surviving item as **MAJOR** (warrants a screenshot) or **MINOR**.
-- For MAJOR items, describe the exact URL to screenshot (page + what must be visible) and any data prerequisites.
-- Return a structured list: title, 2-3 sentence plain-English summary, category, screenshot target, prerequisites.
+- For MAJOR items, describe the exact URL to screenshot and what must be visible on screen.
+- Return a structured list: title, 2-3 sentence plain-English summary, category, screenshot target, and the PR number / author.
 
-Instruct the subagent explicitly: do not use em dashes or mention Stripe in its summaries.
+Instruct the subagent explicitly: no em dashes, no Stripe, no perf-only or security-hardening items.
 
-### 3. Prepare the local environment (main session)
+### 3. Confirm the feature list with the user (MANDATORY)
 
-In parallel with step 2, invoke the `local-environment` skill to start the stack if it is not running:
+Before touching the changelog file or seeding any data, use the `AskUserQuestion` tool to present every candidate returned by the research subagent and let the user decide what stays. For each item, offer three options: `Include as MAJOR` (with screenshot), `Include as MINOR` (no screenshot), or `Skip`. Batch into one or two questions so the user is not asked dozens of things in a row.
+
+Do not proceed past this step with anything the user did not explicitly accept.
+
+### 4. Prepare the local environment (main session)
+
+Only if any accepted MAJOR feature needs a screenshot. Invoke the `local-environment` skill to start the stack if it is not running:
 
 ```bash
 dev docker ps
-dev docker up -d   # if nothing is running
+dev docker up -d
 ```
 
-Wait for the web to be reachable: `until curl -sf http://localhost:<web-port>/ > /dev/null; do sleep 2; done`. The web port depends on the auto-detected instance; use `dev docker ps` output to find it.
+Wait for the web port to be reachable (`dev docker ps` shows the instance-specific port, e.g. 4200 for instance 12).
 
-If the DB has no seeded data, run:
+If the DB is empty, seed it:
 
 ```bash
 docker exec polar-dev-<N>-api-1 bash -c "cd /app/server && uv run python -m scripts.seeds_load"
 ```
 
-### 4. Log in and seed data for screenshots (subagent, `general-purpose`)
+### 5. Capture screenshots (subagent, `general-purpose`)
 
-Launch a `general-purpose` subagent with **isolation: worktree is NOT needed** (it needs to touch the running containers). Give it the list of MAJOR features from step 2 and tell it to:
+Launch a `general-purpose` subagent with the list of accepted MAJOR features. Tell it:
 
-- Log in at `http://localhost:<web-port>/login` using `admin@polar.sh`. The domain must be real (polar.sh) or login validation rejects it. Grab the login code with:
-  ```bash
-  docker logs polar-dev-<N>-api-1 --since 30s 2>&1 | grep -oE 'LOGIN CODE: [A-Z0-9]+' | tail -1
-  ```
-- For an org that is not in `admin@polar.sh`'s membership, rename a seeded user's email to a real `@polar.sh` domain (e.g. `UPDATE users SET email='merchant@polar.sh' WHERE email='support@meltedsql.com'`) and restart the web container so Next.js re-fetches the user's org list:
-  ```bash
-  docker restart polar-dev-<N>-web-1
-  ```
-- Seed data for each MAJOR feature directly in Postgres:
-  - **Pending subscription update**: insert into `subscription_updates` with `applies_at` set to the subscription's `current_period_end` and `applied_at` left null. Also clean up any distracting rows (e.g. delete `pending` seats so the "N of M seats available" counter makes sense).
-  - **Locale-aware checkout**: set `organizations.feature_settings -> 'checkout_localization_enabled'` to `true`, then hit `GET /v1/checkout-links/<client_secret>/redirect?locale=<code>` on the API port to get redirected to a localized checkout.
-  - **License key filters**: navigate to the benefit detail page. The filter dropdown is always visible even with no data.
-- Take each screenshot with Playwright MCP (`mcp__playwright__browser_navigate` + `mcp__playwright__browser_take_screenshot`). Save to `docs/assets/changelog/YYYY-MM-DD/<feature-slug>.png`. Create the directory first.
+- Log in at `http://localhost:<web-port>/login` as `admin@polar.sh`. The email domain must be real (polar.sh works) or login validation rejects it. Grab the login code with `docker logs polar-dev-<N>-api-1 --since 30s 2>&1 | grep -oE 'LOGIN CODE: [A-Z0-9]+' | tail -1`.
+- If a feature lives in an org that `admin@polar.sh` is not a member of, rename the seeded owner's email to a real `@polar.sh` domain (e.g. `UPDATE users SET email='merchant@polar.sh' WHERE email='support@meltedsql.com'`) and restart the web container so Next.js re-fetches the user's org list: `docker restart polar-dev-<N>-web-1`.
+- Figure out the minimal data needed for each screenshot by reading the relevant frontend component. Seed via SQL when possible (e.g. an `INSERT` into a scheduled-change table or toggling a `feature_settings` JSON key) rather than clicking through flows.
+- Clean up distracting placeholder rows so the UI reads clearly (e.g. remove pending seats if the screenshot should highlight claimed ones).
+- Use Playwright MCP (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_take_screenshot`) and save to `docs/assets/changelog/YYYY-MM-DD/<slug>.png`. Create the directory first.
 - Return the list of saved paths.
 
-Smaller features that are frontend related are "appreciated but not required" screenshots. Only capture them if the subagent can do so without additional seeding.
+### 6. Write the entry (main session)
 
-### 5. Write the entry (main session)
-
-Prepend a new `<Update label="YYYY-MM-DD">...</Update>` block at the top of `docs/changelog/recent.mdx`, after the frontmatter and before the most recent existing entry. For each feature:
+Prepend a new `<Update label="YYYY-MM-DD">...</Update>` block at the top of `docs/changelog/recent.mdx`, after the frontmatter and before the previous most-recent entry. For each accepted feature:
 
 ```mdx
 ## <Feature Title>
@@ -109,12 +111,13 @@ Prepend a new `<Update label="YYYY-MM-DD">...</Update>` block at the top of `doc
 
 Order: MAJOR features (with screenshots) first, then MINOR features.
 
-### 6. Verify
+### 7. Verify
 
-- Grep the new block for em / en dashes: `sed -n '/<Update label="YYYY-MM-DD">/,/<\/Update>/p' docs/changelog/recent.mdx | grep -nE '—|–'`. Fix any hits.
-- Grep for `[Ss]tripe` in the new block. Reword anything that mentions it.
-- Confirm every `<img src=...>` path exists on disk.
+Inside the new block only:
+- `grep -nE '—|–'` must return nothing.
+- `grep -nE '[Ss]tripe'` must return nothing.
+- Every `<img src=...>` path must exist on disk.
 
-### 7. Report to the user
+### 8. Report to the user
 
-List every feature included (title + one line) and the paths to the screenshots captured. Stop there. Do **not** run `/yeet` or create a PR unless the user asks.
+List every feature included (title plus one line) and the paths to the screenshots captured. Stop there. Do not create a commit or a PR unless the user asks.

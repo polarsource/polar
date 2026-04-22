@@ -17,12 +17,6 @@ Scheduled subscription changes (product swaps, price updates, seat-count changes
 
 <img class="border rounded" src="/assets/changelog/2026-04-22/pending-subscription-update.png" />
 
-## Korean Checkout Localization
-
-Checkout is now fully localized in Korean (`ko`). Merchants selling to Korean customers get a native buying experience end to end, with product details, payment fields, and order summary all rendering in Korean.
-
-<img class="border rounded" src="/assets/changelog/2026-04-22/korean-checkout.png" />
-
 ## Expanded Currency Support
 
 Presentment currency coverage expanded by 80+ currencies, including EGP, KES, NGN, PKR, VND, UAH, and KZT. Merchants can now price products and display checkout in a much wider range of local currencies.
@@ -35,25 +29,9 @@ Invoice PDFs now render Arabic, Hebrew, and CJK (Chinese, Japanese, Korean) glyp
 
 Localized checkout now respects regional IETF subtags (e.g. `en-CA`, `en-AU`) while keeping the merchant's chosen language. Currency symbols render as `CA$` or `A$` instead of a generic `$`, so buyers see the right currency framing for their region.
 
-## Metrics Cache
-
-Dashboard metrics queries now sit behind a short-lived cache, reducing load on the analytics backend and making repeat loads of revenue, subscription, and product charts noticeably faster.
-
 ## Out-of-Order Event Ingestion
 
-Events can now be ingested with a `pending_parent` relationship: child events no longer have to arrive after their parent. The relationship is resolved when the parent event lands, making usage-metering pipelines tolerant to out-of-order delivery.
-
-## Anonymous Seat Assignment Requires Checkout Secret
-
-Assigning a seat anonymously (for example, right after purchase and before the buyer has logged in) now requires the checkout secret in addition to the checkout ID. The secret is already available in the purchase context, so this tightens the seat invitation flow without disrupting the buy experience.
-
-## Faster Orders Page Product Filter
-
-The product filter on the orders page now loads in larger batches instead of fetching products one at a time. Filtering orders is significantly snappier for organizations with many products.
-
-## Faster Checkout First Paint
-
-Checkout pages now do more work server-side on initial render, reducing the client-side loading flash on first paint. Buyers see the full checkout UI faster after clicking a payment link.
+Events can now be ingested with a `pending_parent` relationship, so child events no longer have to arrive after their parent. The relationship is resolved when the parent event lands, making usage metering pipelines tolerant to out of order delivery.
 </Update>
 
 <Update label="2026-01-31">

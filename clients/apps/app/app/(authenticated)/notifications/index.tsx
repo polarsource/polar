@@ -1,6 +1,7 @@
 import { Notification } from '@/components/Notifications/Notification'
 import { Box } from '@/components/Shared/Box'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import {
   Notification as PolarNotification,
@@ -9,9 +10,24 @@ import {
 } from '@/hooks/polar/notifications'
 import { FlashList } from '@shopify/flash-list'
 import { setBadgeCountAsync } from 'expo-notifications'
-import { Stack } from 'expo-router'
+import { Href, Link, Stack } from 'expo-router'
 import React, { useEffect, useRef } from 'react'
 import { RefreshControl } from 'react-native'
+
+const getNotificationHref = (notification: PolarNotification): Href | null => {
+  switch (notification.type) {
+    case 'MaintainerNewProductSaleNotification':
+      return notification.payload.order_id
+        ? `/orders/${notification.payload.order_id}`
+        : null
+    case 'MaintainerNewPaidSubscriptionNotification':
+      return notification.payload.subscription_id
+        ? `/subscriptions/${notification.payload.subscription_id}`
+        : null
+    default:
+      return null
+  }
+}
 
 const groupNotificationsByDate = (notifications: PolarNotification[]) => {
   if (!notifications?.length) return []
@@ -86,13 +102,24 @@ export default function Notifications() {
             )
           }
 
-          return (
+          const href = getNotificationHref(item)
+          const notification = (
             <Notification
               type={item.type}
               payload={item.payload}
               createdAt={item.created_at}
               style={{ marginBottom: theme.spacing['spacing-16'] }}
             />
+          )
+
+          if (!href) {
+            return notification
+          }
+
+          return (
+            <Link href={href} asChild>
+              <Touchable>{notification}</Touchable>
+            </Link>
           )
         }}
         contentContainerStyle={{

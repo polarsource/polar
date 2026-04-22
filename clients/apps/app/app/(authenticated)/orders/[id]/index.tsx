@@ -1,3 +1,4 @@
+import { CustomField } from '@/components/CustomFields/CustomField'
 import { CustomerRow } from '@/components/Customers/CustomerRow'
 import { Box } from '@/components/Shared/Box'
 import { DetailRow, Details } from '@/components/Shared/Details'
@@ -7,8 +8,6 @@ import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useCustomFields } from '@/hooks/polar/custom_fields'
 import { useOrder } from '@/hooks/polar/orders'
-import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import * as Clipboard from 'expo-clipboard'
 import { Stack, useLocalSearchParams } from 'expo-router'
@@ -21,43 +20,6 @@ const statusColors = {
   partially_refunded: 'blue',
   void: 'red',
 } as const
-
-const numberFormat = new Intl.NumberFormat(undefined, {})
-
-const formatCustomFieldValue = (
-  field: schemas['CustomField'],
-  value: string | number | boolean | null | undefined,
-  iconColor: string,
-): React.ReactNode => {
-  if (value === undefined || value === null) {
-    return '—'
-  }
-
-  switch (field.type) {
-    case 'number':
-      return numberFormat.format(value as number)
-    case 'date':
-      return new Date(value as string).toLocaleDateString('en-US', {
-        dateStyle: 'medium',
-      })
-    case 'checkbox':
-      return (
-        <MaterialIcons
-          name={value === true ? 'check' : 'close'}
-          size={16}
-          color={iconColor}
-        />
-      )
-    case 'select':
-      return (
-        field.properties.options.find((option) => option.value === value)
-          ?.label ?? String(value)
-      )
-    case 'text':
-    default:
-      return String(value)
-  }
-}
 
 export default function Index() {
   const { id } = useLocalSearchParams()
@@ -257,19 +219,20 @@ export default function Index() {
           <Text variant="subtitle" marginBottom="spacing-8">
             Custom Fields
           </Text>
-          <Details>
+          <Box
+            backgroundColor="card"
+            padding="spacing-16"
+            borderRadius="border-radius-12"
+            gap="spacing-16"
+          >
             {customFields.items.map((field) => (
-              <DetailRow
+              <CustomField
                 key={field.id}
-                label={field.name}
-                value={formatCustomFieldValue(
-                  field,
-                  order.custom_field_data?.[field.slug],
-                  theme.colors.text,
-                )}
+                field={field}
+                value={order.custom_field_data?.[field.slug]}
               />
             ))}
-          </Details>
+          </Box>
         </Box>
       ) : null}
 

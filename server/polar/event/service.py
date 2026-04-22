@@ -156,7 +156,7 @@ class EventService:
         aggregate_fields: Sequence[str] = (),
         cursor_pagination: bool = False,
     ) -> tuple[Sequence[Event], int]:
-        organization_ids = await self._get_readable_organization_ids(
+        organization_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
@@ -287,7 +287,7 @@ class EventService:
         id: uuid.UUID,
         aggregate_fields: Sequence[str] = (),
     ) -> Event | None:
-        organization_ids = await self._get_readable_organization_ids(
+        organization_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id=None
         )
         if not organization_ids:
@@ -364,7 +364,7 @@ class EventService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
-        organization_ids = await self._get_readable_organization_ids(
+        organization_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
@@ -547,7 +547,7 @@ class EventService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
-        organization_ids = await self._get_readable_organization_ids(
+        organization_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
@@ -614,7 +614,7 @@ class EventService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
-        organization_ids = await self._get_readable_organization_ids(
+        organization_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
@@ -700,7 +700,7 @@ class EventService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
-        organization_ids = await self._get_readable_organization_ids(
+        organization_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
@@ -767,7 +767,7 @@ class EventService:
             (EventNamesSortProperty.last_seen, True)
         ],
     ) -> tuple[Sequence[EventName], int]:
-        organization_ids = await self._get_readable_organization_ids(
+        organization_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
@@ -1451,31 +1451,17 @@ class EventService:
             ]
         )
 
-    async def _get_readable_organization_ids(
+    async def _get_filtered_org_ids(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         organization_id: Sequence[uuid.UUID] | None,
     ) -> Sequence[uuid.UUID]:
-        if is_organization(auth_subject):
-            if (
-                organization_id is not None
-                and auth_subject.subject.id not in organization_id
-            ):
-                return []
-            return [auth_subject.subject.id]
-
-        statement = select(UserOrganization.organization_id).where(
-            UserOrganization.user_id == auth_subject.subject.id,
-            UserOrganization.is_deleted.is_(False),
-        )
+        """Get accessible org IDs, optionally filtered to a subset."""
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         if organization_id is not None:
-            statement = statement.where(
-                UserOrganization.organization_id.in_(organization_id)
-            )
-
-        result = await session.execute(statement)
-        return list(dict.fromkeys(result.scalars().all()))
+            return [oid for oid in organization_id if oid in org_ids]
+        return list(org_ids)
 
 
 event = EventService()

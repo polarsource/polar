@@ -513,6 +513,7 @@ class ProductService:
         builtins.list[ValidationError],
     ]:
         meter_repository = MeterRepository.from_session(session)
+        meter_org_ids = await get_accessible_org_ids(session, auth_subject)
         prices: list[ProductPrice] = []
         prices_per_currency = defaultdict[str, list[tuple[ProductPrice, int]]](list)
         existing_prices: set[ProductPrice] = set()
@@ -566,7 +567,6 @@ class ProductService:
                         )
                         continue
 
-                    meter_org_ids = await get_accessible_org_ids(session, auth_subject)
                     price.meter = await meter_repository.get_readable_by_id(
                         price_schema.meter_id, meter_org_ids
                     )

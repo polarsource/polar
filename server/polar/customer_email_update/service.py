@@ -15,7 +15,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.utils import utc_now
-from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.models import Customer, Organization
 from polar.models.customer import CustomerType
 from polar.models.customer_email_verification import CustomerEmailVerification
@@ -158,23 +158,7 @@ class CustomerEmailUpdateService:
             customer, update_dict={"email": record.email, "email_verified": True}
         )
 
-        # Sync member email (same pattern as customer/service.py)
-        if old_email is not None and customer.type == CustomerType.individual:
-            member_repository = MemberRepository.from_session(session)
-            member = await member_repository.get_by_customer_and_email(
-                session, customer, old_email
-            )
-            if member is not None:
-                await member_repository.update(
-                    member, update_dict={"email": customer.email}
-                )
-                log.info(
-                    "customer_email_update.synced_member_email",
-                    customer_id=customer.id,
-                    member_id=member.id,
-                    old_email=old_email,
-                    new_email=customer.email,
-                )
+        await member_service.sync_owner_email(session, customer)
 
         if customer.stripe_customer_id is not None and customer.email is not None:
             await stripe_service.update_customer(

@@ -919,6 +919,36 @@ class TestUpdate:
         assert updated_customer.name == "New Name"
         assert member.email == "same@example.com"
 
+    async def test_syncs_owner_member_email_when_owner_has_drifted_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Drift between owner.email and customer.email must be repaired on
+        every update, otherwise the portal sign-in flow creates a duplicate."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="foo.bar@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="foo?bar@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="foo.baz@example.com"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "foo.baz@example.com"
+        assert member.email == "foo.baz@example.com"
+
 
 @pytest.mark.asyncio
 class TestDelete:

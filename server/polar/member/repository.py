@@ -119,7 +119,11 @@ class MemberRepository(
         *,
         include_deleted: bool = False,
     ) -> Member | None:
-        """Get the owner member for a customer."""
+        """Get the owner member for a customer.
+
+        A customer must have at most one active owner; raises
+        `MultipleResultsFound` otherwise so the invariant violation is loud.
+        """
         statement = (
             select(Member)
             .where(

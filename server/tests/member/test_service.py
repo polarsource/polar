@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
+from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import Customer, Member, Organization, User, UserOrganization
 from polar.models.member import MemberRole
@@ -384,6 +385,40 @@ class TestCreateOwnerMember:
         assert member is not None
         assert member.external_id is None
         assert member.email == customer.email
+
+    async def test_reuses_existing_owner_when_customer_email_drifted(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """When owner.email has drifted from customer.email, auto-create must
+        reuse the existing owner rather than insert a second row."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="correct@example.com",
+        )
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="drifted@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(existing)
+
+        member = await member_service.create_owner_member(
+            session, customer, organization
+        )
+
+        assert member is not None
+        assert member.id == existing.id
+        repository = MemberRepository.from_session(session)
+        members = await repository.list_by_customer(session, customer.id)
+        assert len([m for m in members if m.role == MemberRole.owner]) == 1
 
 
 @pytest.mark.asyncio
@@ -974,8 +1009,6 @@ class TestGetOrCreateByEmail:
         await save_fixture(existing)
 
         # Mock repository.create to raise IntegrityError, simulating a race
-        from polar.member.repository import MemberRepository
-
         original_create = MemberRepository.create
 
         call_count = 0

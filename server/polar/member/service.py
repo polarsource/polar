@@ -217,6 +217,34 @@ class MemberService:
 
         return deleted
 
+    async def sync_owner_email(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        """Mirror customer.email to the owner member's email for individual
+        customers. Any drift otherwise causes the portal sign-in flow to
+        auto-create a duplicate owner (the owner-by-email lookup misses the
+        drifted row). Team customers legitimately have members with distinct
+        emails, so they are skipped."""
+        if customer.type != CustomerType.individual or customer.email is None:
+            return
+
+        repository = MemberRepository.from_session(session)
+        owner = await repository.get_owner_by_customer_id(session, customer.id)
+        if owner is None or owner.email.lower() == customer.email.lower():
+            return
+
+        old_email = owner.email
+        await repository.update(owner, update_dict={"email": customer.email})
+        log.info(
+            "member.sync_owner_email",
+            customer_id=customer.id,
+            member_id=owner.id,
+            old_email=old_email,
+            new_email=customer.email,
+        )
+
     async def create_owner_member(
         self,
         session: AsyncSession,
@@ -273,17 +301,19 @@ class MemberService:
         name = owner_name or customer.name
         external_id = owner_external_id or customer.external_id
 
-        existing_member = await repository.get_by_customer_and_email(
-            session, customer, email=email
-        )
-        if existing_member:
+        # A customer has at most one owner. Short-circuit on any existing owner
+        # regardless of email — if we only dedupe by (customer_id, email), a drifted
+        # owner.email (e.g., typo in original email that was later corrected on the
+        # customer) produces a duplicate owner on the next sign-in.
+        existing_owner = await repository.get_owner_by_customer_id(session, customer.id)
+        if existing_owner is not None:
             log.debug(
                 "member.create_owner_member.skipped",
-                reason="member_already_exists",
+                reason="owner_already_exists",
                 customer_id=customer.id,
-                member_id=existing_member.id,
+                member_id=existing_owner.id,
             )
-            return existing_member
+            return existing_owner
 
         member = Member(
             customer_id=customer.id,
@@ -319,18 +349,18 @@ class MemberService:
                 error=str(e),
                 reason="Likely race condition - member already exists",
             )
-            existing_member = await repository.get_by_customer_and_email(
-                session, customer, email=email
+            existing_owner = await repository.get_owner_by_customer_id(
+                session, customer.id
             )
-            if existing_member:
+            if existing_owner is not None:
                 log.info(
                     "member.create_owner_member.found_existing",
                     customer_id=customer.id,
-                    member_id=existing_member.id,
+                    member_id=existing_owner.id,
                 )
-                return existing_member
+                return existing_owner
 
-            # Weird state: IntegrityError but member doesn't exist
+            # Weird state: IntegrityError but no owner exists
             # Re-raise to fail customer creation and maintain data consistency
             log.error(
                 "member.create_owner_member.integrity_error_no_member",

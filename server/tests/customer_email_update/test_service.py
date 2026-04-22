@@ -15,9 +15,11 @@ from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.utils import utc_now
+from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization
 from polar.models.customer import CustomerType
 from polar.models.customer_email_verification import CustomerEmailVerification
+from polar.models.member import Member, MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -337,3 +339,39 @@ class TestVerify:
 
         # No notification should be sent when there's no old email
         mock_enqueue_email.assert_not_called()
+
+    async def test_syncs_owner_member_email_even_when_drifted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Verify flow must repair drifted owner.email, matching
+        customer_service.update."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="correct@example.com",
+            stripe_customer_id=None,
+        )
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="drifted@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        _record, token = await _create_verification(
+            save_fixture, customer, "verified@example.com"
+        )
+
+        service = CustomerEmailUpdateService()
+        await service.verify(session, token)
+        await session.flush()
+        await session.refresh(owner)
+
+        assert owner.email == "verified@example.com"
+        repository = MemberRepository.from_session(session)
+        members = await repository.list_by_customer(session, customer.id)
+        assert len([m for m in members if m.role == MemberRole.owner]) == 1

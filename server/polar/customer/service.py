@@ -343,7 +343,6 @@ class CustomerService:
     ) -> Customer:
         repository = CustomerRepository.from_session(session)
 
-        old_email = customer.email
         email_changed = False
 
         errors: list[ValidationError] = []
@@ -495,30 +494,8 @@ class CustomerService:
                 ) from e
             raise
 
-        # Sync owner member email when the customer email changes.
-        # Only applies to individual customers (type == individual or type is None).
-        # Team customers can have multiple members with different emails — we don't auto-sync.
-        if email_changed and old_email is not None:
-            customer_type = updated_customer.type or CustomerType.individual
-
-            if customer_type == CustomerType.individual:
-                member_repository = MemberRepository.from_session(session)
-                owner = await member_repository.get_owner_by_customer_id(
-                    session, updated_customer.id
-                )
-
-                if owner is not None and owner.email.lower() == old_email.lower():
-                    new_email = updated_customer.email
-
-                    await member_repository.update(
-                        owner, update_dict={"email": new_email}
-                    )
-                    log.info(
-                        "member.email_sync",
-                        customer_id=updated_customer.id,
-                        member_id=owner.id,
-                        new_email=new_email,
-                    )
+        if email_changed:
+            await member_service.sync_owner_email(session, updated_customer)
 
         return updated_customer
 

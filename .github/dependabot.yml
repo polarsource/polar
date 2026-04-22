@@ -26,6 +26,12 @@ updates:
         patterns:
           - "react-email"
           - "@react-email/*"
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]

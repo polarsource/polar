@@ -2,7 +2,10 @@ from uuid import UUID
 
 from sqlalchemy import select
 
+from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.models import UserOrganization
+from polar.models.organization import Organization as OrganizationModel
+from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncReadSession
 
 
@@ -18,3 +21,39 @@ class AuthzRepository:
         )
         result = await self.session.scalars(stmt)
         return set(result.all())
+
+    async def get_accessible_organization(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: UUID,
+    ) -> OrganizationModel | None:
+        """Fetch an organization by ID, returning it only if the subject can access it.
+
+        Returns ``None`` if the organization does not exist, is blocked/deleted,
+        or the subject is not a member.
+        """
+        stmt = (
+            select(OrganizationModel)
+            .where(
+                OrganizationModel.id == organization_id,
+                OrganizationModel.is_deleted.is_(False),
+                OrganizationModel.status != OrganizationStatus.BLOCKED,
+            )
+        )
+
+        if is_user(auth_subject):
+            stmt = stmt.where(
+                OrganizationModel.id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == auth_subject.subject.id,
+                        UserOrganization.is_deleted.is_(False),
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            stmt = stmt.where(OrganizationModel.id == auth_subject.subject.id)
+        else:
+            return None
+
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()

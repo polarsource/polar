@@ -13,7 +13,7 @@ from polar.postgres import AsyncReadSession, get_db_read_session
 
 from .policies import finance, members
 from .policies import organization as org_policy
-from .service import get_accessible_org_ids
+from .service import get_accessible_organization
 from .types import PolicyFn
 
 
@@ -76,14 +76,8 @@ def OrgPolicyGuard(
         ],
         session: AsyncReadSession = Depends(get_db_read_session),
     ) -> AuthorizedOrganization:
-        from polar.organization.repository import OrganizationRepository
-
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.get_by_id(id)
-
-        if organization is None or organization.id not in org_ids:
+        organization = await get_accessible_organization(session, auth_subject, id)
+        if organization is None:
             raise ResourceNotFound()
 
         result = await policy_fn(session, auth_subject, organization)

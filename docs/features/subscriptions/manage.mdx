@@ -12,8 +12,8 @@ All of these actions are available under **Sales → Subscriptions** in the dash
 
 Switch a subscription to a different recurring product — the standard upgrade or downgrade flow.
 
-- The subscription is always updated **immediately**. Only the invoicing is affected by the [proration behavior](/features/subscriptions/proration) you pick.
-- The new product must share the subscription's currency and must match its "seat-based or not" shape — you can't switch a flat subscription to a seat-based product or vice versa.
+- When the change takes effect depends on the [proration behavior](/features/subscriptions/proration): `invoice` and `prorate` apply the new product immediately, while `next_period` schedules a pending update that's only applied at the start of the next billing cycle.
+- The new product must share the subscription's currency and must either both be seat-based or both not be — you can't switch a flat subscription to a seat-based product or vice versa.
 - You can't change the plan on a **trialing** subscription or on one that's already canceled or scheduled to cancel. End the trial or uncancel first.
 - Custom-priced products (pay-what-you-want) aren't valid destinations for a plan change.
 
@@ -46,7 +46,7 @@ Read more in [Proration](/features/subscriptions/proration).
 
 ## Change the number of seats
 
-For [seat-based subscriptions](/features/seat-based-pricing), update how many seats the customer is paying for. Like plan changes, the seat change is applied immediately and the billing impact is controlled by the proration behavior.
+For [seat-based subscriptions](/features/seat-based-pricing), update how many seats the customer is paying for. Like plan changes, when the seat count actually takes effect depends on the [proration behavior](/features/subscriptions/proration): immediate with `invoice` or `prorate`, scheduled for the next cycle with `next_period`.
 
 ```bash cURL
 curl --request PATCH \
@@ -131,7 +131,7 @@ You can optionally record a **cancellation reason** and **comment** — useful f
 
 ### Revoke immediately
 
-Revoking ends the subscription **right now**: status moves to `canceled`, `ended_at` is set to the current time, and all benefits are revoked (license keys deactivated, Discord roles removed, repo access revoked, and so on). There's no refund — if you need to issue one, do it separately from [Refunds](/features/refunds).
+Revoking ends the subscription **right now**: status moves to `canceled`, `ended_at` is set to the current time, and all benefits are revoked. There's no refund — if you need to issue one, do it separately from [Refunds](/features/refunds).
 
 Use this when access needs to stop immediately — a terms-of-service violation, a chargeback, or an explicit customer request.
 
@@ -162,11 +162,11 @@ Uncancelling is not possible once the subscription has actually ended.
 
 ## What customers can do
 
-Everything above is also available to customers through the [Customer Portal](/features/customer-portal/introduction), subject to your [portal settings](/features/customer-portal/settings):
+The [Customer Portal](/features/customer-portal/introduction) exposes a subset of these actions to the customer, gated by your [portal settings](/features/customer-portal/settings):
 
 - **Cancel at period end** is always available — this is the self-service guarantee the portal provides.
+- **Update the default payment method** is always available — the primary way customers recover from a failed renewal.
 - **Change plan** is available when **Enable subscription plan changes** is on.
 - **Change seats** (for seat-based subscriptions) is available when **Enable subscription seat management** is on.
-- **Update the default payment method** is always available — the primary way customers recover from a failed renewal.
 
-Customers can't revoke immediately, change discounts, extend trials, or reschedule renewals — those are merchant-only actions.
+Everything else on this page is merchant-only: revoking a subscription, applying or changing a discount, extending or ending a trial, and rescheduling the renewal date are not exposed to customers.

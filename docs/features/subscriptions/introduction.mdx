@@ -6,13 +6,11 @@ description: "Recurring revenue on top of your products."
 
 A **subscription** is the recurring relationship between a customer and one of your [products](/features/products). It's created automatically whenever a customer checks out a product that has a recurring price, and it keeps generating orders on each renewal until the customer or you decide to end it.
 
-In Polar, subscriptions aren't a separate object type from one-time purchases — they're just the recurring flavor of the same **product** model. This means every subscription capability (benefits, discounts, custom fields, seats, metered usage) is configured on the product, not on the subscription itself.
-
 ## How subscriptions work
 
 1. **A customer subscribes.** When a customer completes a [checkout](/features/checkout/session) for a product that has a recurring price, Polar creates a `subscription` and the first [order](/features/orders).
-2. **Polar renews it automatically.** On every billing cycle, Polar generates a new order, charges the customer's default payment method, and — if the charge succeeds — extends the subscription's current period.
-3. **Benefits stay in sync.** As long as the subscription is active or trialing, the customer keeps access to all the [benefits](/features/benefits/introduction) attached to the product. When the subscription is canceled or revoked, those benefits are revoked too.
+2. **Polar renews it automatically.** At the end of each billing period, Polar advances the subscription to the next cycle and creates a new order, then attempts to charge the customer's default payment method. If the payment fails, the subscription moves to `past_due` and Polar runs an automated [payment recovery flow](/features/subscriptions/failed-payments).
+3. **Benefits stay in sync.** As long as the subscription is active or trialing, the customer keeps access to all the [benefits](/features/benefits/introduction) attached to the product. When the subscription ends, those benefits are revoked.
 4. **Customers self-serve from the portal.** The [Customer Portal](/features/customer-portal/introduction) lets customers update their payment method, download invoices, cancel, and — if you allow it — change plans or manage seats.
 
 ## Recurring pricing
@@ -31,32 +29,9 @@ Subscriptions are driven entirely by the way you price the underlying product. R
   [Products → Variants](/features/products#variants).
 </Note>
 
-## What you can layer on a subscription
+## Cancellation
 
-Beyond recurring pricing, you can enrich a subscription with any of the following by configuring them on the product:
-
-- **[Benefits](/features/benefits/introduction)** — license keys, Discord roles, GitHub repo access, file downloads, feature flags, and custom benefits are granted automatically while the subscription is active.
-- **[Trials](/features/trials)** — give customers a free period before they're first charged.
-- **[Seat-based pricing](/features/seat-based-pricing)** — sell the subscription per seat and let customers invite teammates.
-- **[Usage-based billing](/features/usage-based-billing/introduction)** — add metered prices that are billed on top of the flat fee each cycle.
-- **[Discounts](/features/discounts)** — apply a recurring or one-off discount to the subscription.
-- **[Custom fields](/features/custom-fields)** — collect extra data from the customer at checkout and keep it on the subscription.
-
-## Subscription lifecycle
-
-Every subscription has a `status` that reflects where it is in its lifecycle:
-
-| Status               | Meaning                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `incomplete`         | The initial payment hasn't been confirmed yet. This is a transient state during checkout.                                           |
-| `incomplete_expired` | The initial payment was never confirmed and the subscription will never activate.                                                   |
-| `trialing`           | The subscription is in its [trial period](/features/trials). The customer has access but hasn't been charged yet.                   |
-| `active`             | The subscription is live and being billed on its normal cycle. Benefits are granted.                                                |
-| `past_due`           | A renewal charge failed. Polar retries automatically and prompts the customer to update their payment method.                       |
-| `canceled`           | The subscription has ended. Benefits are revoked.                                                                                   |
-| `unpaid`             | Retries for a failed renewal have been exhausted and the subscription is considered revoked. Benefits are revoked.                  |
-
-Cancellation comes in two flavors, both available to you and your customers:
+A subscription can end in one of two ways, both available to you and your customers:
 
 - **Cancel at period end** — the subscription keeps working until `current_period_end`, then transitions to `canceled`. You can reverse this (uncancel) until the end date is reached.
 - **Revoke immediately** — the subscription moves to `canceled` right away and benefits are revoked. This is irreversible.
@@ -90,11 +65,11 @@ There are two ways a subscription can come into existence:
     or downgraded.
   </Card>
   <Card
-    title="Customer Portal"
-    icon="user"
-    href="/features/customer-portal/introduction"
+    title="Recovering failed payments"
+    icon="credit-card"
+    href="/features/subscriptions/failed-payments"
   >
-    The self-service surface where customers manage their own subscriptions.
+    How Polar retries failed renewals and when benefits are revoked.
   </Card>
   <Card
     title="Subscriptions API"
@@ -128,23 +103,13 @@ There are two ways a subscription can come into existence:
   </Accordion>
   <Accordion title="When is a customer actually charged?">
     At the end of each billing cycle. When a subscription renews, Polar
-    creates a new order, calculates tax, applies any discount, and charges
-    the customer's default payment method. If the charge succeeds the
-    subscription's `current_period_end` moves forward to the next cycle; if
-    it fails the subscription transitions to `past_due` and Polar retries
-    automatically.
+    advances the cycle, creates a new order with tax and any applicable
+    discount, and charges the customer's default payment method. If the
+    charge fails the subscription moves to `past_due` and Polar starts the
+    [payment recovery flow](/features/subscriptions/failed-payments).
 
     The first charge happens at checkout (or when the [trial](/features/trials)
     ends, if one is configured).
-  </Accordion>
-  <Accordion title="What happens when a renewal payment fails?">
-    The subscription moves to `past_due`, the customer receives an email
-    from Polar, and Polar retries the charge on a schedule. The customer can
-    update their default payment method from the [Customer Portal](/features/customer-portal/introduction)
-    to recover — once they do, Polar retries immediately.
-
-    If every retry fails, the subscription is moved to `unpaid` and
-    considered revoked. Benefits are revoked at that point.
   </Accordion>
   <Accordion title="Can I change the price of an existing subscription?">
     Not the amount on an existing subscription directly — subscriptions lock
@@ -164,10 +129,12 @@ There are two ways a subscription can come into existence:
     - If you **cancel at period end**, the customer keeps their benefits
       until `current_period_end` — they paid for that period.
     - If you **revoke immediately**, the subscription becomes `canceled`
-      right away and all benefits are revoked (license keys deactivated,
-      Discord roles removed, repo access revoked, etc.).
-    - If retries for a failed payment are exhausted, the subscription is
-      moved to `unpaid` and benefits are revoked the same way as a revoke.
+      right away and all benefits are revoked.
+    - If a renewal payment can't be recovered after Polar's retries, the
+      subscription moves to `unpaid` and benefits are revoked the same way
+      as a revoke — subject to the optional
+      [grace period](/features/subscriptions/failed-payments#benefit-revocation-grace-period)
+      you can configure on your organization.
   </Accordion>
   <Accordion title="Can I migrate subscriptions from Stripe Billing?">
     Yes. Polar supports importing existing subscriptions from Stripe Billing

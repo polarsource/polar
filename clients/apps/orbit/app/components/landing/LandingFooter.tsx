@@ -21,7 +21,11 @@ const LINK_ROWS = [
   },
 ]
 
-const SOCIALS = ['GitHub', 'X', 'LinkedIn', 'Discord']
+const SOCIALS = [
+  { name: 'GitHub', href: 'https://github.com/polarsource' },
+  { name: 'X', href: 'https://x.com/polar_sh' },
+  { name: 'LinkedIn', href: 'https://linkedin.com/company/polar-sh' },
+]
 
 export const LandingFooter = () => (
   <footer className="mx-2 pb-2 text-neutral-900 dark:text-white">
@@ -56,7 +60,7 @@ export const LandingFooter = () => (
               <a
                 key={link}
                 href="#"
-                className="dark:text-dark-200 text-4xl text-neutral-900 transition hover:text-neutral-500 dark:text-white"
+                className="text-4xl text-neutral-900 transition hover:text-neutral-500 dark:text-white"
               >
                 {link}
               </a>
@@ -71,11 +75,13 @@ export const LandingFooter = () => (
       <div className="flex gap-8">
         {SOCIALS.map((s) => (
           <a
-            key={s}
-            href="#"
+            key={s.name}
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
             className="dark:text-dark-300 text-base text-neutral-500 transition hover:text-neutral-900 dark:hover:text-white"
           >
-            {s}
+            {s.name}
           </a>
         ))}
       </div>

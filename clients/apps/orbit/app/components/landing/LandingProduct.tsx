@@ -12,18 +12,20 @@ export const LandingProduct = () => (
   <section id="product">
     <div className="flex flex-col items-center gap-y-16 p-16 py-48 text-center">
       <SectionHeading>
-        Not just usage billing.
+        One integration.
         <br />
-        Polar is your commerce layer.
+        Infinite revenue models.
       </SectionHeading>
       <p className="max-w-4xl text-4xl leading-snug">
-        A single API that replaces your metering pipeline, billing engine, cost
-        insights, revenue dashboard & customer management.
+        Metering, billing, invoicing, analytics, and customer management — all
+        behind a single API.
       </p>
 
       <div className="flex flex-row items-center gap-x-6">
         <Button href="#">Get Started</Button>
-        <Button href="#" variant="secondary">Documentation</Button>
+        <Button href="#" variant="secondary">
+          Documentation
+        </Button>
       </div>
     </div>
   </section>

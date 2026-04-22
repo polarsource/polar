@@ -36,42 +36,27 @@ const TILES = [
 
 export const LandingOffering = () => (
   <section>
-    <div className="grid grid-cols-1 gap-2 p-2 md:grid-cols-2">
-      {/* Left — heading + description */}
-      <div className="dark:bg-dark-900 flex flex-col justify-center bg-neutral-50 p-16 py-24">
-        <SectionHeading>
-          Everything you
-          <br />
-          need to get paid
-        </SectionHeading>
-        <p className="mt-8 max-w-md text-xl text-neutral-500">
-          Beyond metering — a full commerce platform for subscriptions,
-          checkout, wallets, and more.
-        </p>
-      </div>
-
-      {/* Right — 2×2 tile grid */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
-        {TILES.map((tile) => {
-          const G = tile.Graphic
-          return (
-            <div
-              key={tile.title}
-              className="dark:bg-dark-900 flex flex-col bg-neutral-50"
-            >
-              <div className="aspect-square w-full">
-                <G field={(r, θ) => θ + Math.PI / 2} />
-              </div>
-              <div className="flex flex-col gap-2 p-8">
-                <h3 className="text-lg font-normal text-neutral-900 dark:text-white">
-                  {tile.title}
-                </h3>
-                <p className="text-base text-neutral-500">{tile.desc}</p>
-              </div>
+    {/* Right — 2×2 tile grid */}
+    <div className="m-2 grid grid-cols-1 gap-2 pt-2 sm:grid-cols-4">
+      {TILES.map((tile) => {
+        const G = tile.Graphic
+        return (
+          <div
+            key={tile.title}
+            className="dark:bg-dark-900 flex flex-col bg-neutral-50"
+          >
+            <div className="aspect-square w-full">
+              <G field={(r, θ) => θ + Math.PI / 2} />
             </div>
-          )
-        })}
-      </div>
+            <div className="flex flex-col gap-4 p-12">
+              <h3 className="text-2xl font-normal text-neutral-900 dark:text-white">
+                {tile.title}
+              </h3>
+              <p className="text-2xl text-neutral-500">{tile.desc}</p>
+            </div>
+          </div>
+        )
+      })}
     </div>
   </section>
 )

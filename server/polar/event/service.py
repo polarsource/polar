@@ -914,24 +914,17 @@ class EventService:
         repository = EventRepository.from_session(session)
         event_ids, duplicates_count = await repository.insert_batch(events)
 
-        has_hierarchy = any(
-            event_dict.get("pending_parent_external_id") for event_dict in events
+        resolvable = await repository.find_resolvable_parents(event_ids)
+        await repository.resolve_parents(resolvable)
+        resolved_ids = {r[0] for r in resolvable}
+        pending_ids = {
+            event_dict["id"]
+            for event_dict in events
+            if event_dict.get("pending_parent_external_id")
+        }
+        ready_ids = [eid for eid in event_ids if eid not in pending_ids] + list(
+            resolved_ids
         )
-
-        if has_hierarchy:
-            resolvable = await repository.find_resolvable_parents(event_ids)
-            await repository.resolve_parents(resolvable)
-            resolved_ids = {r[0] for r in resolvable}
-            pending_ids = {
-                event_dict["id"]
-                for event_dict in events
-                if event_dict.get("pending_parent_external_id")
-            }
-            ready_ids = [eid for eid in event_ids if eid not in pending_ids] + [
-                eid for eid in resolved_ids
-            ]
-        else:
-            ready_ids = list(event_ids)
 
         # Temporarily: fetch inserted events and create meter_events
         with logfire.span("create_meter_events", event_count=len(event_ids)):

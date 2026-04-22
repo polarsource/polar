@@ -755,6 +755,56 @@ class TestIngest:
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_parent_arrives_after_child_cross_batch(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        event_repository = EventRepository.from_session(session)
+
+        child_ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="email_sent",
+                    external_customer_id="test-customer-123",
+                    parent_id="parent-event-123",
+                ),
+            ]
+        )
+        await event_service.ingest(session, auth_subject, child_ingest)
+
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        assert len(events) == 1
+        child = events[0]
+        assert child.parent_id is None
+        assert child.pending_parent_external_id == "parent-event-123"
+
+        parent_ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="support_request",
+                    external_customer_id="test-customer-123",
+                    external_id="parent-event-123",
+                ),
+            ]
+        )
+        await event_service.ingest(session, auth_subject, parent_ingest)
+
+        await session.refresh(child)
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        parent = next(e for e in events if e.name == "support_request")
+
+        assert child.parent_id == parent.id
+        assert child.root_id == parent.id
+        assert child.pending_parent_external_id is None
+
+        assert enqueue_events_mock.call_count == 2
+        second_call_args = set(enqueue_events_mock.call_args_list[1][0])
+        assert parent.id in second_call_args
+        assert child.id in second_call_args
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_ingest_with_member_id(
         self,
         save_fixture: SaveFixture,

@@ -13,6 +13,7 @@ from polar.kit.db.postgres import AsyncReadSession
 from polar.models import Organization, PayoutAccount, User
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
+from polar.payout.repository import PayoutRepository
 from polar.postgres import AsyncSession
 
 from .repository import PayoutAccountRepository
@@ -60,6 +61,16 @@ class PayoutAccountLinkedToOrganization(PayoutAccountServiceError):
         message = (
             f"Payout account {payout_account_id} is still linked to one or more "
             "organizations. Please unlink it before deleting."
+        )
+        super().__init__(message, 422)
+
+
+class PayoutAccountHasPendingPayouts(PayoutAccountServiceError):
+    def __init__(self, payout_account_id: uuid.UUID) -> None:
+        self.payout_account_id = payout_account_id
+        message = (
+            f"Payout account {payout_account_id} has pending payouts. "
+            "Please wait for them to complete before deleting."
         )
         super().__init__(message, 422)
 
@@ -141,6 +152,14 @@ class PayoutAccountService:
         )
         if linked_organizations:
             raise PayoutAccountLinkedToOrganization(payout_account.id)
+
+        # Verify there are no pending payouts for this account
+        payout_repository = PayoutRepository.from_session(session)
+        pending_payouts_count = await payout_repository.count_pending_by_payout_account(
+            payout_account.id
+        )
+        if pending_payouts_count > 0:
+            raise PayoutAccountHasPendingPayouts(payout_account.id)
 
         # Delete the account on Stripe
         if payout_account.type == PayoutAccountType.stripe:

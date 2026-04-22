@@ -35,6 +35,18 @@ class PayoutRepository(
         statement = self.get_base_statement().where(Payout.account_id == account)
         return await self.count(statement)
 
+    async def count_pending_by_payout_account(self, payout_account_id: UUID) -> int:
+        statement = self.get_base_statement().where(
+            Payout.payout_account_id == payout_account_id,
+            Payout.status.in_(
+                {
+                    PayoutStatus.pending,
+                    PayoutStatus.in_transit,
+                }
+            ),
+        )
+        return await self.count(statement)
+
     async def get_all_stripe_pending(
         self, delay: timedelta = settings.ACCOUNT_PAYOUT_DELAY
     ) -> Sequence[Payout]:

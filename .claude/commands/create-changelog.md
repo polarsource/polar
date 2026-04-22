@@ -53,21 +53,23 @@ If the user gave a date range, use `--since` and `--until` accordingly.
 
 ### 2. Research features (subagent, `general-purpose`)
 
-Launch a `general-purpose` subagent with the full commit list. Tell it to:
+Launch a `general-purpose` subagent with the full commit list. Also pass it the content of every prior `<Update>` block in `docs/changelog/recent.mdx` from the last 90 days (the "monthly log") so it has a deduplication baseline. Tell it to:
 
 - Filter the list using the include and exclude rules above. Be conservative.
 - For each candidate, run `gh pr view <n>` and inspect changed files to confirm the feature is real, user-visible, and shipped in this window (not a docs update for a feature that shipped earlier).
-- Classify each surviving item as **MAJOR** (warrants a screenshot) or **MINOR**.
+- **Dedupe against the monthly log**: drop anything already announced. An *enhancement* to a previously-announced feature is fine to include if it is materially new (e.g. new filters added to a list that shipped last month), but say so clearly and frame it as an enhancement.
+- **Cap the final set at 10 features.** Rank by merchant / customer impact and cut the tail.
+- Decide which are **MAJOR** (warrants a screenshot) and which are **MINOR**. Decide yourself, do not ask the user.
 - For MAJOR items, describe the exact URL to screenshot and what must be visible on screen.
-- Return a structured list: title, 2-3 sentence plain-English summary, category, screenshot target, and the PR number / author.
+- Return a structured list: title, 2-3 sentence plain-English summary, category, screenshot target, PR number, and a one-line note on dedupe (new feature vs. enhancement of X).
 
 Instruct the subagent explicitly: no em dashes, no Stripe, no perf-only or security-hardening items.
 
-### 3. Confirm the feature list with the user (MANDATORY)
+### 3. Confirm the final list with the user
 
-Before touching the changelog file or seeding any data, use the `AskUserQuestion` tool to present every candidate returned by the research subagent and let the user decide what stays. For each item, offer three options: `Include as MAJOR` (with screenshot), `Include as MINOR` (no screenshot), or `Skip`. Batch into one or two questions so the user is not asked dozens of things in a row.
+Use the `AskUserQuestion` tool once to present the (up to 10) features the subagent selected, along with its MAJOR / MINOR classification. For each item, offer two options: `Keep` or `Drop`. Batch everything into one or two questions so the user is not asked dozens of things in a row.
 
-Do not proceed past this step with anything the user did not explicitly accept.
+Do not change the MAJOR / MINOR classification based on user input: you decided that in step 2. The user only decides what stays and what gets dropped.
 
 ### 4. Prepare the local environment (main session)
 
@@ -92,8 +94,8 @@ Launch a `general-purpose` subagent with the list of accepted MAJOR features. Te
 
 - Log in at `http://localhost:<web-port>/login` as `admin@polar.sh`. The email domain must be real (polar.sh works) or login validation rejects it. Grab the login code with `docker logs polar-dev-<N>-api-1 --since 30s 2>&1 | grep -oE 'LOGIN CODE: [A-Z0-9]+' | tail -1`.
 - If a feature lives in an org that `admin@polar.sh` is not a member of, rename the seeded owner's email to a real `@polar.sh` domain (e.g. `UPDATE users SET email='merchant@polar.sh' WHERE email='support@meltedsql.com'`) and restart the web container so Next.js re-fetches the user's org list: `docker restart polar-dev-<N>-web-1`.
-- Figure out the minimal data needed for each screenshot by reading the relevant frontend component. Seed via SQL when possible (e.g. an `INSERT` into a scheduled-change table or toggling a `feature_settings` JSON key) rather than clicking through flows.
-- Clean up distracting placeholder rows so the UI reads clearly (e.g. remove pending seats if the screenshot should highlight claimed ones).
+- **Prefer clicking through the UI or calling documented API endpoints to create the state you need.** That path exercises real validation and produces screenshots that will not drift when schemas change. Fall back to direct SQL only for states the product does not let you reach through normal flows (e.g. placing a subscription into a pre-scheduled update that is applied by a cron job), or for minor tidy-up so the UI reads clearly (e.g. removing placeholder rows that distract from what the screenshot is about).
+- Read the relevant frontend component first to understand what data the screenshot actually needs, then pick the shortest path to get there.
 - Use Playwright MCP (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_take_screenshot`) and save to `docs/assets/changelog/YYYY-MM-DD/<slug>.png`. Create the directory first.
 - Return the list of saved paths.
 

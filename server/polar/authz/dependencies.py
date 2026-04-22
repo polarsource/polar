@@ -18,7 +18,7 @@ from polar.postgres import AsyncSession, get_db_session
 
 from .policies import finance, members
 from .policies import organization as org_policy
-from .service import get_accessible_organization
+from .service import get_accessible_org_ids, get_accessible_organization
 from .types import PolicyFn
 
 
@@ -269,14 +269,14 @@ def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
 
 
 AuthorizeAccountRead = Annotated[
-    AuthorizedAccount, Depends(AccountPolicyGuard(_finance_can_read()))
+    AuthorizedAccount, Depends(AccountPolicyGuard(finance.can_read))
 ]
 AuthorizeAccountWrite = Annotated[
-    AuthorizedAccount, Depends(AccountPolicyGuard(_finance_can_write()))
+    AuthorizedAccount, Depends(AccountPolicyGuard(finance.can_write))
 ]
 AuthorizePayoutAccountRead = Annotated[
-    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(_finance_can_read()))
+    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(finance.can_read))
 ]
 AuthorizePayoutAccountWrite = Annotated[
-    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(_finance_can_write()))
+    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(finance.can_write))
 ]

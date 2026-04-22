@@ -43,8 +43,8 @@ type APIError<T extends keyof operations> = {
 }
 
 type ValidationError = {
-  error: 'PolarRequestValidationError'
-  detail: { input: number; loc: string[]; msg: string; type: string }[]
+  error: 'PolarRequestValidationError' | 'RequestValidationError'
+  detail: { input: unknown; loc: string[]; msg: string; type: string }[]
 }
 
 export type ErrorResponse<T extends keyof operations> =

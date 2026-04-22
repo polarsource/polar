@@ -104,6 +104,56 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         Events whose chain doesn't reach a resolved root are excluded.
 
         Returns a list of (event_id, parent_id, root_id) tuples.
+
+        Equivalent SQL:
+
+            WITH RECURSIVE chain(
+                id, parent_id, root_id, external_id, organization_id
+            ) AS (
+                -- Base case: pending children whose parent is already resolved,
+                -- scoped to the just-inserted batch on either side of the edge.
+                SELECT
+                    pending.id,
+                    resolved.id AS parent_id,
+                    COALESCE(resolved.root_id, resolved.id) AS root_id,
+                    pending.external_id,
+                    pending.organization_id
+                FROM events AS pending
+                JOIN events AS resolved
+                  ON resolved.organization_id = pending.organization_id
+                 AND resolved.pending_parent_external_id IS NULL
+                 AND (
+                        resolved.external_id = pending.pending_parent_external_id
+                     OR CAST(resolved.id AS VARCHAR)
+                          = pending.pending_parent_external_id
+                     )
+                WHERE pending.pending_parent_external_id IS NOT NULL
+                  AND (
+                        resolved.id IN (:inserted_ids)
+                     OR pending.id IN (:inserted_ids)
+                     )
+
+                UNION ALL
+
+                -- Recursive step: descendants whose parent is already in chain.
+                SELECT
+                    descendant.id,
+                    chain.id AS parent_id,
+                    chain.root_id,
+                    descendant.external_id,
+                    descendant.organization_id
+                FROM events AS descendant
+                JOIN chain
+                  ON descendant.organization_id = chain.organization_id
+                 AND (
+                        chain.external_id
+                          = descendant.pending_parent_external_id
+                     OR CAST(chain.id AS VARCHAR)
+                          = descendant.pending_parent_external_id
+                     )
+                WHERE descendant.pending_parent_external_id IS NOT NULL
+            )
+            SELECT id, parent_id, root_id FROM chain;
         """
         if not inserted_ids:
             return []

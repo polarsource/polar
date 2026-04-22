@@ -6,6 +6,7 @@ from polar.auth.models import AuthSubject, is_organization
 from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Organization, User
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 
 
@@ -75,8 +76,6 @@ async def get_payload_organization(
                 }
             ]
         )
-
-    from polar.organization.repository import OrganizationRepository
 
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(model.organization_id)

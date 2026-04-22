@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "2026-04-15T07:56:06.697926575Z"
+exclude-newer = "2026-04-15T08:53:15.029050673Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -231,14 +231,14 @@ wheels = [
 
 [[package]]
 name = "authlib"
-version = "1.6.9"
+version = "1.6.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/98/00d3dd826d46959ad8e32af2dbb2398868fd9fd0683c26e56d0789bd0e68/authlib-1.6.9.tar.gz", hash = "sha256:d8f2421e7e5980cc1ddb4e32d3f5fa659cfaf60d8eaf3281ebed192e4ab74f04", size = 165134, upload-time = "2026-03-02T07:44:01.998Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/aa/e2/2cd626412bfc3c78b17ca5e5ea8d489f8cae31d40b061f4da0a89068d8a3/authlib-1.6.10.tar.gz", hash = "sha256:856a4f54d6ef3361ca6bb6d14a27e8b88f8097cca795fb428ffe13720e2ecde6", size = 165333, upload-time = "2026-04-13T13:30:34.718Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/53/23/b65f568ed0c22f1efacb744d2db1a33c8068f384b8c9b482b52ebdbc3ef6/authlib-1.6.9-py2.py3-none-any.whl", hash = "sha256:f08b4c14e08f0861dc18a32357b33fbcfd2ea86cfe3fe149484b4d764c4a0ac3", size = 244197, upload-time = "2026-03-02T07:44:00.307Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/f6/9093f1ed17b6e2f4ac50d214543d4ec5268902a70e2158a752a06423b5ef/authlib-1.6.10-py2.py3-none-any.whl", hash = "sha256:aa639b43292554539924a3b4aaa9e81cd67ab64d3e28b22428c61f1200240287", size = 244351, upload-time = "2026-04-13T13:30:33.34Z" },
 ]
 
 [[package]]
@@ -2163,7 +2163,7 @@ requires-dist = [
     { name = "arabic-reshaper", specifier = ">=3.0.0" },
     { name = "asgi-ratelimit", specifier = ">=0.10.0" },
     { name = "asyncpg", specifier = ">=0.29.0" },
-    { name = "authlib", specifier = ">=1.6.0" },
+    { name = "authlib", specifier = ">=1.6.10" },
     { name = "babel", specifier = ">=2.16.0" },
     { name = "boto3", specifier = ">=1.38.30" },
     { name = "clickhouse-connect", specifier = ">=0.8.0" },

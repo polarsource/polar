@@ -9,6 +9,7 @@ from dramatiq import Retry
 
 from polar.checkout.service import NotConfirmedCheckout
 from polar.dispute.service import dispute as dispute_service
+from polar.enums import PaymentProcessor
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
@@ -16,6 +17,7 @@ from polar.models.dispute import DisputeStatus
 from polar.organization.service import organization as organization_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.payout.service import payout as payout_service
 from polar.payout_account.service import payout_account as payout_account_service
@@ -394,6 +396,25 @@ async def payout_failed(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
             await payout_service.update_from_stripe(session, payout)
+
+
+@actor(actor_name="stripe.webhook.payment_method.detached", priority=TaskPriority.HIGH)
+@stripe_api_connection_error_retry
+async def payment_method_detached(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            stripe_payment_method = cast(
+                stripe_lib.PaymentMethod, event.stripe_data.data.object
+            )
+            repository = PaymentMethodRepository.from_session(session)
+            payment_method = await repository.get_by_processor_id(
+                PaymentProcessor.stripe,
+                stripe_payment_method.id,
+                options=repository.get_eager_options(),
+            )
+            if payment_method is None:
+                return
+            await payment_method_service.delete(session, payment_method, force=True)
 
 
 @actor(

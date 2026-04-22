@@ -105,8 +105,9 @@ worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:sta
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000", help = "run load tests (interactive)" }
-lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
-lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
+lint = { cmd = "ruff format . && ruff check --fix . && task lint_subquery", help = "run linters with autofix" }
+lint_check = { cmd = "ruff format --check . && ruff check . && task lint_subquery", help = "run ruff linter" }
+lint_subquery = { cmd = "python scripts/lint_subquery.py", help = "flag .subquery() calls that don't narrow columns" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }

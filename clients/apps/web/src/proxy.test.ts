@@ -281,4 +281,19 @@ describe('middleware function', () => {
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toContain('/login')
   })
+
+  it('should redirect unauthenticated /to/* requests to login preserving the deep link', async () => {
+    const request = new NextRequest(
+      'https://example.com/to/dashboard/settings/billing',
+    )
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(307)
+    const location = response.headers.get('location')
+    expect(location).toContain('/login')
+    expect(location).toContain(
+      'return_to=%2Fto%2Fdashboard%2Fsettings%2Fbilling',
+    )
+  })
 })

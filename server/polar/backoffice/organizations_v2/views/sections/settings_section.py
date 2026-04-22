@@ -398,45 +398,6 @@ class SettingsSection:
                     text("Danger Zone")
 
                 with tag.div(classes="space-y-3"):
-                    # Block/Unblock Refunds
-                    with tag.div(classes="flex items-center justify-between"):
-                        with tag.div():
-                            with tag.div(classes="font-semibold text-sm"):
-                                if self.org.refunds_blocked:
-                                    text("Unblock Refunds")
-                                else:
-                                    text("Block Refunds")
-                            with tag.div(classes="text-xs text-base-content/60"):
-                                if self.org.refunds_blocked:
-                                    text(
-                                        "Allow refunds for all orders in this organization"
-                                    )
-                                else:
-                                    text(
-                                        "Prevent refunds for all orders in this organization"
-                                    )
-
-                        with tag.form(
-                            method="POST",
-                            action=str(
-                                request.url_for(
-                                    "organizations:set_refunds_blocked",
-                                    organization_id=self.org.id,
-                                )
-                            )
-                            + f"?blocked={'false' if self.org.refunds_blocked else 'true'}",
-                        ):
-                            with button(
-                                type="submit",
-                                variant="error",
-                                size="sm",
-                                outline=True,
-                            ):
-                                if self.org.refunds_blocked:
-                                    text("Unblock Refunds")
-                                else:
-                                    text("Block Refunds")
-
                     # Delete Organization
                     with tag.div(classes="flex items-center justify-between"):
                         with tag.div():

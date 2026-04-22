@@ -2351,32 +2351,6 @@ class TestSetCapability:
         assert organization.capabilities == initial
         assert organization.internal_notes is None
 
-    async def test_mirrors_refunds_blocked(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        organization.set_status(OrganizationStatus.ACTIVE)
-        organization.refunds_blocked = False
-
-        await organization_service.set_capability(
-            session,
-            organization,
-            "refunds",
-            False,
-            reason="Fraud investigation in progress",
-        )
-        assert organization.refunds_blocked is True
-
-        await organization_service.set_capability(
-            session,
-            organization,
-            "refunds",
-            True,
-            reason="Investigation resolved, re-enabling refunds",
-        )
-        assert organization.refunds_blocked is False
-
     async def test_status_transition_resets_override(
         self,
         session: AsyncSession,

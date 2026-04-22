@@ -891,17 +891,17 @@ class TestOrganizationRefundsBlocked:
         product: Product,
         customer: Customer,
     ) -> None:
-        """Test that refunds are blocked when organization.refunds_blocked is True."""
-        # Set organization refunds_blocked flag
+        """Test that refunds are blocked when the refunds capability is disabled."""
         from polar.organization.repository import OrganizationRepository
 
         org_repository = OrganizationRepository.from_session(session)
-        assert organization.capabilities is not None
         organization = await org_repository.update(
             organization,
             update_dict={
-                "refunds_blocked": True,
-                "capabilities": {**organization.capabilities, "refunds": False},
+                "capabilities": {
+                    **organization.get_effective_capabilities(),
+                    "refunds": False,
+                },
             },
         )
 
@@ -936,7 +936,7 @@ class TestOrganizationRefundsBlocked:
         product: Product,
         customer: Customer,
     ) -> None:
-        """Test that refunds work normally when organization.refunds_blocked is False."""
+        """Test that refunds work normally when the refunds capability is enabled."""
         # Create an order with payment
         order, payment, _transaction = await create_order_and_payment(
             save_fixture,

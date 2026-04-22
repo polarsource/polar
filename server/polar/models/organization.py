@@ -224,14 +224,6 @@ class OrganizationStatus(StrEnum):
     def review_statuses(cls) -> set[Self]:
         return {cls.REVIEW, cls.SNOOZED}  # pyright: ignore
 
-    @classmethod
-    def payment_ready_statuses(cls) -> set[Self]:
-        return {cls.ACTIVE, cls.OFFBOARDING, *cls.review_statuses()}  # pyright: ignore
-
-    @classmethod
-    def payout_ready_statuses(cls) -> set[Self]:
-        return {cls.ACTIVE}  # pyright: ignore
-
 
 class OrganizationCapabilities(TypedDict):
     checkout_payments: bool
@@ -513,10 +505,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    # Flag to block refunds for all orders in this organization
+    # DEPRECATED: use `capabilities["refunds"]` instead.
+    # `deferred=True` so default SELECTs don't include it, allowing the
+    # column to be dropped in a follow-up migration without a CD race.
     refunds_blocked: Mapped[bool] = mapped_column(
         nullable=False,
         default=False,
+        deferred=True,
     )
 
     capabilities: Mapped[OrganizationCapabilities | None] = mapped_column(
@@ -681,8 +676,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         self.status = status
         self.status_updated_at = datetime.now(UTC)
         self.capabilities = {**STATUS_CAPABILITIES[status]}
-        # Mirror to the legacy column so the two stay in sync.
-        self.refunds_blocked = not self.capabilities["refunds"]
 
     @hybrid_property
     def is_under_review(self) -> bool:

@@ -1220,9 +1220,6 @@ class OrganizationService:
             reason=reason,
         )
 
-        if capability == "refunds":
-            organization.refunds_blocked = not value
-
         session.add(organization)
         return organization
 

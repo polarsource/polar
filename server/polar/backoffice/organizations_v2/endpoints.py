@@ -3529,60 +3529,6 @@ async def add_payment_method_domain(
                     text("Add Domain")
 
 
-@router.post(
-    "/{organization_id}/refunds-blocked",
-    name="organizations:set_refunds_blocked",
-    dependencies=[Depends(get_admin)],
-)
-async def set_refunds_blocked(
-    request: Request,
-    organization_id: UUID4,
-    blocked: bool,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    repository = OrganizationRepository.from_session(session)
-    organization = await repository.get_by_id(organization_id)
-
-    if organization is None:
-        raise HTTPException(status_code=404)
-
-    if organization.refunds_blocked == blocked:
-        status = "blocked" if blocked else "not blocked"
-        await add_toast(
-            request,
-            f"Refunds are already {status} for this organization.",
-            "error",
-        )
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            )
-            + "?section=settings",
-            303,
-        )
-
-    new_capabilities = {
-        **organization.get_effective_capabilities(),
-        "refunds": not blocked,
-    }
-    organization = await repository.update(
-        organization,
-        update_dict={"refunds_blocked": blocked, "capabilities": new_capabilities},
-    )
-
-    action = "blocked" if blocked else "unblocked"
-    await add_toast(
-        request, f"Refunds have been {action} for this organization.", "success"
-    )
-    return HXRedirectResponse(
-        request,
-        str(request.url_for("organizations:detail", organization_id=organization_id))
-        + "?section=settings",
-        303,
-    )
-
-
 @router.api_route(
     "/{organization_id}/capabilities/{capability}",
     name="organizations:set_capability",

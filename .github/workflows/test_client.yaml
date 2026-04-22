@@ -79,6 +79,9 @@ jobs:
       - name: "🧪 Test: App"
         run: pnpm --filter @polar-sh/app test
 
+      - name: "🧪 Test: Web"
+        run: pnpm --filter web test
+
       - name: "🧪 Test: @polar-sh/currency"
         run: pnpm --filter @polar-sh/currency test
 

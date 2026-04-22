@@ -101,40 +101,38 @@ interface MockXHRInstance {
 function mockXHR(options: { status?: number; etag?: string | null } = {}) {
   const { status = 200, etag = '"abc123"' } = options
 
-  vi.stubGlobal(
-    'XMLHttpRequest',
-    vi.fn().mockImplementation(() => ({
-      open: vi.fn(),
-      send: vi.fn().mockImplementation(function (this: MockXHRInstance) {
-        if (this.upload?.onprogress) {
-          this.upload.onprogress.call(
-            {} as XMLHttpRequestUpload,
-            { lengthComputable: true, loaded: 50 } as ProgressEvent,
-          )
-        }
-        this.readyState = 4
-        this.status = status
-        this.statusText = status === 200 ? 'OK' : 'Error'
-        this.onreadystatechange?.call({} as XMLHttpRequest, {} as Event)
-      }),
-      setRequestHeader: vi.fn(),
-      getResponseHeader: vi.fn().mockImplementation((header: string) => {
-        if (header === 'ETag') return etag
-        return null
-      }),
-      readyState: 0,
-      status: 0,
-      statusText: '',
-      onreadystatechange: null as
-        | ((this: XMLHttpRequest, ev: Event) => void)
-        | null,
-      upload: {
-        onprogress: null as
-          | ((this: XMLHttpRequestUpload, ev: ProgressEvent) => void)
-          | null,
-      },
-    })),
-  )
+  class MockXHR {
+    open = vi.fn()
+    send = vi.fn().mockImplementation(function (this: MockXHRInstance) {
+      if (this.upload?.onprogress) {
+        this.upload.onprogress.call(
+          {} as XMLHttpRequestUpload,
+          { lengthComputable: true, loaded: 50 } as ProgressEvent,
+        )
+      }
+      this.readyState = 4
+      this.status = status
+      this.statusText = status === 200 ? 'OK' : 'Error'
+      this.onreadystatechange?.call({} as XMLHttpRequest, {} as Event)
+    })
+    setRequestHeader = vi.fn()
+    getResponseHeader = vi.fn().mockImplementation((header: string) => {
+      if (header === 'ETag') return etag
+      return null
+    })
+    readyState = 0
+    status = 0
+    statusText = ''
+    onreadystatechange: ((this: XMLHttpRequest, ev: Event) => void) | null =
+      null
+    upload: {
+      onprogress:
+        | ((this: XMLHttpRequestUpload, ev: ProgressEvent) => void)
+        | null
+    } = { onprogress: null }
+  }
+
+  vi.stubGlobal('XMLHttpRequest', MockXHR)
 }
 
 type CreateResult = Awaited<ReturnType<Upload['create']>>

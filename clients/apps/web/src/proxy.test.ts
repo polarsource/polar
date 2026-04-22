@@ -245,6 +245,10 @@ describe('middleware function', () => {
   })
 
   it('should throw error on unexpected API response status', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
     createServerSideAPI.mockResolvedValue({
       GET: vi.fn().mockResolvedValue({
         data: undefined,
@@ -258,6 +262,7 @@ describe('middleware function', () => {
     await expect(proxy(request)).rejects.toThrow(
       'Unexpected response status while fetching authenticated user',
     )
+    consoleErrorSpy.mockRestore()
   })
 
   it('should handle 401 responses gracefully', async () => {

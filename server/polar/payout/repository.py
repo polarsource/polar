@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import Select, exists, select
 from sqlalchemy.orm import joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.config import settings
 from polar.enums import PayoutAccountType
 from polar.kit.repository import (
@@ -86,7 +87,9 @@ class PayoutRepository(
             ),
         )
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Payout]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Payout]]:
         return self.get_base_statement().where(
             Payout.payout_account_id.in_(
                 select(Organization.payout_account_id).where(

@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select, select
 
 from polar.auth.models import User
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -46,7 +47,9 @@ class AccountRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Account]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Account]]:
         return self.get_base_statement().where(
             Account.id.in_(
                 select(Organization.account_id).where(Organization.id.in_(org_ids))

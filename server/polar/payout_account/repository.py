@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import Select, select
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -33,7 +34,7 @@ class PayoutAccountRepository(
         return await self.get_one_or_none(statement)
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[PayoutAccount]]:
         return self.get_base_statement().where(
             PayoutAccount.id.in_(

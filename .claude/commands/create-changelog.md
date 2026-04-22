@@ -4,10 +4,15 @@ Produce a polished changelog entry for `docs/changelog/recent.mdx` covering rece
 
 ## Arguments
 
-`$ARGUMENTS` is the time range to cover. Accepts:
+`$ARGUMENTS` may contain a time range and an optional `--confirm` flag.
+
+Time range (optional):
 - Nothing (default: last 7 days)
 - A number of days (e.g. `14`)
 - A date range (e.g. `2026-04-15..2026-04-22`)
+
+Confirmation flag (optional):
+- `--confirm` enables the user confirmation step (step 3). **Off by default.** When omitted, proceed straight from research to screenshots with the subagent's chosen classifications.
 
 ## Style Rules (non-negotiable)
 
@@ -65,11 +70,13 @@ Launch a `general-purpose` subagent with the full commit list. Also pass it the 
 
 Instruct the subagent explicitly: no em dashes, no Stripe, no perf-only or security-hardening items.
 
-### 3. Confirm the final list with the user
+### 3. Confirm the final list with the user (only if `--confirm` was passed)
 
-Use the `AskUserQuestion` tool once to present the (up to 10) features the subagent selected, along with its MAJOR / MINOR classification. For each item, offer two options: `Keep` or `Drop`. Batch everything into one or two questions so the user is not asked dozens of things in a row.
+**Skip this step entirely unless the user passed `--confirm` in `$ARGUMENTS`.** By default, go straight from step 2 to step 4 using the subagent's classifications as the final list.
 
-Do not change the MAJOR / MINOR classification based on user input: you decided that in step 2. The user only decides what stays and what gets dropped.
+When `--confirm` is passed, use the `AskUserQuestion` tool to present the (up to 10) features the subagent selected. For each item, offer three options: `MAJOR` (include with screenshot), `MINOR` (include, no screenshot), `SKIP`. **Pre-mark the option the subagent recommended** so the user sees a clear recommendation and only has to override where they disagree. Batch everything into one or two questions.
+
+Apply the user's choices, then continue.
 
 ### 4. Prepare the local environment (main session)
 

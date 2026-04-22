@@ -24,7 +24,7 @@ export default async function Layout(props: {
           query: {
             organization_id: organization.id,
             limit: 100,
-            is_archived: false,
+            is_archived: null,
           },
         },
       }),

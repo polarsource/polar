@@ -67,7 +67,7 @@ Install the required Better Auth and Polar packages using the following command:
     - **usage** - List customer meters & ingest events for Usage Based Billing
     - **webhooks** - Listen for relevant Polar webhooks
 
-    ```typescript icon="square-js" BetterAuth Server with Polar Example
+    ```typescript icon="square-js" auth.ts
     import { betterAuth } from "better-auth";
     import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth"; // [!code ++]
     import { Polar } from "@polar-sh/sdk"; // [!code ++]
@@ -145,7 +145,7 @@ Install the required Better Auth and Polar packages using the following command:
   <Step title="Configure BetterAuth Client">
     You will be using the BetterAuth Client to interact with the Polar functionalities.
 
-    ```typescript icon="square-js" BetterAuth Client with Polar Example
+    ```typescript icon="square-js" auth-client.ts
     import { createAuthClient } from "better-auth/react";
     import { polarClient } from "@polar-sh/better-auth/client"; // [!code ++]
     import { organizationClient } from "better-auth/client/plugins"; // [!code ++]
@@ -305,17 +305,57 @@ const auth = betterAuth({
 
 Polar's Usage Based Billing builds entirely on event ingestion. Ingest events from your application, create Meters to represent that usage, and add metered prices to Products to charge for it.
 
-The `ingestion` method of the `usage` plugin accepts the following parameters:
+<Warning>
+  **Ingest events from your server, not from the browser.** Events drive billing, so the client must never be trusted to decide what is consumed. Always ingest from the same server-side handler that performs the metered action (e.g. the route that generated the AI video, processed the upload, etc.) so that the recorded usage cannot be forged or bypassed.
+</Warning>
 
-- `event` (string): The name of the event to ingest. For example, `ai_usage`, `video_streamed` or `file_uploaded`.
+Because `createCustomerOnSignUp: true` sets the Polar customer's `externalId` to the BetterAuth user ID, you can pass `externalCustomerId: session.user.id` when ingesting — no extra lookup is needed.
 
-- `metadata` (object): A record containing key-value pairs that provide additional context about the event. Values can be strings, numbers, or booleans. This is useful for storing information that can be used to filter the events or compute the actual usage. For example, you can store the duration of the video streamed or the size of the file uploaded.
+The example below uses the Polar SDK directly from a server route handler. The same `polarClient` instance you configured in `auth.ts` is reused:
 
-<Info>
-  The authenticated user is automatically associated with the ingested event.
-</Info>
+```typescript icon="square-js" app/api/ai/video/route.ts (Next.js App Router)
+import { auth } from "@/lib/auth";
+import { polarClient } from "@/lib/polar";
+import { headers } from "next/headers";
 
-```typescript icon="square-js" Event Ingestion with Usage Plugin Example
+export async function POST(request: Request) {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  // Run the metered work on the server
+  const { video, tokensConsumed } = await makeNewVideo(request);
+
+  // Ingest the resulting usage against the authenticated user
+  await polarClient.events.ingest({
+    events: [
+      {
+        name: "ai-video",
+        externalCustomerId: session.user.id,
+        metadata: {
+          tokensConsumed,
+        },
+      },
+    ],
+  });
+
+  return Response.json({ video });
+}
+```
+
+The `events.ingest` method accepts:
+
+- `name` (string): The name of the event to ingest. For example, `ai_usage`, `video_streamed` or `file_uploaded`.
+- `externalCustomerId` (string): The BetterAuth user ID. Pass `session.user.id` from the server-side session.
+- `metadata` (object): A record of key-value pairs that describe the event. Values can be strings, numbers, or booleans. Use this to store information that can be filtered on or used to compute usage — duration, token count, file size, etc.
+
+#### Client-side ingestion endpoint
+
+The `usage` plugin also registers a BetterAuth endpoint that is callable from the client as `authClient.usage.ingestion(...)`. It forwards to Polar from the BetterAuth server and attaches the authenticated user automatically:
+
+```typescript icon="square-js" auth-client.ts
 const { data: ingested } = await authClient.usage.ingestion({
   event: "file-uploads",
   metadata: {
@@ -323,6 +363,10 @@ const { data: ingested } = await authClient.usage.ingestion({
   },
 });
 ```
+
+<Warning>
+  This endpoint trusts whatever the client sends it, so a user can call it from their browser and claim any usage they want. Only use it for events that genuinely originate on the client and that you are comfortable not being authoritative (e.g. analytics-like signals). For billable usage, stick to server-side ingestion as shown above.
+</Warning>
 
 ### 2. Customer Meters
 

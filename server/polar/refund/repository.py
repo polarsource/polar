@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select
 from sqlalchemy.orm import joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -34,7 +35,9 @@ class RefundRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Refund]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Refund]]:
         statement = self.get_base_statement().where(
             Refund.order_id.is_not(None),
         )

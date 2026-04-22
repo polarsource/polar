@@ -5,18 +5,20 @@ from polar.models.organization import Organization as OrganizationModel
 from polar.postgres import AsyncReadSession
 
 from .repository import AuthzRepository
+from .types import AccessibleOrganizationID
 
 
 async def get_accessible_org_ids(
     session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
-) -> set[UUID]:
+) -> set[AccessibleOrganizationID]:
     """Resolve which organization IDs this subject can access."""
     if is_organization(auth_subject):
-        return {auth_subject.subject.id}
+        return {AccessibleOrganizationID(auth_subject.subject.id)}
     if is_user(auth_subject):
         repository = AuthzRepository(session)
-        return await repository.get_user_org_ids(auth_subject.subject.id)
+        raw_ids = await repository.get_user_org_ids(auth_subject.subject.id)
+        return {AccessibleOrganizationID(uid) for uid in raw_ids}
     return set()
 
 

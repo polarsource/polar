@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -86,7 +87,7 @@ class WebhookEventRepository(
         return await self.get_all(statement)
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[WebhookEvent]]:
         return (
             self.get_base_statement()
@@ -147,7 +148,7 @@ class WebhookDeliveryRepository(
         return res.scalar_one()
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[WebhookDelivery]]:
         return (
             self.get_base_statement()
@@ -168,7 +169,7 @@ class WebhookEndpointRepository(
     model = WebhookEndpoint
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[WebhookEndpoint]]:
         return self.get_base_statement().where(
             WebhookEndpoint.organization_id.in_(org_ids)

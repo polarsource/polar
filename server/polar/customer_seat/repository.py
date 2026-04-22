@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
 from polar.models import (
@@ -326,7 +327,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         return await self.get_one_or_none(statement)
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[CustomerSeat]]:
         """
         Get a statement filtered by organization IDs.
@@ -352,7 +353,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     async def get_by_id_and_org_ids(
         self,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         seat_id: UUID,
         *,
         options: Options = (),
@@ -367,7 +368,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     async def get_by_subscription_and_org_ids(
         self,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         seat_id: UUID,
         subscription_id: UUID,
         *,

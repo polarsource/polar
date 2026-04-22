@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select, select
 from sqlalchemy.exc import IntegrityError
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.models import EventType
 
@@ -13,7 +14,9 @@ class EventTypeRepository(
 ):
     model = EventType
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[EventType]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[EventType]]:
         return self.get_base_statement().where(EventType.organization_id.in_(org_ids))
 
     async def get_by_name_and_organization(

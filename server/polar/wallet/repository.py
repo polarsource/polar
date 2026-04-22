@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -36,7 +37,9 @@ class WalletRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Wallet]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Wallet]]:
         statement = (
             self.get_base_statement()
             .join(Customer, Wallet.customer_id == Customer.id)

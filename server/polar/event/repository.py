@@ -27,6 +27,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import aliased, joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
@@ -126,7 +127,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return await self.get_one_or_none(statement)
 
     def get_event_names_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[str, EventSource, int, datetime, datetime]]:
         return (
             self.get_by_org_ids_statement(org_ids)
@@ -140,7 +141,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .group_by(Event.name, Event.source)
         )
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Event]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Event]]:
         statement = self.get_base_statement()
         statement = statement.where(Event.organization_id.in_(org_ids))
         return statement

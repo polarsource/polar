@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select
 from sqlalchemy.orm import joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -43,7 +44,9 @@ class BenefitRepository(
     def get_eager_options(self) -> Options:
         return (joinedload(Benefit.organization),)
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Benefit]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Benefit]]:
         statement = self.get_base_statement()
         statement = statement.where(Benefit.organization_id.in_(org_ids))
         return statement

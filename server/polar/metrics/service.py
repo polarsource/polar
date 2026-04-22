@@ -10,6 +10,7 @@ from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
@@ -93,7 +94,7 @@ def _expand_metrics_with_dependencies(
 
 
 class _TinybirdFilters(NamedTuple):
-    org_ids: list[uuid.UUID]
+    org_ids: list[AccessibleOrganizationID]
     product_id: Sequence[uuid.UUID] | None
     customer_ids: list[uuid.UUID] | None
     external_customer_id: list[str] | None
@@ -440,11 +441,15 @@ class MetricsService:
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-    ) -> list[uuid.UUID]:
+    ) -> list[AccessibleOrganizationID]:
         """Get accessible org IDs, optionally filtered to a subset."""
         org_ids = await get_accessible_org_ids(session, auth_subject)
         if organization_id is not None and len(organization_id) > 0:
-            return [oid for oid in organization_id if oid in org_ids]
+            return [
+                AccessibleOrganizationID(oid)
+                for oid in organization_id
+                if oid in org_ids
+            ]
         return list(org_ids)
 
     async def _resolve_tinybird_filters(
@@ -529,7 +534,7 @@ class MetricsService:
         original_end_timestamp: datetime,
         timezone: ZoneInfo,
         interval: TimeInterval,
-        tb_org_ids: list[uuid.UUID],
+        tb_org_ids: list[AccessibleOrganizationID],
         product_id: Sequence[uuid.UUID] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
         tb_customer_ids: list[uuid.UUID] | None = None,

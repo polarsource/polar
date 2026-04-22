@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import Select, select
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -35,7 +36,7 @@ class BenefitGrantRepository(
     model = BenefitGrant
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[BenefitGrant]]:
         statement = self.get_base_statement().join(
             Benefit, BenefitGrant.benefit_id == Benefit.id

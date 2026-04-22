@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select, and_, case, func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.repository import (
     Options,
@@ -74,7 +75,9 @@ class ProductRepository(
             selectinload(Product.all_prices),
         )
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Product]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Product]]:
         statement = self.get_base_statement()
         statement = statement.where(Product.organization_id.in_(org_ids))
         return statement
@@ -169,7 +172,7 @@ class ProductPriceRepository(
     async def get_readable_by_id(
         self,
         id: UUID,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         *,
         options: Options = (),
     ) -> ProductPrice | None:
@@ -194,7 +197,7 @@ class ProductPriceRepository(
         return (joinedload(ProductPrice.product),)
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[ProductPrice]]:
         return (
             self.get_base_statement()

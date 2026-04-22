@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import Select
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -25,7 +26,9 @@ class FileRepository(
 ):
     model = File
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[File]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[File]]:
         statement = self.get_base_statement()
         statement = statement.where(File.organization_id.in_(org_ids))
         return statement

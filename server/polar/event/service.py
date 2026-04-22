@@ -15,6 +15,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
@@ -841,7 +842,7 @@ class EventService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        organization_ids: set[uuid.UUID],
+        organization_ids: set[AccessibleOrganizationID],
         *,
         filter: Filter | None = None,
         meter_id: uuid.UUID | None = None,
@@ -1443,11 +1444,15 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         organization_id: Sequence[uuid.UUID] | None,
-    ) -> set[uuid.UUID]:
+    ) -> set[AccessibleOrganizationID]:
         """Get accessible org IDs, optionally filtered to a subset."""
         organization_ids = await get_accessible_org_ids(session, auth_subject)
         if organization_id is not None:
-            return {oid for oid in organization_id if oid in organization_ids}
+            return {
+                AccessibleOrganizationID(oid)
+                for oid in organization_id
+                if oid in organization_ids
+            }
         return set(organization_ids)
 
 

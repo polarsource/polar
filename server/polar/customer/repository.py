@@ -7,6 +7,7 @@ from sqlalchemy import Select, String, cast, func, or_, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.event.system import CustomerUpdatedFields, SystemEvent
 from polar.kit.address import Address
 from polar.kit.repository import (
@@ -177,7 +178,7 @@ class CustomerRepository(
 
     async def stream_by_organization(
         self,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         organization_id: Sequence[UUID] | None,
     ) -> AsyncGenerator[Customer]:
         statement = self.get_by_org_ids_statement(org_ids)
@@ -192,7 +193,7 @@ class CustomerRepository(
 
     async def get_readable_by_id(
         self,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         id: UUID,
         *,
         options: Options = (),
@@ -206,7 +207,7 @@ class CustomerRepository(
 
     async def get_readable_by_external_id(
         self,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         external_id: str,
         *,
         options: Options = (),
@@ -220,7 +221,7 @@ class CustomerRepository(
 
     async def get_readable_external_ids_by_ids(
         self,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         customer_ids: Sequence[UUID],
     ) -> list[str]:
         statement = (
@@ -236,7 +237,7 @@ class CustomerRepository(
 
     async def get_readable_ids_by_external_ids(
         self,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         external_ids: Sequence[str],
     ) -> list[UUID]:
         statement = (
@@ -249,7 +250,7 @@ class CustomerRepository(
 
     async def search_by_query(
         self,
-        org_ids: set[UUID],
+        org_ids: set[AccessibleOrganizationID],
         query: str,
     ) -> tuple[list[UUID], list[str]]:
         statement = (
@@ -270,7 +271,9 @@ class CustomerRepository(
         external_ids = [r.external_id for r in rows if r.external_id is not None]
         return customer_ids, external_ids
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Customer]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Customer]]:
         statement = self.get_base_statement()
         statement = statement.where(Customer.organization_id.in_(org_ids))
         return statement

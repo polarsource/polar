@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import Select, func, select
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
 from polar.kit.repository import (
     Options,
@@ -65,7 +66,9 @@ class PaymentRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_by_org_ids_statement(self, org_ids: set[UUID]) -> Select[tuple[Payment]]:
+    def get_by_org_ids_statement(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Payment]]:
         statement = self.get_base_statement()
         statement = statement.where(Payment.organization_id.in_(org_ids))
         return statement

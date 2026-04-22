@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select
 from sqlalchemy.orm import contains_eager
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -85,7 +86,7 @@ class CustomerMeterRepository(
         return await self.get_one_or_none(statement)
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[CustomerMeter]]:
         return (
             self.get_base_statement()

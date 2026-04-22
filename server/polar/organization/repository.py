@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm import joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -162,7 +163,7 @@ class OrganizationRepository(
                 )
 
     def get_by_org_ids_statement(
-        self, org_ids: set[UUID]
+        self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Organization]]:
         return self.get_base_statement().where(
             Organization.id.in_(org_ids),

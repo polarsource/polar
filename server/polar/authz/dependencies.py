@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Annotated, Any
 
@@ -12,15 +11,10 @@ from polar.models import Organization as OrganizationModel
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session
 
+from .policies import finance, members
+from .policies import organization as org_policy
 from .service import get_accessible_org_ids
-
-# Policy functions return True if allowed, or a denial reason string if denied.
-PolicyResult = bool | str
-
-PolicyFn = Callable[
-    [AsyncReadSession, AuthSubject[User | Organization], OrganizationModel],
-    Awaitable[PolicyResult],
-]
+from .types import PolicyFn
 
 
 @dataclass(frozen=True)
@@ -107,73 +101,21 @@ async def _always_allow(
     session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
-) -> PolicyResult:
+) -> bool:
     return True
 
 
-def _finance_can_read() -> PolicyFn:
-    async def policy(
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization: OrganizationModel,
-    ) -> PolicyResult:
-        from .policies import finance
-
-        return await finance.can_read(session, auth_subject, organization)
-
-    return policy
-
-
-def _finance_can_write() -> PolicyFn:
-    async def policy(
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization: OrganizationModel,
-    ) -> PolicyResult:
-        from .policies import finance
-
-        return await finance.can_write(session, auth_subject, organization)
-
-    return policy
-
-
-def _members_can_manage() -> PolicyFn:
-    async def policy(
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization: OrganizationModel,
-    ) -> PolicyResult:
-        from .policies import members
-
-        return await members.can_manage(session, auth_subject, organization)
-
-    return policy
-
-
-def _org_can_delete() -> PolicyFn:
-    async def policy(
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization: OrganizationModel,
-    ) -> PolicyResult:
-        from .policies import organization as org_policy
-
-        return await org_policy.can_delete(session, auth_subject, organization)
-
-    return policy
-
-
 AuthorizeFinanceRead = Annotated[
-    AuthorizedOrganization, Depends(OrgPolicyGuard(_finance_can_read()))
+    AuthorizedOrganization, Depends(OrgPolicyGuard(finance.can_read))
 ]
 AuthorizeFinanceWrite = Annotated[
-    AuthorizedOrganization, Depends(OrgPolicyGuard(_finance_can_write()))
+    AuthorizedOrganization, Depends(OrgPolicyGuard(finance.can_write))
 ]
 AuthorizeMembersManage = Annotated[
     AuthorizedOrganization,
     Depends(
         OrgPolicyGuard(
-            _members_can_manage(),
+            members.can_manage,
             allowed_subjects={User},
             required_scopes={Scope.web_write, Scope.organizations_write},
         )
@@ -183,7 +125,7 @@ AuthorizeOrgDelete = Annotated[
     AuthorizedOrganization,
     Depends(
         OrgPolicyGuard(
-            _org_can_delete(),
+            org_policy.can_delete,
             allowed_subjects={User},
             required_scopes={Scope.web_write, Scope.organizations_write},
         )

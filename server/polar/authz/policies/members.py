@@ -6,7 +6,7 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
-from polar.authz.dependencies import PolicyResult
+from polar.authz.types import PolicyResult
 from polar.models import Organization as OrganizationModel
 from polar.postgres import AsyncReadSession
 

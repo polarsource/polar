@@ -1414,9 +1414,10 @@ class CheckoutService:
         product_price_id: uuid.UUID,
     ) -> tuple[Sequence[Product], Product, ProductPrice, str]:
         product_price_repository = ProductPriceRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         price = await product_price_repository.get_readable_by_id(
             product_price_id,
-            auth_subject,
+            org_ids,
             options=(
                 contains_eager(ProductPrice.product).options(
                     joinedload(Product.organization)

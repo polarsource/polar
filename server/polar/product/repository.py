@@ -4,7 +4,6 @@ from uuid import UUID
 from sqlalchemy import Select, and_, case, func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.repository import (
     Options,
@@ -20,7 +19,6 @@ from polar.models import (
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
-    UserOrganization,
 )
 from polar.models.product_price import ProductPriceAmountType
 from polar.postgres import sql
@@ -171,12 +169,12 @@ class ProductPriceRepository(
     async def get_readable_by_id(
         self,
         id: UUID,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
         *,
         options: Options = (),
     ) -> ProductPrice | None:
         statement = (
-            self.get_readable_statement(auth_subject)
+            self.get_by_org_ids_statement(org_ids)
             .where(ProductPrice.id == id)
             .options(*options)
         )
@@ -195,28 +193,12 @@ class ProductPriceRepository(
     def get_eager_options(self) -> Options:
         return (joinedload(ProductPrice.product),)
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+    def get_by_org_ids_statement(
+        self, org_ids: set[UUID]
     ) -> Select[tuple[ProductPrice]]:
-        statement = (
+        return (
             self.get_base_statement()
             .join(Product, Product.id == ProductPrice.product_id)
             .options(contains_eager(ProductPrice.product))
+            .where(Product.organization_id.in_(org_ids))
         )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Product.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Product.organization_id == auth_subject.subject.id,
-            )
-
-        return statement

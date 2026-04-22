@@ -270,6 +270,7 @@ class Settings(BaseSettings):
         "icloud.com",
         "mail.com",
         "protonmail.com",
+        "proton.me",
         "zoho.com",
         "gmx.com",
         "yandex.com",

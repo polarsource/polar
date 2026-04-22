@@ -200,6 +200,28 @@ class TrialMonthlyRecurringRevenueMetric(SQLMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class TrialCommittedMonthlyRecurringRevenueMetric(SQLMetric):
+    slug = "trial_committed_monthly_recurring_revenue"
+    display_name = "Trial Committed Monthly Recurring Revenue"
+    type = MetricType.currency
+    query = MetricQuery.active_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.coalesce(
+            func.sum(t.table.c.monthly_amount).filter(
+                and_(_in_trial(t, i), _not_ended_as_of(t, i, now))
+            ),
+            0,
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
 class CheckoutsMetric(SQLMetric):
     slug = "checkouts"
     display_name = "Checkouts"
@@ -762,6 +784,7 @@ METRICS_POSTGRES: list[type[SQLMetric]] = [
     MonthlyRecurringRevenueMetric,
     TrialMonthlyRecurringRevenueMetric,
     CommittedMonthlyRecurringRevenueMetric,
+    TrialCommittedMonthlyRecurringRevenueMetric,
     AverageRevenuePerUserMetric,
     CheckoutsMetric,
     SucceededCheckoutsMetric,

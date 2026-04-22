@@ -98,7 +98,19 @@ def auth_subject(
         )
         subjects_map["member_billing_manager"] = member_billing_manager
 
-    return AuthSubject(subjects_map[subject_key], auth_subject_fixture.scopes, None)
+    subject = subjects_map[subject_key]
+
+    # For User subjects, provide a mock UserSession so is_web_session() returns True.
+    # This matches real web session behavior where all User sessions are UserSessions.
+    session: Any = None
+    if isinstance(subject, User):
+        from unittest.mock import MagicMock
+
+        from polar.models import UserSession
+
+        session = MagicMock(spec=UserSession)
+
+    return AuthSubject(subject, auth_subject_fixture.scopes, session)
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:

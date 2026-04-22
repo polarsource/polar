@@ -20,6 +20,7 @@ from .models import (
     SubjectType,
     User,
     is_anonymous,
+    is_web_session,
 )
 
 oidc_scheme = OpenIdConnect(
@@ -216,16 +217,38 @@ def Authenticator(
     )
 
 
-_WebUserOrAnonymous = Authenticator(
+_WebUserOrAnonymousAuth = Authenticator(
     allowed_subjects={Anonymous, User},
     required_scopes=None,
 )
+
+
+async def _web_user_or_anonymous(
+    auth_subject: Annotated[
+        AuthSubject[Anonymous | User], Depends(_WebUserOrAnonymousAuth)
+    ],
+) -> AuthSubject[Anonymous | User]:
+    """Allow anonymous or web-session users. Reject API tokens."""
+    if not is_anonymous(auth_subject) and not is_web_session(auth_subject):
+        raise Unauthorized()
+    return auth_subject
+
+
 WebUserOrAnonymous = Annotated[
-    AuthSubject[Anonymous | User], Depends(_WebUserOrAnonymous)
+    AuthSubject[Anonymous | User], Depends(_web_user_or_anonymous)
 ]
 
-_WebUserRead = Authenticator(allowed_subjects={User}, required_scopes=None)
-WebUserRead = Annotated[AuthSubject[User], Depends(_WebUserRead)]
+_WebUserAuth = Authenticator(allowed_subjects={User}, required_scopes=None)
 
-_WebUserWrite = Authenticator(allowed_subjects={User}, required_scopes=None)
-WebUserWrite = Annotated[AuthSubject[User], Depends(_WebUserWrite)]
+
+async def _web_user(
+    auth_subject: Annotated[AuthSubject[User], Depends(_WebUserAuth)],
+) -> AuthSubject[User]:
+    """Allow web-session users only. Reject API tokens."""
+    if not is_web_session(auth_subject):
+        raise Unauthorized()
+    return auth_subject
+
+
+WebUserRead = Annotated[AuthSubject[User], Depends(_web_user)]
+WebUserWrite = Annotated[AuthSubject[User], Depends(_web_user)]

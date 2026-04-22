@@ -453,18 +453,28 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               {
                 header: '',
                 accessorKey: 'benefit_action',
-                cell: ({ row: { original } }) =>
-                  original.benefit.is_deleted ? null : (
+                cell: ({ row: { original } }) => {
+                  if (original.benefit.is_deleted) {
+                    return null
+                  }
+                  const licenseKeyId =
+                    original.benefit.type === 'license_keys' &&
+                    'license_key_id' in original.properties
+                      ? original.properties.license_key_id
+                      : undefined
+                  const href = licenseKeyId
+                    ? `/dashboard/${organization.slug}/products/benefits/${original.benefit.id}?license_key_id=${licenseKeyId}`
+                    : `/dashboard/${organization.slug}/products/benefits/${original.benefit.id}`
+                  return (
                     <div className="flex justify-end">
-                      <Link
-                        href={`/dashboard/${organization.slug}/products/benefits/${original.benefit.id}`}
-                      >
+                      <Link href={href}>
                         <Button variant="secondary" size="sm">
                           View Benefit
                         </Button>
                       </Link>
                     </div>
-                  ),
+                  )
+                },
               },
             ]}
             isLoading={benefitGrantsLoading}

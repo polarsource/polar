@@ -45,10 +45,13 @@ export const LicenseKeysPage = ({
   const searchParams = Object.fromEntries(searchParamsMap.entries())
   const { pagination, sorting } = parseSearchParams(searchParams)
   const status = searchParams['status'] ?? 'any'
+  const deepLinkedLicenseKeyId = searchParams['license_key_id']
 
   const [statusLoading, setStatusLoading] = useState(false)
   const [selectedLicenseKeys, setSelectedLicenseKeys] =
-    useState<RowSelectionState>({})
+    useState<RowSelectionState>(
+      deepLinkedLicenseKeyId ? { [deepLinkedLicenseKeyId]: true } : {},
+    )
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organization_id: organization.id,
@@ -72,6 +75,9 @@ export const LicenseKeysPage = ({
     if (status !== 'any') {
       params.append('status', status)
     }
+    if (deepLinkedLicenseKeyId) {
+      params.append('license_key_id', deepLinkedLicenseKeyId)
+    }
     return params
   }
 
@@ -79,9 +85,27 @@ export const LicenseKeysPage = ({
     isShown: isLicenseKeyModalShown,
     show: showLicenseKeyModal,
     hide: hideLicenseKeyModal,
-  } = useModal()
+  } = useModal(!!deepLinkedLicenseKeyId)
 
   const router = useRouter()
+
+  const setDeepLinkParam = useCallback(
+    (licenseKeyId: string | null) => {
+      const params = new URLSearchParams(searchParamsMap.toString())
+      if (licenseKeyId) {
+        params.set('license_key_id', licenseKeyId)
+      } else {
+        params.delete('license_key_id')
+      }
+      const query = params.toString()
+      router.replace(
+        `/dashboard/${organization.slug}/products/benefits/${benefit.id}${
+          query ? `?${query}` : ''
+        }`,
+      )
+    },
+    [searchParamsMap, router, organization.slug, benefit.id],
+  )
 
   const setPagination = (
     updaterOrValue:
@@ -258,10 +282,17 @@ export const LicenseKeysPage = ({
             sorting={sorting}
             setPagination={setPagination}
             setSorting={setSorting}
-            onSelectLicenseKeyChange={(selectedLicenseKeys) => {
-              setSelectedLicenseKeys(selectedLicenseKeys)
-
-              showLicenseKeyModal()
+            onSelectLicenseKeyChange={(updaterOrValue) => {
+              const nextSelection =
+                typeof updaterOrValue === 'function'
+                  ? updaterOrValue(selectedLicenseKeys)
+                  : updaterOrValue
+              setSelectedLicenseKeys(nextSelection)
+              const nextId = Object.keys(nextSelection)[0] ?? null
+              setDeepLinkParam(nextId)
+              if (nextId) {
+                showLicenseKeyModal()
+              }
             }}
             selectedLicenseKey={selectedLicenseKeys}
           />
@@ -271,6 +302,7 @@ export const LicenseKeysPage = ({
             hide={() => {
               hideLicenseKeyModal()
               setSelectedLicenseKeys({})
+              setDeepLinkParam(null)
             }}
           />
         </div>

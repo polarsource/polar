@@ -156,13 +156,11 @@ class EventService:
         aggregate_fields: Sequence[str] = (),
         cursor_pagination: bool = False,
     ) -> tuple[Sequence[Event], int]:
-        organization_ids = await self._get_filtered_org_ids(
+        organization_ids, org_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
             return [], 0
-
-        org_ids = await get_accessible_org_ids(session, auth_subject)
 
         (
             query_filters,
@@ -287,7 +285,7 @@ class EventService:
         id: uuid.UUID,
         aggregate_fields: Sequence[str] = (),
     ) -> Event | None:
-        organization_ids = await self._get_filtered_org_ids(
+        organization_ids, _org_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id=None
         )
         if not organization_ids:
@@ -364,13 +362,11 @@ class EventService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
-        organization_ids = await self._get_filtered_org_ids(
+        organization_ids, org_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
             return ListStatisticsTimeseries(periods=[], totals=[])
-
-        org_ids = await get_accessible_org_ids(session, auth_subject)
 
         (
             query_filters,
@@ -547,13 +543,11 @@ class EventService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
-        organization_ids = await self._get_filtered_org_ids(
+        organization_ids, org_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
             return ListPropertyGroupStats(items=[])
-
-        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer_repository = CustomerRepository.from_session(session)
         all_customer_ids: list[uuid.UUID] = list(customer_id or [])
         all_external_ids: list[str] = list(external_customer_id or [])
@@ -614,13 +608,11 @@ class EventService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
-        organization_ids = await self._get_filtered_org_ids(
+        organization_ids, org_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
             return ListCustomerStats(items=[])
-
-        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer_repository = CustomerRepository.from_session(session)
         all_customer_ids: list[uuid.UUID] = list(customer_id or [])
         all_external_ids: list[str] = list(external_customer_id or [])
@@ -700,13 +692,11 @@ class EventService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
-        organization_ids = await self._get_filtered_org_ids(
+        organization_ids, org_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
             return ListVarianceEvents(items=[])
-
-        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer_repository = CustomerRepository.from_session(session)
         all_customer_ids: list[uuid.UUID] = list(customer_id or [])
         all_external_ids: list[str] = list(external_customer_id or [])
@@ -767,13 +757,11 @@ class EventService:
             (EventNamesSortProperty.last_seen, True)
         ],
     ) -> tuple[Sequence[EventName], int]:
-        organization_ids = await self._get_filtered_org_ids(
+        organization_ids, org_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id
         )
         if not organization_ids:
             return [], 0
-
-        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer_repository = CustomerRepository.from_session(session)
         all_customer_ids: list[uuid.UUID] = list(customer_id or [])
         all_external_ids: list[str] = list(external_customer_id or [])
@@ -1456,12 +1444,16 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         organization_id: Sequence[uuid.UUID] | None,
-    ) -> Sequence[uuid.UUID]:
-        """Get accessible org IDs, optionally filtered to a subset."""
+    ) -> tuple[Sequence[uuid.UUID], set[uuid.UUID]]:
+        """Get accessible org IDs, optionally filtered to a subset.
+
+        Returns a tuple of (filtered_org_ids, all_accessible_org_ids) so
+        callers don't need a second DB roundtrip for the unfiltered set.
+        """
         org_ids = await get_accessible_org_ids(session, auth_subject)
         if organization_id is not None:
-            return [oid for oid in organization_id if oid in org_ids]
-        return list(org_ids)
+            return [oid for oid in organization_id if oid in org_ids], org_ids
+        return list(org_ids), org_ids
 
 
 event = EventService()

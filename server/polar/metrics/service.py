@@ -440,12 +440,16 @@ class MetricsService:
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-    ) -> list[uuid.UUID]:
-        """Get accessible org IDs, optionally filtered to a subset."""
+    ) -> tuple[list[uuid.UUID], set[uuid.UUID]]:
+        """Get accessible org IDs, optionally filtered to a subset.
+
+        Returns (filtered_org_ids, all_accessible_org_ids) so callers
+        don't need a second DB roundtrip for the unfiltered set.
+        """
         org_ids = await get_accessible_org_ids(session, auth_subject)
         if organization_id is not None and len(organization_id) > 0:
-            return [oid for oid in organization_id if oid in org_ids]
-        return list(org_ids)
+            return [oid for oid in organization_id if oid in org_ids], org_ids
+        return list(org_ids), org_ids
 
     async def _resolve_tinybird_filters(
         self,
@@ -458,14 +462,13 @@ class MetricsService:
         customer_id: Sequence[uuid.UUID] | None = None,
         tb_needed: set[str],
     ) -> _TinybirdFilters:
-        tb_org_ids = await self._get_filtered_org_ids(
+        tb_org_ids, org_ids = await self._get_filtered_org_ids(
             session, auth_subject, organization_id=organization_id
         )
 
         external_customer_id: list[str] | None = None
         if customer_id is not None:
             customer_repository = CustomerRepository.from_session(session)
-            org_ids = await get_accessible_org_ids(session, auth_subject)
             external_ids = [
                 eid
                 for eid in await customer_repository.get_readable_external_ids_by_ids(

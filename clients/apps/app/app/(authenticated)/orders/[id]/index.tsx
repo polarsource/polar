@@ -5,7 +5,10 @@ import { Pill } from '@/components/Shared/Pill'
 import { Text } from '@/components/Shared/Text'
 import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
+import { useCustomFields } from '@/hooks/polar/custom_fields'
 import { useOrder } from '@/hooks/polar/orders'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import * as Clipboard from 'expo-clipboard'
 import { Stack, useLocalSearchParams } from 'expo-router'
@@ -19,11 +22,51 @@ const statusColors = {
   void: 'red',
 } as const
 
+const numberFormat = new Intl.NumberFormat(undefined, {})
+
+const formatCustomFieldValue = (
+  field: schemas['CustomField'],
+  value: string | number | boolean | null | undefined,
+  iconColor: string,
+): React.ReactNode => {
+  if (value === undefined || value === null) {
+    return '—'
+  }
+
+  switch (field.type) {
+    case 'number':
+      return numberFormat.format(value as number)
+    case 'date':
+      return new Date(value as string).toLocaleDateString('en-US', {
+        dateStyle: 'medium',
+      })
+    case 'checkbox':
+      return (
+        <MaterialIcons
+          name={value === true ? 'check' : 'close'}
+          size={16}
+          color={iconColor}
+        />
+      )
+    case 'select':
+      return (
+        field.properties.options.find((option) => option.value === value)
+          ?.label ?? String(value)
+      )
+    case 'text':
+    default:
+      return String(value)
+  }
+}
+
 export default function Index() {
   const { id } = useLocalSearchParams()
   const theme = useTheme()
 
   const { data: order, refetch, isRefetching } = useOrder(id as string)
+  const { data: customFields } = useCustomFields(
+    order?.customer.organization_id,
+  )
 
   if (!order) {
     return (
@@ -208,6 +251,27 @@ export default function Index() {
           value={order.customer.billing_address?.country}
         />
       </Details>
+
+      {customFields && customFields.items.length > 0 ? (
+        <Box>
+          <Text variant="subtitle" marginBottom="spacing-8">
+            Custom Fields
+          </Text>
+          <Details>
+            {customFields.items.map((field) => (
+              <DetailRow
+                key={field.id}
+                label={field.name}
+                value={formatCustomFieldValue(
+                  field,
+                  order.custom_field_data?.[field.slug],
+                  theme.colors.text,
+                )}
+              />
+            ))}
+          </Details>
+        </Box>
+      ) : null}
 
       {order.metadata && Object.keys(order.metadata).length > 0 ? (
         <Box>

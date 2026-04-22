@@ -15,8 +15,8 @@
   },
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
-    "@react-email/components": "^1.0.11",
-    "@react-email/render": "^2.0.5",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.6",
     "commander": "^14.0.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"

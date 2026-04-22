@@ -4,7 +4,6 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
-from polar.auth.models import is_user
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
@@ -133,12 +132,12 @@ async def get(
     tags=[APITag.private],
 )
 async def get_account(
-    authorized: AuthorizeFinanceRead,
+    authz: AuthorizeFinanceRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Account:
     """Get the account for an organization."""
     account = await account_service.get_by_organization(
-        session, authorized.organization.id
+        session, authz.organization.id
     )
     if account is None:
         raise ResourceNotFound()
@@ -254,7 +253,7 @@ async def update(
     tags=[APITag.private],
 )
 async def delete(
-    authorized: AuthorizeOrgDelete,
+    authz: AuthorizeOrgDelete,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationDeletionResponse:
     """Request deletion of an organization.
@@ -266,9 +265,8 @@ async def delete(
     If deletion cannot proceed immediately (has orders, subscriptions, or
     Stripe deletion fails), a support ticket will be created for manual handling.
     """
-    assert is_user(authorized.auth_subject)
     result = await organization_service.request_deletion(
-        session, authorized.auth_subject, authorized.organization
+        session, authz.auth_subject, authz.organization
     )
 
     return OrganizationDeletionResponse(
@@ -352,13 +350,13 @@ async def members(
     tags=[APITag.private],
 )
 async def invite_member(
-    authorized: AuthorizeMembersManage,
+    authz: AuthorizeMembersManage,
     invite_body: OrganizationMemberInvite,
     response: Response,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationMember:
     """Invite a user to join an organization."""
-    organization = authorized.organization
+    organization = authz.organization
 
     # Get or create user by email
     user, _ = await user_service.get_by_email_or_create(session, invite_body.email)
@@ -374,9 +372,7 @@ async def invite_member(
     # Add user to organization
     await organization_service.add_user(session, organization, user)
 
-    # Get the inviter's email (from auth subject)
-    assert is_user(authorized.auth_subject)
-    inviter_email = authorized.auth_subject.subject.email
+    inviter_email = authz.auth_subject.subject.email
 
     # Send invitation email
     email = invite_body.email
@@ -421,7 +417,7 @@ async def invite_member(
     },
 )
 async def leave_organization(
-    authorized: AuthorizeOrgAccessUser,
+    authz: AuthorizeOrgAccessUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Leave an organization.
@@ -431,8 +427,8 @@ async def leave_organization(
     """
     from polar.organization.repository import OrganizationRepository
 
-    organization = authorized.organization
-    user = authorized.auth_subject.subject
+    organization = authz.organization
+    user = authz.auth_subject.subject
 
     # Check if user is the admin
     org_repo = OrganizationRepository.from_session(session)
@@ -470,7 +466,7 @@ async def leave_organization(
     },
 )
 async def remove_member(
-    authorized: AuthorizeMembersManage,
+    authz: AuthorizeMembersManage,
     user_id: str,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
@@ -495,7 +491,7 @@ async def remove_member(
         await user_organization_service.remove_member_safe(
             session,
             user_id=target_user_id,
-            organization_id=authorized.organization.id,
+            organization_id=authz.organization.id,
         )
     except UserNotMemberOfOrganization:
         raise ResourceNotFound()

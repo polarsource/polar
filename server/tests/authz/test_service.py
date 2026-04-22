@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import pytest
 
 from polar.auth.models import AuthSubject
@@ -7,7 +9,7 @@ from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 
-NONEXISTENT_ORG_ID = "00000000-0000-0000-0000-000000000000"
+NONEXISTENT_ORG_ID = UUID("00000000-0000-0000-0000-000000000000")
 
 
 @pytest.mark.asyncio

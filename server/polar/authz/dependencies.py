@@ -18,15 +18,18 @@ from .types import PolicyFn
 
 
 @dataclass(frozen=True)
-class AuthorizedOrganization:
+class AuthzContext[S: User | Organization]:
     """Result of an OrgPolicyGuard dependency.
 
     Contains both the resolved organization and the authenticated subject,
     so endpoints have a single entry point for auth context.
+
+    The type parameter ``S`` reflects which subject types the guard allows,
+    giving endpoints automatic type narrowing without ``assert is_user()``.
     """
 
     organization: OrganizationModel
-    auth_subject: AuthSubject[User | Organization]
+    auth_subject: AuthSubject[S]
 
 
 def OrgPolicyGuard(
@@ -43,7 +46,7 @@ def OrgPolicyGuard(
     2. Resolve the organization from the ``{id}`` path parameter.
     3. Verify the subject is a member of the organization.
     4. Evaluate the policy function.
-    5. Return an ``AuthorizedOrganization`` (organization + auth_subject).
+    5. Return an ``AuthzContext`` (organization + auth_subject).
 
     Raises:
         Unauthorized (401): The request has no valid credentials, or the
@@ -75,7 +78,7 @@ def OrgPolicyGuard(
             AuthSubject[User | Organization], Depends(_authenticator)
         ],
         session: AsyncReadSession = Depends(get_db_read_session),
-    ) -> AuthorizedOrganization:
+    ) -> AuthzContext[User | Organization]:
         organization = await get_accessible_organization(session, auth_subject, id)
         if organization is None:
             raise ResourceNotFound()
@@ -84,9 +87,7 @@ def OrgPolicyGuard(
         if result is not True:
             raise NotPermitted(result if isinstance(result, str) else "Not permitted")
 
-        return AuthorizedOrganization(
-            organization=organization, auth_subject=auth_subject
-        )
+        return AuthzContext(organization=organization, auth_subject=auth_subject)
 
     return dependency
 
@@ -100,13 +101,13 @@ async def _always_allow(
 
 
 AuthorizeFinanceRead = Annotated[
-    AuthorizedOrganization, Depends(OrgPolicyGuard(finance.can_read))
+    AuthzContext[User | Organization], Depends(OrgPolicyGuard(finance.can_read))
 ]
 AuthorizeFinanceWrite = Annotated[
-    AuthorizedOrganization, Depends(OrgPolicyGuard(finance.can_write))
+    AuthzContext[User | Organization], Depends(OrgPolicyGuard(finance.can_write))
 ]
 AuthorizeMembersManage = Annotated[
-    AuthorizedOrganization,
+    AuthzContext[User],
     Depends(
         OrgPolicyGuard(
             members.can_manage,
@@ -116,7 +117,7 @@ AuthorizeMembersManage = Annotated[
     ),
 ]
 AuthorizeOrgDelete = Annotated[
-    AuthorizedOrganization,
+    AuthzContext[User],
     Depends(
         OrgPolicyGuard(
             org_policy.can_delete,
@@ -126,10 +127,10 @@ AuthorizeOrgDelete = Annotated[
     ),
 ]
 AuthorizeOrgAccess = Annotated[
-    AuthorizedOrganization, Depends(OrgPolicyGuard(_always_allow))
+    AuthzContext[User | Organization], Depends(OrgPolicyGuard(_always_allow))
 ]
 AuthorizeOrgAccessUser = Annotated[
-    AuthorizedOrganization,
+    AuthzContext[User],
     Depends(
         OrgPolicyGuard(
             _always_allow,

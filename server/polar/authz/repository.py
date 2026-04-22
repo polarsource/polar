@@ -32,13 +32,10 @@ class AuthzRepository:
         Returns ``None`` if the organization does not exist, is blocked/deleted,
         or the subject is not a member.
         """
-        stmt = (
-            select(OrganizationModel)
-            .where(
-                OrganizationModel.id == organization_id,
-                OrganizationModel.is_deleted.is_(False),
-                OrganizationModel.status != OrganizationStatus.BLOCKED,
-            )
+        stmt = select(OrganizationModel).where(
+            OrganizationModel.id == organization_id,
+            OrganizationModel.is_deleted.is_(False),
+            OrganizationModel.status != OrganizationStatus.BLOCKED,
         )
 
         if is_user(auth_subject):

@@ -27,6 +27,4 @@ async def get_accessible_organization(
 ) -> OrganizationModel | None:
     """Fetch an organization by ID, returning it only if the subject can access it."""
     repository = AuthzRepository(session)
-    return await repository.get_accessible_organization(
-        auth_subject, organization_id
-    )
+    return await repository.get_accessible_organization(auth_subject, organization_id)

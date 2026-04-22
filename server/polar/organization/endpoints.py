@@ -136,9 +136,7 @@ async def get_account(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Account:
     """Get the account for an organization."""
-    account = await account_service.get_by_organization(
-        session, authz.organization.id
-    )
+    account = await account_service.get_by_organization(session, authz.organization.id)
     if account is None:
         raise ResourceNotFound()
 

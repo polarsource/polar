@@ -83,6 +83,17 @@ This means that you need to make sure to always use this Checkout Link URL (as s
 
 You can pass optional query parameters to your Checkout Links.
 
+#### Preselect a product
+
+When a Checkout Link is configured with several products, you can point the
+customer directly to one of them using the `product_id` query parameter. The
+customer can still switch to another product on the checkout page.
+
+<ParamField path="product_id" type="string">
+  ID of the product to preselect on the checkout page. Must be one of the
+  products associated with the Checkout Link.
+</ParamField>
+
 #### Prepopulate fields
 
 You can prefill the checkout fields with the following query parameters:
@@ -103,6 +114,12 @@ You can prefill the checkout fields with the following query parameters:
 
 <ParamField path="amount" type="string">
   Prefill amount in case of Pay What You Want pricing
+</ParamField>
+
+<ParamField path="locale" type="string">
+  Force the checkout page language, given as an IETF BCP 47 language tag (e.g.
+  `en`, `fr`, `pt-BR`). If omitted, the language is detected from the
+  customer's browser.
 </ParamField>
 
 <ParamField path="custom_field_data.{slug}" type="string">

@@ -566,8 +566,9 @@ class ProductService:
                         )
                         continue
 
+                    meter_org_ids = await get_accessible_org_ids(session, auth_subject)
                     price.meter = await meter_repository.get_readable_by_id(
-                        price_schema.meter_id, auth_subject
+                        price_schema.meter_id, meter_org_ids
                     )
                     if price.meter is None:
                         errors.append(

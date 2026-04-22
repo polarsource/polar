@@ -552,8 +552,9 @@ class MemberService:
             NotPermitted: If feature flag disabled or no permission to add members
         """
         customer_repository = CustomerRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer = await customer_repository.get_readable_by_id(
-            auth_subject, customer_id, options=(joinedload(Customer.organization),)
+            org_ids, customer_id, options=(joinedload(Customer.organization),)
         )
 
         if customer is None:

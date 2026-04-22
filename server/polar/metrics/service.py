@@ -476,10 +476,11 @@ class MetricsService:
         external_customer_id: list[str] | None = None
         if customer_id is not None:
             customer_repository = CustomerRepository.from_session(session)
+            org_ids = await get_accessible_org_ids(session, auth_subject)
             external_ids = [
                 eid
                 for eid in await customer_repository.get_readable_external_ids_by_ids(
-                    auth_subject, customer_id
+                    org_ids, customer_id
                 )
                 if eid
             ]

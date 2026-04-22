@@ -2,10 +2,8 @@ from uuid import UUID
 
 from sqlalchemy import Select
 
-from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
-from polar.models import Meter, Organization, User
+from polar.models import Meter
 
 
 class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
@@ -17,8 +15,7 @@ class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
     async def get_readable_by_id(
         self,
         id: UUID,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
     ) -> Meter | None:
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = self.get_by_org_ids_statement(org_ids).where(Meter.id == id)
         return await self.get_one_or_none(statement)

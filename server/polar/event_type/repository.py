@@ -4,9 +4,8 @@ from uuid import UUID
 from sqlalchemy import Select, select
 from sqlalchemy.exc import IntegrityError
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
-from polar.models import EventType, UserOrganization
+from polar.models import EventType
 
 
 class EventTypeRepository(
@@ -45,31 +44,6 @@ class EventTypeRepository(
         )
         result = await self.session.execute(statement)
         return {(et.organization_id, et.name): et for et in result.scalars().all()}
-
-    async def get_readable_organization_ids(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        organization_id: Sequence[UUID] | None,
-    ) -> Sequence[UUID]:
-        if is_organization(auth_subject):
-            if (
-                organization_id is not None
-                and auth_subject.subject.id not in organization_id
-            ):
-                return []
-            return [auth_subject.subject.id]
-
-        statement = select(UserOrganization.organization_id).where(
-            UserOrganization.user_id == auth_subject.subject.id,
-            UserOrganization.is_deleted.is_(False),
-        )
-        if organization_id is not None:
-            statement = statement.where(
-                UserOrganization.organization_id.in_(organization_id)
-            )
-
-        result = await self.session.execute(statement)
-        return list(dict.fromkeys(result.scalars().all()))
 
     async def get_or_create(self, name: str, organization_id: UUID) -> EventType:
         existing = await self.get_by_name_and_organization(name, organization_id)

@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -401,19 +402,20 @@ class SubscriptionService:
 
         customer: Customer | None = None
         customer_repository = CustomerRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         error_loc: str
         input_value: uuid.UUID | str
         if isinstance(subscription_create, SubscriptionCreateCustomer):
             error_loc = "customer_id"
             input_value = subscription_create.customer_id
             customer = await customer_repository.get_readable_by_id(
-                auth_subject, input_value
+                org_ids, input_value
             )
         else:
             error_loc = "external_customer_id"
             input_value = subscription_create.external_customer_id
             customer = await customer_repository.get_readable_by_external_id(
-                auth_subject, input_value
+                org_ids, input_value
             )
 
         if customer is None:

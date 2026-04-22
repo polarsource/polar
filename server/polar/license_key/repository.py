@@ -7,17 +7,15 @@ from polar.auth.models import (
     AuthSubject,
     Customer,
     Member,
-    User,
     is_member,
 )
-from polar.authz.service import get_accessible_org_ids
 from polar.kit.repository import (
     Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import LicenseKey, Organization
+from polar.models import LicenseKey
 
 
 class LicenseKeyRepository(
@@ -68,11 +66,10 @@ class LicenseKeyRepository(
         self,
         key: str,
         organization_id: UUID,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
         *,
         options: Options = (),
     ) -> LicenseKey | None:
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
             self.get_by_org_ids_statement(org_ids)
             .where(

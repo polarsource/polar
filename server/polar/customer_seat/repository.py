@@ -4,8 +4,6 @@ from uuid import UUID
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, Organization, User
-from polar.authz.service import get_accessible_org_ids
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
 from polar.models import (
@@ -17,7 +15,6 @@ from polar.models import (
 )
 from polar.models.customer_seat import SeatStatus
 from polar.order.repository import OrderRepository
-from polar.postgres import AsyncReadSession
 from polar.subscription.repository import SubscriptionRepository
 
 SeatContainer = Subscription | Order
@@ -386,39 +383,6 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             .options(*options)
         )
         return await self.get_one_or_none(statement)
-
-    async def get_by_id_and_auth_subject(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        seat_id: UUID,
-        *,
-        options: Options = (),
-    ) -> CustomerSeat | None:
-        """Get a seat by ID filtered by auth subject.
-
-        Backward-compatible wrapper; prefer get_by_id_and_org_ids.
-        """
-        session: AsyncReadSession = self.session
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        return await self.get_by_id_and_org_ids(org_ids, seat_id, options=options)
-
-    async def get_by_subscription_and_auth_subject(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        seat_id: UUID,
-        subscription_id: UUID,
-        *,
-        options: Options = (),
-    ) -> CustomerSeat | None:
-        """Get a seat by ID and subscription ID filtered by auth subject.
-
-        Backward-compatible wrapper; prefer get_by_subscription_and_org_ids.
-        """
-        session: AsyncReadSession = self.session
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        return await self.get_by_subscription_and_org_ids(
-            org_ids, seat_id, subscription_id, options=options
-        )
 
     async def get_active_seat_for_customer(
         self,

@@ -8,6 +8,7 @@ from sse_starlette import EventSourceResponse
 
 from polar.auth.models import Anonymous, Organization, User
 from polar.auth.models import AuthSubject as AuthSubjectType
+from polar.authz.service import get_accessible_org_ids
 from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
@@ -269,9 +270,10 @@ async def revoke_seat(
 
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
     seat_repository = CustomerSeatRepository.from_session(session)
+    org_ids = await get_accessible_org_ids(session, typed_auth_subject)
 
-    seat = await seat_repository.get_by_id_and_auth_subject(
-        typed_auth_subject,
+    seat = await seat_repository.get_by_id_and_org_ids(
+        org_ids,
         seat_id,
         options=seat_repository.get_eager_options(),
     )
@@ -312,9 +314,10 @@ async def resend_invitation(
 
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
     seat_repository = CustomerSeatRepository.from_session(session)
+    org_ids = await get_accessible_org_ids(session, typed_auth_subject)
 
-    seat = await seat_repository.get_by_id_and_auth_subject(
-        typed_auth_subject,
+    seat = await seat_repository.get_by_id_and_org_ids(
+        org_ids,
         seat_id,
         options=seat_repository.get_eager_options(),
     )

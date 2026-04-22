@@ -7,8 +7,6 @@ from sqlalchemy import Select, String, cast, func, or_, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
-from polar.auth.models import AuthSubject, Organization, User
-from polar.authz.service import get_accessible_org_ids
 from polar.event.system import CustomerUpdatedFields, SystemEvent
 from polar.kit.address import Address
 from polar.kit.repository import (
@@ -179,10 +177,9 @@ class CustomerRepository(
 
     async def stream_by_organization(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
         organization_id: Sequence[UUID] | None,
     ) -> AsyncGenerator[Customer]:
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = self.get_by_org_ids_statement(org_ids)
 
         if organization_id is not None:
@@ -195,12 +192,11 @@ class CustomerRepository(
 
     async def get_readable_by_id(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
         id: UUID,
         *,
         options: Options = (),
     ) -> Customer | None:
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
             self.get_by_org_ids_statement(org_ids)
             .where(Customer.id == id)
@@ -210,12 +206,11 @@ class CustomerRepository(
 
     async def get_readable_by_external_id(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
         external_id: str,
         *,
         options: Options = (),
     ) -> Customer | None:
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
             self.get_by_org_ids_statement(org_ids)
             .where(Customer.external_id == external_id)
@@ -225,10 +220,9 @@ class CustomerRepository(
 
     async def get_readable_external_ids_by_ids(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
         customer_ids: Sequence[UUID],
     ) -> list[str]:
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
             self.get_by_org_ids_statement(org_ids)
             .with_only_columns(Customer.external_id)
@@ -242,10 +236,9 @@ class CustomerRepository(
 
     async def get_readable_ids_by_external_ids(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
         external_ids: Sequence[str],
     ) -> list[UUID]:
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
             self.get_by_org_ids_statement(org_ids)
             .with_only_columns(Customer.id)
@@ -256,11 +249,10 @@ class CustomerRepository(
 
     async def search_by_query(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        org_ids: set[UUID],
         organization_ids: Sequence[UUID],
         query: str,
     ) -> tuple[list[UUID], list[str]]:
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         statement = (
             self.get_by_org_ids_statement(org_ids)
             .with_only_columns(Customer.id, Customer.external_id)

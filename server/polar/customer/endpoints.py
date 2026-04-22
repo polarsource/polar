@@ -5,6 +5,7 @@ from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import TypeAdapter
 
+from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -133,7 +134,8 @@ async def export(
         )
 
         repository = CustomerRepository.from_session(session)
-        stream = repository.stream_by_organization(auth_subject, organization_id)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        stream = repository.stream_by_organization(org_ids, organization_id)
 
         async for customer in stream:
             billing_address = customer.billing_address

@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
@@ -161,6 +162,8 @@ class EventService:
         if not organization_ids:
             return [], 0
 
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+
         (
             query_filters,
             matching_cust_ids,
@@ -170,6 +173,7 @@ class EventService:
             session,
             auth_subject,
             organization_ids,
+            org_ids=org_ids,
             filter=filter,
             meter_id=meter_id,
             query=query,
@@ -181,13 +185,13 @@ class EventService:
         if customer_id is not None:
             all_external_ids.extend(
                 await customer_repository.get_readable_external_ids_by_ids(
-                    auth_subject, customer_id
+                    org_ids, customer_id
                 )
             )
         if external_customer_id is not None:
             all_customer_ids.extend(
                 await customer_repository.get_readable_ids_by_external_ids(
-                    auth_subject, external_customer_id
+                    org_ids, external_customer_id
                 )
             )
 
@@ -366,6 +370,8 @@ class EventService:
         if not organization_ids:
             return ListStatisticsTimeseries(periods=[], totals=[])
 
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+
         (
             query_filters,
             matching_cust_ids,
@@ -375,6 +381,7 @@ class EventService:
             session,
             auth_subject,
             organization_ids,
+            org_ids=org_ids,
             filter=filter,
             meter_id=meter_id,
             query=query,
@@ -386,13 +393,13 @@ class EventService:
         if customer_id is not None:
             all_external_ids.extend(
                 await customer_repository.get_readable_external_ids_by_ids(
-                    auth_subject, customer_id
+                    org_ids, customer_id
                 )
             )
         if external_customer_id is not None:
             all_customer_ids.extend(
                 await customer_repository.get_readable_ids_by_external_ids(
-                    auth_subject, external_customer_id
+                    org_ids, external_customer_id
                 )
             )
 
@@ -546,19 +553,20 @@ class EventService:
         if not organization_ids:
             return ListPropertyGroupStats(items=[])
 
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer_repository = CustomerRepository.from_session(session)
         all_customer_ids: list[uuid.UUID] = list(customer_id or [])
         all_external_ids: list[str] = list(external_customer_id or [])
         if customer_id is not None:
             all_external_ids.extend(
                 await customer_repository.get_readable_external_ids_by_ids(
-                    auth_subject, customer_id
+                    org_ids, customer_id
                 )
             )
         if external_customer_id is not None:
             all_customer_ids.extend(
                 await customer_repository.get_readable_ids_by_external_ids(
-                    auth_subject, external_customer_id
+                    org_ids, external_customer_id
                 )
             )
 
@@ -612,19 +620,20 @@ class EventService:
         if not organization_ids:
             return ListCustomerStats(items=[])
 
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer_repository = CustomerRepository.from_session(session)
         all_customer_ids: list[uuid.UUID] = list(customer_id or [])
         all_external_ids: list[str] = list(external_customer_id or [])
         if customer_id is not None:
             all_external_ids.extend(
                 await customer_repository.get_readable_external_ids_by_ids(
-                    auth_subject, customer_id
+                    org_ids, customer_id
                 )
             )
         if external_customer_id is not None:
             all_customer_ids.extend(
                 await customer_repository.get_readable_ids_by_external_ids(
-                    auth_subject, external_customer_id
+                    org_ids, external_customer_id
                 )
             )
 
@@ -697,19 +706,20 @@ class EventService:
         if not organization_ids:
             return ListVarianceEvents(items=[])
 
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer_repository = CustomerRepository.from_session(session)
         all_customer_ids: list[uuid.UUID] = list(customer_id or [])
         all_external_ids: list[str] = list(external_customer_id or [])
         if customer_id is not None:
             all_external_ids.extend(
                 await customer_repository.get_readable_external_ids_by_ids(
-                    auth_subject, customer_id
+                    org_ids, customer_id
                 )
             )
         if external_customer_id is not None:
             all_customer_ids.extend(
                 await customer_repository.get_readable_ids_by_external_ids(
-                    auth_subject, external_customer_id
+                    org_ids, external_customer_id
                 )
             )
 
@@ -763,19 +773,20 @@ class EventService:
         if not organization_ids:
             return [], 0
 
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         customer_repository = CustomerRepository.from_session(session)
         all_customer_ids: list[uuid.UUID] = list(customer_id or [])
         all_external_ids: list[str] = list(external_customer_id or [])
         if customer_id is not None:
             all_external_ids.extend(
                 await customer_repository.get_readable_external_ids_by_ids(
-                    auth_subject, customer_id
+                    org_ids, customer_id
                 )
             )
         if external_customer_id is not None:
             all_customer_ids.extend(
                 await customer_repository.get_readable_ids_by_external_ids(
-                    auth_subject, external_customer_id
+                    org_ids, external_customer_id
                 )
             )
 
@@ -844,6 +855,7 @@ class EventService:
         auth_subject: AuthSubject[User | Organization],
         organization_ids: Sequence[uuid.UUID],
         *,
+        org_ids: set[uuid.UUID],
         filter: Filter | None = None,
         meter_id: uuid.UUID | None = None,
         query: str | None = None,
@@ -860,7 +872,7 @@ class EventService:
         numeric_metadata_property: str | None = None
         if meter_id is not None:
             meter_repository = MeterRepository.from_session(session)
-            meter = await meter_repository.get_readable_by_id(meter_id, auth_subject)
+            meter = await meter_repository.get_readable_by_id(meter_id, org_ids)
             if meter is None:
                 raise PolarRequestValidationError(
                     [
@@ -886,7 +898,7 @@ class EventService:
                 matching_cust_ids,
                 matching_ext_ids,
             ) = await customer_repository.search_by_query(
-                auth_subject, organization_ids, query
+                org_ids, organization_ids, query
             )
 
         return (

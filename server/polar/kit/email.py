@@ -15,7 +15,9 @@ if settings.is_testing():
 _email_dns_resolver = caching_resolver()
 
 validate_email = functools.partial(
-    _validate_email, check_deliverability=True, dns_resolver=_email_dns_resolver
+    _validate_email,
+    check_deliverability=not settings.is_development(),
+    dns_resolver=_email_dns_resolver,
 )
 
 

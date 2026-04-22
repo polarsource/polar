@@ -4,42 +4,6 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
-<Update label="2026-04-22">
-## Filter License Keys and Benefit Grants by Status
-
-Merchants can now filter license keys and benefit grants by status (granted, revoked, disabled, pending) directly from the benefit detail page. The same filters are exposed via the API. Finding revoked or pending entitlements across large customer bases is now a single dropdown click instead of scrolling pages of results.
-
-<img class="border rounded" src="/assets/changelog/2026-04-22/license-keys-filter.png" />
-
-## Pending Subscription Updates Now Surface in the UI
-
-Scheduled subscription changes (product swaps, price updates, seat-count changes) now appear in both the merchant dashboard and the customer portal. A clear "Scheduled Update" section shows what will change and when it applies, so there are no surprises at the next billing cycle.
-
-<img class="border rounded" src="/assets/changelog/2026-04-22/pending-subscription-update.png" />
-
-## Korean Checkout Localization
-
-Checkout is now fully localized in Korean (`ko`). Merchants selling to Korean customers get a native buying experience end to end, with product details, payment fields, and order summary all rendering in Korean.
-
-<img class="border rounded" src="/assets/changelog/2026-04-22/korean-checkout.png" />
-
-## Expanded Currency Support
-
-Presentment currency coverage expanded by 80+ currencies, including EGP, KES, NGN, PKR, VND, UAH, and KZT. Merchants can now price products and display checkout in a much wider range of local currencies.
-
-## Invoice Support for Arabic, Hebrew, and CJK
-
-Invoice PDFs now render Arabic, Hebrew, and CJK (Chinese, Japanese, Korean) glyphs correctly, with proper right-to-left shaping for Arabic and Hebrew. Merchants invoicing customers in these languages get professional, readable documents out of the box.
-
-## Smarter Regional Currency Formatting
-
-Localized checkout now respects regional IETF subtags (e.g. `en-CA`, `en-AU`) while keeping the merchant's chosen language. Currency symbols render as `CA$` or `A$` instead of a generic `$`, so buyers see the right currency framing for their region.
-
-## Out-of-Order Event Ingestion
-
-Events can now be ingested with a `pending_parent` relationship, so child events no longer have to arrive after their parent. The relationship is resolved when the parent event lands, making usage metering pipelines tolerant to out of order delivery.
-</Update>
-
 <Update label="2026-01-31">
 ## Team Member Management (B2B)
 

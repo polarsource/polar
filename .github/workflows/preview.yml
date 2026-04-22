@@ -319,7 +319,7 @@ jobs:
 
       - name: Delete preview comment
         if: steps.comment.outputs.comment-id != ''
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.deleteComment({

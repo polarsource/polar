@@ -177,7 +177,7 @@ jobs:
 
       - name: Delete resolved comment
         if: steps.check.outputs.has_disallowed == 'false' && steps.fc.outputs.comment-id != ''
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.deleteComment({

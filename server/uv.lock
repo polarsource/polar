@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "2026-04-14T08:30:18.988052886Z"
+exclude-newer = "2026-04-15T05:22:20.304355893Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -2234,7 +2234,7 @@ dev = [
     { name = "pytest-recording", specifier = ">=0.13.1" },
     { name = "pytest-subtests", specifier = ">=0.13.1" },
     { name = "pytest-sugar", specifier = ">=1.0.0" },
-    { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.6.1" },
+    { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.8.0" },
     { name = "respx", specifier = ">=0.21.1" },
     { name = "ruff", specifier = ">=0.15.9" },
     { name = "sqlalchemy-utils", specifier = ">=0.41.2" },

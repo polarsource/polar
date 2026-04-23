@@ -30,6 +30,112 @@ Presentment currency coverage expanded by 80+ currencies, including EGP, KES, NG
 Localized checkout now respects regional IETF subtags (e.g. `en-CA`, `en-AU`) while keeping the merchant's chosen language. Currency symbols render as `CA$` or `A$` instead of a generic `$`, so buyers see the right currency framing for their region.
 </Update>
 
+<Update label="2026-04-14">
+## Meter Units
+
+Meters now support custom units with a value multiplier, so you can ingest raw counts (tokens, requests, bytes) and price in whatever unit makes sense for your customers (millions of tokens, GB, etc.). Configure the unit name and multiplier on each meter in the dashboard, and unit labels flow through to checkout, the customer portal, and invoices.
+
+## Self-Service Payout Account Management
+
+Merchants can now create, switch between, and delete payout accounts directly from the Finance page. A new Manage modal lists every account on the user, lets you set the active one for the organization, and blocks deletion when an account still holds a balance or is linked to an organization. Useful for moving payouts to a new bank entity without contacting support.
+
+## Customers Can Update Their Email Address
+
+Customers can now change the email address on their account directly from the customer portal, with a verification step on the new address. No more support tickets to fix a typo or move billing to a new mailbox.
+
+## Cost Insights: Customer Ranking and Variance Detection
+
+Cost Insights now ranks customers by total cost so you can see which accounts are driving the bill, and a new variance API surfaces cost anomalies (sudden spikes or drops) on individual events. Cost values also render correctly on the leaf event detail page. An enhancement to the Cost Insights feature shipped last October.
+
+## Full Product Description on Checkout
+
+Long product descriptions are no longer truncated on the checkout page. Buyers see the full pitch, formatting, and details right where they decide to buy, instead of a clipped preview with a "read more" they may never click.
+</Update>
+
+<Update label="2026-03-31">
+## Streamlined Merchant Onboarding
+
+A redesigned onboarding flow guides new merchants through account setup, organization details, and product creation step by step. Smarter validation, contextual error handling, and analytics on each step mean fewer drop-offs before the first sale.
+
+## Schedule Subscription Updates for Next Cycle
+
+Subscription changes (product swaps, price updates, seat changes) can now be scheduled to apply at the next billing cycle instead of taking effect immediately. The API exposes a new `next_period` proration behavior, and pending updates are returned on subscription objects and webhooks so external systems stay in sync.
+
+## Renewal and Trial Conversion Reminders
+
+Customers on yearly or longer billing cycles now get an automatic reminder seven days before renewal. Trial subscribers get a heads-up three days before their trial ends (or one day for very short trials). Both reminders are toggleable per organization, helping reduce involuntary churn and surprise charges.
+
+## Korean Checkout, Portal, and Emails
+
+Korean joins the list of fully translated languages across checkout, customer portal, and customer emails. Merchants selling to Korean buyers get a native end-to-end experience.
+
+## GDPR Customer Data Export
+
+A new Privacy section in the customer portal lets buyers download a complete JSON export of their personal data, subscriptions, orders, and benefit grants in one click. Helps merchants satisfy data portability obligations without manual exports.
+
+## Cancellation Reason Drill-Down
+
+Cancellation charts in the metrics dashboard are now interactive. Clicking on any reason or time bucket opens a detail modal showing the underlying subscriptions, customer comments, and dates. Merchants can finally connect a spike on the chart to the actual customers behind it.
+
+## Tax-Inclusive Pricing
+
+Merchants can now set a default tax behavior on their organization and price products with tax included in the displayed amount. Useful for regions and product categories where buyers expect to see the all-in price up front.
+
+## Markdown Product Descriptions on Checkout
+
+Product descriptions on checkout pages now render Markdown formatting, so headings, lists, links, and emphasis come through as intended instead of as raw text. Make your value proposition look the way you wrote it.
+
+## Multi-Currency Fixed Discounts
+
+Fixed-amount discounts can now hold separate amounts per currency, matching the multi-currency pricing model that shipped in February. Run a $10 / 10 EUR / 10 GBP coupon as a single discount instead of juggling three.
+
+## Customizable Dashboard Home Charts
+
+The dashboard home page now lets merchants choose which metrics they see on the overview chart and persist their selection. Tailor the first thing you see when you log in to whatever moves the business for you.
+</Update>
+
+<Update label="2026-02-28">
+## Multi-Currency Product Pricing
+
+Merchants can now create products with prices in multiple currencies side by side. Set a USD price, an EUR price, a GBP price, and more on the same product, and customers see the right currency at checkout based on their region. A new default presentment currency setting at the organization level keeps things consistent across the dashboard.
+
+## Feature Flag Benefit
+
+A new Feature Flag benefit type is available for SaaS merchants. Grant it to customers when they should unlock something in your product, then check entitlements through the Polar API or webhooks. JSON metadata stays invisible to the customer, keeping the experience clean for pure software subscriptions.
+
+## Italian and Portuguese Checkout
+
+Checkout, customer portal, and emails are now fully translated into Italian and Portuguese. Customers in Italy, Portugal, and Brazil get a native experience end to end, with currency formatting that matches their region.
+
+## Name Your Webhook Endpoints
+
+Webhook endpoints can now have a friendly name like "Production Events" or "Analytics Pipeline". Names show up as the primary label in the dashboard, with the URL as secondary text, so managing more than a couple of endpoints stops feeling like reading a list of URLs.
+
+## Return URL on Static Checkout Links
+
+Static checkout links created from the dashboard now support a custom return URL, matching what was already possible through the API. Send buyers back to a thank-you page, an upsell, or a specific app screen after they complete a purchase, no API call required.
+
+## Seat Limits at Checkout
+
+Seat-based products now support `min_seats` and `max_seats` on the checkout. Lock customers to a minimum team size for plans that require it, or cap the upper bound for tiered packages, all enforced at the buying step.
+
+## Team Ownership Transfer
+
+Team owners can now hand the owner role to another member directly from the customer portal, and admins can transfer ownership through the API. The previous owner is automatically demoted to billing manager so there is always exactly one owner.
+
+## Member Webhook Events
+
+Three new webhook events have shipped: `member.created`, `member.updated`, and `member.deleted`. External systems can sync team membership changes in real time, perfect for provisioning seats in your own product as B2B teams grow or shrink.
+
+## Faster Wallet and Card Checkout
+
+When mobile wallets are available, they now appear at the top of the payment list instead of buried under the card form. The cardholder name field is hidden when paying with a wallet, since the name is pulled from the wallet token automatically. Fewer clicks, fewer fields, faster checkout.
+
+## Delete Your Account from the Web Dashboard
+
+Account deletion is now available from the web dashboard preferences, matching the mobile app. A clear Danger Zone section walks users through confirmation, surfaces any organizations they need to delete first, and signs them out cleanly when the deletion completes.
+</Update>
+
 <Update label="2026-01-31">
 ## Team Member Management (B2B)
 

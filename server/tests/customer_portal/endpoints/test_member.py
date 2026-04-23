@@ -353,42 +353,6 @@ class TestUpdateMember:
 
     @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
-    async def test_cannot_demote_only_owner(
-        self,
-        client: AsyncClient,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-        member_owner: Member,
-    ) -> None:
-        """Cannot demote the only owner via another endpoint."""
-        customer.type = CustomerType.team
-        await save_fixture(customer)
-
-        # Create another member to try to demote
-        member2 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="other-owner@example.com",
-            name="Other Owner",
-            role=MemberRole.owner,
-        )
-        await save_fixture(member2)
-
-        # Try to demote the other owner - should fail because there can only be one owner
-        response = await client.patch(
-            f"/v1/customer-portal/members/{member2.id}",
-            json={"role": "member"},
-        )
-        # This should work because we're not demoting ourselves and there are multiple owners
-        # Wait, looking at the code again, the logic prevents multiple owners, so this should fail
-        # Actually let me re-read the logic - we allow demoting if owner_count > 1
-        # Since we now have 2 owners (member_owner and member2), demoting member2 should succeed
-        assert response.status_code == 200
-
-    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
-    @pytest.mark.keep_session_state
     async def test_valid_update(
         self,
         client: AsyncClient,
@@ -538,37 +502,6 @@ class TestRemoveMember:
         response = await client.delete(f"/v1/customer-portal/members/{member_owner.id}")
         assert response.status_code == 422
         assert "cannot remove yourself" in response.json()["detail"][0]["msg"].lower()
-
-    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
-    @pytest.mark.keep_session_state
-    async def test_cannot_remove_only_owner(
-        self,
-        client: AsyncClient,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-        member_owner: Member,
-    ) -> None:
-        """Cannot remove the only owner (even if trying to remove another owner)."""
-        customer.type = CustomerType.team
-        await save_fixture(customer)
-
-        # There's only one owner (member_owner), can't remove them
-        # But we're testing self-removal which is blocked by a different check
-        # Let's create a scenario with 2 owners and remove one
-        member2 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="other-owner@example.com",
-            name="Other Owner",
-            role=MemberRole.owner,
-        )
-        await save_fixture(member2)
-
-        # Now try to remove member2 - this should work because there are 2 owners
-        response = await client.delete(f"/v1/customer-portal/members/{member2.id}")
-        assert response.status_code == 204
 
     @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state

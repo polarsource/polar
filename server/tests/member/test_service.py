@@ -17,6 +17,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
     create_customer,
+    create_member,
     create_organization,
 )
 
@@ -690,6 +691,80 @@ class TestUpdate:
             await member_service.update(session, member, role=MemberRole.owner)
 
         assert "only the owner can transfer ownership" in str(exc_info.value).lower()
+
+    @pytest.mark.auth
+    async def test_update_ownership_transfer_customer_portal(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Regression: the partial unique index on (customer_id) WHERE role='owner'
+        would trip if demote+promote ran as two separate UPDATEs."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="owner@example.com",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="member@example.com",
+        )
+
+        updated = await member_service.update(
+            session, member, role=MemberRole.owner, caller_member=owner
+        )
+
+        assert updated.role == MemberRole.owner
+
+        await session.refresh(owner)
+        await session.refresh(member)
+        assert owner.role == MemberRole.billing_manager
+        assert member.role == MemberRole.owner
+
+    @pytest.mark.auth
+    async def test_update_ownership_transfer_admin(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="owner@example.com",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="member@example.com",
+        )
+
+        updated = await member_service.update(
+            session, member, role=MemberRole.owner, allow_ownership_transfer=True
+        )
+
+        assert updated.role == MemberRole.owner
+
+        await session.refresh(owner)
+        await session.refresh(member)
+        assert owner.role == MemberRole.billing_manager
+        assert member.role == MemberRole.owner
 
     @pytest.mark.auth
     async def test_update_no_changes(

@@ -668,6 +668,7 @@ class MemberService:
             - When promoting to owner, the existing owner is automatically demoted to billing_manager
         """
         repository = MemberRepository.from_session(session)
+        transferred = False
 
         if role is not None and member.role != role:
             members = await repository.list_by_customer(session, member.customer_id)
@@ -696,35 +697,22 @@ class MemberService:
                         ]
                     )
 
-                # Find and demote the current owner
-                if caller_is_owner and caller_member is not None:
-                    # Customer portal: demote the caller (who is the owner)
-                    await repository.update(
-                        caller_member, update_dict={"role": MemberRole.billing_manager}
-                    )
-                    log.info(
-                        "member.update.ownership_transfer",
-                        old_owner_id=caller_member.id,
-                        new_owner_id=member.id,
-                        customer_id=member.customer_id,
-                    )
-                else:
-                    # Admin API: find and demote the existing owner
-                    current_owner = next(
-                        (m for m in members if m.role == MemberRole.owner), None
-                    )
-                    if current_owner:
-                        await repository.update(
-                            current_owner,
-                            update_dict={"role": MemberRole.billing_manager},
-                        )
-                        log.info(
-                            "member.update.ownership_transfer",
-                            old_owner_id=current_owner.id,
-                            new_owner_id=member.id,
-                            customer_id=member.customer_id,
-                            admin_transfer=True,
-                        )
+                current_owner = (
+                    caller_member
+                    if caller_is_owner and caller_member is not None
+                    else next(m for m in members if m.role == MemberRole.owner)
+                )
+                await repository.transfer_ownership(
+                    session, current_owner=current_owner, new_owner=member
+                )
+                transferred = True
+                log.info(
+                    "member.update.ownership_transfer",
+                    old_owner_id=current_owner.id,
+                    new_owner_id=member.id,
+                    customer_id=member.customer_id,
+                    transfer_kind="admin" if allow_ownership_transfer else "portal",
+                )
 
             # Prevent removing the last owner
             if is_losing_owner_role and owner_count <= 1:
@@ -742,13 +730,17 @@ class MemberService:
         update_dict = {}
         if name is not None:
             update_dict["name"] = name
-        if role is not None:
+        if role is not None and not transferred:
             update_dict["role"] = role
 
-        if not update_dict:
+        if not update_dict and not transferred:
             return member
 
-        updated_member = await repository.update(member, update_dict=update_dict)
+        updated_member = (
+            await repository.update(member, update_dict=update_dict)
+            if update_dict
+            else member
+        )
         log.info(
             "member.update.success",
             member_id=member.id,

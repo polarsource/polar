@@ -22,10 +22,10 @@ export const Button = ({
   <a
     href={href}
     className={twMerge(
-      "w-fit rounded-full px-8 py-4 text-base font-bold transition [font-variation-settings:'opsz'_32]",
+      "w-fit rounded-full px-8 py-4 text-lg font-semibold transition [font-variation-settings:'opsz'_32]",
       variant === 'primary'
         ? 'bg-neutral-900 text-neutral-100 dark:bg-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200'
-        : 'bg-neutral-300 text-neutral-900 dark:bg-dark-800 dark:text-white font-semibold hover:bg-neutral-300 dark:hover:bg-dark-700',
+        : 'bg-neutral-200 text-neutral-900 dark:bg-dark-800 dark:text-white font-semibold hover:bg-neutral-300 dark:hover:bg-dark-700',
       className,
     )}
   >

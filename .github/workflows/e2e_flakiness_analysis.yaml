@@ -206,8 +206,9 @@ jobs:
         id: result
         if: always()
         run: |
-          # Check if Claude created a PR (flaky fix)
-          PR_URL=$(gh pr list --head "fix/e2e-flaky-" --json url --jq '.[0].url' 2>/dev/null || true)
+          PR_URL=$(gh pr list --state open --json url,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("fix/e2e-flaky-"))][0].url' \
+            2>/dev/null || true)
 
           if [ -f analysis-result.json ]; then
             CLASSIFICATION=$(jq -r '.classification' analysis-result.json)
@@ -241,7 +242,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify Slack - result
-        if: always()
+        if: always() && steps.result.outputs.classification != 'unknown'
         uses: slackapi/slack-github-action@v3
         with:
           method: chat.postMessage

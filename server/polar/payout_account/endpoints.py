@@ -55,8 +55,8 @@ async def create(
 @router.get("/{id}", response_model=PayoutAccountSchema)
 async def get(
     authz: AuthorizePayoutAccountRead,
-) -> PayoutAccountSchema:
-    return PayoutAccountSchema.model_validate(authz.payout_account)
+) -> PayoutAccount:
+    return authz.payout_account
 
 
 @router.delete("/{id}", status_code=204)

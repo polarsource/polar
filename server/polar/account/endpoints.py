@@ -3,6 +3,7 @@ from fastapi import Depends
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.schemas import AccountCredit as AccountCreditSchema
 from polar.authz.dependencies import AuthorizeAccountRead, AuthorizeAccountWrite
+from polar.models import Account
 from polar.openapi import APITag
 from polar.postgres import (
     AsyncReadSession,
@@ -22,8 +23,8 @@ router = APIRouter(tags=["accounts", APITag.private])
 @router.get("/accounts/{id}", response_model=AccountSchema)
 async def get(
     authz: AuthorizeAccountRead,
-) -> AccountSchema:
-    return AccountSchema.model_validate(authz.account)
+) -> Account:
+    return authz.account
 
 
 @router.patch("/accounts/{id}", response_model=AccountSchema)
@@ -31,9 +32,8 @@ async def patch(
     authz: AuthorizeAccountWrite,
     account_update: AccountUpdate,
     session: AsyncSession = Depends(get_db_session),
-) -> AccountSchema:
-    updated = await account_service.update(session, authz.account, account_update)
-    return AccountSchema.model_validate(updated)
+) -> Account:
+    return await account_service.update(session, authz.account, account_update)
 
 
 @router.get("/accounts/{id}/credits", response_model=list[AccountCreditSchema])

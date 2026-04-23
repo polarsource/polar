@@ -1,10 +1,8 @@
 from fastapi import Depends
 
-from polar.account.repository import AccountRepository
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.schemas import AccountCredit as AccountCreditSchema
 from polar.authz.dependencies import AuthorizeAccountRead, AuthorizeAccountWrite
-from polar.exceptions import ResourceNotFound
 from polar.openapi import APITag
 from polar.postgres import (
     AsyncReadSession,
@@ -34,12 +32,7 @@ async def patch(
     account_update: AccountUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountSchema:
-    # Re-fetch on write db session — the guard loaded on a read-only db session
-    repository = AccountRepository.from_session(session)
-    account = await repository.get_by_id(authz.account.id)
-    if account is None:
-        raise ResourceNotFound()
-    updated = await account_service.update(session, account, account_update)
+    updated = await account_service.update(session, authz.account, account_update)
     return AccountSchema.model_validate(updated)
 
 

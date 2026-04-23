@@ -1,20 +1,21 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import Depends
 
-if TYPE_CHECKING:
-    from polar.models import PayoutAccount as PayoutAccountModel
-    from polar.models.account import Account as AccountModel
-
+from polar.account.repository import AccountRepository
 from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import Organization as OrganizationModel
+from polar.models import PayoutAccount as PayoutAccountModel
+from polar.models.account import Account as AccountModel
+from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.payout_account.repository import PayoutAccountRepository
+from polar.postgres import AsyncReadSession, AsyncSession, get_db_read_session, get_db_session
 
 from .policies import finance, members
 from .policies import organization as org_policy
@@ -192,9 +193,6 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
         auth_subject: Annotated[AuthSubject[User], Depends(_authenticator)],
         session: AsyncReadSession = Depends(get_db_read_session),
     ) -> AuthorizedAccount:
-        from polar.account.repository import AccountRepository
-        from polar.organization.repository import OrganizationRepository
-
         account_repo = AccountRepository.from_session(session)
         account = await account_repo.get_by_id(id)
         if account is None:
@@ -239,9 +237,6 @@ def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
         auth_subject: Annotated[AuthSubject[User], Depends(_authenticator)],
         session: AsyncReadSession = Depends(get_db_read_session),
     ) -> AuthorizedPayoutAccount:
-        from polar.organization.repository import OrganizationRepository
-        from polar.payout_account.repository import PayoutAccountRepository
-
         pa_repo = PayoutAccountRepository.from_session(session)
         payout_account = await pa_repo.get_by_id(id)
         if payout_account is None:

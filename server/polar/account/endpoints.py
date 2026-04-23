@@ -1,5 +1,6 @@
 from fastapi import Depends
 
+from polar.account.repository import AccountRepository
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.schemas import AccountCredit as AccountCreditSchema
 from polar.authz.dependencies import AuthorizeAccountRead, AuthorizeAccountWrite
@@ -34,8 +35,6 @@ async def patch(
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountSchema:
     # Re-fetch on write session — the guard loaded on a read session
-    from polar.account.repository import AccountRepository
-
     repository = AccountRepository.from_session(session)
     account = await repository.get_by_id(authz.account.id)
     if account is None:

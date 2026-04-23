@@ -11,6 +11,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, Pagination
 from polar.models import PayoutAccount
 from polar.openapi import APITag
+from polar.payout_account.repository import PayoutAccountRepository
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -66,8 +67,6 @@ async def delete(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     # Re-fetch on write session — the guard loaded on a read session
-    from polar.payout_account.repository import PayoutAccountRepository
-
     repository = PayoutAccountRepository.from_session(session)
     payout_account = await repository.get_by_id(authz.payout_account.id)
     if payout_account is None:

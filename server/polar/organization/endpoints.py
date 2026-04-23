@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import httpx
 from fastapi import Depends, Query, Response, status
 from sqlalchemy.orm import joinedload
@@ -25,7 +27,10 @@ from polar.kit.http import (
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
-from polar.organization.repository import OrganizationReviewRepository
+from polar.organization.repository import (
+    OrganizationRepository,
+    OrganizationReviewRepository,
+)
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -35,6 +40,10 @@ from polar.postgres import (
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import OrganizationMember, OrganizationMemberInvite
+from polar.user_organization.service import (
+    CannotRemoveOrganizationAdmin,
+    UserNotMemberOfOrganization,
+)
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -264,8 +273,6 @@ async def delete(
     Stripe deletion fails), a support ticket will be created for manual handling.
     """
     # Re-fetch on write session — the guard loaded on a read session
-    from polar.organization.repository import OrganizationRepository
-
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(authz.organization.id)
     if organization is None:
@@ -322,8 +329,6 @@ async def members(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""
-    from polar.organization.repository import OrganizationRepository
-
     organization = await organization_service.get(session, auth_subject, id)
 
     if organization is None:
@@ -363,8 +368,6 @@ async def invite_member(
 ) -> OrganizationMember:
     """Invite a user to join an organization."""
     # Re-fetch on write session — the guard loaded on a read session
-    from polar.organization.repository import OrganizationRepository
-
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(authz.organization.id)
     if organization is None:
@@ -437,8 +440,6 @@ async def leave_organization(
     Users can only leave an organization if they are not the admin
     and there is at least one other member.
     """
-    from polar.organization.repository import OrganizationRepository
-
     organization = authz.organization
     user = authz.auth_subject.subject
 
@@ -487,15 +488,8 @@ async def remove_member(
     Only organization admins can remove members.
     Admins cannot remove themselves.
     """
-    from uuid import UUID as UUID_TYPE
-
-    from polar.user_organization.service import (
-        CannotRemoveOrganizationAdmin,
-        UserNotMemberOfOrganization,
-    )
-
     try:
-        target_user_id = UUID_TYPE(user_id)
+        target_user_id = UUID(user_id)
     except ValueError:
         raise ResourceNotFound()
 

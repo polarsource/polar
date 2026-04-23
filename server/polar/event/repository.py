@@ -50,7 +50,7 @@ from .system import SystemEvent
 # Real chains are tens at most; this exists purely to bail out if a cycle
 # (A.parent_id → B → A) ever sneaks into the data, instead of spinning until
 # statement_timeout kills the worker.
-_MAX_RESOLVE_DEPTH = 1000
+_MAX_RESOLVE_DEPTH = 100
 
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):

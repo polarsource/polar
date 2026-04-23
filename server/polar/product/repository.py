@@ -22,7 +22,7 @@ from polar.models import (
     ProductPriceFixed,
     UserOrganization,
 )
-from polar.models.product_price import ProductPriceAmountType
+from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
 from polar.postgres import sql
 
 from .sorting import ProductSortProperty
@@ -165,6 +165,7 @@ class ProductRepository(
                     ProductPrice.product_id == Product.id,
                     ProductPrice.is_archived.is_(False),
                     ProductPrice.price_currency == currency,
+                    ProductPrice.source == ProductPriceSource.catalog,
                 ),
                 isouter=True,
             )

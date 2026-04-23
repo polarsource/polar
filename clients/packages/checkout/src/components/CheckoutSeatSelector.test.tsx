@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { ProductCheckoutPublic } from '../guards'
 import {
@@ -180,6 +180,86 @@ describe('CheckoutSeatSelector', () => {
       expect(screen.getByLabelText('Decrease seats')).toBeInTheDocument()
       expect(screen.getByLabelText('Increase seats')).toBeInTheDocument()
     })
+
+    it('calls update with seats+1 when increase is clicked in compact mode', async () => {
+      const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale="en"
+          compact
+        />,
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Increase seats'))
+      })
+
+      expect(update).toHaveBeenCalledWith({ seats: 4 })
+    })
+
+    it('enters edit mode in compact layout when seat count is clicked', () => {
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={noopUpdate}
+          locale="en"
+          compact
+        />,
+      )
+
+      fireEvent.click(screen.getByLabelText('Click to edit seat count'))
+
+      expect(screen.getByDisplayValue('3')).toBeInTheDocument()
+    })
+
+    it('updates seats from compact edit input on blur', async () => {
+      const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale="en"
+          compact
+        />,
+      )
+
+      fireEvent.click(screen.getByLabelText('Click to edit seat count'))
+      const input = screen.getByDisplayValue('3') as HTMLInputElement
+
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '6' } })
+        fireEvent.blur(input)
+      })
+
+      expect(update).toHaveBeenCalledWith({ seats: 6 })
+    })
+
+    it('renders the seat-limit text in compact mode when min/max are set', () => {
+      const checkout = createSeatCheckout({
+        seats: 5,
+        min_seats: 3,
+        max_seats: 10,
+      })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={noopUpdate}
+          locale="en"
+          compact
+        />,
+      )
+
+      expect(screen.getByText('3 - 10 seats')).toBeInTheDocument()
+    })
   })
 
   describe('fixed seats (min === max)', () => {
@@ -358,6 +438,180 @@ describe('CheckoutSeatSelector', () => {
 
       expect(screen.getByLabelText('Decrease seats')).toBeInTheDocument()
       expect(screen.getByLabelText('Increase seats')).toBeInTheDocument()
+    })
+  })
+
+  describe('stepper interactions', () => {
+    it('calls update with seats+1 when increase is clicked', async () => {
+      const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Increase seats'))
+      })
+
+      expect(update).toHaveBeenCalledWith({ seats: 4 })
+    })
+
+    it('calls update with seats-1 when decrease is clicked', async () => {
+      const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Decrease seats'))
+      })
+
+      expect(update).toHaveBeenCalledWith({ seats: 2 })
+    })
+
+    it('does not call update when clicking decrease at the minimum', async () => {
+      const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
+      const checkout = createSeatCheckout({ seats: 1 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Decrease seats'))
+      })
+
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('shows the error message when update rejects', async () => {
+      const update = vi.fn().mockRejectedValue({
+        error: 'PolarRequestValidationError',
+        detail: [{ msg: 'Custom seat error', loc: [], type: '', input: 0 }],
+      })
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Increase seats'))
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Custom seat error')).toBeInTheDocument()
+      })
+    })
+
+    it('falls back to a generic error message for non-validation errors', async () => {
+      const update = vi
+        .fn()
+        .mockRejectedValue({ error: 'PaymentError', detail: 'oops' })
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Increase seats'))
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText(/Failed to update seats/i)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('inline edit mode', () => {
+    it('updates seats when a new value is typed and the input blurs', async () => {
+      const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale="en"
+        />,
+      )
+
+      fireEvent.click(screen.getByLabelText('Click to edit seat count'))
+
+      const input = screen.getByDisplayValue('3') as HTMLInputElement
+
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '7' } })
+        fireEvent.blur(input)
+      })
+
+      expect(update).toHaveBeenCalledWith({ seats: 7 })
+    })
+
+    it('ignores non-numeric input', () => {
+      const checkout = createSeatCheckout({ seats: 3 })
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={noopUpdate}
+          locale="en"
+        />,
+      )
+
+      fireEvent.click(screen.getByLabelText('Click to edit seat count'))
+      const input = screen.getByDisplayValue('3') as HTMLInputElement
+
+      fireEvent.change(input, { target: { value: 'abc' } })
+
+      expect(input.value).toBe('3')
+    })
+  })
+
+  describe('auto-correct effect', () => {
+    it('issues an update when the checkout seats are below the minimum', async () => {
+      const update = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
+      const checkout = createSeatCheckout({
+        seats: 1,
+        min_seats: 5,
+        max_seats: null,
+      })
+
+      await act(async () => {
+        render(
+          <CheckoutSeatSelector
+            checkout={checkout}
+            update={update}
+            locale="en"
+          />,
+        )
+      })
+
+      expect(update).toHaveBeenCalledWith({ seats: 5 })
     })
   })
 

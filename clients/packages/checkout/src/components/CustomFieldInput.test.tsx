@@ -157,6 +157,81 @@ describe('CustomFieldInput', () => {
       expect(screen.getByText('Bold Label')).toBeInTheDocument()
     })
 
+    it('rewrites markdown headings to spans', () => {
+      const headings = [
+        '# h1',
+        '## h2',
+        '### h3',
+        '#### h4',
+        '##### h5',
+        '###### h6',
+      ].join('\n\n')
+
+      const { container } = render(
+        <FormWrapper>
+          <CustomFieldInput
+            customField={makeTextField({ form_label: headings })}
+            required={false}
+            field={baseField}
+          />
+        </FormWrapper>,
+      )
+
+      for (const tag of ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']) {
+        expect(container.querySelector(tag)).toBeNull()
+      }
+      expect(container.querySelectorAll('span').length).toBeGreaterThan(0)
+    })
+
+    it('rewrites markdown paragraphs to spans', () => {
+      const { container } = render(
+        <FormWrapper>
+          <CustomFieldInput
+            customField={makeTextField({ form_label: 'just some text' })}
+            required={false}
+            field={baseField}
+          />
+        </FormWrapper>,
+      )
+
+      expect(container.querySelector('p')).toBeNull()
+    })
+
+    it('renders markdown links with safe rel/target attributes', () => {
+      render(
+        <FormWrapper>
+          <CustomFieldInput
+            customField={makeTextField({
+              form_label: '[click](https://example.com)',
+            })}
+            required={false}
+            field={baseField}
+          />
+        </FormWrapper>,
+      )
+
+      const link = screen.getByRole('link', { name: 'click' })
+      expect(link).toHaveAttribute('href', 'https://example.com')
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer nofollow')
+    })
+
+    it('strips markdown images entirely', () => {
+      const { container } = render(
+        <FormWrapper>
+          <CustomFieldInput
+            customField={makeTextField({
+              form_label: '![alt text](https://example.com/img.png)',
+            })}
+            required={false}
+            field={baseField}
+          />
+        </FormWrapper>,
+      )
+
+      expect(container.querySelector('img')).toBeNull()
+    })
+
     it('renders help text when provided', () => {
       render(
         <FormWrapper>

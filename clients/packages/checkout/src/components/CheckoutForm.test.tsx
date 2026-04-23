@@ -4,9 +4,47 @@ import { act, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import type { ProductCheckoutPublic } from '../guards'
 import { createCheckout } from '../test-utils/makeCheckout'
 import CheckoutForm from './CheckoutForm'
+
+const { mockLoadStripe, ElementsCapture, captureOptions } = vi.hoisted(() => {
+  const captureOptions = vi.fn()
+  const mockLoadStripe = vi.fn(() => Promise.resolve({}))
+  const ElementsCapture = ({
+    children,
+    options,
+  }: {
+    children: React.ReactNode
+    options: unknown
+  }) => {
+    captureOptions(options)
+    return <>{children}</>
+  }
+  return { mockLoadStripe, ElementsCapture, captureOptions }
+})
+
+const lastElementsOptions = () => {
+  const calls = captureOptions.mock.calls
+  return calls.length ? calls[calls.length - 1][0] : null
+}
+
+vi.mock('@stripe/stripe-js', () => ({
+  loadStripe: mockLoadStripe,
+}))
+
+vi.mock('@stripe/react-stripe-js', () => ({
+  Elements: ElementsCapture,
+  ElementsConsumer: ({
+    children,
+  }: {
+    children: (ctx: { stripe: unknown; elements: unknown }) => React.ReactNode
+  }) => <>{children({ stripe: null, elements: null })}</>,
+  PaymentElement: () => (
+    <div data-testid="mock-payment-element">mock payment element</div>
+  ),
+}))
 
 beforeAll(() => {
   globalThis.ResizeObserver ??= class {
@@ -15,6 +53,11 @@ beforeAll(() => {
     disconnect() {}
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
+})
+
+afterEach(() => {
+  captureOptions.mockClear()
+  mockLoadStripe.mockClear()
 })
 
 function FormWrapper({
@@ -374,5 +417,162 @@ describe('CheckoutForm', () => {
     })
 
     expect(screen.queryByText('Invalid US state')).not.toBeInTheDocument()
+  })
+
+  describe('Stripe checkout form', () => {
+    const stripeCheckout = (
+      overrides: Partial<ProductCheckoutPublic> = {},
+    ): ProductCheckoutPublic =>
+      createCheckout({
+        payment_processor: 'stripe',
+        payment_processor_metadata: { publishable_key: 'pk_test_123' },
+        ...overrides,
+      })
+
+    it('routes to StripeCheckoutForm when payment_processor is "stripe"', () => {
+      render(
+        <FormWrapper
+          checkout={stripeCheckout()}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      expect(mockLoadStripe).toHaveBeenCalledWith('pk_test_123')
+      expect(screen.getByTestId('mock-payment-element')).toBeInTheDocument()
+    })
+
+    it('does not render the PaymentElement when is_payment_form_required is false', () => {
+      const checkout = stripeCheckout({
+        is_payment_form_required: false,
+        is_payment_required: false,
+        is_free_product_price: true,
+        amount: 0,
+        net_amount: 0,
+        total_amount: 0,
+      })
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      expect(
+        screen.queryByTestId('mock-payment-element'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('uses subscription mode when payment setup + payment are required and total > 0', () => {
+      const checkout = stripeCheckout({
+        is_payment_setup_required: true,
+        is_payment_required: true,
+        total_amount: 1500,
+        currency: 'usd',
+      })
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      expect(lastElementsOptions()).toMatchObject({
+        mode: 'subscription',
+        setupFutureUsage: 'off_session',
+        amount: 1500,
+        currency: 'usd',
+      })
+    })
+
+    it('uses payment mode for one-off payments', () => {
+      const checkout = stripeCheckout({
+        is_payment_setup_required: false,
+        is_payment_required: true,
+        total_amount: 999,
+        currency: 'eur',
+      })
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      expect(lastElementsOptions()).toMatchObject({
+        mode: 'payment',
+        amount: 999,
+        currency: 'eur',
+      })
+    })
+
+    it('falls back to setup mode when there is no payment to take now', () => {
+      const checkout = stripeCheckout({
+        is_payment_setup_required: false,
+        is_payment_required: false,
+        total_amount: 0,
+        currency: 'usd',
+      })
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      expect(lastElementsOptions()).toMatchObject({
+        mode: 'setup',
+        setupFutureUsage: 'off_session',
+        currency: 'usd',
+      })
+    })
+
+    it('passes a converted Stripe locale through Elements options', () => {
+      render(
+        <FormWrapper
+          checkout={stripeCheckout()}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="pt-PT"
+        />,
+      )
+
+      expect(lastElementsOptions()).toMatchObject({ locale: 'pt' })
+    })
+
+    it('forwards customer_session_client_secret from payment_processor_metadata', () => {
+      const checkout = stripeCheckout({
+        payment_processor_metadata: {
+          publishable_key: 'pk_test_123',
+          customer_session_client_secret: 'cs_secret_abc',
+        },
+      })
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      expect(lastElementsOptions()).toMatchObject({
+        customerSessionClientSecret: 'cs_secret_abc',
+      })
+    })
   })
 })

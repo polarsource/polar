@@ -157,6 +157,36 @@ For sandbox:
 claude mcp add --transport http "Polar-Sandbox" "https://mcp.polar.sh/mcp/polar-sandbox"
 ```
 
+### OpenCode
+
+In `opencode.jsonc`, add:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "Polar": {
+      "type": "remote",
+      "url": "https://mcp.polar.sh/mcp/polar-mcp"
+    }
+  }
+}
+```
+
+For sandbox:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "Polar Sandbox": {
+      "type": "remote",
+      "url": "https://mcp.polar.sh/mcp/polar-sandbox"
+    }
+  }
+}
+```
+
 ### ChatGPT
 
 MCP is only available for paid users in beta on ChatGPT web, by enabling Developer Mode.

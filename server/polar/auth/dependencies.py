@@ -217,7 +217,7 @@ def Authenticator(
     )
 
 
-_WebUserOrAnonymousAuth = Authenticator(
+_WebUserOrAnonymous = Authenticator(
     allowed_subjects={Anonymous, User},
     required_scopes=None,
 )
@@ -225,7 +225,7 @@ _WebUserOrAnonymousAuth = Authenticator(
 
 async def _web_user_or_anonymous(
     auth_subject: Annotated[
-        AuthSubject[Anonymous | User], Depends(_WebUserOrAnonymousAuth)
+        AuthSubject[Anonymous | User], Depends(_WebUserOrAnonymous)
     ],
 ) -> AuthSubject[Anonymous | User]:
     """Allow anonymous or web-session users. Reject API tokens."""

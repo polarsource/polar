@@ -29,7 +29,7 @@ from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval
-from polar.kit.utils import utc_now
+from polar.kit.utils import generate_uuid, utc_now
 from polar.logging import Logger
 from polar.meter.aggregation import PropertyAggregation
 from polar.meter.filter import Filter
@@ -933,6 +933,14 @@ class EventService:
 
     async def create_event(self, session: AsyncSession, event: Event) -> Event:
         repository = EventRepository.from_session(session)
+        if (
+            event.source == EventSource.system
+            and event.parent_id is None
+            and event.root_id is None
+        ):
+            if event.id is None:
+                event.id = generate_uuid()
+            event.root_id = event.id
         event = await repository.create(event, flush=True)
         # Temporarily
         await self._create_meter_events(session, [event])

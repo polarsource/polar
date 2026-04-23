@@ -135,6 +135,24 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
+    async def get_latest_by_customer_ids(
+        self,
+        customer_ids: Sequence[UUID],
+        *,
+        limit: int,
+        options: Options = (),
+    ) -> Sequence[Order]:
+        statement = (
+            self.get_base_statement()
+            .join(Customer, onclause=Customer.id == Order.customer_id)
+            .join(Product, onclause=Product.id == Order.product_id, isouter=True)
+            .where(Order.customer_id.in_(customer_ids))
+            .order_by(Order.created_at.desc())
+            .limit(limit)
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
     async def get_pending_orders_for_subscription(
         self, subscription_id: UUID, *, options: Options = ()
     ) -> Sequence[Order]:

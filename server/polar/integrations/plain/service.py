@@ -42,6 +42,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.kit.currency import format_currency
 from polar.models import (
@@ -49,11 +50,11 @@ from polar.models import (
     OAuthAccount,
     Order,
     Organization,
-    Product,
     User,
     UserOrganization,
 )
 from polar.models.organization_review import OrganizationReview
+from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 
@@ -864,22 +865,20 @@ class PlainService:
     ) -> CustomerCard | None:
         email = request.customer.email
 
-        statement = (
-            (
-                select(Order)
-                .join(Customer, onclause=Customer.id == Order.customer_id)
-                .join(Product, onclause=Product.id == Order.product_id, isouter=True)
-                .where(func.lower(Customer.email) == email.lower())
-            )
-            .order_by(Order.created_at.desc())
-            .limit(3)
-            .options(
+        customer_repository = CustomerRepository.from_session(session)
+        customer_ids = await customer_repository.get_ids_by_email(email)
+        if not customer_ids:
+            return None
+
+        order_repository = OrderRepository.from_session(session)
+        orders = await order_repository.get_latest_by_customer_ids(
+            customer_ids,
+            limit=3,
+            options=(
                 contains_eager(Order.product),
                 contains_eager(Order.customer).joinedload(Customer.organization),
-            )
+            ),
         )
-        result = await session.execute(statement)
-        orders = result.unique().scalars().all()
 
         if len(orders) == 0:
             return None

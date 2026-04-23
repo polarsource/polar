@@ -158,6 +158,15 @@ class CustomerRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_ids_by_email(self, email: str) -> Sequence[UUID]:
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Customer.id)
+            .where(func.lower(Customer.email) == email.lower())
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     async def get_by_external_id_and_organization(
         self, external_id: str, organization_id: UUID
     ) -> Customer | None:

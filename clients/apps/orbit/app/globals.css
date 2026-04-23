@@ -6,16 +6,16 @@
 
   /* Dark monochrome palette — no saturation, good step contrast,
      caps at mid-gray. Use as: bg-dark-950, text-dark-300, etc. */
-  --color-dark-950: #050505;
-  --color-dark-900: #0a0a0a;
-  --color-dark-800: #181818;
-  --color-dark-700: #282828;
-  --color-dark-600: #3e3e3e;
-  --color-dark-500: #4a4a4a;
-  --color-dark-400: #5c5c5c;
-  --color-dark-300: #717171;
-  --color-dark-200: #888888;
-  --color-dark-100: #a0a0a0;
+  --color-dark-950: #040404;
+  --color-dark-900: #0c0c0c;
+  --color-dark-800: #1c1c1c;
+  --color-dark-700: #2e2e2e;
+  --color-dark-600: #424242;
+  --color-dark-500: #555555;
+  --color-dark-400: #6a6a6a;
+  --color-dark-300: #7f7f7f;
+  --color-dark-200: #949494;
+  --color-dark-100: #aaaaaa;
 
   --font-sans: var(--font-inter);
   --font-mono: var(--font-mono);
@@ -31,7 +31,7 @@
     --color-foreground: #a0a0a0;
 
     --color-graphic-stroke: #ffffff;
-    --color-graphic-dim: rgb(70, 70, 70);
+    --color-graphic-dim: rgb(30, 30, 30);
   }
 }
 

@@ -24,7 +24,7 @@ export const LandingArchitecture = () => (
   <section id="architecture">
     {/* Top row — heading */}
     <div className="grid grid-cols-1 md:grid-cols-2">
-      <div className="px-16 py-32">
+      <div className="py-32">
         <SectionHeading>
           Ingest. Aggregate.
           <br />

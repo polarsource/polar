@@ -60,10 +60,26 @@ export const LandingCTA = () => {
     return () => cancelAnimationFrame(animRef.current)
   }, [])
 
-  const onEnter = useCallback(() => {
+  const onEnter = useCallback((e: React.MouseEvent) => {
     hoverRef.current = true
-    cursorRefs.current.forEach((el) => {
+    // Set mouse pos from the enter event itself (onMove hasn't fired yet)
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (rect) {
+      mousePosRef.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      }
+    }
+    const mouse = mousePosRef.current
+    positionsRef.current.forEach((pos, i) => {
+      pos.x = mouse.x + SATELLITES[i].offsetX
+      pos.y = mouse.y + SATELLITES[i].offsetY
+    })
+    cursorRefs.current.forEach((el, i) => {
       if (el) {
+        const pos = positionsRef.current[i]
+        el.style.left = `${pos.x}px`
+        el.style.top = `${pos.y}px`
         el.style.transform = 'translate(-10%, -5%) scale(1)'
         el.style.opacity = '1'
       }

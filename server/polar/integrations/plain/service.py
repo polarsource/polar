@@ -3,8 +3,7 @@ import asyncio
 import contextlib
 import random
 import uuid
-from collections.abc import AsyncIterator, Coroutine
-from typing import Any
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 import httpx
 import pycountry
@@ -45,6 +44,7 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.kit.currency import format_currency
+from polar.kit.db.postgres import AsyncReadSessionMaker
 from polar.models import (
     Customer,
     OAuthAccount,
@@ -55,7 +55,7 @@ from polar.models import (
 )
 from polar.models.organization_review import OrganizationReview
 from polar.order.repository import OrderRepository
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.user.repository import UserRepository
 
 from .schemas import (
@@ -106,51 +106,46 @@ class PlainCustomerError(PlainServiceError):
 
 _card_getter_semaphore = asyncio.Semaphore(3)
 
+CardGetter = Callable[
+    [AsyncReadSession, CustomerCardsRequest], Awaitable[CustomerCard | None]
+]
+
 
 async def _card_getter_task(
-    coroutine: Coroutine[Any, Any, CustomerCard | None],
+    sessionmaker: AsyncReadSessionMaker,
+    getter: CardGetter,
+    request: CustomerCardsRequest,
 ) -> CustomerCard | None:
     async with _card_getter_semaphore:
-        return await coroutine
+        async with sessionmaker() as session:
+            return await getter(session, request)
 
 
 class PlainService:
     enabled = settings.PLAIN_TOKEN is not None
 
     async def get_cards(
-        self, session: AsyncSession, request: CustomerCardsRequest
+        self,
+        sessionmaker: AsyncReadSessionMaker,
+        request: CustomerCardsRequest,
     ) -> CustomerCardsResponse:
+        getters: list[CardGetter] = []
+        if CustomerCardKey.user in request.cardKeys:
+            getters.append(self._get_user_card)
+        if CustomerCardKey.organization in request.cardKeys:
+            getters.append(self._get_organization_card)
+        if CustomerCardKey.customer in request.cardKeys:
+            getters.append(self.get_customer_card)
+        if CustomerCardKey.order in request.cardKeys:
+            getters.append(self._get_order_card)
+        if CustomerCardKey.snippets in request.cardKeys:
+            getters.append(self._get_snippets_card)
+
         tasks: list[asyncio.Task[CustomerCard | None]] = []
         async with asyncio.TaskGroup() as tg:
-            if CustomerCardKey.user in request.cardKeys:
+            for getter in getters:
                 tasks.append(
-                    tg.create_task(
-                        _card_getter_task(self._get_user_card(session, request))
-                    )
-                )
-            if CustomerCardKey.organization in request.cardKeys:
-                tasks.append(
-                    tg.create_task(
-                        _card_getter_task(self._get_organization_card(session, request))
-                    )
-                )
-            if CustomerCardKey.customer in request.cardKeys:
-                tasks.append(
-                    tg.create_task(
-                        _card_getter_task(self.get_customer_card(session, request))
-                    )
-                )
-            if CustomerCardKey.order in request.cardKeys:
-                tasks.append(
-                    tg.create_task(
-                        _card_getter_task(self._get_order_card(session, request))
-                    )
-                )
-            if CustomerCardKey.snippets in request.cardKeys:
-                tasks.append(
-                    tg.create_task(
-                        _card_getter_task(self._get_snippets_card(session, request))
-                    )
+                    tg.create_task(_card_getter_task(sessionmaker, getter, request))
                 )
 
         cards = [card for task in tasks if (card := task.result()) is not None]
@@ -362,7 +357,7 @@ class PlainService:
                 )
 
     async def _get_user_card(
-        self, session: AsyncSession, request: CustomerCardsRequest
+        self, session: AsyncReadSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
 
@@ -495,7 +490,7 @@ class PlainService:
         )
 
     async def _get_organization_card(
-        self, session: AsyncSession, request: CustomerCardsRequest
+        self, session: AsyncReadSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
 
@@ -694,7 +689,7 @@ class PlainService:
         )
 
     async def get_customer_card(
-        self, session: AsyncSession, request: CustomerCardsRequest
+        self, session: AsyncReadSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
 
@@ -861,7 +856,7 @@ class PlainService:
         )
 
     async def _get_order_card(
-        self, session: AsyncSession, request: CustomerCardsRequest
+        self, session: AsyncReadSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
 
@@ -1133,7 +1128,7 @@ class PlainService:
         )
 
     async def _get_snippets_card(
-        self, session: AsyncSession, request: CustomerCardsRequest
+        self, session: AsyncReadSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
 

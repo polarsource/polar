@@ -1,10 +1,9 @@
 import hashlib
 import hmac
 
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Header, HTTPException, Request
 
 from polar.config import settings
-from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import CustomerCardsRequest, CustomerCardsResponse
@@ -20,7 +19,6 @@ async def get_cards(
     request: Request,
     customer_cards_request: CustomerCardsRequest,
     plain_request_signature: str = Header(...),
-    session: AsyncSession = Depends(get_db_session),
 ) -> CustomerCardsResponse:
     secret = settings.PLAIN_REQUEST_SIGNING_SECRET
     if secret is None:
@@ -31,4 +29,5 @@ async def get_cards(
     if not hmac.compare_digest(signature, plain_request_signature):
         raise HTTPException(status_code=403)
 
-    return await plain_service.get_cards(session, customer_cards_request)
+    sessionmaker = request.state.async_read_sessionmaker
+    return await plain_service.get_cards(sessionmaker, customer_cards_request)

@@ -36,7 +36,7 @@ const TIERS = [
       'Custom Domain',
     ],
     cta: 'Upgrade Now',
-    primary: true,
+    primary: false,
   },
   {
     name: 'Startup',
@@ -79,13 +79,22 @@ const TIERS = [
 
 export const LandingPricing = () => (
   <section id="pricing" className="flex flex-col gap-y-24 py-48">
-    <SectionHeading>
-      Simple, transparent
-      <br />
-      pricing
-    </SectionHeading>
+    <div className="flex flex-col items-center gap-y-8 text-center">
+      <SectionHeading className="text-center">
+        Pay for what you use.
+        <br />
+        Scale when you&apos;re ready.
+      </SectionHeading>
+      <p className="max-w-2xl text-2xl text-neutral-500">
+        Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
+      </p>
+      <div className="flex items-center gap-x-6 pt-4">
+        <Button href="#">Get Started Free</Button>
+        <Button href="#" variant="secondary">Contact Enterprise</Button>
+      </div>
+    </div>
 
-    <div className="grid grid-cols-1 gap-8 px-2 pb-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-2 px-2 pb-2 sm:grid-cols-2 lg:grid-cols-4">
       {TIERS.map((tier) => (
         <div
           key={tier.name}
@@ -93,11 +102,11 @@ export const LandingPricing = () => (
         >
           <div className="flex flex-col gap-y-12 p-12">
             <div className="flex flex-col gap-y-8">
-              <div className="flex flex-row justify-between">
-                <div className="text-4xl text-black dark:text-white">
+              <div className="flex items-baseline justify-between">
+                <span className="text-4xl text-black dark:text-white">
                   {tier.name}
-                </div>
-                <div className="flex items-baseline gap-4">
+                </span>
+                <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-normal text-neutral-900 dark:text-white">
                     {tier.free ? 'Free' : tier.price}
                   </span>

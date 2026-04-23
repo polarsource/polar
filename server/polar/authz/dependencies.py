@@ -15,11 +15,7 @@ from polar.models.account import Account as AccountModel
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationID
 from polar.payout_account.repository import PayoutAccountRepository
-from polar.postgres import (
-    AsyncSession,
-    get_db_read_session,
-    get_db_session,
-)
+from polar.postgres import AsyncSession, get_db_session
 
 from .policies import finance, members
 from .policies import organization as org_policy
@@ -47,7 +43,6 @@ def OrgPolicyGuard(
     *,
     allowed_subjects: set[type] | None = None,
     required_scopes: set[Scope] | None = None,
-    use_write_session: bool = False,
 ) -> Any:
     """Create a FastAPI dependency that authenticates, resolves an organization,
     and checks a policy — all in one step.
@@ -83,14 +78,12 @@ def OrgPolicyGuard(
         required_scopes=_scopes,
     )
 
-    _get_session = get_db_session if use_write_session else get_db_read_session
-
     async def dependency(
         id: OrganizationID,
         auth_subject: Annotated[
             AuthSubject[User | Organization], Depends(_authenticator)
         ],
-        session: AsyncSession = Depends(_get_session),
+        session: AsyncSession = Depends(get_db_session),
     ) -> AuthzContext[User | Organization]:
         organization = await get_accessible_organization(session, auth_subject, id)
         if organization is None:
@@ -127,7 +120,7 @@ AuthorizeFinanceRead = Annotated[
 ]
 AuthorizeFinanceWrite = Annotated[
     AuthzContext[User | Organization],
-    Depends(OrgPolicyGuard(finance.can_write, use_write_session=True)),
+    Depends(OrgPolicyGuard(finance.can_write)),
 ]
 AuthorizeMembersManage = Annotated[
     AuthzContext[User],
@@ -136,7 +129,6 @@ AuthorizeMembersManage = Annotated[
             members.can_manage,
             allowed_subjects={User},
             required_scopes={Scope.web_write, Scope.organizations_write},
-            use_write_session=True,
         )
     ),
 ]
@@ -147,7 +139,6 @@ AuthorizeOrgDelete = Annotated[
             org_policy.can_delete,
             allowed_subjects={User},
             required_scopes={Scope.web_write, Scope.organizations_write},
-            use_write_session=True,
         )
     ),
 ]
@@ -161,7 +152,6 @@ AuthorizeOrgAccessUser = Annotated[
             _always_allow,
             allowed_subjects={User},
             required_scopes={Scope.organizations_write},
-            use_write_session=True,
         )
     ),
 ]
@@ -193,7 +183,7 @@ class AuthorizedPayoutAccount:
     auth_subject: AuthSubject[User | Organization]
 
 
-def AccountPolicyGuard(policy_fn: PolicyFn, *, use_write_session: bool = False) -> Any:
+def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     """FastAPI dependency: resolve account by {id}, find owning org, check policy.
 
     Raises:
@@ -208,12 +198,10 @@ def AccountPolicyGuard(policy_fn: PolicyFn, *, use_write_session: bool = False) 
         required_scopes={Scope.web_read, Scope.web_write},
     )
 
-    _get_session = get_db_session if use_write_session else get_db_read_session
-
     async def dependency(
         id: UUID,
         auth_subject: Annotated[AuthSubject[User], Depends(_authenticator)],
-        session: AsyncSession = Depends(_get_session),
+        session: AsyncSession = Depends(get_db_session),
     ) -> AuthorizedAccount:
         account_repo = AccountRepository.from_session(session)
         account = await account_repo.get_by_id(id)
@@ -236,9 +224,7 @@ def AccountPolicyGuard(policy_fn: PolicyFn, *, use_write_session: bool = False) 
     return dependency
 
 
-def PayoutAccountPolicyGuard(
-    policy_fn: PolicyFn, *, use_write_session: bool = False
-) -> Any:
+def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     """FastAPI dependency: resolve payout account by {id}, find owning org, check policy.
 
     Raises:
@@ -253,12 +239,10 @@ def PayoutAccountPolicyGuard(
         required_scopes={Scope.web_read, Scope.web_write},
     )
 
-    _get_session = get_db_session if use_write_session else get_db_read_session
-
     async def dependency(
         id: UUID,
         auth_subject: Annotated[AuthSubject[User], Depends(_authenticator)],
-        session: AsyncSession = Depends(_get_session),
+        session: AsyncSession = Depends(get_db_session),
     ) -> AuthorizedPayoutAccount:
         pa_repo = PayoutAccountRepository.from_session(session)
         payout_account = await pa_repo.get_by_id(id)
@@ -288,12 +272,12 @@ AuthorizeAccountRead = Annotated[
 ]
 AuthorizeAccountWrite = Annotated[
     AuthorizedAccount,
-    Depends(AccountPolicyGuard(finance.can_write, use_write_session=True)),
+    Depends(AccountPolicyGuard(finance.can_write)),
 ]
 AuthorizePayoutAccountRead = Annotated[
     AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(finance.can_read))
 ]
 AuthorizePayoutAccountWrite = Annotated[
     AuthorizedPayoutAccount,
-    Depends(PayoutAccountPolicyGuard(finance.can_write, use_write_session=True)),
+    Depends(PayoutAccountPolicyGuard(finance.can_write)),
 ]

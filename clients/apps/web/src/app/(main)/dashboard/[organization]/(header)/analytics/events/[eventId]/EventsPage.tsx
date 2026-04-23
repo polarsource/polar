@@ -119,6 +119,7 @@ export default function EventDetailPage({
       }
       className="flex flex-col gap-y-12"
       contextViewPlacement="right"
+      contextViewTitle="Customer"
       contextView={
         event.customer ? (
           <CustomerContextView
@@ -127,7 +128,7 @@ export default function EventDetailPage({
           />
         ) : undefined
       }
-      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
+      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
       <div className="grid grid-cols-1 items-start gap-16 md:grid-cols-[1fr_360px]">
         {/* Left column — event rows */}

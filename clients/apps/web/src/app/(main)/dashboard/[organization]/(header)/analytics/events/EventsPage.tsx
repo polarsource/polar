@@ -188,6 +188,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         </h3>
       }
       contextViewPlacement="left"
+      contextViewTitle="Events"
       contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       contextView={
         <div className="flex h-full flex-col gap-y-4">
@@ -365,7 +366,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     >
       <div className="flex h-full flex-col gap-y-4">
         {events.length === 0 && !isFetching ? (
-          <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
+          <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-8 text-center md:p-24">
             <h1 className="text-2xl font-normal">No Events Found</h1>
             <p className="dark:text-polar-500 text-gray-500">
               There are no events matching your current filters

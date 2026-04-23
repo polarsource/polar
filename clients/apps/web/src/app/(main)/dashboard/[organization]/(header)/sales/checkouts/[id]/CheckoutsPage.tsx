@@ -40,6 +40,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
       }
       className="gap-y-8"
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none"
+      contextViewTitle="Customer"
       contextView={
         customer ? (
           <CustomerContextView

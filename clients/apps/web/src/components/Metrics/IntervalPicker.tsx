@@ -113,7 +113,7 @@ const IntervalPicker = ({
 
   return (
     <Select value={interval} onValueChange={onChange}>
-      <SelectTrigger>
+      <SelectTrigger className="text-sm">
         <SelectValue placeholder="Select an interval" />
       </SelectTrigger>
       <SelectContent>

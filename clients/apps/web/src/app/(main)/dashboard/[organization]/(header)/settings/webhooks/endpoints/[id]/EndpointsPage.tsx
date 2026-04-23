@@ -164,6 +164,7 @@ export default function ClientPage({
         </div>
       }
       contextView={<WebhookContextView endpoint={endpoint} />}
+      contextViewTitle="Webhook"
       className="gap-y-8"
       wide
     >

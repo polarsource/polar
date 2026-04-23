@@ -23,7 +23,7 @@ import {
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
-import { MetricsHeader } from './MetricsHeader'
+import { twMerge } from 'tailwind-merge'
 import { useMetricsFilters } from './useMetricsFilters'
 
 const BUILT_IN_NAMES: Record<string, string> = {
@@ -40,22 +40,9 @@ const BUILT_IN_NAMES: Record<string, string> = {
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-interface DashboardViewHeaderProps {
-  organization: schemas['Organization']
-  earliestDateISOString: string
-}
-
-export function DashboardViewHeader({
-  organization,
-  earliestDateISOString,
-}: DashboardViewHeaderProps) {
+function useCurrentDashboard(organization: schemas['Organization']) {
   const pathname = usePathname()
   const { data: customDashboards } = useMetricDashboards(organization.id)
-  const { isShown: isEditShown, show: showEdit, hide: hideEdit } = useModal()
-
-  const { interval, startDate, endDate, productId } = useMetricsFilters(
-    earliestDateISOString,
-  )
 
   const currentSlug = useMemo(() => {
     const parts = pathname.split('/')
@@ -82,6 +69,43 @@ export function DashboardViewHeader({
     if (BUILT_IN_NAMES[currentSlug]) return BUILT_IN_NAMES[currentSlug]
     return currentDashboard?.name ?? null
   }, [currentSlug, currentDashboard])
+
+  return { currentSlug, isCustomDashboard, currentDashboard, dashboardName }
+}
+
+export function DashboardViewTitle({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) {
+  const { dashboardName } = useCurrentDashboard(organization)
+  if (!dashboardName) return null
+  return (
+    <h3 className="text-xl font-medium whitespace-nowrap dark:text-white">
+      {dashboardName}
+    </h3>
+  )
+}
+
+interface DashboardViewActionsProps {
+  organization: schemas['Organization']
+  earliestDateISOString: string
+  className?: string
+}
+
+export function DashboardViewActions({
+  organization,
+  earliestDateISOString,
+  className,
+}: DashboardViewActionsProps) {
+  const { isShown: isEditShown, show: showEdit, hide: hideEdit } = useModal()
+
+  const { interval, startDate, endDate, productId } = useMetricsFilters(
+    earliestDateISOString,
+  )
+
+  const { currentSlug, isCustomDashboard, currentDashboard } =
+    useCurrentDashboard(organization)
 
   const metricsForExport = useMemo(() => {
     if (isCustomDashboard && currentDashboard) {
@@ -119,30 +143,17 @@ export function DashboardViewHeader({
   ])
 
   return (
-    <div className="flex w-full items-center justify-between gap-x-4">
-      {dashboardName ? (
-        <h3 className="text-xl font-medium whitespace-nowrap dark:text-white">
-          {dashboardName}
-        </h3>
-      ) : (
-        <span />
-      )}
-      <div className="flex items-center gap-x-6">
-        <MetricsHeader
+    <div className={twMerge('flex items-center', className)}>
+      {isCustomDashboard && currentDashboard ? (
+        <DashboardDotMenu
           organization={organization}
-          earliestDateISOString={earliestDateISOString}
+          dashboard={currentDashboard}
+          onEdit={showEdit}
+          onExport={handleExport}
         />
-        {isCustomDashboard && currentDashboard ? (
-          <DashboardDotMenu
-            organization={organization}
-            dashboard={currentDashboard}
-            onEdit={showEdit}
-            onExport={handleExport}
-          />
-        ) : (
-          <ExportMenu onExport={handleExport} />
-        )}
-      </div>
+      ) : (
+        <ExportMenu onExport={handleExport} />
+      )}
       {currentDashboard && (
         <Modal
           title="Edit Dashboard"

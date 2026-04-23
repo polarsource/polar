@@ -107,13 +107,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
         ) : undefined
       }
       className="gap-y-12"
+      contextViewTitle="Customer"
       contextView={
         <CustomerContextView
           organization={organization}
           customer={order.customer}
         />
       }
-      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
+      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">

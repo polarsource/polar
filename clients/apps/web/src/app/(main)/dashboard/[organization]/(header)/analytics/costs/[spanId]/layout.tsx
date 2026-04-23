@@ -23,6 +23,7 @@ export default async function Layout({
     <DashboardBody
       title={null}
       contextViewPlacement="left"
+      contextViewTitle="Spans"
       contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       contextView={
         <div className="flex h-full flex-col gap-y-4">

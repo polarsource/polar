@@ -138,7 +138,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
           )}
         </div>
       }
-      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden"
+      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none"
+      contextViewTitle="Customer"
       contextView={
         <CustomerContextView
           organization={organization}

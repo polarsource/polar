@@ -42,7 +42,17 @@ High-signal, externally visible changes:
 - Organization status, review, appeal, or onboarding lifecycle plumbing.
 - **Docs-only changes.** If the PR only touches `docs/` or `handbook/`, the feature likely shipped weeks ago. Do not include it. Verify by grepping the code for the feature before including it.
 
-When in doubt, leave it out. It is much better to ship a short changelog than a bloated one.
+When in doubt, leave it out. It is much better to ship a short changelog than a bloated one. **The cap is 10, not a target.** A given week or month often has fewer than 5 items that pass the bar. Apply this smell test before including anything: "would a merchant or customer actually notice this in their week?" If the honest answer is no, drop it, even if it ships visible UI.
+
+## Verifying scope claims
+
+PR descriptions and design docs frequently list the *eventual* scope of a feature alongside what was actually shipped in that PR. If you take the prose at face value, you will hallucinate scope. Before writing copy that names specific surfaces (checkout, customer portal, emails, dashboard, mobile app, API, webhooks, invoices, etc.):
+
+1. List the changed files in the PR (`gh pr view <n> --json files`).
+2. Confirm each surface you name has a matching file in the diff. Customer portal copy lives under `clients/apps/web/src/components/CustomerPortal` and similar; emails live under `server/emails` and `clients/packages/email`; checkout under `clients/packages/checkout` and `clients/apps/web/src/app/(checkout)`; etc.
+3. If a surface is mentioned in the PR description but not touched in the diff, either drop the surface from your copy or frame the entry as scoped to what shipped (e.g. "Korean checkout" instead of "Korean checkout, portal, and emails").
+
+Do not paraphrase a PR description that lists future surfaces alongside the shipped one. Copy only what you can prove from the diff.
 
 ## Steps
 
@@ -61,14 +71,16 @@ If the user gave a date range, use `--since` and `--until` accordingly.
 Launch a `general-purpose` subagent with the full commit list. Also pass it the content of every prior `<Update>` block in `docs/changelog/recent.mdx` from the last 90 days (the "monthly log") so it has a deduplication baseline. Tell it to:
 
 - Filter the list using the include and exclude rules above. Be conservative.
-- For each candidate, run `gh pr view <n>` and inspect changed files to confirm the feature is real, user-visible, and shipped in this window (not a docs update for a feature that shipped earlier).
+- For each candidate, run `gh pr view <n> --json files,body` and inspect the actual changed files to confirm the feature is real, user-visible, and shipped in this window (not a docs update for a feature that shipped earlier).
+- **Apply the smell test**: would a merchant or customer notice this in their week? Items that pass on technicality but read as filler (e.g. "delete account from web" matching mobile, "full description on checkout" removing a truncation, "name your webhook endpoints" labels) should be dropped. Prefer 4 sharp items to 10 mixed ones.
+- **Verify scope by reading the diff.** Do not paraphrase the PR description if it lists multiple surfaces (checkout, portal, emails, mobile, etc.). Confirm each surface you name has matching files in the diff. See the "Verifying scope claims" section above.
 - **Dedupe against the monthly log**: drop anything already announced. An *enhancement* to a previously-announced feature is fine to include if it is materially new (e.g. new filters added to a list that shipped last month), but say so clearly and frame it as an enhancement.
-- **Cap the final set at 10 features.** Rank by merchant / customer impact and cut the tail.
+- **Cap is 10, not a target.** If only 3 items pass the bar, return 3.
 - Decide which are **MAJOR** (warrants a screenshot) and which are **MINOR**. Decide yourself, do not ask the user.
 - For MAJOR items, describe the exact URL to screenshot and what must be visible on screen.
-- Return a structured list: title, 2-3 sentence plain-English summary, category, screenshot target, PR number, and a one-line note on dedupe (new feature vs. enhancement of X).
+- Return a structured list: title, 2-3 sentence plain-English summary (only naming surfaces you verified in the diff), category, screenshot target, PR number, and a one-line note on dedupe (new feature vs. enhancement of X).
 
-Instruct the subagent explicitly: no em dashes, no Stripe, no perf-only or security-hardening items.
+Instruct the subagent explicitly: no em dashes, no Stripe, no perf-only or security-hardening items, no filler.
 
 ### 3. Confirm the final list with the user (only if `--confirm` was passed)
 

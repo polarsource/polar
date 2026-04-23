@@ -37,6 +37,13 @@ class Member(RecordModel):
             unique=True,
             postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
+        # Partial unique index: at most one active owner per customer.
+        Index(
+            "members_customer_id_owner_active_key",
+            "customer_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL AND role = 'owner'"),
+        ),
     )
 
     customer_id: Mapped[UUID] = mapped_column(

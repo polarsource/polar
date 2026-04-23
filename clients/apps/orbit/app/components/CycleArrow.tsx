@@ -46,7 +46,7 @@ export const CycleArrow = () => {
 
     for (let i = 0; i < cols; i++) {
       const x = startX + i * colGap;
-      const goingUp = i % 2 === 1;
+      const goingUp = i % 2 === 0;
 
       if (i === 0) {
         ctx.moveTo(x, goingUp ? cy + halfH : cy - halfH);
@@ -63,26 +63,15 @@ export const CycleArrow = () => {
 
     ctx.stroke();
 
-    // Arrowheads — V-shaped strokes at both path ends
+    // Arrowhead — right end only, pointing up
     const headLen = colGap * 0.8;
     const headAngle = Math.PI / 4;
-
-    // Left end: path starts at top of first column, pointing down
-    const lx = startX;
-    const ly = cy - halfH;
-    ctx.beginPath();
-    ctx.moveTo(lx - Math.sin(headAngle) * headLen, ly + Math.cos(headAngle) * headLen);
-    ctx.lineTo(lx, ly);
-    ctx.lineTo(lx + Math.sin(headAngle) * headLen, ly + Math.cos(headAngle) * headLen);
-    ctx.stroke();
-
-    // Right end: path ends at bottom of last column, pointing up
     const rx = startX + (cols - 1) * colGap;
-    const ry = cy + halfH;
+    const ry = cy - halfH;
     ctx.beginPath();
-    ctx.moveTo(rx - Math.sin(headAngle) * headLen, ry - Math.cos(headAngle) * headLen);
+    ctx.moveTo(rx - Math.sin(headAngle) * headLen, ry + Math.cos(headAngle) * headLen);
     ctx.lineTo(rx, ry);
-    ctx.lineTo(rx + Math.sin(headAngle) * headLen, ry - Math.cos(headAngle) * headLen);
+    ctx.lineTo(rx + Math.sin(headAngle) * headLen, ry + Math.cos(headAngle) * headLen);
     ctx.stroke();
   }, []);
 

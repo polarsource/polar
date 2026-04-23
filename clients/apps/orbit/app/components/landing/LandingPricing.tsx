@@ -81,22 +81,20 @@ export const LandingPricing = () => (
   <section id="pricing" className="flex flex-col gap-y-32 py-48">
     <div className="flex flex-col items-center gap-y-8 text-center">
       <SectionHeading className="text-center">
-        Pay for what you use.
-        <br />
-        Scale when you&apos;re ready.
+        Built to scale with you.
       </SectionHeading>
       <p className="max-w-4xl text-4xl leading-snug text-balance">
         Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
       </p>
       <div className="flex items-center gap-x-6 pt-4">
-        <Button href="#">Get Started Free</Button>
+        <Button href="#">Get Started</Button>
         <Button href="#" variant="secondary">
           Contact Enterprise
         </Button>
       </div>
     </div>
 
-    <div className="grid grid-cols-1 gap-2 px-2 pb-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-2 px-2 pb-2 sm:grid-cols-2 xl:grid-cols-4">
       {TIERS.map((tier) => (
         <div
           key={tier.name}
@@ -125,8 +123,10 @@ export const LandingPricing = () => (
               </div>
             </div>
 
-            <div className="dark:border-dark-700 grid grid-cols-1 border-t border-neutral-300 pt-8 text-black sm:grid-cols-2 dark:text-white">
-              <div className="text-xl">Fees</div>
+            <div className="dark:border-dark-700 grid grid-cols-1 gap-2 border-t border-neutral-300 pt-8 text-black xl:grid-cols-2 dark:text-white">
+              <div className="dark:text-dark-300 text-xl xl:dark:text-white">
+                Fees
+              </div>
               <ul className="flex flex-col gap-2">
                 {tier.fees.map((f) => (
                   <li key={f} className="text-xl">
@@ -136,8 +136,10 @@ export const LandingPricing = () => (
               </ul>
             </div>
 
-            <div className="dark:border-dark-700 grid grid-cols-1 border-t border-neutral-300 pt-8 text-black sm:grid-cols-2 dark:text-white">
-              <div className="text-xl">Features</div>
+            <div className="dark:border-dark-700 grid grid-cols-1 gap-2 border-t border-neutral-300 pt-8 text-black xl:grid-cols-2 dark:text-white">
+              <div className="dark:text-dark-300 text-xl xl:dark:text-white">
+                Features
+              </div>
               <ul className="flex flex-col gap-2">
                 {tier.features.map((f) => (
                   <li key={f} className="text-xl">
@@ -150,11 +152,7 @@ export const LandingPricing = () => (
 
           <a
             href="#"
-            className={`mt-auto block w-full py-5 text-center text-xl font-medium transition ${
-              tier.primary
-                ? 'bg-neutral-900 font-semibold text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200'
-                : 'dark:bg-dark-800 dark:hover:bg-dark-700 bg-neutral-200 text-neutral-900 hover:bg-neutral-300 dark:text-white'
-            }`}
+            className="dark:bg-dark-800 dark:hover:bg-dark-700 mt-auto block w-full bg-neutral-200 py-5 text-center text-xl font-medium text-neutral-900 transition hover:bg-neutral-300 dark:text-white"
           >
             {tier.cta}
           </a>

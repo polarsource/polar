@@ -1,12 +1,8 @@
 'use client'
 
-import {
-  useCustomerPortalSession,
-  usePortalAuthenticatedUser,
-} from '@/hooks/queries/customerPortal'
+import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { Client, schemas } from '@polar-sh/client'
 import {
   Select,
@@ -75,7 +71,6 @@ const NavigationContent = ({
   searchParams: URLSearchParams
 }) => {
   const router = useRouter()
-  const { data: customerPortalSession } = useCustomerPortalSession(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
 
   const buildPath = (path: string) => {
@@ -87,15 +82,6 @@ const NavigationContent = ({
   return (
     <>
       <nav className="sticky top-0 hidden h-fit w-40 flex-none flex-col gap-y-6 py-12 md:flex lg:w-64">
-        {customerPortalSession && customerPortalSession.return_url && (
-          <Link
-            href={customerPortalSession.return_url}
-            className="dark:text-polar-500 flex flex-row items-center gap-x-4 py-2 text-gray-500"
-          >
-            <ArrowBackOutlined fontSize="inherit" />
-            <span>Back to {organization.name}</span>
-          </Link>
-        )}
         <div className="flex flex-col">
           {authenticatedUser?.name ? <h3>{authenticatedUser?.name}</h3> : null}
           <span

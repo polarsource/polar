@@ -25,10 +25,11 @@ export function useAutoSave<T extends FieldValues>({
   useEffect(() => {
     if (!enabled) return
 
-    // Filter on type === 'change' so programmatic updates like `reset()`
-    // (fired after a successful save) don't re-trigger the autosave loop.
+    // `reset()` emits without a `name`; `field.onChange` and `setValue` both
+    // set one. Filtering on `name` keeps programmatic setValue updates (e.g.
+    // file uploads) while still ignoring the reset fired after a save.
     const subscription = form.watch((_value, info) => {
-      if (info.type !== 'change') return
+      if (!info.name) return
       if (isSavingRef.current) return
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current)

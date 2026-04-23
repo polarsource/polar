@@ -1,7 +1,7 @@
 'use client'
 
 import { Dumbbell } from '../Dumbbell'
-import { VectorField } from '../VectorField'
+import { CycleArrow } from '../CycleArrow'
 import { LinkedRings } from '../LinkedRings'
 import { CreditArc } from '../CreditArc'
 
@@ -19,7 +19,7 @@ const TILES = [
   {
     title: 'Subscriptions',
     desc: 'Recurring plans with trials, upgrades, proration, and dunning built in.',
-    Graphic: VectorField,
+    Graphic: CycleArrow,
   },
   {
     title: 'Seats',
@@ -45,7 +45,7 @@ export const LandingOffering = () => (
             className="dark:bg-dark-900 flex flex-col bg-neutral-50"
           >
             <div className="aspect-square w-full">
-              <G field={(r, θ) => θ + Math.PI / 2} />
+              <G />
             </div>
             <div className="flex flex-col gap-2 px-12 py-12 text-3xl">
               <span className="text-neutral-900 dark:text-neutral-300">

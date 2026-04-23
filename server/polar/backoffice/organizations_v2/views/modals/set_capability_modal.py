@@ -30,7 +30,7 @@ class SetCapabilityModal:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-        current_value = self.organization.get_effective_capabilities()[self.capability]
+        current_value = self.organization.capabilities[self.capability]
         status_default = STATUS_CAPABILITIES[self.organization.status][self.capability]
 
         action_word = "Enable" if self.target_value else "Disable"

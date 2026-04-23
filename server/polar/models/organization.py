@@ -505,18 +505,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    # DEPRECATED: use `capabilities["refunds"]` instead.
-    # `deferred=True` so default SELECTs don't include it, allowing the
-    # column to be dropped in a follow-up migration without a CD race.
-    refunds_blocked: Mapped[bool] = mapped_column(
-        nullable=False,
-        default=False,
-        deferred=True,
-    )
-
-    capabilities: Mapped[OrganizationCapabilities | None] = mapped_column(
+    capabilities: Mapped[OrganizationCapabilities] = mapped_column(
         JSONB,
-        nullable=True,
+        nullable=False,
         default=lambda: {**STATUS_CAPABILITIES[OrganizationStatus.CREATED]},
     )
 
@@ -599,13 +590,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
     # End: Fields synced from GitHub
     #
 
-    def get_effective_capabilities(self) -> OrganizationCapabilities:
-        """Return capabilities, falling back to the status defaults for rows
-        that pre-date the backfill."""
-        return self.capabilities or STATUS_CAPABILITIES[self.status]
-
     def _capability(self, name: CapabilityName) -> bool:
-        return self.get_effective_capabilities()[name]
+        return self.capabilities[name]
 
     @hybrid_property
     def can_authenticate(self) -> bool:

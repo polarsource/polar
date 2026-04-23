@@ -899,7 +899,7 @@ class TestOrganizationRefundsBlocked:
             organization,
             update_dict={
                 "capabilities": {
-                    **organization.get_effective_capabilities(),
+                    **organization.capabilities,
                     "refunds": False,
                 },
             },

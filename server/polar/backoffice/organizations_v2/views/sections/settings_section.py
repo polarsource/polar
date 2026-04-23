@@ -336,7 +336,7 @@ class SettingsSection:
                     with tag.div(classes="text-xs text-base-content/60"):
                         text("Overrides reset on the next status change.")
 
-                current_caps = self.org.get_effective_capabilities()
+                current_caps = self.org.capabilities
                 status_defaults = STATUS_CAPABILITIES[self.org.status]
 
                 with tag.div(classes="space-y-3"):

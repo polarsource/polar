@@ -3553,7 +3553,7 @@ async def set_capability(
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    current_value = organization.get_effective_capabilities()[capability_name]
+    current_value = organization.capabilities[capability_name]
 
     settings_url = str(
         request.url_for(

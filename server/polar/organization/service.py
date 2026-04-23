@@ -1207,7 +1207,7 @@ class OrganizationService:
         resets `capabilities` from `STATUS_CAPABILITIES`.
         """
         current: OrganizationCapabilities = dict(  # type: ignore[assignment]
-            organization.get_effective_capabilities()
+            organization.capabilities
         )
         if current[capability] == value:
             return organization

@@ -12,7 +12,7 @@ from fastapi import (
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 
-from polar.auth.scope import Scope
+from polar.auth.scope import READ_ONLY_SCOPES
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
@@ -54,7 +54,7 @@ async def start_impersonation(
         session=session,
         user=target_user,
         user_agent=request.headers.get("User-Agent", ""),
-        scopes=[s for s in Scope if s.value.endswith(":read")],
+        scopes=list(READ_ONLY_SCOPES),
         expire_in=timedelta(minutes=60),
     )
 

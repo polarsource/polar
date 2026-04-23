@@ -26,7 +26,7 @@ from tagflow import tag, text
 from polar.account.service import account as account_service
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.service import account_credit_service
-from polar.auth.scope import Scope
+from polar.auth.scope import READ_ONLY_SCOPES
 from polar.auth.service import auth as auth_service
 from polar.backoffice.organizations.analytics import (
     OrganizationSetupAnalyticsService,
@@ -2715,7 +2715,7 @@ async def impersonate_user(
         session=session,
         user=user,
         user_agent=request.headers.get("User-Agent", ""),
-        scopes=[s for s in Scope if s.value.endswith(":read")],  # Read-only
+        scopes=list(READ_ONLY_SCOPES),
         expire_in=timedelta(minutes=60),  # Time-limited
     )
 

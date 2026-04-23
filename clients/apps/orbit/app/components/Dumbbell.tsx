@@ -43,7 +43,7 @@ export const Dumbbell = () => {
 
       ctx.clearRect(0, 0, size, size);
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2;
 
       const gap = size * (0.2 + Math.sin(time * 0.6) * 0.05);
 

@@ -45,7 +45,7 @@ export const LinkedRings = () => {
 
       ctx.clearRect(0, 0, size, size);
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2;
 
       // Big center circle
       ctx.beginPath();

@@ -97,7 +97,7 @@ class WebhookService:
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         repository = WebhookEndpointRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).order_by(
+        statement = repository.get_statement_by_org_ids(org_ids).order_by(
             WebhookEndpoint.created_at.desc()
         )
 
@@ -118,7 +118,7 @@ class WebhookService:
     ) -> WebhookEndpoint | None:
         repository = WebhookEndpointRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(
+        statement = repository.get_statement_by_org_ids(org_ids).where(
             WebhookEndpoint.id == id
         )
         return await repository.get_one_or_none(statement)
@@ -221,7 +221,7 @@ class WebhookService:
         org_ids = await get_accessible_org_ids(session, auth_subject)
 
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .options(joinedload(WebhookDelivery.webhook_event))
             .order_by(desc(WebhookDelivery.created_at))
         )
@@ -290,7 +290,7 @@ class WebhookService:
     ) -> None:
         repository = WebhookEventRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(
+        statement = repository.get_statement_by_org_ids(org_ids).where(
             WebhookEvent.id == id
         )
         event = await repository.get_one_or_none(statement)

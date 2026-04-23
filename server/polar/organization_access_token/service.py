@@ -53,7 +53,7 @@ class OrganizationAccessTokenService:
     ) -> tuple[Sequence[OrganizationAccessToken], int]:
         repository = OrganizationAccessTokenRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids)
 
         if organization_id is not None:
             statement = statement.where(
@@ -93,7 +93,7 @@ class OrganizationAccessTokenService:
     ) -> OrganizationAccessToken | None:
         repository = OrganizationAccessTokenRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(
+        statement = repository.get_statement_by_org_ids(org_ids).where(
             OrganizationAccessToken.id == id,
             OrganizationAccessToken.is_deleted.is_(False),
         )

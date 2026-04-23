@@ -12,7 +12,7 @@ class MetricDashboardRepository(
 ):
     model = MetricDashboard
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[MetricDashboard]]:
         statement = self.get_base_statement()

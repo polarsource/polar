@@ -63,7 +63,7 @@ class DisputeService:
     ) -> tuple[Sequence[Dispute], int]:
         repository = DisputeRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids)
 
         if organization_id is not None:
             statement = statement.where(Payment.organization_id.in_(organization_id))
@@ -88,7 +88,7 @@ class DisputeService:
     ) -> Dispute | None:
         repository = DisputeRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(Dispute.id == id)
+        statement = repository.get_statement_by_org_ids(org_ids).where(Dispute.id == id)
         return await repository.get_one_or_none(statement)
 
     async def upsert_from_stripe(

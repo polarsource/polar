@@ -45,7 +45,7 @@ class BenefitService:
     ) -> tuple[Sequence[Benefit], int]:
         repository = BenefitRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids)
 
         if type is not None:
             statement = statement.where(Benefit.type.in_(type))
@@ -99,7 +99,7 @@ class BenefitService:
         repository = BenefitRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .where(Benefit.id == id)
             .options(*repository.get_eager_options())
         )

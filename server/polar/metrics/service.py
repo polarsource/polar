@@ -112,7 +112,7 @@ class MetricsService:
     ) -> Sequence[MetricDashboard]:
         repository = MetricDashboardRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids)
         if organization_id is not None:
             statement = statement.where(
                 MetricDashboard.organization_id.in_(organization_id)
@@ -127,7 +127,7 @@ class MetricsService:
     ) -> MetricDashboard | None:
         repository = MetricDashboardRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(
+        statement = repository.get_statement_by_org_ids(org_ids).where(
             MetricDashboard.id == id
         )
         return await repository.get_one_or_none(statement)

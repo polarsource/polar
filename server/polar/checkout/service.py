@@ -254,7 +254,7 @@ class CheckoutService:
     ) -> tuple[Sequence[Checkout], int]:
         repository = CheckoutRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).options(
+        statement = repository.get_statement_by_org_ids(org_ids).options(
             *repository.get_eager_options()
         )
 
@@ -293,7 +293,7 @@ class CheckoutService:
         repository = CheckoutRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .where(Checkout.id == id)
             .options(*repository.get_eager_options())
         )

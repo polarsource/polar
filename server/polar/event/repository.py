@@ -130,7 +130,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[str, EventSource, int, datetime, datetime]]:
         return (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .with_only_columns(
                 Event.name,
                 Event.source,
@@ -141,7 +141,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .group_by(Event.name, Event.source)
         )
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Event]]:
         statement = self.get_base_statement()

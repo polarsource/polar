@@ -46,7 +46,7 @@ class MemberService:
         """List members with pagination and filtering."""
         repository = MemberRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids)
 
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
@@ -79,7 +79,7 @@ class MemberService:
         """Get a member by ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(Member.id == id)
+        statement = repository.get_statement_by_org_ids(org_ids).where(Member.id == id)
         return await repository.get_one_or_none(statement)
 
     async def get_by_external_id(
@@ -94,7 +94,7 @@ class MemberService:
         """Get a member by external ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(
+        statement = repository.get_statement_by_org_ids(org_ids).where(
             Member.external_id == external_id
         )
 

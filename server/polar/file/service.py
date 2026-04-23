@@ -37,7 +37,7 @@ class FileService:
         repository = FileRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
 
-        statement = repository.get_by_org_ids_statement(org_ids).where(
+        statement = repository.get_statement_by_org_ids(org_ids).where(
             File.is_uploaded.is_(True)
         )
 
@@ -59,7 +59,7 @@ class FileService:
     ) -> File | None:
         repository = FileRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(File.id == id)
+        statement = repository.get_statement_by_org_ids(org_ids).where(File.id == id)
         return await repository.get_one_or_none(statement)
 
     async def patch(

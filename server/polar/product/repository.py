@@ -75,7 +75,7 @@ class ProductRepository(
             selectinload(Product.all_prices),
         )
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Product]]:
         statement = self.get_base_statement()
@@ -177,7 +177,7 @@ class ProductPriceRepository(
         options: Options = (),
     ) -> ProductPrice | None:
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .where(ProductPrice.id == id)
             .options(*options)
         )
@@ -196,7 +196,7 @@ class ProductPriceRepository(
     def get_eager_options(self) -> Options:
         return (joinedload(ProductPrice.product),)
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[ProductPrice]]:
         return (

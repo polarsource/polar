@@ -80,7 +80,7 @@ class ProductService:
     ) -> tuple[Sequence[Product], int]:
         repository = ProductRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).join(
+        statement = repository.get_statement_by_org_ids(org_ids).join(
             ProductPrice,
             onclause=(
                 ProductPrice.id
@@ -147,7 +147,7 @@ class ProductService:
         repository = ProductRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .where(Product.id == id)
             .options(*repository.get_eager_options())
         )

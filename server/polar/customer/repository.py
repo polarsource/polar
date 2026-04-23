@@ -181,7 +181,7 @@ class CustomerRepository(
         org_ids: set[AccessibleOrganizationID],
         organization_id: Sequence[UUID] | None,
     ) -> AsyncGenerator[Customer]:
-        statement = self.get_by_org_ids_statement(org_ids)
+        statement = self.get_statement_by_org_ids(org_ids)
 
         if organization_id is not None:
             statement = statement.where(
@@ -199,7 +199,7 @@ class CustomerRepository(
         options: Options = (),
     ) -> Customer | None:
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .where(Customer.id == id)
             .options(*options)
         )
@@ -213,7 +213,7 @@ class CustomerRepository(
         options: Options = (),
     ) -> Customer | None:
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .where(Customer.external_id == external_id)
             .options(*options)
         )
@@ -225,7 +225,7 @@ class CustomerRepository(
         customer_ids: Sequence[UUID],
     ) -> list[str]:
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .with_only_columns(Customer.external_id)
             .where(
                 Customer.id.in_(customer_ids),
@@ -241,7 +241,7 @@ class CustomerRepository(
         external_ids: Sequence[str],
     ) -> list[UUID]:
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .with_only_columns(Customer.id)
             .where(Customer.external_id.in_(external_ids))
         )
@@ -254,7 +254,7 @@ class CustomerRepository(
         query: str,
     ) -> tuple[list[UUID], list[str]]:
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .with_only_columns(Customer.id, Customer.external_id)
             .where(
                 or_(
@@ -271,7 +271,7 @@ class CustomerRepository(
         external_ids = [r.external_id for r in rows if r.external_id is not None]
         return customer_ids, external_ids
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Customer]]:
         statement = self.get_base_statement()

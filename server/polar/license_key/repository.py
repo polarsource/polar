@@ -72,7 +72,7 @@ class LicenseKeyRepository(
         options: Options = (),
     ) -> LicenseKey | None:
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .where(
                 LicenseKey.key == key,
                 LicenseKey.organization_id == organization_id,
@@ -104,7 +104,7 @@ class LicenseKeyRepository(
 
         return statement
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[LicenseKey]]:
         statement = self.get_base_statement()

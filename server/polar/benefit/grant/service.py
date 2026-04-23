@@ -163,7 +163,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         repository = BenefitGrantRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .join(Customer, BenefitGrant.customer_id == Customer.id)
             .where(BenefitGrant.is_deleted.is_(False))
             .options(

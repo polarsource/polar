@@ -44,7 +44,7 @@ class BenefitRepository(
     def get_eager_options(self) -> Options:
         return (joinedload(Benefit.organization),)
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Benefit]]:
         statement = self.get_base_statement()

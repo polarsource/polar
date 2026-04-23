@@ -50,7 +50,7 @@ class LicenseKeyService:
         repository = LicenseKeyRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .order_by(LicenseKey.created_at.asc())
             .options(*repository.get_eager_options())
         )
@@ -77,7 +77,7 @@ class LicenseKeyService:
         repository = LicenseKeyRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .where(LicenseKey.id == id)
             .options(*repository.get_eager_options())
         )

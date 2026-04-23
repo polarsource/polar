@@ -326,7 +326,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_one_or_none(statement)
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[CustomerSeat]]:
         """
@@ -360,7 +360,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
     ) -> CustomerSeat | None:
         """Get a seat by ID filtered by organization IDs."""
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .where(CustomerSeat.id == seat_id)
             .options(*options)
         )
@@ -376,7 +376,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
     ) -> CustomerSeat | None:
         """Get a seat by ID and subscription ID filtered by organization IDs."""
         statement = (
-            self.get_by_org_ids_statement(org_ids)
+            self.get_statement_by_org_ids(org_ids)
             .where(
                 CustomerSeat.id == seat_id,
                 CustomerSeat.subscription_id == subscription_id,

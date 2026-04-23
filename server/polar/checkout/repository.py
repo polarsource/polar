@@ -75,7 +75,7 @@ class CheckoutRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().all())
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Checkout]]:
         return self.get_base_statement().where(Checkout.organization_id.in_(org_ids))

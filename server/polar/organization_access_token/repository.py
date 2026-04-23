@@ -51,7 +51,7 @@ class OrganizationAccessTokenRepository(
         )
         await self.session.execute(statement)
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[OrganizationAccessToken]]:
         return self.get_base_statement().where(

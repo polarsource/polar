@@ -145,7 +145,7 @@ class OrganizationService:
     ) -> tuple[Sequence[Organization], int]:
         repository = OrganizationRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids)
 
         if slug is not None:
             statement = statement.where(Organization.slug == slug)
@@ -167,7 +167,7 @@ class OrganizationService:
         repository = OrganizationRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .where(Organization.id == id)
             .options(*options)
         )

@@ -35,7 +35,7 @@ class BenefitGrantRepository(
 ):
     model = BenefitGrant
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[BenefitGrant]]:
         statement = self.get_base_statement().join(

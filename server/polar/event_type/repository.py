@@ -14,7 +14,7 @@ class EventTypeRepository(
 ):
     model = EventType
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[EventType]]:
         return self.get_base_statement().where(EventType.organization_id.in_(org_ids))

@@ -10,7 +10,7 @@ from polar.models import Meter
 class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
     model = Meter
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Meter]]:
         return self.get_base_statement().where(Meter.organization_id.in_(org_ids))
@@ -20,5 +20,5 @@ class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
         id: UUID,
         org_ids: set[AccessibleOrganizationID],
     ) -> Meter | None:
-        statement = self.get_by_org_ids_statement(org_ids).where(Meter.id == id)
+        statement = self.get_statement_by_org_ids(org_ids).where(Meter.id == id)
         return await self.get_one_or_none(statement)

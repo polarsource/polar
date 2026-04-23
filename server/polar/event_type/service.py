@@ -28,7 +28,7 @@ class EventTypeService:
     ) -> EventType | None:
         repository = EventTypeRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids).where(
+        statement = repository.get_statement_by_org_ids(org_ids).where(
             EventType.id == id
         )
         return await repository.get_one_or_none(statement)

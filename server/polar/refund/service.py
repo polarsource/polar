@@ -129,7 +129,7 @@ class RefundService:
     ) -> tuple[Sequence[Refund], int]:
         repository = RefundRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids)
 
         if id is not None:
             statement = statement.where(Refund.id.in_(id))

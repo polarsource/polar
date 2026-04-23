@@ -86,7 +86,7 @@ class WebhookEventRepository(
         )
         return await self.get_all(statement)
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[WebhookEvent]]:
         return (
@@ -147,7 +147,7 @@ class WebhookDeliveryRepository(
         res = await self.session.execute(statement)
         return res.scalar_one()
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[WebhookDelivery]]:
         return (
@@ -168,7 +168,7 @@ class WebhookEndpointRepository(
 ):
     model = WebhookEndpoint
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[WebhookEndpoint]]:
         return self.get_base_statement().where(

@@ -101,7 +101,7 @@
                   "features/subscriptions/manage",
                   "features/subscriptions/proration",
                   "features/subscriptions/failed-payments",
-                  "features/trials"
+                  "features/subscriptions/trials"
                 ]
               },
               "features/orders",
@@ -797,6 +797,14 @@
     {
       "source": "/guides/proration-for-subscription-changes",
       "destination": "/features/subscriptions/proration"
+    },
+    {
+      "source": "/features/trials",
+      "destination": "/features/subscriptions/trials"
+    },
+    {
+      "source": "/docs/features/trials",
+      "destination": "/features/subscriptions/trials"
     },
     {
       "source": "/docs/guides/subscription-upgrades",

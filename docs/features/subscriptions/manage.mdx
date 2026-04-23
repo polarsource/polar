@@ -70,7 +70,7 @@ curl --request PATCH \
 
 ## Manage the trial
 
-You can add, extend, or end a [trial](/features/trials) on any subscription:
+You can add, extend, or end a [trial](/features/subscriptions/trials) on any subscription:
 
 - **Add or extend** a trial by setting `trial_end` to a future date. If the subscription is currently active, its status switches to `trialing` and the next charge is postponed to the new date.
 - **End a trial immediately** by setting `trial_end` to `"now"`. The subscription becomes `active` and a new billing cycle — and charge — starts on the spot.

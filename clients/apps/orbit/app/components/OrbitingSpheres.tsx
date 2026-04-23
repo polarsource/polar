@@ -69,7 +69,7 @@ export const OrbitingSpheres = () => {
       const dx = Math.cos(angle);
       const dy = Math.sin(angle);
 
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2;
 
       // Big sphere — bright
       ctx.strokeStyle = strokeColor;

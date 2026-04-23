@@ -30,9 +30,9 @@ export const CycleArrow = () => {
       "rgb(190, 190, 190)";
 
     const cy = size / 2;
-    const cols = 7;
-    const colGap = size * 0.06;
-    const halfH = size * 0.12;
+    const cols = 5;
+    const colGap = size * 0.08;
+    const halfH = size * 0.16;
     const r = colGap / 2;
 
     const totalW = (cols - 1) * colGap;

@@ -78,19 +78,21 @@ const TIERS = [
 ]
 
 export const LandingPricing = () => (
-  <section id="pricing" className="flex flex-col gap-y-24 py-48">
+  <section id="pricing" className="flex flex-col gap-y-32 py-48">
     <div className="flex flex-col items-center gap-y-8 text-center">
       <SectionHeading className="text-center">
         Pay for what you use.
         <br />
         Scale when you&apos;re ready.
       </SectionHeading>
-      <p className="max-w-2xl text-2xl text-neutral-500">
+      <p className="max-w-4xl text-4xl leading-snug text-balance">
         Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
       </p>
       <div className="flex items-center gap-x-6 pt-4">
         <Button href="#">Get Started Free</Button>
-        <Button href="#" variant="secondary">Contact Enterprise</Button>
+        <Button href="#" variant="secondary">
+          Contact Enterprise
+        </Button>
       </div>
     </div>
 
@@ -102,24 +104,25 @@ export const LandingPricing = () => (
         >
           <div className="flex flex-col gap-y-12 p-12">
             <div className="flex flex-col gap-y-8">
-              <div className="flex items-baseline justify-between">
+              <div className="flex flex-col gap-4">
                 <span className="text-4xl text-black dark:text-white">
                   {tier.name}
                 </span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-normal text-neutral-900 dark:text-white">
-                    {tier.free ? 'Free' : tier.price}
-                  </span>
-                  {tier.period && (
-                    <span className="dark:text-dark-200 text-lg text-neutral-500">
-                      {tier.period}
-                    </span>
-                  )}
-                </div>
+
+                <p className="dark:text-dark-200 text-2xl text-neutral-500">
+                  {tier.desc}
+                </p>
               </div>
-              <p className="dark:text-dark-200 text-2xl text-neutral-500">
-                {tier.desc}
-              </p>
+              <div className="flex items-baseline gap-4">
+                <span className="text-5xl font-normal text-neutral-900 dark:text-white">
+                  {tier.free ? 'Free' : tier.price}
+                </span>
+                {tier.period && (
+                  <span className="dark:text-dark-200 text-2xl text-neutral-500">
+                    {tier.period}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="dark:border-dark-700 grid grid-cols-1 border-t border-neutral-300 pt-8 text-black sm:grid-cols-2 dark:text-white">

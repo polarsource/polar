@@ -9,12 +9,7 @@ from polar.auth.scope import Scope
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import Organization as OrganizationModel
 from polar.organization.schemas import OrganizationID
-from polar.postgres import (
-    AsyncReadSession,
-    AsyncSession,
-    get_db_read_session,
-    get_db_session,
-)
+from polar.postgres import AsyncSession, get_db_session
 
 from .policies import finance, members
 from .policies import organization as org_policy
@@ -42,7 +37,6 @@ def OrgPolicyGuard(
     *,
     allowed_subjects: set[type] | None = None,
     required_scopes: set[Scope] | None = None,
-    use_write_session: bool = False,
 ) -> Any:
     """Create a FastAPI dependency that authenticates, resolves an organization,
     and checks a policy — all in one step.
@@ -63,11 +57,6 @@ def OrgPolicyGuard(
             leaking the existence of organizations the subject cannot access.
         NotPermitted (403): The subject is a member but the policy function
             returned False (e.g. not an admin for finance endpoints).
-
-    When ``use_write_session`` is True, the guard loads the organization in
-    the request's write session. Required for endpoints that mutate the
-    returned organization — passing an object attached to the read session
-    into a write-session operation raises SQLAlchemy cross-session errors.
     """
 
     _allowed = allowed_subjects or {User, Organization}
@@ -83,53 +72,28 @@ def OrgPolicyGuard(
         required_scopes=_scopes,
     )
 
-    if use_write_session:
+    async def dependency(
+        id: OrganizationID,
+        auth_subject: Annotated[
+            AuthSubject[User | Organization], Depends(_authenticator)
+        ],
+        session: AsyncSession = Depends(get_db_session),
+    ) -> AuthzContext[User | Organization]:
+        organization = await get_accessible_organization(session, auth_subject, id)
+        if organization is None:
+            raise ResourceNotFound()
 
-        async def dependency(
-            id: OrganizationID,
-            auth_subject: Annotated[
-                AuthSubject[User | Organization], Depends(_authenticator)
-            ],
-            session: AsyncSession = Depends(get_db_session),
-        ) -> AuthzContext[User | Organization]:
-            organization = await get_accessible_organization(session, auth_subject, id)
-            if organization is None:
-                raise ResourceNotFound()
+        result = await policy_fn(session, auth_subject, organization)
+        if result is not True:
+            raise NotPermitted(result if isinstance(result, str) else "Not permitted")
 
-            result = await policy_fn(session, auth_subject, organization)
-            if result is not True:
-                raise NotPermitted(
-                    result if isinstance(result, str) else "Not permitted"
-                )
-
-            return AuthzContext(organization=organization, auth_subject=auth_subject)
-
-    else:
-
-        async def dependency(
-            id: OrganizationID,
-            auth_subject: Annotated[
-                AuthSubject[User | Organization], Depends(_authenticator)
-            ],
-            session: AsyncReadSession = Depends(get_db_read_session),
-        ) -> AuthzContext[User | Organization]:
-            organization = await get_accessible_organization(session, auth_subject, id)
-            if organization is None:
-                raise ResourceNotFound()
-
-            result = await policy_fn(session, auth_subject, organization)
-            if result is not True:
-                raise NotPermitted(
-                    result if isinstance(result, str) else "Not permitted"
-                )
-
-            return AuthzContext(organization=organization, auth_subject=auth_subject)
+        return AuthzContext(organization=organization, auth_subject=auth_subject)
 
     return dependency
 
 
 async def _always_allow(
-    session: AsyncReadSession,
+    session: AsyncSession,
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> bool:
@@ -159,7 +123,6 @@ AuthorizeOrgDelete = Annotated[
             org_policy.can_delete,
             allowed_subjects={User},
             required_scopes={Scope.web_write, Scope.organizations_write},
-            use_write_session=True,
         )
     ),
 ]

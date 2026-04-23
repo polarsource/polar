@@ -66,7 +66,7 @@ async def delete(
     authz: AuthorizePayoutAccountWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    # Re-fetch on write session — the guard loaded on a read session
+    # Re-fetch on write db session — the guard loaded on a read-only db session
     repository = PayoutAccountRepository.from_session(session)
     payout_account = await repository.get_by_id(authz.payout_account.id)
     if payout_account is None:

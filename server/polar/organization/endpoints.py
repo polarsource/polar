@@ -272,7 +272,7 @@ async def delete(
     If deletion cannot proceed immediately (has orders, subscriptions, or
     Stripe deletion fails), a support ticket will be created for manual handling.
     """
-    # Re-fetch on write session — the guard loaded on a read session
+    # Re-fetch on write db session — the guard loaded on a read-only db session
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(authz.organization.id)
     if organization is None:
@@ -367,7 +367,7 @@ async def invite_member(
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationMember:
     """Invite a user to join an organization."""
-    # Re-fetch on write session — the guard loaded on a read session
+    # Re-fetch on write db session — the guard loaded on a read-only db session
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(authz.organization.id)
     if organization is None:

@@ -34,7 +34,7 @@ async def patch(
     account_update: AccountUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountSchema:
-    # Re-fetch on write session — the guard loaded on a read session
+    # Re-fetch on write db session — the guard loaded on a read-only db session
     repository = AccountRepository.from_session(session)
     account = await repository.get_by_id(authz.account.id)
     if account is None:

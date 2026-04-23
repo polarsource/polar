@@ -1,6 +1,9 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
+  "styling": {
+    "latex": false
+  },
   "appearance": {
     "default": "system"
   },

@@ -33,7 +33,6 @@ class TestListDashboards:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_user_empty(
@@ -46,7 +45,6 @@ class TestListDashboards:
         assert response.json() == []
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_user_returns_own_dashboards(
@@ -69,7 +67,6 @@ class TestListDashboards:
         assert json[0]["name"] == "My Dashboard"
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_filter_by_organization_id(
@@ -106,9 +103,7 @@ class TestListDashboards:
         assert len(json) == 1
         assert json[0]["id"] == str(dashboard.id)
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
-    )
+    @pytest.mark.auth
     async def test_does_not_return_other_org_dashboards(
         self,
         client: AsyncClient,
@@ -135,7 +130,6 @@ class TestCreateDashboard:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_write}),
     )
     async def test_valid(
@@ -161,7 +155,7 @@ class TestCreateDashboard:
         assert "id" in json
         assert "created_at" in json
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_empty_metrics(
         self,
         client: AsyncClient,
@@ -179,7 +173,7 @@ class TestCreateDashboard:
         assert response.status_code == 201
         assert response.json()["metrics"] == []
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_empty_name_rejected(
         self,
         client: AsyncClient,
@@ -196,7 +190,7 @@ class TestCreateDashboard:
         )
         assert response.status_code == 422
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_too_many_metrics_rejected(
         self,
         client: AsyncClient,
@@ -242,7 +236,6 @@ class TestGetDashboard:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_valid(
@@ -264,12 +257,12 @@ class TestGetDashboard:
         assert json["name"] == "My Dashboard"
         assert json["organization_id"] == str(organization.id)
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_not_found(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/metrics/dashboards/{uuid.uuid4()}")
         assert response.status_code == 404
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_cannot_access_other_org_dashboard(
         self,
         client: AsyncClient,
@@ -298,7 +291,6 @@ class TestUpdateDashboard:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_write}),
     )
     async def test_update_name(
@@ -316,7 +308,7 @@ class TestUpdateDashboard:
         assert response.status_code == 200
         assert response.json()["name"] == "Renamed"
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_update_metrics(
         self,
         client: AsyncClient,
@@ -335,7 +327,7 @@ class TestUpdateDashboard:
         assert response.status_code == 200
         assert response.json()["metrics"] == ["orders", "checkouts"]
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_partial_update_preserves_other_fields(
         self,
         client: AsyncClient,
@@ -358,14 +350,14 @@ class TestUpdateDashboard:
         assert json["name"] == "Updated"
         assert json["metrics"] == ["revenue"]
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_not_found(self, client: AsyncClient) -> None:
         response = await client.patch(
             f"/v1/metrics/dashboards/{uuid.uuid4()}", json={"name": "X"}
         )
         assert response.status_code == 404
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_cannot_update_other_org_dashboard(
         self,
         client: AsyncClient,
@@ -394,7 +386,6 @@ class TestDeleteDashboard:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.metrics_write}),
     )
     async def test_valid(
@@ -409,12 +400,12 @@ class TestDeleteDashboard:
         response = await client.delete(f"/v1/metrics/dashboards/{dashboard.id}")
         assert response.status_code == 204
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_not_found(self, client: AsyncClient) -> None:
         response = await client.delete(f"/v1/metrics/dashboards/{uuid.uuid4()}")
         assert response.status_code == 404
 
-    @pytest.mark.auth(scopes=set(Scope))
+    @pytest.mark.auth
     async def test_cannot_delete_other_org_dashboard(
         self,
         client: AsyncClient,

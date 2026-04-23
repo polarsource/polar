@@ -64,7 +64,6 @@ class TestCreateWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.webhooks_write}),
     )
     async def test_user_valid(
@@ -139,7 +138,6 @@ class TestUpdateWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.webhooks_write}),
     )
     async def test_user_valid(
@@ -193,7 +191,6 @@ class TestDeleteWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes=set(Scope)),
         AuthSubjectFixture(scopes={Scope.webhooks_write}),
     )
     async def test_user_valid(

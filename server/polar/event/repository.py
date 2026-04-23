@@ -108,23 +108,25 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         Step 1: link parent_id wherever a pending ref now matches a parent
         row. Run as four UPDATEs to keep each plan cleanly indexed:
           1a — child in batch, parent in DB, ref by external_id
+          1c — child in batch, parent in DB, ref by Polar ID (UUID)
           1b — parent in batch, child pending in DB, ref by external_id
-          1c — child in batch, parent in DB, ref by UUID string
-          1d — parent in batch, child pending in DB, ref by UUID string
+          1d — parent in batch, child pending in DB, ref by Polar ID (UUID)
 
-        Step 2: walk UP from each batch event to find its root_id, then walk
-        DOWN to descendants. Bounded by `batch × (chain depth + descendant
-        subtree)` — never expands the forest.
-
-        Note: walk_down also propagates root_id into pre-existing descendants
-        of a batch event — i.e. an old orphan chain that was sitting in the DB
-        waiting for an ancestor that just arrived in this batch. Those IDs flow
-        through RETURNING, so the result can include events that weren't in
-        inserted_ids.
+        Step 2: propagate root_id along parent_id edges with a single
+        iterative UPDATE. Each round roots every event whose immediate
+        parent is already rooted. Starting frontier = the batch; each
+        subsequent round shifts the frontier to the events just rooted,
+        so the scope stays bounded and we only touch relevant descendants.
+        This covers both directions in one pass: batch events inherit
+        root_id from rooted ancestors, and DB orphans inherit it from
+        ancestors that just arrived in this batch.
         """
         if not inserted_ids:
             return []
 
+        # parent_1a, parent_1b, parent_1c, parent_1d
+        # are all four ways we can resolve pending_parent_id to parent_id
+        # (pointing to a internal event ID).
         parent_1a = Event.__table__.alias("parent_1a")
         await self.session.execute(
             update(Event)
@@ -133,18 +135,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.organization_id == parent_1a.c.organization_id,
                 Event.pending_parent_external_id == parent_1a.c.external_id,
                 Event.id.in_(inserted_ids),
-            )
-        )
-
-        parent_1b = Event.__table__.alias("parent_1b")
-        await self.session.execute(
-            update(Event)
-            .values(parent_id=parent_1b.c.id, pending_parent_external_id=None)
-            .where(
-                Event.organization_id == parent_1b.c.organization_id,
-                Event.pending_parent_external_id.is_not(None),
-                Event.pending_parent_external_id == parent_1b.c.external_id,
-                parent_1b.c.id.in_(inserted_ids),
             )
         )
 
@@ -163,16 +153,28 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             uuid_pending_in_batch.append(event_id)
 
         if uuid_pending_in_batch:
-            parent_1c = Event.__table__.alias("parent_1c")
+            parent_1b = Event.__table__.alias("parent_1b")
             await self.session.execute(
                 update(Event)
-                .values(parent_id=parent_1c.c.id, pending_parent_external_id=None)
+                .values(parent_id=parent_1b.c.id, pending_parent_external_id=None)
                 .where(
-                    Event.organization_id == parent_1c.c.organization_id,
-                    cast(Event.pending_parent_external_id, SA_UUID) == parent_1c.c.id,
+                    Event.organization_id == parent_1b.c.organization_id,
+                    cast(Event.pending_parent_external_id, SA_UUID) == parent_1b.c.id,
                     Event.id.in_(uuid_pending_in_batch),
                 )
             )
+
+        parent_1c = Event.__table__.alias("parent_1c")
+        await self.session.execute(
+            update(Event)
+            .values(parent_id=parent_1c.c.id, pending_parent_external_id=None)
+            .where(
+                Event.organization_id == parent_1c.c.organization_id,
+                Event.pending_parent_external_id.is_not(None),
+                Event.pending_parent_external_id == parent_1c.c.external_id,
+                parent_1c.c.id.in_(inserted_ids),
+            )
+        )
 
         # Pending refs are matched against the canonical lowercase string of
         # batch ids; non-canonical (e.g. uppercase) refs won't link here, but
@@ -189,64 +191,30 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
         )
 
-        walk_up_anchor = select(
-            Event.id.label("seed"),
-            Event.id.label("cur"),
-            Event.parent_id.label("parent_id"),
-            Event.root_id.label("root_id"),
-            literal(0).label("depth"),
-        ).where(Event.id.in_(inserted_ids))
-        walk_up = walk_up_anchor.cte("walk_up", recursive=True)
-
-        p_up = Event.__table__.alias("p_up")
-        walk_up = walk_up.union_all(
-            select(
-                walk_up.c.seed,
-                p_up.c.id,
-                p_up.c.parent_id,
-                p_up.c.root_id,
-                (walk_up.c.depth + 1).label("depth"),
-            )
-            .select_from(walk_up.join(p_up, p_up.c.id == walk_up.c.parent_id))
-            .where(
-                walk_up.c.root_id.is_(None),
-                walk_up.c.depth < _MAX_RESOLVE_DEPTH,
-            )
-        )
-
-        walk_down_anchor = select(
-            walk_up.c.seed.label("cur"),
-            walk_up.c.root_id.label("root_id"),
-            literal(0).label("depth"),
-        ).where(walk_up.c.root_id.is_not(None))
-        walk_down = walk_down_anchor.cte("walk_down", recursive=True)
-
-        c_down = Event.__table__.alias("c_down")
-        walk_down = walk_down.union_all(
-            select(
-                c_down.c.id,
-                walk_down.c.root_id,
-                (walk_down.c.depth + 1).label("depth"),
-            )
-            .select_from(walk_down.join(c_down, c_down.c.parent_id == walk_down.c.cur))
-            .where(walk_down.c.depth < _MAX_RESOLVE_DEPTH)
-        )
-
-        propagate_root = (
-            update(Event)
-            .add_cte(walk_up, walk_down)
-            .values(root_id=walk_down.c.root_id)
-            .where(
-                Event.id == walk_down.c.cur,
-                or_(
+        frontier: set[UUID] = set(inserted_ids)
+        newly_rooted: list[UUID] = []
+        for _ in range(_MAX_RESOLVE_DEPTH):
+            if not frontier:
+                break
+            parent_alias = Event.__table__.alias("p_root")
+            result = await self.session.execute(
+                update(Event)
+                .values(root_id=parent_alias.c.root_id)
+                .where(
+                    or_(Event.id.in_(frontier), Event.parent_id.in_(frontier)),
                     Event.root_id.is_(None),
-                    Event.root_id != walk_down.c.root_id,
-                ),
+                    Event.parent_id == parent_alias.c.id,
+                    parent_alias.c.root_id.is_not(None),
+                )
+                .returning(Event.id)
             )
-            .returning(Event.id)
-        )
-        result = await self.session.execute(propagate_root)
-        return [row[0] for row in result.all()]
+            newly = [row[0] for row in result.all()]
+            if not newly:
+                break
+            newly_rooted.extend(newly)
+            frontier = set(newly)
+
+        return newly_rooted
 
     async def get_latest_meter_reset(
         self, customer: Customer, meter_id: UUID

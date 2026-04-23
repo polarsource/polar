@@ -283,7 +283,6 @@ class PlainService:
                 CreateThreadInput(
                     customer_identifier=customer_identifier,
                     title=f"Organization Deletion Request - {organization.slug}",
-                    label_type_ids=["lt_01JKD9ASBPVX09YYXGHSXZRWSA"],
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(

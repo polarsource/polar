@@ -1,0 +1,145 @@
+<Info>
+  **Status**: Draft
+
+  **Created**: 2026-04-23
+
+  **Last Updated**: 2026-04-23
+</Info>
+
+## Briefing
+
+The customer portal already exposes "Download Invoice" on every paid Order, but invoice generation requires `billing_name` and `billing_address`. Customers who never fill those in (indie devs, wallet payers, anyone topping up balance credit) get nothing. Support sees regular requests for proof of payment, and some customers actually require it for bookkeeping, expense reimbursement, or compliance. They don't need a tax invoice, just confirmation that the charge happened.
+
+A **receipt** is the missing artifact: a PDF proving the payment event without the billing-details gate. It mirrors Stripe's `charge.receipt_url`. The PDF is mutable, so refunds are reflected in the same document over time.
+
+## Goals
+
+- Every Order with a succeeded Payment has a downloadable receipt PDF in the customer portal, regardless of whether billing details are set.
+- The receipt is mutable. Issuing a refund updates the PDF; the customer's URL keeps working and serves the latest content.
+- A stable `receipt_number` is shown on the document and stored on the Order, so it can be referenced from support tools.
+- Polar staff can also fetch a customer's receipt from backoffice. Merchants can fetch it through the dashboard API.
+
+### Non-goals (v0)
+
+- No receipts for Orders without a succeeded Payment (100% discount, balance-credit only, $0 trial). The existing invoice flow still covers those cases when billing details exist.
+- No emailed receipts. Customers download when they want to.
+- No public webhook events for receipts.
+
+## Solution
+
+### Receipt per Order
+
+Each Order gets at most one receipt. Polar Orders have at most one succeeded `Payment`, so per-Order and per-Payment collapse into the same shape. The receipt is allocated when the Order transitions to paid. The PDF itself is rendered lazily on first download and re-rendered whenever the payment state changes (typically a refund).
+
+### Allocation
+
+Allocation runs at the end of `_on_order_paid`, the central paid-transition hook. It checks that the Order has at least one succeeded Payment, then allocates a number from a per-customer counter:
+
+```
+RCPT-{customer.short_id_str}-{NNNN}
+```
+
+The counter, `Customer.receipt_next_number`, mirrors the existing `Customer.invoice_next_number` exactly. We deliberately do **not** reuse `Organization.customer_invoice_prefix`. Production data shows invoice prefixes range from short tokens like `DUY` to overlong values (one is 600 characters, the long tail is essentially company-name dumps). More importantly, since invoices and receipts use independent counters, sharing the prefix would produce identical-looking identifiers for different documents (e.g., invoice `ACME-AB1-0001` and receipt `ACME-AB1-0001`), which is a real support headache. A hardcoded `RCPT` prefix sidesteps both problems. The org identity is shown in the PDF body, not in the identifier. If we later want per-org customization, adding a `customer_receipt_prefix` column is a non-breaking change.
+
+Allocation is wrapped in `session.begin_nested()` with a `FOR UPDATE` plus null-check on the Order. Retried hooks return without burning a number, and any exception is caught at the call site so a bad receipt allocation never fails the paid transition itself.
+
+#### Why receipts allocate later than invoices
+
+Invoices are numbered at Order creation time. `OrganizationService.get_next_invoice_number` is called from four places when constructing a new Order, and the `invoice_number` column is non-null and set at insert.
+
+Receipts can't follow the same pattern because we only want them for Orders that will actually have a succeeded Payment. Allocating at creation would burn numbers on Orders that end up free or discount-only. So receipts allocate later, in the paid-transition hook, gated on Payment existence.
+
+### Render and storage
+
+Rendering is handled by a Dramatiq actor, never inline in an API request. The actor takes a Redis lock keyed by `order_id` before generating. If the lock is already held, the actor exits cleanly, so we never run two renders for the same Order at once.
+
+Each render uploads to a brand new S3 key:
+
+```
+{org_id}/{order_id}/{utc_iso8601}.pdf
+```
+
+The path lives in a new dedicated bucket, `polar-customer-receipts` (env-prefixed for sandbox and test). It mirrors Polar's one-bucket-per-purpose convention and follows the existing org-scoped, UUID-named pattern used elsewhere for mutable artifacts. A new `aws_s3_bucket` resource plus a matching IAM policy is roughly 10 lines of Terraform.
+
+Because every render writes to a fresh key, there are no overwrites. That means no S3 versioning is needed, no CDN cache can serve stale content, and old keys remain in S3 as a free audit trail. Objects are uploaded with `Cache-Control: public, max-age=31536000, immutable`. The `Order.receipt_path` column always points at the current key.
+
+### Refund regeneration
+
+When a refund is finalized, the refund hook calls into the receipt service to enqueue a render. The old `receipt_path` keeps serving until the new file is uploaded and the column is swapped. There is no null gap: customers downloading mid-window get the previous PDF, and the next download gets the new one with the Refunds section.
+
+### PDF
+
+The PDF is a flavor of the existing invoice generator. Heading is "RECEIPT" with the `receipt_number`. The "Bill to" block falls back to the customer email when `billing_address` is null, which is the whole point of the feature. Payment summary lists the succeeded Payment with method and last4. Footer shows the render time, useful for both customers and support when the document gets regenerated.
+
+The Refunds section appears whenever the Order has at least one Refund. One row per refund, in chronological order, each showing date, amount, and refund ID. A "Total refunded" line at the bottom of the section sums them. If the cumulative refunded amount equals the original Payment, a "FULLY REFUNDED" stamp appears at the top of the document. Partial refunds (one or many) just show the rows and the running total.
+
+### Schema
+
+```
+orders
+  ├─ receipt_number    str | null    -- e.g. "RCPT-AB1-0042"
+  └─ receipt_path      str | null    -- current S3 key
+
+customers
+  └─ receipt_next_number  int NOT NULL DEFAULT 1
+
+organizations
+  └─ receipts_enabled  bool NOT NULL DEFAULT false
+```
+
+Plus a partial unique index on `(customer_id, receipt_number) WHERE receipt_number IS NOT NULL`.
+
+### API
+
+Receipt download mirrors the existing invoice endpoints, with one difference: there is no POST trigger. Allocation is automatic in `_on_order_paid` and rendering is lazy on first GET, so the customer has no precondition to satisfy.
+
+| Surface | Auth | Endpoint |
+|---|---|---|
+| Customer portal | `CustomerPortalUnionBillingRead` (Customer always, Member needs `owner` or `billing_manager`) | `GET /v1/customer-portal/orders/{id}/receipt` |
+| Backoffice (Polar staff) | Existing backoffice auth, read-only | mirror of the customer-portal endpoint |
+| Merchant dashboard | `auth.OrdersRead` | `GET /v1/orders/{id}/receipt` |
+
+Each endpoint returns `{url}` (200) when the receipt is ready, 202 when a render is in flight, and 404 when no receipt has been allocated. The `Order` resource exposes `receipt_number` (used by the frontend to gate the download button) but does not expose `receipt_url`. Presigned URLs are short-lived, so embedding one in every list response would waste compute and ship URLs that expire by click time.
+
+### Frontend
+
+A new `DownloadReceipt` component is rendered above the existing invoice button on the customer portal Order page. It is visible only when `receipt_number` is set. The component polls the GET endpoint every 2 seconds for up to 30 seconds. On terminal failure, it shows a "Try again" button and a `mailto:` support link with the order ID prefilled.
+
+## Rollout
+
+The feature is gated by a per-org boolean column, `Organization.receipts_enabled`, defaulting to `false`. To enable it for an org we (1) backfill that org's existing Orders, then (2) flip the flag.
+
+### Backfill script
+
+After the schema lands, existing paid Orders won't have a `receipt_number`. A one-shot script allocates them:
+
+```
+python -m polar.scripts.backfill_receipts <organization_id>
+```
+
+The script selects paid Orders for the org where `receipt_number IS NULL` and at least one succeeded Payment exists, then calls `receipt_service.allocate` for each. It uses the same atomic path as runtime allocation, so re-running is safe. PDF rendering stays lazy on first download, so the script only allocates numbers (no S3 writes).
+
+### Per-org sequence
+
+1. Run the script for the target org and wait for it to finish.
+2. Flip the flag: `UPDATE organizations SET receipts_enabled = true WHERE id = '<org_id>'`. From that moment, new paid Orders for the org get a receipt number allocated automatically in `_on_order_paid`.
+3. Watch the metrics dashboard for 24 to 48 hours, then move to the next org.
+
+The order matters mostly for cleanliness. Even if you flip the flag without running the script, new Orders will allocate correctly; only historical Orders would be missing numbers until you run it.
+
+### PR sequencing
+
+| # | Scope |
+|---|---|
+| 1 | Schema migration: 4 columns and the partial unique index `CONCURRENTLY` |
+| 2 | New `polar/receipt/` module, Terraform for the new bucket, allocation hook, render actor with Redis lock, refund hook, metrics. `receipts_enabled` defaults to `false` everywhere |
+| 3 | Customer-portal, backoffice, and merchant-dashboard `GET` endpoints, frontend component, enable for one internal org |
+| 4 | Per-org enable via the script and flag flip |
+
+## Open questions
+
+None outstanding for v0. The following are explicitly deferred:
+
+- Receipts for Orders without a succeeded Payment. Could be revisited if support volume justifies it.
+- Email delivery.
+- Public webhook events.

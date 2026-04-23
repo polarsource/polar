@@ -89,10 +89,7 @@ def OrgPolicyGuard(
         if organization is None:
             raise ResourceNotFound()
 
-        result = await policy_fn(session, auth_subject, organization)
-        if result is not True:
-            raise NotPermitted(result if isinstance(result, str) else "Not permitted")
-
+        await _check_policy(policy_fn, session, auth_subject, organization)
         return AuthzContext(organization=organization, auth_subject=auth_subject)
 
     return dependency
@@ -104,6 +101,18 @@ async def _always_allow(
     organization: OrganizationModel,
 ) -> bool:
     return True
+
+
+async def _check_policy(
+    policy_fn: PolicyFn,
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization],
+    organization: OrganizationModel,
+) -> None:
+    """Evaluate a policy function and raise NotPermitted if denied."""
+    result = await policy_fn(session, auth_subject, organization)
+    if result is not True:
+        raise NotPermitted(result if isinstance(result, str) else "Not permitted")
 
 
 AuthorizeFinanceRead = Annotated[
@@ -206,10 +215,7 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
         if organization is None or organization.id not in org_ids:
             raise ResourceNotFound()
 
-        result = await policy_fn(session, auth_subject, organization)
-        if result is not True:
-            raise NotPermitted(result if isinstance(result, str) else "Not permitted")
-
+        await _check_policy(policy_fn, session, auth_subject, organization)
         return AuthorizedAccount(
             account=account, organization=organization, auth_subject=auth_subject
         )
@@ -250,10 +256,7 @@ def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
         if organization is None or organization.id not in org_ids:
             raise ResourceNotFound()
 
-        result = await policy_fn(session, auth_subject, organization)
-        if result is not True:
-            raise NotPermitted(result if isinstance(result, str) else "Not permitted")
-
+        await _check_policy(policy_fn, session, auth_subject, organization)
         return AuthorizedPayoutAccount(
             payout_account=payout_account,
             organization=organization,

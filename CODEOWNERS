@@ -14,5 +14,8 @@ infra/** @Yopi
 clients/apps/web/src/components/Checkout/** @sebastianekstrom
 clients/packages/checkout/** @sebastianekstrom
 
+# Docs
+/docs/ @pieterbeulque
+
 # Other
 **/legal @victoriabolin @birkjernstrom

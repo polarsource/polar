@@ -179,7 +179,6 @@ class AuthorizedPayoutAccount:
     """Result of a PayoutAccountPolicyGuard dependency."""
 
     payout_account: "PayoutAccountModel"
-    organization: OrganizationModel
     auth_subject: AuthSubject[User | Organization]
 
 
@@ -249,18 +248,13 @@ def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
         if payout_account is None:
             raise ResourceNotFound()
 
-        # Find the organization that uses this payout account
-        org_repo = OrganizationRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        organization = await org_repo.get_by_payout_account(payout_account.id)
-
-        if organization is None or organization.id not in org_ids:
+        # Check that the user is admin of this payout account's organization
+        if payout_account.admin_id != auth_subject.subject.id:
             raise ResourceNotFound()
 
-        await _check_policy(policy_fn, session, auth_subject, organization)
+        # await _check_policy(policy_fn, session, auth_subject, organization)
         return AuthorizedPayoutAccount(
             payout_account=payout_account,
-            organization=organization,
             auth_subject=auth_subject,
         )
 

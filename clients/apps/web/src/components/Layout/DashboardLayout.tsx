@@ -111,7 +111,7 @@ const MobileNav = ({
   )
 
   return (
-    <div className="dark:bg-polar-900 relative z-20 flex w-screen flex-col items-center justify-between bg-gray-50 md:hidden">
+    <div className="dark:bg-polar-900 relative z-20 flex w-full max-w-full flex-col items-center justify-between overflow-x-clip bg-gray-50 md:hidden">
       {mobileNavOpen ? (
         <div className="relative flex h-full w-full flex-col">
           {header}

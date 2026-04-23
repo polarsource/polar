@@ -55,21 +55,23 @@ Long product descriptions are no longer truncated on the checkout page. Buyers s
 </Update>
 
 <Update label="2026-03-31">
-## Streamlined Merchant Onboarding
+## Customizable Dashboard Home Charts
 
-A redesigned onboarding flow guides new merchants through account setup, organization details, and product creation step by step. Smarter validation, contextual error handling, and analytics on each step mean fewer drop-offs before the first sale.
+The dashboard home page now lets merchants choose which metrics they see on the overview chart and persist their selection. Tailor the first thing you see when you log in to whatever moves the business for you.
+
+<img class="border rounded" src="/assets/changelog/2026-03-31/customizable-dashboard-charts.png" />
 
 ## Schedule Subscription Updates for Next Cycle
 
 Subscription changes (product swaps, price updates, seat changes) can now be scheduled to apply at the next billing cycle instead of taking effect immediately. The API exposes a new `next_period` proration behavior, and pending updates are returned on subscription objects and webhooks so external systems stay in sync.
 
+## Streamlined Merchant Onboarding
+
+A redesigned onboarding flow guides new merchants through account setup, organization details, and product creation step by step. Smarter validation, contextual error handling, and analytics on each step mean fewer drop-offs before the first sale.
+
 ## Renewal and Trial Conversion Reminders
 
 Customers on yearly or longer billing cycles now get an automatic reminder seven days before renewal. Trial subscribers get a heads-up three days before their trial ends (or one day for very short trials). Both reminders are toggleable per organization, helping reduce involuntary churn and surprise charges.
-
-## Korean Checkout, Portal, and Emails
-
-Korean joins the list of fully translated languages across checkout, customer portal, and customer emails. Merchants selling to Korean buyers get a native end-to-end experience.
 
 ## GDPR Customer Data Export
 
@@ -78,6 +80,10 @@ A new Privacy section in the customer portal lets buyers download a complete JSO
 ## Cancellation Reason Drill-Down
 
 Cancellation charts in the metrics dashboard are now interactive. Clicking on any reason or time bucket opens a detail modal showing the underlying subscriptions, customer comments, and dates. Merchants can finally connect a spike on the chart to the actual customers behind it.
+
+## Korean Checkout, Portal, and Emails
+
+Korean joins the list of fully translated languages across checkout, customer portal, and customer emails. Merchants selling to Korean buyers get a native end-to-end experience.
 
 ## Tax-Inclusive Pricing
 
@@ -90,12 +96,6 @@ Product descriptions on checkout pages now render Markdown formatting, so headin
 ## Multi-Currency Fixed Discounts
 
 Fixed-amount discounts can now hold separate amounts per currency, matching the multi-currency pricing model that shipped in February. Run a $10 / 10 EUR / 10 GBP coupon as a single discount instead of juggling three.
-
-## Customizable Dashboard Home Charts
-
-The dashboard home page now lets merchants choose which metrics they see on the overview chart and persist their selection. Tailor the first thing you see when you log in to whatever moves the business for you.
-
-<img class="border rounded" src="/assets/changelog/2026-03-31/customizable-dashboard-charts.png" />
 </Update>
 
 <Update label="2026-02-28">
@@ -103,13 +103,29 @@ The dashboard home page now lets merchants choose which metrics they see on the 
 
 Merchants can now create products with prices in multiple currencies side by side. Set a USD price, an EUR price, a GBP price, and more on the same product, and customers see the right currency at checkout based on their region. A new default presentment currency setting at the organization level keeps things consistent across the dashboard.
 
+## Italian and Portuguese Checkout
+
+Checkout, customer portal, and emails are now fully translated into Italian and Portuguese. Customers in Italy, Portugal, and Brazil get a native experience end to end, with currency formatting that matches their region.
+
 ## Feature Flag Benefit
 
 A new Feature Flag benefit type is available for SaaS merchants. Grant it to customers when they should unlock something in your product, then check entitlements through the Polar API or webhooks. JSON metadata stays invisible to the customer, keeping the experience clean for pure software subscriptions.
 
-## Italian and Portuguese Checkout
+## Faster Wallet and Card Checkout
 
-Checkout, customer portal, and emails are now fully translated into Italian and Portuguese. Customers in Italy, Portugal, and Brazil get a native experience end to end, with currency formatting that matches their region.
+When mobile wallets are available, they now appear at the top of the payment list instead of buried under the card form. The cardholder name field is hidden when paying with a wallet, since the name is pulled from the wallet token automatically. Fewer clicks, fewer fields, faster checkout.
+
+## Team Ownership Transfer
+
+Team owners can now hand the owner role to another member directly from the customer portal, and admins can transfer ownership through the API. The previous owner is automatically demoted to billing manager so there is always exactly one owner.
+
+## Seat Limits at Checkout
+
+Seat-based products now support `min_seats` and `max_seats` on the checkout. Lock customers to a minimum team size for plans that require it, or cap the upper bound for tiered packages, all enforced at the buying step.
+
+## Member Webhook Events
+
+Three new webhook events have shipped: `member.created`, `member.updated`, and `member.deleted`. External systems can sync team membership changes in real time, perfect for provisioning seats in your own product as B2B teams grow or shrink.
 
 ## Name Your Webhook Endpoints
 
@@ -118,22 +134,6 @@ Webhook endpoints can now have a friendly name like "Production Events" or "Anal
 ## Return URL on Static Checkout Links
 
 Static checkout links created from the dashboard now support a custom return URL, matching what was already possible through the API. Send buyers back to a thank-you page, an upsell, or a specific app screen after they complete a purchase, no API call required.
-
-## Seat Limits at Checkout
-
-Seat-based products now support `min_seats` and `max_seats` on the checkout. Lock customers to a minimum team size for plans that require it, or cap the upper bound for tiered packages, all enforced at the buying step.
-
-## Team Ownership Transfer
-
-Team owners can now hand the owner role to another member directly from the customer portal, and admins can transfer ownership through the API. The previous owner is automatically demoted to billing manager so there is always exactly one owner.
-
-## Member Webhook Events
-
-Three new webhook events have shipped: `member.created`, `member.updated`, and `member.deleted`. External systems can sync team membership changes in real time, perfect for provisioning seats in your own product as B2B teams grow or shrink.
-
-## Faster Wallet and Card Checkout
-
-When mobile wallets are available, they now appear at the top of the payment list instead of buried under the card form. The cardholder name field is hidden when paying with a wallet, since the name is pulled from the wallet token automatically. Fewer clicks, fewer fields, faster checkout.
 
 ## Delete Your Account from the Web Dashboard
 

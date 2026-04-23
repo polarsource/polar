@@ -47,7 +47,7 @@ class AccountService:
         org_ids = await get_accessible_org_ids(session, auth_subject)
         repository = AccountRepository.from_session(session)
         statement = (
-            repository.get_by_org_ids_statement(org_ids)
+            repository.get_statement_by_org_ids(org_ids)
             .where(Account.id == id)
             .options(
                 joinedload(Account.users),

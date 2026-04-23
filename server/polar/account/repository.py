@@ -47,7 +47,7 @@ class AccountRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_by_org_ids_statement(
+    def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Account]]:
         return self.get_base_statement().where(

@@ -8,12 +8,11 @@ import { Button } from './Button'
 const TIERS = [
   {
     name: 'Starter',
-    price: '$0',
-    period: '/month',
+    free: true,
     desc: 'Free to start & validate ideas.',
     fees: [
       '4.40% + 40¢ per transaction',
-      '0.5% Billing',
+      '0.5% per Subscription',
       '$10.00 / 1M Product Events',
     ],
     features: ['All features to sell', '100K Product Events'],
@@ -27,7 +26,7 @@ const TIERS = [
     desc: 'For solo entrepreneurs and early teams.',
     fees: [
       '3.80% + 35¢ per transaction',
-      '0.0% Billing (SaaS Embedded)',
+      '0.0% per Subscription',
       '$6.00 / 1M Product Events',
     ],
     features: [
@@ -36,7 +35,7 @@ const TIERS = [
       'Team permissions',
       'Custom Domain',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Upgrade Now',
     primary: true,
   },
   {
@@ -46,7 +45,7 @@ const TIERS = [
     desc: 'For scaling startups.',
     fees: [
       '3.00% + 30¢ per transaction',
-      '0.0% Billing (SaaS Embedded)',
+      '0.0% per Subscription',
       '$7.00 / 1M Product Events',
     ],
     features: [
@@ -55,7 +54,7 @@ const TIERS = [
       '5M Product Events',
       'Advanced Analytics',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Upgrade Now',
     primary: false,
   },
   {
@@ -65,69 +64,71 @@ const TIERS = [
     desc: 'For fast growing businesses.',
     fees: [
       '2.40% + 30¢ per transaction',
-      '0.0% Billing (SaaS Embedded)',
+      '0.0% per Subscription',
       '$5.00 / 1M Product Events',
     ],
-    features: ['Slack & Prioritized Ticket support', '20M Product Events'],
-    cta: 'Start Free Trial',
+    features: [
+      'Slack Channel',
+      'Prioritized Ticket support',
+      '20M Product Events',
+    ],
+    cta: 'Upgrade Now',
     primary: false,
   },
 ]
 
 export const LandingPricing = () => (
-  <section id="pricing" className="py-48">
-    <div className="p-16 py-24">
-      <SectionHeading>
-        Simple, transparent
-        <br />
-        pricing
-      </SectionHeading>
-    </div>
+  <section id="pricing" className="flex flex-col gap-y-24 py-48">
+    <SectionHeading>
+      Simple, transparent
+      <br />
+      pricing
+    </SectionHeading>
 
-    <div className="grid grid-cols-1 gap-2 px-2 pb-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-8 px-2 pb-2 sm:grid-cols-2 lg:grid-cols-4">
       {TIERS.map((tier) => (
         <div
           key={tier.name}
           className="dark:bg-dark-900 flex flex-col justify-between bg-neutral-50"
         >
-          <div className="flex flex-col gap-y-4 p-10">
-            <div className="text-4xl text-black dark:text-white">
-              {tier.name}
-            </div>
-            <p className="dark:text-dark-200 text-2xl text-neutral-500">
-              {tier.desc}
-            </p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-normal text-neutral-900 dark:text-white">
-                {tier.price}
-              </span>
-              <span className="dark:text-dark-200 text-lg text-neutral-500">
-                {tier.period}
-              </span>
+          <div className="flex flex-col gap-y-12 p-12">
+            <div className="flex flex-col gap-y-8">
+              <div className="flex flex-row justify-between">
+                <div className="text-4xl text-black dark:text-white">
+                  {tier.name}
+                </div>
+                <div className="flex items-baseline gap-4">
+                  <span className="text-4xl font-normal text-neutral-900 dark:text-white">
+                    {tier.free ? 'Free' : tier.price}
+                  </span>
+                  {tier.period && (
+                    <span className="dark:text-dark-200 text-lg text-neutral-500">
+                      {tier.period}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p className="dark:text-dark-200 text-2xl text-neutral-500">
+                {tier.desc}
+              </p>
             </div>
 
-            <div className="dark:border-dark-700 mt-8 border-t border-neutral-200 pt-6">
-              <div className="mb-2 text-base text-neutral-400">Fees</div>
+            <div className="dark:border-dark-700 grid grid-cols-1 border-t border-neutral-300 pt-8 text-black sm:grid-cols-2 dark:text-white">
+              <div className="text-xl">Fees</div>
               <ul className="flex flex-col gap-2">
                 {tier.fees.map((f) => (
-                  <li
-                    key={f}
-                    className="text-lg text-neutral-900 dark:text-neutral-300"
-                  >
+                  <li key={f} className="text-xl">
                     {f}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="dark:border-dark-700 mt-8 border-t border-neutral-200 pt-6">
-              <div className="mb-2 text-base text-neutral-400">Features</div>
+            <div className="dark:border-dark-700 grid grid-cols-1 border-t border-neutral-300 pt-8 text-black sm:grid-cols-2 dark:text-white">
+              <div className="text-xl">Features</div>
               <ul className="flex flex-col gap-2">
                 {tier.features.map((f) => (
-                  <li
-                    key={f}
-                    className="text-lg text-neutral-900 dark:text-neutral-200"
-                  >
+                  <li key={f} className="text-xl">
                     {f}
                   </li>
                 ))}
@@ -137,10 +138,10 @@ export const LandingPricing = () => (
 
           <a
             href="#"
-            className={`mt-auto block w-full py-5 text-center text-lg font-medium transition ${
+            className={`mt-auto block w-full py-5 text-center text-xl font-medium transition ${
               tier.primary
-                ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200'
-                : 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300 dark:bg-dark-800 dark:text-white dark:hover:bg-dark-700'
+                ? 'bg-neutral-900 font-semibold text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200'
+                : 'dark:bg-dark-800 dark:hover:bg-dark-700 bg-neutral-200 text-neutral-900 hover:bg-neutral-300 dark:text-white'
             }`}
           >
             {tier.cta}

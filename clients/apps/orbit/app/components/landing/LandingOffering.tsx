@@ -1,10 +1,9 @@
 'use client'
 
-import { SectionHeading } from './SectionHeading'
-import { WaveBars } from '../WaveBars'
+import { Dumbbell } from '../Dumbbell'
 import { VectorField } from '../VectorField'
-import { MagneticBubbles } from '../MagneticBubbles'
-import { CircularBand } from '../CircularBand'
+import { LinkedRings } from '../LinkedRings'
+import { CreditArc } from '../CreditArc'
 
 /**
  * LandingOffering — 2×2 grid of product tiles, each with a graphic
@@ -15,7 +14,7 @@ const TILES = [
   {
     title: 'Usage Billing',
     desc: 'Meter tokens, API calls, compute, storage — bill with precision down to the event.',
-    Graphic: WaveBars,
+    Graphic: Dumbbell,
   },
   {
     title: 'Subscriptions',
@@ -24,13 +23,13 @@ const TILES = [
   },
   {
     title: 'Seats',
-    desc: "Per-seat pricing that scales with your customers' teams. Add, remove, prorate automatically.",
-    Graphic: MagneticBubbles,
+    desc: "Pricing that scales with your customer's teams. Add, remove, prorate automatically.",
+    Graphic: LinkedRings,
   },
   {
-    title: 'Digital Goods',
-    desc: 'Sell licenses, downloads, credits, and one-time digital products with a single API call.',
-    Graphic: CircularBand,
+    title: 'Credits',
+    desc: 'Let customers prepay and draw down over time — like a wallet for your API.',
+    Graphic: CreditArc,
   },
 ]
 
@@ -48,11 +47,13 @@ export const LandingOffering = () => (
             <div className="aspect-square w-full">
               <G field={(r, θ) => θ + Math.PI / 2} />
             </div>
-            <div className="flex flex-col gap-4 p-12">
-              <h3 className="text-2xl font-normal text-neutral-900 dark:text-white">
+            <div className="flex flex-col gap-2 px-12 py-12 text-3xl">
+              <span className="text-neutral-900 dark:text-neutral-300">
                 {tile.title}
-              </h3>
-              <p className="text-2xl text-neutral-500">{tile.desc}</p>
+              </span>
+              <span className="dark:text-dark-300 text-neutral-500">
+                {tile.desc}
+              </span>
             </div>
           </div>
         )

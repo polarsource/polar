@@ -17,7 +17,7 @@ const LAYERS = [
   { id: '01', name: 'Ingest', desc: 'Stream every call, token, and byte' },
   { id: '02', name: 'Aggregate', desc: 'Raw signals become billable usage' },
   { id: '03', name: 'Quantify', desc: 'Turn consumption into charges' },
-  { id: '04', name: 'Charge', desc: 'Invoice, collect, and close the loop' },
+  { id: '04', name: 'Charge', desc: 'Invoice, collect & close the loop' },
 ]
 
 export const LandingArchitecture = () => (
@@ -60,13 +60,10 @@ export const LandingArchitecture = () => (
             {i === 3 && <OrbitingSpheres />}
           </div>
           {/* Label */}
-          <div className="dark:bg-dark-800 flex flex-row items-center gap-x-6 bg-neutral-100 px-8 py-6">
-            <span className="text-5xl font-normal text-black dark:text-neutral-300">
-              — {l.id}
-            </span>
-            <div className="flex flex-col">
-              <span className="font-medium text-neutral-900 dark:text-neutral-300">
-                {l.name}
+          <div className="flex flex-col px-12 py-12">
+            <div className="flex flex-col gap-2 text-3xl">
+              <span className="text-neutral-900 dark:text-neutral-300">
+                {l.id} — {l.name}
               </span>
               <span className="dark:text-dark-300 text-neutral-500">
                 {l.desc}

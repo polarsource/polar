@@ -28,8 +28,8 @@ interface VectorFieldProps {
 
 export const VectorField = ({
   field = uniformField,
-  cols = 14,
-  rows = 14,
+  cols = 8,
+  rows = 8,
 }: VectorFieldProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef<{ x: number; y: number } | null>(null)
@@ -52,7 +52,7 @@ export const VectorField = ({
     const innerSize = size - padding * 2
     const cellW = innerSize / cols
     const cellH = innerSize / rows
-    const half = Math.min(cellW, cellH) * 0.25
+    const half = Math.min(cellW, cellH) * 0.2
 
     const styles = getComputedStyle(canvas)
     const strokeColor =
@@ -80,7 +80,7 @@ export const VectorField = ({
 
     const draw = () => {
       ctx.clearRect(0, 0, size, size)
-      ctx.lineWidth = 1
+      ctx.lineWidth = 1.5
       ctx.lineCap = 'round'
       ctx.strokeStyle = strokeColor
 

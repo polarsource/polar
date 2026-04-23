@@ -13,7 +13,7 @@ from polar.kit.pagination import ListResource, PaginationParams, PaginationParam
 from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
 from polar.models import Subscription
-from polar.models.subscription import CustomerCancellationReason
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import APITag
 from polar.order.service import PaymentFailed
 from polar.organization.schemas import OrganizationID
@@ -83,6 +83,11 @@ async def list(
     active: bool | None = Query(
         None, description="Filter by active or inactive subscription."
     ),
+    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
+        None,
+        title="SubscriptionStatus Filter",
+        description="Filter by subscription status.",
+    ),
     cancel_at_period_end: bool | None = Query(
         None,
         description="Filter by subscriptions that are set to cancel at period end.",
@@ -113,6 +118,7 @@ async def list(
         external_customer_id=external_customer_id,
         discount_id=discount_id,
         active=active,
+        status=status,
         cancel_at_period_end=cancel_at_period_end,
         customer_cancellation_reason=customer_cancellation_reason,
         canceled_at_after=canceled_at_after,

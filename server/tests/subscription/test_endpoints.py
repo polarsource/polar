@@ -169,6 +169,65 @@ class TestListSubscriptions:
         assert json["pagination"]["total_count"] == 2
 
     @pytest.mark.auth
+    async def test_status_filter(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trialing,
+            started_at=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+        await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            revoke=True,
+        )
+
+        # Filter by single status
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={"status": "active"},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        for item in json["items"]:
+            assert item["status"] == "active"
+
+        # Filter by multiple statuses
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={"status": ["active", "trialing"]},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
+        # Filter by canceled
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={"status": "canceled"},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        for item in json["items"]:
+            assert item["status"] == "canceled"
+
+    @pytest.mark.auth
     async def test_canceled_at_date_range(
         self,
         save_fixture: SaveFixture,

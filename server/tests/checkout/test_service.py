@@ -3776,6 +3776,42 @@ class TestUpdate:
                 CheckoutUpdate(currency=PresentmentCurrency.eur),
             )
 
+    async def test_product_change_no_prices_for_existing_and_default_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.default_presentment_currency = PresentmentCurrency.ngn
+        await save_fixture(organization)
+
+        current_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(4242, "ngn")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(4242, "usd")],
+        )
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[current_product, new_product],
+            product=current_product,
+            currency="ngn",
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout,
+                CheckoutUpdate(product_id=new_product.id),
+            )
+
 
 @pytest.mark.asyncio
 class TestConfirm:

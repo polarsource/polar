@@ -1911,12 +1911,30 @@ class CheckoutService:
                 # Only product is updated, try to use the existing currency
                 # or fallback to default currency if existing currency is not supported
                 else:
-                    currency_prices = PriceSet.from_product(
-                        product,
-                        checkout.currency,
-                        product.organization.default_presentment_currency,
+                    currencies = list(
+                        dict.fromkeys(
+                            [
+                                checkout.currency,
+                                product.organization.default_presentment_currency,
+                            ]
+                        )
                     )
-                    checkout.currency = currency_prices.currency
+                    try:
+                        currency_prices = PriceSet.from_product(
+                            product, *currencies
+                        )
+                        checkout.currency = currency_prices.currency
+                    except NoPricesForCurrencies as e:
+                        raise PolarRequestValidationError(
+                            [
+                                {
+                                    "type": "value_error",
+                                    "loc": ("body", "product_id"),
+                                    "msg": "Product is not available in the specified currency.",
+                                    "input": str(product.id),
+                                }
+                            ]
+                        ) from e
 
                 price = currency_prices.get_default_price()
 

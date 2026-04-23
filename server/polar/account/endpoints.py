@@ -22,14 +22,14 @@ router = APIRouter(tags=["accounts", APITag.private])
 
 @router.get("/accounts/{id}", response_model=AccountSchema)
 async def get(
-    authorized: AuthorizeAccountRead,
+    authz: AuthorizeAccountRead,
 ) -> AccountSchema:
-    return AccountSchema.model_validate(authorized.account)
+    return AccountSchema.model_validate(authz.account)
 
 
 @router.patch("/accounts/{id}", response_model=AccountSchema)
 async def patch(
-    authorized: AuthorizeAccountWrite,
+    authz: AuthorizeAccountWrite,
     account_update: AccountUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountSchema:
@@ -37,7 +37,7 @@ async def patch(
     from polar.account.repository import AccountRepository
 
     repository = AccountRepository.from_session(session)
-    account = await repository.get_by_id(authorized.account.id)
+    account = await repository.get_by_id(authz.account.id)
     if account is None:
         raise ResourceNotFound()
     updated = await account_service.update(session, account, account_update)
@@ -46,9 +46,9 @@ async def patch(
 
 @router.get("/accounts/{id}/credits", response_model=list[AccountCreditSchema])
 async def get_credits(
-    authorized: AuthorizeAccountRead,
+    authz: AuthorizeAccountRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> list[AccountCreditSchema]:
     credit_repository = AccountCreditRepository.from_session(session)
-    credits = await credit_repository.get_active(authorized.account.id)
+    credits = await credit_repository.get_active(authz.account.id)
     return [AccountCreditSchema.model_validate(credit) for credit in credits]

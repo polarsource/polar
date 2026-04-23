@@ -55,21 +55,21 @@ async def create(
 
 @router.get("/{id}", response_model=PayoutAccountSchema)
 async def get(
-    authorized: AuthorizePayoutAccountRead,
+    authz: AuthorizePayoutAccountRead,
 ) -> PayoutAccountSchema:
-    return PayoutAccountSchema.model_validate(authorized.payout_account)
+    return PayoutAccountSchema.model_validate(authz.payout_account)
 
 
 @router.delete("/{id}", status_code=204)
 async def delete(
-    authorized: AuthorizePayoutAccountWrite,
+    authz: AuthorizePayoutAccountWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     # Re-fetch on write session — the guard loaded on a read session
     from polar.payout_account.repository import PayoutAccountRepository
 
     repository = PayoutAccountRepository.from_session(session)
-    payout_account = await repository.get_by_id(authorized.payout_account.id)
+    payout_account = await repository.get_by_id(authz.payout_account.id)
     if payout_account is None:
         raise ResourceNotFound()
     await payout_account_service.delete(session, payout_account)
@@ -77,16 +77,16 @@ async def delete(
 
 @router.post("/{id}/onboarding-link", response_model=PayoutAccountLink)
 async def onboarding_link(
-    authorized: AuthorizePayoutAccountWrite,
+    authz: AuthorizePayoutAccountWrite,
     return_path: str = Query(...),
 ) -> PayoutAccountLink:
     return await payout_account_service.onboarding_link(
-        authorized.payout_account, return_path
+        authz.payout_account, return_path
     )
 
 
 @router.post("/{id}/dashboard-link", response_model=PayoutAccountLink)
 async def dashboard_link(
-    authorized: AuthorizePayoutAccountWrite,
+    authz: AuthorizePayoutAccountWrite,
 ) -> PayoutAccountLink:
-    return await payout_account_service.dashboard_link(authorized.payout_account)
+    return await payout_account_service.dashboard_link(authz.payout_account)

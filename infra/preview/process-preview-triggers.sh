@@ -23,7 +23,6 @@ while true; do
                 if [[ "$PR_NUM" =~ ^[0-9]+$ ]]; then
                     "$PREVIEW_TOOLS_DIR/regenerate-caddyfile.sh"
                     systemctl reload caddy
-                    systemctl enable "polar-preview-backend@${PR_NUM}"
                     systemctl restart "polar-preview-backend@${PR_NUM}" || echo "[trigger] Failed to restart pr-${PR_NUM}"
                 fi
                 ;;

@@ -151,12 +151,12 @@ const MetricChartBox = ({
   }, [data, metric, selectedMetric])
 
   const hoveredPeriod = useMemo(() => {
-    if (!data || !hoveredPeriodIndex) return null
+    if (!data || hoveredPeriodIndex == null) return null
     return data.periods[hoveredPeriodIndex]
   }, [data, hoveredPeriodIndex])
 
   const hoveredPreviousPeriod = useMemo(() => {
-    if (!previousData || !hoveredPeriodIndex) return null
+    if (!previousData || hoveredPeriodIndex == null) return null
     return previousData.periods[hoveredPeriodIndex]
   }, [previousData, hoveredPeriodIndex])
 

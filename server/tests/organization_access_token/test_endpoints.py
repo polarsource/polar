@@ -61,7 +61,6 @@ class TestCreateOrganizationAccessToken:
         AuthSubjectFixture(
             subject="organization",
             scopes={
-                Scope.web_write,
                 Scope.organization_access_tokens_write,
             },
         )
@@ -88,7 +87,6 @@ class TestCreateOrganizationAccessToken:
         AuthSubjectFixture(
             subject="organization",
             scopes={
-                Scope.web_write,
                 Scope.organization_access_tokens_write,
                 Scope.metrics_read,
             },
@@ -115,7 +113,6 @@ class TestUpdateOrganizationAccessToken:
         AuthSubjectFixture(
             subject="organization",
             scopes={
-                Scope.web_write,
                 Scope.organization_access_tokens_write,
             },
         )
@@ -141,7 +138,6 @@ class TestUpdateOrganizationAccessToken:
         AuthSubjectFixture(
             subject="organization",
             scopes={
-                Scope.web_write,
                 Scope.organization_access_tokens_write,
                 Scope.metrics_read,
             },

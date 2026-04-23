@@ -65,8 +65,6 @@ _TRIAL_METERED_AUTH = pytest.mark.auth(
     AuthSubjectFixture(
         subject="user",
         scopes={
-            Scope.web_read,
-            Scope.web_write,
             Scope.checkouts_read,
             Scope.checkouts_write,
             Scope.orders_read,

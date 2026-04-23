@@ -65,7 +65,7 @@ export const RadialSpinner = () => {
 
       // Faint background paths — always visible
       ctx.strokeStyle = dimColor
-      ctx.lineWidth = 1
+      ctx.lineWidth = 2
       for (let i = 0; i < SPOKE_COUNT; i++) {
         const angle = (i / SPOKE_COUNT) * Math.PI * 2 - Math.PI / 2
         ctx.beginPath()
@@ -104,7 +104,7 @@ export const RadialSpinner = () => {
         const y2 = cy + Math.sin(angle) * r2
 
         ctx.strokeStyle = strokeColor
-        ctx.lineWidth = 1.5
+        ctx.lineWidth = 2
         ctx.beginPath()
         ctx.moveTo(x1, y1)
         ctx.lineTo(x2, y2)

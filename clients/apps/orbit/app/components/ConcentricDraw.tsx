@@ -72,7 +72,7 @@ export const ConcentricDraw = () => {
 
         // Faint background ring
         ctx.strokeStyle = dimColor;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.setLineDash([]);
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -95,7 +95,7 @@ export const ConcentricDraw = () => {
         if (endAngle - startAngle < 0.01) continue;
 
         ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(cx, cy, r, startAngle, endAngle);
         ctx.stroke();

@@ -92,6 +92,7 @@ from polar.product.guard import (
     is_static_price,
 )
 from polar.product.price_set import PriceSet
+from polar.product.repository import ProductRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
@@ -331,7 +332,14 @@ class OrderService:
             statement = statement.where(Order.product_id.in_(product_id))
 
         if product_billing_type is not None:
-            statement = statement.where(Product.billing_type.in_(product_billing_type))
+            product_repository = ProductRepository.from_session(session)
+            matching_product_ids = await product_repository.get_ids_by_billing_type(
+                product_billing_type,
+                organization_ids=organization_id,
+            )
+            if not matching_product_ids:
+                return [], 0
+            statement = statement.where(Order.product_id.in_(matching_product_ids))
 
         if discount_id is not None:
             statement = statement.where(Order.discount_id.in_(discount_id))

@@ -30,10 +30,10 @@ export const CycleArrow = () => {
       "rgb(190, 190, 190)";
 
     const cy = size / 2;
-    const cols = 7;           // odd count so left and right end on opposite sides
-    const colGap = size * 0.06; // horizontal spacing between verticals
-    const halfH = size * 0.12;  // half the vertical extent
-    const r = colGap / 2;      // semicircle radius = half the gap
+    const cols = 7;
+    const colGap = size * 0.06;
+    const halfH = size * 0.12;
+    const r = colGap / 2;
 
     const totalW = (cols - 1) * colGap;
     const startX = (size - totalW) / 2;
@@ -49,14 +49,11 @@ export const CycleArrow = () => {
       const goingUp = i % 2 === 1;
 
       if (i === 0) {
-        // Start at the bottom or top of the first column
         ctx.moveTo(x, goingUp ? cy + halfH : cy - halfH);
       }
 
-      // Vertical line
       ctx.lineTo(x, goingUp ? cy - halfH : cy + halfH);
 
-      // Semicircle connecting to the next column (if not last)
       if (i < cols - 1) {
         const arcCx = x + colGap / 2;
         const arcCy = goingUp ? cy - halfH : cy + halfH;
@@ -64,6 +61,28 @@ export const CycleArrow = () => {
       }
     }
 
+    ctx.stroke();
+
+    // Arrowheads — V-shaped strokes at both path ends
+    const headLen = colGap * 0.8;
+    const headAngle = Math.PI / 4;
+
+    // Left end: path starts at top of first column, pointing down
+    const lx = startX;
+    const ly = cy - halfH;
+    ctx.beginPath();
+    ctx.moveTo(lx - Math.sin(headAngle) * headLen, ly + Math.cos(headAngle) * headLen);
+    ctx.lineTo(lx, ly);
+    ctx.lineTo(lx + Math.sin(headAngle) * headLen, ly + Math.cos(headAngle) * headLen);
+    ctx.stroke();
+
+    // Right end: path ends at bottom of last column, pointing up
+    const rx = startX + (cols - 1) * colGap;
+    const ry = cy + halfH;
+    ctx.beginPath();
+    ctx.moveTo(rx - Math.sin(headAngle) * headLen, ry - Math.cos(headAngle) * headLen);
+    ctx.lineTo(rx, ry);
+    ctx.lineTo(rx + Math.sin(headAngle) * headLen, ry - Math.cos(headAngle) * headLen);
     ctx.stroke();
   }, []);
 

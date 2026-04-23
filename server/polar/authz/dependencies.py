@@ -15,7 +15,10 @@ from polar.models.account import Account as AccountModel
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationID
 from polar.payout_account.repository import PayoutAccountRepository
-from polar.postgres import AsyncReadSession, AsyncSession, get_db_read_session, get_db_session
+from polar.postgres import (
+    AsyncSession,
+    get_db_session,
+)
 
 from .policies import finance, members
 from .policies import organization as org_policy
@@ -105,7 +108,7 @@ async def _always_allow(
 
 async def _check_policy(
     policy_fn: PolicyFn,
-    session: AsyncReadSession,
+    session: AsyncSession,
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> None:
@@ -200,7 +203,7 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     async def dependency(
         id: UUID,
         auth_subject: Annotated[AuthSubject[User], Depends(_authenticator)],
-        session: AsyncReadSession = Depends(get_db_read_session),
+        session: AsyncSession = Depends(get_db_session),
     ) -> AuthorizedAccount:
         account_repo = AccountRepository.from_session(session)
         account = await account_repo.get_by_id(id)
@@ -241,7 +244,7 @@ def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     async def dependency(
         id: UUID,
         auth_subject: Annotated[AuthSubject[User], Depends(_authenticator)],
-        session: AsyncReadSession = Depends(get_db_read_session),
+        session: AsyncSession = Depends(get_db_session),
     ) -> AuthorizedPayoutAccount:
         pa_repo = PayoutAccountRepository.from_session(session)
         payout_account = await pa_repo.get_by_id(id)

@@ -17,7 +17,7 @@ _EventTypeRead = Authenticator(
 EventTypeRead = Annotated[AuthSubject[User | Organization], Depends(_EventTypeRead)]
 
 _EventTypeWrite = Authenticator(
-    required_scopes=set(),
+    required_scopes={Scope.events_write},
     allowed_subjects={User, Organization},
 )
 EventTypeWrite = Annotated[AuthSubject[User | Organization], Depends(_EventTypeWrite)]

@@ -21,7 +21,9 @@ from tests.fixtures.random_objects import (
     create_account,
     create_customer,
     create_order,
+    create_payout_account,
     create_subscription,
+    create_user,
 )
 
 
@@ -507,6 +509,126 @@ class TestGetPaymentStatus:
         json = response.json()
         # Should be payment ready even without completing steps
         assert json["payment_ready"] is True
+
+
+@pytest.mark.asyncio
+class TestSetPayoutAccount:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/payout-account",
+            json={"payout_account_id": str(uuid.uuid4())},
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_non_member_returns_404(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/payout-account",
+            json={"payout_account_id": str(uuid.uuid4())},
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_non_admin_member_returns_403(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        """A regular org member (not admin) cannot set the payout account."""
+        other_user = await create_user(save_fixture)
+        organization.account = await create_account(save_fixture, user=other_user)
+        await save_fixture(organization)
+
+        payout_account = await create_payout_account(
+            save_fixture, organization, user
+        )
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/payout-account",
+            json={"payout_account_id": str(payout_account.id)},
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_admin_can_set_own_payout_account(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        """An org admin can set the payout account to one they own."""
+        organization.account = await create_account(save_fixture, user=user)
+        await save_fixture(organization)
+
+        payout_account = await create_payout_account(
+            save_fixture, organization, user
+        )
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/payout-account",
+            json={"payout_account_id": str(payout_account.id)},
+        )
+        assert response.status_code == 200
+        assert response.json()["id"] == str(organization.id)
+
+    @pytest.mark.auth
+    async def test_admin_cannot_set_other_users_payout_account(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        """An org admin cannot assign a payout account they don't own."""
+        organization.account = await create_account(save_fixture, user=user)
+        await save_fixture(organization)
+
+        other_user = await create_user(save_fixture)
+        payout_account = await create_payout_account(
+            save_fixture, organization, other_user
+        )
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/payout-account",
+            json={"payout_account_id": str(payout_account.id)},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_unknown_payout_account_returns_422(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        organization.account = await create_account(save_fixture, user=user)
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/payout-account",
+            json={"payout_account_id": str(uuid.uuid4())},
+        )
+        assert response.status_code == 422
 
 
 @pytest.mark.asyncio

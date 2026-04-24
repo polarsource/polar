@@ -251,7 +251,7 @@ class PolarSelfClient:
         from polar_sdk.models.polarerror import PolarError
 
         total_tokens = input_tokens + output_tokens
-        cost_cents = cost_usd * Decimal(100)
+        cost_cents = (cost_usd * Decimal(100)).quantize(Decimal("0.000001"))
         root_external_id = f"organization_review-{external_customer_id}"
 
         with logfire.span(

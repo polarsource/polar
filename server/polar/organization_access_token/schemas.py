@@ -3,12 +3,12 @@ from enum import StrEnum
 
 from pydantic import UUID4
 
-from polar.auth.scope import RESERVED_SCOPES, Scope
+from polar.auth.scope import Scope
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.organization.schemas import OrganizationID
 
 AvailableScope = StrEnum(  # type: ignore
-    "AvailableScope", {s: s.value for s in Scope if s not in RESERVED_SCOPES}
+    "AvailableScope", {s: s.value for s in Scope}
 )
 
 

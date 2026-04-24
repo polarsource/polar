@@ -6,7 +6,6 @@ from fastapi.params import Depends
 from fastapi.routing import APIRoute
 
 from polar.auth.dependencies import _Authenticator
-from polar.auth.scope import RESERVED_SCOPES
 
 
 class DocumentedAuthSubjectAPIRoute(APIRoute):
@@ -48,11 +47,7 @@ class DocumentedAuthSubjectAPIRoute(APIRoute):
                 description = kwargs["description"] or inspect.cleandoc(
                     endpoint.__doc__ or ""
                 )
-                scopes_list = [
-                    f"`{s}`"
-                    for s in sorted(required_scopes or [])
-                    if s not in RESERVED_SCOPES
-                ]
+                scopes_list = [f"`{s}`" for s in sorted(required_scopes or [])]
                 if scopes_list:
                     description += f"\n\n**Scopes**: {' '.join(scopes_list)}"
                 kwargs["description"] = description

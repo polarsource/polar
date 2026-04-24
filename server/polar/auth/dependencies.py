@@ -6,7 +6,7 @@ from fastapi import Depends, Request, Security
 from fastapi.security import HTTPBearer, OpenIdConnect
 from makefun import with_signature
 
-from polar.auth.scope import RESERVED_SCOPES, Scope
+from polar.auth.scope import Scope
 from polar.exceptions import Unauthorized
 from polar.oauth2.exceptions import InsufficientScopeError
 
@@ -193,13 +193,7 @@ def Authenticator(
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             default=Security(
                 _get_auth_subject_factory(allowed_subjects_frozen),
-                scopes=sorted(
-                    [
-                        s.value
-                        for s in (required_scopes or {})
-                        if s not in RESERVED_SCOPES
-                    ]
-                ),
+                scopes=sorted(s.value for s in (required_scopes or {})),
             ),
         ),
     ]

@@ -1,8 +1,8 @@
 """add receipt columns to orders and customers
 
 Revision ID: 5d9e4c1f2a3b
-Revises: d3f5e1a7b2c4
-Create Date: 2026-04-24 09:00:00.000000
+Revises: ead15547bea8
+Create Date: 2026-04-24 14:00:00.000000
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5d9e4c1f2a3b"
-down_revision = "d3f5e1a7b2c4"
+down_revision = "ead15547bea8"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

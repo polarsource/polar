@@ -553,7 +553,7 @@ describe('CheckoutPricingBreakdown', () => {
   })
 
   describe('metered prices in breakdown', () => {
-    it('shows additional metered usage row', () => {
+    it('shows usage pricing section and per-meter row', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',
         meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' as const },
@@ -570,8 +570,76 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/additional metered usage/i)).toBeInTheDocument()
+      expect(screen.getByText(/usage pricing/i)).toBeInTheDocument()
       expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
+    })
+
+    it('strikes through the original rate when a percentage discount is active', () => {
+      const meteredPrice = createMeteredPrice({
+        id: 'price_metered_1',
+        unit_amount: '900',
+        meter: { id: 'meter_1', name: 'Workspaces', unit: 'scalar' as const },
+      })
+      const checkout = createCheckout({
+        amount: 999,
+        discount_amount: 500,
+        net_amount: 499,
+        tax_amount: null,
+        total_amount: 499,
+        discount: {
+          id: 'disc_1',
+          name: 'half',
+          type: 'percentage',
+          duration: 'once',
+          code: 'halfoff',
+          basis_points: 5000,
+        } satisfies schemas['CheckoutPublic']['discount'],
+        prices: {
+          prod_1: [createCheckout().product_price, meteredPrice],
+        },
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const row = screen.getByTestId('detail-row-Workspaces')
+      expect(row).toHaveTextContent('$9.00')
+      expect(row).toHaveTextContent('$4.50')
+      expect(within(row).getByText('$9.00')).toHaveClass('line-through')
+    })
+
+    it('does not strike through the rate for fixed-amount discounts', () => {
+      const meteredPrice = createMeteredPrice({
+        id: 'price_metered_1',
+        unit_amount: '900',
+        meter: { id: 'meter_1', name: 'Workspaces', unit: 'scalar' as const },
+      })
+      const checkout = createCheckout({
+        amount: 999,
+        discount_amount: 500,
+        net_amount: 499,
+        tax_amount: null,
+        total_amount: 499,
+        discount: {
+          id: 'disc_1',
+          name: '$5 off',
+          type: 'fixed',
+          duration: 'once',
+          code: null,
+          amount: 500,
+          currency: 'usd',
+          amounts: { usd: 500 },
+        } satisfies schemas['CheckoutPublic']['discount'],
+        prices: {
+          prod_1: [createCheckout().product_price, meteredPrice],
+        },
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const row = screen.getByTestId('detail-row-Workspaces')
+      expect(row).toHaveTextContent('$9.00')
+      expect(within(row).queryByText('$4.50')).not.toBeInTheDocument()
+      expect(row.querySelector('.line-through')).toBeNull()
     })
   })
 

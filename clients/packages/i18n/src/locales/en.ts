@@ -95,7 +95,7 @@ export default {
           other: 'Every # years',
         },
       },
-      additionalMeteredUsage: 'Additional metered usage',
+      additionalMeteredUsage: 'Usage pricing',
       perUnit: '/ unit',
       perSeat: 'per seat',
       seats: {

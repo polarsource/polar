@@ -262,11 +262,7 @@ const CheckoutPricingBreakdown = ({
           {meteredPrices.length > 0 && (
             <DetailRow
               title={t('checkout.pricing.additionalMeteredUsage')}
-              subtitle={
-                checkout.discount?.type === 'percentage'
-                  ? discountEndLabel || undefined
-                  : undefined
-              }
+              className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-4"
             />
           )}
           {meteredPrices.map((meteredPrice) => (

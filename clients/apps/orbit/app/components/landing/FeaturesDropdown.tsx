@@ -24,10 +24,21 @@ const FEATURES_MENU = [
 ]
 
 const containerVariants: Variants = {
-  hidden: {},
+  hidden: {
+    y: '-100%',
+    opacity: 0,
+  },
   visible: {
+    y: 0,
+    opacity: 1,
     transition: {
+      y: {
+        ease: [0.7, 0, 0.3, 1] as [number, number, number, number],
+        duration: 0.5,
+      },
+      opacity: { duration: 0.15 },
       staggerChildren: 0.05,
+      delayChildren: 0.15,
     },
   },
 }
@@ -62,13 +73,17 @@ export const FeaturesDropdown = () => {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="dark:bg-dark-950 fixed inset-x-0 top-20 -z-5 bg-white"
+            className="dark:bg-dark-950 fixed inset-x-0 top-0 -z-5 bg-white"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
+            exit="hidden"
+            style={{ willChange: 'transform' }}
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
           >
-            <div className="px-16 pt-24 pb-12 shadow-2xl">
-              <div className="grid grid-cols-4 gap-12 xl:grid-cols-8">
+            <div className="px-16 pt-48 pb-12 shadow-2xl">
+              <div className="grid grid-cols-4 gap-12 xl:grid-cols-6">
                 {FEATURES_MENU.map((col) => (
                   <div key={col.title} className="flex flex-col gap-y-2">
                     <div className="dark:text-dark-300 text-2xl text-neutral-400">

@@ -397,37 +397,105 @@ class Settings(BaseSettings):
         "usd": _DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE,
     }
     # Minimum payout amounts per country (in USD cents), based on Stripe's per-country
-    # minimums converted from local currency to USD.
+    # minimums converted from local currency to USD (ceiling).
     # Source: https://docs.stripe.com/global-payouts/send-money
-    # FX rates are approximate and were last updated on 2026-04-24. Refresh periodically.
-    # TODO: Add other countries as needed based on https://docs.stripe.com/global-payouts/send-money
+    # FX rates are approximate as of 2026-04-24. Refresh periodically.
+    # TODO: Refresh FX rates periodically based on https://docs.stripe.com/global-payouts/send-money
     ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_COUNTRY: dict[str, int] = {
-        "AE": 137,   # United Arab Emirates: 5.0 AED ≈ $1.37
-        "AL": 3175,  # Albania: 3000.0 ALL ≈ $31.75
-        "AM": 3025,  # Armenia: 12100.0 AMD ≈ $30.25
-        "BA": 2778,  # Bosnia and Herzegovina: 50.0 BAM ≈ $27.78
-        "BS": 2500,  # Bahamas: 25.0 BSD ≈ $25.00
-        "BT": 3013,  # Bhutan: 2500.0 BTN ≈ $30.13
-        "EC": 100,   # Ecuador: 1.0 USD = $1.00
-        "GM": 2815,  # Gambia: 1900.0 GMD ≈ $28.15
-        "GY": 3015,  # Guyana: 6300.0 GYD ≈ $30.15
-        "HK": 256,   # Hong Kong: 20.0 HKD ≈ $2.56
-        "KW": 323,   # Kuwait: 1.0 KWD ≈ $3.23
-        "MD": 2809,  # Moldova: 500.0 MDL ≈ $28.09
-        "MG": 2940,  # Madagascar: 132300.0 MGA ≈ $29.40
-        "MK": 2655,  # North Macedonia: 1500.0 MKD ≈ $26.55
-        "MN": 3044,  # Mongolia: 105000.0 MNT ≈ $30.44
-        "MY": 2830,  # Malaysia: 133.0 MYR ≈ $28.30
-        "MZ": 2500,  # Mozambique: 1600.0 MZN ≈ $25.00
-        "NA": 2660,  # Namibia: 500.0 NAD ≈ $26.60
-        "PA": 5000,  # Panama: 50.0 USD = $50.00
-        "RS": 2778,  # Serbia: 3000.0 RSD ≈ $27.78
-        "SV": 3000,  # El Salvador: 30.0 USD = $30.00
-        "TH": 1676,  # Thailand: 600.0 THB ≈ $16.76
-        "TW": 2540,  # Taiwan: 800.0 TWD ≈ $25.40
-        "UZ": 2767,  # Uzbekistan: 343000.0 UZS ≈ $27.67
-        "VN": 333,   # Vietnam: 81125.0 VND ≈ $3.33
-        "ZA": 532,   # South Africa: 100.0 ZAR ≈ $5.32
+        "AE": 137,   # United Arab Emirates: 5 AED ≈ $1.37
+        "AG": 2,     # Antigua and Barbuda: 0.04 XCD ≈ $0.01
+        "AL": 3175,  # Albania: 3000 ALL ≈ $31.75
+        "AM": 3025,  # Armenia: 12100 AMD ≈ $30.25
+        "AT": 2,     # Austria: 0.01 EUR ≈ $0.01
+        "AU": 1,     # Australia: 0.01 AUD ≈ $0.01
+        "BA": 2778,  # Bosnia and Herzegovina: 50 BAM ≈ $27.78
+        "BE": 2,     # Belgium: 0.01 EUR ≈ $0.01
+        "BG": 2,     # Bulgaria: 0.01 EUR ≈ $0.01
+        "BH": 2,     # Bahrain: 0.005 BHD ≈ $0.01
+        "BJ": 1,     # Benin: 1 XOF ≈ $0.00
+        "BN": 75,    # Brunei: 1 BND ≈ $0.75
+        "BS": 2500,  # Bahamas: 25 BSD ≈ $25.00
+        "BT": 3013,  # Bhutan: 2500 BTN ≈ $30.13
+        "BW": 8,     # Botswana: 1 BWP ≈ $0.07
+        "CA": 1,     # Canada: 0.01 CAD ≈ $0.01
+        "CH": 2,     # Switzerland: 0.01 EUR ≈ $0.01
+        "CI": 1,     # Côte d'Ivoire: 1 XOF ≈ $0.00
+        "CR": 2,     # Costa Rica: 7 CRC ≈ $0.01
+        "CY": 2,     # Cyprus: 0.01 EUR ≈ $0.01
+        "CZ": 2,     # Czech Republic: 0.01 EUR ≈ $0.01
+        "DE": 2,     # Germany: 0.01 EUR ≈ $0.01
+        "DK": 1,     # Denmark: 0.01 DKK ≈ $0.00
+        "DZ": 1,     # Algeria: 1 DZD ≈ $0.01
+        "EC": 100,   # Ecuador: 1 USD = $1.00
+        "EE": 2,     # Estonia: 0.01 EUR ≈ $0.01
+        "ES": 2,     # Spain: 0.01 EUR ≈ $0.01
+        "ET": 2,     # Ethiopia: 1 ETB ≈ $0.02
+        "FI": 2,     # Finland: 0.01 EUR ≈ $0.01
+        "FR": 2,     # France: 0.01 EUR ≈ $0.01
+        "GB": 2,     # United Kingdom: 0.01 GBP ≈ $0.01
+        "GM": 2815,  # Gambia: 1900 GMD ≈ $28.15
+        "GR": 2,     # Greece: 0.01 EUR ≈ $0.01
+        "GT": 13,    # Guatemala: 1 GTQ ≈ $0.13
+        "GY": 3015,  # Guyana: 6300 GYD ≈ $30.15
+        "HK": 256,   # Hong Kong: 20 HKD ≈ $2.56
+        "HR": 2,     # Croatia: 0.01 EUR ≈ $0.01
+        "HU": 1,     # Hungary: 0.01 HUF ≈ $0.00
+        "ID": 1,     # Indonesia: 0.01 IDR ≈ $0.00
+        "IE": 2,     # Ireland: 0.01 EUR ≈ $0.01
+        "IL": 1,     # Israel: 0.01 ILS ≈ $0.00
+        "IS": 2,     # Iceland: 0.01 EUR ≈ $0.01
+        "IT": 2,     # Italy: 0.01 EUR ≈ $0.01
+        "JM": 0,     # Jamaica: 0 JMD = $0.00
+        "JO": 2,     # Jordan: 0.01 JOD ≈ $0.01
+        "KE": 14,    # Kenya: 20 KES ≈ $0.14
+        "KW": 323,   # Kuwait: 1 KWD ≈ $3.23
+        "LC": 2,     # Saint Lucia: 0.04 XCD ≈ $0.01
+        "LI": 2,     # Liechtenstein: 0.01 EUR ≈ $0.01
+        "LK": 1,     # Sri Lanka: 1 LKR ≈ $0.00
+        "LT": 2,     # Lithuania: 0.01 EUR ≈ $0.01
+        "LU": 2,     # Luxembourg: 0.01 EUR ≈ $0.01
+        "LV": 2,     # Latvia: 0.01 EUR ≈ $0.01
+        "MA": 1,     # Morocco: 0.01 MAD ≈ $0.00
+        "MD": 2809,  # Moldova: 500 MDL ≈ $28.09
+        "MG": 2940,  # Madagascar: 132300 MGA ≈ $29.40
+        "MK": 2655,  # North Macedonia: 1500 MKD ≈ $26.55
+        "MN": 3044,  # Mongolia: 105000 MNT ≈ $30.44
+        "MT": 2,     # Malta: 0.01 EUR ≈ $0.01
+        "MU": 1,     # Mauritius: 0.01 MUR ≈ $0.00
+        "MX": 1,     # Mexico: 0.01 MXN ≈ $0.00
+        "MY": 2830,  # Malaysia: 133 MYR ≈ $28.30
+        "MZ": 2500,  # Mozambique: 1600 MZN ≈ $25.00
+        "NA": 2660,  # Namibia: 500 NAD ≈ $26.60
+        "NL": 2,     # Netherlands: 0.01 EUR ≈ $0.01
+        "NO": 1,     # Norway: 0.01 NOK ≈ $0.00
+        "NZ": 1,     # New Zealand: 0.01 NZD ≈ $0.01
+        "OM": 2,     # Oman: 0.005 OMR ≈ $0.01
+        "PA": 5000,  # Panama: 50 USD = $50.00
+        "PE": 2,     # Peru: 0.05 PEN ≈ $0.01
+        "PH": 1,     # Philippines: 0.01 PHP ≈ $0.00
+        "PK": 2,     # Pakistan: 4 PKR ≈ $0.01
+        "PL": 1,     # Poland: 0.01 PLN ≈ $0.00
+        "PT": 2,     # Portugal: 0.01 EUR ≈ $0.01
+        "QA": 28,    # Qatar: 1 QAR ≈ $0.27
+        "RO": 1,     # Romania: 0.01 RON ≈ $0.00
+        "RS": 2778,  # Serbia: 3000 RSD ≈ $27.78
+        "RW": 8,     # Rwanda: 100 RWF ≈ $0.08
+        "SE": 1,     # Sweden: 0.01 SEK ≈ $0.00
+        "SG": 1,     # Singapore: 0.01 SGD ≈ $0.01
+        "SI": 2,     # Slovenia: 0.01 EUR ≈ $0.01
+        "SK": 2,     # Slovakia: 0.01 EUR ≈ $0.01
+        "SN": 1,     # Senegal: 1 XOF ≈ $0.00
+        "SV": 3000,  # El Salvador: 30 USD = $30.00
+        "TH": 1676,  # Thailand: 600 THB ≈ $16.76
+        "TN": 1,     # Tunisia: 0.001 TND ≈ $0.00
+        "TR": 17,    # Turkey: 5 TRY ≈ $0.16
+        "TT": 2,     # Trinidad and Tobago: 0.1 TTD ≈ $0.01
+        "TW": 2540,  # Taiwan: 800 TWD ≈ $25.40
+        "TZ": 2,     # Tanzania: 35 TZS ≈ $0.01
+        "US": 1,     # United States: 0.01 USD = $0.01
+        "UZ": 2767,  # Uzbekistan: 343000 UZS ≈ $27.67
+        "VN": 333,   # Vietnam: 81125 VND ≈ $3.33
+        "ZA": 532,   # South Africa: 100 ZAR ≈ $5.32
     }
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40

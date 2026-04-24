@@ -266,6 +266,7 @@ async def orders_import(
                 tax_rate=None,
                 tax_calculation_processor_id=None,
                 invoice_number=invoice_number,
+                organization_id=organization.id,
                 customer=customer,
                 product=product,
                 discount=None,

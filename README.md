@@ -22,10 +22,6 @@
 <a href="https://polar.sh/docs/api-reference">API Reference</a>
 
 <p align="center">
-  <a href="https://discord.gg/Pnhfz3UThd">
-    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
-  </a>
-
   <a href="https://twitter.com/intent/follow?screen_name=polar_sh">
     <img src="https://img.shields.io/twitter/follow/polar_sh.svg?label=Follow%20@polar_sh" alt="Follow @polar_sh" />
   </a>
@@ -52,10 +48,6 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 ## Roadmap, Issues & Feature Requests
 
-**🎯 Upcoming milestones.** [Check out what we're building towards](https://github.com/polarsource/polar/issues/3242)
-
-**💬 Shape the future of Polar with us.** [Join our Discord](https://discord.gg/Pnhfz3UThd)
-
 **🐛 Found a bug?** [Submit it here](https://github.com/polarsource/polar/issues)
 
 **🔓 Found a security vulnerability?** We greatly appreciate responsible and private disclosures. See [Security](./SECURITY.md)
@@ -72,11 +64,6 @@ We also maintain SDKs for the following languages:
 ## Contributions
 
 Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) file contains everything you need to know to configure your development environment.
-
-> [!TIP]
-> Want to get started quickly? Use GitHub Codespaces.
->
-> [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/polarsource/polar?machine=standardLinux32gb)
 
 ### Contributors
 

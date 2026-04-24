@@ -61,9 +61,6 @@ const Footer = () => {
                 GitHub
               </FooterLink>
               <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
-              <FooterLink href="https://discord.gg/Pnhfz3UThd">
-                Discord
-              </FooterLink>
               <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
                 Brand Assets
               </FooterLink>

@@ -776,14 +776,7 @@ class OrganizationService:
             enqueue_job("organization.under_review", organization_id=organization.id)
             return organization
 
-        if organization.status not in {
-            OrganizationStatus.ACTIVE,
-            OrganizationStatus.REVIEW,
-            OrganizationStatus.SNOOZED,
-        }:
-            return organization
-
-        if organization.is_under_review:
+        if organization.status != OrganizationStatus.ACTIVE:
             return organization
 
         if (

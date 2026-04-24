@@ -112,8 +112,6 @@ logger = structlog.getLogger(__name__)
 
 REVIEW_TICKET_TITLE = "Ongoing organization review"
 
-FIRST_REVIEWS_MAX_THRESHOLD_CENTS = 1000
-
 
 class DeletePayoutAccountForm(BaseModel):
     reason: str
@@ -338,11 +336,7 @@ async def list_organizations(
             stmt = stmt.where(OrganizationReview.appeal_submitted_at.is_(None))
 
     if first_reviews == "true":
-        stmt = stmt.where(
-            Organization.status == OrganizationStatus.REVIEW,
-            Organization.initially_reviewed_at.is_(None),
-            Organization.next_review_threshold <= FIRST_REVIEWS_MAX_THRESHOLD_CENTS,
-        )
+        stmt = stmt.where(Organization.is_first_review.is_(True))
 
     # Apply sorting
     is_desc = direction == "desc"

@@ -17,6 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
     and_,
+    or_,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -400,6 +401,11 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
 }
 
+# Upper bound (in cents) of `next_review_threshold` that qualifies an
+# organization as a "first review" alongside orgs still in their initial
+# review cycle (`initially_reviewed_at IS NULL`). Either condition is enough.
+FIRST_REVIEW_MAX_THRESHOLD_CENTS = 1000
+
 
 class Organization(RateLimitGroupMixin, RecordModel):
     __tablename__ = "organizations"
@@ -671,6 +677,24 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @classmethod
     def _is_under_review_expression(cls) -> ColumnElement[bool]:
         return cls.status.in_(OrganizationStatus.review_statuses())
+
+    @hybrid_property
+    def is_first_review(self) -> bool:
+        return self.status == OrganizationStatus.REVIEW and (
+            self.initially_reviewed_at is None
+            or self.next_review_threshold <= FIRST_REVIEW_MAX_THRESHOLD_CENTS
+        )
+
+    @is_first_review.inplace.expression
+    @classmethod
+    def _is_first_review_expression(cls) -> ColumnElement[bool]:
+        return and_(
+            cls.status == OrganizationStatus.REVIEW,
+            or_(
+                cls.initially_reviewed_at.is_(None),
+                cls.next_review_threshold <= FIRST_REVIEW_MAX_THRESHOLD_CENTS,
+            ),
+        )
 
     @property
     def polar_site_url(self) -> str:

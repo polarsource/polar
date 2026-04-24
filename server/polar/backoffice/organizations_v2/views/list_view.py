@@ -11,9 +11,13 @@ from sqlalchemy import func, select
 from tagflow import tag, text
 
 from polar.models import Organization, PayoutAccount
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import (
+    FIRST_REVIEW_MAX_THRESHOLD_CENTS,
+    OrganizationStatus,
+)
 from polar.postgres import AsyncSession
 
+from ... import formatters
 from ...components import (
     Tab,
     action_bar,
@@ -21,6 +25,10 @@ from ...components import (
     empty_state,
     status_badge,
     tab_nav,
+)
+
+FIRST_REVIEW_THRESHOLD_LABEL = formatters.currency(
+    FIRST_REVIEW_MAX_THRESHOLD_CENTS, "usd"
 )
 
 
@@ -187,8 +195,20 @@ class OrganizationListView:
                             title=org.name,
                         ):
                             text(org.name)
-                        with status_badge(org.status):
-                            pass
+                        if org.is_first_review:
+                            with tag.span(
+                                classes="badge badge-warning",
+                                title=(
+                                    "First review — never reviewed before "
+                                    f"or next review threshold is ≤ "
+                                    f"{FIRST_REVIEW_THRESHOLD_LABEL}"
+                                ),
+                                **{"aria-label": "first review status"},
+                            ):
+                                text("First Review")
+                        else:
+                            with status_badge(org.status):
+                                pass
                     with tag.div(
                         classes="text-xs text-base-content/60 font-mono truncate max-w-[200px]",
                         title=org.slug,
@@ -535,7 +555,7 @@ class OrganizationListView:
                                         if selected_first_reviews == "true":
                                             first_review_attrs["selected"] = ""
                                         with tag.option(**first_review_attrs):
-                                            text("First Reviews (≤ $10)")
+                                            text("First Reviews")
 
         # Organization table
         with tag.div(id="org-list", classes="overflow-x-auto"):

@@ -35,7 +35,7 @@ def upgrade() -> None:
         "organizations",
         ["organization_id"],
         ["id"],
-        ondelete="cascade",
+        ondelete="restrict",
     )
 
 

@@ -177,7 +177,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     organization_id: Mapped[UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("organizations.id", ondelete="cascade"),
+        ForeignKey("organizations.id", ondelete="restrict"),
         nullable=True,
         index=True,
     )

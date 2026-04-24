@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, OpenIdConnect
 from makefun import with_signature
 
 from polar.auth.scope import Scope
-from polar.exceptions import Unauthorized
+from polar.exceptions import NotPermitted, Unauthorized
 from polar.oauth2.exceptions import InsufficientScopeError
 
 from .models import (
@@ -224,7 +224,7 @@ async def _web_user_or_anonymous(
 ) -> AuthSubject[Anonymous | User]:
     """Allow anonymous or web-session users. Reject API tokens."""
     if not is_anonymous(auth_subject) and not is_web_session(auth_subject):
-        raise Unauthorized()
+        raise NotPermitted()
     return auth_subject
 
 
@@ -240,7 +240,7 @@ async def _web_user(
 ) -> AuthSubject[User]:
     """Allow web-session users only. Reject API tokens."""
     if not is_web_session(auth_subject):
-        raise Unauthorized()
+        raise NotPermitted()
     return auth_subject
 
 

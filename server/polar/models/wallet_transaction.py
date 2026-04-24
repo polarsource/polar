@@ -11,7 +11,7 @@ from polar.enums import TaxProcessor
 from polar.kit.db.models import IDModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import utc_now
-from polar.tax.calculation import TaxabilityReason, TaxRate
+from polar.tax.calculation import TaxabilityReason, TaxBreakdownItem, TaxRate
 
 if TYPE_CHECKING:
     from .order import Order
@@ -42,6 +42,9 @@ class WalletTransaction(IDModel):
     )
     taxability_reason: Mapped[TaxabilityReason | None] = mapped_column(
         String, nullable=True, default=None
+    )
+    tax_breakdown: Mapped[list[TaxBreakdownItem] | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=None
     )
     tax_calculation_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None

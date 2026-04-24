@@ -13,7 +13,6 @@ from polar.invoice.render import (
     render_invoice_pdf,
 )
 from polar.kit.address import Address, CountryAlpha2
-from polar.tax.calculation.base import TaxabilityReason
 
 
 @pytest.fixture
@@ -39,9 +38,8 @@ def invoice() -> Invoice:
         ),
         subtotal_amount=100_00,
         discount_amount=0,
-        taxability_reason=TaxabilityReason.standard_rated,
         tax_amount=0,
-        tax_rate=None,
+        tax_breakdown=[],
         net_amount=100_00,
         currency="usd",
         items=[

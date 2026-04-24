@@ -34,17 +34,18 @@ def invoice() -> Invoice:
         customer_additional_info="FR61954506077",
         subtotal_amount=100_00,
         discount_amount=10_00,
-        taxability_reason=TaxabilityReason.standard_rated,
         tax_amount=18_00,
-        tax_rate={
-            "rate_type": "percentage",
-            "display_name": "VAT",
-            "basis_points": 2000,
-            "country": "FR",
-            "amount": None,
-            "amount_currency": None,
-            "state": None,
-        },
+        tax_breakdown=[
+            {
+                "rate_type": "percentage",
+                "display_name": "VAT",
+                "basis_points": 2000,
+                "country": "FR",
+                "state": None,
+                "amount": 18_00,
+                "taxability_reason": TaxabilityReason.standard_rated,
+            }
+        ],
         net_amount=90_00,
         currency="usd",
         items=[

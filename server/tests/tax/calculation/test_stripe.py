@@ -53,8 +53,7 @@ class TestStripeCalculateTax:
             )
 
             assert result["amount"] == 0
-            assert result["taxability_reason"] is None
-            assert result["tax_rate"] is None
+            assert result["tax_breakdown"] == []
             assert result["processor_id"] is not None
             assert result["processor_id"].startswith("taxcalc_sandbox_")
             assert result["tax_behavior"] == TaxBehavior.exclusive

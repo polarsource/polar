@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from collections.abc import Sequence
 
@@ -15,11 +17,21 @@ from polar.models.payment_method import PaymentMethod
 from polar.models.wallet import WalletType
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.tax.calculation import TaxabilityReason, TaxCode, TaxRate
+from polar.tax.calculation import (
+    TaxabilityReason,
+    TaxBreakdownItem,
+    TaxCode,
+    TaxRate,
+    tax_rate_from_breakdown,
+    taxability_reason_from_breakdown,
+)
 from polar.tax.calculation import tax_calculation as tax_calculation_service
 
 from .repository import WalletRepository, WalletTransactionRepository
 from .sorting import WalletSortProperty
+
+# Module-level alias to avoid shadowing by WalletService.list method
+_TaxBreakdownItems = list[TaxBreakdownItem]
 
 
 class WalletError(PolarError): ...
@@ -137,8 +149,9 @@ class WalletService:
             )
             tax_calculation_processor_id = tax_calculation["processor_id"]
             tax_amount = tax_calculation["amount"]
-            taxability_reason = tax_calculation["taxability_reason"]
-            tax_rate = tax_calculation["tax_rate"]
+            tax_breakdown = tax_calculation["tax_breakdown"]
+            taxability_reason = taxability_reason_from_breakdown(tax_breakdown)
+            tax_rate = tax_rate_from_breakdown(tax_breakdown)
 
         transaction = await self.create_transaction(
             session,
@@ -147,6 +160,7 @@ class WalletService:
             tax_amount=tax_amount,
             taxability_reason=taxability_reason,
             tax_rate=tax_rate,
+            tax_breakdown=tax_breakdown if billing_address is not None else None,
             tax_calculation_processor_id=tax_calculation_processor_id,
             flush=True,
         )
@@ -190,6 +204,7 @@ class WalletService:
         tax_amount: int | None = None,
         taxability_reason: TaxabilityReason | None = None,
         tax_rate: TaxRate | None = None,
+        tax_breakdown: _TaxBreakdownItems | None = None,
         tax_calculation_processor_id: str | None = None,
         order: Order | None = None,
         flush: bool = False,
@@ -203,6 +218,7 @@ class WalletService:
                 tax_amount=tax_amount,
                 taxability_reason=taxability_reason,
                 tax_rate=tax_rate,
+                tax_breakdown=tax_breakdown,
                 tax_calculation_processor_id=tax_calculation_processor_id,
                 order=order,
             ),

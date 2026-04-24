@@ -15,12 +15,15 @@ from .base import (
     CalculationExpiredError,
     InvalidTaxIDError,
     TaxabilityReason,
+    TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
     TaxCode,
     TaxRate,
     TaxServiceProtocol,
+    tax_rate_from_breakdown,
+    taxability_reason_from_breakdown,
 )
 from .numeral import numeral_tax_service
 from .stripe import stripe_tax_service
@@ -206,6 +209,7 @@ tax_calculation = TaxCalculationService()
 __all__ = [
     "CalculationExpiredError",
     "InvalidTaxIDError",
+    "TaxBreakdownItem",
     "TaxCalculation",
     "TaxCalculationLogicalError",
     "TaxCalculationTechnicalError",
@@ -213,4 +217,6 @@ __all__ = [
     "TaxRate",
     "TaxabilityReason",
     "tax_calculation",
+    "tax_rate_from_breakdown",
+    "taxability_reason_from_breakdown",
 ]

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
@@ -96,11 +98,12 @@ from polar.product.repository import ProductRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
-    TaxabilityReason,
+    TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
     TaxCode,
-    TaxRate,
+    tax_rate_from_breakdown,
+    taxability_reason_from_breakdown,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -118,6 +121,9 @@ from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 from .repository import OrderRepository
 from .schemas import OrderInvoice, OrderUpdate
 from .sorting import OrderSortProperty
+
+# Module-level alias to avoid shadowing by OrderService.list method
+_TaxBreakdownItems = list[TaxBreakdownItem]
 
 log: Logger = structlog.get_logger()
 
@@ -594,6 +600,7 @@ class OrderService:
                 taxability_reason=checkout.taxability_reason,
                 tax_behavior=checkout.tax_behavior,
                 tax_rate=checkout.tax_rate,
+                tax_breakdown=checkout.tax_breakdown,
                 invoice_number=invoice_number,
                 organization_id=organization.id,
                 customer=customer,
@@ -713,8 +720,7 @@ class OrderService:
                 tax_behavior,
                 tax_calculation_processor_id,
                 tax_amount,
-                taxability_reason,
-                tax_rate,
+                tax_breakdown,
             ) = await self._calculate_subscription_order_tax(
                 reference=str(order_id),
                 taxable_amount=subtotal_amount - discount_amount,
@@ -767,10 +773,11 @@ class OrderService:
                     billing_reason=billing_reason,
                     billing_name=customer.billing_name,
                     billing_address=billing_address,
-                    taxability_reason=taxability_reason,
+                    taxability_reason=taxability_reason_from_breakdown(tax_breakdown),
                     tax_behavior=tax_behavior,
                     tax_id=tax_id,
-                    tax_rate=tax_rate,
+                    tax_rate=tax_rate_from_breakdown(tax_breakdown),
+                    tax_breakdown=tax_breakdown or None,
                     tax_processor=tax_processor,
                     tax_calculation_processor_id=tax_calculation_processor_id,
                     invoice_number=invoice_number,
@@ -900,6 +907,7 @@ class OrderService:
                 taxability_reason=None,
                 tax_id=customer.tax_id,
                 tax_rate=None,
+                tax_breakdown=None,
                 invoice_number=invoice_number,
                 organization_id=organization.id,
                 customer=customer,
@@ -954,6 +962,7 @@ class OrderService:
                 tax_id=customer.tax_id,
                 taxability_reason=wallet_transaction.taxability_reason,
                 tax_rate=wallet_transaction.tax_rate,
+                tax_breakdown=wallet_transaction.tax_breakdown,
                 invoice_number=invoice_number,
                 organization_id=wallet.organization.id,
                 customer=customer,
@@ -1439,8 +1448,7 @@ class OrderService:
                     tax_behavior,
                     tax_calculation_processor_id,
                     tax_amount,
-                    taxability_reason,
-                    tax_rate,
+                    tax_breakdown,
                 ) = await self._calculate_subscription_order_tax(
                     reference=str(order.id),
                     taxable_amount=order.net_amount,
@@ -1455,8 +1463,11 @@ class OrderService:
                     "tax_calculation_processor_id": tax_calculation_processor_id,
                     "tax_amount": tax_amount,
                     "tax_behavior": tax_behavior,
-                    "taxability_reason": taxability_reason,
-                    "tax_rate": tax_rate,
+                    "taxability_reason": taxability_reason_from_breakdown(
+                        tax_breakdown
+                    ),
+                    "tax_rate": tax_rate_from_breakdown(tax_breakdown),
+                    "tax_breakdown": tax_breakdown or None,
                 }
 
                 if tax_amount != order.tax_amount:
@@ -2227,8 +2238,7 @@ class OrderService:
         TaxBehavior | None,
         str | None,
         int,
-        TaxabilityReason | None,
-        TaxRate | None,
+        _TaxBreakdownItems,
     ]:
         billing_address = customer.billing_address
         tax_id = customer.tax_id
@@ -2237,8 +2247,7 @@ class OrderService:
         tax_behavior: TaxBehavior | None = None
         tax_calculation: TaxCalculation | None = None
         tax_amount = 0
-        taxability_reason: TaxabilityReason | None = None
-        tax_rate: TaxRate | None = None
+        tax_breakdown: list[TaxBreakdownItem] = []
         tax_calculation_processor_id: str | None = None
 
         if (
@@ -2283,16 +2292,14 @@ class OrderService:
 
             if tax_calculation is not None:
                 tax_behavior = tax_calculation["tax_behavior"]
-                taxability_reason = tax_calculation["taxability_reason"]
-                tax_rate = tax_calculation["tax_rate"]
+                tax_breakdown = tax_calculation["tax_breakdown"]
 
         return (
             tax_processor,
             tax_behavior,
             tax_calculation_processor_id,
             tax_amount,
-            taxability_reason,
-            tax_rate,
+            tax_breakdown,
         )
 
     async def schedule_retry_for_past_due_orders(

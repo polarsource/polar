@@ -122,13 +122,47 @@ class TaxRate(TypedDict):
     state: str | None
 
 
+class TaxBreakdownItem(TypedDict):
+    rate_type: Literal["percentage"] | Literal["fixed"]
+    basis_points: int | None
+    display_name: str
+    country: str | None
+    state: str | None
+    amount: int
+    taxability_reason: str
+
+
 class TaxCalculation(TypedDict):
     processor_id: str | None
     amount: int
     currency: str
     tax_behavior: TaxBehavior
-    taxability_reason: TaxabilityReason | None
-    tax_rate: TaxRate | None
+    tax_breakdown: list[TaxBreakdownItem]
+
+
+def tax_rate_from_breakdown(
+    tax_breakdown: list[TaxBreakdownItem],
+) -> TaxRate | None:
+    if not tax_breakdown:
+        return None
+    item = tax_breakdown[0]
+    return TaxRate(
+        rate_type=item["rate_type"],
+        basis_points=item["basis_points"],
+        amount=None,
+        amount_currency=None,
+        display_name=item["display_name"],
+        country=item["country"],
+        state=item["state"],
+    )
+
+
+def taxability_reason_from_breakdown(
+    tax_breakdown: list[TaxBreakdownItem],
+) -> TaxabilityReason | None:
+    if not tax_breakdown:
+        return None
+    return TaxabilityReason(tax_breakdown[0]["taxability_reason"])
 
 
 class TaxServiceProtocol(Protocol):

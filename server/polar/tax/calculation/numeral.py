@@ -17,6 +17,7 @@ from .base import (
     CalculationExpiredError,
     InvalidTaxIDError,
     TaxabilityReason,
+    TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
@@ -134,6 +135,78 @@ def from_numeral_tax_jurisdiction(
     )
 
 
+def _numeral_jurisdiction_to_breakdown_item(
+    jurisdiction: NumeralTaxJurisdiction,
+    country: str,
+    state: str | None,
+    amount: int,
+    customer_exempt: bool,
+) -> TaxBreakdownItem:
+    is_fixed = jurisdiction["fee_amount"] > 0
+    basis_points = None if is_fixed else int(jurisdiction["tax_rate"] * 100 * 100)
+    note = jurisdiction["note"].lower()
+    taxability_reason = TaxabilityReason.from_numeral(note, customer_exempt)
+    return TaxBreakdownItem(
+        rate_type="fixed" if is_fixed else "percentage",
+        basis_points=basis_points,
+        display_name=jurisdiction["jurisdiction_name"],
+        country=country,
+        state=state,
+        amount=amount,
+        taxability_reason=taxability_reason.value,
+    )
+
+
+def _build_numeral_tax_breakdown(
+    jurisdictions: list[NumeralTaxJurisdiction],
+    *,
+    country: str,
+    state: str | None,
+    total_tax_amount: int,
+    customer_exempt: bool,
+) -> list[TaxBreakdownItem]:
+    if not jurisdictions:
+        return []
+
+    # Separate fixed-fee and percentage jurisdictions
+    fixed_jurisdictions = [j for j in jurisdictions if j["fee_amount"] > 0]
+    percentage_jurisdictions = [j for j in jurisdictions if j["fee_amount"] == 0]
+
+    total_fixed = sum(j["fee_amount"] for j in fixed_jurisdictions)
+    proportional_tax = total_tax_amount - total_fixed
+    total_rate = sum(j["tax_rate"] for j in percentage_jurisdictions)
+
+    tax_breakdown: list[TaxBreakdownItem] = []
+
+    # Compute per-jurisdiction amounts for percentage taxes proportionally
+    remaining = proportional_tax
+    for i, jurisdiction in enumerate(jurisdictions):
+        if jurisdiction["fee_amount"] > 0:
+            amount = jurisdiction["fee_amount"]
+        elif i < len(jurisdictions) - 1:
+            amount = (
+                round(proportional_tax * jurisdiction["tax_rate"] / total_rate)
+                if total_rate > 0
+                else 0
+            )
+            remaining -= amount
+        else:
+            # Last percentage item gets the remainder to ensure the sum is exact
+            amount = remaining
+
+        tax_breakdown.append(
+            _numeral_jurisdiction_to_breakdown_item(
+                jurisdiction,
+                country=country,
+                state=state,
+                amount=amount,
+                customer_exempt=customer_exempt,
+            )
+        )
+
+    return tax_breakdown
+
+
 class NumeralTaxService(TaxServiceProtocol):
     def __init__(self) -> None:
         self.client = httpx.AsyncClient(
@@ -231,16 +304,17 @@ class NumeralTaxService(TaxServiceProtocol):
                     amount=0,
                     currency=currency,
                     tax_behavior=tax_behavior,
-                    taxability_reason=TaxabilityReason.not_supported,
-                    tax_rate=TaxRate(
-                        rate_type="percentage",
-                        basis_points=0,
-                        amount=None,
-                        amount_currency=None,
-                        display_name="",
-                        country=address.country,
-                        state=address.get_unprefixed_state(),
-                    ),
+                    tax_breakdown=[
+                        TaxBreakdownItem(
+                            rate_type="percentage",
+                            basis_points=0,
+                            display_name="",
+                            country=address.country,
+                            state=address.get_unprefixed_state(),
+                            amount=0,
+                            taxability_reason=TaxabilityReason.not_supported.value,
+                        )
+                    ],
                 )
             error_meta = error_response["error"].get("error_meta")
             if error_meta is not None and error_meta["field"].startswith(
@@ -262,24 +336,25 @@ class NumeralTaxService(TaxServiceProtocol):
             "numeral.calculation_id", calculation["id"]
         )
 
-        tax_jurisdiction = calculation["line_items"][0]["tax_jurisdictions"][0]
-        tax_rate = from_numeral_tax_jurisdiction(
-            tax_jurisdiction,
-            country=address.country,
-            state=address.get_unprefixed_state(),
-            currency=currency,
-        )
+        jurisdictions = calculation["line_items"][0]["tax_jurisdictions"]
+        total_tax_amount = calculation["total_tax_amount"]
+        country = address.country
+        state = address.get_unprefixed_state()
 
-        note = tax_jurisdiction["note"].lower()
-        taxability_reason = TaxabilityReason.from_numeral(note, customer_exempt)
+        tax_breakdown = _build_numeral_tax_breakdown(
+            jurisdictions,
+            country=country,
+            state=state,
+            total_tax_amount=total_tax_amount,
+            customer_exempt=customer_exempt,
+        )
 
         return TaxCalculation(
             processor_id=calculation["id"],
-            amount=calculation["total_tax_amount"],
+            amount=total_tax_amount,
             currency=currency,
             tax_behavior=tax_behavior,
-            taxability_reason=taxability_reason,
-            tax_rate=tax_rate,
+            tax_breakdown=tax_breakdown,
         )
 
     @logfire.instrument("numeral.record")

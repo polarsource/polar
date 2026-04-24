@@ -1,5 +1,8 @@
+'use client'
+
 import { SectionHeading } from './SectionHeading'
 import { Button } from './Button'
+import { VectorField } from '../VectorField'
 
 /**
  * LandingPricing — 4-tier pricing grid with actual Polar tier info.
@@ -89,7 +92,7 @@ export const LandingPricing = () => (
       <div className="flex items-center gap-x-6 pt-4">
         <Button href="#">Get Started</Button>
         <Button href="#" variant="secondary">
-          Contact Enterprise
+          Startup Program
         </Button>
       </div>
     </div>
@@ -123,10 +126,8 @@ export const LandingPricing = () => (
               </div>
             </div>
 
-            <div className="dark:border-dark-700 grid grid-cols-1 gap-2 border-t border-neutral-300 pt-8 text-black xl:grid-cols-2 dark:text-white">
-              <div className="dark:text-dark-300 text-xl xl:dark:text-white">
-                Fees
-              </div>
+            <div className="dark:border-dark-700 grid grid-cols-1 gap-2 border-t border-neutral-300 pt-8 text-black dark:text-white">
+              <div className="dark:text-dark-300 text-xl">Fees</div>
               <ul className="flex flex-col gap-2">
                 {tier.fees.map((f) => (
                   <li key={f} className="text-xl">
@@ -136,10 +137,8 @@ export const LandingPricing = () => (
               </ul>
             </div>
 
-            <div className="dark:border-dark-700 grid grid-cols-1 gap-2 border-t border-neutral-300 pt-8 text-black xl:grid-cols-2 dark:text-white">
-              <div className="dark:text-dark-300 text-xl xl:dark:text-white">
-                Features
-              </div>
+            <div className="dark:border-dark-700 grid grid-cols-1 gap-2 border-t border-neutral-300 pt-8 text-black dark:text-white">
+              <div className="dark:text-dark-300 text-xl">Features</div>
               <ul className="flex flex-col gap-2">
                 {tier.features.map((f) => (
                   <li key={f} className="text-xl">
@@ -158,6 +157,37 @@ export const LandingPricing = () => (
           </a>
         </div>
       ))}
+    </div>
+
+    {/* Enterprise */}
+    <div className="dark:bg-dark-900 mx-2 grid grid-cols-1 gap-12 bg-neutral-50 p-16 md:grid-cols-4">
+      <VectorField field={(r, theta) => theta + Math.PI / 2} />
+      <div className="flex flex-col gap-6">
+        <h3 className="text-4xl text-black dark:text-white">Enterprise</h3>
+        <p className="dark:text-dark-200 max-w-md text-2xl text-neutral-500">
+          For organizations with custom requirements, dedicated infrastructure,
+          and compliance needs.
+        </p>
+        <Button href="#" className="mt-4">
+          Contact Sales
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+        {[
+          'Unlimited events',
+          'Dedicated account manager',
+          'Custom SLA guarantee',
+          'SSO & RBAC',
+          'On-premise deployment',
+          'Custom integrations',
+          'Priority P0 support',
+          'Volume discounts',
+        ].map((f) => (
+          <span key={f} className="text-xl text-black dark:text-white">
+            {f}
+          </span>
+        ))}
+      </div>
     </div>
   </section>
 )

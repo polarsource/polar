@@ -36,7 +36,7 @@ const TILES = [
 export const LandingOffering = () => (
   <section>
     {/* Right — 2×2 tile grid */}
-    <div className="m-2 grid grid-cols-1 gap-2 pt-2 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
       {TILES.map((tile) => {
         const G = tile.Graphic
         return (
@@ -47,7 +47,7 @@ export const LandingOffering = () => (
             <div className="aspect-square w-full">
               <G />
             </div>
-            <div className="flex flex-col gap-2 px-12 py-12 text-3xl">
+            <div className="flex flex-col gap-2 px-10 py-10 text-2xl">
               <span className="text-neutral-900 dark:text-neutral-300">
                 {tile.title}
               </span>

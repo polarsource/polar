@@ -31,7 +31,7 @@ export const LandingFooter = () => (
   <footer className="mx-2 pb-2 text-neutral-900 dark:text-white">
     {/* Top — CTA heading + description */}
     <div className="grid grid-cols-1 px-12 pt-32 pb-20 md:grid-cols-2">
-      <div>
+      <div className="flex flex-col">
         <SectionHeading className="text-[clamp(1.5rem,4.5vw,6rem)]! whitespace-nowrap">
           Polar Software, Inc.
         </SectionHeading>

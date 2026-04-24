@@ -40,7 +40,7 @@ export const LandingTestimonials = () => (
         <div
           key={t.name}
           className={twMerge(
-            'flex flex-col justify-between gap-y-16 p-12 py-24 bg-neutral-50 dark:bg-dark-900',
+            'flex flex-col justify-between gap-y-16 p-10 py-16 bg-neutral-50 dark:bg-dark-900',
           )}
         >
           {/* Outward arrow */}
@@ -60,10 +60,10 @@ export const LandingTestimonials = () => (
             {t.quote}
           </p>
           <div>
-            <div className="text-xl text-neutral-900 dark:text-white">
+            <div className="text-2xl text-neutral-900 dark:text-white">
               {t.name}
             </div>
-            <div className="text-xl text-neutral-500">{t.role}</div>
+            <div className="text-2xl text-neutral-500">{t.role}</div>
           </div>
         </div>
       ))}

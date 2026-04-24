@@ -33,8 +33,8 @@ export const LandingArchitecture = () => (
       </div>
       <div className="flex flex-col justify-end gap-12 py-32">
         <p className="max-w-xl text-4xl leading-snug text-neutral-900 dark:text-white">
-          From the moment a request fires to the moment you get paid — four
-          layers, one pipeline, zero glue code.
+          Billing built for Applied AI. Four layers, one pipeline, zero glue
+          code.
         </p>
         <div className="flex flex-row items-center gap-x-6">
           <Button href="#">Get Started</Button>
@@ -60,8 +60,8 @@ export const LandingArchitecture = () => (
             {i === 3 && <OrbitingSpheres />}
           </div>
           {/* Label */}
-          <div className="flex flex-col px-12 py-12">
-            <div className="flex flex-col gap-2 text-3xl">
+          <div className="flex flex-col px-10 py-10">
+            <div className="flex flex-col gap-2 text-2xl">
               <span className="text-neutral-900 dark:text-neutral-300">
                 {l.id} — {l.name}
               </span>

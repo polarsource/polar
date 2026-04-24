@@ -182,7 +182,8 @@ class TestPayoutAccountCanRead:
         )
 
         result = await pa_policy.can_read(auth_subject, payout_account)
-        assert result is False
+        assert isinstance(result, str)
+        assert "admin" in result.lower()
 
 
 @pytest.mark.asyncio
@@ -217,4 +218,5 @@ class TestPayoutAccountCanWrite:
         )
 
         result = await pa_policy.can_write(auth_subject, payout_account)
-        assert result is False
+        assert isinstance(result, str)
+        assert "admin" in result.lower()

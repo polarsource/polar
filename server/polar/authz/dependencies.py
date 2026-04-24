@@ -22,7 +22,7 @@ from .policies import finance, members
 from .policies import organization as org_policy
 from .policies import payout_account as pa_policy
 from .service import get_accessible_org_ids, get_accessible_organization
-from .types import PolicyFn
+from .types import PolicyFn, PolicyResult
 
 
 @dataclass(frozen=True)
@@ -226,7 +226,7 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
 
 
 def PayoutAccountPolicyGuard(
-    policy_fn: Callable[[AuthSubject[User], "PayoutAccountModel"], Awaitable[bool]],
+    policy_fn: Callable[[AuthSubject[User], "PayoutAccountModel"], Awaitable[PolicyResult]],
 ) -> Any:
     """FastAPI dependency: resolve payout account by {id}, check policy.
 
@@ -255,7 +255,8 @@ def PayoutAccountPolicyGuard(
         if payout_account is None:
             raise ResourceNotFound()
 
-        if not await policy_fn(auth_subject, payout_account):
+        result = await policy_fn(auth_subject, payout_account)
+        if result is not True:
             raise ResourceNotFound()
 
         return AuthorizedPayoutAccount(

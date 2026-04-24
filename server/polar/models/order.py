@@ -175,6 +175,17 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def customer(cls) -> Mapped["Customer"]:
         return relationship("Customer", lazy="raise")
 
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    organization: AssociationProxy["Organization"] = association_proxy(
+        "customer", "organization"
+    )
+
     product_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("products.id"), nullable=True, index=True
     )
@@ -190,10 +201,6 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @declared_attr
     def discount(cls) -> Mapped["Discount | None"]:
         return relationship("Discount", lazy="raise")
-
-    organization: AssociationProxy["Organization"] = association_proxy(
-        "customer", "organization"
-    )
 
     subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("subscriptions.id"), nullable=True, index=True

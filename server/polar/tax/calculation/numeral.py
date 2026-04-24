@@ -28,20 +28,17 @@ from .base import (
 
 log: Logger = structlog.get_logger()
 
-NUMERAL_API_VERSION = "2025-05-12"
-
-
-class NumeralTaxId(TypedDict):
-    type: Literal["VAT", "GST", "EIN"]
-    value: str
+NUMERAL_API_VERSION = "2026-03-01"
 
 
 class NumeralTaxJurisdiction(TypedDict):
     tax_rate: float
     rate_type: str
-    jurisdiction_name: str
     fee_amount: int
-    note: str
+    tax_due_decimal: int
+    tax_authority_name: str
+    tax_authority_type: str
+    tax_type: str
 
 
 class NumeralLineItemProduct(TypedDict):
@@ -51,6 +48,18 @@ class NumeralLineItemProduct(TypedDict):
 class NumeralLineItem(TypedDict):
     product: NumeralLineItemProduct
     tax_jurisdictions: list[NumeralTaxJurisdiction]
+    quantity: int
+    tax_amount: int
+    amount_excluding_tax: int
+    amount_including_tax: int
+
+
+class NumeralAddressUsed(TypedDict):
+    address_line_1: str
+    address_city: str
+    address_province: str
+    address_postal_code: str
+    address_country: str
 
 
 class NumeralTaxCalculationResponse(TypedDict):
@@ -62,20 +71,18 @@ class NumeralTaxCalculationResponse(TypedDict):
     total_amount_excluding_tax: int
     total_amount_including_tax: int
     line_items: list[NumeralLineItem]
+    expires_at: int
+    testmode: bool
+    address_resolution_status: str
+    address_used: NumeralAddressUsed
+    location_source: NotRequired[str]
+    resolution_precision: NotRequired[str]
 
 
-class NumeralTaxCalculationErrorMeta(TypedDict):
-    field: str
-
-
-class NumeralTaxCalculationErrorObject(TypedDict):
-    error_code: NotRequired[str]
-    error_message: str
-    error_meta: NotRequired[NumeralTaxCalculationErrorMeta]
-
-
-class NumeralTaxCalculationErrorResponse(TypedDict):
-    error: NumeralTaxCalculationErrorObject
+class NumeralErrorResponse(TypedDict):
+    code: int
+    type: str
+    message: str
 
 
 class NumeralTaxTransactionResponse(TypedDict):
@@ -90,51 +97,31 @@ class NumeralTaxRefundResponse(TypedDict):
     line_items: list[NumeralLineItem]
 
 
-def to_numeral_tax_id(tax_id: TaxID) -> NumeralTaxId:
-    value, format = tax_id
-    _, type = format.split("_", 1)
-    match type:
-        case "gst":
-            return {"type": "GST", "value": value}
-        case "ein":
-            return {"type": "EIN", "value": value}
-        case _:
-            return {"type": "VAT", "value": value}
-
-
 def _numeral_jurisdiction_to_breakdown_item(
     jurisdiction: NumeralTaxJurisdiction,
     country: str,
     state: str | None,
-    subtotal_amount: int,
     customer_exempt: bool,
 ) -> TaxBreakdownItem:
-    note = jurisdiction["note"].lower()
-    taxability_reason = TaxabilityReason.from_numeral(note, customer_exempt)
+    taxability_reason = TaxabilityReason.from_numeral(
+        jurisdiction["rate_type"], customer_exempt
+    )
 
     is_fixed = jurisdiction["fee_amount"] > 0
-    if is_fixed:
-        item_amount = jurisdiction["fee_amount"]
-        rate = None
-    else:
-        assert jurisdiction["tax_rate"] is not None
-        rate = jurisdiction["tax_rate"]
-        # Numeral seems to round 0.5 down, which is the standard Python behavior, different from our usual rounding
-        # Temporary fix as newer version of Numeral API explicitly gives the tax amount per item
-        item_amount = round(subtotal_amount * rate)
+    rate = None if is_fixed else jurisdiction["tax_rate"]
 
     subdivision: str | None = None
     if "general state" not in jurisdiction["rate_type"]:
-        subdivision = jurisdiction["jurisdiction_name"]
+        subdivision = jurisdiction["tax_authority_name"]
 
     return TaxBreakdownItem(
         rate_type="fixed" if is_fixed else "percentage",
         rate=rate,
-        display_name="Tax",  # Current API version doesn't provide helpful tax name
+        display_name=jurisdiction["tax_authority_name"],
         country=country,
         state=state,
         subdivision=subdivision,
-        amount=item_amount,
+        amount=jurisdiction["tax_due_decimal"],
         taxability_reason=taxability_reason,
     )
 
@@ -144,7 +131,6 @@ def _build_numeral_tax_breakdown(
     *,
     country: str,
     state: str | None,
-    subtotal_amount: int,
     customer_exempt: bool,
 ) -> list[TaxBreakdownItem]:
     tax_breakdown: list[TaxBreakdownItem] = []
@@ -155,7 +141,6 @@ def _build_numeral_tax_breakdown(
                 jurisdiction,
                 country=country,
                 state=state,
-                subtotal_amount=subtotal_amount,
                 customer_exempt=customer_exempt,
             )
         )
@@ -220,7 +205,9 @@ class NumeralTaxService(TaxServiceProtocol):
             "customer": {
                 "address": payload_address,
                 "type": customer_type,
-                "tax_ids": [to_numeral_tax_id(tax_id) for tax_id in tax_ids],
+                "tax_ids": [
+                    {"type": format, "value": value} for value, format in tax_ids
+                ],
             },
             "order_details": {
                 "automatic_tax": "auto",
@@ -252,9 +239,9 @@ class NumeralTaxService(TaxServiceProtocol):
                 raise TaxCalculationTechnicalError("Rate limit exceeded") from e
 
             log.debug("Numeral tax calculation error: %s", e.response.text)
-            error_response: NumeralTaxCalculationErrorResponse = e.response.json()
-            error_code = error_response["error"].get("error_code")
-            if error_code == "invalid_country_code":
+            error_response: NumeralErrorResponse = e.response.json()
+            error_type = error_response.get("type", "")
+            if error_type == "INVALID_COUNTRY_CODE":
                 return TaxCalculation(
                     processor_id=None,
                     amount=0,
@@ -273,20 +260,14 @@ class NumeralTaxService(TaxServiceProtocol):
                         )
                     ],
                 )
-            elif error_code == "zip_state_mismatch":
-                raise TaxCalculationLogicalError(
-                    "Postal code does not match state"
-                ) from e
-            error_meta = error_response["error"].get("error_meta")
-            if error_meta is not None and error_meta["field"].startswith(
-                "customer.address"
-            ):
-                raise TaxCalculationLogicalError("Invalid address provided") from e
-            error_message = error_response["error"]["error_message"].lower()
-            if "address_zip_code" in error_message:
+            if error_type == "ZIP_STATE_MISMATCH":
                 raise TaxCalculationLogicalError("Invalid postal code provided") from e
-            if "vat id" in error_message:
+            if error_type == "MALFORMED_ADDRESS":
+                raise TaxCalculationLogicalError("Invalid address provided") from e
+            if error_type == "INVALID_TAX_ID":
                 raise InvalidTaxIDError() from e
+
+            log.warning("Unhandled Numeral tax calculation error: %s", e.response.text)
             raise
         except httpx.RequestError as e:
             log.debug("Numeral tax calculation request error: %s", str(e))
@@ -306,7 +287,6 @@ class NumeralTaxService(TaxServiceProtocol):
             jurisdictions,
             country=country,
             state=state,
-            subtotal_amount=calculation["total_amount_excluding_tax"],
             customer_exempt=customer_exempt,
         )
 
@@ -348,9 +328,8 @@ class NumeralTaxService(TaxServiceProtocol):
                     text=e.response.text,
                 )
                 raise TaxRecordError() from e
-            error_json = e.response.json()
-            error_code = error_json.get("error", {}).get("error_code")
-            if error_code == "calculation_expired":
+            error_response: NumeralErrorResponse = e.response.json()
+            if error_response.get("type") == "CALCULATION_EXPIRED":
                 raise CalculationExpiredError() from e
             log.warning("Numeral tax record error: %s", e.response.text)
             raise TaxRecordError() from e

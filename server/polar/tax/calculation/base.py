@@ -116,12 +116,13 @@ class TaxabilityReason(StrEnum):
         return cls(stripe_reason)
 
     @classmethod
-    def from_numeral(cls, note: str, customer_exempt: bool) -> "TaxabilityReason":
+    def from_numeral(cls, rate_type: str, customer_exempt: bool) -> "TaxabilityReason":
         if customer_exempt:
             return TaxabilityReason.customer_exempt
-        elif "reverse charge" in note:
+        rate_type_lower = rate_type.lower()
+        if "reverse" in rate_type_lower and "charge" in rate_type_lower:
             return TaxabilityReason.reverse_charge
-        elif "no_collection" in note:
+        if "no_collection" in rate_type_lower or "no collection" in rate_type_lower:
             return TaxabilityReason.not_collecting
 
         return TaxabilityReason.standard_rated

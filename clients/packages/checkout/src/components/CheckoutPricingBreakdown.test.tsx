@@ -553,7 +553,7 @@ describe('CheckoutPricingBreakdown', () => {
   })
 
   describe('metered prices in breakdown', () => {
-    it('shows usage pricing section and per-meter row', () => {
+    it('shows additional metered usage row', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',
         meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' as const },
@@ -570,7 +570,7 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/usage pricing/i)).toBeInTheDocument()
+      expect(screen.getByText(/additional metered usage/i)).toBeInTheDocument()
       expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
     })
 

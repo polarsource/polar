@@ -350,7 +350,7 @@ class TestUpdateOrganization:
         settings = response.json()["customer_portal_settings"]
         assert settings["customer"]["allow_email_change"] is True
 
-
+    @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(
         self,
         client: AsyncClient,
@@ -379,6 +379,31 @@ class TestUpdateOrganization:
         assert ("body", "website") in error_locations
         assert ("body", "email") in error_locations
         assert ("body", "socials") in error_locations
+        assert ("body", "details", "product_description") in error_locations
+
+    @pytest.mark.auth
+    async def test_submit_for_review_requires_details(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "website": "https://example.com",
+                "email": "support@example.com",
+                "socials": [{"platform": "x", "url": "https://x.com/polar"}],
+            },
+        )
+        assert update_response.status_code == 200
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/submit-review"
+        )
+
+        assert response.status_code == 422
+        error_locations = {tuple(error["loc"]) for error in response.json()["detail"]}
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth

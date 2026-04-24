@@ -1,4 +1,3 @@
-import builtins
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
@@ -7,6 +6,7 @@ from uuid import UUID
 
 import structlog
 from pydantic import BaseModel, Field
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -68,6 +68,7 @@ from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
     OrganizationCreate,
     OrganizationDeletionBlockedReason,
+    OrganizationReviewSubmissionBody,
     OrganizationUpdate,
 )
 from .sorting import OrganizationSortProperty
@@ -413,76 +414,15 @@ class OrganizationService:
         await self._after_update(session, organization)
         return organization
 
-    def _validate_review_submission(
-        self, organization: Organization
-    ) -> builtins.list[ValidationError]:
-        errors: builtins.list[ValidationError] = []
-
-        if not organization.name or not organization.name.strip():
-            errors.append(
-                {
-                    "loc": ("body", "name"),
-                    "msg": "Organization name is required.",
-                    "type": "value_error",
-                    "input": organization.name,
-                }
-            )
-
-        if not organization.website:
-            errors.append(
-                {
-                    "loc": ("body", "website"),
-                    "msg": "Website is required.",
-                    "type": "value_error",
-                    "input": organization.website,
-                }
-            )
-
-        if not organization.email:
-            errors.append(
-                {
-                    "loc": ("body", "email"),
-                    "msg": "Support email is required.",
-                    "type": "value_error",
-                    "input": organization.email,
-                }
-            )
-
-        if not any(
-            social.get("url", "").strip() for social in (organization.socials or [])
-        ):
-            errors.append(
-                {
-                    "loc": ("body", "socials"),
-                    "msg": "At least one social media link is required.",
-                    "type": "value_error",
-                    "input": organization.socials,
-                }
-            )
-
-        product_description = (organization.details or {}).get("product_description")
-        if (
-            not isinstance(product_description, str)
-            or len(product_description.strip()) < 30
-        ):
-            errors.append(
-                {
-                    "loc": ("body", "details", "product_description"),
-                    "msg": "Please provide at least 30 characters.",
-                    "type": "value_error",
-                    "input": product_description,
-                }
-            )
-
-        return errors
-
     async def submit_for_review(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        errors = self._validate_review_submission(organization)
-
-        if errors:
-            raise PolarRequestValidationError(errors)
+        try:
+            OrganizationReviewSubmissionBody.model_validate({"body": organization})
+        except PydanticValidationError as e:
+            raise PolarRequestValidationError(
+                cast(Sequence[ValidationError], e.errors())
+            ) from e
 
         if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)

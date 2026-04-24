@@ -324,6 +324,36 @@ class TestUpdateReviewSubmission:
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth
+    async def test_update_with_submit_for_review_requires_details(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        session.add(organization)
+        await session.flush()
+        await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                website=cast(HttpUrl, "https://example.com"),
+                email="support@example.com",
+                socials=[
+                    OrganizationSocialLink(
+                        platform=cast(OrganizationSocialPlatforms, "x"),
+                        url=cast(HttpUrl, "https://x.com/polar"),
+                    )
+                ],
+            ),
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await organization_service.submit_for_review(session, organization)
+
+        error_locations = {tuple(error["loc"]) for error in exc_info.value.errors()}
+        assert ("body", "details", "product_description") in error_locations
+
+    @pytest.mark.auth
     async def test_update_details_ignored_after_initial_status(
         self,
         session: AsyncSession,

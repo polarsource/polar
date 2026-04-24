@@ -252,6 +252,11 @@ class NumeralTaxService(TaxServiceProtocol):
                 raise TaxCalculationLogicalError("Invalid postal code provided") from e
             if "vat id" in error_message:
                 raise InvalidTaxIDError() from e
+            log.warning(
+                "Numeral tax calculation unhandled error",
+                status_code=e.response.status_code,
+                response=e.response.text,
+            )
             raise
         except httpx.RequestError as e:
             log.debug("Numeral tax calculation request error: %s", str(e))

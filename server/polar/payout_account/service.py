@@ -100,20 +100,6 @@ class PayoutAccountService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def get_by_id_and_admin(
-        self,
-        session: AsyncReadSession,
-        payout_account_id: uuid.UUID,
-        user: User,
-    ) -> PayoutAccount | None:
-        """Look up a payout account by ID, checking that the user is its admin."""
-        repository = PayoutAccountRepository.from_session(session)
-        statement = repository.get_base_statement().where(
-            PayoutAccount.id == payout_account_id,
-            PayoutAccount.admin_id == user.id,
-        )
-        return await repository.get_one_or_none(statement)
-
     async def create(
         self,
         auth_subject: AuthSubject[User],

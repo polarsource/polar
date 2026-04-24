@@ -1,4 +1,3 @@
-import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -2042,7 +2041,6 @@ class TestSetPayoutAccount:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
         user: User,
@@ -2056,25 +2054,10 @@ class TestSetPayoutAccount:
         await save_fixture(organization)
 
         updated_org = await organization_service.set_payout_account(
-            session, auth_subject, organization, payout_account.id
+            session, organization, payout_account
         )
 
         assert updated_org.payout_account_id == payout_account.id
-
-    @pytest.mark.auth
-    async def test_set_unknown_payout_account_raises_error(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user: User,
-    ) -> None:
-        """Raises PolarRequestValidationError for unknown payout account."""
-        with pytest.raises(PolarRequestValidationError):
-            await organization_service.set_payout_account(
-                session, auth_subject, organization, uuid.uuid4()
-            )
 
 
 @pytest.mark.asyncio

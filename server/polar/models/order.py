@@ -95,6 +95,13 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
             "search_vector",
             postgresql_using="gin",
         ),
+        Index(
+            "ix_orders_customer_id_receipt_number",
+            "customer_id",
+            "receipt_number",
+            unique=True,
+            postgresql_where=text("receipt_number IS NOT NULL"),
+        ),
     )
 
     search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True, deferred=True)
@@ -152,6 +159,13 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     invoice_number: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     invoice_path: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+
+    receipt_number: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+    receipt_path: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
 

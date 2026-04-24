@@ -96,8 +96,8 @@ class Invoice(BaseModel):
             for item in self.tax_breakdown
             if item["taxability_reason"]
             in {
-                TaxabilityReason.standard_rated,
-                TaxabilityReason.reverse_charge,
+                TaxabilityReason.standard_rated.value,
+                TaxabilityReason.reverse_charge.value,
             }
         ]
 
@@ -108,7 +108,7 @@ class Invoice(BaseModel):
     def _tax_item_label(self, item: TaxBreakdownItem) -> str:
         label = item["display_name"]
 
-        if item["taxability_reason"] == TaxabilityReason.reverse_charge:
+        if item["taxability_reason"] == TaxabilityReason.reverse_charge.value:
             return f"{label} (0% Reverse Charge)"
 
         if item["country"] is not None:

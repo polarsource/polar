@@ -176,23 +176,28 @@ def _build_numeral_tax_breakdown(
     proportional_tax = total_tax_amount - total_fixed
     total_rate = sum(j["tax_rate"] for j in percentage_jurisdictions)
 
+    # Compute per-jurisdiction amounts for percentage taxes proportionally.
+    # Fixed-fee amounts are always their fee_amount. For percentage jurisdictions,
+    # we allocate proportionally, with the last one absorbing rounding differences.
+    pct_remaining = proportional_tax
+    pct_index = 0
     tax_breakdown: list[TaxBreakdownItem] = []
 
-    # Compute per-jurisdiction amounts for percentage taxes proportionally
-    remaining = proportional_tax
-    for i, jurisdiction in enumerate(jurisdictions):
+    for jurisdiction in jurisdictions:
         if jurisdiction["fee_amount"] > 0:
             amount = jurisdiction["fee_amount"]
-        elif i < len(jurisdictions) - 1:
-            amount = (
-                round(proportional_tax * jurisdiction["tax_rate"] / total_rate)
-                if total_rate > 0
-                else 0
-            )
-            remaining -= amount
         else:
-            # Last percentage item gets the remainder to ensure the sum is exact
-            amount = remaining
+            pct_index += 1
+            if pct_index < len(percentage_jurisdictions):
+                amount = (
+                    round(proportional_tax * jurisdiction["tax_rate"] / total_rate)
+                    if total_rate > 0
+                    else 0
+                )
+                pct_remaining -= amount
+            else:
+                # Last percentage item gets the remainder to ensure the sum is exact
+                amount = pct_remaining
 
         tax_breakdown.append(
             _numeral_jurisdiction_to_breakdown_item(

@@ -123,7 +123,7 @@ class TaxRate(TypedDict):
 
 
 class TaxBreakdownItem(TypedDict):
-    rate_type: Literal["percentage"] | Literal["fixed"]
+    rate_type: Literal["percentage", "fixed"]
     basis_points: int | None
     display_name: str
     country: str | None

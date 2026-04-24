@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Annotated, Any
 from uuid import UUID
@@ -21,7 +22,7 @@ from .policies import finance, members
 from .policies import organization as org_policy
 from .policies import payout_account as pa_policy
 from .service import get_accessible_org_ids, get_accessible_organization
-from .types import PayoutAccountPolicyFn, PolicyFn
+from .types import PolicyFn
 
 
 @dataclass(frozen=True)
@@ -224,7 +225,9 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     return dependency
 
 
-def PayoutAccountPolicyGuard(policy_fn: PayoutAccountPolicyFn) -> Any:
+def PayoutAccountPolicyGuard(
+    policy_fn: Callable[[AuthSubject[User], "PayoutAccountModel"], Awaitable[bool]],
+) -> Any:
     """FastAPI dependency: resolve payout account by {id}, check policy.
 
     Payout accounts are user-owned resources (via ``admin_id``).

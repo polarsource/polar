@@ -23,12 +23,6 @@ def upgrade() -> None:
         "orders",
         sa.Column("organization_id", sa.Uuid(), nullable=True),
     )
-    op.create_index(
-        op.f("ix_orders_organization_id"),
-        "orders",
-        ["organization_id"],
-        unique=False,
-    )
     op.create_foreign_key(
         op.f("orders_organization_id_fkey"),
         "orders",
@@ -37,6 +31,14 @@ def upgrade() -> None:
         ["id"],
         ondelete="restrict",
     )
+    with op.get_context().autocommit_block():
+        op.create_index(
+            op.f("ix_orders_organization_id"),
+            "orders",
+            ["organization_id"],
+            unique=False,
+            postgresql_concurrently=True,
+        )
 
 
 def downgrade() -> None:

@@ -11,6 +11,7 @@ from polar.authz.dependencies import (
     AuthorizeMembersManage,
     AuthorizeOrgAccessUser,
     AuthorizeOrgDelete,
+    AuthorizeOrgManagePayoutAccount,
 )
 from polar.authz.policies import payout_account as pa_policy
 from polar.config import settings
@@ -164,34 +165,18 @@ async def get_account(
     tags=[APITag.private],
 )
 async def set_payout_account(
-    id: OrganizationID,
+    authz: AuthorizeOrgManagePayoutAccount,
     body: OrganizationPayoutAccountSet,
-    auth_subject: auth.OrganizationsWriteUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Set the payout account for an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
     # Resolve payout account and check admin ownership
     pa_repo = PayoutAccountRepository.from_session(session)
     payout_account = await pa_repo.get_by_id(body.payout_account_id)
-    if payout_account is None:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "payout_account_id"),
-                    "msg": "Payout account not found or not accessible.",
-                    "input": str(body.payout_account_id),
-                }
-            ]
-        )
-
-    result = await pa_policy.can_write(auth_subject, payout_account)
-    if result is not True:
+    if (
+        payout_account is None
+        or await pa_policy.can_write(authz.auth_subject, payout_account) is not True
+    ):
         raise PolarRequestValidationError(
             [
                 {
@@ -204,7 +189,7 @@ async def set_payout_account(
         )
 
     return await organization_service.set_payout_account(
-        session, organization, payout_account
+        session, authz.organization, payout_account
     )
 
 

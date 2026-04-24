@@ -33,3 +33,27 @@ async def can_delete(
             return True
         return "Only the account admin can delete an organization with an account"
     return "Not permitted"
+
+
+async def can_manage_payout_account(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization],
+    organization: OrganizationModel,
+) -> PolicyResult:
+    """Can the subject set or change the payout account for this organization?
+
+    - Organization tokens: always allowed (the org is the subject)
+    - Users: if the org has an account, only the account admin can manage.
+      If no account, any member can manage.
+    """
+    if is_organization(auth_subject):
+        return True
+    if is_user(auth_subject):
+        if organization.account_id is None:
+            return True
+        if await account_service.is_user_admin(
+            session, organization.account_id, auth_subject.subject
+        ):
+            return True
+        return "Only organization admins can manage the payout account"
+    return "Not permitted"

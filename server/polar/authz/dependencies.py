@@ -144,6 +144,16 @@ AuthorizeOrgDelete = Annotated[
         )
     ),
 ]
+AuthorizeOrgManagePayoutAccount = Annotated[
+    AuthzContext[User],
+    Depends(
+        OrgPolicyGuard(
+            org_policy.can_manage_payout_account,
+            allowed_subjects={User},
+            required_scopes={Scope.web_write, Scope.organizations_write},
+        )
+    ),
+]
 AuthorizeOrgAccess = Annotated[
     AuthzContext[User | Organization], Depends(OrgPolicyGuard(_always_allow))
 ]
@@ -226,7 +236,9 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
 
 
 def PayoutAccountPolicyGuard(
-    policy_fn: Callable[[AuthSubject[User], "PayoutAccountModel"], Awaitable[PolicyResult]],
+    policy_fn: Callable[
+        [AuthSubject[User], "PayoutAccountModel"], Awaitable[PolicyResult]
+    ],
 ) -> Any:
     """FastAPI dependency: resolve payout account by {id}, check policy.
 

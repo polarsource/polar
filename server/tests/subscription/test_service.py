@@ -4309,6 +4309,75 @@ class TestUpdateSeats:
         )
         assert updated_subscription_update is None
 
+    async def test_next_period_revert_to_current_clears_pending_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Reproduces customer flow:
+        # subscription has 3 seats → set pending=1 → set pending=2 →
+        # set pending=3 (= current) should clear the pending update.
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=3,
+        )
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=1,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+        pending = await subscription_update_repository.get_unapplied_by_subscription_id(
+            subscription.id
+        )
+        assert pending is not None
+        assert pending.seats == 1
+
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=2,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+        pending = await subscription_update_repository.get_unapplied_by_subscription_id(
+            subscription.id
+        )
+        assert pending is not None
+        assert pending.seats == 2
+
+        # Reverting to current seat count must clear the pending update
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=3,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        assert updated.seats == 3
+        assert updated.pending_update is None
+        pending = await subscription_update_repository.get_unapplied_by_subscription_id(
+            subscription.id
+        )
+        assert pending is None
+
     async def test_seat_increase_with_fixed_discount(
         self,
         session: AsyncSession,

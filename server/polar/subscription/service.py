@@ -1405,7 +1405,18 @@ class SubscriptionService:
         old_seats = subscription.seats or 1
         old_amount = subscription.amount
 
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+
         if old_seats == seats:
+            # No-op for the seat count itself, but a stale next-period
+            # SubscriptionUpdate would otherwise survive — clear it so the
+            # subscription doesn't change at the next billing cycle.
+            pending = subscription.pending_update
+            if pending is not None and pending.seats is not None:
+                await subscription_update_repository.soft_delete(pending)
+                subscription.pending_update = None
             return subscription
 
         event = await event_service.create_event(
@@ -1430,9 +1441,6 @@ class SubscriptionService:
         previous_status = subscription.status
         previous_is_canceled = subscription.canceled
 
-        subscription_update_repository = SubscriptionUpdateRepository.from_session(
-            session
-        )
         if proration_behavior == SubscriptionProrationBehavior.next_period:
             subscription.pending_update = await subscription_update_repository.upsert(
                 subscription_update

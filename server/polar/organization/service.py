@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 from uuid import UUID
 
 import structlog
@@ -67,8 +67,7 @@ from .schemas import (
 )
 from .sorting import OrganizationSortProperty
 
-if TYPE_CHECKING:
-    pass
+
 
 log = structlog.get_logger()
 

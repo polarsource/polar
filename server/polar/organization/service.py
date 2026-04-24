@@ -67,8 +67,6 @@ from .schemas import (
 )
 from .sorting import OrganizationSortProperty
 
-
-
 log = structlog.get_logger()
 
 _MIN_REVIEW_THRESHOLD = 10_000

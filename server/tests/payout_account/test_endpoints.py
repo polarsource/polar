@@ -94,9 +94,7 @@ class TestGetPayoutAccount:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        payout_account = await create_payout_account(
-            save_fixture, organization, user
-        )
+        payout_account = await create_payout_account(save_fixture, organization, user)
 
         response = await client.get(f"/v1/payout-accounts/{payout_account.id}")
 
@@ -114,9 +112,7 @@ class TestGetPayoutAccount:
     ) -> None:
         """A payout account linked to multiple organizations is accessible
         by its admin regardless of which org it's linked to."""
-        payout_account = await create_payout_account(
-            save_fixture, organization, user
-        )
+        payout_account = await create_payout_account(save_fixture, organization, user)
 
         # Create a second organization owned by the same user, sharing the
         # same payout account.
@@ -183,9 +179,7 @@ class TestDeletePayoutAccount:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        payout_account = await create_payout_account(
-            save_fixture, organization, user
-        )
+        payout_account = await create_payout_account(save_fixture, organization, user)
         # Unlink from organization so delete is allowed
         organization.payout_account = None
         await save_fixture(organization)
@@ -196,9 +190,7 @@ class TestDeletePayoutAccount:
         mock.delete_account.return_value = None
         mocker.patch("polar.payout_account.service.stripe", new=mock)
 
-        response = await client.delete(
-            f"/v1/payout-accounts/{payout_account.id}"
-        )
+        response = await client.delete(f"/v1/payout-accounts/{payout_account.id}")
 
         assert response.status_code == 204
 
@@ -236,9 +228,7 @@ class TestOnboardingLink:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        payout_account = await create_payout_account(
-            save_fixture, organization, user
-        )
+        payout_account = await create_payout_account(save_fixture, organization, user)
 
         mock = mocker.MagicMock(spec=StripeService)
         account_link = MagicMock()
@@ -288,9 +278,7 @@ class TestDashboardLink:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        payout_account = await create_payout_account(
-            save_fixture, organization, user
-        )
+        payout_account = await create_payout_account(save_fixture, organization, user)
 
         mock = mocker.MagicMock(spec=StripeService)
         login_link = MagicMock()

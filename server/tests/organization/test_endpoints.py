@@ -548,9 +548,7 @@ class TestSetPayoutAccount:
         organization.account = await create_account(save_fixture, user=other_user)
         await save_fixture(organization)
 
-        payout_account = await create_payout_account(
-            save_fixture, organization, user
-        )
+        payout_account = await create_payout_account(save_fixture, organization, user)
         organization.payout_account = None
         await save_fixture(organization)
 
@@ -573,9 +571,7 @@ class TestSetPayoutAccount:
         organization.account = await create_account(save_fixture, user=user)
         await save_fixture(organization)
 
-        payout_account = await create_payout_account(
-            save_fixture, organization, user
-        )
+        payout_account = await create_payout_account(save_fixture, organization, user)
         organization.payout_account = None
         await save_fixture(organization)
 

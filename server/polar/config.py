@@ -396,11 +396,38 @@ class Settings(BaseSettings):
         # USD, default
         "usd": _DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE,
     }
-    # Country-specific minimums (in USD cents) that override the currency-based minimum
-    # Based on Stripe's per-country payout requirements: https://docs.stripe.com/global-payouts/send-money
+    # Minimum payout amounts per country (in USD cents), based on Stripe's per-country
+    # minimums converted from local currency to USD.
+    # Source: https://docs.stripe.com/global-payouts/send-money
+    # FX rates are approximate and were last updated on 2026-04-24. Refresh periodically.
     # TODO: Add other countries as needed based on https://docs.stripe.com/global-payouts/send-money
     ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_COUNTRY: dict[str, int] = {
-        "PA": 5000,  # Panama: $50.00 USD (Stripe minimum for Panama)
+        "AE": 137,   # United Arab Emirates: 5.0 AED ≈ $1.37
+        "AL": 3175,  # Albania: 3000.0 ALL ≈ $31.75
+        "AM": 3025,  # Armenia: 12100.0 AMD ≈ $30.25
+        "BA": 2778,  # Bosnia and Herzegovina: 50.0 BAM ≈ $27.78
+        "BS": 2500,  # Bahamas: 25.0 BSD ≈ $25.00
+        "BT": 3013,  # Bhutan: 2500.0 BTN ≈ $30.13
+        "EC": 100,   # Ecuador: 1.0 USD = $1.00
+        "GM": 2815,  # Gambia: 1900.0 GMD ≈ $28.15
+        "GY": 3015,  # Guyana: 6300.0 GYD ≈ $30.15
+        "HK": 256,   # Hong Kong: 20.0 HKD ≈ $2.56
+        "KW": 323,   # Kuwait: 1.0 KWD ≈ $3.23
+        "MD": 2809,  # Moldova: 500.0 MDL ≈ $28.09
+        "MG": 2940,  # Madagascar: 132300.0 MGA ≈ $29.40
+        "MK": 2655,  # North Macedonia: 1500.0 MKD ≈ $26.55
+        "MN": 3044,  # Mongolia: 105000.0 MNT ≈ $30.44
+        "MY": 2830,  # Malaysia: 133.0 MYR ≈ $28.30
+        "MZ": 2500,  # Mozambique: 1600.0 MZN ≈ $25.00
+        "NA": 2660,  # Namibia: 500.0 NAD ≈ $26.60
+        "PA": 5000,  # Panama: 50.0 USD = $50.00
+        "RS": 2778,  # Serbia: 3000.0 RSD ≈ $27.78
+        "SV": 3000,  # El Salvador: 30.0 USD = $30.00
+        "TH": 1676,  # Thailand: 600.0 THB ≈ $16.76
+        "TW": 2540,  # Taiwan: 800.0 TWD ≈ $25.40
+        "UZ": 2767,  # Uzbekistan: 343000.0 UZS ≈ $27.67
+        "VN": 333,   # Vietnam: 81125.0 VND ≈ $3.33
+        "ZA": 532,   # South Africa: 100.0 ZAR ≈ $5.32
     }
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40

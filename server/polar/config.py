@@ -396,6 +396,12 @@ class Settings(BaseSettings):
         # USD, default
         "usd": _DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE,
     }
+    # Country-specific minimums (in USD cents) that override the currency-based minimum
+    # Based on Stripe's per-country payout requirements: https://docs.stripe.com/global-payouts/send-money
+    # TODO: Add other countries as needed based on https://docs.stripe.com/global-payouts/send-money
+    ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_COUNTRY: dict[str, int] = {
+        "PA": 5000,  # Panama: $50.00 USD (Stripe minimum for Panama)
+    }
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40
 
@@ -557,6 +563,13 @@ class Settings(BaseSettings):
         return self.ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_CURRENCY.get(
             currency.lower(), self._DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE
         )
+
+    def get_minimum_payout_for_account(self, currency: str, country: str) -> int:
+        currency_min = self.get_minimum_payout_for_currency(currency)
+        country_min = self.ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_COUNTRY.get(
+            country.upper(), 0
+        )
+        return max(currency_min, country_min)
 
     def get_pydantic_gateway_model(
         self, model: str | None = None

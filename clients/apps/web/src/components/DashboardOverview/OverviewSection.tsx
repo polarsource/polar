@@ -61,7 +61,7 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
         <h2 className="text-2xl font-medium text-gray-900 dark:text-white">
           Overview
         </h2>
-        <div className="flex items-center gap-x-4">
+        <div className="flex items-center justify-between md:gap-x-4">
           <SegmentedControl
             options={(
               Object.entries(CHART_RANGES) as [ChartRange, string][]
@@ -75,9 +75,10 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
             variant="secondary"
             size="sm"
             wrapperClassNames="gap-x-2"
+            aria-label="Customize"
           >
             <Settings2 className="h-3.5 w-3.5" />
-            Customize
+            <span className="hidden md:inline">Customize</span>
           </Button>
         </div>
       </div>

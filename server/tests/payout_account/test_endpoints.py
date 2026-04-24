@@ -1,9 +1,11 @@
 import uuid
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, PayoutAccount, User, UserOrganization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -171,6 +173,35 @@ class TestDeletePayoutAccount:
         assert response.status_code == 401
 
     @pytest.mark.auth
+    async def test_admin_can_delete_unlinked_account(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MagicMock,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user
+        )
+        # Unlink from organization so delete is allowed
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        mock = mocker.MagicMock(spec=StripeService)
+        mock.account_exists.return_value = True
+        mock.retrieve_balance.return_value = ("usd", 0)
+        mock.delete_account.return_value = None
+        mocker.patch("polar.payout_account.service.stripe", new=mock)
+
+        response = await client.delete(
+            f"/v1/payout-accounts/{payout_account.id}"
+        )
+
+        assert response.status_code == 204
+
+    @pytest.mark.auth
     async def test_user_cannot_delete_other_organization_account(
         self,
         client: AsyncClient,
@@ -195,6 +226,34 @@ class TestOnboardingLink:
         assert response.status_code == 401
 
     @pytest.mark.auth
+    async def test_admin_can_get_onboarding_link(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MagicMock,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user
+        )
+
+        mock = mocker.MagicMock(spec=StripeService)
+        account_link = MagicMock()
+        account_link.url = "https://connect.stripe.com/setup/test"
+        mock.create_account_link.return_value = account_link
+        mocker.patch("polar.payout_account.service.stripe", new=mock)
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/onboarding-link",
+            params={"return_path": "/finance/account"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["url"] == "https://connect.stripe.com/setup/test"
+
+    @pytest.mark.auth
     async def test_user_cannot_access_other_organization_account(
         self,
         client: AsyncClient,
@@ -217,6 +276,33 @@ class TestDashboardLink:
         )
 
         assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_admin_can_get_dashboard_link(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MagicMock,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user
+        )
+
+        mock = mocker.MagicMock(spec=StripeService)
+        login_link = MagicMock()
+        login_link.url = "https://connect.stripe.com/login/test"
+        mock.create_login_link.return_value = login_link
+        mocker.patch("polar.payout_account.service.stripe", new=mock)
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/dashboard-link"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["url"] == "https://connect.stripe.com/login/test"
 
     @pytest.mark.auth
     async def test_user_cannot_access_other_organization_account(

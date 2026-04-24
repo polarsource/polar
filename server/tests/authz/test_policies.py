@@ -113,7 +113,7 @@ class TestOrgCanDelete:
         assert isinstance(result, str)
         assert (
             result
-            == "Only the account admin can delete an organization with an account"
+            == "Only the account admin can delete the organization"
         )
 
 
@@ -151,7 +151,7 @@ class TestMembersCanManage:
 
         result = await members.can_manage(session, auth_subject, organization)
         assert isinstance(result, str)
-        assert result == "Only organization admins can manage members"
+        assert result == "Only the account admin can manage members"
 
 
 @pytest.mark.asyncio

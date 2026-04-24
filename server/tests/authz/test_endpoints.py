@@ -118,7 +118,7 @@ class TestPolicyGuardDeleteOrganization:
         assert response.status_code == 403
         assert (
             response.json()["detail"]
-            == "Only the account admin can delete an organization with an account"
+            == "Only the account admin can delete the organization"
         )
 
 
@@ -164,7 +164,7 @@ class TestPolicyGuardInviteMember:
         )
         assert response.status_code == 403
         assert (
-            response.json()["detail"] == "Only organization admins can manage members"
+            response.json()["detail"] == "Only the account admin can manage members"
         )
 
 

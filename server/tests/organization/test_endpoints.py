@@ -831,5 +831,5 @@ class TestDeleteOrganization:
         json = response.json()
         assert (
             json["detail"]
-            == "Only the account admin can delete an organization with an account"
+            == "Only the account admin can delete the organization"
         )

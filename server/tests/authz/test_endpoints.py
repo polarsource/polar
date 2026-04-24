@@ -163,9 +163,7 @@ class TestPolicyGuardInviteMember:
             json={"email": "newmember@example.com"},
         )
         assert response.status_code == 403
-        assert (
-            response.json()["detail"] == "Only the account admin can manage members"
-        )
+        assert response.json()["detail"] == "Only the account admin can manage members"
 
 
 @pytest.mark.asyncio

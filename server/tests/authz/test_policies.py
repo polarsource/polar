@@ -111,10 +111,7 @@ class TestOrgCanDelete:
 
         result = await org_policy.can_delete(session, auth_subject, organization)
         assert isinstance(result, str)
-        assert (
-            result
-            == "Only the account admin can delete the organization"
-        )
+        assert result == "Only the account admin can delete the organization"
 
 
 @pytest.mark.asyncio

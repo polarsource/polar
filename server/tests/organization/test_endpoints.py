@@ -829,7 +829,4 @@ class TestDeleteOrganization:
 
         assert response.status_code == 403
         json = response.json()
-        assert (
-            json["detail"]
-            == "Only the account admin can delete the organization"
-        )
+        assert json["detail"] == "Only the account admin can delete the organization"

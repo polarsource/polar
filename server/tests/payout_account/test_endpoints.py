@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, PayoutAccount, User, UserOrganization
@@ -177,7 +178,7 @@ class TestDeletePayoutAccount:
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        mocker: MagicMock,
+        mocker: MockerFixture,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,
@@ -230,7 +231,7 @@ class TestOnboardingLink:
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        mocker: MagicMock,
+        mocker: MockerFixture,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,
@@ -282,7 +283,7 @@ class TestDashboardLink:
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        mocker: MagicMock,
+        mocker: MockerFixture,
         user: User,
         organization: Organization,
         user_organization: UserOrganization,

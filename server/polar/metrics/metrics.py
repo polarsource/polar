@@ -33,8 +33,7 @@ def _not_in_trial(t: ColumnElement[datetime], i: TimeInterval) -> ColumnElement[
     buckets = t.table.c
     return or_(
         buckets.trial_end.is_(None),
-        i.sql_date_trunc(cast(SQLColumnExpression[datetime], buckets.trial_end))
-        <= i.sql_date_trunc(t),
+        buckets.trial_end < t + i.sql_interval(),
     )
 
 
@@ -42,8 +41,7 @@ def _in_trial(t: ColumnElement[datetime], i: TimeInterval) -> ColumnElement[bool
     buckets = t.table.c
     return and_(
         buckets.trial_end.is_not(None),
-        i.sql_date_trunc(cast(SQLColumnExpression[datetime], buckets.trial_end))
-        > i.sql_date_trunc(t),
+        buckets.trial_end >= t + i.sql_interval(),
     )
 
 

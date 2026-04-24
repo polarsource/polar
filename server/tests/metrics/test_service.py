@@ -3514,6 +3514,60 @@ class TestGetMetrics:
         assert mar.trial_monthly_recurring_revenue == 0
         assert mar.trial_committed_monthly_recurring_revenue == 0
 
+    async def test_trial_mrr_is_stable_across_now_values(
+        self,
+        metrics_harness: MetricsHarness,
+        metrics_session: AsyncSession,
+    ) -> None:
+        case = QUERY_CASES_BY_LABEL["trial_excluded_from_mrr"]
+        org_ctx = metrics_harness.organizations[case.org_key]
+        auth_subject = _metrics_auth_subject(
+            metrics_harness.user,
+            metrics_harness.unauthorized_user,
+            org_ctx.organization,
+            case.auth_type,
+        )
+
+        async def get_metrics(now: datetime) -> MetricsResponse:
+            return await metrics_service.get_metrics(
+                metrics_session,
+                auth_subject,
+                start_date=case.start_date,
+                end_date=case.end_date,
+                timezone=ZoneInfo(case.timezone),
+                interval=case.interval,
+                organization_id=[org_ctx.organization.id]
+                if case.organization_id_filter or case.auth_type == "user"
+                else None,
+                product_id=[org_ctx.product_ids[k] for k in case.product_keys] or None,
+                billing_type=list(case.billing_types) or None,
+                customer_id=[org_ctx.customer_ids[k] for k in case.customer_keys]
+                or None,
+                metrics=list(case.metrics) if case.metrics is not None else None,
+                now=now,
+            )
+
+        early = await get_metrics(datetime(2024, 2, 1, tzinfo=UTC))
+        later = await get_metrics(datetime(2024, 6, 1, tzinfo=UTC))
+
+        assert len(early.periods) == len(later.periods) == 3
+        for early_period, later_period in zip(
+            early.periods, later.periods, strict=True
+        ):
+            assert early_period.timestamp == later_period.timestamp
+            assert (
+                early_period.monthly_recurring_revenue
+                == later_period.monthly_recurring_revenue
+            )
+            assert (
+                early_period.trial_monthly_recurring_revenue
+                == later_period.trial_monthly_recurring_revenue
+            )
+            assert (
+                early_period.trial_committed_monthly_recurring_revenue
+                == later_period.trial_committed_monthly_recurring_revenue
+            )
+
     async def test_mrr_subscription_forever_discount(
         self,
         metrics_harness: MetricsHarness,

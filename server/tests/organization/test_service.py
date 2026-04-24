@@ -548,6 +548,33 @@ class TestCheckReviewThreshold:
         # Then: stays snoozed (can't compute grace period)
         assert result.status == OrganizationStatus.SNOOZED
 
+    async def test_offboarding_over_threshold_stays_offboarding(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: offboarding org with threshold 0 and a positive balance
+        # (OFFBOARDING -> REVIEW is not a legal transition, so the check
+        # must skip without raising InvalidStatusTransitionError)
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.next_review_threshold = 0
+
+        mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=5000,
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then: no status mutation, balance still synced, no review enqueued
+        assert result.status == OrganizationStatus.OFFBOARDING
+        assert result.total_balance == 5000
+        enqueue_job_mock.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestConfirmOrganizationReviewed:

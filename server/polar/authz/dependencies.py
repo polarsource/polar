@@ -19,8 +19,9 @@ from polar.postgres import AsyncSession, get_db_session
 
 from .policies import finance, members
 from .policies import organization as org_policy
+from .policies import payout_account as pa_policy
 from .service import get_accessible_org_ids, get_accessible_organization
-from .types import PolicyFn
+from .types import PayoutAccountPolicyFn, PolicyFn
 
 
 @dataclass(frozen=True)
@@ -179,7 +180,7 @@ class AuthorizedPayoutAccount:
     """Result of a PayoutAccountPolicyGuard dependency."""
 
     payout_account: "PayoutAccountModel"
-    auth_subject: AuthSubject[User | Organization]
+    auth_subject: AuthSubject[User]
 
 
 def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
@@ -223,14 +224,17 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     return dependency
 
 
-def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
-    """FastAPI dependency: resolve payout account by {id}, find owning org, check policy.
+def PayoutAccountPolicyGuard(policy_fn: PayoutAccountPolicyFn) -> Any:
+    """FastAPI dependency: resolve payout account by {id}, check policy.
+
+    Payout accounts are user-owned resources (via ``admin_id``).
+    The policy receives the authenticated user and the payout account
+    instead of an organization.
 
     Raises:
         Unauthorized (401): No valid credentials.
-        ResourceNotFound (404): Payout account not found or subject has no
-            access to the owning organization.
-        NotPermitted (403): Subject is a member but the policy denied access.
+        ResourceNotFound (404): Payout account not found or policy denied
+            access.
     """
 
     _authenticator = Authenticator(
@@ -248,11 +252,9 @@ def PayoutAccountPolicyGuard(policy_fn: PolicyFn) -> Any:
         if payout_account is None:
             raise ResourceNotFound()
 
-        # Check that the user is admin of this payout account's organization
-        if payout_account.admin_id != auth_subject.subject.id:
+        if not await policy_fn(auth_subject, payout_account):
             raise ResourceNotFound()
 
-        # await _check_policy(policy_fn, session, auth_subject, organization)
         return AuthorizedPayoutAccount(
             payout_account=payout_account,
             auth_subject=auth_subject,
@@ -269,9 +271,9 @@ AuthorizeAccountWrite = Annotated[
     Depends(AccountPolicyGuard(finance.can_write)),
 ]
 AuthorizePayoutAccountRead = Annotated[
-    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(finance.can_read))
+    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(pa_policy.can_read))
 ]
 AuthorizePayoutAccountWrite = Annotated[
     AuthorizedPayoutAccount,
-    Depends(PayoutAccountPolicyGuard(finance.can_write)),
+    Depends(PayoutAccountPolicyGuard(pa_policy.can_write)),
 ]

@@ -138,20 +138,19 @@ class ProductRepository(
                     ),
                 )
 
-    async def get_ids_by_billing_type(
+    def get_ids_by_billing_type_statement(
         self,
         billing_types: Sequence[ProductBillingType],
         *,
         organization_ids: Sequence[UUID] | None = None,
-    ) -> Sequence[UUID]:
+    ) -> Select[tuple[UUID]]:
         statement = select(Product.id).where(
             Product.billing_type.in_(billing_types),
             Product.deleted_at.is_(None),
         )
         if organization_ids is not None:
             statement = statement.where(Product.organization_id.in_(organization_ids))
-        result = await self.session.execute(statement)
-        return result.scalars().all()
+        return statement
 
     async def get_products_without_currency(
         self, organization_id: UUID, currency: PresentmentCurrency

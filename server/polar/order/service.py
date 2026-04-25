@@ -333,13 +333,11 @@ class OrderService:
 
         if product_billing_type is not None:
             product_repository = ProductRepository.from_session(session)
-            matching_product_ids = await product_repository.get_ids_by_billing_type(
+            product_subquery = product_repository.get_ids_by_billing_type_statement(
                 product_billing_type,
                 organization_ids=organization_id,
             )
-            if not matching_product_ids:
-                return [], 0
-            statement = statement.where(Order.product_id.in_(matching_product_ids))
+            statement = statement.where(Order.product_id.in_(product_subquery))
 
         if discount_id is not None:
             statement = statement.where(Order.discount_id.in_(discount_id))

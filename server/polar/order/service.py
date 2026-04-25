@@ -12,6 +12,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
+from polar.authz.service import get_accessible_org_ids
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
@@ -311,7 +312,8 @@ class OrderService:
         ],
     ) -> tuple[Sequence[Order], int]:
         repository = OrderRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        accessible_org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_statement_by_org_ids(accessible_org_ids)
 
         statement = (
             statement.join(Order.discount, isouter=True)
@@ -333,13 +335,12 @@ class OrderService:
 
         if product_billing_type is not None:
             product_repository = ProductRepository.from_session(session)
-            matching_product_ids = await product_repository.get_ids_by_billing_type(
-                product_billing_type,
-                organization_ids=organization_id,
+            product_subquery = (
+                product_repository.get_statement_by_org_ids(accessible_org_ids)
+                .with_only_columns(Product.id)
+                .where(Product.billing_type.in_(product_billing_type))
             )
-            if not matching_product_ids:
-                return [], 0
-            statement = statement.where(Order.product_id.in_(matching_product_ids))
+            statement = statement.where(Order.product_id.in_(product_subquery))
 
         if discount_id is not None:
             statement = statement.where(Order.discount_id.in_(discount_id))

@@ -21,7 +21,6 @@ from polar.models import (
     ProductPriceCustom,
     ProductPriceFixed,
 )
-from polar.models.product import ProductBillingType
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
 from polar.postgres import sql
 
@@ -137,21 +136,6 @@ class ProductRepository(
                         ProductPriceFixed.price_amount,
                     ),
                 )
-
-    async def get_ids_by_billing_type(
-        self,
-        billing_types: Sequence[ProductBillingType],
-        *,
-        organization_ids: Sequence[UUID] | None = None,
-    ) -> Sequence[UUID]:
-        statement = select(Product.id).where(
-            Product.billing_type.in_(billing_types),
-            Product.deleted_at.is_(None),
-        )
-        if organization_ids is not None:
-            statement = statement.where(Product.organization_id.in_(organization_ids))
-        result = await self.session.execute(statement)
-        return result.scalars().all()
 
     async def get_products_without_currency(
         self, organization_id: UUID, currency: PresentmentCurrency

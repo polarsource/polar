@@ -14,6 +14,7 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -189,6 +190,15 @@ class OrderRepository(
         """Release a payment lock for an order."""
         return await self.update(
             order, update_dict={"payment_lock_acquired_at": None}, flush=flush
+        )
+
+    def get_statement_by_org_ids(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Order]]:
+        return (
+            self.get_base_statement()
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(Customer.organization_id.in_(org_ids))
         )
 
     def get_readable_statement(

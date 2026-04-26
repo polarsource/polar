@@ -40,8 +40,8 @@ export const TextRings = () => {
     const cx = size / 2
     const cy = size / 2
     const mono =
-      getComputedStyle(canvas).getPropertyValue('--font-inter').trim() ||
-      'monospace'
+      getComputedStyle(canvas).getPropertyValue('--font-sans').trim() ||
+      'sans-serif'
 
     // Precompute ring data — each ring gets exactly one copy of the word
     const rings = Array.from({ length: RING_COUNT }, (_, i) => {

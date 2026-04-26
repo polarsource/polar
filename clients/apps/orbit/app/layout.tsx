@@ -1,11 +1,32 @@
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
+import { JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({
-  variable: '--font-inter',
-  subsets: ['latin'],
-  axes: ['opsz'],
+const neueMontreal = localFont({
+  variable: '--font-sans',
+  src: [
+    {
+      path: '../public/fonts/PPNeueMontreal-Thin.otf',
+      weight: '100',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/PPNeueMontreal-Book.otf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/PPNeueMontreal-Medium.otf',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/PPNeueMontreal-Bold.otf',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
 })
 
 const jetbrainsMono = JetBrains_Mono({
@@ -27,10 +48,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${neueMontreal.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body
-        className={`${inter.className} dark:text-dark-200 flex min-h-full flex-col bg-white text-neutral-600 dark:bg-black`}
+        className={`${neueMontreal.className} dark:text-dark-200 flex min-h-full flex-col bg-white text-neutral-600 dark:bg-black`}
       >
         {children}
       </body>

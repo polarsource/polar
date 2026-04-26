@@ -31,7 +31,7 @@ export const LandingPayments = () => (
     <div className="grid grid-cols-2 divide-x divide-neutral-800">
       <div className="p-16 py-32">
         <SectionLabel number="002.B" label="Payments &amp; SaaS" />
-        <h2 className="mt-12 text-[clamp(2rem,4.5vw,4rem)] font-normal [font-variation-settings:'opsz'_32] leading-[1.05] text-white">
+        <h2 className="mt-12 text-[clamp(2rem,4.5vw,4rem)] font-normal leading-[1.05] text-white">
           Not just metering.
           <br />
           The complete

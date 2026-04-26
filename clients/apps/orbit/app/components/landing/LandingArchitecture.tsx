@@ -21,17 +21,17 @@ const LAYERS = [
 ]
 
 export const LandingArchitecture = () => (
-  <section id="architecture">
+  <section id="architecture" className="flex flex-col gap-y-32 pt-16">
     {/* Top row — heading */}
     <div className="grid grid-cols-1 md:grid-cols-2">
-      <div className="py-32">
+      <div>
         <SectionHeading>
           Ingest. Aggregate.
           <br />
           Quantify. Charge.
         </SectionHeading>
       </div>
-      <div className="flex flex-col justify-end gap-12 py-32">
+      <div className="flex flex-col justify-end gap-8">
         <p className="max-w-xl text-4xl leading-snug text-neutral-900 dark:text-white">
           Billing built for Applied AI. Four layers, one pipeline, zero glue
           code.

@@ -27,20 +27,13 @@ const FEATURES_MENU = [
 
 const containerVariants: Variants = {
   hidden: {
-    y: '-100%',
     opacity: 0,
   },
   visible: {
-    y: 0,
     opacity: 1,
     transition: {
-      y: {
-        ease: [0.7, 0, 0.3, 1] as [number, number, number, number],
-        duration: 0.5,
-      },
-      opacity: { duration: 0.15 },
+      duration: 0.2,
       staggerChildren: 0.05,
-      delayChildren: 0.15,
     },
   },
 }

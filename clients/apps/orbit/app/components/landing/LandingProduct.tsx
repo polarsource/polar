@@ -3,6 +3,7 @@
 import { SectionHeading } from './SectionHeading'
 import { Button } from './Button'
 import { ShapeGrid } from '../ShapeGrid'
+import { Stream } from '@cloudflare/stream-react'
 
 /**
  * LandingProduct — two-column layout. Left: heading + description.

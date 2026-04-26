@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { GraphicContainer } from './GraphicContainer'
+import { useInView } from '../hooks/useInView'
 
 /**
  * ShapeGrid — 3×3 grid of geometric motifs built from circles and
@@ -88,12 +89,14 @@ const CELLS: CellDraw[] = [drawPill, drawVenn, drawDumbbell, drawConcentric]
 export const ShapeGrid = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
+  const { ref: wrapperRef, inView } = useInView()
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    if (!inView) return
 
     const dpr = window.devicePixelRatio ?? 1
     const size = canvas.offsetWidth
@@ -135,11 +138,13 @@ export const ShapeGrid = () => {
     animRef.current = requestAnimationFrame(draw)
 
     return () => cancelAnimationFrame(animRef.current)
-  }, [])
+  }, [inView])
 
   return (
-    <GraphicContainer>
-      <canvas ref={canvasRef} className="h-full w-full" />
-    </GraphicContainer>
+    <div ref={wrapperRef}>
+      <GraphicContainer>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </GraphicContainer>
+    </div>
   )
 }

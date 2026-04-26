@@ -1,6 +1,6 @@
 import type { FeatureData } from './featureData'
 import { TileGrid } from '../TileGrid'
-import { VennPatterns } from '../VennPatterns'
+import { CircularBand } from '../CircularBand'
 import { WaveBars } from '../WaveBars'
 import { ConcentricDraw } from '../ConcentricDraw'
 
@@ -37,7 +37,7 @@ export const paymentsFeatures: FeatureData[] = [
       { label: 'Google Pay', text: 'One-tap payments for Android and Chrome users' },
       { label: 'Automatic Setup', text: 'Wallet payments enabled by default on embedded checkout' },
     ],
-    Graphic: VennPatterns,
+    Graphic: CircularBand,
   },
   {
     slug: 'multi-currency',

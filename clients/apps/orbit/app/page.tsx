@@ -1,3 +1,5 @@
+'use client'
+
 import { LandingNav } from './components/landing/LandingNav'
 import { LandingArchitecture } from './components/landing/LandingArchitecture'
 import { LandingProduct } from './components/landing/LandingProduct'
@@ -6,6 +8,7 @@ import { LandingPricing } from './components/landing/LandingPricing'
 import { LandingTestimonials } from './components/landing/LandingTestimonials'
 import { LandingCTA } from './components/landing/LandingCTA'
 import { LandingFooter } from './components/landing/LandingFooter'
+import { Stream } from '@cloudflare/stream-react'
 
 export default function Home() {
   return (
@@ -17,6 +20,7 @@ export default function Home() {
       <LandingTestimonials />
       <LandingCTA />
       <LandingPricing />
+      <Stream src="8fb79c2cb066f3d9e982ad5ad3eb9fc4" autoplay muted loop />
       <LandingFooter />
     </div>
   )

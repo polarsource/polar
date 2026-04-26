@@ -70,7 +70,7 @@ export const LandingFooter = () => (
     </div>
 
     {/* Bottom bar — socials left, copyright right */}
-    <div className="flex items-center justify-between py-12">
+    <div className="flex items-center justify-between py-12 text-2xl">
       <div className="flex gap-8">
         {SOCIALS.map((s) => (
           <a
@@ -78,13 +78,13 @@ export const LandingFooter = () => (
             href={s.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="dark:text-dark-300 text-base text-neutral-500 transition hover:text-neutral-900 dark:hover:text-white"
+            className="dark:text-dark-300 text-neutral-500 transition hover:text-neutral-900 dark:hover:text-white"
           >
             {s.name}
           </a>
         ))}
       </div>
-      <span className="dark:text-dark-300 text-base text-neutral-400">
+      <span className="dark:text-dark-300 text-neutral-400">
         &copy; 2026 Polar Software, Inc.
       </span>
     </div>

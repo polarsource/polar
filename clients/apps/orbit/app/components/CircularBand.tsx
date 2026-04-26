@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { GraphicContainer } from './GraphicContainer'
+import { useInView } from '../hooks/useInView'
 
 interface Ring {
   radius: number
@@ -18,6 +19,7 @@ interface CircularBandProps {
 export const CircularBand = ({ fill = false }: CircularBandProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
+  const { ref: wrapperRef, inView } = useInView()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -25,6 +27,7 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    if (!inView) return
 
     const init = () => {
       const dpr = window.devicePixelRatio ?? 1
@@ -103,15 +106,21 @@ export const CircularBand = ({ fill = false }: CircularBandProps) => {
       cancelAnimationFrame(animRef.current)
       resizeObserver.disconnect()
     }
-  }, [])
+  }, [inView])
 
   if (fill) {
-    return <canvas ref={canvasRef} className="h-full w-full" />
+    return (
+      <div ref={wrapperRef}>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </div>
+    )
   }
 
   return (
-    <GraphicContainer>
-      <canvas ref={canvasRef} className="h-full w-full" />
-    </GraphicContainer>
+    <div ref={wrapperRef}>
+      <GraphicContainer>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </GraphicContainer>
+    </div>
   )
 }

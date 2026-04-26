@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useInView } from '../hooks/useInView'
 import { GraphicContainer } from './GraphicContainer'
 
 /**
@@ -10,6 +11,7 @@ import { GraphicContainer } from './GraphicContainer'
  */
 
 export const CycleArrow = () => {
+  const { ref: wrapperRef, inView } = useInView()
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -17,6 +19,7 @@ export const CycleArrow = () => {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    if (!inView) return
 
     const dpr = window.devicePixelRatio ?? 1
     const size = canvas.offsetWidth
@@ -79,11 +82,13 @@ export const CycleArrow = () => {
       ry + Math.cos(headAngle) * headLen,
     )
     ctx.stroke()
-  }, [])
+  }, [inView])
 
   return (
-    <GraphicContainer>
-      <canvas ref={canvasRef} className="h-full w-full" />
-    </GraphicContainer>
+    <div ref={wrapperRef}>
+      <GraphicContainer>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </GraphicContainer>
+    </div>
   )
 }

@@ -1,6 +1,6 @@
 import type { FeatureData } from './featureData'
 import { RadialSpinner } from '../RadialSpinner'
-import { MagneticBubbles } from '../MagneticBubbles'
+import { ConcentricDraw } from '../ConcentricDraw'
 import { VectorField } from '../VectorField'
 import { ShapeGrid } from '../ShapeGrid'
 
@@ -37,7 +37,7 @@ export const platformFeatures: FeatureData[] = [
       { label: 'Email Auth', text: 'Customers sign in using their purchase email' },
       { label: 'Pre-Auth Links', text: 'Generate authenticated portal links via API' },
     ],
-    Graphic: MagneticBubbles,
+    Graphic: ConcentricDraw,
   },
   {
     slug: 'webhooks',

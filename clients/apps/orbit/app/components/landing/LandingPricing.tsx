@@ -127,7 +127,9 @@ export const LandingPricing = () => (
             </div>
 
             <div className="dark:border-dark-700 grid grid-cols-1 gap-2 border-t border-neutral-300 pt-8 text-black dark:text-white">
-              <div className="dark:text-dark-300 text-xl">Fees</div>
+              <div className="dark:text-dark-300 text-xl text-neutral-500">
+                Fees
+              </div>
               <ul className="flex flex-col gap-2">
                 {tier.fees.map((f) => (
                   <li key={f} className="text-xl">
@@ -138,7 +140,9 @@ export const LandingPricing = () => (
             </div>
 
             <div className="dark:border-dark-700 grid grid-cols-1 gap-2 border-t border-neutral-300 pt-8 text-black dark:text-white">
-              <div className="dark:text-dark-300 text-xl">Features</div>
+              <div className="dark:text-dark-300 text-xl text-neutral-500">
+                Features
+              </div>
               <ul className="flex flex-col gap-2">
                 {tier.features.map((f) => (
                   <li key={f} className="text-xl">

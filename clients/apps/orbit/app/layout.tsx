@@ -3,26 +3,26 @@ import localFont from 'next/font/local'
 import { JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-const neueMontreal = localFont({
+const soehne = localFont({
   variable: '--font-sans',
   src: [
     {
-      path: '../public/fonts/PPNeueMontreal-Thin.otf',
-      weight: '100',
+      path: '../public/fonts/test-soehne-leicht.woff2',
+      weight: '300',
       style: 'normal',
     },
     {
-      path: '../public/fonts/PPNeueMontreal-Book.otf',
+      path: '../public/fonts/test-soehne-buch.woff2',
       weight: '400',
       style: 'normal',
     },
     {
-      path: '../public/fonts/PPNeueMontreal-Medium.otf',
+      path: '../public/fonts/test-soehne-kraftig.woff2',
       weight: '500',
       style: 'normal',
     },
     {
-      path: '../public/fonts/PPNeueMontreal-Bold.otf',
+      path: '../public/fonts/test-soehne-dreiviertelfett.woff2',
       weight: '700',
       style: 'normal',
     },
@@ -48,10 +48,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${neueMontreal.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${soehne.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body
-        className={`${neueMontreal.className} dark:text-dark-200 flex min-h-full flex-col bg-white text-neutral-600 dark:bg-black`}
+        className={`${soehne.className} dark:text-dark-200 flex min-h-full flex-col bg-white text-neutral-600 dark:bg-black`}
       >
         {children}
       </body>

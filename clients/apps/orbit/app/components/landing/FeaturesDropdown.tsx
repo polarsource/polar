@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 
+const slugify = (s: string) => s.toLowerCase().replace(/\s+/g, '-')
+
 const FEATURES_MENU = [
   {
     title: 'Billing',
@@ -82,7 +84,7 @@ export const FeaturesDropdown = () => {
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
           >
-            <div className="px-16 pt-48 pb-12 shadow-2xl">
+            <div className="px-16 pt-48 pb-12">
               <div className="grid grid-cols-4 gap-12 xl:grid-cols-6">
                 {FEATURES_MENU.map((col) => (
                   <div key={col.title} className="flex flex-col gap-y-2">
@@ -94,7 +96,7 @@ export const FeaturesDropdown = () => {
                         <li key={item} className="overflow-hidden">
                           <motion.div variants={itemVariants}>
                             <Link
-                              href="#"
+                              href={`/features/${slugify(item)}`}
                               className="block text-2xl text-black transition dark:text-white"
                             >
                               {item}

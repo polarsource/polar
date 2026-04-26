@@ -27,9 +27,9 @@ const SOCIALS = [
 ]
 
 export const LandingFooter = () => (
-  <footer className="mx-2 pb-2 text-neutral-900 dark:text-white">
+  <footer className="text-neutral-900 dark:text-white">
     {/* Top — CTA heading + description */}
-    <div className="grid grid-cols-1 px-12 pt-32 pb-20 md:grid-cols-2">
+    <div className="grid grid-cols-1 pt-32 pb-20 md:grid-cols-2">
       <div className="flex flex-col">
         <SectionHeading className="text-[clamp(1.5rem,4.5vw,6rem)]! whitespace-nowrap">
           Polar Software, Inc.
@@ -47,7 +47,7 @@ export const LandingFooter = () => (
     </div>
 
     {/* Link rows — 2-col grid, label on left half, links stacked on right half */}
-    <div className="px-12">
+    <div>
       {LINK_ROWS.map((row) => (
         <div
           key={row.label}
@@ -70,7 +70,7 @@ export const LandingFooter = () => (
     </div>
 
     {/* Bottom bar — socials left, copyright right */}
-    <div className="flex items-center justify-between px-12 py-12">
+    <div className="flex items-center justify-between py-12">
       <div className="flex gap-8">
         {SOCIALS.map((s) => (
           <a

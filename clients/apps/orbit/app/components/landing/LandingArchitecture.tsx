@@ -21,27 +21,11 @@ const LAYERS = [
 ]
 
 export const LandingArchitecture = () => (
-  <section id="architecture" className="flex flex-col gap-y-32 pt-16">
+  <section id="architecture" className="flex flex-col gap-y-16 pt-8">
     {/* Top row — heading */}
     <div className="grid grid-cols-1 md:grid-cols-2">
       <div>
-        <SectionHeading>
-          Ingest. Aggregate.
-          <br />
-          Quantify. Charge.
-        </SectionHeading>
-      </div>
-      <div className="flex flex-col justify-end gap-8">
-        <p className="max-w-xl text-4xl leading-snug text-neutral-900 dark:text-white">
-          Billing built for Applied AI. Four layers, one pipeline, zero glue
-          code.
-        </p>
-        <div className="flex flex-row items-center gap-x-6">
-          <Button href="#">Get Started</Button>
-          <Button href="#" variant="secondary">
-            Documentation
-          </Button>
-        </div>
+        <SectionHeading>Billing built for intelligent software.</SectionHeading>
       </div>
     </div>
 

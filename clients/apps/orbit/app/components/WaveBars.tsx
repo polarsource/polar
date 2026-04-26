@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useInView } from '../hooks/useInView'
 import { GraphicContainer } from './GraphicContainer'
 
 /**
@@ -13,6 +14,7 @@ const COLS = 8
 const ROWS = 28
 
 export const WaveBars = () => {
+  const { ref: wrapperRef, inView } = useInView()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
 
@@ -21,6 +23,7 @@ export const WaveBars = () => {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    if (!inView) return
 
     const dpr = window.devicePixelRatio ?? 1
     const size = canvas.offsetWidth
@@ -82,11 +85,13 @@ export const WaveBars = () => {
     animRef.current = requestAnimationFrame(draw)
 
     return () => cancelAnimationFrame(animRef.current)
-  }, [])
+  }, [inView])
 
   return (
-    <GraphicContainer>
-      <canvas ref={canvasRef} className="h-full w-full" />
-    </GraphicContainer>
+    <div ref={wrapperRef}>
+      <GraphicContainer>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </GraphicContainer>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
 import type { FeatureData } from './featureData'
-import { EventStream } from '../EventStream'
+import { TextRings } from '../TextRings'
 import { GaugeSweep } from '../GaugeSweep'
 import { VolumetricSlices } from '../VolumetricSlices'
 import { OrbitingSpheres } from '../OrbitingSpheres'
@@ -20,7 +20,7 @@ export const infrastructureFeatures: FeatureData[] = [
       { label: 'Immutable Events', text: 'Events cannot be modified after ingestion' },
       { label: 'HTTP Fallback', text: 'Direct HTTP API for any language or platform' },
     ],
-    Graphic: EventStream,
+    Graphic: TextRings,
   },
   {
     slug: 'metering',

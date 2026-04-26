@@ -98,7 +98,7 @@ export const LandingPricing = () => (
     </div>
 
     <div className="grid grid-cols-1 gap-2 px-2 pb-2 sm:grid-cols-2 xl:grid-cols-4">
-      {TIERS.map((tier) => (
+      {TIERS.map((tier, index) => (
         <div
           key={tier.name}
           className="dark:bg-dark-900 flex flex-col justify-between bg-neutral-50"

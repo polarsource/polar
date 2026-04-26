@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useInView } from '../hooks/useInView'
 import { GraphicContainer } from './GraphicContainer'
 
 /**
@@ -155,6 +156,7 @@ const link = (gl: WebGLRenderingContext, vs: string, fs: string) => {
 }
 
 export const VolumetricSlices = () => {
+  const { ref: wrapperRef, inView } = useInView()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
 
@@ -168,6 +170,7 @@ export const VolumetricSlices = () => {
       antialias: true,
     })
     if (!gl) return
+    if (!inView) return
 
     // fwidth requires derivatives extension in WebGL1
     gl.getExtension('OES_standard_derivatives')
@@ -288,11 +291,13 @@ export const VolumetricSlices = () => {
       gl.deleteBuffer(quadBuf)
       gl.deleteProgram(prog)
     }
-  }, [])
+  }, [inView])
 
   return (
-    <GraphicContainer>
-      <canvas ref={canvasRef} className="h-full w-full" />
-    </GraphicContainer>
+    <div ref={wrapperRef}>
+      <GraphicContainer>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </GraphicContainer>
+    </div>
   )
 }

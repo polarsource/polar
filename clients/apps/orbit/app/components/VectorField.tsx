@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useInView } from '../hooks/useInView'
 import { GraphicContainer } from './GraphicContainer'
 
 /**
@@ -31,6 +32,7 @@ export const VectorField = ({
   cols = 8,
   rows = 8,
 }: VectorFieldProps) => {
+  const { ref: wrapperRef, inView } = useInView()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef<{ x: number; y: number } | null>(null)
   const animRef = useRef<number>(0)
@@ -41,6 +43,7 @@ export const VectorField = ({
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    if (!inView) return
 
     const dpr = window.devicePixelRatio ?? 1
     const size = canvas.offsetWidth
@@ -156,11 +159,13 @@ export const VectorField = ({
       canvas.removeEventListener('mousemove', onMove)
       canvas.removeEventListener('mouseleave', onLeave)
     }
-  }, [field, cols, rows])
+  }, [field, cols, rows, inView])
 
   return (
-    <GraphicContainer>
-      <canvas ref={canvasRef} className="h-full w-full" />
-    </GraphicContainer>
+    <div ref={wrapperRef}>
+      <GraphicContainer>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </GraphicContainer>
+    </div>
   )
 }

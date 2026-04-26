@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useInView } from "../hooks/useInView";
 import { GraphicContainer } from "./GraphicContainer";
 
 /**
@@ -9,6 +10,7 @@ import { GraphicContainer } from "./GraphicContainer";
  */
 
 export const LinkedRings = () => {
+  const { ref: wrapperRef, inView } = useInView();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -17,6 +19,7 @@ export const LinkedRings = () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    if (!inView) return;
 
     const dpr = window.devicePixelRatio ?? 1;
     const size = canvas.offsetWidth;
@@ -68,11 +71,13 @@ export const LinkedRings = () => {
     animRef.current = requestAnimationFrame(draw);
 
     return () => cancelAnimationFrame(animRef.current);
-  }, []);
+  }, [inView]);
 
   return (
-    <GraphicContainer>
-      <canvas ref={canvasRef} className="h-full w-full" />
-    </GraphicContainer>
+    <div ref={wrapperRef}>
+      <GraphicContainer>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </GraphicContainer>
+    </div>
   );
 };

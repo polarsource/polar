@@ -109,13 +109,13 @@ export const LandingCTA = () => {
   return (
     <section>
       <div className="grid grid-cols-1 gap-2 p-2 md:grid-cols-2">
-        <div className="relative overflow-hidden bg-neutral-50 p-2 dark:bg-dark-900">
+        <div className="dark:bg-dark-900 relative overflow-hidden bg-neutral-50 p-2">
           <TextRings />
         </div>
 
         <div
           ref={containerRef}
-          className="relative flex flex-col items-center justify-center gap-y-16 overflow-hidden bg-neutral-50 p-16 py-24 xl:gap-y-32 dark:bg-dark-900"
+          className="dark:bg-dark-900 relative flex flex-col items-center justify-center gap-y-16 overflow-hidden bg-neutral-50 p-16 py-24 xl:gap-y-32"
         >
           <SectionHeading>
             Painless billing <br />
@@ -123,7 +123,7 @@ export const LandingCTA = () => {
           </SectionHeading>
           <a
             href="#"
-            className="relative z-10 cursor-none flex-nowrap rounded-full bg-black px-24 py-16 text-4xl font-medium text-nowrap text-white transition hover:bg-neutral-800 xl:px-32 xl:py-24 xl:text-7xl dark:bg-white dark:text-black dark:hover:bg-neutral-300"
+            className="relative z-10 cursor-none flex-nowrap rounded-full bg-black px-24 py-16 text-4xl text-nowrap text-white transition hover:bg-neutral-800 xl:px-32 xl:py-24 xl:text-7xl dark:bg-white dark:text-black dark:hover:bg-neutral-300"
             onMouseEnter={onEnter}
             onMouseLeave={onLeave}
             onMouseMove={onMove}
@@ -134,7 +134,9 @@ export const LandingCTA = () => {
           {SATELLITES.map((sat, i) => (
             <div
               key={i}
-              ref={(el) => { cursorRefs.current[i] = el }}
+              ref={(el) => {
+                cursorRefs.current[i] = el
+              }}
               className="pointer-events-none absolute text-black transition-[transform,opacity] duration-150 ease-out"
               style={{
                 transform: 'translate(-10%, -5%) scale(0)',

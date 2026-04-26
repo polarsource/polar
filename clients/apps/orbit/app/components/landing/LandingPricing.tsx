@@ -155,7 +155,7 @@ export const LandingPricing = () => (
 
           <a
             href="#"
-            className="dark:bg-dark-800 dark:hover:bg-dark-700 mt-auto block w-full bg-neutral-100 py-5 text-center text-xl font-medium text-neutral-900 transition hover:bg-neutral-200 dark:text-white"
+            className="dark:bg-dark-800 dark:hover:bg-dark-700 mt-auto block w-full bg-neutral-100 py-5 text-center text-xl text-neutral-900 transition hover:bg-neutral-200 dark:text-white"
           >
             {tier.cta}
           </a>

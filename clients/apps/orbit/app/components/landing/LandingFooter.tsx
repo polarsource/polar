@@ -1,5 +1,4 @@
 import { SectionHeading } from './SectionHeading'
-import { SlicedPolar } from './SlicedPolar'
 
 /**
  * LandingFooter — editorial footer with CTA heading, structured

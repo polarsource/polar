@@ -20,7 +20,7 @@ export const LandingMetrics = () => (
     <div className="grid grid-cols-4 divide-x divide-neutral-200 dark:divide-neutral-800">
       {METRICS.map((m) => (
         <div key={m.label} className="flex flex-col gap-3 p-16 py-32">
-          <span className="text-[clamp(2.5rem,5vw,5rem)] font-normal [font-variation-settings:'opsz'_32] leading-none text-neutral-900 dark:text-white">
+          <span className="text-[clamp(2.5rem,5vw,5rem)] font-normal leading-none text-neutral-900 dark:text-white">
             {m.value}
           </span>
           <span className="text-base uppercase text-neutral-900 dark:text-white">

@@ -15,8 +15,8 @@ export default function Home() {
       <LandingProduct />
       <LandingOffering />
       <LandingTestimonials />
-      <LandingPricing />
       <LandingCTA />
+      <LandingPricing />
       <LandingFooter />
     </div>
   )

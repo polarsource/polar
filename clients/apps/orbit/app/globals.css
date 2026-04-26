@@ -17,7 +17,6 @@
   --color-dark-200: #949494;
   --color-dark-100: #aaaaaa;
 
-  --font-sans: var(--font-inter);
   --font-mono: var(--font-mono);
 
   /* Graphic stroke colors — read by canvas components via getComputedStyle */

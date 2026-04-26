@@ -26,7 +26,7 @@ const TIERS = [
     name: 'Pro',
     price: '$20',
     period: '/month',
-    desc: 'For solo entrepreneurs and early teams.',
+    desc: 'For entrepreneurs & early teams.',
     fees: [
       '3.80% + 35¢ per transaction',
       '0.0% per Subscription',
@@ -103,7 +103,7 @@ export const LandingPricing = () => (
           key={tier.name}
           className="dark:bg-dark-900 flex flex-col justify-between bg-neutral-50"
         >
-          <div className="flex flex-col gap-y-12 p-12">
+          <div className="flex flex-col gap-y-12 p-10">
             <div className="flex flex-col gap-y-8">
               <div className="flex flex-col gap-4">
                 <span className="text-4xl text-black dark:text-white">
@@ -151,7 +151,7 @@ export const LandingPricing = () => (
 
           <a
             href="#"
-            className="dark:bg-dark-800 dark:hover:bg-dark-700 mt-auto block w-full bg-neutral-200 py-5 text-center text-xl font-medium text-neutral-900 transition hover:bg-neutral-300 dark:text-white"
+            className="dark:bg-dark-800 dark:hover:bg-dark-700 mt-auto block w-full bg-neutral-100 py-5 text-center text-xl font-medium text-neutral-900 transition hover:bg-neutral-200 dark:text-white"
           >
             {tier.cta}
           </a>

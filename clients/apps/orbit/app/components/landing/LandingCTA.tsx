@@ -123,7 +123,7 @@ export const LandingCTA = () => {
           </SectionHeading>
           <a
             href="#"
-            className="relative z-10 cursor-none flex-nowrap rounded-full bg-black px-24 py-16 text-4xl text-nowrap text-white transition hover:bg-neutral-800 xl:px-32 xl:py-24 xl:text-7xl dark:bg-white dark:text-black dark:hover:bg-neutral-300"
+            className="relative z-10 cursor-none flex-nowrap rounded-full bg-black px-24 py-16 text-4xl font-medium text-nowrap text-white transition hover:bg-neutral-800 xl:px-32 xl:py-24 xl:text-7xl dark:bg-white dark:text-black dark:hover:bg-neutral-300"
             onMouseEnter={onEnter}
             onMouseLeave={onLeave}
             onMouseMove={onMove}

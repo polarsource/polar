@@ -5,7 +5,6 @@ from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import TypeAdapter
 
-from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -23,14 +22,20 @@ from polar.postgres import (
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
-from . import auth, sorting
+from . import sorting
+from .auth import (
+    AuthorizeCustomerCreate,
+    AuthorizeCustomerExternalRead,
+    AuthorizeCustomerExternalWrite,
+    AuthorizeCustomerList,
+    AuthorizeCustomerRead,
+    AuthorizeCustomerWrite,
+)
 from .repository import CustomerRepository
 from .schemas.customer import (
     CustomerCreate,
-    CustomerID,
     CustomerUpdate,
     CustomerUpdateExternalID,
-    ExternalCustomerID,
 )
 from .schemas.customer import (
     CustomerResponse as CustomerSchema,
@@ -59,7 +64,7 @@ CustomerNotFound = {
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
-    auth_subject: auth.CustomerRead,
+    accessible_org_ids: AuthorizeCustomerList,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
@@ -75,7 +80,7 @@ async def list(
     """List customers."""
     results, count = await customer_service.list(
         session,
-        auth_subject,
+        accessible_org_ids,
         organization_id=organization_id,
         email=email,
         metadata=metadata,
@@ -104,7 +109,7 @@ async def list(
     },
 )
 async def export(
-    auth_subject: auth.CustomerRead,
+    accessible_org_ids: AuthorizeCustomerList,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
@@ -134,8 +139,7 @@ async def export(
         )
 
         repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        stream = repository.stream_by_organization(org_ids, organization_id)
+        stream = repository.stream_by_organization(accessible_org_ids, organization_id)
 
         async for customer in stream:
             billing_address = customer.billing_address
@@ -174,17 +178,8 @@ async def export(
     response_model=CustomerSchema,
     responses={404: CustomerNotFound},
 )
-async def get(
-    id: CustomerID,
-    auth_subject: auth.CustomerRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> Customer:
+async def get(customer: AuthorizeCustomerRead) -> Customer:
     """Get a customer by ID."""
-    customer = await customer_service.get(session, auth_subject, id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
     return customer
 
 
@@ -194,17 +189,8 @@ async def get(
     response_model=CustomerSchema,
     responses={404: CustomerNotFound},
 )
-async def get_external(
-    external_id: ExternalCustomerID,
-    auth_subject: auth.CustomerRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> Customer:
+async def get_external(customer: AuthorizeCustomerExternalRead) -> Customer:
     """Get a customer by external ID."""
-    customer = await customer_service.get_external(session, auth_subject, external_id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
     return customer
 
 
@@ -215,8 +201,7 @@ async def get_external(
     responses={404: CustomerNotFound},
 )
 async def get_state(
-    id: CustomerID,
-    auth_subject: auth.CustomerRead,
+    customer: AuthorizeCustomerRead,
     session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
 ) -> CustomerState:
@@ -229,11 +214,6 @@ async def get_state(
     It's the ideal endpoint to use when you need to get a full overview
     of a customer's status.
     """
-    customer = await customer_service.get(session, auth_subject, id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
     return await customer_service.get_state(session, redis, customer)
 
 
@@ -244,8 +224,7 @@ async def get_state(
     responses={404: CustomerNotFound},
 )
 async def get_state_external(
-    external_id: ExternalCustomerID,
-    auth_subject: auth.CustomerRead,
+    customer: AuthorizeCustomerExternalRead,
     session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
 ) -> CustomerState:
@@ -258,11 +237,6 @@ async def get_state_external(
     It's the ideal endpoint to use when you need to get a full overview
     of a customer's status.
     """
-    customer = await customer_service.get_external(session, auth_subject, external_id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
     return await customer_service.get_state(session, redis, customer)
 
 
@@ -275,11 +249,11 @@ async def get_state_external(
 )
 async def create(
     customer_create: CustomerCreate,
-    auth_subject: auth.CustomerWrite,
+    organization: AuthorizeCustomerCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Create a customer."""
-    return await customer_service.create(session, customer_create, auth_subject)
+    return await customer_service.create(session, customer_create, organization)
 
 
 @router.patch(
@@ -292,17 +266,11 @@ async def create(
     },
 )
 async def update(
-    id: CustomerID,
     customer_update: CustomerUpdate,
-    auth_subject: auth.CustomerWrite,
+    customer: AuthorizeCustomerWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update a customer."""
-    customer = await customer_service.get(session, auth_subject, id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
     return await customer_service.update(session, customer, customer_update)
 
 
@@ -316,17 +284,11 @@ async def update(
     },
 )
 async def update_external(
-    external_id: ExternalCustomerID,
     customer_update: CustomerUpdateExternalID,
-    auth_subject: auth.CustomerWrite,
+    customer: AuthorizeCustomerExternalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update a customer by external ID."""
-    customer = await customer_service.get_external(session, auth_subject, external_id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
     return await customer_service.update(session, customer, customer_update)
 
 
@@ -340,8 +302,7 @@ async def update_external(
     },
 )
 async def delete(
-    id: CustomerID,
-    auth_subject: auth.CustomerWrite,
+    customer: AuthorizeCustomerWrite,
     anonymize: bool = Query(
         default=False,
         description=(
@@ -370,11 +331,6 @@ async def delete(
 
     Set `anonymize=true` to also anonymize PII for GDPR compliance.
     """
-    customer = await customer_service.get(session, auth_subject, id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
     await customer_service.delete(session, customer, anonymize=anonymize)
 
 
@@ -388,8 +344,7 @@ async def delete(
     },
 )
 async def delete_external(
-    external_id: ExternalCustomerID,
-    auth_subject: auth.CustomerWrite,
+    customer: AuthorizeCustomerExternalWrite,
     anonymize: bool = Query(
         default=False,
         description=(
@@ -405,9 +360,4 @@ async def delete_external(
 
     Set `anonymize=true` to also anonymize PII for GDPR compliance.
     """
-    customer = await customer_service.get_external(session, auth_subject, external_id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
     await customer_service.delete(session, customer, anonymize=anonymize)

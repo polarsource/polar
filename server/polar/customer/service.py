@@ -10,8 +10,7 @@ from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_session.service import customer_session as customer_session_service
@@ -29,12 +28,11 @@ from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
-from polar.models import BenefitGrant, Customer, Order, Organization, Subscription, User
+from polar.models import BenefitGrant, Customer, Order, Organization, Subscription
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.order.repository import OrderRepository
-from polar.organization.resolver import get_payload_organization
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
@@ -63,7 +61,7 @@ class CustomerService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        accessible_org_ids: set[AccessibleOrganizationID],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         email: str | None = None,
@@ -75,8 +73,7 @@ class CustomerService:
         ],
     ) -> tuple[Sequence[Customer], int]:
         repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_statement_by_org_ids(org_ids)
+        statement = repository.get_statement_by_org_ids(accessible_org_ids)
 
         if organization_id is not None:
             statement = statement.where(Customer.organization_id.in_(organization_id))
@@ -111,43 +108,14 @@ class CustomerService:
             statement, limit=pagination.limit, page=pagination.page
         )
 
-    async def get(
-        self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        id: uuid.UUID,
-    ) -> Customer | None:
-        repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_statement_by_org_ids(org_ids).where(
-            Customer.id == id
-        )
-        return await repository.get_one_or_none(statement)
-
-    async def get_external(
-        self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        external_id: str,
-    ) -> Customer | None:
-        repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_statement_by_org_ids(org_ids).where(
-            Customer.external_id == external_id
-        )
-        return await repository.get_one_or_none(statement)
-
     async def create(
         self,
         session: AsyncSession,
         customer_create: CustomerIndividualCreate | CustomerTeamCreate,
-        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
         *,
         created_at: datetime | None = None,
     ) -> Customer:
-        organization = await get_payload_organization(
-            session, auth_subject, customer_create
-        )
         repository = CustomerRepository.from_session(session)
 
         errors: list[ValidationError] = []

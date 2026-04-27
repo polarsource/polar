@@ -5,6 +5,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_user
+from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.customer.schemas.customer import (
     CustomerIndividualCreate,
@@ -19,6 +20,7 @@ from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.customer import CustomerType
 from polar.models.member import Member, MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
+from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.tax.tax_id import TaxIDFormat
@@ -33,8 +35,9 @@ class TestList:
     async def test_not_accessible_organization(
         self, session: AsyncSession, auth_subject: AuthSubject[User], customer: Customer
     ) -> None:
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         customers, total = await customer_service.list(
-            session, auth_subject, pagination=PaginationParams(1, 10)
+            session, org_ids, pagination=PaginationParams(1, 10)
         )
         assert len(customers) == 0
         assert total == 0
@@ -69,9 +72,10 @@ class TestList:
             user_metadata={"user_id": "GHI"},
         )
 
+        org_ids = await get_accessible_org_ids(session, auth_subject)
         customers, total = await customer_service.list(
             session,
-            auth_subject,
+            org_ids,
             metadata={"user_id": ["ABC", "DEF"]},
             pagination=PaginationParams(1, 10),
         )
@@ -92,13 +96,15 @@ class TestCreate:
         auth_subject: AuthSubject[User],
         organization: Organization,
     ) -> None:
+        # The org-access check now lives in the dep (get_payload_organization);
+        # the service no longer takes auth_subject.
         with pytest.raises(PolarRequestValidationError):
-            await customer_service.create(
+            await get_payload_organization(
                 session,
+                auth_subject,
                 CustomerIndividualCreate(
                     email="customer@example.com", organization_id=organization.id
                 ),
-                auth_subject,
             )
 
     @pytest.mark.auth(
@@ -121,7 +127,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), organization
             )
             await session.flush()
 
@@ -145,7 +151,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), organization
             )
             await session.flush()
 
@@ -167,7 +173,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), organization
         )
         await session.flush()
 
@@ -197,7 +203,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), organization
         )
         await session.flush()
 
@@ -232,7 +238,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), organization
         )
         await session.flush()
 
@@ -271,7 +277,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), organization
         )
         await session.flush()
 
@@ -319,7 +325,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), organization
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "email")
 
@@ -360,7 +366,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), organization
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "external_id")
 
@@ -384,7 +390,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), organization
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "billing_address")
 
@@ -409,7 +415,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerIndividualCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), organization
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
 
@@ -433,7 +439,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerIndividualCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), organization
         )
         await session.flush()
 

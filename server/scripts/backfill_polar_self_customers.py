@@ -127,7 +127,7 @@ async def _backfill_organization(
                 external_id=str(owner.id),
             ),
         ),
-        auth_subject,
+        organization,
         created_at=organization.created_at,
     )
     tally.customers += 1

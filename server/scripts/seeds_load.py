@@ -1634,7 +1634,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     name=f"Customer {i + 1}",
                     organization_id=organization.id,
                 ),
-                auth_subject=auth_subject,
+                organization=organization,
             )
 
             timeline_events = _build_customer_timeline_events(
@@ -1723,7 +1723,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                         name=customer_data["name"],
                         organization_id=organization.id,
                     ),
-                    auth_subject=auth_subject,
+                    organization=organization,
                 )
 
                 seats_purchased = customer_data["seats_purchased"]
@@ -1814,7 +1814,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                                     name=f"Seat Holder {i + 1}",
                                     organization_id=organization.id,
                                 ),
-                                auth_subject=auth_subject,
+                                organization=organization,
                             )
                             seat = CustomerSeat(
                                 subscription_id=subscription.id,
@@ -1985,7 +1985,7 @@ async def create_single_org_seed(
                 name=f"Customer {i + 1}",
                 organization_id=organization.id,
             ),
-            auth_subject=auth_subject,
+            organization=organization,
         )
 
         timeline_events = _build_customer_timeline_events(

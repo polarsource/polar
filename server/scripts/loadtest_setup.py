@@ -79,7 +79,7 @@ async def create_loadtest_data(
                 external_id=external_id,
                 organization_id=organization.id,
             ),
-            auth_subject=auth_subject,
+            organization=organization,
         )
         external_customer_ids.append(external_id)
         typer.echo(f"Created customer {i + 1}/{num_customers}", err=True)

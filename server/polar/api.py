@@ -160,5 +160,5 @@ router.include_router(resend_router)
 router.include_router(chargeback_stop_router)
 # /payout-accounts
 router.include_router(payout_account_router)
-# /feedback
+# /feedbacks
 router.include_router(feedback_router)

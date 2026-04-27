@@ -10,7 +10,7 @@ from polar.routing import APIRouter
 from .schemas import Feedback, FeedbackCreate
 from .service import feedback as feedback_service
 
-router = APIRouter(prefix="/feedback", tags=["feedback", APITag.private])
+router = APIRouter(prefix="/feedbacks", tags=["feedbacks", APITag.private])
 
 
 @router.post("/", response_model=Feedback, status_code=201)

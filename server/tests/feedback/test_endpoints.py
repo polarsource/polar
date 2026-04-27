@@ -27,7 +27,7 @@ class TestSubmitFeedback:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:
-        response = await client.post("/v1/feedback/", json=_payload(organization))
+        response = await client.post("/v1/feedbacks/", json=_payload(organization))
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
@@ -38,7 +38,7 @@ class TestSubmitFeedback:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/feedback/", json=_payload(organization, message="too short")
+            "/v1/feedbacks/", json=_payload(organization, message="too short")
         )
         assert response.status_code == 422
 
@@ -50,7 +50,7 @@ class TestSubmitFeedback:
     ) -> None:
         payload = _payload(organization)
         del payload["organization_id"]
-        response = await client.post("/v1/feedback/", json=payload)
+        response = await client.post("/v1/feedbacks/", json=payload)
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
@@ -59,7 +59,7 @@ class TestSubmitFeedback:
         client: AsyncClient,
         organization: Organization,
     ) -> None:
-        response = await client.post("/v1/feedback/", json=_payload(organization))
+        response = await client.post("/v1/feedbacks/", json=_payload(organization))
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
@@ -70,7 +70,7 @@ class TestSubmitFeedback:
         user_organization: UserOrganization,
     ) -> None:
         payload = _payload(organization, organization_id=str(uuid.uuid4()))
-        response = await client.post("/v1/feedback/", json=payload)
+        response = await client.post("/v1/feedbacks/", json=payload)
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -79,7 +79,7 @@ class TestSubmitFeedback:
         client: AsyncClient,
         organization: Organization,
     ) -> None:
-        response = await client.post("/v1/feedback/", json=_payload(organization))
+        response = await client.post("/v1/feedbacks/", json=_payload(organization))
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
@@ -91,7 +91,7 @@ class TestSubmitFeedback:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        response = await client.post("/v1/feedback/", json=_payload(organization))
+        response = await client.post("/v1/feedbacks/", json=_payload(organization))
         assert response.status_code == 201
 
         body = response.json()
@@ -128,7 +128,7 @@ class TestSubmitFeedback:
                 )
             )
 
-        response = await client.post("/v1/feedback/", json=_payload(organization))
+        response = await client.post("/v1/feedbacks/", json=_payload(organization))
         assert response.status_code == 429
         # Submissions are fresh, so Retry-After should be near the full window.
         retry_after = int(response.headers["Retry-After"])
@@ -147,11 +147,11 @@ class TestSubmitFeedback:
         # validation + membership checks.
         for _ in range(10):
             response = await client.post(
-                "/v1/feedback/", json=_payload(organization, message="x")
+                "/v1/feedbacks/", json=_payload(organization, message="x")
             )
             assert response.status_code == 422
 
-        response = await client.post("/v1/feedback/", json=_payload(organization))
+        response = await client.post("/v1/feedbacks/", json=_payload(organization))
         assert response.status_code == 201
 
         count = (await session.execute(select(func.count(Feedback.id)))).scalar_one()

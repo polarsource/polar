@@ -11,8 +11,9 @@ import { useState, type ReactNode } from 'react'
 import LogoIcon from '../Brand/logos/LogoIcon'
 import { type APIPreviewStep, APIPreview } from './APIPreview'
 
-const STEPS = ['personal', 'business', 'product'] as const
+const STEPS = ['auth', 'personal', 'business', 'product'] as const
 const STEP_ROUTES = [
+  '/onboarding/auth',
   '/onboarding/personal',
   '/onboarding/business',
   '/onboarding/product',
@@ -21,8 +22,9 @@ const STEP_ROUTES = [
 interface OnboardingShellProps {
   title: string
   subtitle?: string
-  step?: 'personal' | 'business' | 'product'
+  step?: 'auth' | 'personal' | 'business' | 'product'
   apiStep?: APIPreviewStep
+  authMethod?: string
   children: ReactNode
 }
 
@@ -31,10 +33,11 @@ export function OnboardingShell({
   subtitle,
   step,
   apiStep,
+  authMethod,
   children,
 }: OnboardingShellProps) {
   const router = useRouter()
-  const { userOrganizations } = useAuth()
+  const { currentUser, userOrganizations } = useAuth()
   const [hadOrgs] = useState(() => userOrganizations.length > 0)
   const currentIndex = step ? STEPS.indexOf(step) : -1
 
@@ -47,27 +50,29 @@ export function OnboardingShell({
       overflowX="hidden"
       position="relative"
     >
-      <Box
-        position="absolute"
-        bottom={24}
-        left={24}
-        display="flex"
-        gap="l"
-        color="text-tertiary"
-      >
-        <Link
-          href="/dashboard/account/preferences"
-          className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
+      {currentUser && (
+        <Box
+          position="absolute"
+          bottom={24}
+          left={24}
+          display="flex"
+          gap="l"
+          color="text-tertiary"
         >
-          User settings
-        </Link>
-        <a
-          href={`${CONFIG.BASE_URL}/v1/auth/logout`}
-          className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
-        >
-          Log out
-        </a>
-      </Box>
+          <Link
+            href="/dashboard/account/preferences"
+            className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
+          >
+            User settings
+          </Link>
+          <a
+            href={`${CONFIG.BASE_URL}/v1/auth/logout`}
+            className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
+          >
+            Log out
+          </a>
+        </Box>
+      )}
       <Box display="flex" width="100%" maxWidth="60rem">
         {/* Left: form */}
         <Box
@@ -95,7 +100,7 @@ export function OnboardingShell({
             >
               <Box display="flex" flexDirection="column" rowGap="xl">
                 <Box display="flex" alignItems="center" justifyContent="center">
-                  {currentIndex > 0 && (
+                  {currentIndex > 0 && STEPS[currentIndex - 1] !== 'auth' && (
                     <button
                       type="button"
                       onClick={() => router.push(STEP_ROUTES[currentIndex - 1])}
@@ -169,7 +174,12 @@ export function OnboardingShell({
             backgroundColor="background-secondary"
           />
           <Box position="sticky" top={150} zIndex={1}>
-            {(apiStep ?? step) && <APIPreview step={(apiStep ?? step)!} />}
+            {(apiStep ?? step) && (
+              <APIPreview
+                step={(apiStep ?? step)!}
+                authMethod={authMethod}
+              />
+            )}
           </Box>
         </Box>
       </Box>

@@ -17,7 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const APP_VERSION = Constants.expoConfig?.version ?? 'Unknown'
-
+//
 function UpdateId() {
   const { currentlyRunning } = useUpdates()
   const updateId = currentlyRunning.updateId

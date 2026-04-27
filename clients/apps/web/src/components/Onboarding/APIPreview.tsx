@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuth } from '@/hooks'
 import { type schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -14,6 +15,7 @@ function toSnakeCase(str: string): string {
 }
 
 const STEP_CONFIG = {
+  auth: { method: 'POST', path: '/v1/auth/sessions' },
   personal: { method: 'PATCH', path: '/v1/users/me' },
   business: { method: 'POST', path: '/v1/organizations' },
   product: { method: 'POST', path: '/v1/organizations' },
@@ -27,10 +29,22 @@ interface Line {
   content: React.ReactNode
 }
 
-export type APIPreviewStep = 'personal' | 'business' | 'product' | 'sandbox'
+export type APIPreviewStep =
+  | 'auth'
+  | 'personal'
+  | 'business'
+  | 'product'
+  | 'sandbox'
 
-export function APIPreview({ step }: { step: APIPreviewStep }) {
+export function APIPreview({
+  step,
+  authMethod,
+}: {
+  step: APIPreviewStep
+  authMethod?: string
+}) {
   const data = useOnboardingDataLive()
+  const { currentUser } = useAuth()
   const { apiLoading, apiResponse, clearApiResponse } = useOnboardingData()
 
   useEffect(() => {
@@ -39,6 +53,13 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
 
   const body = useMemo(() => {
     switch (step) {
+      case 'auth': {
+        const obj: Record<string, unknown> = {}
+        if (authMethod) obj.method = authMethod
+        if (currentUser?.email) obj.email = currentUser.email
+        if (currentUser?.id) obj.user_id = currentUser.id
+        return obj
+      }
       case 'personal': {
         const obj: Partial<schemas['UserUpdate']> = {}
         if (data.firstName) obj.first_name = data.firstName

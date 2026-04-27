@@ -76,6 +76,12 @@ const requiresAuthentication = (request: NextRequest): boolean => {
     return false
   }
 
+  // The auth step of the onboarding flow is the entry point for unauthenticated
+  // users coming from the landing page's "Get Started" button.
+  if (request.nextUrl.pathname === '/onboarding/auth') {
+    return false
+  }
+
   return AUTHENTICATED_ROUTES.some((route) =>
     route.test(request.nextUrl.pathname),
   )

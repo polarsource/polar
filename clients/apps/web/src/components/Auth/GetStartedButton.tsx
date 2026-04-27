@@ -4,32 +4,29 @@ import { usePostHog } from '@/hooks/posthog'
 import { CONFIG } from '@/utils/config'
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { ComponentProps, FormEvent, useCallback, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { ComponentProps, FormEvent, useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
-import { AuthModal } from './AuthModal'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
-  orgSlug?: string
 }
 
 const GetStartedButton = ({
   text: _text,
   wrapperClassNames,
-  orgSlug: slug,
   size = 'lg',
   ...props
 }: GetStartedButtonProps) => {
   const posthog = usePostHog()
+  const router = useRouter()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-  const [view, setView] = useState<'choose' | 'signup' | 'login'>('choose')
   const text = _text || 'Get Started'
 
   const onClick = useCallback(() => {
     posthog.capture('global:user:signup:click')
-    setView('choose')
     showModal()
   }, [posthog, showModal])
 
@@ -56,34 +53,14 @@ const GetStartedButton = ({
       mode: 'production',
       source: 'landing_modal',
     })
-    setView('signup')
+    hideModal()
+    router.push('/onboarding/auth')
   }
 
-  const modalTitles = {
-    choose: 'Get started',
-    signup: 'Sign up',
-    login: 'Sign in',
-  } as const
-  const modalTitle = modalTitles[view]
-
-  const modalContents = {
-    choose: (
-      <GetStartedChoose
-        onSandbox={handleSandbox}
-        onGetStarted={handleGetStarted}
-        onLogin={() => setView('login')}
-      />
-    ),
-    signup: (
-      <AuthModal
-        returnTo="/onboarding/personal"
-        returnParams={slug ? { slug, auto: 'true' } : {}}
-        signup={{ intent: 'creator' }}
-      />
-    ),
-    login: <AuthModal returnTo="/dashboard" />,
+  const handleLogin = () => {
+    hideModal()
+    router.push('/onboarding/auth?intent=login')
   }
-  const modalContent = modalContents[view]
 
   return (
     <>
@@ -105,10 +82,16 @@ const GetStartedButton = ({
       </Button>
 
       <Modal
-        title={modalTitle}
+        title="Get started"
         isShown={isModalShown}
         hide={hideModal}
-        modalContent={modalContent}
+        modalContent={
+          <GetStartedChoose
+            onSandbox={handleSandbox}
+            onGetStarted={handleGetStarted}
+            onLogin={handleLogin}
+          />
+        }
         className="lg:w-full lg:max-w-[480px]"
       />
     </>

@@ -108,6 +108,26 @@ class CustomerService:
             statement, limit=pagination.limit, page=pagination.page
         )
 
+    async def get(
+        self,
+        session: AsyncReadSession,
+        accessible_org_ids: set[AccessibleOrganizationID],
+        id: uuid.UUID,
+    ) -> Customer | None:
+        repository = CustomerRepository.from_session(session)
+        return await repository.get_readable_by_id(accessible_org_ids, id)
+
+    async def get_external(
+        self,
+        session: AsyncReadSession,
+        accessible_org_ids: set[AccessibleOrganizationID],
+        external_id: str,
+    ) -> Customer | None:
+        repository = CustomerRepository.from_session(session)
+        return await repository.get_readable_by_external_id(
+            accessible_org_ids, external_id
+        )
+
     async def create(
         self,
         session: AsyncSession,

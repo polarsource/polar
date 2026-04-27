@@ -101,12 +101,8 @@ class OrganizationCapabilities(Schema):
     payouts: bool = Field(
         description="Whether the organization can withdraw its balance."
     )
-    refunds: bool = Field(
-        description="Whether the organization can issue refunds."
-    )
-    api_access: bool = Field(
-        description="Whether the organization can access the API."
-    )
+    refunds: bool = Field(description="Whether the organization can issue refunds.")
+    api_access: bool = Field(description="Whether the organization can access the API.")
     dashboard_access: bool = Field(
         description="Whether the organization can access the dashboard."
     )

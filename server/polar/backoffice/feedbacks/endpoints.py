@@ -41,13 +41,13 @@ router = APIRouter()
 
 def _type_badge(feedback_type: FeedbackType) -> None:
     with tag.div(classes="badge badge-outline"):
-        text(feedback_type.value)
+        text(str(feedback_type))
 
 
 def _status_badge(status: FeedbackStatus) -> None:
     variant = "badge-warning" if status == FeedbackStatus.new else "badge-success"
     with tag.div(classes=f"badge {variant}"):
-        text(status.value)
+        text(str(status))
 
 
 def _list_tabs(request: Request, *, active: FeedbackStatus) -> list[Tab]:
@@ -85,8 +85,8 @@ async def _render_list(
     with layout(
         request,
         [
-            (breadcrumb_label, str(request.url)),
             ("Feedback", str(request.url_for("feedbacks:list"))),
+            (breadcrumb_label, str(request.url)),
         ],
         route_name,
     ):
@@ -207,8 +207,8 @@ async def get(
     with layout(
         request,
         [
-            (str(feedback.id)[:8], str(request.url)),
             ("Feedback", str(request.url_for("feedbacks:list"))),
+            (str(feedback.id)[:8], str(request.url)),
         ],
         "feedbacks:get",
     ):
@@ -239,15 +239,20 @@ async def get(
                     ):
                         text("Delete")
 
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-4"):
-                # Message (rendered Markdown) — wider column
-                with tag.div(classes="card card-border w-full shadow-sm lg:col-span-2"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Message")
-                        with tag.div(classes="prose max-w-none"):
-                            render_markdown(feedback.message)
+            # Message (rendered Markdown) — full width
+            with tag.div(classes="card card-border w-full shadow-sm"):
+                with tag.div(classes="card-body"):
+                    with tag.h2(classes="card-title"):
+                        text("Message")
+                    with tag.div(
+                        classes=(
+                            "prose max-w-none "
+                            "prose-pre:whitespace-pre-wrap prose-pre:break-words"
+                        )
+                    ):
+                        render_markdown(feedback.message)
 
+            with tag.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-4"):
                 # Submitted by
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
@@ -277,42 +282,50 @@ async def get(
                         ).render(request, feedback):
                             pass
 
-            # Internal note
-            with tag.div(classes="card card-border w-full shadow-sm"):
-                with tag.div(classes="card-body"):
-                    with tag.h2(classes="card-title"):
-                        text("Internal note")
-                    with UpdateFeedbackNoteForm.render(
-                        data={"internal_note": feedback.internal_note or ""},
-                        hx_post=str(
-                            request.url_for("feedbacks:update_note", id=feedback.id)
-                        ),
-                        classes="flex flex-col gap-2",
-                    ):
-                        with tag.div(classes="flex justify-end"):
-                            with button(type="submit", variant="primary", size="sm"):
-                                text("Save note")
+                # Client context
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Client context")
+                        if feedback.client_context:
+                            with tag.dl(
+                                classes=(
+                                    "grid grid-cols-[max-content_1fr] gap-x-4 "
+                                    "gap-y-1 text-sm"
+                                )
+                            ):
+                                for key, value in sorted(
+                                    feedback.client_context.items()
+                                ):
+                                    with tag.dt(classes="font-semibold"):
+                                        text(key)
+                                    with tag.dd(
+                                        classes=(
+                                            "font-mono whitespace-pre-wrap break-all"
+                                        )
+                                    ):
+                                        text(_format_context_value(value))
+                        else:
+                            with tag.p(classes="text-gray-500"):
+                                text("No client context captured.")
 
-            # Client context
-            with tag.div(classes="card card-border w-full shadow-sm"):
-                with tag.div(classes="card-body"):
-                    with tag.h2(classes="card-title"):
-                        text("Client context")
-                    if feedback.client_context:
-                        with tag.dl(
-                            classes=(
-                                "grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 "
-                                "text-sm"
-                            )
+                # Internal note
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Internal note")
+                        with UpdateFeedbackNoteForm.render(
+                            data={"internal_note": feedback.internal_note or ""},
+                            hx_post=str(
+                                request.url_for("feedbacks:update_note", id=feedback.id)
+                            ),
+                            classes="flex flex-col gap-2",
                         ):
-                            for key, value in sorted(feedback.client_context.items()):
-                                with tag.dt(classes="font-semibold"):
-                                    text(key)
-                                with tag.dd(classes="font-mono break-all"):
-                                    text(_format_context_value(value))
-                    else:
-                        with tag.p(classes="text-gray-500"):
-                            text("No client context captured.")
+                            with tag.div(classes="flex justify-end"):
+                                with button(
+                                    type="submit", variant="primary", size="sm"
+                                ):
+                                    text("Save note")
 
 
 def _format_context_value(value: Any) -> str:

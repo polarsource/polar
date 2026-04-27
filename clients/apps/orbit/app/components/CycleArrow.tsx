@@ -34,8 +34,8 @@ export const CycleArrow = () => {
 
     const cy = size / 2
     const cols = 7
-    const colGap = size * 0.08
-    const halfH = size * 0.1
+    const colGap = size * 0.12
+    const halfH = size * 0.16
     const r = colGap / 2
 
     const totalW = (cols - 1) * colGap
@@ -43,7 +43,6 @@ export const CycleArrow = () => {
 
     ctx.strokeStyle = strokeColor
     ctx.lineWidth = 2
-    ctx.lineCap = 'round'
 
     ctx.beginPath()
 

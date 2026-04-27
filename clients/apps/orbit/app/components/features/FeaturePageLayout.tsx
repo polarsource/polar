@@ -22,10 +22,10 @@ export const FeaturePageLayout = ({ feature }: { feature: FeatureData }) => {
             <h1 className="text-[clamp(2.5rem,5vw,5rem)] leading-[1.1] font-normal text-neutral-900 dark:text-white">
               {feature.title}
             </h1>
-            <p className="max-w-lg text-2xl">{feature.subtitle}</p>
+            <p className="max-w-3xl text-2xl">{feature.subtitle}</p>
           </div>
 
-          <p className="text-2xl">{feature.description}</p>
+          <p className="max-w-3xl text-2xl">{feature.description}</p>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {feature.details.map((d) => (
@@ -51,8 +51,6 @@ export const FeaturePageLayout = ({ feature }: { feature: FeatureData }) => {
                 d="M4 12L12 4M12 4H5M12 4V11"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               />
             </svg>
           </Link>

@@ -54,7 +54,7 @@ export const FeaturesDropdown = () => {
 
   return (
     <div onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <button className="cursor-pointer text-xl text-black transition hover:text-neutral-900 dark:text-white dark:hover:text-white">
+      <button className="cursor-pointer text-xl font-medium text-black transition hover:text-neutral-900 dark:text-white dark:hover:text-white">
         Features
       </button>
 

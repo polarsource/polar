@@ -84,7 +84,6 @@ export const VectorField = ({
     const draw = () => {
       ctx.clearRect(0, 0, size, size)
       ctx.lineWidth = 1.5
-      ctx.lineCap = 'round'
       ctx.strokeStyle = strokeColor
 
       const mouse = mouseRef.current

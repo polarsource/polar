@@ -34,8 +34,8 @@ export const LinkedRings = () => {
 
     const cx = size / 2;
     const cy = size / 2;
-    const bigR = size * 0.12;
-    const smallR = size * 0.05;
+    const bigR = size * 0.2;
+    const smallR = size * 0.08;
     const orbitR = bigR + smallR;
 
     let lastTime: number | null = null;

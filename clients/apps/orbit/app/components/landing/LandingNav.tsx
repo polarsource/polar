@@ -12,7 +12,7 @@ const NavLink = ({
 }) => (
   <Link
     href={href}
-    className="text-xl text-black transition hover:text-neutral-900 dark:text-white dark:hover:text-white"
+    className="text-xl font-medium text-black transition hover:text-neutral-900 dark:text-white dark:hover:text-white"
   >
     {children}
   </Link>

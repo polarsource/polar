@@ -25,7 +25,11 @@ export const LandingArchitecture = () => (
     {/* Top row — heading */}
     <div className="grid grid-cols-1 md:grid-cols-2">
       <div>
-        <SectionHeading>Billing built for intelligent software.</SectionHeading>
+        <SectionHeading>
+          Billing built for
+          <br />
+          intelligent software.
+        </SectionHeading>
       </div>
     </div>
 

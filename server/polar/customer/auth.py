@@ -1,5 +1,4 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import Depends
 
@@ -15,7 +14,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession, get_db_session
 
 from .repository import CustomerRepository
-from .schemas.customer import CustomerCreate
+from .schemas.customer import CustomerCreate, CustomerID, ExternalCustomerID
 
 _READ_SCOPES = {Scope.customers_read, Scope.customers_write}
 _WRITE_SCOPES = {Scope.customers_write}
@@ -65,7 +64,7 @@ AuthorizeCustomerCreate = Annotated[OrganizationModel, Depends(_authorize_create
 # (membership = permission). 404 if the customer doesn't exist OR isn't
 # accessible — same response, no existence leakage.
 async def _resolve_by_id(
-    id: UUID,
+    id: CustomerID,
     auth_subject: AuthSubject[User | Organization],
     session: AsyncSession,
 ) -> Customer:
@@ -78,7 +77,7 @@ async def _resolve_by_id(
 
 
 async def _resolve_by_external_id(
-    external_id: str,
+    external_id: ExternalCustomerID,
     auth_subject: AuthSubject[User | Organization],
     session: AsyncSession,
 ) -> Customer:
@@ -91,7 +90,7 @@ async def _resolve_by_external_id(
 
 
 async def _authorize_read_by_id(
-    id: UUID,
+    id: CustomerID,
     auth_subject: Annotated[
         AuthSubject[User | Organization], Depends(_read_authenticator)
     ],
@@ -101,7 +100,7 @@ async def _authorize_read_by_id(
 
 
 async def _authorize_write_by_id(
-    id: UUID,
+    id: CustomerID,
     auth_subject: Annotated[
         AuthSubject[User | Organization], Depends(_write_authenticator)
     ],
@@ -111,7 +110,7 @@ async def _authorize_write_by_id(
 
 
 async def _authorize_read_by_external_id(
-    external_id: str,
+    external_id: ExternalCustomerID,
     auth_subject: Annotated[
         AuthSubject[User | Organization], Depends(_read_authenticator)
     ],
@@ -121,7 +120,7 @@ async def _authorize_read_by_external_id(
 
 
 async def _authorize_write_by_external_id(
-    external_id: str,
+    external_id: ExternalCustomerID,
     auth_subject: Annotated[
         AuthSubject[User | Organization], Depends(_write_authenticator)
     ],

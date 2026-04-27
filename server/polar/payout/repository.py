@@ -91,10 +91,8 @@ class PayoutRepository(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Payout]]:
         return self.get_base_statement().where(
-            Payout.payout_account_id.in_(
-                select(Organization.payout_account_id).where(
-                    Organization.id.in_(org_ids)
-                )
+            Payout.account_id.in_(
+                select(Organization.account_id).where(Organization.id.in_(org_ids))
             )
         )
 

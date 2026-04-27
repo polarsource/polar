@@ -42,6 +42,7 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/checkouts/.+/confirm": [
         Rule(minute=6, hour=20, block_time=1800, zone="checkout-confirm")
     ],
+    "^/v1/feedbacks/": [Rule(hour=5, block_time=3600, zone="feedback-submit")],
 }
 
 _SANDBOX_RULES: dict[str, Sequence[Rule]] = {

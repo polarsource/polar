@@ -2,13 +2,12 @@ import uuid
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from polar.models import Feedback, Organization, User, UserOrganization
 from polar.models.feedback import FeedbackStatus, FeedbackType
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
-from tests.fixtures.database import SaveFixture
 
 
 def _payload(organization: Organization, **overrides: object) -> dict[str, object]:
@@ -107,52 +106,3 @@ class TestSubmitFeedback:
         assert stored.message == "Something is broken in the dashboard."
         assert stored.user_id == user.id
         assert stored.organization_id == organization.id
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
-    async def test_rate_limited_after_max(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user: User,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        for _ in range(5):
-            await save_fixture(
-                Feedback(
-                    type=FeedbackType.feedback,
-                    message="prior submission",
-                    client_context={},
-                    user_id=user.id,
-                    organization_id=organization.id,
-                )
-            )
-
-        response = await client.post("/v1/feedbacks/", json=_payload(organization))
-        assert response.status_code == 429
-        # Submissions are fresh, so Retry-After should be near the full window.
-        retry_after = int(response.headers["Retry-After"])
-        assert 3540 <= retry_after <= 3600
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
-    async def test_validation_errors_dont_count_against_rate_limit(
-        self,
-        session: AsyncSession,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # 10 invalid attempts (well above the rate limit) should not consume
-        # any of the user's budget because the count is performed only after
-        # validation + membership checks.
-        for _ in range(10):
-            response = await client.post(
-                "/v1/feedbacks/", json=_payload(organization, message="x")
-            )
-            assert response.status_code == 422
-
-        response = await client.post("/v1/feedbacks/", json=_payload(organization))
-        assert response.status_code == 201
-
-        count = (await session.execute(select(func.count(Feedback.id)))).scalar_one()
-        assert count == 1

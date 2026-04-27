@@ -18,7 +18,7 @@ const SEAT_METRICS: (keyof schemas['Metrics'])[] = [
   'seat_utilization_rate',
 ]
 
-interface CustomersContentProps {
+interface SeatsContentProps {
   data: ParsedMetricsResponse
   interval: schemas['TimeInterval']
 }
@@ -75,7 +75,7 @@ function MetricSection({
   )
 }
 
-export function CustomersContent({ data, interval }: CustomersContentProps) {
+export function SeatsContent({ data, interval }: SeatsContentProps) {
   return (
     <div className="flex flex-col gap-y-8">
       <MetricSection

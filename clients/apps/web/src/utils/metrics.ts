@@ -428,7 +428,7 @@ export const METRIC_GROUPS: MetricGroup[] = [
     ],
   },
   {
-    category: 'Customers',
+    category: 'Seats',
     metrics: [
       {
         slug: 'seat_customers',

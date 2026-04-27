@@ -41,7 +41,7 @@ export default async function Layout(props: {
     if (slug === 'subscriptions' || slug === 'cancellations') {
       return hasRecurringProducts
     }
-    if (slug === 'customers') {
+    if (slug === 'seats') {
       return organization.feature_settings?.seat_based_pricing_enabled ?? false
     }
     return true

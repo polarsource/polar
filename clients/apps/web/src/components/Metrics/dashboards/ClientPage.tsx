@@ -12,8 +12,8 @@ import {
 } from 'nuqs'
 import { useMemo } from 'react'
 import { CancellationsContent } from './CancellationsContent'
-import { CustomersContent } from './CustomersContent'
 import { MetricGroup } from './MetricGroup'
+import { SeatsContent } from './SeatsContent'
 
 const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
 
@@ -88,8 +88,8 @@ export default function ClientPage({
           endDate={endDate}
           productId={productId ?? undefined}
         />
-      ) : metric === 'customers' ? (
-        <CustomersContent data={data} interval={interval} />
+      ) : metric === 'seats' ? (
+        <SeatsContent data={data} interval={interval} />
       ) : (
         <MetricGroup metricKeys={metrics} data={data} interval={interval} />
       )}

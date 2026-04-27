@@ -1,3 +1,4 @@
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
@@ -22,13 +23,6 @@ interface FormSchema {
 
 const MAX_MESSAGE_LENGTH = 5000
 
-const apiErrorMessage = (status: number | undefined): string => {
-  if (status === 429) {
-    return "You've sent a lot of feedback recently — please try again in an hour."
-  }
-  return 'Something went wrong submitting your feedback. Please try again.'
-}
-
 export const FeedbackForm = ({
   organization,
   onSuccess,
@@ -48,23 +42,22 @@ export const FeedbackForm = ({
   const { control, handleSubmit } = form
 
   const submitFeedback = useSubmitFeedback()
+  const apiError = submitFeedback.data?.error
+    ? extractApiErrorMessage(submitFeedback.data.error)
+    : null
 
   const onSubmit = async (formData: FormSchema) => {
-    const result = await submitFeedback.mutateAsync({
+    const { error } = await submitFeedback.mutateAsync({
       type: formData.type,
       message: formData.message,
       organization_id: organization.id,
       client_context: collectClientContext(),
     })
-    if (!result.error) {
-      onSuccess(formData.type)
+    if (error) {
+      return
     }
+    onSuccess(formData.type)
   }
-
-  const errorStatus = submitFeedback.data?.response?.status
-  const showApiError =
-    submitFeedback.isError ||
-    (submitFeedback.data?.error !== undefined && errorStatus !== undefined)
 
   return (
     <Form {...form}>
@@ -123,9 +116,9 @@ export const FeedbackForm = ({
           )}
         />
 
-        {showApiError && (
+        {apiError && (
           <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            {apiErrorMessage(errorStatus)}
+            {apiError}
           </div>
         )}
 

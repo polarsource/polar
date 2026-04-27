@@ -3,6 +3,7 @@ from typing import Annotated, Any, Literal
 from annotated_types import Ge
 from fastapi import UploadFile
 from pydantic import (
+    AfterValidator,
     Discriminator,
     Field,
     StringConstraints,
@@ -10,6 +11,7 @@ from pydantic import (
     model_validator,
 )
 
+from polar.enums import RateLimitGroup
 from polar.kit.schemas import HttpUrlToStr, Schema
 from polar.organization.schemas import NameInput, OrganizationFeatureSettings, SlugInput
 
@@ -126,6 +128,30 @@ class UpdateOrganizationForm(forms.BaseForm):
         OrganizationCheckoutSettingsForm | None,
         forms.SubFormField(OrganizationCheckoutSettingsForm),
         Field(default=None, title="Checkout Settings"),
+    ]
+
+
+_ORGANIZATIONS_RATE_LIMIT_GROUPS: tuple[RateLimitGroup, ...] = (
+    RateLimitGroup.restricted,
+    RateLimitGroup.default,
+    RateLimitGroup.elevated,
+)
+
+
+def _validate_backoffice_rate_limit_group(value: RateLimitGroup) -> RateLimitGroup:
+    if value not in _ORGANIZATIONS_RATE_LIMIT_GROUPS:
+        raise ValueError(f"{value.value} cannot be set from the backoffice")
+    return value
+
+
+class UpdateRateLimitGroupForm(forms.BaseForm):
+    rate_limit_group: Annotated[
+        RateLimitGroup,
+        forms.SelectField(
+            options=[(g.value, g.name) for g in _ORGANIZATIONS_RATE_LIMIT_GROUPS]
+        ),
+        AfterValidator(_validate_backoffice_rate_limit_group),
+        Field(title="Rate Limit Group"),
     ]
 
 

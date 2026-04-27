@@ -97,7 +97,7 @@ function SubmitButton({ loading }: { loading: boolean }) {
   )
 }
 
-export function PersonalDetailsStep() {
+export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
   const router = useRouter()
   const { currentUser, reloadUser } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
@@ -108,6 +108,12 @@ export function PersonalDetailsStep() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(false)
 
+  const safeGeoCountry =
+    geoCountry &&
+    (enums.addressInputCountryValues as string[]).includes(geoCountry)
+      ? geoCountry
+      : undefined
+
   trackStepViewed('personal')
 
   const dateOfBirthSource = data.dateOfBirth || currentUser?.date_of_birth || ''
@@ -117,7 +123,7 @@ export function PersonalDetailsStep() {
     defaultValues: {
       firstName: data.firstName || currentUser?.first_name || '',
       lastName: data.lastName || currentUser?.last_name || '',
-      country: data.country || currentUser?.country || '',
+      country: data.country || currentUser?.country || safeGeoCountry || '',
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
       dobDay: parsedDob[2] ? String(Number(parsedDob[2])) : '',

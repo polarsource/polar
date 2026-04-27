@@ -6,16 +6,14 @@ from fastapi import Depends
 from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
-from polar.authz.dependencies import (
-    AuthorizedCreate,
-    AuthorizedList,
-    AuthorizedResource,
-    OrgListGuard,
-    ResourcePolicyGuard,
-    authorize_create_payload,
-)
+from polar.authz.dependencies import AuthorizedResource, ResourcePolicyGuard
 from polar.authz.policies import custom_field as custom_field_policy
+from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
+from polar.exceptions import NotPermitted
 from polar.models import CustomField
+from polar.models import Organization as OrganizationModel
+from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession, get_db_session
 
 from .repository import CustomFieldRepository
@@ -25,38 +23,51 @@ _LIST_SCOPES = {Scope.custom_fields_read, Scope.custom_fields_write}
 _WRITE_SCOPES = {Scope.custom_fields_write}
 
 
-# List endpoint — authenticate + resolve accessible org IDs at the dep layer.
+# List endpoint — authenticate + resolve accessible org IDs.
+_list_authenticator = Authenticator(
+    allowed_subjects={User, Organization},
+    required_scopes=_LIST_SCOPES,
+)
+
+
+async def _authorize_list(
+    auth_subject: Annotated[
+        AuthSubject[User | Organization], Depends(_list_authenticator)
+    ],
+    session: AsyncSession = Depends(get_db_session),
+) -> set[AccessibleOrganizationID]:
+    return await get_accessible_org_ids(session, auth_subject)
+
+
 AuthorizeCustomFieldList = Annotated[
-    AuthorizedList, Depends(OrgListGuard(required_scopes=_LIST_SCOPES))
+    set[AccessibleOrganizationID], Depends(_authorize_list)
 ]
 
 
-# Create endpoint — parse body, resolve target org from payload, run can_write.
+# Create endpoint — authenticate + parse body + resolve target org + run policy.
 _create_authenticator = Authenticator(
     allowed_subjects={User, Organization},
     required_scopes=_WRITE_SCOPES,
 )
 
 
-async def _authorize_custom_field_create(
+async def _authorize_create(
     custom_field_create: CustomFieldCreate,
     auth_subject: Annotated[
         AuthSubject[User | Organization], Depends(_create_authenticator)
     ],
     session: AsyncSession = Depends(get_db_session),
-) -> AuthorizedCreate[CustomFieldCreate]:
-    return await authorize_create_payload(
-        session=session,
-        auth_subject=auth_subject,
-        body=custom_field_create,
-        policy_fn=custom_field_policy.can_write,
+) -> OrganizationModel:
+    organization = await get_payload_organization(
+        session, auth_subject, custom_field_create
     )
+    result = await custom_field_policy.can_write(session, auth_subject, organization)
+    if result is not True:
+        raise NotPermitted(result if isinstance(result, str) else "Not permitted")
+    return organization
 
 
-AuthorizeCustomFieldCreate = Annotated[
-    AuthorizedCreate[CustomFieldCreate],
-    Depends(_authorize_custom_field_create),
-]
+AuthorizeCustomFieldCreate = Annotated[OrganizationModel, Depends(_authorize_create)]
 
 
 # Per-id endpoints — full PolicyGuard (resolve resource → check org access → policy).

@@ -1,12 +1,12 @@
 import uuid
 from collections.abc import Sequence
 
-from polar.authz.dependencies import AuthorizedCreate, AuthorizedList
+from polar.authz.types import AccessibleOrganizationID
 from polar.custom_field.sorting import CustomFieldSortProperty
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
-from polar.models import CustomField
+from polar.models import CustomField, Organization
 from polar.models.custom_field import CustomFieldType
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -18,7 +18,7 @@ class CustomFieldService:
     async def list(
         self,
         session: AsyncReadSession,
-        authz: AuthorizedList,
+        accessible_org_ids: set[AccessibleOrganizationID],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
@@ -29,7 +29,7 @@ class CustomFieldService:
         ],
     ) -> tuple[Sequence[CustomField], int]:
         repository = CustomFieldRepository.from_session(session)
-        statement = repository.get_by_org_ids_statement(authz.accessible_org_ids)
+        statement = repository.get_by_org_ids_statement(accessible_org_ids)
         statement = repository.apply_query_filter(
             statement,
             organization_id=organization_id,
@@ -42,11 +42,12 @@ class CustomFieldService:
     async def create(
         self,
         session: AsyncSession,
-        authz: AuthorizedCreate[CustomFieldCreate],
+        custom_field_create: CustomFieldCreate,
+        organization: Organization,
     ) -> CustomField:
         repository = CustomFieldRepository.from_session(session)
         existing_field = await repository.get_by_organization_id_and_slug(
-            authz.organization.id, authz.body.slug
+            organization.id, custom_field_create.slug
         )
         if existing_field is not None:
             raise PolarRequestValidationError(
@@ -55,14 +56,16 @@ class CustomFieldService:
                         "type": "value_error",
                         "loc": ("body", "slug"),
                         "msg": "Custom field with this slug already exists.",
-                        "input": authz.body.slug,
+                        "input": custom_field_create.slug,
                     }
                 ]
             )
 
         custom_field = CustomField(
-            **authz.body.model_dump(exclude={"organization_id"}, by_alias=True),
-            organization=authz.organization,
+            **custom_field_create.model_dump(
+                exclude={"organization_id"}, by_alias=True
+            ),
+            organization=organization,
         )
         return await repository.create(custom_field)
 

@@ -26,7 +26,7 @@ from .auth import (
     AuthorizeCustomFieldWrite,
 )
 from .schemas import CustomField as CustomFieldSchema
-from .schemas import CustomFieldAdapter, CustomFieldUpdate
+from .schemas import CustomFieldAdapter, CustomFieldCreate, CustomFieldUpdate
 from .service import custom_field as custom_field_service
 
 router = APIRouter(prefix="/custom-fields", tags=["custom-fields", APITag.public])
@@ -43,7 +43,7 @@ CustomFieldNotFound = {
     "/", summary="List Custom Fields", response_model=ListResource[CustomFieldSchema]
 )
 async def list(
-    authz: AuthorizeCustomFieldList,
+    accessible_org_ids: AuthorizeCustomFieldList,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
@@ -58,7 +58,7 @@ async def list(
     """List custom fields."""
     results, count = await custom_field_service.list(
         session,
-        authz,
+        accessible_org_ids,
         organization_id=organization_id,
         query=query,
         type=type,
@@ -94,11 +94,12 @@ async def get(
     responses={201: {"description": "Custom field created."}},
 )
 async def create(
-    authz: AuthorizeCustomFieldCreate,
+    custom_field_create: CustomFieldCreate,
+    organization: AuthorizeCustomFieldCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomField:
     """Create a custom field."""
-    return await custom_field_service.create(session, authz)
+    return await custom_field_service.create(session, custom_field_create, organization)
 
 
 @router.patch(

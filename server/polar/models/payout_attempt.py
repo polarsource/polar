@@ -25,13 +25,15 @@ class PayoutAttemptStatus(StrEnum):
 
     @classmethod
     def from_stripe(cls, stripe_status: str) -> "PayoutAttemptStatus":
-        if stripe_status == "in_transit":
-            return cls.in_transit
-        if stripe_status == "paid":
-            return cls.succeeded
-        if stripe_status == "failed":
-            return cls.failed
-        return cls.pending
+        match stripe_status:
+            case "in_transit":
+                return cls.in_transit
+            case "paid":
+                return cls.succeeded
+            case "failed" | "canceled":
+                return cls.failed
+            case _:
+                return cls.pending
 
 
 class PayoutAttempt(RecordModel):

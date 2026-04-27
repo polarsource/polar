@@ -1,7 +1,9 @@
 import base64
 import hashlib
+import unicodedata
 from datetime import datetime
 from typing import Any, Self
+from urllib.parse import quote
 
 from pydantic import UUID4, computed_field
 
@@ -11,7 +13,15 @@ from polar.organization.schemas import OrganizationID
 
 
 def get_downloadable_content_disposition(filename: str) -> str:
-    return f'attachment; filename="{filename}"'
+    if filename.isascii():
+        return f'attachment; filename="{filename}"'
+    ascii_fallback = (
+        unicodedata.normalize("NFKD", filename)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+    encoded = quote(filename, safe="")
+    return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded}"
 
 
 class S3FileCreatePart(Schema):

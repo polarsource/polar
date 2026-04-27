@@ -20,7 +20,6 @@ from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
-from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.integrations.tinybird.service import (
     TinybirdTimeseriesStats,
     events_to_tinybird,
@@ -1015,8 +1014,6 @@ class EventService:
 
         tinybird_events = events_to_tinybird(events, ancestors_by_event)
         enqueue_job("tinybird.ingest", tinybird_events)
-
-        polar_self_service.enqueue_event_ingestion(events)
 
     async def _create_meter_events(
         self, session: AsyncSession, events: Sequence[Event]

@@ -43,8 +43,8 @@ class FeedbackService:
                 type=create_schema.type,
                 message=create_schema.message,
                 client_context=create_schema.client_context,
-                user_id=user.id,
-                organization_id=create_schema.organization_id,
+                user=membership.user,
+                organization=membership.organization,
             ),
             flush=True,
         )

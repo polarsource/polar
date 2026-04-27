@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
@@ -12,6 +13,7 @@ from polar.integrations.polar.tasks import (
     add_member,
     delete_customer,
     remove_member,
+    track_event_ingestion,
     track_organization_review_usage,
 )
 
@@ -184,6 +186,76 @@ class TestDeleteCustomer:
         await delete_customer(external_id="org-123")
 
         client.delete_customer.assert_called_once_with(external_id="org-123")
+
+
+@pytest.mark.asyncio
+class TestFlushEventIngestion:
+    SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+    def _patch_settings(self, mocker: MockerFixture, *, enabled: bool = True) -> None:
+        settings = mocker.patch("polar.integrations.polar.tasks.settings")
+        settings.POLAR_SELF_ENABLED = enabled
+        settings.POLAR_ORGANIZATION_ID = str(self.SELF_ORG_ID)
+
+    async def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
+        self._patch_settings(mocker, enabled=False)
+        client = AsyncMock(spec=PolarSelfClient)
+        get_client = mocker.patch(
+            "polar.integrations.polar.tasks.get_client", return_value=client
+        )
+
+        await track_event_ingestion()
+
+        get_client.assert_not_called()
+
+    async def test_noop_when_no_counts(self, mocker: MockerFixture) -> None:
+        self._patch_settings(mocker)
+        repository = MagicMock()
+        repository.get_latest_polar_self_ingestion_timestamp = AsyncMock(
+            return_value=None
+        )
+        repository.count_user_events_by_organization = AsyncMock(return_value={})
+        mocker.patch(
+            "polar.integrations.polar.tasks.EventRepository.from_session",
+            return_value=repository,
+        )
+        client = AsyncMock(spec=PolarSelfClient)
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await track_event_ingestion()
+
+        client.track_event_ingestion.assert_not_called()
+
+    async def test_calls_client_with_counts_and_cutoff(
+        self, mocker: MockerFixture
+    ) -> None:
+        self._patch_settings(mocker)
+        org_a = uuid.UUID("00000000-0000-0000-0000-00000000000a")
+        last_flush = MagicMock()
+        counts = {org_a: 7}
+        repository = MagicMock()
+        repository.get_latest_polar_self_ingestion_timestamp = AsyncMock(
+            return_value=last_flush
+        )
+        repository.count_user_events_by_organization = AsyncMock(return_value=counts)
+        mocker.patch(
+            "polar.integrations.polar.tasks.EventRepository.from_session",
+            return_value=repository,
+        )
+        client = AsyncMock(spec=PolarSelfClient)
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await track_event_ingestion()
+
+        repository.count_user_events_by_organization.assert_called_once()
+        kwargs = repository.count_user_events_by_organization.call_args.kwargs
+        assert kwargs["after"] is last_flush
+        assert kwargs["exclude_organization_id"] == self.SELF_ORG_ID
+        cutoff = kwargs["until"]
+
+        client.track_event_ingestion.assert_called_once_with(
+            counts=counts, cutoff=cutoff
+        )
 
 
 @pytest.mark.asyncio

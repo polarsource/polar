@@ -1,8 +1,19 @@
+import uuid
+from datetime import timedelta
 from decimal import Decimal
 
 from dramatiq import Retry
 
-from polar.worker import TaskPriority, actor, can_retry
+from polar.config import settings
+from polar.event.repository import EventRepository
+from polar.kit.utils import utc_now
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    TaskPriority,
+    actor,
+    can_retry,
+)
 
 from .client import get_client
 
@@ -89,14 +100,29 @@ async def delete_customer(external_id: str) -> None:
     await get_client().delete_customer(external_id=external_id)
 
 
-@actor(actor_name="polar_self.track_event_ingestion", priority=TaskPriority.LOW)
-async def track_event_ingestion(
-    external_customer_id: str, count: int, organization_id: str
-) -> None:
-    await get_client().track_event_ingestion(
-        external_customer_id=external_customer_id,
-        count=count,
-    )
+@actor(
+    actor_name="polar_self.track_event_ingestion_v2",
+    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
+    priority=TaskPriority.LOW,
+)
+async def track_event_ingestion() -> None:
+    if not settings.POLAR_SELF_ENABLED:
+        return
+    self_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+    cutoff = utc_now() - timedelta(seconds=30)
+    async with AsyncSessionMaker() as session:
+        repository = EventRepository.from_session(session)
+        last_flush = await repository.get_latest_polar_self_ingestion_timestamp(
+            self_organization_id
+        )
+        counts = await repository.count_user_events_by_organization(
+            after=last_flush,
+            until=cutoff,
+            exclude_organization_id=self_organization_id,
+        )
+    if not counts:
+        return
+    await get_client().track_event_ingestion(counts=counts, cutoff=cutoff)
 
 
 @actor(

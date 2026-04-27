@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, NoReturn
+from uuid import UUID
 
 import httpx
 import logfire
@@ -199,6 +202,43 @@ class PolarSelfClient:
                 _raise_error(span, e, "delete_customer")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "delete_customer")
+
+    async def track_event_ingestion(
+        self, *, counts: Mapping[UUID, int], cutoff: datetime
+    ) -> None:
+        from polar_sdk.models import (
+            EventCreateCustomer,
+            EventCreateExternalCustomer,
+            EventsIngest,
+        )
+        from polar_sdk.models.polarerror import PolarError
+
+        cutoff_epoch = int(cutoff.timestamp())
+        events: list[EventCreateCustomer | EventCreateExternalCustomer] = [
+            EventCreateExternalCustomer(
+                name="event_ingestion",
+                external_customer_id=str(org_id),
+                external_id=f"events_ingested-{org_id}-{cutoff_epoch}",
+                timestamp=cutoff,
+                metadata={"count": count},
+            )
+            for org_id, count in counts.items()
+        ]
+
+        with logfire.span(
+            "polar.track_event_ingestion",
+            org_count=len(events),
+            cutoff=cutoff.isoformat(),
+        ) as span:
+            try:
+                await self._sdk.events.ingest_async(request=EventsIngest(events=events))
+            except PolarError as e:
+                if e.status_code == 409:
+                    span.set_attribute("conflict", True)
+                    return
+                _raise_error(span, e, "track_event_ingestion")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "track_event_ingestion")
 
     async def track_event_ingestion(
         self, *, external_customer_id: str, count: int

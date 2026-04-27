@@ -10,6 +10,7 @@ from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
 from .email_logs.endpoints import router as email_logs_router
 from .external_events.endpoints import router as external_events_router
+from .feedbacks.endpoints import router as feedbacks_router
 from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
@@ -60,6 +61,7 @@ app.include_router(orders_router, prefix="/orders")
 app.include_router(payouts_router, prefix="/payouts")
 app.include_router(impersonation_router, prefix="/impersonation")
 app.include_router(webhooks_router, prefix="/webhooks")
+app.include_router(feedbacks_router, prefix="/feedbacks")
 
 
 @app.get("/", name="index")

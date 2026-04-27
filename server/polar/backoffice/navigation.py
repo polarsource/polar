@@ -40,4 +40,7 @@ NAVIGATION = [
     navigation.NavigationItem(
         "Webhooks", "webhooks:list", active_route_name_prefix="webhooks:"
     ),
+    navigation.NavigationItem(
+        "Feedback", "feedbacks:list", active_route_name_prefix="feedbacks:"
+    ),
 ]

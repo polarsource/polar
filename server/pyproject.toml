@@ -62,6 +62,7 @@ dependencies = [
   "trafilatura>=2.0.0",
   "polar-sdk==0.31.3",
   "anyio>=4.13.0",
+  "markdown-it-py>=4.0.0",
 ]
 
 [dependency-groups]

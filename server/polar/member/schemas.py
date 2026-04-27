@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from annotated_types import MaxLen
 from fastapi import Path
@@ -61,9 +61,14 @@ class MemberCreate(Schema):
         description=_external_id_description,
         examples=[_external_id_example],
     )
-    role: MemberRole = Field(
+    # Owner is excluded: ownership is established via `MemberOwnerCreate` on
+    # customer creation, or transferred via the update endpoint.
+    role: Literal[MemberRole.member, MemberRole.billing_manager] = Field(
         default=MemberRole.member,
-        description="The role of the member within the customer.",
+        description=(
+            "The role of the member within the customer. To assign or transfer "
+            "ownership, use the member update endpoint."
+        ),
         examples=[MemberRole.member],
     )
 

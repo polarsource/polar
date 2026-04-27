@@ -442,6 +442,24 @@ class TestCreateMember:
         assert response.status_code == 404
 
     @pytest.mark.auth
+    async def test_create_member_rejects_owner_role(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Owner role is rejected at the schema layer."""
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": "00000000-0000-0000-0000-000000000000",
+                "email": "another-owner@example.com",
+                "role": "owner",
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
     async def test_create_member_default_role(
         self,
         save_fixture: SaveFixture,

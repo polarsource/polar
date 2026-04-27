@@ -312,8 +312,17 @@ async def get(
                 # Internal note
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Internal note")
+                        with tag.div(classes="flex items-center justify-between gap-2"):
+                            with tag.h2(classes="card-title"):
+                                text("Internal note")
+                            if feedback.internal_note and feedback.modified_at:
+                                with tag.span(classes="text-xs text-gray-500"):
+                                    text(
+                                        "Updated "
+                                        + feedback.modified_at.strftime(
+                                            "%Y-%m-%d %H:%M UTC"
+                                        )
+                                    )
                         with UpdateFeedbackNoteForm.render(
                             data={"internal_note": feedback.internal_note or ""},
                             hx_post=str(
@@ -321,11 +330,24 @@ async def get(
                             ),
                             classes="flex flex-col gap-2",
                         ):
-                            with tag.div(classes="flex justify-end"):
+                            with tag.div(classes="flex justify-end gap-2"):
                                 with button(
-                                    type="submit", variant="primary", size="sm"
+                                    type="submit",
+                                    name="action",
+                                    value="save",
+                                    size="sm",
+                                    ghost=True,
                                 ):
                                     text("Save note")
+                                if feedback.status == FeedbackStatus.new:
+                                    with button(
+                                        type="submit",
+                                        name="action",
+                                        value="save_and_triage",
+                                        variant="primary",
+                                        size="sm",
+                                    ):
+                                        text("Save & Mark as triaged")
 
 
 def _format_context_value(value: Any) -> str:
@@ -375,8 +397,21 @@ async def update_note(
         )
 
     note = form.internal_note.strip() or None
-    await repository.update(feedback, update_dict={"internal_note": note})
-    await add_toast(request, "Note saved.", "success")
+    update_dict: dict[str, Any] = {"internal_note": note}
+
+    triage = (
+        form_data.get("action") == "save_and_triage"
+        and feedback.status == FeedbackStatus.new
+    )
+    if triage:
+        update_dict["status"] = FeedbackStatus.triaged
+
+    await repository.update(feedback, update_dict=update_dict)
+    await add_toast(
+        request,
+        "Note saved and feedback marked as triaged." if triage else "Note saved.",
+        "success",
+    )
     return HXRedirectResponse(
         request, str(request.url_for("feedbacks:get", id=feedback.id))
     )

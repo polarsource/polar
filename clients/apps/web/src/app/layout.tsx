@@ -85,7 +85,7 @@ export default async function RootLayout({
             user={authenticatedUser}
             userOrganizations={userOrganizations}
           >
-            <PolarPostHogProvider distinctId={distinctId}>
+            <PolarPostHogProvider>
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
                   <NavigationHistoryProvider>

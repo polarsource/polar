@@ -26251,6 +26251,7 @@ export interface components {
       | 'FR'
       | 'GM'
       | 'DE'
+      | 'GH'
       | 'GR'
       | 'GT'
       | 'GY'
@@ -53630,6 +53631,7 @@ export const stripeAccountCountryValues: ReadonlyArray<
   'FR',
   'GM',
   'DE',
+  'GH',
   'GR',
   'GT',
   'GY',

@@ -64,7 +64,8 @@ class FeedbackService:
                 client_context=create_schema.client_context,
                 user_id=user.id,
                 organization_id=create_schema.organization_id,
-            )
+            ),
+            flush=True,
         )
 
     async def _enforce_rate_limit(

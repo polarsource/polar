@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 from collections.abc import Sequence
 
@@ -29,9 +27,6 @@ from polar.tax.calculation import tax_calculation as tax_calculation_service
 
 from .repository import WalletRepository, WalletTransactionRepository
 from .sorting import WalletSortProperty
-
-# Module-level alias to avoid shadowing by WalletService.list method
-_TaxBreakdownItems = list[TaxBreakdownItem]
 
 
 class WalletError(PolarError): ...
@@ -204,7 +199,7 @@ class WalletService:
         tax_amount: int | None = None,
         taxability_reason: TaxabilityReason | None = None,
         tax_rate: TaxRate | None = None,
-        tax_breakdown: _TaxBreakdownItems | None = None,
+        tax_breakdown: Sequence[TaxBreakdownItem] | None = None,
         tax_calculation_processor_id: str | None = None,
         order: Order | None = None,
         flush: bool = False,

@@ -89,26 +89,10 @@ class Invoice(BaseModel):
             *(self.extra_heading_items or []),
         ]
 
-    @property
-    def _displayed_tax_items(self) -> list[TaxBreakdownItem]:
-        return [
-            item
-            for item in self.tax_breakdown
-            if item["taxability_reason"]
-            in {
-                TaxabilityReason.standard_rated.value,
-                TaxabilityReason.reverse_charge.value,
-            }
-        ]
-
-    @property
-    def tax_displayed(self) -> bool:
-        return len(self._displayed_tax_items) > 0
-
     def _tax_item_label(self, item: TaxBreakdownItem) -> str:
         label = item["display_name"]
 
-        if item["taxability_reason"] == TaxabilityReason.reverse_charge.value:
+        if item["taxability_reason"] == TaxabilityReason.reverse_charge:
             return f"{label} (0% Reverse Charge)"
 
         if item["country"] is not None:
@@ -120,6 +104,22 @@ class Invoice(BaseModel):
             label += f" ({format_percent(item['basis_points'])})"
 
         return label
+
+    @property
+    def displayed_tax_items(self) -> list[InvoiceTotalsItem]:
+        return [
+            InvoiceTotalsItem(
+                label=self._tax_item_label(item),
+                amount=item["amount"],
+                currency=self.currency,
+            )
+            for item in self.tax_breakdown
+            if item["taxability_reason"]
+            in {
+                TaxabilityReason.standard_rated,
+                TaxabilityReason.reverse_charge,
+            }
+        ]
 
     @property
     def totals_items(self) -> list[InvoiceTotalsItem]:
@@ -140,8 +140,8 @@ class Invoice(BaseModel):
                 )
             )
 
-        displayed_tax_items = self._displayed_tax_items
-        if displayed_tax_items:
+        displayed_tax_items = self.displayed_tax_items
+        if len(displayed_tax_items) > 0:
             items.append(
                 InvoiceTotalsItem(
                     label="Total excluding tax",
@@ -149,14 +149,7 @@ class Invoice(BaseModel):
                     currency=self.currency,
                 )
             )
-            for tax_item in displayed_tax_items:
-                items.append(
-                    InvoiceTotalsItem(
-                        label=self._tax_item_label(tax_item),
-                        amount=tax_item["amount"],
-                        currency=self.currency,
-                    )
-                )
+            items.extend(displayed_tax_items)
 
         total = self.net_amount + self.tax_amount
         items.append(

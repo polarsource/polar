@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
@@ -121,9 +119,6 @@ from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 from .repository import OrderRepository
 from .schemas import OrderInvoice, OrderUpdate
 from .sorting import OrderSortProperty
-
-# Module-level alias to avoid shadowing by OrderService.list method
-_TaxBreakdownItems = list[TaxBreakdownItem]
 
 log: Logger = structlog.get_logger()
 
@@ -2238,7 +2233,7 @@ class OrderService:
         TaxBehavior | None,
         str | None,
         int,
-        _TaxBreakdownItems,
+        Sequence[TaxBreakdownItem],
     ]:
         billing_address = customer.billing_address
         tax_id = customer.tax_id

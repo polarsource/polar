@@ -22,7 +22,6 @@ from .base import (
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
     TaxCode,
-    TaxRate,
     TaxRecordError,
     TaxServiceProtocol,
 )
@@ -43,6 +42,7 @@ class NumeralTaxJurisdiction(TypedDict):
     jurisdiction_name: str
     fee_amount: int
     note: str
+    tax_due_decimal: str
 
 
 class NumeralLineItemProduct(TypedDict):
@@ -103,38 +103,6 @@ def to_numeral_tax_id(tax_id: TaxID) -> NumeralTaxId:
             return {"type": "VAT", "value": value}
 
 
-def from_numeral_tax_jurisdiction(
-    jurisdiction: NumeralTaxJurisdiction,
-    country: str,
-    state: str | None,
-    currency: str,
-) -> TaxRate:
-    rate_type: Literal["percentage", "fixed"] = (
-        "fixed" if jurisdiction["fee_amount"] > 0 else "percentage"
-    )
-    basis_points = None
-    amount = None
-    amount_currency = None
-
-    if rate_type == "percentage":
-        basis_points = int(jurisdiction["tax_rate"] * 100 * 100)
-    else:
-        amount = jurisdiction["fee_amount"]
-        amount_currency = currency
-
-    display_name = jurisdiction["jurisdiction_name"]
-
-    return TaxRate(
-        rate_type=rate_type,
-        basis_points=basis_points,
-        amount=amount,
-        amount_currency=amount_currency,
-        display_name=display_name,
-        country=country,
-        state=state,
-    )
-
-
 def _numeral_jurisdiction_to_breakdown_item(
     jurisdiction: NumeralTaxJurisdiction,
     country: str,
@@ -153,7 +121,7 @@ def _numeral_jurisdiction_to_breakdown_item(
         country=country,
         state=state,
         amount=amount,
-        taxability_reason=taxability_reason.value,
+        taxability_reason=taxability_reason,
     )
 
 
@@ -168,36 +136,16 @@ def _build_numeral_tax_breakdown(
     if not jurisdictions:
         return []
 
-    # Separate fixed-fee and percentage jurisdictions
-    fixed_jurisdictions = [j for j in jurisdictions if j["fee_amount"] > 0]
-    percentage_jurisdictions = [j for j in jurisdictions if j["fee_amount"] == 0]
-
-    total_fixed = sum(j["fee_amount"] for j in fixed_jurisdictions)
-    proportional_tax = total_tax_amount - total_fixed
-    total_rate = sum(j["tax_rate"] for j in percentage_jurisdictions)
-
-    # Compute per-jurisdiction amounts for percentage taxes proportionally.
-    # Fixed-fee amounts are always their fee_amount. For percentage jurisdictions,
-    # we allocate proportionally, with the last one absorbing rounding differences.
-    pct_remaining = proportional_tax
-    pct_index = 0
     tax_breakdown: list[TaxBreakdownItem] = []
+    remaining = total_tax_amount
 
-    for jurisdiction in jurisdictions:
-        if jurisdiction["fee_amount"] > 0:
-            amount = jurisdiction["fee_amount"]
+    for i, jurisdiction in enumerate(jurisdictions):
+        if i < len(jurisdictions) - 1:
+            amount = round(float(jurisdiction["tax_due_decimal"]) * 100)
+            remaining -= amount
         else:
-            pct_index += 1
-            if pct_index < len(percentage_jurisdictions):
-                amount = (
-                    round(proportional_tax * jurisdiction["tax_rate"] / total_rate)
-                    if total_rate > 0
-                    else 0
-                )
-                pct_remaining -= amount
-            else:
-                # Last percentage item gets the remainder to ensure the sum is exact
-                amount = pct_remaining
+            # Last item absorbs any rounding to ensure the total matches exactly
+            amount = remaining
 
         tax_breakdown.append(
             _numeral_jurisdiction_to_breakdown_item(
@@ -317,7 +265,7 @@ class NumeralTaxService(TaxServiceProtocol):
                             country=address.country,
                             state=address.get_unprefixed_state(),
                             amount=0,
-                            taxability_reason=TaxabilityReason.not_supported.value,
+                            taxability_reason=TaxabilityReason.not_supported,
                         )
                     ],
                 )

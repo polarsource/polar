@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
 from typing import Literal, Protocol, TypedDict, overload
@@ -129,7 +130,7 @@ class TaxBreakdownItem(TypedDict):
     country: str | None
     state: str | None
     amount: int
-    taxability_reason: str
+    taxability_reason: TaxabilityReason
 
 
 class TaxCalculation(TypedDict):
@@ -141,7 +142,7 @@ class TaxCalculation(TypedDict):
 
 
 def tax_rate_from_breakdown(
-    tax_breakdown: list[TaxBreakdownItem],
+    tax_breakdown: Sequence[TaxBreakdownItem],
 ) -> TaxRate | None:
     if not tax_breakdown:
         return None
@@ -158,7 +159,7 @@ def tax_rate_from_breakdown(
 
 
 def taxability_reason_from_breakdown(
-    tax_breakdown: list[TaxBreakdownItem],
+    tax_breakdown: Sequence[TaxBreakdownItem],
 ) -> TaxabilityReason | None:
     if not tax_breakdown:
         return None

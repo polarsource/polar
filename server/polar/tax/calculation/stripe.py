@@ -112,36 +112,8 @@ def _from_stripe_breakdown_item(
         country=rate_details.country,
         state=rate_details.state,
         amount=breakdown.amount,
-        taxability_reason=taxability_reason.value,
+        taxability_reason=taxability_reason,
     )
-
-
-def from_stripe_tax_rate_details(
-    tax_rate_details: stripe_lib.tax.Calculation.TaxBreakdown.TaxRateDetails,
-) -> TaxRate | None:
-    rate_type = tax_rate_details.rate_type
-    if rate_type is None:
-        return None
-
-    basis_points = None
-    amount = None
-    amount_currency = None
-
-    if tax_rate_details.percentage_decimal is not None:
-        basis_points = int(float(tax_rate_details.percentage_decimal) * 100)
-    elif tax_rate_details.flat_amount is not None:
-        amount = tax_rate_details.flat_amount.amount
-        amount_currency = tax_rate_details.flat_amount.currency
-
-    return {
-        "rate_type": "fixed" if rate_type == "flat_amount" else "percentage",
-        "basis_points": basis_points,
-        "amount": amount,
-        "amount_currency": amount_currency,
-        "display_name": _get_stripe_tax_display_name(tax_rate_details),
-        "country": tax_rate_details.country,
-        "state": tax_rate_details.state,
-    }
 
 
 class StripeTaxService(TaxServiceProtocol):

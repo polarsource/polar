@@ -204,6 +204,7 @@ module "sandbox" {
     files_presign_ttl             = "3600"
     files_public_bucket_name      = "polar-public-sandbox-files"
     customer_invoices_bucket_name = "polar-sandbox-customer-invoices"
+    customer_receipts_bucket_name = "polar-sandbox-customer-receipts"
     payout_invoices_bucket_name   = "polar-sandbox-payout-invoices"
     logs_bucket_name              = "polar-sandbox-logs"
   }

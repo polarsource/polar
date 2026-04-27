@@ -18,6 +18,7 @@ variable "buckets" {
   description = "Bucket names and policy descriptions"
   type = object({
     customer_invoices = object({ name = string, description = optional(string) })
+    customer_receipts = object({ name = string, description = optional(string) })
     payout_invoices   = object({ name = string, description = optional(string) })
     files             = object({ name = string, description = optional(string) })
     public_files      = object({ name = string, description = optional(string) })
@@ -36,6 +37,20 @@ data "aws_iam_policy_document" "customer_invoices" {
       "s3:GetObjectVersionAttributes",
     ]
     resources = ["arn:aws:s3:::${var.buckets.customer_invoices.name}/*"]
+  }
+}
+
+data "aws_iam_policy_document" "customer_receipts" {
+  statement {
+    sid = "VisualEditor0"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObjectAttributes",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionAttributes",
+    ]
+    resources = ["arn:aws:s3:::${var.buckets.customer_receipts.name}/*"]
   }
 }
 
@@ -101,6 +116,12 @@ resource "aws_iam_policy" "customer_invoices" {
   policy      = data.aws_iam_policy_document.customer_invoices.json
 }
 
+resource "aws_iam_policy" "customer_receipts" {
+  name        = var.buckets.customer_receipts.name
+  description = var.buckets.customer_receipts.description
+  policy      = data.aws_iam_policy_document.customer_receipts.json
+}
+
 resource "aws_iam_policy" "payout_invoices" {
   name        = var.buckets.payout_invoices.name
   description = var.buckets.payout_invoices.description
@@ -128,6 +149,11 @@ resource "aws_iam_policy" "logs" {
 resource "aws_iam_user_policy_attachment" "customer_invoices" {
   user       = var.username
   policy_arn = aws_iam_policy.customer_invoices.arn
+}
+
+resource "aws_iam_user_policy_attachment" "customer_receipts" {
+  user       = var.username
+  policy_arn = aws_iam_policy.customer_receipts.arn
 }
 
 resource "aws_iam_user_policy_attachment" "payout_invoices" {

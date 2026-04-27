@@ -292,6 +292,7 @@ module "production" {
     files_presign_ttl             = "3600"
     files_public_bucket_name      = "polar-public-files"
     customer_invoices_bucket_name = "polar-customer-invoices"
+    customer_receipts_bucket_name = "polar-customer-receipts"
     payout_invoices_bucket_name   = "polar-payout-invoices"
     logs_bucket_name              = "polar-production-logs"
   }

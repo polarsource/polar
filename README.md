@@ -48,7 +48,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 ## Roadmap, Issues & Feature Requests
 
-**🐛 Found a bug?** [Submit it here](https://github.com/polarsource/polar/issues)
+**💬 Feature requests & bugs** can be reported through the "Feedback" button found in the sidebar, bottom left of your Polar dashboard.
 
 **🔓 Found a security vulnerability?** We greatly appreciate responsible and private disclosures. See [Security](./SECURITY.md)
 

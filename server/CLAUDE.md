@@ -175,7 +175,7 @@ ResourcesRead = Annotated[
     AuthSubject[User | Organization],
     Depends(
         Authenticator(
-            required_scopes={Scope.web_read, Scope.resources_read},
+            required_scopes={Scope.resources_read},
             allowed_subjects={User, Organization},
         )
     ),

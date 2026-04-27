@@ -116,7 +116,6 @@ READ_ONLY_SCOPES: set[Scope] = {
     Scope.profile,
     Scope.email,
     Scope.user_read,
-    Scope.web_read,
     Scope.organizations_read,
     Scope.custom_fields_read,
     Scope.discounts_read,
@@ -148,13 +147,14 @@ READ_ONLY_SCOPES: set[Scope] = {
     Scope.organization_access_tokens_read,
 }
 
-SCOPES_SUPPORTED = [s.value for s in Scope]
+# web_read/web_write are legacy — kept in Scope enum for session upgrade
+# but excluded from public-facing scope lists.
+_LEGACY_SCOPES = {Scope.web_read, Scope.web_write}
+SCOPES_SUPPORTED = [s.value for s in Scope if s not in _LEGACY_SCOPES]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
     Scope.profile: "Read your profile",
     Scope.email: "Read your email address",
-    Scope.web_read: "Web Read Access",
-    Scope.web_write: "Web Write Access",
     Scope.user_read: "User Read",
     Scope.user_write: "Delete your user account",
     Scope.organizations_read: "Read your organizations",

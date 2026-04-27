@@ -109,7 +109,13 @@ def _render_table(request: Request, items: Sequence[Feedback]) -> None:
         with tag.table(classes="table table-zebra"):
             with tag.thead():
                 with tag.tr():
-                    for header in ("Type", "Message", "Organization", "User", "Submitted"):
+                    for header in (
+                        "Type",
+                        "Message",
+                        "Organization",
+                        "User",
+                        "Submitted",
+                    ):
                         with tag.th():
                             text(header)
             with tag.tbody():
@@ -119,7 +125,9 @@ def _render_table(request: Request, items: Sequence[Feedback]) -> None:
 
 def _render_row(request: Request, feedback: Feedback) -> None:
     detail_url = str(request.url_for("feedbacks:get", id=feedback.id))
-    with tag.tr(classes="hover cursor-pointer", onclick=f"window.location='{detail_url}'"):
+    with tag.tr(
+        classes="hover cursor-pointer", onclick=f"window.location='{detail_url}'"
+    ):
         with tag.td():
             _type_badge(feedback.type)
         with tag.td(classes="max-w-md truncate"):
@@ -224,9 +232,7 @@ async def get(
                         ):
                             text("Mark as triaged")
                     with button(
-                        hx_get=str(
-                            request.url_for("feedbacks:delete", id=feedback.id)
-                        ),
+                        hx_get=str(request.url_for("feedbacks:delete", id=feedback.id)),
                         hx_target="#modal",
                         variant="error",
                         ghost=True,
@@ -326,9 +332,7 @@ async def triage(
     if feedback is None:
         raise HTTPException(status_code=404)
     if feedback.status != FeedbackStatus.new:
-        raise HTTPException(
-            status_code=400, detail="Feedback is already triaged."
-        )
+        raise HTTPException(status_code=400, detail="Feedback is already triaged.")
 
     await repository.update(feedback, update_dict={"status": FeedbackStatus.triaged})
     await add_toast(request, "Feedback marked as triaged.", "success")
@@ -379,9 +383,7 @@ async def delete(
     if request.method == "POST":
         await repository.soft_delete(feedback)
         await add_toast(request, "Feedback deleted.", "success")
-        return HXRedirectResponse(
-            request, str(request.url_for("feedbacks:list"))
-        )
+        return HXRedirectResponse(request, str(request.url_for("feedbacks:list")))
 
     with document() as doc:
         with tag.div(id="modal"):

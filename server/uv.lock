@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "2026-04-15T12:59:45.62691044Z"
+exclude-newer = "2026-04-20T13:55:33.598226Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -2090,6 +2090,7 @@ dependencies = [
     { name = "itsdangerous" },
     { name = "logfire", extra = ["fastapi", "httpx", "redis", "sqlalchemy"] },
     { name = "makefun" },
+    { name = "markdown-it-py" },
     { name = "plain-client" },
     { name = "playwright" },
     { name = "polar-sdk" },
@@ -2181,6 +2182,7 @@ requires-dist = [
     { name = "itsdangerous", specifier = ">=2.2.0" },
     { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=4.32.0" },
     { name = "makefun", specifier = ">=1.15.6" },
+    { name = "markdown-it-py", specifier = ">=4.0.0" },
     { name = "plain-client", specifier = ">=0.0.3" },
     { name = "playwright", specifier = ">=1.50.0" },
     { name = "polar-sdk", url = "https://files.pythonhosted.org/packages/ef/23/bd856ec12a8faef40bfb6b30e7add657952c7266f5f0ac7c156067fa30ea/polar_sdk-0.31.3-py3-none-any.whl" },

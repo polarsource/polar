@@ -33,11 +33,11 @@ class Feedback(RecordModel):
 
     type: Mapped[FeedbackType] = mapped_column(String, nullable=False)
     status: Mapped[FeedbackStatus] = mapped_column(
-        String, nullable=False, default=FeedbackStatus.new, server_default="new"
+        String, nullable=False, default=FeedbackStatus.new
     )
     message: Mapped[str] = mapped_column(Text, nullable=False)
     client_context: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict, server_default="{}"
+        JSONB, nullable=False, default=dict
     )
     internal_note: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 

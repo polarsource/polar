@@ -27,6 +27,7 @@ from .email_verification import EmailVerification
 from .event import Event
 from .event_type import EventType
 from .external_event import ExternalEvent
+from .feedback import Feedback, FeedbackStatus, FeedbackType
 from .file import File
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
@@ -119,6 +120,9 @@ __all__ = [
     "Event",
     "EventType",
     "ExternalEvent",
+    "Feedback",
+    "FeedbackStatus",
+    "FeedbackType",
     "File",
     "IssueReward",
     "LegacyRecurringProductPriceCustom",

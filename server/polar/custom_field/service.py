@@ -1,37 +1,22 @@
 import uuid
 from collections.abc import Sequence
-from typing import Any
 
-from sqlalchemy import (
-    Select,
-    UnaryExpression,
-    asc,
-    delete,
-    desc,
-    func,
-    or_,
-    select,
-    update,
-)
-from sqlalchemy.orm import contains_eager
-
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, Organization, User
+from polar.authz.service import get_accessible_org_ids
 from polar.custom_field.sorting import CustomFieldSortProperty
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import CustomField, Organization, User, UserOrganization
+from polar.models import CustomField
 from polar.models.custom_field import CustomFieldType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .attachment import attached_custom_fields_models
-from .data import custom_field_data_models
+from .repository import CustomFieldRepository
 from .schemas import CustomFieldCreate, CustomFieldUpdate
 
 
-class CustomFieldService(ResourceServiceReader[CustomField]):
+class CustomFieldService:
     async def list(
         self,
         session: AsyncReadSession,
@@ -45,54 +30,17 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             (CustomFieldSortProperty.slug, False)
         ],
     ) -> tuple[Sequence[CustomField], int]:
-        statement = self._get_readable_custom_field_statement(auth_subject)
-
-        if organization_id is not None:
-            statement = statement.where(
-                CustomField.organization_id.in_(organization_id)
-            )
-
-        if query is not None:
-            statement = statement.where(
-                or_(
-                    CustomField.name.ilike(f"%{query}%"),
-                    CustomField.slug.ilike(f"%{query}%"),
-                )
-            )
-
-        if type is not None:
-            statement = statement.where(CustomField.type.in_(type))
-
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == CustomFieldSortProperty.created_at:
-                order_by_clauses.append(
-                    clause_function(CustomFieldSortProperty.created_at)
-                )
-            elif criterion == CustomFieldSortProperty.slug:
-                order_by_clauses.append(clause_function(CustomFieldSortProperty.slug))
-            elif criterion == CustomFieldSortProperty.custom_field_name:
-                order_by_clauses.append(
-                    clause_function(CustomFieldSortProperty.custom_field_name)
-                )
-            elif criterion == CustomFieldSortProperty.type:
-                order_by_clauses.append(clause_function(CustomFieldSortProperty.type))
-        statement = statement.order_by(*order_by_clauses)
-
-        return await paginate(session, statement, pagination=pagination)
-
-    async def get_by_id(
-        self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        id: uuid.UUID,
-    ) -> CustomField | None:
-        statement = self._get_readable_custom_field_statement(auth_subject).where(
-            CustomField.id == id
+        repository = CustomFieldRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.apply_query_filter(
+            statement,
+            organization_id=organization_id,
+            query=query,
+            type=type,
         )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        statement = repository.apply_sorting(statement, sorting)
+        return await paginate(session, statement, pagination=pagination)
 
     async def create(
         self,
@@ -104,8 +52,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             session, auth_subject, custom_field_create
         )
 
-        existing_field = await self._get_by_organization_id_and_slug(
-            session, organization.id, custom_field_create.slug
+        repository = CustomFieldRepository.from_session(session)
+        existing_field = await repository.get_by_organization_id_and_slug(
+            organization.id, custom_field_create.slug
         )
         if existing_field is not None:
             raise PolarRequestValidationError(
@@ -125,9 +74,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             ),
             organization=organization,
         )
-        session.add(custom_field)
-
-        return custom_field
+        return await repository.create(custom_field)
 
     async def update(
         self,
@@ -147,12 +94,14 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                 ]
             )
 
+        repository = CustomFieldRepository.from_session(session)
+
         if (
             custom_field_update.slug is not None
             and custom_field.slug != custom_field_update.slug
         ):
-            existing_field = await self._get_by_organization_id_and_slug(
-                session, custom_field.organization_id, custom_field_update.slug
+            existing_field = await repository.get_by_organization_id_and_slug(
+                custom_field.organization_id, custom_field_update.slug
             )
             if existing_field is not None and existing_field.id != custom_field.id:
                 raise PolarRequestValidationError(
@@ -167,98 +116,31 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                 )
 
         previous_slug = custom_field.slug
-        for attr, value in custom_field_update.model_dump(
-            exclude_unset=True, by_alias=True
-        ).items():
-            setattr(custom_field, attr, value)
+        update_dict = custom_field_update.model_dump(exclude_unset=True, by_alias=True)
+        custom_field = await repository.update(custom_field, update_dict=update_dict)
 
-        # Update the slug from all custom_field_data JSONB
         if previous_slug != custom_field.slug:
-            for model in custom_field_data_models:
-                update_statement = (
-                    update(model)
-                    .where(
-                        model.organization == custom_field.organization,
-                        model.custom_field_data.has_key(previous_slug),
-                    )
-                    .values(
-                        custom_field_data=(
-                            model.custom_field_data.op("-")(previous_slug)
-                        ).op("||")(
-                            func.jsonb_build_object(
-                                custom_field.slug,
-                                model.custom_field_data[previous_slug],
-                            )
-                        )
-                    )
-                )
-                await session.execute(update_statement)
+            await repository.rename_slug_in_attached_data(custom_field, previous_slug)
 
-        session.add(custom_field)
         return custom_field
 
     async def delete(
         self, session: AsyncSession, custom_field: CustomField
     ) -> CustomField:
-        custom_field.set_deleted_at()
-        session.add(custom_field)
-
-        # Delete row with this custom field from all association tables
-        for model in attached_custom_fields_models:
-            delete_statement = delete(model).where(
-                model.custom_field_id == custom_field.id
-            )
-            await session.execute(delete_statement)
-
+        repository = CustomFieldRepository.from_session(session)
+        custom_field = await repository.soft_delete(custom_field)
+        await repository.detach_from_all(custom_field.id)
         return custom_field
 
     async def get_by_organization_and_id(
         self, session: AsyncSession, id: uuid.UUID, organization_id: uuid.UUID
     ) -> CustomField | None:
-        statement = select(CustomField).where(
-            CustomField.is_deleted.is_(False),
+        repository = CustomFieldRepository.from_session(session)
+        statement = repository.get_base_statement().where(
             CustomField.organization_id == organization_id,
             CustomField.id == id,
         )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def _get_by_organization_id_and_slug(
-        self, session: AsyncSession, organization_id: uuid.UUID, slug: str
-    ) -> CustomField | None:
-        statement = select(CustomField).where(
-            CustomField.organization_id == organization_id,
-            CustomField.slug == slug,
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    def _get_readable_custom_field_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[CustomField]]:
-        statement = (
-            select(CustomField)
-            .where(CustomField.is_deleted.is_(False))
-            .join(Organization, Organization.id == CustomField.organization_id)
-            .options(contains_eager(CustomField.organization))
-        )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                CustomField.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                CustomField.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
+        return await repository.get_one_or_none(statement)
 
 
-custom_field = CustomFieldService(CustomField)
+custom_field = CustomFieldService()

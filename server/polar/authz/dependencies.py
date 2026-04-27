@@ -115,6 +115,76 @@ async def _check_policy(
         raise NotPermitted(result if isinstance(result, str) else "Not permitted")
 
 
+@dataclass(frozen=True)
+class AuthorizedResource[R]:
+    """Result of a ResourcePolicyGuard dependency.
+
+    Contains the resolved resource, its owning organization (already
+    access-checked against the auth subject), and the auth subject.
+    """
+
+    resource: R
+    organization: OrganizationModel
+    auth_subject: AuthSubject[User | Organization]
+
+
+def ResourcePolicyGuard[R](
+    *,
+    resolve: Callable[[AsyncSession, UUID], Awaitable[R | None]],
+    get_organization_id: Callable[[R], UUID],
+    policy_fn: PolicyFn,
+    required_scopes: set[Scope],
+    allowed_subjects: set[type] | None = None,
+) -> Any:
+    """Generic policy guard for resources owned by an organization.
+
+    Steps:
+    1. Authenticate the subject (token type + scope check).
+    2. Resolve the resource by ``{id}`` via ``resolve``.
+    3. Extract the resource's owning organization id via ``get_organization_id``
+       and verify the subject can access it.
+    4. Evaluate the policy function against (subject, organization).
+    5. Return an ``AuthorizedResource`` wrapping resource + org + subject.
+
+    Raises:
+        Unauthorized (401): No valid credentials.
+        InsufficientScopeError (403): Token lacks required scopes.
+        ResourceNotFound (404): Resource missing, or its org is inaccessible.
+        NotPermitted (403): Subject is a member but the policy denied access.
+    """
+    _allowed = allowed_subjects or {User, Organization}
+    _authenticator = Authenticator(
+        allowed_subjects=_allowed,
+        required_scopes=required_scopes,
+    )
+
+    async def dependency(
+        id: UUID,
+        auth_subject: Annotated[
+            AuthSubject[User | Organization], Depends(_authenticator)
+        ],
+        session: AsyncSession = Depends(get_db_session),
+    ) -> AuthorizedResource[R]:
+        resource = await resolve(session, id)
+        if resource is None:
+            raise ResourceNotFound()
+
+        organization = await get_accessible_organization(
+            session, auth_subject, get_organization_id(resource)
+        )
+        if organization is None:
+            raise ResourceNotFound()
+
+        await _check_policy(policy_fn, session, auth_subject, organization)
+        return AuthorizedResource(
+            resource=resource,
+            organization=organization,
+            auth_subject=auth_subject,
+        )
+
+    return dependency
+
+
 AuthorizeFinanceRead = Annotated[
     AuthzContext[User | Organization],
     Depends(

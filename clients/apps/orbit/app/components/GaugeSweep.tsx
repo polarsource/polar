@@ -33,9 +33,9 @@ export const GaugeSweep = () => {
     ctx.scale(dpr, dpr)
 
     const styles = getComputedStyle(canvas)
-    const strokeColor = styles.getPropertyValue('--color-graphic-stroke').trim() || 'rgb(190, 190, 190)'
-    const dimColor = styles.getPropertyValue('--color-graphic-dim').trim() || 'rgb(70, 70, 70)'
-    ctx.lineCap = 'round'
+    const strokeColor =
+      styles.getPropertyValue('--color-graphic-stroke').trim() ||
+      'rgb(190, 190, 190)'
 
     const cx = size / 2
     const cy = size / 2

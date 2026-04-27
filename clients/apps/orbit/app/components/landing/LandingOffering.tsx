@@ -64,7 +64,7 @@ export const LandingOffering = () => {
       <section className="sticky top-0 h-screen py-24">
         <div className="grid h-full grid-cols-1 gap-12 lg:grid-cols-2">
           <div className="dark:bg-dark-900 flex items-center justify-center bg-neutral-50 p-16">
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-xl">
               <ActiveGraphic key={activeIndex} />
             </div>
           </div>
@@ -72,23 +72,27 @@ export const LandingOffering = () => {
           <div className="flex flex-col justify-center px-8 lg:px-16">
             <div className="flex flex-col gap-4">
               {TILES.map((tile, i) => (
-                <span
-                  key={tile.title}
-                  className={`block text-[clamp(2rem,4vw,6rem)] leading-[1.1] font-normal transition-all duration-500 ${
-                    i === activeIndex
-                      ? 'text-neutral-900 dark:text-white'
-                      : 'dark:text-dark-700 text-neutral-200'
-                  }`}
-                >
-                  {tile.title}
-                </span>
-              ))}
-            </div>
+                <>
+                  <span
+                    key={tile.title}
+                    className={`block text-[clamp(2rem,4vw,6rem)] leading-[1.1] font-normal transition-all duration-500 ${
+                      i === activeIndex
+                        ? 'text-neutral-900 dark:text-white'
+                        : 'dark:text-dark-700 text-neutral-200'
+                    }`}
+                  >
+                    {tile.title}
+                  </span>
 
-            <div className="mt-12 max-w-md">
-              <p className="dark:text-dark-300 text-4xl text-neutral-500 transition-all duration-500">
-                {TILES[activeIndex].desc}
-              </p>
+                  {i === activeIndex && (
+                    <div className="max-w-2xl py-2 md:py-6">
+                      <p className="dark:text-dark-300 text-[clamp(2rem,4vw,3rem)] leading-snug text-neutral-500 transition-all duration-500">
+                        {TILES[activeIndex].desc}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ))}
             </div>
           </div>
         </div>

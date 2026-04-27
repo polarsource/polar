@@ -2,8 +2,6 @@
 
 import { SectionHeading } from './SectionHeading'
 import { Button } from './Button'
-import { ShapeGrid } from '../ShapeGrid'
-import { Stream } from '@cloudflare/stream-react'
 
 /**
  * LandingProduct — two-column layout. Left: heading + description.
@@ -13,12 +11,12 @@ export const LandingProduct = () => (
   <section id="product">
     <div className="flex flex-col items-center gap-y-16 p-16 py-48 text-center">
       <SectionHeading>
-        One integration.
+        Your entire billing stack.
         <br />
-        Infinite revenue models.
+        In one integration.
       </SectionHeading>
       <p className="max-w-4xl text-4xl leading-snug">
-        Metering, billing, invoicing, analytics, and customer management — all
+        Metering, billing, invoicing, analytics, and customer management. All
         behind a single API.
       </p>
 

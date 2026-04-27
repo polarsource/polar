@@ -2,7 +2,6 @@
 
 import { SectionHeading } from './SectionHeading'
 import { Button } from './Button'
-import { VectorField } from '../VectorField'
 
 /**
  * LandingPricing — 4-tier pricing grid with actual Polar tier info.
@@ -13,11 +12,7 @@ const TIERS = [
     name: 'Starter',
     free: true,
     desc: 'Free to start & validate ideas.',
-    fees: [
-      '4.40% + 40¢ per transaction',
-      '0.5% per Subscription',
-      '$10.00 / 1M Product Events',
-    ],
+    fees: ['5.00% + 50¢ per transaction', '$10.00 / 1M Product Events'],
     features: ['All features to sell', '100K Product Events'],
     cta: 'Get Started',
     primary: false,
@@ -27,11 +22,7 @@ const TIERS = [
     price: '$20',
     period: '/month',
     desc: 'For entrepreneurs & early teams.',
-    fees: [
-      '3.80% + 35¢ per transaction',
-      '0.0% per Subscription',
-      '$6.00 / 1M Product Events',
-    ],
+    fees: ['3.80% + 35¢ per transaction', '$6.00 / 1M Product Events'],
     features: [
       'Prioritized Ticket support',
       '1M Product Events',
@@ -46,11 +37,7 @@ const TIERS = [
     price: '$100',
     period: '/month',
     desc: 'For scaling startups.',
-    fees: [
-      '3.00% + 30¢ per transaction',
-      '0.0% per Subscription',
-      '$7.00 / 1M Product Events',
-    ],
+    fees: ['3.00% + 30¢ per transaction', '$7.00 / 1M Product Events'],
     features: [
       'P1 Ticket support',
       'Custom Emails',
@@ -65,11 +52,7 @@ const TIERS = [
     price: '$400',
     period: '/month',
     desc: 'For fast growing businesses.',
-    fees: [
-      '2.40% + 30¢ per transaction',
-      '0.0% per Subscription',
-      '$5.00 / 1M Product Events',
-    ],
+    fees: ['2.40% + 30¢ per transaction', '$5.00 / 1M Product Events'],
     features: [
       'Slack Channel',
       'Prioritized Ticket support',
@@ -92,13 +75,13 @@ export const LandingPricing = () => (
       <div className="flex items-center gap-x-6 pt-4">
         <Button href="#">Get Started</Button>
         <Button href="#" variant="secondary">
-          Startup Program
+          Contact Sales
         </Button>
       </div>
     </div>
 
     <div className="grid grid-cols-1 gap-2 px-2 pb-2 sm:grid-cols-2 xl:grid-cols-4">
-      {TIERS.map((tier, index) => (
+      {TIERS.map((tier) => (
         <div
           key={tier.name}
           className="dark:bg-dark-900 flex flex-col justify-between bg-neutral-50"
@@ -155,7 +138,7 @@ export const LandingPricing = () => (
 
           <a
             href="#"
-            className="dark:bg-dark-800 dark:hover:bg-dark-700 mt-auto block w-full bg-neutral-100 py-5 text-center text-xl text-neutral-900 transition hover:bg-neutral-200 dark:text-white"
+            className="dark:bg-dark-800 dark:hover:bg-dark-700 mt-auto block w-full bg-neutral-100 py-5 text-center text-xl font-medium text-neutral-900 transition hover:bg-neutral-200 dark:text-white"
           >
             {tier.cta}
           </a>
@@ -163,34 +146,65 @@ export const LandingPricing = () => (
       ))}
     </div>
 
-    {/* Enterprise */}
-    <div className="dark:bg-dark-900 mx-2 grid grid-cols-1 gap-12 bg-neutral-50 p-16 md:grid-cols-4">
-      <VectorField field={(r, theta) => theta + Math.PI / 2} />
-      <div className="flex flex-col gap-6">
-        <h3 className="text-4xl text-black dark:text-white">Enterprise</h3>
-        <p className="dark:text-dark-200 max-w-md text-2xl text-neutral-500">
-          For organizations with custom requirements, dedicated infrastructure,
-          and compliance needs.
-        </p>
-        <Button href="#" className="mt-4">
+    <div className="grid grid-cols-1 gap-2 px-2 md:grid-cols-2">
+      {/* Enterprise */}
+      <div className="dark:bg-dark-900 flex flex-col justify-between bg-neutral-50 p-12">
+        <div className="flex flex-col gap-6">
+          <h3 className="text-4xl text-black dark:text-white">Enterprise</h3>
+          <p className="dark:text-dark-200 max-w-md text-2xl text-neutral-500">
+            For organizations with custom requirements, dedicated
+            infrastructure, and compliance needs.
+          </p>
+          <div className="dark:border-dark-700 mt-4 grid grid-cols-2 gap-x-12 gap-y-4 border-t border-neutral-300 pt-8">
+            {[
+              'Unlimited events',
+              'Dedicated account manager',
+              'Custom SLA guarantee',
+              'SSO & RBAC',
+              'On-premise deployment',
+              'Custom integrations',
+              'Priority P0 support',
+              'Volume discounts',
+            ].map((f) => (
+              <span key={f} className="text-xl text-black dark:text-white">
+                {f}
+              </span>
+            ))}
+          </div>
+        </div>
+        <Button href="#" className="mt-12">
           Contact Sales
         </Button>
       </div>
-      <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-        {[
-          'Unlimited events',
-          'Dedicated account manager',
-          'Custom SLA guarantee',
-          'SSO & RBAC',
-          'On-premise deployment',
-          'Custom integrations',
-          'Priority P0 support',
-          'Volume discounts',
-        ].map((f) => (
-          <span key={f} className="text-xl text-black dark:text-white">
-            {f}
-          </span>
-        ))}
+
+      {/* Startup Program */}
+      <div className="dark:bg-dark-900 flex flex-col justify-between bg-neutral-50 p-12">
+        <div className="flex flex-col gap-6">
+          <h3 className="text-4xl text-black dark:text-white">
+            Startup Program
+          </h3>
+          <p className="dark:text-dark-200 max-w-md text-2xl text-neutral-500">
+            Early-stage? Get Polar&apos;s Scale plan free for 12 months — lower
+            fees, more events, and premium support while you grow.
+          </p>
+          <div className="dark:border-dark-700 mt-4 grid grid-cols-2 gap-x-12 gap-y-4 border-t border-neutral-300 pt-8">
+            {[
+              'Scale plan included',
+              '12 months free',
+              '20M Product Events',
+              'Reduced transaction fees',
+              'Priority support',
+              'Custom domain',
+            ].map((f) => (
+              <span key={f} className="text-xl text-black dark:text-white">
+                {f}
+              </span>
+            ))}
+          </div>
+        </div>
+        <Button href="#" className="mt-12">
+          Apply Now
+        </Button>
       </div>
     </div>
   </section>

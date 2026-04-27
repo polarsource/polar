@@ -34,7 +34,7 @@ export const Dumbbell = () => {
 
     const cx = size / 2;
     const cy = size / 2;
-    const r = size * 0.12;
+    const r = size * 0.18;
 
     let lastTime: number | null = null;
     let time = 0;
@@ -48,7 +48,7 @@ export const Dumbbell = () => {
       ctx.strokeStyle = strokeColor;
       ctx.lineWidth = 2;
 
-      const gap = size * (0.2 + Math.sin(time * 0.6) * 0.05);
+      const gap = size * (0.25 + Math.sin(time * 0.6) * 0.06);
 
       // Left circle
       ctx.beginPath();

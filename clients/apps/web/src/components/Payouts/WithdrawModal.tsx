@@ -28,8 +28,8 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     schemas['PayoutEstimate'] | null
   >(null)
   const canWithdraw = useMemo(
-    () => organization.status === 'active',
-    [organization.status],
+    () => organization.capabilities.payouts,
+    [organization.capabilities.payouts],
   )
 
   const getPayoutEstimate = useCallback(async () => {

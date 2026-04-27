@@ -617,8 +617,6 @@ export interface paths {
      *
      *     If deletion cannot proceed immediately (has orders, subscriptions, or
      *     Stripe deletion fails), a support ticket will be created for manual handling.
-     *
-     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:delete']
     options?: never
@@ -642,8 +640,6 @@ export interface paths {
     /**
      * Get Organization Account
      * @description Get the account for an organization.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_account']
     put?: never
@@ -670,8 +666,6 @@ export interface paths {
     /**
      * Set Organization Payout Account
      * @description Set the payout account for an organization.
-     *
-     *     **Scopes**: `organizations:write`
      */
     patch: operations['organizations:set_payout_account']
     trace?: never
@@ -752,8 +746,6 @@ export interface paths {
     /**
      * Invite Member
      * @description Invite a user to join an organization.
-     *
-     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:invite_member']
     delete?: never
@@ -778,8 +770,6 @@ export interface paths {
      *
      *     Users can only leave an organization if they are not the admin
      *     and there is at least one other member.
-     *
-     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:leave_organization']
     options?: never
@@ -803,8 +793,6 @@ export interface paths {
      *
      *     Only organization admins can remove members.
      *     Admins cannot remove themselves.
-     *
-     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:remove_member']
     options?: never
@@ -20488,8 +20476,12 @@ export interface components {
       committed_subscriptions?: number | null
       /** Monthly Recurring Revenue */
       monthly_recurring_revenue?: number | null
+      /** Trial Monthly Recurring Revenue */
+      trial_monthly_recurring_revenue?: number | null
       /** Committed Monthly Recurring Revenue */
       committed_monthly_recurring_revenue?: number | null
+      /** Trial Committed Monthly Recurring Revenue */
+      trial_committed_monthly_recurring_revenue?: number | null
       /** Average Revenue Per User */
       average_revenue_per_user?: number | null
       /** Checkouts */
@@ -20558,6 +20550,10 @@ export interface components {
       canceled_subscriptions_unused?: number | null
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other?: number | null
+      /** Annual Recurring Revenue */
+      annual_recurring_revenue?: number | null
+      /** Committed Annual Recurring Revenue */
+      committed_annual_recurring_revenue?: number | null
       /** Checkouts Conversion */
       checkouts_conversion?: number | null
       /** Ltv */
@@ -20579,7 +20575,11 @@ export interface components {
       active_subscriptions?: components['schemas']['Metric'] | null
       committed_subscriptions?: components['schemas']['Metric'] | null
       monthly_recurring_revenue?: components['schemas']['Metric'] | null
+      trial_monthly_recurring_revenue?: components['schemas']['Metric'] | null
       committed_monthly_recurring_revenue?:
+        | components['schemas']['Metric']
+        | null
+      trial_committed_monthly_recurring_revenue?:
         | components['schemas']['Metric']
         | null
       average_revenue_per_user?: components['schemas']['Metric'] | null
@@ -20628,6 +20628,10 @@ export interface components {
         | null
       canceled_subscriptions_unused?: components['schemas']['Metric'] | null
       canceled_subscriptions_other?: components['schemas']['Metric'] | null
+      annual_recurring_revenue?: components['schemas']['Metric'] | null
+      committed_annual_recurring_revenue?:
+        | components['schemas']['Metric']
+        | null
       checkouts_conversion?: components['schemas']['Metric'] | null
       ltv?: components['schemas']['Metric'] | null
       gross_margin?: components['schemas']['Metric'] | null
@@ -20703,8 +20707,12 @@ export interface components {
       committed_subscriptions?: number | null
       /** Monthly Recurring Revenue */
       monthly_recurring_revenue?: number | null
+      /** Trial Monthly Recurring Revenue */
+      trial_monthly_recurring_revenue?: number | null
       /** Committed Monthly Recurring Revenue */
       committed_monthly_recurring_revenue?: number | null
+      /** Trial Committed Monthly Recurring Revenue */
+      trial_committed_monthly_recurring_revenue?: number | null
       /** Average Revenue Per User */
       average_revenue_per_user?: number | null
       /** Checkouts */
@@ -20773,6 +20781,10 @@ export interface components {
       canceled_subscriptions_unused?: number | null
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other?: number | null
+      /** Annual Recurring Revenue */
+      annual_recurring_revenue?: number | null
+      /** Committed Annual Recurring Revenue */
+      committed_annual_recurring_revenue?: number | null
       /** Checkouts Conversion */
       checkouts_conversion?: number | null
       /** Ltv */
@@ -22316,6 +22328,8 @@ export interface components {
        * @description ID of the payout account.
        */
       payout_account_id: string | null
+      /** @description Capabilities currently granted to the organization. */
+      capabilities: components['schemas']['OrganizationCapabilities']
     }
     /** OrganizationAccessToken */
     OrganizationAccessToken: {
@@ -22497,6 +22511,39 @@ export interface components {
       readonly size_readable: string
       /** Public Url */
       readonly public_url: string
+    }
+    /** OrganizationCapabilities */
+    OrganizationCapabilities: {
+      /**
+       * Checkout Payments
+       * @description Whether the organization can accept new checkout payments.
+       */
+      checkout_payments: boolean
+      /**
+       * Subscription Renewals
+       * @description Whether the organization can process subscription renewals.
+       */
+      subscription_renewals: boolean
+      /**
+       * Payouts
+       * @description Whether the organization can withdraw its balance.
+       */
+      payouts: boolean
+      /**
+       * Refunds
+       * @description Whether the organization can issue refunds.
+       */
+      refunds: boolean
+      /**
+       * Api Access
+       * @description Whether the organization can access the API.
+       */
+      api_access: boolean
+      /**
+       * Dashboard Access
+       * @description Whether the organization can access the dashboard.
+       */
+      dashboard_access: boolean
     }
     /** OrganizationCompanyLegalEntitySchema */
     OrganizationCompanyLegalEntitySchema: {
@@ -23350,6 +23397,8 @@ export interface components {
        * @description ID of the payout account.
        */
       payout_account_id: string | null
+      /** @description Capabilities currently granted to the organization. */
+      capabilities: components['schemas']['OrganizationCapabilities']
       /** @description Organization compliance details. Only visible to organization members. */
       details?: components['schemas']['OrganizationDetails'] | null
     }
@@ -31468,8 +31517,8 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        id: string
         user_id: string
+        id: string
       }
       cookie?: never
     }

@@ -91,6 +91,27 @@ def _discard_logo_dev_url(url: HttpUrl) -> HttpUrl | None:
 AvatarUrl = Annotated[HttpUrlToStr, AfterValidator(_discard_logo_dev_url)]
 
 
+class OrganizationCapabilities(Schema):
+    checkout_payments: bool = Field(
+        description="Whether the organization can accept new checkout payments."
+    )
+    subscription_renewals: bool = Field(
+        description="Whether the organization can process subscription renewals."
+    )
+    payouts: bool = Field(
+        description="Whether the organization can withdraw its balance."
+    )
+    refunds: bool = Field(
+        description="Whether the organization can issue refunds."
+    )
+    api_access: bool = Field(
+        description="Whether the organization can access the API."
+    )
+    dashboard_access: bool = Field(
+        description="Whether the organization can access the dashboard."
+    )
+
+
 class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
@@ -372,6 +393,10 @@ class Organization(OrganizationBase):
 
     account_id: UUID4 | None = Field(description="ID of the transactions account.")
     payout_account_id: UUID4 | None = Field(description="ID of the payout account.")
+
+    capabilities: OrganizationCapabilities = Field(
+        description="Capabilities currently granted to the organization.",
+    )
 
 
 class OrganizationKYC(Organization):

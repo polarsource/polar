@@ -108,6 +108,7 @@ class OrganizationListView:
                 "hx-vals": hx_vals,
                 "hx-target": "#org-list",
                 "hx-include": "#filter-form",
+                "hx-push-url": "true",
             },
         ):
             justify = {
@@ -163,6 +164,7 @@ class OrganizationListView:
                 hx_vals=json.dumps(hx_vals),
                 hx_include="#filter-form",
                 hx_target="#org-list",
+                hx_push_url="true",
             ):
                 text(label)
 
@@ -290,6 +292,10 @@ class OrganizationListView:
         countries: list[str] | None = None,
         selected_country: str | None = None,
         selected_first_reviews: str | None = None,
+        selected_q: str | None = None,
+        selected_risk_level: str | None = None,
+        selected_days_in_status: str | None = None,
+        selected_has_appeal: str | None = None,
     ) -> Generator[None]:
         """Render the complete list view."""
 
@@ -373,6 +379,7 @@ class OrganizationListView:
                 hx_get=str(request.url_for("organizations:list")),
                 hx_trigger="submit, change from:.filter-select",
                 hx_target="#org-list",
+                hx_push_url="true",
             ):
                 # Preserve the active status tab across filter submissions.
                 # Without this, changing any filter drops the `status` query
@@ -389,13 +396,16 @@ class OrganizationListView:
                 with tag.div(classes="flex gap-3"):
                     # Search input
                     with tag.div(classes="flex-1"):
-                        with tag.input(
-                            type="search",
-                            placeholder="Search organizations by name or slug...",
-                            classes="input input-bordered w-full",
-                            name="q",
-                            **{"hx-trigger": "keyup changed delay:300ms"},
-                        ):
+                        search_attrs: dict[str, str] = {
+                            "type": "search",
+                            "placeholder": ("Search organizations by name or slug..."),
+                            "classes": "input input-bordered w-full",
+                            "name": "q",
+                            "hx-trigger": "keyup changed delay:300ms",
+                        }
+                        if selected_q:
+                            search_attrs["value"] = selected_q
+                        with tag.input(**search_attrs):
                             pass
 
                     # Advanced filters toggle button
@@ -482,16 +492,18 @@ class OrganizationListView:
                                     classes="select select-bordered select-sm w-full filter-select",
                                     name="risk_level",
                                 ):
-                                    with tag.option(value=""):
-                                        text("All Risk Levels")
-                                    with tag.option(value="high"):
-                                        text("High (≥75)")
-                                    with tag.option(value="medium"):
-                                        text("Medium (50-74)")
-                                    with tag.option(value="low"):
-                                        text("Low (<50)")
-                                    with tag.option(value="unscored"):
-                                        text("Unscored")
+                                    for opt_value, opt_label in (
+                                        ("", "All Risk Levels"),
+                                        ("high", "High (≥75)"),
+                                        ("medium", "Medium (50-74)"),
+                                        ("low", "Low (<50)"),
+                                        ("unscored", "Unscored"),
+                                    ):
+                                        opt_attrs: dict[str, str] = {"value": opt_value}
+                                        if (selected_risk_level or "") == opt_value:
+                                            opt_attrs["selected"] = ""
+                                        with tag.option(**opt_attrs):
+                                            text(opt_label)
 
                             # Days in status
                             with tag.div():
@@ -504,16 +516,18 @@ class OrganizationListView:
                                     classes="select select-bordered select-sm w-full filter-select",
                                     name="days_in_status",
                                 ):
-                                    with tag.option(value=""):
-                                        text("Any Duration")
-                                    with tag.option(value="1"):
-                                        text(">1 day")
-                                    with tag.option(value="3"):
-                                        text(">3 days")
-                                    with tag.option(value="7"):
-                                        text(">7 days")
-                                    with tag.option(value="30"):
-                                        text(">30 days")
+                                    for opt_value, opt_label in (
+                                        ("", "Any Duration"),
+                                        ("1", ">1 day"),
+                                        ("3", ">3 days"),
+                                        ("7", ">7 days"),
+                                        ("30", ">30 days"),
+                                    ):
+                                        opt_attrs = {"value": opt_value}
+                                        if (selected_days_in_status or "") == opt_value:
+                                            opt_attrs["selected"] = ""
+                                        with tag.option(**opt_attrs):
+                                            text(opt_label)
 
                         # Row 2: Appeal filter
                         with tag.div(classes="grid grid-cols-1 md:grid-cols-3 gap-3"):
@@ -528,14 +542,17 @@ class OrganizationListView:
                                     classes="select select-bordered select-sm w-full filter-select",
                                     name="has_appeal",
                                 ):
-                                    with tag.option(value=""):
-                                        text("All")
-                                    with tag.option(value="pending"):
-                                        text("Pending Appeal")
-                                    with tag.option(value="reviewed"):
-                                        text("Reviewed")
-                                    with tag.option(value="none"):
-                                        text("No Appeal")
+                                    for opt_value, opt_label in (
+                                        ("", "All"),
+                                        ("pending", "Pending Appeal"),
+                                        ("reviewed", "Reviewed"),
+                                        ("none", "No Appeal"),
+                                    ):
+                                        opt_attrs = {"value": opt_value}
+                                        if (selected_has_appeal or "") == opt_value:
+                                            opt_attrs["selected"] = ""
+                                        with tag.option(**opt_attrs):
+                                            text(opt_label)
 
                             # Only meaningful on the Review tab
                             if status_filter == OrganizationStatus.REVIEW:

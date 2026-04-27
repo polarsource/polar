@@ -435,6 +435,10 @@ async def list_organizations(
                 countries,
                 country,
                 selected_first_reviews=first_reviews,
+                selected_q=q,
+                selected_risk_level=risk_level,
+                selected_days_in_status=days_in_status,
+                selected_has_appeal=has_appeal,
             ):
                 pass
 

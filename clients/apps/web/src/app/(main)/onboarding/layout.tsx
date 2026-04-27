@@ -1,4 +1,4 @@
-import { OnboardingProvider } from '@/components/Onboarding/v2/OnboardingContext'
+import { OnboardingProvider } from '@/components/Onboarding/OnboardingContext'
 import type { ReactNode } from 'react'
 
 export default function OnboardingLayout({

@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
-import LogoIcon from '../../Brand/logos/LogoIcon'
+import LogoIcon from '../Brand/logos/LogoIcon'
 import { type APIPreviewStep, APIPreview } from './APIPreview'
 
 const STEPS = ['personal', 'business', 'product'] as const

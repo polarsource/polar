@@ -1,6 +1,6 @@
 'use client'
 
-import { useOnboardingData } from '@/components/Onboarding/v2/OnboardingContext'
+import { useOnboardingData } from '@/components/Onboarding/OnboardingContext'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'

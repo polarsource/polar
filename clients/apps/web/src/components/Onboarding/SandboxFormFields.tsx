@@ -14,7 +14,7 @@ import {
 import { useEffect } from 'react'
 import { type UseFormReturn, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
-import { CurrencySelector } from '../../CurrencySelector'
+import { CurrencySelector } from '../CurrencySelector'
 import { useOnboardingData } from './OnboardingContext'
 
 interface FormSchema {

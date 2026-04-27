@@ -1,4 +1,4 @@
-import { BusinessDetailsStep } from '@/components/Onboarding/v2/BusinessDetailsStep'
+import { BusinessDetailsStep } from '@/components/Onboarding/BusinessDetailsStep'
 import { CONFIG } from '@/utils/config'
 import { redirect } from 'next/navigation'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
-import { useOnboardingData } from '@/components/Onboarding/v2/OnboardingContext'
+import { useOnboardingData } from '@/components/Onboarding/OnboardingContext'
 import { CONFIG } from '@/utils/config'
 import Link from 'next/link'
 import { Box } from '@polar-sh/orbit/Box'

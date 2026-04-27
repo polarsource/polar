@@ -2,7 +2,6 @@
 
 import revalidate from '@/app/actions'
 import { CurrencySelector } from '@/components/CurrencySelector'
-import SupportedUseCases from '@/components/Onboarding/components/SupportedUseCases'
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
@@ -27,6 +26,7 @@ import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import SharedLayout from './components/SharedLayout'
+import SupportedUseCases from './components/SupportedUseCases'
 
 type FormSchema = Pick<
   schemas['OrganizationCreate'],

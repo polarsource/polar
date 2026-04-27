@@ -1,4 +1,4 @@
-import { ProductDetailsStep } from '@/components/Onboarding/v2/ProductDetailsStep'
+import { ProductDetailsStep } from '@/components/Onboarding/ProductDetailsStep'
 import { CONFIG } from '@/utils/config'
 import { redirect } from 'next/navigation'
 

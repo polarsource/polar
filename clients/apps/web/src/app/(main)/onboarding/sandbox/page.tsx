@@ -1,4 +1,4 @@
-import { SandboxStep } from '@/components/Onboarding/v2/SandboxStep'
+import { SandboxStep } from '@/components/Onboarding/SandboxStep'
 import { CONFIG } from '@/utils/config'
 import { redirect } from 'next/navigation'
 

@@ -167,7 +167,7 @@ AuthorizeOrgManagePayoutAccount = Annotated[
         OrgPolicyGuard(
             org_policy.can_manage_payout_account,
             allowed_subjects={User},
-            required_scopes={Scope.web_write, Scope.organizations_write},
+            required_scopes={Scope.organizations_write},
         )
     ),
 ]

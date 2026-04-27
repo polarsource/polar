@@ -40,6 +40,7 @@ class StripeAccountCountry(StrEnum):
     FR = "FR"
     GM = "GM"
     DE = "DE"
+    GH = "GH"
     GR = "GR"
     GT = "GT"
     GY = "GY"

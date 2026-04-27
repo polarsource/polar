@@ -18,7 +18,6 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
-from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -192,16 +191,16 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def customer(cls) -> Mapped["Customer"]:
         return relationship("Customer", lazy="raise")
 
-    organization_id: Mapped[UUID | None] = mapped_column(
+    organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="restrict"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
 
-    organization: AssociationProxy["Organization"] = association_proxy(
-        "customer", "organization"
-    )
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     product_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("products.id"), nullable=True, index=True

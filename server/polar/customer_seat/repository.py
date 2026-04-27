@@ -8,7 +8,6 @@ from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
 from polar.models import (
-    Customer,
     CustomerSeat,
     Order,
     Product,
@@ -416,7 +415,8 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             ),
             joinedload(CustomerSeat.order).options(
                 joinedload(Order.product).joinedload(Product.organization),
-                joinedload(Order.customer).joinedload(Customer.organization),
+                joinedload(Order.customer),
+                joinedload(Order.organization),
             ),
             joinedload(CustomerSeat.customer),
             joinedload(CustomerSeat.member),

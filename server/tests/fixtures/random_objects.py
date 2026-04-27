@@ -941,7 +941,7 @@ async def create_order(
         billing_name=billing_name,
         billing_address=billing_address,
         invoice_number=invoice_number or rstr("INV-"),
-        organization_id=customer.organization_id,
+        organization=customer.organization,
         customer=customer,
         product=product,
         subscription=subscription,

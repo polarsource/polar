@@ -99,11 +99,7 @@ class OrderRepository(
 
         statement = (
             self.get_base_statement()
-            .join(Customer, Customer.id == Order.customer_id)
-            .join(
-                Organization,
-                Organization.id == Customer.organization_id,
-            )
+            .join(Organization, Organization.id == Order.organization_id)
             .where(
                 Order.next_payment_attempt_at.is_not(None),
                 Order.next_payment_attempt_at <= utc_now(),
@@ -195,23 +191,17 @@ class OrderRepository(
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Order]]:
-        return (
-            self.get_base_statement()
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(Customer.organization_id.in_(org_ids))
-        )
+        return self.get_base_statement().where(Order.organization_id.in_(org_ids))
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
     ) -> Select[tuple[Order]]:
-        statement = self.get_base_statement().join(
-            Customer, Order.customer_id == Customer.id
-        )
+        statement = self.get_base_statement()
 
         if is_user(auth_subject):
             user = auth_subject.subject
             statement = statement.where(
-                Customer.organization_id.in_(
+                Order.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.is_deleted.is_(False),
@@ -220,7 +210,7 @@ class OrderRepository(
             )
         elif is_organization(auth_subject):
             statement = statement.where(
-                Customer.organization_id == auth_subject.subject.id,
+                Order.organization_id == auth_subject.subject.id,
             )
         elif is_customer(auth_subject):
             customer = auth_subject.subject
@@ -245,9 +235,8 @@ class OrderRepository(
         discount_load: "_AbstractLoad | None" = None,
     ) -> Options:
         return (
-            customer_load
-            if customer_load
-            else joinedload(Order.customer).joinedload(Customer.organization),
+            customer_load if customer_load else joinedload(Order.customer),
+            joinedload(Order.organization),
             discount_load if discount_load else joinedload(Order.discount),
             product_load if product_load else joinedload(Order.product),
             joinedload(Order.subscription).joinedload(Subscription.customer),

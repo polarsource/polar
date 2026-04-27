@@ -19,6 +19,7 @@ from polar.email_update.endpoints import router as email_update_router
 from polar.event.endpoints import router as event_router
 from polar.event_type.endpoints import router as event_type_router
 from polar.eventstream.endpoints import router as stream_router
+from polar.feedback.endpoints import router as feedback_router
 from polar.file.endpoints import router as files_router
 from polar.integrations.apple.endpoints import router as apple_router
 from polar.integrations.chargeback_stop.endpoints import (
@@ -159,3 +160,5 @@ router.include_router(resend_router)
 router.include_router(chargeback_stop_router)
 # /payout-accounts
 router.include_router(payout_account_router)
+# /feedback
+router.include_router(feedback_router)

@@ -240,37 +240,6 @@ class PolarSelfClient:
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "track_event_ingestion")
 
-    async def track_event_ingestion(
-        self, *, external_customer_id: str, count: int
-    ) -> None:
-        from polar_sdk.models import EventCreateExternalCustomer, EventsIngest
-        from polar_sdk.models.polarerror import PolarError
-
-        with logfire.span(
-            "polar.track_event_ingestion",
-            external_customer_id=external_customer_id,
-            event_count=count,
-        ) as span:
-            try:
-                await self._sdk.events.ingest_async(
-                    request=EventsIngest(
-                        events=[
-                            EventCreateExternalCustomer(
-                                name="event_ingestion",
-                                external_customer_id=external_customer_id,
-                                metadata={"count": count},
-                            )
-                        ]
-                    )
-                )
-            except PolarError as e:
-                if e.status_code == 409:
-                    span.set_attribute("conflict", True)
-                    return
-                _raise_error(span, e, "track_event_ingestion")
-            except httpx.RequestError as e:
-                _raise_network_error(span, e, "track_event_ingestion")
-
     async def track_organization_review_usage(
         self,
         *,

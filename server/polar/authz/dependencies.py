@@ -14,6 +14,10 @@ from polar.models import Organization as OrganizationModel
 from polar.models import PayoutAccount as PayoutAccountModel
 from polar.models.account import Account as AccountModel
 from polar.organization.repository import OrganizationRepository
+from polar.organization.resolver import (
+    OrganizationIDModel,
+    get_payload_organization,
+)
 from polar.organization.schemas import OrganizationID
 from polar.payout_account.repository import PayoutAccountRepository
 from polar.postgres import AsyncSession, get_db_session
@@ -22,7 +26,7 @@ from .policies import finance, members
 from .policies import organization as org_policy
 from .policies import payout_account as pa_policy
 from .service import get_accessible_org_ids, get_accessible_organization
-from .types import PolicyFn, PolicyResult
+from .types import AccessibleOrganizationID, PolicyFn, PolicyResult
 
 
 @dataclass(frozen=True)
@@ -126,6 +130,91 @@ class AuthorizedResource[R]:
     resource: R
     organization: OrganizationModel
     auth_subject: AuthSubject[User | Organization]
+
+
+@dataclass(frozen=True)
+class AuthorizedList:
+    """Result of an OrgListGuard dependency.
+
+    Contains the set of organization IDs the subject can access plus the
+    auth subject. Services receive these IDs and never see ``auth_subject``
+    for filtering.
+    """
+
+    accessible_org_ids: set[AccessibleOrganizationID]
+    auth_subject: AuthSubject[User | Organization]
+
+
+@dataclass(frozen=True)
+class AuthorizedCreate[B]:
+    """Result of an org-payload create guard.
+
+    Contains the parsed request body, the resolved target organization
+    (already access-checked), and the auth subject.
+    """
+
+    body: B
+    organization: OrganizationModel
+    auth_subject: AuthSubject[User | Organization]
+
+
+def OrgListGuard(
+    *,
+    required_scopes: set[Scope],
+    allowed_subjects: set[type] | None = None,
+) -> Any:
+    """Dependency: authenticate + resolve accessible organization IDs.
+
+    For list endpoints whose only access check is ``filter by org membership``.
+    The service receives ``accessible_org_ids`` and never sees the auth
+    subject — pure data access.
+
+    Raises:
+        Unauthorized (401): No valid credentials.
+        InsufficientScopeError (403): Token lacks required scopes.
+    """
+    _allowed = allowed_subjects or {User, Organization}
+    _authenticator = Authenticator(
+        allowed_subjects=_allowed,
+        required_scopes=required_scopes,
+    )
+
+    async def dependency(
+        auth_subject: Annotated[
+            AuthSubject[User | Organization], Depends(_authenticator)
+        ],
+        session: AsyncSession = Depends(get_db_session),
+    ) -> AuthorizedList:
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        return AuthorizedList(
+            accessible_org_ids=org_ids,
+            auth_subject=auth_subject,
+        )
+
+    return dependency
+
+
+async def authorize_create_payload[B: OrganizationIDModel](
+    *,
+    session: AsyncSession,
+    auth_subject: AuthSubject[User | Organization],
+    body: B,
+    policy_fn: PolicyFn,
+) -> AuthorizedCreate[B]:
+    """Helper for per-module create deps.
+
+    Resolves the target organization from ``body.organization_id`` (or
+    falls back to the org auth subject), checks subject access, and runs
+    the create policy. Modules wrap this in a small dep that declares the
+    concrete body type so FastAPI can introspect it.
+    """
+    organization = await get_payload_organization(session, auth_subject, body)
+    await _check_policy(policy_fn, session, auth_subject, organization)
+    return AuthorizedCreate(
+        body=body,
+        organization=organization,
+        auth_subject=auth_subject,
+    )
 
 
 def ResourcePolicyGuard[R](

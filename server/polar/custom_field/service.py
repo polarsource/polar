@@ -1,15 +1,13 @@
 import uuid
 from collections.abc import Sequence
 
-from polar.auth.models import AuthSubject, Organization, User
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.dependencies import AuthorizedCreate, AuthorizedList
 from polar.custom_field.sorting import CustomFieldSortProperty
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.models import CustomField
 from polar.models.custom_field import CustomFieldType
-from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import CustomFieldRepository
@@ -20,7 +18,7 @@ class CustomFieldService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        authz: AuthorizedList,
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
@@ -31,8 +29,7 @@ class CustomFieldService:
         ],
     ) -> tuple[Sequence[CustomField], int]:
         repository = CustomFieldRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        statement = repository.get_by_org_ids_statement(org_ids)
+        statement = repository.get_by_org_ids_statement(authz.accessible_org_ids)
         statement = repository.apply_query_filter(
             statement,
             organization_id=organization_id,
@@ -45,16 +42,11 @@ class CustomFieldService:
     async def create(
         self,
         session: AsyncSession,
-        custom_field_create: CustomFieldCreate,
-        auth_subject: AuthSubject[User | Organization],
+        authz: AuthorizedCreate[CustomFieldCreate],
     ) -> CustomField:
-        organization = await get_payload_organization(
-            session, auth_subject, custom_field_create
-        )
-
         repository = CustomFieldRepository.from_session(session)
         existing_field = await repository.get_by_organization_id_and_slug(
-            organization.id, custom_field_create.slug
+            authz.organization.id, authz.body.slug
         )
         if existing_field is not None:
             raise PolarRequestValidationError(
@@ -63,16 +55,14 @@ class CustomFieldService:
                         "type": "value_error",
                         "loc": ("body", "slug"),
                         "msg": "Custom field with this slug already exists.",
-                        "input": custom_field_create.slug,
+                        "input": authz.body.slug,
                     }
                 ]
             )
 
         custom_field = CustomField(
-            **custom_field_create.model_dump(
-                exclude={"organization_id"}, by_alias=True
-            ),
-            organization=organization,
+            **authz.body.model_dump(exclude={"organization_id"}, by_alias=True),
+            organization=authz.organization,
         )
         return await repository.create(custom_field)
 

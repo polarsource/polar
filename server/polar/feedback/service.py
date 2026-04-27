@@ -68,9 +68,7 @@ class FeedbackService:
             flush=True,
         )
 
-    async def _enforce_rate_limit(
-        self, session: AsyncSession, *, user: User
-    ) -> None:
+    async def _enforce_rate_limit(self, session: AsyncSession, *, user: User) -> None:
         repository = FeedbackRepository.from_session(session)
         now = utc_now()
         since = now - RATE_LIMIT_WINDOW
@@ -83,9 +81,7 @@ class FeedbackService:
         assert oldest is not None
         retry_after = max(
             1,
-            math.ceil(
-                (oldest.created_at + RATE_LIMIT_WINDOW - now).total_seconds()
-            ),
+            math.ceil((oldest.created_at + RATE_LIMIT_WINDOW - now).total_seconds()),
         )
         raise FeedbackRateLimitExceeded(retry_after_seconds=retry_after)
 

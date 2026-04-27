@@ -11,9 +11,7 @@ class FeedbackRepository(
 ):
     model = Feedback
 
-    async def count_recent_by_user(
-        self, user_id: UUID, *, since: datetime
-    ) -> int:
+    async def count_recent_by_user(self, user_id: UUID, *, since: datetime) -> int:
         statement = (
             self.get_base_statement()
             .where(Feedback.user_id == user_id)

@@ -92,7 +92,9 @@ class TestSubmit:
             )
         # Submissions are fresh, so retry_after is close to the full window.
         window_seconds = int(RATE_LIMIT_WINDOW.total_seconds())
-        assert window_seconds - 60 <= exc_info.value.retry_after_seconds <= window_seconds
+        assert (
+            window_seconds - 60 <= exc_info.value.retry_after_seconds <= window_seconds
+        )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_rate_limit_retry_after_tracks_oldest(

@@ -154,7 +154,5 @@ class TestSubmitFeedback:
         response = await client.post("/v1/feedback/", json=_payload(organization))
         assert response.status_code == 201
 
-        count = (
-            await session.execute(select(func.count(Feedback.id)))
-        ).scalar_one()
+        count = (await session.execute(select(func.count(Feedback.id)))).scalar_one()
         assert count == 1

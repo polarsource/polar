@@ -4091,6 +4091,8 @@ export interface paths {
     /**
      * Update Event Type
      * @description Update an event type's label.
+     *
+     *     **Scopes**: `events:write`
      */
     patch: operations['event-types:update']
     trace?: never
@@ -4540,6 +4542,23 @@ export interface paths {
     put?: never
     /** Dashboard Link */
     post: operations['payout_accounts:dashboard_link']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/feedbacks/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Submit */
+    post: operations['feedbacks:submit']
     delete?: never
     options?: never
     head?: never
@@ -6121,8 +6140,6 @@ export interface components {
        *       "openid": "OpenID",
        *       "profile": "Read your profile",
        *       "email": "Read your email address",
-       *       "web:read": "Web Read Access",
-       *       "web:write": "Web Write Access",
        *       "user:read": "User Read",
        *       "user:write": "Delete your user account",
        *       "organizations:read": "Read your organizations",
@@ -6207,8 +6224,6 @@ export interface components {
        *       "openid": "OpenID",
        *       "profile": "Read your profile",
        *       "email": "Read your email address",
-       *       "web:read": "Web Read Access",
-       *       "web:write": "Web Write Access",
        *       "user:read": "User Read",
        *       "user:write": "Delete your user account",
        *       "organizations:read": "Read your organizations",
@@ -6299,6 +6314,8 @@ export interface components {
       | 'email'
       | 'user:read'
       | 'user:write'
+      | 'web:read'
+      | 'web:write'
       | 'organizations:read'
       | 'organizations:write'
       | 'custom_fields:read'
@@ -18436,6 +18453,68 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** Feedback */
+    Feedback: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      type: components['schemas']['FeedbackType']
+      status: components['schemas']['FeedbackStatus']
+      /** Message */
+      message: string
+      /** Client Context */
+      client_context: {
+        [key: string]: unknown
+      }
+      /**
+       * User Id
+       * Format: uuid4
+       */
+      user_id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+    }
+    /** FeedbackCreate */
+    FeedbackCreate: {
+      type: components['schemas']['FeedbackType']
+      /** Message */
+      message: string
+      /**
+       * Organization Id
+       * Format: uuid
+       */
+      organization_id: string
+      /** Client Context */
+      client_context?: {
+        [key: string]: unknown
+      }
+    }
+    /**
+     * FeedbackStatus
+     * @enum {string}
+     */
+    FeedbackStatus: 'new' | 'triaged'
+    /**
+     * FeedbackType
+     * @enum {string}
+     */
+    FeedbackType: 'bug' | 'feedback' | 'question'
     FileCreate:
       | components['schemas']['DownloadableFileCreate']
       | components['schemas']['ProductMediaFileCreate']
@@ -20492,6 +20571,18 @@ export interface components {
       churned_subscriptions?: number | null
       /** Churn Rate */
       churn_rate?: number | null
+      /** Seats Total */
+      seats_total?: number | null
+      /** Seats Claimed */
+      seats_claimed?: number | null
+      /** Seats Pending */
+      seats_pending?: number | null
+      /** Seat Customers */
+      seat_customers?: number | null
+      /** New Seat Customers */
+      new_seat_customers?: number | null
+      /** Churned Seat Customers */
+      churned_seat_customers?: number | null
       /** Orders */
       orders?: number | null
       /** Revenue */
@@ -20564,19 +20655,7 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
-      /** Seat Count */
-      seats_total?: number | null
-      /** Claimed Seats */
-      seats_claimed?: number | null
-      /** Pending Seats */
-      seats_pending?: number | null
-      /** Active Customers */
-      seat_customers?: number | null
-      /** New Customers */
-      new_seat_customers?: number | null
-      /** Churned Customers */
-      churned_seat_customers?: number | null
-      /** Average Seats per Customer */
+      /** Average Seats Per Customer */
       average_seats_per_customer?: number | null
       /** Seat Utilization Rate */
       seat_utilization_rate?: number | null
@@ -20603,6 +20682,12 @@ export interface components {
       succeeded_checkouts?: components['schemas']['Metric'] | null
       churned_subscriptions?: components['schemas']['Metric'] | null
       churn_rate?: components['schemas']['Metric'] | null
+      seats_total?: components['schemas']['Metric'] | null
+      seats_claimed?: components['schemas']['Metric'] | null
+      seats_pending?: components['schemas']['Metric'] | null
+      seat_customers?: components['schemas']['Metric'] | null
+      new_seat_customers?: components['schemas']['Metric'] | null
+      churned_seat_customers?: components['schemas']['Metric'] | null
       orders?: components['schemas']['Metric'] | null
       revenue?: components['schemas']['Metric'] | null
       net_revenue?: components['schemas']['Metric'] | null
@@ -20653,12 +20738,6 @@ export interface components {
       gross_margin?: components['schemas']['Metric'] | null
       gross_margin_percentage?: components['schemas']['Metric'] | null
       cashflow?: components['schemas']['Metric'] | null
-      seats_total?: components['schemas']['Metric'] | null
-      seats_claimed?: components['schemas']['Metric'] | null
-      seats_pending?: components['schemas']['Metric'] | null
-      seat_customers?: components['schemas']['Metric'] | null
-      new_seat_customers?: components['schemas']['Metric'] | null
-      churned_seat_customers?: components['schemas']['Metric'] | null
       average_seats_per_customer?: components['schemas']['Metric'] | null
       seat_utilization_rate?: components['schemas']['Metric'] | null
     }
@@ -20747,6 +20826,18 @@ export interface components {
       churned_subscriptions?: number | null
       /** Churn Rate */
       churn_rate?: number | null
+      /** Seats Total */
+      seats_total?: number | null
+      /** Seats Claimed */
+      seats_claimed?: number | null
+      /** Seats Pending */
+      seats_pending?: number | null
+      /** Seat Customers */
+      seat_customers?: number | null
+      /** New Seat Customers */
+      new_seat_customers?: number | null
+      /** Churned Seat Customers */
+      churned_seat_customers?: number | null
       /** Orders */
       orders?: number | null
       /** Revenue */
@@ -20819,19 +20910,7 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
-      /** Seat Count */
-      seats_total?: number | null
-      /** Claimed Seats */
-      seats_claimed?: number | null
-      /** Pending Seats */
-      seats_pending?: number | null
-      /** Active Customers */
-      seat_customers?: number | null
-      /** New Customers */
-      new_seat_customers?: number | null
-      /** Churned Customers */
-      churned_seat_customers?: number | null
-      /** Average Seats per Customer */
+      /** Average Seats Per Customer */
       average_seats_per_customer?: number | null
       /** Seat Utilization Rate */
       seat_utilization_rate?: number | null
@@ -26251,6 +26330,7 @@ export interface components {
       | 'FR'
       | 'GM'
       | 'DE'
+      | 'GH'
       | 'GR'
       | 'GT'
       | 'GY'
@@ -45096,6 +45176,39 @@ export interface operations {
       }
     }
   }
+  'feedbacks:submit': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['FeedbackCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Feedback']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointcheckout_created_post: {
     parameters: {
       query?: never
@@ -51000,6 +51113,8 @@ export const availableScopeValues: ReadonlyArray<
   'email',
   'user:read',
   'user:write',
+  'web:read',
+  'web:write',
   'organizations:read',
   'organizations:write',
   'custom_fields:read',
@@ -52015,6 +52130,12 @@ export const eventTypesSortPropertyValues: ReadonlyArray<
   'last_seen',
   '-last_seen',
 ]
+export const feedbackStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['FeedbackStatus']
+> = ['new', 'triaged']
+export const feedbackTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['FeedbackType']
+> = ['bug', 'feedback', 'question']
 export const fileServiceTypesValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FileServiceTypes']
 > = ['downloadable', 'product_media', 'organization_avatar']
@@ -53630,6 +53751,7 @@ export const stripeAccountCountryValues: ReadonlyArray<
   'FR',
   'GM',
   'DE',
+  'GH',
   'GR',
   'GT',
   'GY',

@@ -1,3 +1,4 @@
+import math
 from datetime import timedelta
 
 from polar.auth.models import AuthSubject
@@ -21,6 +22,7 @@ class FeedbackError(PolarError): ...
 
 class FeedbackRateLimitExceeded(FeedbackError):
     def __init__(self, retry_after_seconds: int) -> None:
+        self.retry_after_seconds = retry_after_seconds
         super().__init__(
             "You've sent a lot of feedback recently. Please try again later.",
             status_code=429,
@@ -69,12 +71,22 @@ class FeedbackService:
         self, session: AsyncSession, *, user: User
     ) -> None:
         repository = FeedbackRepository.from_session(session)
-        since = utc_now() - RATE_LIMIT_WINDOW
+        now = utc_now()
+        since = now - RATE_LIMIT_WINDOW
         count = await repository.count_recent_by_user(user.id, since=since)
-        if count >= RATE_LIMIT_MAX:
-            raise FeedbackRateLimitExceeded(
-                retry_after_seconds=int(RATE_LIMIT_WINDOW.total_seconds())
-            )
+        if count < RATE_LIMIT_MAX:
+            return
+
+        oldest = await repository.get_oldest_recent_by_user(user.id, since=since)
+        # `oldest` is non-None: count >= RATE_LIMIT_MAX implies at least one row.
+        assert oldest is not None
+        retry_after = max(
+            1,
+            math.ceil(
+                (oldest.created_at + RATE_LIMIT_WINDOW - now).total_seconds()
+            ),
+        )
+        raise FeedbackRateLimitExceeded(retry_after_seconds=retry_after)
 
 
 feedback = FeedbackService()

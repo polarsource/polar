@@ -86,10 +86,52 @@ class TestSubmit:
                 )
             )
 
-        with pytest.raises(FeedbackRateLimitExceeded):
+        with pytest.raises(FeedbackRateLimitExceeded) as exc_info:
             await feedback_service.submit(
                 session, auth_subject, _build_payload(organization)
             )
+        # Submissions are fresh, so retry_after is close to the full window.
+        window_seconds = int(RATE_LIMIT_WINDOW.total_seconds())
+        assert window_seconds - 60 <= exc_info.value.retry_after_seconds <= window_seconds
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_rate_limit_retry_after_tracks_oldest(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        # Oldest submission is 50 minutes old, so retry_after should be ~10 minutes.
+        oldest_age = timedelta(minutes=50)
+        await save_fixture(
+            Feedback(
+                type=FeedbackType.feedback,
+                message="oldest in window",
+                client_context={},
+                user_id=auth_subject.subject.id,
+                organization_id=organization.id,
+                created_at=utc_now() - oldest_age,
+            )
+        )
+        for _ in range(RATE_LIMIT_MAX - 1):
+            await save_fixture(
+                Feedback(
+                    type=FeedbackType.feedback,
+                    message="prior submission",
+                    client_context={},
+                    user_id=auth_subject.subject.id,
+                    organization_id=organization.id,
+                )
+            )
+
+        with pytest.raises(FeedbackRateLimitExceeded) as exc_info:
+            await feedback_service.submit(
+                session, auth_subject, _build_payload(organization)
+            )
+        expected = int((RATE_LIMIT_WINDOW - oldest_age).total_seconds())
+        assert abs(exc_info.value.retry_after_seconds - expected) <= 5
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_rate_limit_resets_after_window(

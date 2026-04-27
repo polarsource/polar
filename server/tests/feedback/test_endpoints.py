@@ -130,7 +130,9 @@ class TestSubmitFeedback:
 
         response = await client.post("/v1/feedback/", json=_payload(organization))
         assert response.status_code == 429
-        assert response.headers.get("Retry-After") == "3600"
+        # Submissions are fresh, so Retry-After should be near the full window.
+        retry_after = int(response.headers["Retry-After"])
+        assert 3540 <= retry_after <= 3600
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_validation_errors_dont_count_against_rate_limit(

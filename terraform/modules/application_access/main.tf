@@ -42,7 +42,7 @@ data "aws_iam_policy_document" "customer_invoices" {
 
 data "aws_iam_policy_document" "customer_receipts" {
   statement {
-    sid = "VisualEditor0"
+    sid = "Terraform"
     actions = [
       "s3:PutObject",
       "s3:GetObjectAttributes",

@@ -57,7 +57,7 @@ const SidebarProvider = ({
   children,
   ...props
 }: {
-  ref?: React.RefObject<HTMLDivElement>
+  ref?: React.Ref<HTMLDivElement>
   defaultOpen?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -160,7 +160,7 @@ const Sidebar = ({
   children,
   ...props
 }: {
-  ref?: React.RefObject<HTMLDivElement>
+  ref?: React.Ref<HTMLDivElement>
   side?: ComponentProps<typeof SheetContent>['side']
   variant?: 'sidebar' | 'floating' | 'inset'
   collapsible?: 'none' | 'offcanvas' | 'icon'
@@ -514,7 +514,7 @@ const SidebarMenuItem = ({
   className,
   ...props
 }: React.ComponentProps<'li'> & {
-  ref?: React.RefObject<HTMLLIElement>
+  ref?: React.Ref<HTMLLIElement>
 }) => (
   <li
     ref={ref}

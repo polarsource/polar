@@ -45,11 +45,7 @@ export const LandingVision = () => {
   let wordIndex = 0
 
   return (
-    <div
-      ref={wrapperRef}
-      style={{ height: '300vh' }}
-      className="dark:bg-dark-900 bg-neutral-100"
-    >
+    <div ref={wrapperRef} style={{ height: '300vh' }}>
       <LandingSection className="sticky top-0 flex h-screen items-center justify-center px-8 md:px-24">
         <div className="max-w-5xl">
           {PARAGRAPHS.map((paragraph, pi) => (

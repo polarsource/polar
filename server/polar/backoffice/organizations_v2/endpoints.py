@@ -561,9 +561,7 @@ async def get_organization_detail(
         payouts_enabled = await setup_analytics.check_payout_account_enabled(
             organization
         )
-        payment_ready = organization_service.is_organization_ready_for_payment(
-            organization
-        )
+        payment_ready = organization.can_accept_payments
 
         setup_score = OrganizationSetupAnalyticsService.calculate_setup_score(
             checkout_links_count,

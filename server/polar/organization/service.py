@@ -32,6 +32,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.organization import (
+    STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
     OrganizationDetails,
@@ -212,6 +213,13 @@ class OrganizationService:
         feature_settings["member_model_enabled"] = True
         feature_settings["seat_based_pricing_enabled"] = True
         create_data["feature_settings"] = feature_settings
+
+        if settings.is_sandbox():
+            create_data["status"] = OrganizationStatus.ACTIVE
+            create_data["capabilities"] = {
+                **STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]
+            }
+            create_data["status_updated_at"] = datetime.now(UTC)
 
         organization = await repository.create(
             Organization(
@@ -745,6 +753,9 @@ class OrganizationService:
         organization.total_balance = transfers_sum
         session.add(organization)
 
+        if settings.is_sandbox():
+            return organization
+
         # If snoozed and grace period has passed, a sale triggers re-review
         if (
             organization.status == OrganizationStatus.SNOOZED
@@ -1051,13 +1062,9 @@ class OrganizationService:
     def get_payment_status(self, organization: Organization) -> PaymentStatusResponse:
         """Get payment status and onboarding steps for an organization."""
         return PaymentStatusResponse(
-            payment_ready=self.is_organization_ready_for_payment(organization),
+            payment_ready=organization.can_accept_payments,
             organization_status=organization.status,
         )
-
-    def is_organization_ready_for_payment(self, organization: Organization) -> bool:
-        """Whether the org can accept payments. Sandbox bypasses the capability."""
-        return settings.is_sandbox() or organization.can_accept_payments
 
     async def get_ai_review(
         self, session: AsyncSession, organization: Organization

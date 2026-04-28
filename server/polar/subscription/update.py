@@ -141,7 +141,10 @@ def _generate_product_subscription_update(
     subscription = subscription_update.subscription
 
     current_product = subscription.product
-    assert is_recurring_product(current_product)
+    # We are checking for current_product.is_recurring instead of is_recurring_product
+    # because legacy products will have is_recurring but not be of type RecurringProduct
+    # which is_recurring_product asserts.
+    assert current_product.is_recurring
 
     new_product = subscription_update.product
     assert new_product is not None

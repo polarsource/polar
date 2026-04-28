@@ -62,6 +62,7 @@ from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
 from polar.models.product_price import (
     ProductPriceAmountType,
+    ProductPriceFixed,
     ProductPriceSeatUnit,
 )
 from polar.models.subscription import Subscription, SubscriptionStatus
@@ -1624,6 +1625,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         num_customers = (
             random.randint(3, 8) if not org_data.get("seat_based_customers") else 0
         )
+        seeded_customers = []
         for i in range(num_customers):
             # customer_email = f"customer_{org_data['slug']}_{i + 1}@example.com"
             customer_email = f"customer_{org_data['slug']}_{i + 1}@polar.sh"
@@ -1636,6 +1638,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 ),
                 auth_subject=auth_subject,
             )
+            seeded_customers.append(customer)
 
             timeline_events = _build_customer_timeline_events(
                 organization_id=organization.id,
@@ -1706,6 +1709,66 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         await _flush_tinybird_events(
             pending_tinybird_events, pending_tinybird_ancestors
         )
+
+        # Create real Subscription rows for acme-corp customers so that PG-based
+        # metrics (MRR, Trial MRR, Active Subscriptions) have data to display.
+        # Mixes active and trialing subscriptions to populate trial metrics too.
+        if org_data["slug"] == "acme-corp" and seeded_customers:
+            recurring_products = [
+                p for p in org_products if p.recurring_interval is not None
+            ]
+            if recurring_products:
+                now = utc_now()
+                for idx, sub_customer in enumerate(seeded_customers):
+                    product = recurring_products[idx % len(recurring_products)]
+                    fixed_price = next(
+                        (
+                            price
+                            for price in product.all_prices
+                            if isinstance(price, ProductPriceFixed)
+                        ),
+                        None,
+                    )
+                    if fixed_price is None:
+                        continue
+
+                    is_trial = idx % 3 == 0
+                    trial_end = now + timedelta(days=14) if is_trial else None
+                    status = (
+                        SubscriptionStatus.trialing
+                        if is_trial
+                        else SubscriptionStatus.active
+                    )
+
+                    subscription = Subscription(
+                        amount=fixed_price.price_amount,
+                        net_amount=fixed_price.price_amount,
+                        currency=fixed_price.price_currency,
+                        tax_behavior=TaxBehavior.exclusive,
+                        recurring_interval=product.recurring_interval,
+                        recurring_interval_count=1,
+                        status=status,
+                        current_period_start=now,
+                        current_period_end=now + timedelta(days=30),
+                        trial_start=now if is_trial else None,
+                        trial_end=trial_end,
+                        cancel_at_period_end=False,
+                        started_at=now,
+                        customer_id=sub_customer.id,
+                        product_id=product.id,
+                        anchor_day=now.day,
+                    )
+                    session.add(subscription)
+                    await session.flush()
+
+                    spp = SubscriptionProductPrice(
+                        subscription_id=subscription.id,
+                        product_price_id=fixed_price.id,
+                        amount=fixed_price.price_amount,
+                    )
+                    session.add(spp)
+
+                await session.flush()
 
         # Create seat-based customers with subscriptions and seats
         seat_based_customers = org_data.get("seat_based_customers", [])

@@ -404,7 +404,7 @@ class Settings(BaseSettings):
     # USD cents and indexed by ISO 3166-1 alpha-2 country code. Only
     # countries whose USD-equivalent minimum is meaningful (i.e., greater
     # than the default $10 minimum) are listed here. See:
-    # https://docs.stripe.com/payouts/minimum-and-maximum-payout-amounts
+    # https://docs.stripe.com/global-payouts/send-money
     ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_COUNTRY: dict[str, int] = {
         "AL": 3500,  # Albania: 3000 ALL
         "AM": 3500,  # Armenia: 12100 AMD

@@ -262,8 +262,8 @@ class PayoutService:
         balance_amount = await transaction_service.get_transactions_sum(
             session, account.id
         )
-        minimum_amount = settings.get_minimum_payout_for_currency(
-            payout_account.currency
+        minimum_amount = settings.get_minimum_payout(
+            payout_account.currency, payout_account.country
         )
         if balance_amount < minimum_amount:
             raise InsufficientBalance(
@@ -306,8 +306,8 @@ class PayoutService:
             balance_amount = await transaction_service.get_transactions_sum(
                 session, account.id
             )
-            minimum_amount = settings.get_minimum_payout_for_currency(
-                payout_account.currency
+            minimum_amount = settings.get_minimum_payout(
+                payout_account.currency, payout_account.country
             )
             if balance_amount < minimum_amount:
                 raise InsufficientBalance(

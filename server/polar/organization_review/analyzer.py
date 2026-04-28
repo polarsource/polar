@@ -56,9 +56,11 @@ Social link should be linked to the user's profile on the platform, and not the 
 Unverified identity is a red flag.
 Countries with high risk of fraud or money laundering are yellow flags that requires \
 human reviews.
-Also check if the user has other organizations on Polar, especially denied or blocked ones. \
-Prior denials are a strong signal. Re-creating an organization after denial is grounds \
-for automatic denial.
+
+Whether to weigh the user's other organizations on Polar (prior denials, blocked \
+organizations) depends on the review CONTEXT. The context-specific preamble below \
+will tell you whether to consider prior history. If the preamble does not mention it, \
+do NOT use prior denials as a signal — a fresh organization deserves a fresh look.
 
 ### 4. Financial Risk
 Assess payment risk scores, refund rates, charge back rates, authorization rate, and dispute history. \
@@ -358,7 +360,9 @@ No Stripe account, payments, or products exist yet. \
 Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, IDENTITY_TRUST. \
 Skip FINANCIAL_RISK and SETUP_READINESS — set those to LOW risk with confidence 0. \
 Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged. \
-For IDENTITY_TRUST at this stage, focus only on prior history (prior denials, blocked organizations).
+At submission time, do NOT use prior denied or blocked organizations as a signal — \
+the user deserves a fresh review based on this submission's content alone. Set IDENTITY_TRUST \
+to LOW with confidence 0 unless there is a concrete identity-related red flag in this submission.
 
 Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
 with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
@@ -412,6 +416,11 @@ disputes/chargebacks at meaningful volume).
 a binding decision and do NOT override it based on the same concerns.
 - Re-flagging the same concerns wastes human reviewer time and degrades trust in the \
 agent. When in doubt, defer to the prior human decision.
+
+**Prior history (assess under IDENTITY_TRUST)**: The admin's other organizations \
+on Polar (especially denied or blocked ones) are a meaningful risk signal here. \
+Prior denials of OTHER orgs by the same admin are strong evidence — re-creating \
+an organization after denial is grounds for denial.
 
 Important information to check (assess under SETUP_READINESS):
 - **Setup readiness check**: The org is ready to sell if ANY of these is true:
@@ -495,6 +504,66 @@ Return only APPROVE or DENY.
 """
 
 
+APPEAL_PREAMBLE = """\
+This is an APPEAL review. The organization was previously DENIED at submission \
+time and the merchant has now submitted an appeal explaining why they believe \
+that decision was wrong. Their appeal text is included in the prompt under \
+"## Appeal from Merchant".
+
+Your decision here is FINAL — there is no further automated review after this. \
+A merchant who is denied at this stage is told to contact human support if they \
+disagree, but no Plain ticket is created automatically. So weigh the appeal \
+text carefully.
+
+How to evaluate the appeal:
+- The "## Original Denial Message Shown to Merchant" section (if present) is \
+the exact text the merchant read before writing their appeal. The appeal is \
+their response to THAT specific message — read both side-by-side and judge \
+whether the appeal directly addresses the stated concern.
+- The "## Prior Review Decisions" section (further down) contains the prior \
+agent's internal reasoning, which is more detailed than the merchant-facing \
+text. Use it for richer context, but anchor your assessment on the concern \
+the merchant was actually told about.
+- Treat the appeal text as NEW evidence about the business that was not \
+available at submission. The original review only saw the org's setup details \
+and website; the appeal may clarify the actual product, customer base, or \
+business model.
+- If the appeal credibly explains away the original concern (e.g., "we sell \
+Framer templates, not human consulting services"), and nothing else in the \
+data contradicts it, APPROVE.
+- If the appeal is vague, evasive, or does not address the original concern, \
+DENY.
+- If the appeal asserts something that directly contradicts hard data \
+(prohibited products visible on Polar, Stripe fraud signals), DENY \
+regardless of the appeal text. Do NOT use prior denied or blocked \
+organizations as a signal at the appeal stage — judge this organization \
+on its own merits and the appeal text.
+- A short or generic appeal ("please approve me", "I disagree") with no \
+specific information is grounds for DENY.
+
+Assess only POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, IDENTITY_TRUST. \
+Skip FINANCIAL_RISK and SETUP_READINESS — set those to LOW with confidence 0.
+
+Return only APPROVE or DENY, never NEEDS_HUMAN_REVIEW.
+
+## Merchant-Facing Summary (merchant_summary)
+
+Produce a short merchant_summary (1-2 sentences) shown directly to the merchant:
+- For APPROVE: confirm that the appeal was accepted.
+- For DENY: explain in general terms why the appeal was not sufficient and \
+tell them to contact support if they believe the decision is wrong. NEVER \
+mention scraped websites, prior organizations, risk scores, or specific \
+fraud signals.
+
+Examples for DENY:
+- "Your appeal did not provide enough new information to overturn the original decision. If you believe this is wrong, please contact support."
+- "Based on the information provided, we are unable to approve your organization. Please contact support if you believe this is incorrect."
+
+Examples for APPROVE:
+- "Your appeal has been accepted. Your organization has been approved to sell on Polar."
+"""
+
+
 def _annotate_domains(domains: list[str]) -> str:
     """Join domain names, tagging known service domains for the AI agent."""
     parts = []
@@ -535,6 +604,7 @@ class ReviewAnalyzer:
             ReviewContext.SUBMISSION: SUBMISSION_PREAMBLE,
             ReviewContext.THRESHOLD: THRESHOLD_PREAMBLE,
             ReviewContext.MANUAL: MANUAL_PREAMBLE,
+            ReviewContext.APPEAL: APPEAL_PREAMBLE,
         }.get(context)
 
         try:
@@ -570,6 +640,20 @@ class ReviewAnalyzer:
         history = snapshot.history
 
         parts = []
+
+        if snapshot.context == ReviewContext.APPEAL:
+            if snapshot.original_denial_reason:
+                parts.append("## Original Denial Message Shown to Merchant")
+                parts.append(
+                    "This is the exact text the merchant saw on their dashboard "
+                    "and is now responding to:"
+                )
+                parts.append(snapshot.original_denial_reason)
+                parts.append("")
+            if snapshot.appeal_reason:
+                parts.append("## Appeal from Merchant")
+                parts.append(snapshot.appeal_reason)
+                parts.append("")
 
         # Organization details
         parts.append("## Organization Details")

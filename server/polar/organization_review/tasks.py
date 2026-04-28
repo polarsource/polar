@@ -6,7 +6,7 @@ import structlog
 from polar.config import Environment, settings
 from polar.exceptions import PolarTaskError
 from polar.integrations.polar.service import polar_self
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
     OrganizationRepository,
@@ -15,12 +15,19 @@ from polar.organization.repository import (
     OrganizationReviewRepository as OrgReviewRepository,
 )
 from polar.organization.service import organization as organization_service
+from polar.postgres import AsyncSession
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .agent import run_organization_review
 from .report import build_agent_report
 from .repository import OrganizationReviewRepository
-from .schemas import ActorType, DecisionType, ReviewContext, ReviewVerdict
+from .schemas import (
+    ActorType,
+    AgentReviewResult,
+    DecisionType,
+    ReviewContext,
+    ReviewVerdict,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -40,6 +47,47 @@ _VERDICT_MAP: dict[ReviewVerdict, str] = {
     ReviewVerdict.APPROVE: OrganizationReview.Verdict.PASS,
     ReviewVerdict.DENY: OrganizationReview.Verdict.FAIL,
 }
+
+
+async def _persist_agent_result(
+    session: AsyncSession,
+    organization: Organization,
+    review_context: ReviewContext,
+    result: AgentReviewResult,
+) -> uuid.UUID:
+    """Log + track usage + persist OrganizationAgentReview. Returns its id."""
+    report = result.report
+    log.info(
+        "organization_review.task.complete",
+        organization_id=str(organization.id),
+        slug=organization.slug,
+        context=review_context.value,
+        verdict=report.verdict.value,
+        overall_risk_score=report.overall_risk_score,
+        summary=report.summary,
+        model_used=result.model_used,
+        duration_seconds=result.duration_seconds,
+        estimated_cost_usd=result.usage.estimated_cost_usd,
+    )
+
+    polar_self.enqueue_track_organization_review_usage(
+        external_customer_id=str(organization.id),
+        review_context=review_context.value,
+        vendor=result.model_provider,
+        model=result.model_used,
+        input_tokens=result.usage.input_tokens,
+        output_tokens=result.usage.output_tokens,
+        cost_usd=result.usage.estimated_cost_usd,
+    )
+
+    review_repository = OrganizationReviewRepository.from_session(session)
+    typed_report = build_agent_report(result, review_type=review_context.value)
+    agent_review = await review_repository.save_agent_review(
+        organization_id=organization.id,
+        report=typed_report,
+        reviewed_at=datetime.now(UTC),
+    )
+    return agent_review.id
 
 
 @actor(
@@ -86,37 +134,10 @@ async def run_review_agent(
             raise
 
         report = result.report
-        log.info(
-            "organization_review.task.complete",
-            organization_id=str(organization_id),
-            slug=organization.slug,
-            context=review_context.value,
-            verdict=report.verdict.value,
-            overall_risk_score=report.overall_risk_score,
-            summary=report.summary,
-            model_used=result.model_used,
-            duration_seconds=result.duration_seconds,
-            estimated_cost_usd=result.usage.estimated_cost_usd,
+        agent_review_id = await _persist_agent_result(
+            session, organization, review_context, result
         )
-
-        polar_self.enqueue_track_organization_review_usage(
-            external_customer_id=str(organization_id),
-            review_context=review_context.value,
-            vendor=result.model_provider,
-            model=result.model_used,
-            input_tokens=result.usage.input_tokens,
-            output_tokens=result.usage.output_tokens,
-            cost_usd=result.usage.estimated_cost_usd,
-        )
-
-        # Persist agent report to its own table (both contexts)
         review_repository = OrganizationReviewRepository.from_session(session)
-        typed_report = build_agent_report(result, review_type=review_context.value)
-        agent_review = await review_repository.save_agent_review(
-            organization_id=organization_id,
-            report=typed_report,
-            reviewed_at=datetime.now(UTC),
-        )
 
         # For THRESHOLD context with auto-approve eligibility:
         # delegate decision to the service layer
@@ -152,7 +173,7 @@ async def run_review_agent(
             if auto_approved:
                 await review_repository.record_agent_decision(
                     organization_id=organization_id,
-                    agent_review_id=agent_review.id,
+                    agent_review_id=agent_review_id,
                     decision=DecisionType.APPROVE,
                     review_context=ReviewContext.THRESHOLD,
                     verdict=report.verdict,
@@ -212,7 +233,7 @@ async def run_review_agent(
 
                 await review_repository.record_agent_decision(
                     organization_id=organization_id,
-                    agent_review_id=agent_review.id,
+                    agent_review_id=agent_review_id,
                     decision=DecisionType.DENY,
                     review_context=ReviewContext.SUBMISSION,
                     verdict=report.verdict,
@@ -227,3 +248,73 @@ async def run_review_agent(
                 )
             elif report.verdict == ReviewVerdict.APPROVE:
                 await organization_service.maybe_activate(session, organization)
+
+
+@actor(
+    actor_name="organization_review.appeal_submitted",
+    priority=TaskPriority.LOW,
+    time_limit=180_000,
+    max_retries=1,
+)
+async def review_appeal(organization_id: uuid.UUID) -> None:
+    """Auto-review a submitted appeal with the AI agent.
+
+    The merchant's appeal is decisive: APPROVE activates the org, DENY closes
+    out the appeal with a "contact support" message and no Plain ticket.
+    """
+    if settings.ENV == Environment.sandbox:
+        return
+
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id, include_blocked=True)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        org_review_repository = OrgReviewRepository.from_session(session)
+        review = await org_review_repository.get_by_organization(organization_id)
+        if review is None or review.appeal_submitted_at is None:
+            log.warning(
+                "organization_review.appeal.no_pending_appeal",
+                organization_id=str(organization_id),
+                slug=organization.slug,
+            )
+            return
+
+        if review.appeal_decision is not None:
+            log.info(
+                "organization_review.appeal.already_decided",
+                organization_id=str(organization_id),
+                slug=organization.slug,
+                decision=review.appeal_decision,
+            )
+            return
+
+        result = await run_organization_review(
+            session,
+            organization,
+            context=ReviewContext.APPEAL,
+            appeal_reason=review.appeal_reason,
+            original_denial_reason=review.reason,
+        )
+        report = result.report
+        agent_review_id = await _persist_agent_result(
+            session, organization, ReviewContext.APPEAL, result
+        )
+
+        if report.verdict == ReviewVerdict.APPROVE:
+            await organization_service.approve_appeal(session, organization)
+            decision = DecisionType.APPROVE
+        else:
+            await organization_service.deny_appeal(session, organization)
+            decision = DecisionType.DENY
+
+        agent_review_repository = OrganizationReviewRepository.from_session(session)
+        await agent_review_repository.record_agent_decision(
+            organization_id=organization_id,
+            agent_review_id=agent_review_id,
+            decision=decision,
+            review_context=ReviewContext.APPEAL,
+            verdict=report.verdict,
+            risk_score=report.overall_risk_score,
+        )

@@ -14,7 +14,7 @@ import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { usePayoutAccount } from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
 import { loadStripe } from '@stripe/stripe-js'
-import { BanIcon, CheckIcon } from 'lucide-react'
+import { CheckIcon } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 export default function ClientPage({
@@ -39,8 +39,6 @@ export default function ClientPage({
     reviewStatus?.reason === 'Grandfathered organization'
 
   const isDenied = organization.status === 'denied'
-
-  const canAppeal = reviewStatus?.appeal_decision !== 'rejected'
 
   const isActive = ['active', 'review', 'snoozed'].includes(organization.status)
 
@@ -168,17 +166,6 @@ export default function ClientPage({
               kyc={true}
               onSubmitted={handleDetailsSubmitted}
             />
-          ) : isDenied && !canAppeal ? (
-            <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
-              <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                <BanIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
-              </span>
-              <h4 className="mb-2 font-medium">Account denied</h4>
-              <p className="dark:text-polar-400 mx-auto max-w-sm text-sm text-balance text-gray-600">
-                You have been denied access to Polar. If you believe this is a
-                mistake, please contact support for further assistance.
-              </p>
-            </div>
           ) : isApproved ? (
             <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
               <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">

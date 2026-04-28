@@ -9,7 +9,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Textarea } from '@polar-sh/ui/components/ui/textarea'
 import { Loader2 } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 interface AppealFormProps {
   organization: schemas['Organization']
@@ -22,31 +22,33 @@ const AppealForm: React.FC<AppealFormProps> = ({
   reason,
   existingReviewStatus,
 }) => {
-  const [appealReason, setAppealReason] = useState(
-    () => existingReviewStatus?.appeal_reason ?? '',
-  )
-  const [isSubmitted, setIsSubmitted] = useState(
-    () => !!existingReviewStatus?.appeal_submitted_at,
-  )
+  const [appealReason, setAppealReason] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [pollingTimedOut, setPollingTimedOut] = useState(false)
 
   const appealMutation = useOrganizationAppeal(organization.id)
-  const reviewStatus = useOrganizationReviewStatus(organization.id)
+  const isAwaitingDecision =
+    !!existingReviewStatus?.appeal_submitted_at &&
+    !existingReviewStatus?.appeal_decision
+  const reviewStatus = useOrganizationReviewStatus(
+    organization.id,
+    true,
+    (appealMutation.isSuccess || isAwaitingDecision) && !pollingTimedOut
+      ? 3000
+      : undefined,
+  )
 
-  // Use existing review status if provided, otherwise use fetched data
   const currentReviewStatus = existingReviewStatus || reviewStatus.data
+  const isSubmitted =
+    appealMutation.isSuccess || !!currentReviewStatus?.appeal_submitted_at
+  const submittedReason = currentReviewStatus?.appeal_reason || appealReason
 
-  // Update state based on existing review status
-  const [prevReviewStatus, setPrevReviewStatus] = useState(currentReviewStatus)
-  if (currentReviewStatus !== prevReviewStatus) {
-    setPrevReviewStatus(currentReviewStatus)
-    if (currentReviewStatus?.appeal_submitted_at) {
-      setIsSubmitted(true)
-      if (currentReviewStatus.appeal_reason) {
-        setAppealReason(currentReviewStatus.appeal_reason)
-      }
-    }
-  }
+  // Stop polling after 2 minutes if the worker hasn't decided yet.
+  useEffect(() => {
+    if (!isAwaitingDecision || pollingTimedOut) return
+    const timeout = setTimeout(() => setPollingTimedOut(true), 120_000)
+    return () => clearTimeout(timeout)
+  }, [isAwaitingDecision, pollingTimedOut])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,9 +59,6 @@ const AppealForm: React.FC<AppealFormProps> = ({
 
     try {
       await appealMutation.mutateAsync({ reason: appealReason })
-      setIsSubmitted(true)
-
-      // Invalidate the review status query to refresh the data
       getQueryClient().invalidateQueries({
         queryKey: ['organizationReviewStatus', organization.id],
       })
@@ -79,19 +78,26 @@ const AppealForm: React.FC<AppealFormProps> = ({
     return (
       <div className="space-y-4">
         <div>
-          <h4 className="mb-1 font-medium">
+          <h4 className="mb-1 flex items-center gap-2 font-medium">
+            {!decision && !pollingTimedOut && (
+              <Loader2 className="dark:text-polar-400 h-4 w-4 animate-spin text-gray-500" />
+            )}
             {decision === 'approved'
               ? 'Appeal approved'
               : decision === 'rejected'
                 ? 'Appeal denied'
-                : 'Appeal under review'}
+                : pollingTimedOut
+                  ? 'Appeal still processing'
+                  : 'Appeal under review'}
           </h4>
           <p className="dark:text-polar-400 text-sm text-gray-600">
             {decision === 'approved'
               ? 'Your appeal has been approved. Payment access has been restored.'
               : decision === 'rejected'
-                ? 'Your appeal has been reviewed and denied. Please contact support for further assistance.'
-                : 'Our team will review your case and get back to you as soon as possible.'}
+                ? "Your appeal wasn't approved. If you believe this is wrong, please contact support — we can take another look."
+                : pollingTimedOut
+                  ? "This is taking longer than expected. Refresh the page in a few minutes — if it still hasn't updated, please contact support."
+                  : 'We are reviewing your appeal. This usually takes about a minute.'}
           </p>
           {submissionDate && (
             <p className="dark:text-polar-400 mt-2 text-xs text-gray-500">
@@ -102,10 +108,10 @@ const AppealForm: React.FC<AppealFormProps> = ({
           )}
         </div>
 
-        {appealReason && (
+        {submittedReason && (
           <div className="dark:bg-polar-800 rounded-lg bg-white p-3">
             <p className="dark:text-polar-300 text-sm text-gray-700">
-              {appealReason}
+              {submittedReason}
             </p>
           </div>
         )}
@@ -128,8 +134,8 @@ const AppealForm: React.FC<AppealFormProps> = ({
               className="cursor-pointer underline hover:no-underline"
             >
               submit an appeal
-            </button>{' '}
-            for manual review.
+            </button>
+            .
           </p>
         )}
       </div>

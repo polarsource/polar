@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import { useUpdateUser } from '@/hooks/queries'
+import { useMonthDigitTypeahead } from '@/hooks/useMonthDigitTypeahead'
 import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
@@ -80,6 +81,8 @@ const PersonalInformationSettings = () => {
   })
 
   const { control, handleSubmit, reset } = form
+
+  const handleMonthDigit = useMonthDigitTypeahead()
 
   useEffect(() => {
     if (currentUser) {
@@ -206,7 +209,9 @@ const PersonalInformationSettings = () => {
                 <FormItem>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
+                      <SelectTrigger
+                        onKeyDown={(e) => handleMonthDigit(e, field.onChange)}
+                      >
                         <SelectValue placeholder="Month" />
                       </SelectTrigger>
                       <SelectContent>

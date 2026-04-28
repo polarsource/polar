@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
+import { useMonthDigitTypeahead } from '@/hooks/useMonthDigitTypeahead'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -132,6 +133,8 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
   })
 
   const { control, handleSubmit, watch, setValue } = form
+
+  const handleMonthDigit = useMonthDigitTypeahead()
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('country')
@@ -299,7 +302,9 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
                         value={field.value}
                         onValueChange={field.onChange}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger
+                          onKeyDown={(e) => handleMonthDigit(e, field.onChange)}
+                        >
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
                         <SelectContent>

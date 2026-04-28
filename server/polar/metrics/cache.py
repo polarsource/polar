@@ -53,6 +53,7 @@ def build_cache_key(
     external_customer_ids: Sequence[str] | None,
     billing_type: Sequence[ProductBillingType] | None,
     metrics: Sequence[str] | None,
+    include_trials_in_mrr: bool = False,
 ) -> str:
     payload = {
         "start_date": start_date.isoformat(),
@@ -65,6 +66,7 @@ def build_cache_key(
         "external_customer_ids": _sorted_strs(external_customer_ids),
         "billing_type": _sorted_billing_types(billing_type),
         "metrics": _sorted_strs(metrics),
+        "include_trials_in_mrr": include_trials_in_mrr,
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()

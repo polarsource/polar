@@ -22,6 +22,7 @@ from polar.models import (
     User,
 )
 from polar.models.product import ProductBillingType
+from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
@@ -32,6 +33,7 @@ from .metrics import (
     METRICS_POST_COMPUTE,
     METRICS_POSTGRES,
     METRICS_TINYBIRD,
+    MetricsContext,
     SQLMetric,
 )
 from .queries import (
@@ -197,6 +199,10 @@ class MetricsService:
             tb_needed=tb_slugs,
         )
 
+        metrics_context = await self._resolve_metrics_context(
+            session, organization_id=organization_id
+        )
+
         cache_key: str | None = None
         if redis is not None and now is None:
             cache_key = build_cache_key(
@@ -210,6 +216,7 @@ class MetricsService:
                 external_customer_ids=tb_filters.external_customer_id,
                 billing_type=billing_type,
                 metrics=metrics,
+                include_trials_in_mrr=metrics_context.include_trials_in_mrr,
             )
             with logfire.span("Get metrics cache", cache_key=cache_key) as span:
                 cached = await get_cached_metrics(redis, cache_key)
@@ -312,7 +319,9 @@ class MetricsService:
                 period_dict[meta_metric.slug] = 0
             for meta_metric in filtered_post_compute:
                 period = MetricsPeriod.model_validate(period_dict)
-                period_dict[meta_metric.slug] = meta_metric.compute_from_period(period)
+                period_dict[meta_metric.slug] = meta_metric.compute_from_period(
+                    period, metrics_context
+                )
 
             if metrics is not None:
                 all_resolved = pg_slugs | tb_slugs | meta_slugs
@@ -434,6 +443,27 @@ class MetricsService:
                 periods[period.timestamp] = period
 
         return periods
+
+    async def _resolve_metrics_context(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        *,
+        organization_id: Sequence[uuid.UUID] | None,
+    ) -> MetricsContext:
+        # Org-level feature flag only applies when the request is scoped to a
+        # single organization. Aggregated/multi-org views fall back to the
+        # default (trials excluded) to avoid silently changing semantics.
+        if organization_id is None or len(organization_id) != 1:
+            return MetricsContext()
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id[0])
+        if organization is None:
+            return MetricsContext()
+        return MetricsContext(
+            include_trials_in_mrr=bool(
+                organization.feature_settings.get("include_trials_in_mrr", False)
+            )
+        )
 
     async def _get_org_ids_for_subject(
         self,

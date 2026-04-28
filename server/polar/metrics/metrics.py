@@ -1,5 +1,6 @@
 from collections import deque
 from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, ClassVar, Protocol, cast
@@ -63,6 +64,13 @@ class MetricType(StrEnum):
     percentage = "percentage"
 
 
+@dataclass(frozen=True)
+class MetricsContext:
+    """Per-request context made available to MetaMetric computations."""
+
+    include_trials_in_mrr: bool = False
+
+
 def cumulative_sum(periods: Iterable["MetricsPeriod"], slug: str) -> int | float:
     return sum(getattr(p, slug) or 0 for p in periods)
 
@@ -100,7 +108,9 @@ class TinybirdMetric(Metric, Protocol):
 
 class MetaMetric(Metric, Protocol):
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> int | float: ...
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> int | float: ...
 
 
 class ActiveSubscriptionsMetric(SQLMetric):
@@ -139,9 +149,9 @@ class CommittedSubscriptionsMetric(SQLMetric):
         return cumulative_last(periods, cls.slug)
 
 
-class MonthlyRecurringRevenueMetric(SQLMetric):
-    slug = "monthly_recurring_revenue"
-    display_name = "Monthly Recurring Revenue"
+class BaseMonthlyRecurringRevenueMetric(SQLMetric):
+    slug = "base_monthly_recurring_revenue"
+    display_name = "Base Monthly Recurring Revenue"
     type = MetricType.currency
     query = MetricQuery.active_subscriptions
 
@@ -158,9 +168,9 @@ class MonthlyRecurringRevenueMetric(SQLMetric):
         return cumulative_last(periods, cls.slug)
 
 
-class CommittedMonthlyRecurringRevenueMetric(SQLMetric):
-    slug = "committed_monthly_recurring_revenue"
-    display_name = "Committed Monthly Recurring Revenue"
+class BaseCommittedMonthlyRecurringRevenueMetric(SQLMetric):
+    slug = "base_committed_monthly_recurring_revenue"
+    display_name = "Base Committed Monthly Recurring Revenue"
     type = MetricType.currency
     query = MetricQuery.active_subscriptions
 
@@ -175,6 +185,52 @@ class CommittedMonthlyRecurringRevenueMetric(SQLMetric):
             ),
             0,
         )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class MonthlyRecurringRevenueMetric(MetaMetric):
+    slug = "monthly_recurring_revenue"
+    display_name = "Monthly Recurring Revenue"
+    type = MetricType.currency
+    dependencies: ClassVar[list[str]] = [
+        "base_monthly_recurring_revenue",
+        "trial_monthly_recurring_revenue",
+    ]
+
+    @classmethod
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> int | float:
+        base = period.base_monthly_recurring_revenue or 0
+        if context.include_trials_in_mrr:
+            return base + (period.trial_monthly_recurring_revenue or 0)
+        return base
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class CommittedMonthlyRecurringRevenueMetric(MetaMetric):
+    slug = "committed_monthly_recurring_revenue"
+    display_name = "Committed Monthly Recurring Revenue"
+    type = MetricType.currency
+    dependencies: ClassVar[list[str]] = [
+        "base_committed_monthly_recurring_revenue",
+        "trial_committed_monthly_recurring_revenue",
+    ]
+
+    @classmethod
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> int | float:
+        base = period.base_committed_monthly_recurring_revenue or 0
+        if context.include_trials_in_mrr:
+            return base + (period.trial_committed_monthly_recurring_revenue or 0)
+        return base
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -265,7 +321,9 @@ class AnnualRecurringRevenueMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["monthly_recurring_revenue"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> int | float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> int | float:
         return (period.monthly_recurring_revenue or 0) * 12
 
     @classmethod
@@ -280,7 +338,9 @@ class CommittedAnnualRecurringRevenueMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["committed_monthly_recurring_revenue"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> int | float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> int | float:
         return (period.committed_monthly_recurring_revenue or 0) * 12
 
     @classmethod
@@ -295,7 +355,9 @@ class CheckoutsConversionMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["checkouts", "succeeded_checkouts"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> float:
         checkouts = period.checkouts or 0
         succeeded = period.succeeded_checkouts or 0
         return succeeded / checkouts if checkouts > 0 else 0.0
@@ -358,7 +420,9 @@ class GrossMarginMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["cumulative_revenue", "cumulative_costs"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> float:
         revenue = period.cumulative_revenue or 0
         costs = period.cumulative_costs or 0
         return revenue - costs
@@ -375,7 +439,9 @@ class GrossMarginPercentageMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["cumulative_revenue", "cumulative_costs"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> float:
         revenue = period.cumulative_revenue or 0
         costs = period.cumulative_costs or 0
         return (revenue - costs) / revenue if revenue > 0 else 0.0
@@ -392,7 +458,9 @@ class CashflowMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["revenue", "costs"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> float:
         revenue = period.revenue or 0
         costs = period.costs or 0
         return revenue - costs
@@ -551,7 +619,9 @@ class AverageSeatsPerCustomerMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["seats_total", "seat_customers"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> float:
         total = period.seats_total or 0
         customers = period.seat_customers or 0
         return total / customers if customers > 0 else 0.0
@@ -568,7 +638,9 @@ class SeatUtilizationRateMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["seats_claimed", "seats_total"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> float:
         claimed = period.seats_claimed or 0
         total = period.seats_total or 0
         return claimed / total if total > 0 else 0.0
@@ -589,7 +661,9 @@ class LTVMetric(MetaMetric):
     ]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> int:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", context: MetricsContext
+    ) -> int:
         arpu = period.average_revenue_per_user or 0
         cost_per_user = period.cost_per_user or 0
         churn_rate = period.churn_rate or 0
@@ -968,9 +1042,9 @@ METRICS_TINYBIRD: list[type[TinybirdMetric]] = [
 METRICS_POSTGRES: list[type[SQLMetric]] = [
     ActiveSubscriptionsMetric,
     CommittedSubscriptionsMetric,
-    MonthlyRecurringRevenueMetric,
+    BaseMonthlyRecurringRevenueMetric,
     TrialMonthlyRecurringRevenueMetric,
-    CommittedMonthlyRecurringRevenueMetric,
+    BaseCommittedMonthlyRecurringRevenueMetric,
     TrialCommittedMonthlyRecurringRevenueMetric,
     AverageRevenuePerUserMetric,
     CheckoutsMetric,
@@ -985,7 +1059,13 @@ METRICS_POSTGRES: list[type[SQLMetric]] = [
     ChurnedSeatCustomersMetric,
 ]
 
+# Order matters — metrics whose dependencies are other meta metrics must be
+# listed AFTER their dependencies, since periods are computed sequentially.
+# E.g., AnnualRecurringRevenueMetric reads `monthly_recurring_revenue` which is
+# itself a meta metric, so MonthlyRecurringRevenueMetric must come first.
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
+    MonthlyRecurringRevenueMetric,
+    CommittedMonthlyRecurringRevenueMetric,
     AnnualRecurringRevenueMetric,
     CommittedAnnualRecurringRevenueMetric,
     CheckoutsConversionMetric,
@@ -1011,6 +1091,7 @@ __all__ = [
     "MetaMetric",
     "Metric",
     "MetricType",
+    "MetricsContext",
     "SQLMetric",
     "TinybirdMetric",
 ]

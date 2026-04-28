@@ -300,3 +300,17 @@ class CustomerRepository(
         result = await self.session.execute(stmt)
         next_number = result.scalar_one()
         return next_number - 1
+
+    async def increment_receipt_next_number(self, customer_id: UUID) -> int:
+        """
+        Atomically increment receipt_next_number and return the value before increment.
+        """
+        stmt = (
+            update(Customer)
+            .where(Customer.id == customer_id)
+            .values(receipt_next_number=Customer.receipt_next_number + 1)
+            .returning(Customer.receipt_next_number)
+        )
+        result = await self.session.execute(stmt)
+        next_number = result.scalar_one()
+        return next_number - 1

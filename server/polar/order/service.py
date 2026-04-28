@@ -94,6 +94,7 @@ from polar.product.guard import (
 )
 from polar.product.price_set import PriceSet
 from polar.product.repository import ProductRepository
+from polar.receipt.service import receipt as receipt_service
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
@@ -1995,6 +1996,8 @@ class OrderService:
 
     async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
         assert order.paid
+
+        await receipt_service.allocate(session, order)
 
         await self.send_webhook(session, order, WebhookEventType.order_paid)
 

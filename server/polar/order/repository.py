@@ -90,6 +90,22 @@ class OrderRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def lock_for_receipt_allocation(self, order_id: UUID) -> str | None:
+        """Lock the Order row and return its current ``receipt_number``.
+
+        Returns the scalar value rather than the ORM instance so the caller
+        sees the fresh, lock-protected number — the identity map would
+        otherwise hand back a stale cached ``Order``. Raises if the order
+        does not exist.
+        """
+        statement = (
+            select(Order.receipt_number)
+            .where(Order.id == order_id)
+            .with_for_update(of=Order)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
     async def get_due_dunning_orders(self, *, options: Options = ()) -> Sequence[Order]:
         """Get orders that are due for dunning retry based on next_payment_attempt_at.
 

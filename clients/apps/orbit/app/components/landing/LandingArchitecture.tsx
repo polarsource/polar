@@ -5,7 +5,6 @@ import { ConcentricDraw } from '../ConcentricDraw'
 import { GaugeSweep } from '../GaugeSweep'
 import { OrbitingSpheres } from '../OrbitingSpheres'
 import { SectionHeading } from './SectionHeading'
-import { Button } from './Button'
 
 /**
  * LandingArchitecture — heading row + four-column graphic row,

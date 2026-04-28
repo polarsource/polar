@@ -51,7 +51,7 @@ export default function RootLayout({
       className={`${neueMontreal.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body
-        className={`${neueMontreal.className} dark:text-dark-200 flex min-h-full flex-col bg-white text-neutral-600 dark:bg-black`}
+        className={`${neueMontreal.className} flex min-h-full flex-col bg-white dark:bg-black`}
       >
         {children}
       </body>

@@ -19,7 +19,7 @@ const NavLink = ({
 )
 
 export const LandingNav = () => (
-  <nav className="relative z-50 flex w-full items-center gap-10 py-16">
+  <nav className="sticky top-0 z-50 flex w-full items-center gap-10 bg-white py-12 dark:bg-black">
     <Link href="/" className="mr-auto">
       <PolarLogo className="text-neutral-900 dark:text-white" height={36} />
     </Link>

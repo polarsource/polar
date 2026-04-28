@@ -323,6 +323,16 @@ class MKVATValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class GEVATValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = number.replace(" ", "").replace("-", "").replace(".", "").strip()
+        if number.upper().startswith("GE"):
+            number = number[2:]
+        if len(number) not in (9, 11) or not number.isdigit():
+            raise InvalidTaxID(number, country)
+        return number
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ae_trn:
@@ -333,6 +343,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CLTINValidator()
         case TaxIDFormat.co_nit:
             return CONITValidator()
+        case TaxIDFormat.ge_vat:
+            return GEVATValidator()
         case TaxIDFormat.il_vat:
             return ILVATValidator()
         case TaxIDFormat.mk_vat:

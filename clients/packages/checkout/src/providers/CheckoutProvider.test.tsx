@@ -130,8 +130,8 @@ describe('CheckoutProvider', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('ready')).toBeInTheDocument()
+        expect(getCtx().checkout.id).toBe('ch_fetched')
       })
-      expect(getCtx().checkout.id).toBe('ch_fetched')
       expect(mockClient.GET).toHaveBeenCalledWith(
         '/v1/checkouts/client/{client_secret}',
         { params: { path: { client_secret: 'cs_test' } } },

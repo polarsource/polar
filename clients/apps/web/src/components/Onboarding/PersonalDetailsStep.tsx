@@ -24,9 +24,11 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
+import { useMonthDigitTypeahead } from '@/hooks/useMonthDigitTypeahead'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { setValidationErrors } from '@/utils/api/errors'
 import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
@@ -48,13 +50,13 @@ const MONTH_NAMES = [
 ] as const
 
 interface FormSchema {
-  firstName: string
-  lastName: string
+  first_name: string
+  last_name: string
   country: string
   dobYear: string
   dobMonth: string
   dobDay: string
-  terms: boolean
+  accepted_terms_of_service: boolean
 }
 
 function FormSync() {
@@ -67,8 +69,8 @@ function FormSync() {
         ? `${values.dobYear}-${values.dobMonth}-${String(values.dobDay).padStart(2, '0')}`
         : undefined
     updateData({
-      firstName: values.firstName,
-      lastName: values.lastName,
+      firstName: values.first_name,
+      lastName: values.last_name,
       country: values.country,
       dateOfBirth,
     })
@@ -78,17 +80,24 @@ function FormSync() {
 }
 
 function SubmitButton({ loading }: { loading: boolean }) {
-  const { firstName, lastName, country, dobYear, dobMonth, dobDay, terms } =
-    useWatch<FormSchema>()
+  const {
+    first_name,
+    last_name,
+    country,
+    dobYear,
+    dobMonth,
+    dobDay,
+    accepted_terms_of_service,
+  } = useWatch<FormSchema>()
 
   const disabled =
-    !firstName ||
-    !lastName ||
+    !first_name ||
+    !last_name ||
     !country ||
     !dobYear ||
     !dobMonth ||
     !dobDay ||
-    !terms
+    !accepted_terms_of_service
 
   return (
     <Button type="submit" loading={loading} disabled={disabled} fullWidth>
@@ -121,17 +130,20 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
 
   const form = useForm<FormSchema>({
     defaultValues: {
-      firstName: data.firstName || currentUser?.first_name || '',
-      lastName: data.lastName || currentUser?.last_name || '',
+      first_name: data.firstName || currentUser?.first_name || '',
+      last_name: data.lastName || currentUser?.last_name || '',
       country: data.country || currentUser?.country || safeGeoCountry || '',
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
       dobDay: parsedDob[2] ? String(Number(parsedDob[2])) : '',
-      terms: currentUser?.accepted_terms_of_service ?? false,
+      accepted_terms_of_service:
+        currentUser?.accepted_terms_of_service ?? false,
     },
   })
 
-  const { control, handleSubmit, watch, setValue } = form
+  const { control, handleSubmit, watch, setValue, setError } = form
+
+  const handleMonthDigit = useMonthDigitTypeahead()
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('country')
@@ -158,25 +170,36 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
     setApiLoading(true)
     const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay.padStart(2, '0')}`
     updateData({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
+      firstName: formData.first_name,
+      lastName: formData.last_name,
       country: formData.country,
       dateOfBirth,
     })
 
     try {
       const { error } = await updateUser.mutateAsync({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
         country: formData.country as schemas['CountryAlpha2Input'],
         date_of_birth: dateOfBirth,
-        ...(formData.terms ? { accepted_terms_of_service: true } : {}),
+        ...(formData.accepted_terms_of_service
+          ? { accepted_terms_of_service: true }
+          : {}),
       })
 
       if (error) {
         Sentry.captureException(error)
         setSubmitting(false)
-        setSubmitError(true)
+        if (Array.isArray(error.detail)) {
+          const remapped = error.detail.map((d) =>
+            d.loc[1] === 'date_of_birth'
+              ? { ...d, loc: [d.loc[0], 'dobMonth'] }
+              : d,
+          )
+          setValidationErrors(remapped, setError)
+        } else {
+          setSubmitError(true)
+        }
         await showApiResponse(400, 'Failed to save personal details')
         return
       }
@@ -215,7 +238,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
           >
             <FormField
               control={control}
-              name="firstName"
+              name="first_name"
               rules={{ required: 'First name is required' }}
               render={({ field }) => (
                 <FormItem className="w-full">
@@ -229,7 +252,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
             />
             <FormField
               control={control}
-              name="lastName"
+              name="last_name"
               rules={{ required: 'Last name is required' }}
               render={({ field }) => (
                 <FormItem className="w-full">
@@ -299,7 +322,9 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
                         value={field.value}
                         onValueChange={field.onChange}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger
+                          onKeyDown={(e) => handleMonthDigit(e, field.onChange)}
+                        >
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
                         <SelectContent>
@@ -373,7 +398,11 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
           </Box>
 
           {showTerms.current && (
-            <TermsCheckbox control={control} name="terms" setValue={setValue} />
+            <TermsCheckbox
+              control={control}
+              name="accepted_terms_of_service"
+              setValue={setValue}
+            />
           )}
 
           <Box display="flex" flexDirection="column" rowGap="s">

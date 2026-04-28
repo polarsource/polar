@@ -5,6 +5,11 @@
 server/** @frankie567
 server/polar/metrics/** @Yopi @pieterbeulque
 server/tests/metrics/** @Yopi @pieterbeulque
+server/polar/organization_review/** @psincraian
+server/tests/organization_review/** @psincraian
+server/polar/customer_seat/** @psincraian
+server/tests/customer_seat/** @psincraian
+server/tests/e2e/** @psincraian
 
 # Infrastructure
 terraform/** @Yopi

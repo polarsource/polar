@@ -29,13 +29,14 @@ from polar.organization_review.schemas import (
     RiskLevel,
     UsageInfo,
 )
-from polar.organization_review.tasks import run_review_agent
+from polar.organization_review.tasks import review_appeal, run_review_agent
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 # Access the unwrapped async function to bypass the actor decorator
 # which requires JobQueueManager / Redis / Dramatiq broker infrastructure.
 _run_review_agent = run_review_agent.__wrapped__  # type: ignore[attr-defined]
+_review_appeal = review_appeal.__wrapped__  # type: ignore[attr-defined]
 
 
 def _make_agent_result(
@@ -306,3 +307,143 @@ class TestRunReviewAgentGrandfathered:
         # Verify the org was denied
         await session.refresh(organization)
         assert organization.status == OrganizationStatus.DENIED
+
+
+@pytest.mark.asyncio
+class TestReviewAppeal:
+    async def test_approve_activates_org(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["policy"],
+            reason="Original denial",
+            timed_out=False,
+            model_used="test-model",
+            organization_details_snapshot={},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="We sell digital templates, not consultancy.",
+        )
+        await save_fixture(review)
+
+        agent_result = _make_agent_result(
+            verdict=ReviewVerdict.APPROVE,
+            merchant_summary="Appeal approved",
+        )
+
+        approve_mock = AsyncMock()
+        deny_mock = AsyncMock()
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=agent_result,
+            ),
+            patch(
+                "polar.organization_review.tasks.organization_service.approve_appeal",
+                approve_mock,
+            ),
+            patch(
+                "polar.organization_review.tasks.organization_service.deny_appeal",
+                deny_mock,
+            ),
+        ):
+            await _review_appeal(organization.id)
+
+        approve_mock.assert_awaited_once()
+        deny_mock.assert_not_awaited()
+
+    async def test_deny_rejects_appeal(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["policy"],
+            reason="Original denial",
+            timed_out=False,
+            model_used="test-model",
+            organization_details_snapshot={},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="please approve",
+        )
+        await save_fixture(review)
+
+        agent_result = _make_agent_result(
+            verdict=ReviewVerdict.DENY,
+            merchant_summary="Appeal denied",
+        )
+
+        approve_mock = AsyncMock()
+        deny_mock = AsyncMock()
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=agent_result,
+            ),
+            patch(
+                "polar.organization_review.tasks.organization_service.approve_appeal",
+                approve_mock,
+            ),
+            patch(
+                "polar.organization_review.tasks.organization_service.deny_appeal",
+                deny_mock,
+            ),
+        ):
+            await _review_appeal(organization.id)
+
+        deny_mock.assert_awaited_once()
+        approve_mock.assert_not_awaited()
+
+    async def test_no_pending_appeal_short_circuits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=[],
+            reason="Original denial",
+            timed_out=False,
+            model_used="test-model",
+            organization_details_snapshot={},
+        )
+        await save_fixture(review)
+
+        run_mock = AsyncMock()
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                run_mock,
+            ),
+        ):
+            await _review_appeal(organization.id)
+
+        run_mock.assert_not_awaited()

@@ -12,9 +12,6 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import (
-    Customer as CustomerModel,
-)
-from polar.models import (
     Order,
     OrderItem,
     Product,
@@ -48,7 +45,8 @@ class CustomerOrderRepository(
         if product_load is None:
             product_load = joinedload(Order.product)
         return (
-            joinedload(Order.customer).joinedload(CustomerModel.organization),
+            joinedload(Order.customer),
+            joinedload(Order.organization),
             joinedload(Order.discount),
             joinedload(Order.subscription).joinedload(Subscription.customer),
             product_load.options(

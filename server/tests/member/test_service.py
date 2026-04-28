@@ -6,10 +6,12 @@ from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
+from polar.exceptions import NotPermitted
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import Customer, Member, Organization, User, UserOrganization
+from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -436,9 +438,6 @@ class TestCreate:
         user_organization: UserOrganization,
     ) -> None:
         """Test that individual customers can only have 1 member (the owner)."""
-        from polar.exceptions import NotPermitted
-        from polar.models.customer import CustomerType
-
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
@@ -486,8 +485,6 @@ class TestCreate:
         user_organization: UserOrganization,
     ) -> None:
         """Test that team customers can have multiple members."""
-        from polar.models.customer import CustomerType
-
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 

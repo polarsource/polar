@@ -18,7 +18,6 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
-from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -30,7 +29,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.models.order_item import OrderItem
-from polar.tax.calculation import TaxabilityReason, TaxRate
+from polar.tax.calculation import TaxabilityReason, TaxBreakdownItem, TaxRate
 from polar.tax.tax_id import TaxID, TaxIDType
 
 if TYPE_CHECKING:
@@ -147,6 +146,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     tax_rate: Mapped[TaxRate | None] = mapped_column(
         JSONB(none_as_null=True), nullable=True, default=None
     )
+    tax_breakdown: Mapped[list[TaxBreakdownItem] | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=None
+    )
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
         StringEnum(TaxProcessor), default=None, nullable=True
     )
@@ -189,16 +191,16 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def customer(cls) -> Mapped["Customer"]:
         return relationship("Customer", lazy="raise")
 
-    organization_id: Mapped[UUID | None] = mapped_column(
+    organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="restrict"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
 
-    organization: AssociationProxy["Organization"] = association_proxy(
-        "customer", "organization"
-    )
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     product_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("products.id"), nullable=True, index=True

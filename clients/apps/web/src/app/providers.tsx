@@ -1,6 +1,7 @@
 'use client'
 
 import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
+import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { NavigationHistoryProvider } from '@/providers/navigationHistory'
 import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
@@ -10,34 +11,31 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
-import { PropsWithChildren, useEffect } from 'react'
+import { PropsWithChildren } from 'react'
 
 export { NavigationHistoryProvider }
 
+if (typeof window !== 'undefined' && CONFIG.POSTHOG_TOKEN) {
+  const distinctId = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${DISTINCT_ID_COOKIE}=`))
+    ?.split('=')[1]
+
+  posthog.init(CONFIG.POSTHOG_TOKEN, {
+    ui_host: 'https://us.i.posthog.com',
+    api_host: '/ingest',
+    defaults: '2025-05-24', // enables automatic pageview tracking
+    persistence: cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory',
+    bootstrap: distinctId ? { distinctID: distinctId } : undefined,
+    disable_surveys: true,
+  })
+}
+
 export function PolarPostHogProvider({
   children,
-  distinctId,
 }: {
   children: React.ReactNode
-  distinctId: string
 }) {
-  useEffect(() => {
-    if (!CONFIG.POSTHOG_TOKEN) {
-      return
-    }
-
-    posthog.init(CONFIG.POSTHOG_TOKEN, {
-      ui_host: 'https://us.i.posthog.com',
-      api_host: '/ingest',
-      defaults: '2025-05-24', // this enables automatic pageview tracking
-      persistence: cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory',
-      bootstrap: {
-        distinctID: distinctId,
-      },
-      disable_surveys: true,
-    })
-  }, [distinctId])
-
   return <PostHogProvider client={posthog}>{children}</PostHogProvider>
 }
 

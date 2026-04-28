@@ -64,19 +64,17 @@ There are three PolicyGuard variants for different resource types:
 
 ### Typed dependencies
 
-Pre-built typed dependencies are defined in `server/polar/authz/dependencies.py`:
+Each guard is paired with a policy and exposed as a named dependency in `server/polar/authz/dependencies.py`. Endpoints depend on these names rather than wiring guards and policies themselves. For example:
 
 ```python
 AuthorizeFinanceRead    # OrgPolicyGuard + finance.can_read
-AuthorizeFinanceWrite   # OrgPolicyGuard + finance.can_write
 AuthorizeMembersManage  # OrgPolicyGuard + members.can_manage (User-only)
-AuthorizeOrgDelete      # OrgPolicyGuard + organization.can_delete (User-only)
-AuthorizeOrgAccessUser  # OrgPolicyGuard + always allow (User-only)
-AuthorizeAccountRead    # AccountPolicyGuard + finance.can_read
 AuthorizeAccountWrite   # AccountPolicyGuard + finance.can_write
-AuthorizePayoutAccountRead   # PayoutAccountPolicyGuard + finance.can_read
-AuthorizePayoutAccountWrite  # PayoutAccountPolicyGuard + finance.can_write
 ```
+
+There are also "always-allow" variants for endpoints that only need authentication, scope check, and org membership — no further policy. They exist so endpoints can still benefit from centralized resource resolution (the guard fetches the org and 404s non-members) without inventing a trivial policy.
+
+See `server/polar/authz/dependencies.py` for the full list.
 
 ## Policies
 
@@ -104,13 +102,9 @@ async def can_read(
 
 The denial reason string is passed through to the `NotPermitted` exception and appears in the 403 response body.
 
-### Policy files
+### Where policies live
 
-| File | Functions | Controls access to |
-|------|-----------|-------------------|
-| `policies/finance.py` | `can_read`, `can_write` | Accounts, transactions, payouts |
-| `policies/organization.py` | `can_delete` | Organization deletion |
-| `policies/members.py` | `can_manage` | Inviting, removing, and changing members |
+Policies are grouped by the resource area they protect — one file per area in `server/polar/authz/policies/` (e.g. finance, members, organization). A file typically exposes `can_read`/`can_write` or a more specific verb when the operation has its own rules (e.g. `can_delete`, `can_manage`). New areas get a new file rather than overloading an existing one.
 
 ## Org-scoped data access
 

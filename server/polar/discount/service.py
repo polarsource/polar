@@ -30,7 +30,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 
-from .schemas import DiscountCreate, DiscountFixedCreateBase, DiscountUpdate
+from .schemas import DiscountCreate, DiscountFixedCreate, DiscountUpdate
 from .sorting import DiscountSortProperty
 
 log = structlog.get_logger()
@@ -152,7 +152,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount_model = discount_create.type.get_model()
         discount_id = uuid.uuid4()
 
-        if isinstance(discount_create, DiscountFixedCreateBase):
+        if isinstance(discount_create, DiscountFixedCreate):
             if (
                 discount_create.amount is not None
                 and discount_create.currency is not None

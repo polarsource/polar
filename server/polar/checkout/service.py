@@ -85,7 +85,6 @@ from polar.observability.checkout_metrics import (
     CHECKOUT_SUCCEEDED_TOTAL,
 )
 from polar.order.service import order as order_service
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.guard import (
@@ -959,9 +958,7 @@ class CheckoutService:
                 }
             )
 
-        if not organization_service.is_organization_ready_for_payment(
-            checkout.organization
-        ):
+        if not checkout.organization.can_accept_payments:
             if checkout.is_payment_required:
                 raise PaymentNotReady()
 

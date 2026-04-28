@@ -250,7 +250,7 @@
           "public"
         ],
         "summary": "Get Organization",
-        "description": "Get an organization by ID.\n\n**Scopes**: `organizations:read` `organizations:write`",
+        "description": "Get an organization by ID.",
         "operationId": "organizations:get",
         "parameters": [
           {
@@ -305,10 +305,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Organization",
-          "User"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -343,7 +339,7 @@
           "public"
         ],
         "summary": "Update Organization",
-        "description": "Update an organization.\n\n**Scopes**: `organizations:write`",
+        "description": "Update an organization.",
         "operationId": "organizations:update",
         "parameters": [
           {
@@ -418,10 +414,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Organization",
-          "User"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1451,10 +1443,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Anonymous",
-          "User"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1525,10 +1513,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Anonymous",
-          "User"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1607,10 +1591,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Anonymous",
-          "User"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1679,10 +1659,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Anonymous",
-          "User"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1747,10 +1723,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Anonymous",
-          "User"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -2944,7 +2916,7 @@
           "public"
         ],
         "summary": "List Benefit Grants",
-        "description": "List benefit grants across all benefits for the authenticated organization.\n\n**Scopes**: `benefits:read` `benefits:write`",
+        "description": "List benefit grants across all benefits accessible to the authenticated subject.\n\n**Scopes**: `benefits:read` `benefits:write`",
         "operationId": "benefit-grants:list",
         "parameters": [
           {
@@ -8558,6 +8530,11 @@
             "lang": "python",
             "label": "Python (SDK)",
             "source": "from datetime import date\nimport polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.export(start_date=date.fromisoformat(\"2026-07-17\"), end_date=date.fromisoformat(\"2024-05-06\"), interval=polar_sdk.TimeInterval.YEAR, timezone=\"UTC\", organization_id=\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types/rfcdate.js\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.export({\n    startDate: new RFCDate(\"2026-07-17\"),\n    endDate: new RFCDate(\"2024-05-06\"),\n    interval: \"year\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           }
         ]
       }
@@ -9156,6 +9133,30 @@
               "description": "Filter by benefit ID."
             },
             "description": "Filter by benefit ID."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/LicenseKeyStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LicenseKeyStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "LicenseKeyStatus Filter",
+              "description": "Filter by license key status."
+            },
+            "description": "Filter by license key status."
           },
           {
             "name": "page",
@@ -11211,7 +11212,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.create({\n    duration: \"once\",\n    type: \"fixed\",\n    basisPoints: 449604,\n    name: \"<value>\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.create({\n    name: \"<value>\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    type: \"fixed\",\n    duration: \"once\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -13238,7 +13239,7 @@
           "mcp"
         ],
         "summary": "Get Member by External ID",
-        "description": "Get a member by external ID.\n\n**Scopes**: `members:read` `members:write`",
+        "description": "Get a member by external ID. One of customer_id or external_customer_id must be specified.\n\n**Scopes**: `members:read` `members:write`",
         "operationId": "members:get_member_by_external_id",
         "parameters": [
           {
@@ -13251,6 +13252,43 @@
               "title": "External Id"
             },
             "description": "The member external ID."
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The customer ID.",
+              "title": "Customer Id"
+            },
+            "description": "The customer ID."
+          },
+          {
+            "name": "external_customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The customer external ID.",
+              "title": "External Customer Id"
+            },
+            "description": "The customer external ID."
           }
         ],
         "responses": {
@@ -13303,6 +13341,11 @@
             "lang": "python",
             "label": "Python (SDK)",
             "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.members.get_member_by_external_id(external_id=\"<id>\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.members.getMemberByExternalId({\n    externalId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           }
         ]
       },
@@ -13313,7 +13356,7 @@
           "mcp"
         ],
         "summary": "Update Member by External ID",
-        "description": "Update a member by external ID.\n\n**Scopes**: `members:write`",
+        "description": "Update a member by external ID. One of customer_id or external_customer_id must be specified.\n\n**Scopes**: `members:write`",
         "operationId": "members:update_member_by_external_id",
         "parameters": [
           {
@@ -13326,6 +13369,43 @@
               "title": "External Id"
             },
             "description": "The member external ID."
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The customer ID.",
+              "title": "Customer Id"
+            },
+            "description": "The customer ID."
+          },
+          {
+            "name": "external_customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The customer external ID.",
+              "title": "External Customer Id"
+            },
+            "description": "The customer external ID."
           }
         ],
         "requestBody": {
@@ -13388,6 +13468,11 @@
             "lang": "python",
             "label": "Python (SDK)",
             "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.members.update_member_by_external_id(external_id=\"<id>\", member_update={\n        \"name\": \"Jane Doe\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.members.updateMemberByExternalId({\n    externalId: \"<id>\",\n    memberUpdate: {\n      name: \"Jane Doe\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           }
         ]
       },
@@ -13398,7 +13483,7 @@
           "mcp"
         ],
         "summary": "Delete Member by External ID",
-        "description": "Delete a member by external ID.\n\n**Scopes**: `members:write`",
+        "description": "Delete a member by external ID. One of customer_id or external_customer_id must be specified.\n\n**Scopes**: `members:write`",
         "operationId": "members:delete_member_by_external_id",
         "parameters": [
           {
@@ -13411,6 +13496,43 @@
               "title": "External Id"
             },
             "description": "The member external ID."
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The customer ID.",
+              "title": "Customer Id"
+            },
+            "description": "The customer ID."
+          },
+          {
+            "name": "external_customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The customer external ID.",
+              "title": "External Customer Id"
+            },
+            "description": "The customer external ID."
           }
         ],
         "responses": {
@@ -13456,6 +13578,11 @@
             "lang": "python",
             "label": "Python (SDK)",
             "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.members.delete_member_by_external_id(external_id=\"<id>\")\n\n    # Use the SDK ..."
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.members.deleteMemberByExternalId({\n    externalId: \"<id>\",\n  });\n\n\n}\n\nrun();"
           }
         ]
       }
@@ -14555,6 +14682,198 @@
             "lang": "php",
             "label": "PHP (SDK)",
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n\n$requestSecurity = new Operations\\CustomerPortalCustomersDeletePaymentMethodSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->deletePaymentMethod(\n    security: $requestSecurity,\n    id: '<id>'\n\n);\n\nif ($response->statusCode === 200) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/customer-portal/customers/me/email-update/request": {
+      "post": {
+        "tags": [
+          "customer_portal",
+          "customers",
+          "public"
+        ],
+        "summary": "Request Email Change",
+        "description": "Request an email change for the authenticated customer.",
+        "operationId": "customer_portal:customers:request_email_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerEmailUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Verification email sent.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "customer_session": [
+              "customer_portal:write"
+            ]
+          },
+          {
+            "member_session": [
+              "customer_portal:write"
+            ]
+          }
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-name-override": "request_email_update",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.customers.request_email_update(security=polar_sdk.CustomerPortalCustomersRequestEmailUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), request={\n        \"email\": \"Tommie_Larkin78@gmail.com\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customers.requestEmailUpdate({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    email: \"Tommie_Larkin78@gmail.com\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
+      }
+    },
+    "/v1/customer-portal/customers/me/email-update/check": {
+      "get": {
+        "tags": [
+          "customer_portal",
+          "customers",
+          "public"
+        ],
+        "summary": "Check Email Change Token",
+        "description": "Check if an email change verification token is still valid.",
+        "operationId": "customer_portal:customers:check_email_update",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Token is valid."
+          },
+          "401": {
+            "description": "Invalid or expired verification token."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-name-override": "check_email_update",
+        "security": [
+          {}
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    polar.customer_portal.customers.check_email_update(token=\"<value>\")\n\n    # Use the SDK ..."
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  await polar.customerPortal.customers.checkEmailUpdate({\n    token: \"<value>\",\n  });\n\n\n}\n\nrun();"
+          }
+        ]
+      }
+    },
+    "/v1/customer-portal/customers/me/email-update/verify": {
+      "post": {
+        "tags": [
+          "customer_portal",
+          "customers",
+          "public"
+        ],
+        "summary": "Verify Email Change",
+        "description": "Verify an email change using the token from the verification email.",
+        "operationId": "customer_portal:customers:verify_email_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerEmailUpdateVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Email updated successfully. Returns a new session token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerEmailUpdateVerifyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired verification token."
+          },
+          "422": {
+            "description": "Email address is already in use."
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.customers",
+        "x-speakeasy-name-override": "verify_email_update",
+        "security": [
+          {}
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.customers.verify_email_update(request={\n        \"token\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customers.verifyEmailUpdate({\n    token: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           }
         ]
       }
@@ -20117,7 +20436,7 @@
           "public"
         ],
         "summary": "Update Event Type",
-        "description": "Update an event type's label.",
+        "description": "Update an event type's label.\n\n**Scopes**: `events:write`",
         "operationId": "event-types:update",
         "parameters": [
           {
@@ -24736,8 +25055,6 @@
               "openid": "OpenID",
               "profile": "Read your profile",
               "email": "Read your email address",
-              "web:read": "Web Read Access",
-              "web:write": "Web Write Access",
               "user:read": "User Read",
               "user:write": "Delete your user account",
               "organizations:read": "Read your organizations",
@@ -24854,8 +25171,6 @@
               "openid": "OpenID",
               "profile": "Read your profile",
               "email": "Read your email address",
-              "web:read": "Web Read Access",
-              "web:write": "Web Write Access",
               "user:read": "User Read",
               "user:write": "Delete your user account",
               "organizations:read": "Read your organizations",
@@ -26351,6 +26666,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -26373,6 +26693,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "properties"
@@ -26559,6 +26880,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -26584,6 +26910,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "organization",
@@ -26878,6 +27205,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -26900,6 +27232,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "properties"
@@ -27088,6 +27421,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -27113,6 +27451,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "organization",
@@ -27248,6 +27587,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -27270,6 +27614,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "properties"
@@ -27456,6 +27801,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -27481,6 +27831,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "organization",
@@ -27618,6 +27969,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -27640,6 +27996,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "properties"
@@ -27783,6 +28140,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -27808,6 +28170,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "organization",
@@ -27934,6 +28297,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -27956,6 +28324,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "properties"
@@ -28166,6 +28535,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -28191,6 +28565,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "organization",
@@ -30146,6 +30521,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -30168,6 +30548,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "properties"
@@ -30400,6 +30781,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -30425,6 +30811,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "organization",
@@ -30599,6 +30986,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -30621,6 +31013,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "properties"
@@ -30804,6 +31197,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -30829,6 +31227,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id",
           "metadata",
           "organization",
@@ -30973,6 +31372,11 @@
             "title": "Deletable",
             "description": "Whether the benefit is deletable."
           },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "Whether the benefit is deleted."
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -30989,6 +31393,7 @@
           "description",
           "selectable",
           "deletable",
+          "is_deleted",
           "organization_id"
         ],
         "title": "BenefitPublic"
@@ -31755,6 +32160,17 @@
             "title": "Tax Amount",
             "description": "Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it."
           },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated."
+          },
           "total_amount": {
             "type": "integer",
             "title": "Total Amount",
@@ -32193,6 +32609,7 @@
           "discount_amount",
           "net_amount",
           "tax_amount",
+          "tax_behavior",
           "total_amount",
           "currency",
           "allow_trial",
@@ -32428,7 +32845,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -34376,7 +34793,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -34928,7 +35345,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -35328,7 +35745,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -35588,6 +36005,17 @@
             ],
             "title": "Tax Amount",
             "description": "Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it."
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated."
           },
           "total_amount": {
             "type": "integer",
@@ -35963,6 +36391,7 @@
           "discount_amount",
           "net_amount",
           "tax_amount",
+          "tax_behavior",
           "total_amount",
           "currency",
           "allow_trial",
@@ -36169,6 +36598,17 @@
             ],
             "title": "Tax Amount",
             "description": "Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it."
+          },
+          "tax_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tax behavior of the checkout. `inclusive` means the price includes tax, `exclusive` means tax is added on top. If `null`, tax is not yet calculated."
           },
           "total_amount": {
             "type": "integer",
@@ -36555,6 +36995,7 @@
           "discount_amount",
           "net_amount",
           "tax_amount",
+          "tax_behavior",
           "total_amount",
           "currency",
           "allow_trial",
@@ -36777,7 +37218,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -37160,7 +37601,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -40798,7 +41239,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25
+              25.0
             ]
           },
           "credited_units": {
@@ -40814,7 +41255,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75
+              75.0
             ]
           },
           "meter": {
@@ -41117,6 +41558,46 @@
         ],
         "title": "CustomerDeletedMetadata"
       },
+      "CustomerEmailUpdateRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "CustomerEmailUpdateRequest"
+      },
+      "CustomerEmailUpdateVerifyRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "CustomerEmailUpdateVerifyRequest"
+      },
+      "CustomerEmailUpdateVerifyResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "CustomerEmailUpdateVerifyResponse"
+      },
       "CustomerIndividual": {
         "properties": {
           "id": {
@@ -41393,7 +41874,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -41512,7 +41993,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25
+              25.0
             ]
           },
           "credited_units": {
@@ -41528,7 +42009,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75
+              75.0
             ]
           },
           "customer": {
@@ -42864,6 +43345,16 @@
         ],
         "title": "CustomerPortalCustomer"
       },
+      "CustomerPortalCustomerSettings": {
+        "properties": {
+          "allow_email_change": {
+            "type": "boolean",
+            "title": "Allow Email Change"
+          }
+        },
+        "type": "object",
+        "title": "CustomerPortalCustomerSettings"
+      },
       "CustomerPortalCustomerUpdate": {
         "properties": {
           "billing_name": {
@@ -44022,7 +44513,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25
+              25.0
             ]
           },
           "credited_units": {
@@ -44038,7 +44529,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75
+              75.0
             ]
           }
         },
@@ -44342,7 +44833,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25
+              25.0
             ]
           },
           "credited_units": {
@@ -44976,7 +45467,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25
+              25.0
             ]
           },
           "credited_units": {
@@ -45582,7 +46073,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -45753,7 +46244,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -45888,7 +46379,7 @@
               {
                 "type": "string",
                 "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en`.",
                 "examples": [
                   "en",
                   "en-US",
@@ -46271,18 +46762,19 @@
       "DiscountCreate": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/DiscountFixedOnceForeverDurationCreate"
+            "$ref": "#/components/schemas/DiscountFixedCreate"
           },
           {
-            "$ref": "#/components/schemas/DiscountFixedRepeatDurationCreate"
-          },
-          {
-            "$ref": "#/components/schemas/DiscountPercentageOnceForeverDurationCreate"
-          },
-          {
-            "$ref": "#/components/schemas/DiscountPercentageRepeatDurationCreate"
+            "$ref": "#/components/schemas/DiscountPercentageCreate"
           }
-        ]
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "fixed": "#/components/schemas/DiscountFixedCreate",
+            "percentage": "#/components/schemas/DiscountPercentageCreate"
+          }
+        }
       },
       "DiscountDuration": {
         "type": "string",
@@ -46292,6 +46784,214 @@
           "repeating"
         ],
         "title": "DiscountDuration"
+      },
+      "DiscountFixedCreate": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the discount. Will be displayed to the customer when the discount is applied."
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code",
+            "description": "Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API."
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At",
+            "description": "Optional timestamp after which the discount is redeemable."
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At",
+            "description": "Optional timestamp after which the discount is no longer redeemable."
+          },
+          "max_redemptions": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions",
+            "description": "Optional maximum number of times the discount can be redeemed."
+          },
+          "products": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                "type": "array",
+                "description": "List of product IDs the discount can be applied to."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Products"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ],
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the discount. **Required unless you use an organization token.**"
+          },
+          "type": {
+            "type": "string",
+            "const": "fixed",
+            "title": "Type",
+            "default": "fixed"
+          },
+          "duration": {
+            "$ref": "#/components/schemas/DiscountDuration",
+            "description": "For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`."
+          },
+          "duration_in_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 999,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration In Months",
+            "description": "Number of months the discount should be applied.\n\nRequired when `duration` is `repeating`. Must be omitted otherwise.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 999999999999,
+                "minimum": 0,
+                "description": "Fixed amount to discount from the invoice total."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "deprecated": true
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentmentCurrency",
+                "description": "The currency of the fixed amount discount."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "usd",
+            "deprecated": true
+          },
+          "amounts": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer",
+                  "maximum": 999999999999,
+                  "minimum": 0,
+                  "description": "Fixed amount to discount from the invoice total."
+                },
+                "propertyNames": {
+                  "$ref": "#/components/schemas/PresentmentCurrency"
+                },
+                "type": "object",
+                "minProperties": 1,
+                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amounts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "duration"
+        ],
+        "title": "DiscountFixedCreate",
+        "description": "Schema to create a fixed amount discount."
       },
       "DiscountFixedOnceForeverDuration": {
         "properties": {
@@ -46625,198 +47325,6 @@
           "organization_id"
         ],
         "title": "DiscountFixedOnceForeverDurationBase"
-      },
-      "DiscountFixedOnceForeverDurationCreate": {
-        "properties": {
-          "duration": {
-            "$ref": "#/components/schemas/DiscountDuration"
-          },
-          "type": {
-            "$ref": "#/components/schemas/DiscountType",
-            "description": "Type of the discount."
-          },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999999999999,
-                "minimum": 0,
-                "description": "Fixed amount to discount from the invoice total."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount",
-            "deprecated": true
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "description": "The currency of the fixed amount discount."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": "usd",
-            "deprecated": true
-          },
-          "amounts": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "integer",
-                  "maximum": 999999999999,
-                  "minimum": 0,
-                  "description": "Fixed amount to discount from the invoice total."
-                },
-                "propertyNames": {
-                  "$ref": "#/components/schemas/PresentmentCurrency"
-                },
-                "type": "object",
-                "minProperties": 1,
-                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amounts"
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Name",
-            "description": "Name of the discount. Will be displayed to the customer when the discount is applied."
-          },
-          "code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Code",
-            "description": "Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API."
-          },
-          "starts_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Starts At",
-            "description": "Optional timestamp after which the discount is redeemable."
-          },
-          "ends_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ends At",
-            "description": "Optional timestamp after which the discount is no longer redeemable."
-          },
-          "max_redemptions": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Redemptions",
-            "description": "Optional maximum number of times the discount can be redeemed."
-          },
-          "products": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array",
-                "description": "List of product IDs the discount can be applied to."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Products"
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4",
-                "description": "The organization ID.",
-                "examples": [
-                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
-                ],
-                "x-polar-selector-widget": {
-                  "displayProperty": "name",
-                  "resourceName": "Organization",
-                  "resourceRoot": "/v1/organizations"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the discount. **Required unless you use an organization token.**"
-          }
-        },
-        "type": "object",
-        "required": [
-          "duration",
-          "type",
-          "name"
-        ],
-        "title": "DiscountFixedOnceForeverDurationCreate",
-        "description": "Schema to create a fixed amount discount that is applied once or forever."
       },
       "DiscountFixedRepeatDuration": {
         "properties": {
@@ -47161,72 +47669,8 @@
         ],
         "title": "DiscountFixedRepeatDurationBase"
       },
-      "DiscountFixedRepeatDurationCreate": {
+      "DiscountPercentageCreate": {
         "properties": {
-          "duration": {
-            "$ref": "#/components/schemas/DiscountDuration"
-          },
-          "duration_in_months": {
-            "type": "integer",
-            "maximum": 999,
-            "minimum": 1,
-            "title": "Duration In Months",
-            "description": "Number of months the discount should be applied.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
-          },
-          "type": {
-            "$ref": "#/components/schemas/DiscountType",
-            "description": "Type of the discount."
-          },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999999999999,
-                "minimum": 0,
-                "description": "Fixed amount to discount from the invoice total."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount",
-            "deprecated": true
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "description": "The currency of the fixed amount discount."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": "usd",
-            "deprecated": true
-          },
-          "amounts": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "integer",
-                  "maximum": 999999999999,
-                  "minimum": 0,
-                  "description": "Fixed amount to discount from the invoice total."
-                },
-                "propertyNames": {
-                  "$ref": "#/components/schemas/PresentmentCurrency"
-                },
-                "type": "object",
-                "minProperties": 1,
-                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amounts"
-          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -47349,17 +47793,47 @@
             ],
             "title": "Organization Id",
             "description": "The ID of the organization owning the discount. **Required unless you use an organization token.**"
+          },
+          "type": {
+            "type": "string",
+            "const": "percentage",
+            "title": "Type",
+            "default": "percentage"
+          },
+          "duration": {
+            "$ref": "#/components/schemas/DiscountDuration",
+            "description": "For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`."
+          },
+          "duration_in_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 999,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration In Months",
+            "description": "Number of months the discount should be applied.\n\nRequired when `duration` is `repeating`. Must be omitted otherwise.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
+          },
+          "basis_points": {
+            "type": "integer",
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Basis Points",
+            "description": "Discount percentage in basis points.\n\nA basis point is 1/100th of a percent.\nFor example, to create a 25.5% discount, set this to 2550."
           }
         },
         "type": "object",
         "required": [
+          "name",
           "duration",
-          "duration_in_months",
-          "type",
-          "name"
+          "basis_points"
         ],
-        "title": "DiscountFixedRepeatDurationCreate",
-        "description": "Schema to create a fixed amount discount that is applied on every invoice\nfor a certain number of months."
+        "title": "DiscountPercentageCreate",
+        "description": "Schema to create a percentage discount."
       },
       "DiscountPercentageOnceForeverDuration": {
         "properties": {
@@ -47645,156 +48119,6 @@
           "organization_id"
         ],
         "title": "DiscountPercentageOnceForeverDurationBase"
-      },
-      "DiscountPercentageOnceForeverDurationCreate": {
-        "properties": {
-          "duration": {
-            "$ref": "#/components/schemas/DiscountDuration"
-          },
-          "type": {
-            "$ref": "#/components/schemas/DiscountType",
-            "description": "Type of the discount."
-          },
-          "basis_points": {
-            "type": "integer",
-            "maximum": 10000,
-            "minimum": 1,
-            "title": "Basis Points",
-            "description": "Discount percentage in basis points.\n\nA basis point is 1/100th of a percent.\nFor example, to create a 25.5% discount, set this to 2550."
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Name",
-            "description": "Name of the discount. Will be displayed to the customer when the discount is applied."
-          },
-          "code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Code",
-            "description": "Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API."
-          },
-          "starts_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Starts At",
-            "description": "Optional timestamp after which the discount is redeemable."
-          },
-          "ends_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ends At",
-            "description": "Optional timestamp after which the discount is no longer redeemable."
-          },
-          "max_redemptions": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Redemptions",
-            "description": "Optional maximum number of times the discount can be redeemed."
-          },
-          "products": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array",
-                "description": "List of product IDs the discount can be applied to."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Products"
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4",
-                "description": "The organization ID.",
-                "examples": [
-                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
-                ],
-                "x-polar-selector-widget": {
-                  "displayProperty": "name",
-                  "resourceName": "Organization",
-                  "resourceRoot": "/v1/organizations"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the discount. **Required unless you use an organization token.**"
-          }
-        },
-        "type": "object",
-        "required": [
-          "duration",
-          "type",
-          "basis_points",
-          "name"
-        ],
-        "title": "DiscountPercentageOnceForeverDurationCreate",
-        "description": "Schema to create a percentage discount that is applied once or forever."
       },
       "DiscountPercentageRepeatDuration": {
         "properties": {
@@ -48090,164 +48414,6 @@
           "organization_id"
         ],
         "title": "DiscountPercentageRepeatDurationBase"
-      },
-      "DiscountPercentageRepeatDurationCreate": {
-        "properties": {
-          "duration": {
-            "$ref": "#/components/schemas/DiscountDuration"
-          },
-          "duration_in_months": {
-            "type": "integer",
-            "maximum": 999,
-            "minimum": 1,
-            "title": "Duration In Months",
-            "description": "Number of months the discount should be applied.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
-          },
-          "type": {
-            "$ref": "#/components/schemas/DiscountType",
-            "description": "Type of the discount."
-          },
-          "basis_points": {
-            "type": "integer",
-            "maximum": 10000,
-            "minimum": 1,
-            "title": "Basis Points",
-            "description": "Discount percentage in basis points.\n\nA basis point is 1/100th of a percent.\nFor example, to create a 25.5% discount, set this to 2550."
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Name",
-            "description": "Name of the discount. Will be displayed to the customer when the discount is applied."
-          },
-          "code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Code",
-            "description": "Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API."
-          },
-          "starts_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Starts At",
-            "description": "Optional timestamp after which the discount is redeemable."
-          },
-          "ends_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ends At",
-            "description": "Optional timestamp after which the discount is no longer redeemable."
-          },
-          "max_redemptions": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Redemptions",
-            "description": "Optional maximum number of times the discount can be redeemed."
-          },
-          "products": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array",
-                "description": "List of product IDs the discount can be applied to."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Products"
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4",
-                "description": "The organization ID.",
-                "examples": [
-                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
-                ],
-                "x-polar-selector-widget": {
-                  "displayProperty": "name",
-                  "resourceName": "Organization",
-                  "resourceRoot": "/v1/organizations"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the discount. **Required unless you use an organization token.**"
-          }
-        },
-        "type": "object",
-        "required": [
-          "duration",
-          "duration_in_months",
-          "type",
-          "basis_points",
-          "name"
-        ],
-        "title": "DiscountPercentageRepeatDurationCreate",
-        "description": "Schema to create a percentage discount that is applied on every invoice\nfor a certain number of months."
       },
       "DiscountProduct": {
         "properties": {
@@ -50328,7 +50494,6 @@
         "type": "string",
         "enum": [
           "created",
-          "onboarding_started",
           "under_review",
           "denied",
           "active"
@@ -52477,8 +52642,13 @@
             ]
           },
           "role": {
-            "$ref": "#/components/schemas/MemberRole",
-            "description": "The role of the member within the customer.",
+            "type": "string",
+            "enum": [
+              "member",
+              "billing_manager"
+            ],
+            "title": "Role",
+            "description": "The role of the member within the customer. To assign or transfer ownership, use the member update endpoint.",
             "default": "member",
             "examples": [
               "member"
@@ -53052,7 +53222,7 @@
             "title": "Total",
             "description": "The total quantity for the period.",
             "examples": [
-              100
+              100.0
             ]
           }
         },
@@ -53076,7 +53246,7 @@
             "title": "Quantity",
             "description": "The quantity for the current period.",
             "examples": [
-              10
+              10.0
             ]
           }
         },
@@ -53622,6 +53792,20 @@
             ],
             "title": "Monthly Recurring Revenue"
           },
+          "trial_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Monthly Recurring Revenue"
+          },
           "committed_monthly_recurring_revenue": {
             "anyOf": [
               {
@@ -53635,6 +53819,20 @@
               }
             ],
             "title": "Committed Monthly Recurring Revenue"
+          },
+          "trial_committed_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Committed Monthly Recurring Revenue"
           },
           "average_revenue_per_user": {
             "anyOf": [
@@ -53705,6 +53903,90 @@
               }
             ],
             "title": "Churn Rate"
+          },
+          "seats_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats Total"
+          },
+          "seats_claimed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats Claimed"
+          },
+          "seats_pending": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats Pending"
+          },
+          "seat_customers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Customers"
+          },
+          "new_seat_customers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Seat Customers"
+          },
+          "churned_seat_customers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Churned Seat Customers"
           },
           "orders": {
             "anyOf": [
@@ -54112,6 +54394,34 @@
             ],
             "title": "Canceled Subscriptions Other"
           },
+          "annual_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Recurring Revenue"
+          },
+          "committed_annual_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Committed Annual Recurring Revenue"
+          },
           "checkouts_conversion": {
             "anyOf": [
               {
@@ -54181,6 +54491,34 @@
               }
             ],
             "title": "Cashflow"
+          },
+          "average_seats_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Seats Per Customer"
+          },
+          "seat_utilization_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Utilization Rate"
           }
         },
         "type": "object",
@@ -54231,7 +54569,27 @@
               }
             ]
           },
+          "trial_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "committed_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trial_committed_monthly_recurring_revenue": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Metric"
@@ -54282,6 +54640,66 @@
             ]
           },
           "churn_rate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seats_total": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seats_claimed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seats_pending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seat_customers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "new_seat_customers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "churned_seat_customers": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Metric"
@@ -54581,6 +54999,26 @@
               }
             ]
           },
+          "annual_recurring_revenue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "committed_annual_recurring_revenue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "checkouts_conversion": {
             "anyOf": [
               {
@@ -54622,6 +55060,26 @@
             ]
           },
           "cashflow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "average_seats_per_customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seat_utilization_rate": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Metric"
@@ -54783,6 +55241,20 @@
             ],
             "title": "Monthly Recurring Revenue"
           },
+          "trial_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Monthly Recurring Revenue"
+          },
           "committed_monthly_recurring_revenue": {
             "anyOf": [
               {
@@ -54796,6 +55268,20 @@
               }
             ],
             "title": "Committed Monthly Recurring Revenue"
+          },
+          "trial_committed_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Committed Monthly Recurring Revenue"
           },
           "average_revenue_per_user": {
             "anyOf": [
@@ -54866,6 +55352,90 @@
               }
             ],
             "title": "Churn Rate"
+          },
+          "seats_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats Total"
+          },
+          "seats_claimed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats Claimed"
+          },
+          "seats_pending": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats Pending"
+          },
+          "seat_customers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Customers"
+          },
+          "new_seat_customers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Seat Customers"
+          },
+          "churned_seat_customers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Churned Seat Customers"
           },
           "orders": {
             "anyOf": [
@@ -55273,6 +55843,34 @@
             ],
             "title": "Canceled Subscriptions Other"
           },
+          "annual_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Recurring Revenue"
+          },
+          "committed_annual_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Committed Annual Recurring Revenue"
+          },
           "checkouts_conversion": {
             "anyOf": [
               {
@@ -55342,6 +55940,34 @@
               }
             ],
             "title": "Cashflow"
+          },
+          "average_seats_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Seats Per Customer"
+          },
+          "seat_utilization_rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Utilization Rate"
           }
         },
         "type": "object",
@@ -58229,6 +58855,10 @@
             ],
             "title": "Payout Account Id",
             "description": "ID of the payout account."
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/OrganizationCapabilities",
+            "description": "Capabilities currently granted to the organization."
           }
         },
         "type": "object",
@@ -58254,7 +58884,8 @@
           "customer_email_settings",
           "customer_portal_settings",
           "account_id",
-          "payout_account_id"
+          "payout_account_id",
+          "capabilities"
         ],
         "title": "Organization"
       },
@@ -58676,6 +59307,50 @@
         ],
         "title": "OrganizationAvatarFileRead",
         "description": "File to be used as an organization avatar."
+      },
+      "OrganizationCapabilities": {
+        "properties": {
+          "checkout_payments": {
+            "type": "boolean",
+            "title": "Checkout Payments",
+            "description": "Whether the organization can accept new checkout payments."
+          },
+          "subscription_renewals": {
+            "type": "boolean",
+            "title": "Subscription Renewals",
+            "description": "Whether the organization can process subscription renewals."
+          },
+          "payouts": {
+            "type": "boolean",
+            "title": "Payouts",
+            "description": "Whether the organization can withdraw its balance."
+          },
+          "refunds": {
+            "type": "boolean",
+            "title": "Refunds",
+            "description": "Whether the organization can issue refunds."
+          },
+          "api_access": {
+            "type": "boolean",
+            "title": "Api Access",
+            "description": "Whether the organization can access the API."
+          },
+          "dashboard_access": {
+            "type": "boolean",
+            "title": "Dashboard Access",
+            "description": "Whether the organization can access the dashboard."
+          }
+        },
+        "type": "object",
+        "required": [
+          "checkout_payments",
+          "subscription_renewals",
+          "payouts",
+          "refunds",
+          "api_access",
+          "dashboard_access"
+        ],
+        "title": "OrganizationCapabilities"
       },
       "OrganizationCompanyLegalEntitySchema": {
         "properties": {
@@ -59443,6 +60118,9 @@
           },
           "subscription": {
             "$ref": "#/components/schemas/CustomerPortalSubscriptionSettings"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerPortalCustomerSettings"
           }
         },
         "type": "object",
@@ -59586,12 +60264,6 @@
             "type": "boolean",
             "title": "Seat Based Pricing Enabled",
             "description": "If this organization has seat-based pricing enabled",
-            "default": false
-          },
-          "revops_enabled": {
-            "type": "boolean",
-            "title": "Revops Enabled",
-            "description": "If this organization has RevOps enabled",
             "default": false
           },
           "wallets_enabled": {
@@ -59739,11 +60411,11 @@
         "type": "string",
         "enum": [
           "created",
-          "onboarding_started",
-          "initial_review",
-          "ongoing_review",
+          "review",
+          "snoozed",
           "denied",
           "active",
+          "blocked",
           "offboarding"
         ],
         "title": "OrganizationStatus"
@@ -59761,7 +60433,7 @@
               "prorate",
               "next_period"
             ],
-            "title": "Proration Behavior"
+            "title": "PublicSubscriptionProrationBehavior"
           },
           "benefit_revocation_grace_period": {
             "type": "integer",
@@ -60903,41 +61575,131 @@
         "type": "string",
         "enum": [
           "aed",
+          "all",
+          "amd",
+          "aoa",
           "ars",
           "aud",
+          "awg",
+          "azn",
+          "bam",
+          "bbd",
+          "bdt",
+          "bif",
+          "bmd",
+          "bnd",
+          "bob",
           "brl",
+          "bsd",
+          "bwp",
+          "bzd",
           "cad",
+          "cdf",
           "chf",
           "clp",
           "cny",
           "cop",
+          "crc",
+          "cve",
           "czk",
+          "djf",
           "dkk",
+          "dop",
+          "dzd",
+          "egp",
+          "etb",
           "eur",
+          "fjd",
+          "fkp",
           "gbp",
+          "gel",
+          "gip",
+          "gmd",
+          "gnf",
+          "gtq",
+          "gyd",
           "hkd",
+          "hnl",
+          "htg",
           "huf",
           "idr",
           "ils",
           "inr",
+          "isk",
+          "jmd",
           "jpy",
+          "kes",
+          "kgs",
+          "khr",
+          "kmf",
           "krw",
+          "kyd",
+          "kzt",
+          "lak",
+          "lkr",
+          "lrd",
+          "lsl",
+          "mad",
+          "mdl",
+          "mga",
+          "mkd",
+          "mnt",
+          "mop",
+          "mur",
+          "mvr",
+          "mwk",
           "mxn",
           "myr",
+          "mzn",
+          "nad",
+          "ngn",
+          "nio",
           "nok",
+          "npr",
           "nzd",
+          "pab",
           "pen",
+          "pgk",
           "php",
+          "pkr",
           "pln",
+          "pyg",
+          "qar",
           "ron",
+          "rsd",
+          "rwf",
           "sar",
+          "sbd",
+          "scr",
           "sek",
           "sgd",
+          "shp",
+          "sos",
+          "srd",
+          "szl",
           "thb",
+          "tjs",
+          "top",
           "try",
+          "ttd",
           "twd",
+          "tzs",
+          "uah",
+          "ugx",
           "usd",
-          "zar"
+          "uyu",
+          "uzs",
+          "vnd",
+          "vuv",
+          "wst",
+          "xaf",
+          "xcd",
+          "xcg",
+          "xof",
+          "xpf",
+          "yer",
+          "zar",
+          "zmw"
         ],
         "title": "PresentmentCurrency"
       },
@@ -61531,7 +62293,7 @@
           },
           "size": {
             "type": "integer",
-            "maximum": 10485760,
+            "maximum": 1.048576E+7,
             "title": "Size",
             "description": "Size of the file. A maximum of 10 MB is allowed for this type of file."
           },
@@ -61893,7 +62655,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1000000,
+                "maximum": 1E+6,
                 "minimum": 10,
                 "description": "The price in cents.\nMinimum amounts per currency:\n- USD: $0.50\n- AED: AED2.00\n- ARS: ARS0.50\n- AUD: A$0.50\n- BRL: R$0.50\n- CAD: CA$0.50\n- CHF: CHF0.50\n- COP: COP0.50\n- CZK: CZK15.00\n- DKK: DKK2.50\n- EUR: €0.50\n- GBP: £0.30\n- HKD: HK$4.00\n- HUF: HUF175.00\n- IDR: IDR0.50\n- ILS: ₪0.50\n- INR: ₹60.00\n- JPY: ¥50\n- KRW: ₩50\n- MXN: MX$0.10\n- MYR: MYR2.00\n- NOK: NOK3.00\n- NZD: NZ$0.50\n- PHP: ₱0.50\n- PLN: PLN2.00\n- RON: RON2.00\n- RUB: RUB0.50\n- SEK: SEK3.00\n- SGD: SGD0.50\n- THB: THB0.10\n- ZAR: ZAR0.50"
               },
@@ -61908,7 +62670,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1000000,
+                "maximum": 1E+6,
                 "minimum": 0,
                 "description": "The price in cents.\nMinimum amounts per currency:\n- USD: $0.50\n- AED: AED2.00\n- ARS: ARS0.50\n- AUD: A$0.50\n- BRL: R$0.50\n- CAD: CA$0.50\n- CHF: CHF0.50\n- COP: COP0.50\n- CZK: CZK15.00\n- DKK: DKK2.50\n- EUR: €0.50\n- GBP: £0.30\n- HKD: HK$4.00\n- HUF: HUF175.00\n- IDR: IDR0.50\n- ILS: ₪0.50\n- INR: ₹60.00\n- JPY: ¥50\n- KRW: ₩50\n- MXN: MX$0.10\n- MYR: MYR2.00\n- NOK: NOK3.00\n- NZD: NZ$0.50\n- PHP: ₱0.50\n- PLN: PLN2.00\n- RON: RON2.00\n- RUB: RUB0.50\n- SEK: SEK3.00\n- SGD: SGD0.50\n- THB: THB0.10\n- ZAR: ZAR0.50"
               },
@@ -63580,8 +64342,6 @@
           "user:write": "Delete your user account",
           "wallets:read": "Read wallets",
           "wallets:write": "Create or modify wallets",
-          "web:read": "Web Read Access",
-          "web:write": "Web Write Access",
           "webhooks:read": "Read webhooks",
           "webhooks:write": "Create or modify webhooks"
         }
@@ -63613,6 +64373,18 @@
             ],
             "title": "Checkout Id",
             "description": "Checkout ID. Used to look up subscription or order from the checkout page."
+          },
+          "checkout_client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Client Secret",
+            "description": "Client secret of the checkout. Required when assigning seats via checkout_id as an anonymous caller (e.g. the checkout confirmation page)."
           },
           "order_id": {
             "anyOf": [
@@ -65313,7 +66085,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25
+              25.0
             ]
           },
           "credited_units": {
@@ -66188,7 +66960,7 @@
             "type": "string",
             "format": "date-time",
             "title": "Current Billing Period End",
-            "description": "Set a new date for the end of the current billing period. The subscription will renew on this date. Needs to be later than the current value.\n\nIt is not possible to update the current billing period on a canceled subscription."
+            "description": "Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.\n\nIt is not possible to update the current billing period on a canceled subscription."
           }
         },
         "type": "object",
@@ -66736,6 +67508,14 @@
             "subscription.updated": "#/components/schemas/SubscriptionUpdatedEvent"
           }
         }
+      },
+      "TaxBehavior": {
+        "type": "string",
+        "enum": [
+          "inclusive",
+          "exclusive"
+        ],
+        "title": "TaxBehavior"
       },
       "TaxBehaviorOption": {
         "type": "string",

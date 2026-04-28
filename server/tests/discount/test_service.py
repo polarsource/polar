@@ -7,7 +7,7 @@ from polar.auth.models import AuthSubject, User
 from polar.checkout.schemas import CheckoutUpdatePublic
 from polar.checkout.service import checkout as checkout_service
 from polar.discount.schemas import (
-    DiscountFixedOnceForeverDurationCreate,
+    DiscountFixedCreate,
     DiscountUpdate,
 )
 from polar.discount.service import discount as discount_service
@@ -54,7 +54,7 @@ class TestCreate:
     ) -> None:
         discount = await discount_service.create(
             session,
-            DiscountFixedOnceForeverDurationCreate(
+            DiscountFixedCreate(
                 duration=DiscountDuration.once,
                 type=DiscountType.fixed,
                 amount=1000,

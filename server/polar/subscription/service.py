@@ -1124,7 +1124,10 @@ class SubscriptionService:
         assert organization is not None
 
         assert is_recurring_product(product)
-        assert is_recurring_product(previous_product)
+        # We are checking for product.is_recurring instead of is_recurring_product
+        # because legacy products will have is_recurring but not be of type RecurringProduct
+        # which is_recurring_product asserts.
+        assert previous_product.is_recurring
 
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior

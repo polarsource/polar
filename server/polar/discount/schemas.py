@@ -96,24 +96,6 @@ MaxRedemptions = Annotated[
     ),
     Ge(1),
 ]
-DurationOnceForever = Annotated[
-    Literal[DiscountDuration.once, DiscountDuration.forever],
-    Field(
-        description=(
-            "For subscriptions, determines if the discount should be applied "
-            "once on the first invoice or forever."
-        )
-    ),
-]
-DurationRepeating = Annotated[
-    Literal[DiscountDuration.repeating],
-    Field(
-        description=(
-            "For subscriptions, the discount should be applied on every invoice "
-            "for a certain number of months, determined by `duration_in_months`."
-        )
-    ),
-]
 DurationInMonths = Annotated[
     int,
     Field(
@@ -171,14 +153,11 @@ ProductsList = Annotated[
 
 class DiscountCreateBase(MetadataInputMixin, Schema):
     name: Name
-    type: DiscountType = Field(description="Type of the discount.")
     code: Code = None
 
     starts_at: StartsAt = None
     ends_at: EndsAt = None
     max_redemptions: MaxRedemptions = None
-
-    duration: DiscountDuration
 
     products: ProductsList | None = None
 
@@ -196,17 +175,53 @@ class DiscountCreateBase(MetadataInputMixin, Schema):
         return self
 
 
-class DiscountOnceForeverDurationCreateBase(Schema):
-    duration: DurationOnceForever
+Duration = Annotated[
+    DiscountDuration,
+    Field(
+        description=(
+            "For subscriptions, determines if the discount should be applied "
+            "once on the first invoice, forever, or for a certain number of "
+            "months determined by `duration_in_months`."
+        ),
+    ),
+]
+DurationInMonthsOptional = Annotated[
+    int | None,
+    Field(
+        default=None,
+        description=inspect.cleandoc("""
+        Number of months the discount should be applied.
+
+        Required when `duration` is `repeating`. Must be omitted otherwise.
+
+        For this to work on yearly pricing, you should multiply this by 12.
+        For example, to apply the discount for 2 years, set this to 24.
+        """),
+        ge=1,
+        le=999,
+    ),
+]
 
 
-class DiscountRepeatDurationCreateBase(Schema):
-    duration: DurationRepeating
-    duration_in_months: DurationInMonths
+def _validate_duration_in_months(
+    duration: DiscountDuration, duration_in_months: int | None
+) -> None:
+    if duration == DiscountDuration.repeating and duration_in_months is None:
+        raise ValueError(
+            "`duration_in_months` is required when `duration` is `repeating`."
+        )
+    if duration != DiscountDuration.repeating and duration_in_months is not None:
+        raise ValueError(
+            "`duration_in_months` must be omitted when `duration` is not `repeating`."
+        )
 
 
-class DiscountFixedCreateBase(Schema):
+class DiscountFixedCreate(DiscountCreateBase):
+    """Schema to create a fixed amount discount."""
+
     type: Literal[DiscountType.fixed] = DiscountType.fixed
+    duration: Duration
+    duration_in_months: DurationInMonthsOptional = None
     amount: Amount | None = Field(
         default=None,
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
@@ -225,42 +240,24 @@ class DiscountFixedCreateBase(Schema):
             raise ValueError("Must specify either `amount` or `amounts`.")
         return self
 
+    @model_validator(mode="after")
+    def validate_duration_in_months(self) -> Self:
+        _validate_duration_in_months(self.duration, self.duration_in_months)
+        return self
 
-class DiscountPercentageCreateBase(Schema):
+
+class DiscountPercentageCreate(DiscountCreateBase):
+    """Schema to create a percentage discount."""
+
     type: Literal[DiscountType.percentage] = DiscountType.percentage
+    duration: Duration
+    duration_in_months: DurationInMonthsOptional = None
     basis_points: BasisPoints
 
-
-class DiscountFixedOnceForeverDurationCreate(
-    DiscountCreateBase, DiscountFixedCreateBase, DiscountOnceForeverDurationCreateBase
-):
-    """Schema to create a fixed amount discount that is applied once or forever."""
-
-
-class DiscountFixedRepeatDurationCreate(
-    DiscountCreateBase, DiscountFixedCreateBase, DiscountRepeatDurationCreateBase
-):
-    """
-    Schema to create a fixed amount discount that is applied on every invoice
-    for a certain number of months.
-    """
-
-
-class DiscountPercentageOnceForeverDurationCreate(
-    DiscountCreateBase,
-    DiscountPercentageCreateBase,
-    DiscountOnceForeverDurationCreateBase,
-):
-    """Schema to create a percentage discount that is applied once or forever."""
-
-
-class DiscountPercentageRepeatDurationCreate(
-    DiscountCreateBase, DiscountPercentageCreateBase, DiscountRepeatDurationCreateBase
-):
-    """
-    Schema to create a percentage discount that is applied on every invoice
-    for a certain number of months.
-    """
+    @model_validator(mode="after")
+    def validate_duration_in_months(self) -> Self:
+        _validate_duration_in_months(self.duration, self.duration_in_months)
+        return self
 
 
 class DiscountUpdate(MetadataInputMixin, Schema):
@@ -461,13 +458,8 @@ def get_discriminator_value(v: Any) -> str | None:
 
 
 DiscountCreate = Annotated[
-    Annotated[DiscountFixedOnceForeverDurationCreate, Tag("fixed.once_forever")]
-    | Annotated[DiscountFixedRepeatDurationCreate, Tag("fixed.repeat")]
-    | Annotated[
-        DiscountPercentageOnceForeverDurationCreate, Tag("percentage.once_forever")
-    ]
-    | Annotated[DiscountPercentageRepeatDurationCreate, Tag("percentage.repeat")],
-    Discriminator(get_discriminator_value),
+    DiscountFixedCreate | DiscountPercentageCreate,
+    Discriminator("type"),
 ]
 DiscountMinimal = Annotated[
     Annotated[DiscountFixedOnceForeverDurationBase, Tag("fixed.once_forever")]

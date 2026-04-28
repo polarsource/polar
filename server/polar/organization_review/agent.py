@@ -49,6 +49,8 @@ async def run_organization_review(
     session: AsyncSession,
     organization: Organization,
     context: ReviewContext = ReviewContext.THRESHOLD,
+    appeal_reason: str | None = None,
+    original_denial_reason: str | None = None,
 ) -> AgentReviewResult:
     start_time = time.monotonic()
 
@@ -61,6 +63,13 @@ async def run_organization_review(
 
     try:
         snapshot = await _collect_data(organization, context)
+        appeal_updates: dict[str, str] = {}
+        if appeal_reason is not None:
+            appeal_updates["appeal_reason"] = appeal_reason
+        if original_denial_reason is not None:
+            appeal_updates["original_denial_reason"] = original_denial_reason
+        if appeal_updates:
+            snapshot = snapshot.model_copy(update=appeal_updates)
 
         report, analyzer_usage = await review_analyzer.analyze(
             snapshot, context=context

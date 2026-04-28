@@ -1,0 +1,120 @@
+name: OpenAPI Client Regeneration Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "server/polar/**"
+      - "clients/packages/client/src/v1.ts"
+      - "clients/packages/client/package.json"
+      - ".github/workflows/openapi-generate-check.yml"
+
+concurrency:
+  group: openapi-generate-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: "Check generated client"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
+      POLAR_PYDANTIC_AI_GATEWAY_API_KEY: "POLAR_PYDANTIC_AI_GATEWAY_API_KEY"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6.3.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: Create mock email renderer binary
+        run: touch /tmp/email-renderer
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: |
+          uv sync
+          uv run task generate_dev_jwks
+
+      - name: Install client dependencies
+        working-directory: ./clients
+        run: pnpm install
+
+      - name: Regenerate OpenAPI client
+        working-directory: ./clients
+        run: pnpm generate
+
+      - name: Build PR comment body
+        id: body
+        run: |
+          stale=false
+          if [[ -n "$(git status --porcelain clients/packages/client/src/v1.ts)" ]]; then
+            stale=true
+            echo "::warning::Generated client (clients/packages/client/src/v1.ts) is out of date. Run 'pnpm generate' in clients/."
+          fi
+          {
+            echo 'body<<COMMENT_EOF'
+            echo '<!-- __OPENAPI_CLIENT_REGEN -->'
+            echo '## Generated OpenAPI Client'
+            echo ''
+            if [[ "$stale" == "true" ]]; then
+              echo '⚠️ **`clients/packages/client/src/v1.ts` is out of date.**'
+              echo ''
+              echo 'The OpenAPI schema has changed but the generated client has not been regenerated. Please run:'
+              echo ''
+              echo '```bash'
+              echo 'cd clients && pnpm generate'
+              echo '```'
+              echo ''
+              echo 'and commit the updated `clients/packages/client/src/v1.ts`.'
+              echo ''
+              echo '<details><summary>Diff stat</summary>'
+              echo ''
+              echo '```'
+              git diff --stat -- clients/packages/client/src/v1.ts
+              echo '```'
+              echo ''
+              echo '</details>'
+            else
+              echo '✅ Generated client is up to date.'
+            fi
+            echo 'COMMENT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v4
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "<!-- __OPENAPI_CLIENT_REGEN -->"
+
+      - name: Create or update PR comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: ${{ steps.body.outputs.body }}

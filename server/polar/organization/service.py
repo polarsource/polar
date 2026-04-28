@@ -6,6 +6,7 @@ from uuid import UUID
 
 import structlog
 from pydantic import BaseModel, Field
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -15,9 +16,12 @@ from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import (
+    PolarError,
+    PolarRequestValidationError,
+    ValidationError,
+)
 from polar.integrations.loops.service import loops as loops_service
-from polar.integrations.plain.service import plain as plain_service
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
@@ -32,6 +36,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.organization import (
+    STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
     OrganizationDetails,
@@ -63,6 +68,7 @@ from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
     OrganizationCreate,
     OrganizationDeletionBlockedReason,
+    OrganizationReviewSubmissionBody,
     OrganizationUpdate,
 )
 from .sorting import OrganizationSortProperty
@@ -212,6 +218,13 @@ class OrganizationService:
         feature_settings["member_model_enabled"] = True
         feature_settings["seat_based_pricing_enabled"] = True
         create_data["feature_settings"] = feature_settings
+
+        if settings.is_sandbox():
+            create_data["status"] = OrganizationStatus.ACTIVE
+            create_data["capabilities"] = {
+                **STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]
+            }
+            create_data["status_updated_at"] = datetime.now(UTC)
 
         organization = await repository.create(
             Organization(
@@ -398,15 +411,27 @@ class OrganizationService:
             },
         )
 
-        # Only store details once to avoid API overrides later w/o review
-        # We do allow initial details being set upon creation that will still require review,
-        # so upon creation we set details but not details_submitted_at
-        # so details_submitted_at effectively doubles as a "submit for review"
-        # timestamp, for now. We'll revisit this soon enough. @pieterbeulque
-        if not organization.details_submitted_at and update_schema.details:
+        if update_schema.details and organization.status == OrganizationStatus.CREATED:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
             )
+
+        organization = await repository.update(organization, update_dict=update_dict)
+
+        await self._after_update(session, organization)
+        return organization
+
+    async def submit_for_review(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        try:
+            OrganizationReviewSubmissionBody.model_validate({"body": organization})
+        except PydanticValidationError as e:
+            raise PolarRequestValidationError(
+                cast(Sequence[ValidationError], e.errors())
+            ) from e
+
+        if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)
             enqueue_job(
                 "organization_review.run_agent",
@@ -414,7 +439,7 @@ class OrganizationService:
                 context=ReviewContext.SUBMISSION,
             )
 
-        organization = await repository.update(organization, update_dict=update_dict)
+        session.add(organization)
 
         await self._after_update(session, organization)
         return organization
@@ -745,6 +770,9 @@ class OrganizationService:
         organization.total_balance = transfers_sum
         session.add(organization)
 
+        if settings.is_sandbox():
+            return organization
+
         # If snoozed and grace period has passed, a sale triggers re-review
         if (
             organization.status == OrganizationStatus.SNOOZED
@@ -1051,21 +1079,17 @@ class OrganizationService:
     def get_payment_status(self, organization: Organization) -> PaymentStatusResponse:
         """Get payment status and onboarding steps for an organization."""
         return PaymentStatusResponse(
-            payment_ready=self.is_organization_ready_for_payment(organization),
+            payment_ready=organization.can_accept_payments,
             organization_status=organization.status,
         )
-
-    def is_organization_ready_for_payment(self, organization: Organization) -> bool:
-        """Whether the org can accept payments. Sandbox bypasses the capability."""
-        return settings.is_sandbox() or organization.can_accept_payments
 
     async def get_ai_review(
         self, session: AsyncSession, organization: Organization
     ) -> OrganizationReview | None:
         """Get the existing AI review for an organization, if any.
 
-        The actual AI review is now triggered asynchronously via a background
-        task when organization details are first submitted (see update()).
+        The actual AI review is triggered asynchronously via a background
+        task when organization details are submitted for review.
         """
         repository = OrganizationReviewRepository.from_session(session)
         return await repository.get_by_organization(organization.id)
@@ -1073,7 +1097,12 @@ class OrganizationService:
     async def submit_appeal(
         self, session: AsyncSession, organization: Organization, appeal_reason: str
     ) -> OrganizationReview:
-        """Submit an appeal for organization review and create a Plain ticket."""
+        """Submit an appeal and enqueue the AI agent to decide it.
+
+        The appeal is decisive: the agent either approves the org or rejects
+        the appeal with a "contact support" message. No Plain ticket is
+        created automatically.
+        """
 
         repository = OrganizationReviewRepository.from_session(session)
         review = await repository.get_by_organization(organization.id)
@@ -1092,7 +1121,7 @@ class OrganizationService:
 
         session.add(review)
 
-        await plain_service.create_appeal_review_thread(session, organization, review)
+        enqueue_job("organization_review.appeal_submitted", organization.id)
 
         return review
 

@@ -14,7 +14,6 @@ from polar.event.system import (
 )
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Event, Order, Transaction
-from polar.models.customer import Customer
 from polar.postgres import create_async_engine
 from scripts.helper import typer_async
 
@@ -36,7 +35,8 @@ async def backfill(
             Order,
             order_id,
             options=[
-                joinedload(Order.customer).joinedload(Customer.organization),
+                joinedload(Order.customer),
+                joinedload(Order.organization),
             ],
         )
         if order is None:
@@ -81,7 +81,7 @@ async def backfill(
                 )
                 raise typer.Exit(0)
 
-        organization = order.customer.organization
+        organization = order.organization
 
         if txn is not None:
             assert txn.presentment_amount is not None

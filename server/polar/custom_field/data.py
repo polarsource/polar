@@ -94,7 +94,7 @@ def validate_custom_field_data(
         ]
     )
     try:
-        return schema.model_validate(data).model_dump(mode="json")
+        return schema.model_validate(data).model_dump(mode="json", exclude_unset=True)
     except ValidationError as e:
         raise PolarRequestValidationError(
             [{**err, "loc": (*error_loc_prefix, *err["loc"])} for err in e.errors()]  # pyright: ignore

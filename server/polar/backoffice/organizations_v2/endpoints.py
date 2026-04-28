@@ -39,6 +39,7 @@ from polar.backoffice.organizations.forms import (
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
     UpdateOrganizationSocialsForm,
+    UpdateRateLimitGroupForm,
 )
 from polar.backoffice.organizations.orders_import import orders_import_sse
 from polar.enums import PayoutAccountType
@@ -561,9 +562,7 @@ async def get_organization_detail(
         payouts_enabled = await setup_analytics.check_payout_account_enabled(
             organization
         )
-        payment_ready = organization_service.is_organization_ready_for_payment(
-            organization
-        )
+        payment_ready = organization.can_accept_payments
 
         setup_score = OrganizationSetupAnalyticsService.calculate_setup_score(
             checkout_links_count,
@@ -2153,6 +2152,73 @@ async def edit_order_settings(
                             with tag.div(classes="text-xs text-base-content/60"):
                                 text(desc)
 
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/edit-rate-limit-group",
+    name="organizations:edit_rate_limit_group",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_rate_limit_group(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization rate limit group."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateRateLimitGroupForm.model_validate_form(data)
+            await repository.update(
+                organization,
+                update_dict={"rate_limit_group": form.rate_limit_group},
+            )
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=settings",
+                303,
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Edit Rate Limit Group", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text("Configure which rate limit group applies to this organization")
+
+        with UpdateRateLimitGroupForm.render(
+            data={"rate_limit_group": organization.rate_limit_group.value},
+            validation_error=validation_error,
+            hx_post=str(
+                request.url_for(
+                    "organizations:edit_rate_limit_group",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col",
+        ):
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):

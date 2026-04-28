@@ -127,6 +127,32 @@ class SettingsSection:
                         with tag.div(classes="text-xs text-base-content/60 ml-auto"):
                             text("Enabled" if require_3ds else "Disabled")
 
+            # Rate limit group card
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Rate Limit Group")
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        ghost=True,
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:edit_rate_limit_group",
+                                organization_id=self.org.id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+
+                with tag.div(classes="space-y-4"):
+                    with tag.div():
+                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
+                            text("Group")
+                        with tag.div(classes="text-sm"):
+                            text(self.org.rate_limit_group.value.title())
+
             # Feature flags card
             with card(bordered=True):
                 with tag.div(classes="flex items-center justify-between mb-4"):

@@ -311,6 +311,8 @@ class DataSnapshot(Schema):
     setup: SetupData = Field(default_factory=SetupData)
     website: WebsiteData | None = None
     prior_feedback: PriorFeedbackData = Field(default_factory=PriorFeedbackData)
+    appeal_reason: str | None = None
+    original_denial_reason: str | None = None
     collected_at: datetime
 
 

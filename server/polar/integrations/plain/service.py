@@ -38,7 +38,7 @@ from plain_client import (
     UpsertCustomerUpsertCustomer,
 )
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -871,7 +871,8 @@ class PlainService:
             limit=3,
             options=(
                 contains_eager(Order.product),
-                contains_eager(Order.customer).joinedload(Customer.organization),
+                contains_eager(Order.customer),
+                joinedload(Order.organization),
             ),
         )
 
@@ -879,7 +880,7 @@ class PlainService:
             return None
 
         def _get_order_container(order: Order) -> ComponentContainerInput:
-            organization = order.customer.organization
+            organization = order.organization
 
             return ComponentContainerInput(
                 container_content=[

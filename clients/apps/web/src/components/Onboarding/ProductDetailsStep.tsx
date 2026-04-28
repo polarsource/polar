@@ -1,8 +1,7 @@
 'use client'
 
-import { useAuth } from '@/hooks'
 import * as Sentry from '@sentry/nextjs'
-import { useCreateOrganization } from '@/hooks/queries'
+import { useUpdateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -66,11 +65,10 @@ interface FormSchema {
 
 export function ProductDetailsStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
-  const createOrganization = useCreateOrganization()
+  const updateOrganization = useUpdateOrganization()
   const [loading, setLoading] = useState<
     'validating' | 'submitting' | 'submitting-anyway' | null
   >(null)
@@ -132,36 +130,32 @@ export function ProductDetailsStep() {
   const submitOrg = async (formData: FormSchema) => {
     setApiLoading(true)
 
+    if (!data.organizationId) {
+      form.setError('root', {
+        message: 'Organization setup is incomplete. Please start again.',
+      })
+      await showApiResponse(400, 'Failed to update organization')
+      return false
+    }
+
     const switching = formData.currentlySellingOn.length > 0
     const switchingFrom = (
       switching ? formData.currentlySellingOn[0] : null
     ) as schemas['OrganizationDetails']['switching_from']
 
-    const { data: org, error } = await createOrganization.mutateAsync({
-      name: data.orgName!,
-      slug: data.orgSlug!,
-      default_presentment_currency:
-        (data.defaultCurrency as schemas['PresentmentCurrency']) || 'usd',
-      country: (data.businessCountry || data.country || undefined) as
-        | schemas['OrganizationCreate']['country']
-        | undefined,
-      default_tax_behavior: 'location',
-      legal_entity:
-        data.organizationType === 'company'
-          ? {
-              type: 'company' as const,
-              registered_name: data.registeredBusinessName!,
-            }
-          : { type: 'individual' as const },
-      ...(formData.supportEmail && { email: formData.supportEmail }),
-      ...(formData.productUrl && { website: formData.productUrl }),
-      details: {
-        product_description: formData.productDescription,
-        selling_categories: formData.sellingCategories,
-        pricing_models: formData.pricingModel,
-        switching,
-        switching_from: switchingFrom,
-      } satisfies schemas['OrganizationDetails'],
+    const { error } = await updateOrganization.mutateAsync({
+      id: data.organizationId,
+      body: {
+        ...(formData.supportEmail && { email: formData.supportEmail }),
+        ...(formData.productUrl && { website: formData.productUrl }),
+        details: {
+          product_description: formData.productDescription,
+          selling_categories: formData.sellingCategories,
+          pricing_models: formData.pricingModel,
+          switching,
+          switching_from: switchingFrom,
+        } satisfies schemas['OrganizationDetails'],
+      },
     })
 
     if (error) {
@@ -173,14 +167,11 @@ export function ProductDetailsStep() {
               ? (error.detail[0]?.msg ?? 'Validation failed')
               : 'Something went wrong, please try again.',
       })
-      showApiResponse(400, 'Failed to create organization')
+      await showApiResponse(400, 'Failed to update organization')
       return false
     }
 
-    setUserOrganizations((prev) => [...prev, org])
-    updateData({ organizationId: org.id, orgSlug: org.slug })
-
-    trackStepCompleted('product', { organization_id: org.id })
+    trackStepCompleted('product', { organization_id: data.organizationId })
     await showApiResponse(200, 'OK')
     router.push('/onboarding/complete')
     return true

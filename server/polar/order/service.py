@@ -94,6 +94,7 @@ from polar.product.guard import (
 )
 from polar.product.price_set import PriceSet
 from polar.product.repository import ProductRepository
+from polar.receipt.service import receipt as receipt_service
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
@@ -316,7 +317,8 @@ class OrderService:
         statement = repository.get_statement_by_org_ids(accessible_org_ids)
 
         statement = (
-            statement.join(Order.discount, isouter=True)
+            statement.join(Customer, Order.customer_id == Customer.id)
+            .join(Order.discount, isouter=True)
             .join(Order.product, isouter=True)
             .options(
                 *repository.get_eager_options(
@@ -328,7 +330,7 @@ class OrderService:
         )
 
         if organization_id is not None:
-            statement = statement.where(Customer.organization_id.in_(organization_id))
+            statement = statement.where(Order.organization_id.in_(organization_id))
 
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))
@@ -380,7 +382,6 @@ class OrderService:
             repository.get_readable_statement(auth_subject)
             .options(
                 *repository.get_eager_options(
-                    customer_load=contains_eager(Order.customer),
                     product_load=joinedload(Order.product),
                 )
             )
@@ -473,7 +474,7 @@ class OrderService:
             "order.invoice_generated",
             {"order_id": order.id},
             customer_id=order.customer_id,
-            organization_id=order.organization.id,
+            organization_id=order.organization_id,
         )
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
@@ -596,7 +597,7 @@ class OrderService:
                 tax_behavior=checkout.tax_behavior,
                 tax_rate=checkout.tax_rate,
                 invoice_number=invoice_number,
-                organization_id=organization.id,
+                organization=organization,
                 customer=customer,
                 product=checkout.product,
                 discount=checkout.discount,
@@ -775,7 +776,7 @@ class OrderService:
                     tax_processor=tax_processor,
                     tax_calculation_processor_id=tax_calculation_processor_id,
                     invoice_number=invoice_number,
-                    organization_id=subscription.organization.id,
+                    organization=subscription.organization,
                     customer=customer,
                     product=subscription.product,
                     discount=discount,
@@ -902,7 +903,7 @@ class OrderService:
                 tax_id=customer.tax_id,
                 tax_rate=None,
                 invoice_number=invoice_number,
-                organization_id=organization.id,
+                organization=organization,
                 customer=customer,
                 product=product,
                 discount=None,
@@ -956,7 +957,7 @@ class OrderService:
                 taxability_reason=wallet_transaction.taxability_reason,
                 tax_rate=wallet_transaction.tax_rate,
                 invoice_number=invoice_number,
-                organization_id=wallet.organization.id,
+                organization=wallet.organization,
                 customer=customer,
                 items=items,
                 product=None,
@@ -1078,7 +1079,7 @@ class OrderService:
         async with self.acquire_payment_lock(session, order):
             if payment_method.processor == PaymentProcessor.stripe:
                 metadata: dict[str, Any] = {
-                    "organization_id": str(order.organization.id),
+                    "organization_id": str(order.organization_id),
                     "order_id": str(order.id),
                     "payment_mode": payment_mode,
                 }
@@ -1238,7 +1239,7 @@ class OrderService:
                 )
 
         metadata: dict[str, Any] = {
-            "organization_id": str(order.organization.id),
+            "organization_id": str(order.organization_id),
             "order_id": str(order.id),
             STRIPE_METADATA_PAYMENT_TRIGGER: PaymentTrigger.retry_customer,
         }
@@ -1996,6 +1997,8 @@ class OrderService:
     async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
         assert order.paid
 
+        await receipt_service.allocate(session, order)
+
         await self.send_webhook(session, order, WebhookEventType.order_paid)
 
         metadata = OrderPaidMetadata(
@@ -2341,7 +2344,7 @@ class OrderService:
             log.info(
                 "Subscription renewals disabled, skipping dunning",
                 order_id=order.id,
-                organization_id=order.organization.id,
+                organization_id=order.organization_id,
             )
             return order
 

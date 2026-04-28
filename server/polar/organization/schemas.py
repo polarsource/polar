@@ -486,6 +486,33 @@ class OrganizationUpdate(Schema):
     )
 
 
+class OrganizationReviewSubmissionDetails(Schema):
+    product_description: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=30)
+    ]
+
+
+def _empty_review_submission_details_to_dict(value: Any) -> Any:
+    if value is None:
+        return {}
+    return value
+
+
+class OrganizationReviewSubmission(Schema):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    website: Annotated[str, StringConstraints(min_length=1)]
+    email: EmailStrDNS
+    socials: list[OrganizationSocialLink] = Field(min_length=1)
+    details: Annotated[
+        OrganizationReviewSubmissionDetails,
+        BeforeValidator(_empty_review_submission_details_to_dict),
+    ]
+
+
+class OrganizationReviewSubmissionBody(Schema):
+    body: OrganizationReviewSubmission
+
+
 class OrganizationPaymentStatus(Schema):
     payment_ready: bool = Field(
         description="Whether the organization is ready to accept payments"

@@ -249,6 +249,93 @@ class TestCreateDiscount:
         assert discount.amount == 1000
         assert discount.currency == "usd"
 
+    @pytest.mark.auth
+    async def test_fixed_type_with_basis_points_rejected(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "fixed",
+                "code": "DISCOUNT",
+                "duration": "once",
+                "basis_points": 10000,
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.parametrize(
+        ("duration", "extra"),
+        [
+            pytest.param("once", {}, id="once"),
+            pytest.param("forever", {}, id="forever"),
+            pytest.param("repeating", {"duration_in_months": 3}, id="repeating"),
+        ],
+    )
+    @pytest.mark.auth
+    async def test_valid_percentage_durations(
+        self,
+        duration: str,
+        extra: dict[str, Any],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "percentage",
+                "duration": duration,
+                "basis_points": 1000,
+                "organization_id": str(organization.id),
+                **extra,
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["type"] == "percentage"
+        assert response.json()["duration"] == duration
+
+    @pytest.mark.parametrize(
+        ("duration", "extra"),
+        [
+            pytest.param("once", {}, id="once"),
+            pytest.param("forever", {}, id="forever"),
+            pytest.param("repeating", {"duration_in_months": 3}, id="repeating"),
+        ],
+    )
+    @pytest.mark.auth
+    async def test_valid_fixed_durations(
+        self,
+        duration: str,
+        extra: dict[str, Any],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "fixed",
+                "duration": duration,
+                "amounts": {"usd": 500},
+                "organization_id": str(organization.id),
+                **extra,
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["type"] == "fixed"
+        assert response.json()["duration"] == duration
+
 
 @pytest.mark.asyncio
 class TestGetDiscount:

@@ -19,6 +19,8 @@ export function isValidMetricType(value: string): value is MetricType {
 const SUBSCRIPTION_METRICS: (keyof schemas['Metrics'])[] = [
   'monthly_recurring_revenue',
   'committed_monthly_recurring_revenue',
+  'trial_monthly_recurring_revenue',
+  'trial_committed_monthly_recurring_revenue',
   'active_subscriptions',
   'new_subscriptions',
   'committed_subscriptions',

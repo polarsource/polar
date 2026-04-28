@@ -273,6 +273,18 @@ export const METRIC_GROUPS: MetricGroup[] = [
         description:
           'MRR from subscriptions still within a committed billing period.',
       },
+      {
+        slug: 'trial_monthly_recurring_revenue',
+        display_name: 'Trial MRR',
+        description:
+          'Normalized monthly revenue from subscriptions currently in a trial period.',
+      },
+      {
+        slug: 'trial_committed_monthly_recurring_revenue',
+        display_name: 'Trial Committed MRR',
+        description:
+          'Trial MRR from subscriptions still within a committed billing period.',
+      },
     ],
   },
   {

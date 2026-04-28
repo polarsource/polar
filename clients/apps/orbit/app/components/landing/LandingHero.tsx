@@ -3,6 +3,7 @@
 import { CircularBand } from '../CircularBand'
 import { SectionLabel } from './SectionLabel'
 import { SectionHeading } from './SectionHeading'
+import { LandingSection } from './LandingSection'
 
 /**
  * LandingHero — two-column hero. Left: standalone CircularBand graphic
@@ -10,30 +11,11 @@ import { SectionHeading } from './SectionHeading'
  * on the graphic.
  */
 export const LandingHero = () => (
-  <section className="grid grid-cols-2 divide-x divide-neutral-200 dark:divide-neutral-800 border-b border-neutral-200 dark:border-neutral-800">
-    {/* Left — graphic, standalone */}
-    <div className="relative overflow-hidden">
-      <CircularBand fill />
-    </div>
-
-    {/* Right — text */}
-    <div className="flex flex-col justify-between p-16">
-      <div />
-
-      <div>
-        <SectionHeading className="leading-[0.95]">
-          From Inference
-          <br />
-          to Invoice
-        </SectionHeading>
-      </div>
-
-      <a
-        href="#get-started"
-        className="w-fit border border-neutral-900 dark:border-white px-8 py-4 text-base font-medium text-neutral-900 dark:text-white transition hover:bg-neutral-900 hover:text-white dark:hover:bg-white dark:hover:text-black"
-      >
-        Get Started
-      </a>
-    </div>
-  </section>
+  <LandingSection className="flex h-screen flex-col justify-center">
+    <SectionHeading>
+      Billing built for
+      <br />
+      intelligent software.
+    </SectionHeading>
+  </LandingSection>
 )

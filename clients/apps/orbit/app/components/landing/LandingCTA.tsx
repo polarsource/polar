@@ -1,8 +1,9 @@
 import { TextRings } from '../TextRings'
 import { SectionHeading } from './SectionHeading'
+import { LandingSection } from './LandingSection'
 
 export const LandingCTA = () => (
-  <section>
+  <LandingSection>
     <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
       <div className="dark:bg-dark-900 relative overflow-hidden bg-neutral-50 p-2">
         <TextRings />
@@ -21,5 +22,5 @@ export const LandingCTA = () => (
         </a>
       </div>
     </div>
-  </section>
+  </LandingSection>
 )

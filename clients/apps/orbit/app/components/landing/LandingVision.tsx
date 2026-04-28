@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { LandingSection } from './LandingSection'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -44,8 +45,12 @@ export const LandingVision = () => {
   let wordIndex = 0
 
   return (
-    <div ref={wrapperRef} style={{ height: '300vh' }}>
-      <section className="sticky top-0 flex h-screen items-center justify-center px-8 md:px-24">
+    <div
+      ref={wrapperRef}
+      style={{ height: '300vh' }}
+      className="dark:bg-dark-900 bg-neutral-100"
+    >
+      <LandingSection className="sticky top-0 flex h-screen items-center justify-center px-8 md:px-24">
         <div className="max-w-5xl">
           {PARAGRAPHS.map((paragraph, pi) => (
             <p
@@ -71,7 +76,7 @@ export const LandingVision = () => {
             </p>
           ))}
         </div>
-      </section>
+      </LandingSection>
     </div>
   )
 }

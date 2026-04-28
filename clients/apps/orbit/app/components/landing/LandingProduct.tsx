@@ -2,13 +2,14 @@
 
 import { SectionHeading } from './SectionHeading'
 import { Button } from './Button'
+import { LandingSection } from './LandingSection'
 
 /**
  * LandingProduct — two-column layout. Left: heading + description.
  * Right: PhyllotaxisSunflower graphic.
  */
 export const LandingProduct = () => (
-  <section id="product">
+  <LandingSection id="product">
     <div className="flex flex-col items-center gap-y-16 p-16 py-48 text-center">
       <SectionHeading>
         Your entire billing stack.
@@ -27,5 +28,5 @@ export const LandingProduct = () => (
         </Button>
       </div>
     </div>
-  </section>
+  </LandingSection>
 )

@@ -7,11 +7,13 @@ import { LandingPricing } from './components/landing/LandingPricing'
 import { LandingTestimonials } from './components/landing/LandingTestimonials'
 import { LandingCTA } from './components/landing/LandingCTA'
 import { LandingFooter } from './components/landing/LandingFooter'
+import { LandingHero } from './components/landing/LandingHero'
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col md:px-16">
+    <div className="flex flex-col">
       <LandingNav />
+      <LandingHero />
       <LandingArchitecture />
       <LandingVision />
       <LandingOffering />

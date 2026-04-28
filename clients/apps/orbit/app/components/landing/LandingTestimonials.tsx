@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { LandingSection } from './LandingSection'
 
 const TESTIMONIALS = [
   {
@@ -31,7 +32,7 @@ const TESTIMONIALS = [
 ]
 
 export const LandingTestimonials = () => (
-  <section className="mb-2">
+  <LandingSection className="mb-2">
     <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
       {TESTIMONIALS.map((t) => (
         <Link
@@ -66,5 +67,5 @@ export const LandingTestimonials = () => (
         </Link>
       ))}
     </div>
-  </section>
+  </LandingSection>
 )

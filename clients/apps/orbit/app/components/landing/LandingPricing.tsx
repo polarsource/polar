@@ -2,6 +2,7 @@
 
 import { SectionHeading } from './SectionHeading'
 import { Button } from './Button'
+import { LandingSection } from './LandingSection'
 
 /**
  * LandingPricing — 4-tier pricing grid with actual Polar tier info.
@@ -64,7 +65,7 @@ const TIERS = [
 ]
 
 export const LandingPricing = () => (
-  <section id="pricing" className="flex flex-col gap-y-32 py-48">
+  <LandingSection id="pricing" className="flex flex-col gap-y-32 py-48">
     <div className="flex flex-col items-center gap-y-8 text-center">
       <SectionHeading className="text-center">
         Built to scale with you.
@@ -206,5 +207,5 @@ export const LandingPricing = () => (
         </Button>
       </div>
     </div>
-  </section>
+  </LandingSection>
 )

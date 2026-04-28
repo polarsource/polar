@@ -5,6 +5,7 @@ import { ConcentricDraw } from '../ConcentricDraw'
 import { GaugeSweep } from '../GaugeSweep'
 import { OrbitingSpheres } from '../OrbitingSpheres'
 import { SectionHeading } from './SectionHeading'
+import { LandingSection } from './LandingSection'
 
 /**
  * LandingArchitecture — heading row + four-column graphic row,
@@ -20,14 +21,14 @@ const LAYERS = [
 ]
 
 export const LandingArchitecture = () => (
-  <section id="architecture" className="flex flex-col gap-y-16 pt-8">
+  <LandingSection id="architecture" className="flex flex-col gap-y-16 pt-8">
     {/* Top row — heading */}
     <div className="grid grid-cols-1 md:grid-cols-2">
       <div>
         <SectionHeading>
-          Billing built for
+          Usage billing
           <br />
-          intelligent software.
+          in 4 simple steps.
         </SectionHeading>
       </div>
     </div>
@@ -60,5 +61,5 @@ export const LandingArchitecture = () => (
         </div>
       ))}
     </div>
-  </section>
+  </LandingSection>
 )

@@ -27,7 +27,7 @@ const SOCIALS = [
 ]
 
 export const LandingFooter = () => (
-  <footer className="text-neutral-900 dark:text-white">
+  <footer className="mx-auto w-full max-w-[1760px] text-neutral-900 dark:text-white">
     {/* Top — CTA heading + description */}
     <div className="grid grid-cols-1 pt-32 pb-20 md:grid-cols-2">
       <div className="flex flex-col">

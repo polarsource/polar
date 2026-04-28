@@ -142,7 +142,7 @@ export default function Finance() {
             Withdraw
           </Button>
         </Box>
-        <Text color="subtext">You may only withdraw amounts above $10.</Text>
+        <Text color="subtext">Minimum withdrawal amounts apply.</Text>
       </Box>
 
       <Box flexDirection="column" gap="spacing-16">

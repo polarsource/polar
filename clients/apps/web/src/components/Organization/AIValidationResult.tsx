@@ -52,7 +52,7 @@ const AIValidationResult = ({
         type: 'loading',
         title: 'Reviewing organization…',
         message:
-          'Our AI is reviewing your organization details against our acceptable use policy. This typically takes one to two minutes.',
+          'We are reviewing your organization details against our acceptable use policy. This typically takes one to two minutes.',
         icon: <Loader2 className="h-4 w-4 animate-spin" />,
       }
     }

@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import AccountPage from './AccountPage'
+import { AccountPageRouter } from './AccountPageRouter'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -20,5 +20,15 @@ export default async function Page(props: {
     false, // Don't use cache to make sure we get the latest payout account info after onboarding changes
   )
 
-  return <AccountPage organization={organization} />
+  const { data: reviewStatus } = await api.GET(
+    '/v1/organizations/{id}/review-status',
+    { params: { path: { id: organization.id } } },
+  )
+
+  return (
+    <AccountPageRouter
+      organization={organization}
+      initialReviewStatus={reviewStatus}
+    />
+  )
 }

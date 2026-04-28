@@ -297,6 +297,7 @@ export const useOrganizationReviewStatus = (
   id: string,
   enabled: boolean = true,
   refetchInterval?: number,
+  initialData?: schemas['OrganizationReviewStatus'],
 ) =>
   useQuery({
     queryKey: ['organizationReviewStatus', id],
@@ -309,6 +310,7 @@ export const useOrganizationReviewStatus = (
     retry: defaultRetry,
     enabled: enabled && !!id,
     refetchInterval,
+    initialData,
   })
 
 export const useDeleteOrganization = () =>

@@ -183,7 +183,7 @@ class CommittedMonthlyRecurringRevenueMetric(SQLMetric):
 
 class TrialMonthlyRecurringRevenueMetric(SQLMetric):
     slug = "trial_monthly_recurring_revenue"
-    display_name = "Trial Monthly Recurring Revenue"
+    display_name = "Trialing MRR Including Cancelations"
     type = MetricType.currency
     query = MetricQuery.active_subscriptions
 
@@ -202,7 +202,7 @@ class TrialMonthlyRecurringRevenueMetric(SQLMetric):
 
 class TrialCommittedMonthlyRecurringRevenueMetric(SQLMetric):
     slug = "trial_committed_monthly_recurring_revenue"
-    display_name = "Trial Committed Monthly Recurring Revenue"
+    display_name = "Trialing Monthly Recurring Revenue"
     type = MetricType.currency
     query = MetricQuery.active_subscriptions
 

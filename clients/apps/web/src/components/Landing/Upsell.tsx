@@ -1,14 +1,7 @@
-import GetStartedButton from '../Auth/GetStartedButton'
+import { TextRings } from './graphics/TextRings'
 
-export const Upsell = () => {
-  return (
-    <div className="flex flex-col items-center gap-y-12 py-24 text-center">
-      <h1 className="font-display text-4xl leading-tight! xl:text-7xl">
-        Modern billing.
-        <br />
-        Built for the AI era.
-      </h1>
-      <GetStartedButton />
-    </div>
-  )
-}
+export const Upsell = () => (
+  <div className="relative overflow-hidden p-2">
+    <TextRings />
+  </div>
+)

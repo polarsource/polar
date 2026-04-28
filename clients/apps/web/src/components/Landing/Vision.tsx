@@ -51,7 +51,7 @@ export const Vision = () => {
   return (
     <div ref={wrapperRef} style={{ height: '300vh' }}>
       <div className="sticky top-0 flex h-screen items-center justify-center">
-        <div className="flex flex-row gap-x-24">
+        <div className="flex flex-row gap-x-6 px-4 md:gap-x-24 md:px-0">
           <div className="dark:bg-polar-700 w-px self-stretch bg-neutral-200">
             <div
               ref={barRef}

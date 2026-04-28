@@ -61,10 +61,10 @@ export const Features = () => {
   }, [onScroll])
 
   return (
-    <div className="flex max-w-none! flex-col gap-y-24 py-32">
+    <div className="flex max-w-none! flex-col gap-y-12 py-32 md:gap-y-24">
       <div className="mx-auto w-full max-w-7xl">
-        <h1 className="font-display text-7xl leading-snug">
-          All primitives you need.
+        <h1 className="font-display px-4 text-4xl leading-snug md:px-0 md:text-7xl">
+          All billing primitives you need.
           <br />
           In a single API.
         </h1>
@@ -79,7 +79,7 @@ export const Features = () => {
           return (
             <div
               key={tile.title}
-              className="dark:bg-dark-900 flex w-[340px] shrink-0 flex-col bg-neutral-50 md:w-[440px]"
+              className="dark:bg-dark-900 flex w-[340px] shrink-0 flex-col bg-neutral-50 md:w-[420px]"
             >
               <div className="flex flex-col gap-4 p-8">
                 <span className="font-display text-3xl text-neutral-900 dark:text-white">

@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { GraphicContainer } from './GraphicContainer'
-import { useInView } from '../hooks/useInView'
+import { useInView } from '@/hooks/useInView'
 
 /**
  * TextRings — concentric rings of text placed along circular paths.
@@ -73,7 +72,9 @@ export const TextRings = () => {
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       const styles = getComputedStyle(canvas)
-      ctx.fillStyle = styles.getPropertyValue('--color-graphic-stroke').trim() || 'rgb(190, 190, 190)'
+      ctx.fillStyle =
+        styles.getPropertyValue('--color-graphic-stroke').trim() ||
+        'rgb(190, 190, 190)'
 
       for (const ring of rings) {
         // Oscillating progress: never fully collapses — stays readable
@@ -133,9 +134,7 @@ export const TextRings = () => {
 
   return (
     <div ref={wrapperRef}>
-      <GraphicContainer>
-        <canvas ref={canvasRef} className="h-full w-full" />
-      </GraphicContainer>
+      <canvas ref={canvasRef} className="h-full w-full" />
     </div>
   )
 }

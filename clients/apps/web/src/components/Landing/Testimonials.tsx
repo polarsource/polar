@@ -82,33 +82,24 @@ const userTestimonials = [
 ]
 
 export const Testimonials = () => (
-  <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-    {userTestimonials.map((t) => (
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    {userTestimonials.map((t, i) => (
       <Link
         key={t.name}
         href={t.link}
         target="_blank"
-        className="dark:bg-dark-900 dark:hover:bg-dark-800 flex flex-col justify-between gap-y-12 bg-neutral-50 p-10 py-16 transition-colors hover:bg-neutral-100"
+        className="dark:bg-dark-900 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-12 bg-neutral-50 p-10 transition-colors hover:bg-neutral-100"
       >
-        <div className="flex flex-row items-center justify-between gap-x-2">
-          <Avatar
-            name={t.name}
-            avatar_url={t.avatar ?? ''}
-            className="h-12 w-12"
-            width={64}
-            height={64}
-            loading="lazy"
-            CustomImageComponent={StaticImage}
-          />
-        </div>
+        <span className="dark:text-dark-500 text-neutral-500 tabular-nums">{`— 0${i + 1}`}</span>
         <div className="flex h-full flex-col gap-y-6 text-xl leading-snug text-neutral-900 dark:text-white">
           {t.text}
         </div>
+        <div className="dark:bg-polar-700 h-1 w-6 bg-gray-100" />
         <div>
-          <div className="text-xl text-neutral-900 dark:text-white">
+          <div className="text-lg text-neutral-900 dark:text-white">
             {t.name}
           </div>
-          <div className="dark:text-dark-400 text-xl text-neutral-400">
+          <div className="dark:text-dark-400 text-lg text-neutral-400">
             {t.company}
           </div>
         </div>

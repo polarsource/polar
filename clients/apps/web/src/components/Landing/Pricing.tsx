@@ -5,13 +5,15 @@ import Link from 'next/link'
 // ── Component ─────────────────────────────────────────────────────────────────
 export const Pricing = () => {
   return (
-    <div className="flex w-full flex-col gap-y-16 md:flex-row md:gap-x-32">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {/* Left — text */}
-      <div className="flex flex-col gap-y-8 md:w-1/2 md:flex-1">
-        <h2 className="font-display text-3xl leading-tight! text-pretty md:text-5xl">
-          Cheapest Merchant of Record on the market
+      <div className="dark:bg-dark-900 col-span-1 flex flex-col gap-y-8 bg-gray-50 p-12 md:col-span-2 md:flex-1">
+        <h2 className="font-display text-3xl leading-tight! md:text-5xl">
+          Eveything you need
+          <br />
+          for a flat fee
         </h2>
-        <p className="dark:text-polar-500 text-lg leading-relaxed text-pretty text-gray-500">
+        <p className="dark:text-polar-500 max-w-xl text-lg leading-relaxed text-pretty text-gray-500">
           One flat rate covers payment processing, global tax compliance, and
           reliable support. No monthly fees, no setup costs.
         </p>
@@ -26,9 +28,9 @@ export const Pricing = () => {
       </div>
 
       {/* Right — visual fee breakdown */}
-      <div className="flex flex-col gap-y-4 md:w-1/2 md:flex-1">
+      <div className="dark:bg-dark-900 flex flex-col gap-y-4 bg-gray-50 md:flex-1">
         {/* Fee display */}
-        <div className="dark:bg-polar-900 flex flex-col gap-y-8 rounded-2xl bg-gray-50 px-8 py-7">
+        <div className="flex flex-col gap-y-8 p-12">
           <div className="flex flex-col gap-y-4">
             <div className="flex items-baseline gap-x-3">
               <span className="text-5xl font-light tracking-tight">4%</span>
@@ -47,7 +49,7 @@ export const Pricing = () => {
               'Volume discounts for high-growth teams',
               'No monthly or setup fees',
             ].map((item) => (
-              <li key={item} className="flex items-center gap-x-2.5">
+              <li key={item} className="flex gap-x-4">
                 <CheckOutlined className="text-emerald-500" fontSize="small" />
                 <span>{item}</span>
               </li>

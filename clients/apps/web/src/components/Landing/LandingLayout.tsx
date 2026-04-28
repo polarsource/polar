@@ -292,7 +292,7 @@ const LandingPageDesktopNavigation = () => {
     <div className="dark:text-polar-50 dark:bg-polar-950 sticky top-0 z-10 hidden w-full flex-col items-center gap-12 bg-white py-8 md:flex">
       <div className="relative flex w-full flex-row items-center justify-between lg:max-w-7xl">
         <Link href="/">
-          <PolarLogotype logoVariant="icon" size={40} />
+          <PolarLogotype logoVariant="logotype" size={120} />
         </Link>
 
         <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">

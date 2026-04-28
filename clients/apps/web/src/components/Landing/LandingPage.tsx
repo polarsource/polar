@@ -11,6 +11,7 @@ import { Upsell } from './Upsell'
 import { Usage } from './Usage'
 import { Vision } from './Vision'
 import { Features } from './Features'
+import { Logotypes } from './Logotypes'
 
 export default function Page() {
   return (
@@ -48,10 +49,11 @@ const PageContent = () => {
       </Section>
       <Section>
         <Testimonials />
+        <Logotypes />
       </Section>
       <Section>
-        <Pricing />
         <Upsell />
+        <Pricing />
       </Section>
     </>
   )

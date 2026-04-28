@@ -16,7 +16,7 @@ const uniformField: FieldFn = () => 0
 
 // Lerp angle via shortest arc
 const lerpAngle = (from: number, to: number, t: number) => {
-  let diff = ((to - from + Math.PI * 3) % (Math.PI * 2)) - Math.PI
+  const diff = ((to - from + Math.PI * 3) % (Math.PI * 2)) - Math.PI
   return from + diff * t
 }
 

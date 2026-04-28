@@ -72,7 +72,6 @@ export const ConcentricDraw = () => {
 
       for (let i = 0; i < RING_COUNT; i++) {
         const r = radii[i]
-        const circumference = 2 * Math.PI * r
 
         // Faint background ring
         ctx.strokeStyle = dimColor

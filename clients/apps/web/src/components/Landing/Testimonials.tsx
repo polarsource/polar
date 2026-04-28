@@ -1,8 +1,5 @@
 import Link from 'next/link'
-import { Section } from './Section'
 import { StillaAI } from './Logos'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import { StaticImage } from '../Image/StaticImage'
 
 export const companyTestimonials = [
   {

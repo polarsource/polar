@@ -19,6 +19,20 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
+    # Production is expected to have been backfilled via
+    # scripts/backfill_order_organization_id.py before this migration runs;
+    # this UPDATE is a safety net for local environments where the script
+    # may not have been executed.
+    op.execute(
+        """
+        UPDATE orders
+           SET organization_id = customers.organization_id
+          FROM customers
+         WHERE orders.customer_id = customers.id
+           AND orders.organization_id IS NULL
+        """
+    )
+
     # Use the NOT VALID / VALIDATE pattern to avoid a full-table ACCESS EXCLUSIVE
     # lock when setting NOT NULL.
     #

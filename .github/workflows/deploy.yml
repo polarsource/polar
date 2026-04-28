@@ -42,7 +42,6 @@ jobs:
     name: "Build Docker Image 🐳"
     concurrency:
       group: build-deploy
-      cancel-in-progress: true
 
     needs: changes
     if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'

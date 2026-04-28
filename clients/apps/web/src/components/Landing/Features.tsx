@@ -5,7 +5,6 @@ import { Dumbbell } from './graphics/Dumbbell'
 import { CycleArrow } from './graphics/CycleArrow'
 import { LinkedRings } from './graphics/LinkedRings'
 import { CreditArc } from './graphics/CreditArc'
-import { RadialSpinner } from './graphics/RadialSpinner'
 import { WaveBars } from './graphics/WaveBars'
 import { VectorField } from './graphics/VectorField'
 

@@ -52,7 +52,7 @@ export const LandingTestimonials = () => (
             <path d="M7 17L17 7" />
             <path d="M7 7H17V17" />
           </svg>
-          <p className="text-3xl leading-snug text-neutral-900 dark:text-white">
+          <p className="h-full text-3xl leading-snug text-neutral-900 dark:text-white">
             {t.quote}
           </p>
           <div>

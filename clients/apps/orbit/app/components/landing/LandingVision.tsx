@@ -7,8 +7,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 gsap.registerPlugin(ScrollTrigger)
 
 const PARAGRAPHS = [
-  `Polar has the tools to build the financial foundation for tomorrow's software.`,
-  'One flat rate covering payment processing, global tax compliance & reliable support.',
+  `Polar is the financial layer for a new generation of software startups.`,
+  'Event-based usage billing. Checkouts that convert. Realtime metrics. Worldwide tax handled.',
 ]
 
 export const LandingVision = () => {
@@ -46,11 +46,11 @@ export const LandingVision = () => {
   return (
     <div ref={wrapperRef} style={{ height: '300vh' }}>
       <section className="sticky top-0 flex h-screen items-center justify-center px-8 md:px-24">
-        <div className="max-w-7xl">
+        <div className="max-w-5xl">
           {PARAGRAPHS.map((paragraph, pi) => (
             <p
               key={pi}
-              className="mb-16 text-[clamp(2rem,4.5vw,4.5rem)] leading-[1.3] font-normal text-neutral-900 dark:text-white"
+              className="mb-16 text-[clamp(2rem,4.5vw,4rem)] leading-[1.3] font-normal text-neutral-900 dark:text-white"
             >
               {paragraph.split(' ').map((word, wi) => {
                 const idx = wordIndex++

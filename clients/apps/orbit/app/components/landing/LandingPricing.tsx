@@ -29,7 +29,7 @@ const TIERS = [
       'Team permissions',
       'Custom Domain',
     ],
-    cta: 'Upgrade Now',
+    cta: 'Upgrade',
     primary: false,
   },
   {
@@ -44,7 +44,7 @@ const TIERS = [
       '5M Product Events',
       'Advanced Analytics',
     ],
-    cta: 'Upgrade Now',
+    cta: 'Upgrade',
     primary: false,
   },
   {
@@ -58,7 +58,7 @@ const TIERS = [
       'Prioritized Ticket support',
       '20M Product Events',
     ],
-    cta: 'Upgrade Now',
+    cta: 'Upgrade',
     primary: false,
   },
 ]
@@ -135,7 +135,6 @@ export const LandingPricing = () => (
               </ul>
             </div>
           </div>
-
           <a
             href="#"
             className="dark:bg-dark-800 dark:hover:bg-dark-700 mt-auto block w-full bg-neutral-100 py-5 text-center text-xl font-medium text-neutral-900 transition hover:bg-neutral-200 dark:text-white"

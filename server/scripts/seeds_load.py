@@ -24,7 +24,7 @@ from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.config import settings
 from polar.customer.schemas.customer import CustomerIndividualCreate
 from polar.customer.service import customer as customer_service
-from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
+from polar.discount.schemas import DiscountPercentageCreate
 from polar.discount.service import discount as discount_service
 from polar.enums import (
     PaymentProcessor,
@@ -1599,7 +1599,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         if org_products:
             await discount_service.create(
                 session=session,
-                discount_create=DiscountPercentageOnceForeverDurationCreate(
+                discount_create=DiscountPercentageCreate(
                     name="Free",
                     code="free",
                     type=DiscountType.percentage,

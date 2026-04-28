@@ -26,7 +26,7 @@ import {
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { FieldPath, useForm, useWatch } from 'react-hook-form'
 import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
@@ -55,6 +55,14 @@ interface FormSchema {
   dobMonth: string
   dobDay: string
   terms: boolean
+}
+
+const API_TO_FORM_FIELD: Record<string, FieldPath<FormSchema>> = {
+  first_name: 'firstName',
+  last_name: 'lastName',
+  country: 'country',
+  date_of_birth: 'dobMonth',
+  accepted_terms_of_service: 'terms',
 }
 
 function FormSync() {
@@ -131,7 +139,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
     },
   })
 
-  const { control, handleSubmit, watch, setValue } = form
+  const { control, handleSubmit, watch, setValue, setError } = form
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('country')
@@ -176,7 +184,20 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
       if (error) {
         Sentry.captureException(error)
         setSubmitting(false)
-        setSubmitError(true)
+        let mappedAny = false
+        if (Array.isArray(error.detail)) {
+          for (const detail of error.detail) {
+            const apiPath = detail.loc.slice(1).join('.')
+            const formPath = API_TO_FORM_FIELD[apiPath]
+            if (formPath) {
+              setError(formPath, { type: detail.type, message: detail.msg })
+              mappedAny = true
+            }
+          }
+        }
+        if (!mappedAny) {
+          setSubmitError(true)
+        }
         await showApiResponse(400, 'Failed to save personal details')
         return
       }

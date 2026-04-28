@@ -20,7 +20,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { useForm, useFormContext, useWatch } from 'react-hook-form'
+import { FieldPath, useForm, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { containsBlockedWord } from '@/utils/blocked-words'
 import { CurrencySelector } from '../CurrencySelector'
@@ -35,6 +35,15 @@ interface FormSchema {
   defaultCurrency: string
   businessCountry: string
   registeredBusinessName: string
+}
+
+const API_TO_FORM_FIELD: Record<string, FieldPath<FormSchema>> = {
+  name: 'orgName',
+  slug: 'orgSlug',
+  country: 'businessCountry',
+  default_presentment_currency: 'defaultCurrency',
+  'legal_entity.registered_name': 'registeredBusinessName',
+  'legal_entity.type': 'organizationType',
 }
 
 function FormSync() {
@@ -287,14 +296,27 @@ export function BusinessDetailsStep() {
 
     if (error) {
       setSubmitting(false)
-      setError('root', {
-        message:
-          typeof error.detail === 'string'
-            ? error.detail
-            : Array.isArray(error.detail)
-              ? (error.detail[0]?.msg ?? 'Failed to create organization')
-              : 'Failed to create organization',
-      })
+      let mappedAny = false
+      if (Array.isArray(error.detail)) {
+        for (const detail of error.detail) {
+          const apiPath = detail.loc.slice(1).join('.')
+          const formPath = API_TO_FORM_FIELD[apiPath]
+          if (formPath) {
+            setError(formPath, { type: detail.type, message: detail.msg })
+            mappedAny = true
+          }
+        }
+      }
+      if (!mappedAny) {
+        setError('root', {
+          message:
+            typeof error.detail === 'string'
+              ? error.detail
+              : Array.isArray(error.detail)
+                ? (error.detail[0]?.msg ?? 'Failed to create organization')
+                : 'Failed to create organization',
+        })
+      }
       await showApiResponse(400, 'Failed to create organization')
       return
     }

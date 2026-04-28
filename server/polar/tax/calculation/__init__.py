@@ -22,6 +22,8 @@ from .base import (
     TaxCode,
     TaxRate,
     TaxServiceProtocol,
+    tax_rate_from_breakdown,
+    taxability_reason_from_breakdown,
 )
 from .numeral import numeral_tax_service
 from .stripe import stripe_tax_service
@@ -215,4 +217,6 @@ __all__ = [
     "TaxRate",
     "TaxabilityReason",
     "tax_calculation",
+    "tax_rate_from_breakdown",
+    "taxability_reason_from_breakdown",
 ]

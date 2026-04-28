@@ -15,6 +15,7 @@ from polar.logging import Logger
 from ..tax_id import TaxID, to_stripe_tax_id
 from .base import (
     TaxabilityReason,
+    TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
@@ -73,40 +74,47 @@ def from_stripe_tax_rate(tax_rate: stripe_lib.TaxRate) -> TaxRate | None:
     }
 
 
-def from_stripe_tax_rate_details(
+def _get_stripe_tax_display_name(
     tax_rate_details: stripe_lib.tax.Calculation.TaxBreakdown.TaxRateDetails,
-) -> TaxRate | None:
-    rate_type = tax_rate_details.rate_type
-    if rate_type is None:
+) -> str:
+    tax_type = tax_rate_details.tax_type
+    if tax_type is None:
+        return "Tax"
+    if tax_type in {"gst", "hst", "igst", "jct", "pst", "qct", "rst", "vat"}:
+        return tax_type.upper()
+    return tax_type.replace("_", " ").title()
+
+
+def _from_stripe_breakdown_item(
+    breakdown: stripe_lib.tax.Calculation.TaxBreakdown,
+) -> TaxBreakdownItem | None:
+    rate_details = breakdown.tax_rate_details
+    if rate_details is None or rate_details.rate_type is None:
         return None
 
-    basis_points = None
-    amount = None
-    amount_currency = None
+    rate_type: Literal["percentage", "fixed"] = (
+        "fixed" if rate_details.rate_type == "flat_amount" else "percentage"
+    )
+    rate = None
+    if rate_details.percentage_decimal is not None:
+        rate = float(rate_details.percentage_decimal) / 100
 
-    if tax_rate_details.percentage_decimal is not None:
-        basis_points = int(float(tax_rate_details.percentage_decimal) * 100)
-    elif tax_rate_details.flat_amount is not None:
-        amount = tax_rate_details.flat_amount.amount
-        amount_currency = tax_rate_details.flat_amount.currency
+    taxability_reason = TaxabilityReason.from_stripe(
+        breakdown.taxability_reason, breakdown.amount
+    )
+    if taxability_reason is None:
+        taxability_reason = TaxabilityReason.not_collecting
 
-    tax_type = tax_rate_details.tax_type
-    display_name = "Tax"
-    if tax_type is not None:
-        if tax_type in {"gst", "hst", "igst", "jct", "pst", "qct", "rst", "vat"}:
-            display_name = tax_type.upper()
-        else:
-            display_name = tax_type.replace("_", " ").title()
-
-    return {
-        "rate_type": "fixed" if rate_type == "flat_amount" else "percentage",
-        "basis_points": basis_points,
-        "amount": amount,
-        "amount_currency": amount_currency,
-        "display_name": display_name,
-        "country": tax_rate_details.country,
-        "state": tax_rate_details.state,
-    }
+    return TaxBreakdownItem(
+        rate_type=rate_type,
+        rate=rate,
+        display_name=_get_stripe_tax_display_name(rate_details),
+        country=rate_details.country,
+        state=rate_details.state,
+        subdivision=None,  # Stripe bundles regional taxes (e.g. state + local) into a single tax rate, so we don't have subdivision-level detail
+        amount=breakdown.amount,
+        taxability_reason=taxability_reason,
+    )
 
 
 class StripeTaxService(TaxServiceProtocol):
@@ -163,8 +171,7 @@ class StripeTaxService(TaxServiceProtocol):
                     "amount": 0,
                     "currency": currency,
                     "tax_behavior": tax_behavior,
-                    "taxability_reason": None,
-                    "tax_rate": None,
+                    "tax_breakdown": [],
                 }
             raise TaxCalculationTechnicalError("Rate limit exceeded") from e
         except stripe_lib.InvalidRequestError as e:
@@ -181,17 +188,20 @@ class StripeTaxService(TaxServiceProtocol):
             raise InvalidTaxLocation(e) from e
         else:
             assert calculation.id is not None
-            amount = calculation.tax_amount_exclusive + calculation.tax_amount_inclusive
-            breakdown = calculation.tax_breakdown[0]
+            total_amount = (
+                calculation.tax_amount_exclusive + calculation.tax_amount_inclusive
+            )
+            tax_breakdown: list[TaxBreakdownItem] = []
+            for breakdown_item in calculation.tax_breakdown:
+                item = _from_stripe_breakdown_item(breakdown_item)
+                if item is not None:
+                    tax_breakdown.append(item)
             return {
                 "processor_id": calculation.id,
-                "amount": amount,
+                "amount": total_amount,
                 "currency": currency,
                 "tax_behavior": tax_behavior,
-                "taxability_reason": TaxabilityReason.from_stripe(
-                    breakdown.taxability_reason, amount
-                ),
-                "tax_rate": from_stripe_tax_rate_details(breakdown.tax_rate_details),
+                "tax_breakdown": tax_breakdown,
             }
 
     async def record(self, calculation_id: str, reference: str) -> str:

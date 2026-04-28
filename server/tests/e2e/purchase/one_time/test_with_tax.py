@@ -54,17 +54,19 @@ class TestWithTax:
             {
                 "processor_id": "TAX_E2E_10PCT",
                 "amount": 500,  # $5 tax on $50
-                "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_behavior": TaxBehavior.exclusive,
-                "tax_rate": {
-                    "rate_type": "percentage",
-                    "basis_points": 1000,  # 10%
-                    "amount": None,
-                    "amount_currency": None,
-                    "display_name": "Sales Tax",
-                    "country": "US",
-                    "state": "CA",
-                },
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.1,  # 10%
+                        "display_name": "Tax",
+                        "country": "US",
+                        "state": "CA",
+                        "subdivision": None,
+                        "amount": 500,
+                        "taxability_reason": TaxabilityReason.standard_rated,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )

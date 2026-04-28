@@ -10,6 +10,7 @@ from opentelemetry import trace
 from polar.config import settings
 from polar.enums import TaxBehavior
 from polar.kit.address import Address
+from polar.kit.math import polar_round
 from polar.logging import Logger
 
 from ..tax_id import TaxID
@@ -17,11 +18,11 @@ from .base import (
     CalculationExpiredError,
     InvalidTaxIDError,
     TaxabilityReason,
+    TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
     TaxCode,
-    TaxRate,
     TaxRecordError,
     TaxServiceProtocol,
 )
@@ -102,36 +103,63 @@ def to_numeral_tax_id(tax_id: TaxID) -> NumeralTaxId:
             return {"type": "VAT", "value": value}
 
 
-def from_numeral_tax_jurisdiction(
+def _numeral_jurisdiction_to_breakdown_item(
     jurisdiction: NumeralTaxJurisdiction,
     country: str,
     state: str | None,
-    currency: str,
-) -> TaxRate:
-    rate_type: Literal["percentage", "fixed"] = (
-        "fixed" if jurisdiction["fee_amount"] > 0 else "percentage"
-    )
-    basis_points = None
-    amount = None
-    amount_currency = None
+    amount: int,
+    customer_exempt: bool,
+) -> TaxBreakdownItem:
+    note = jurisdiction["note"].lower()
+    taxability_reason = TaxabilityReason.from_numeral(note, customer_exempt)
 
-    if rate_type == "percentage":
-        basis_points = int(jurisdiction["tax_rate"] * 100 * 100)
+    is_fixed = jurisdiction["fee_amount"] > 0
+    if is_fixed:
+        item_amount = jurisdiction["fee_amount"]
+        rate = None
     else:
-        amount = jurisdiction["fee_amount"]
-        amount_currency = currency
+        assert jurisdiction["tax_rate"] is not None
+        rate = jurisdiction["tax_rate"]
+        item_amount = polar_round(amount * rate)
 
-    display_name = jurisdiction["jurisdiction_name"]
+    subdivision: str | None = None
+    if "general state" not in jurisdiction["rate_type"]:
+        subdivision = jurisdiction["jurisdiction_name"]
 
-    return TaxRate(
-        rate_type=rate_type,
-        basis_points=basis_points,
-        amount=amount,
-        amount_currency=amount_currency,
-        display_name=display_name,
+    return TaxBreakdownItem(
+        rate_type="fixed" if is_fixed else "percentage",
+        rate=rate,
+        display_name="Tax",  # Current API version doesn't provide helpful tax name
         country=country,
         state=state,
+        subdivision=subdivision,
+        amount=item_amount,
+        taxability_reason=taxability_reason,
     )
+
+
+def _build_numeral_tax_breakdown(
+    jurisdictions: list[NumeralTaxJurisdiction],
+    *,
+    country: str,
+    state: str | None,
+    amount: int,
+    customer_exempt: bool,
+) -> list[TaxBreakdownItem]:
+    tax_breakdown: list[TaxBreakdownItem] = []
+
+    for jurisdiction in jurisdictions:
+        tax_breakdown.append(
+            _numeral_jurisdiction_to_breakdown_item(
+                jurisdiction,
+                country=country,
+                state=state,
+                amount=amount,
+                customer_exempt=customer_exempt,
+            )
+        )
+
+    return tax_breakdown
 
 
 class NumeralTaxService(TaxServiceProtocol):
@@ -231,16 +259,18 @@ class NumeralTaxService(TaxServiceProtocol):
                     amount=0,
                     currency=currency,
                     tax_behavior=tax_behavior,
-                    taxability_reason=TaxabilityReason.not_supported,
-                    tax_rate=TaxRate(
-                        rate_type="percentage",
-                        basis_points=0,
-                        amount=None,
-                        amount_currency=None,
-                        display_name="",
-                        country=address.country,
-                        state=address.get_unprefixed_state(),
-                    ),
+                    tax_breakdown=[
+                        TaxBreakdownItem(
+                            rate_type="percentage",
+                            rate=0,
+                            display_name="",
+                            country=address.country,
+                            state=address.get_unprefixed_state(),
+                            subdivision=None,
+                            amount=0,
+                            taxability_reason=TaxabilityReason.not_supported,
+                        )
+                    ],
                 )
             error_meta = error_response["error"].get("error_meta")
             if error_meta is not None and error_meta["field"].startswith(
@@ -262,24 +292,26 @@ class NumeralTaxService(TaxServiceProtocol):
             "numeral.calculation_id", calculation["id"]
         )
 
-        tax_jurisdiction = calculation["line_items"][0]["tax_jurisdictions"][0]
-        tax_rate = from_numeral_tax_jurisdiction(
-            tax_jurisdiction,
-            country=address.country,
-            state=address.get_unprefixed_state(),
-            currency=currency,
-        )
+        jurisdictions = calculation["line_items"][0]["tax_jurisdictions"]
+        total_tax_amount = calculation["total_tax_amount"]
+        country = address.country
+        state = address.get_unprefixed_state()
 
-        note = tax_jurisdiction["note"].lower()
-        taxability_reason = TaxabilityReason.from_numeral(note, customer_exempt)
+        tax_breakdown = _build_numeral_tax_breakdown(
+            jurisdictions,
+            country=country,
+            state=state,
+            amount=amount,
+            customer_exempt=customer_exempt,
+        )
+        assert sum(item["amount"] for item in tax_breakdown) == total_tax_amount
 
         return TaxCalculation(
             processor_id=calculation["id"],
-            amount=calculation["total_tax_amount"],
+            amount=total_tax_amount,
             currency=currency,
             tax_behavior=tax_behavior,
-            taxability_reason=taxability_reason,
-            tax_rate=tax_rate,
+            tax_breakdown=tax_breakdown,
         )
 
     @logfire.instrument("numeral.record")

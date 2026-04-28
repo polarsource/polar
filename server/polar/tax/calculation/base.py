@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
 from typing import Literal, Protocol, TypedDict, overload
@@ -113,7 +114,7 @@ class TaxabilityReason(StrEnum):
 
 
 class TaxRate(TypedDict):
-    rate_type: Literal["percentage"] | Literal["fixed"]
+    rate_type: Literal["percentage", "fixed"]
     basis_points: int | None
     amount: int | None
     amount_currency: str | None
@@ -128,6 +129,7 @@ class TaxBreakdownItem(TypedDict):
     display_name: str
     country: str | None
     state: str | None
+    subdivision: str | None
     amount: int
     taxability_reason: TaxabilityReason
 
@@ -137,8 +139,32 @@ class TaxCalculation(TypedDict):
     amount: int
     currency: str
     tax_behavior: TaxBehavior
-    taxability_reason: TaxabilityReason | None
-    tax_rate: TaxRate | None
+    tax_breakdown: list[TaxBreakdownItem]
+
+
+def tax_rate_from_breakdown(
+    tax_breakdown: Sequence[TaxBreakdownItem],
+) -> TaxRate | None:
+    if not tax_breakdown:
+        return None
+    item = tax_breakdown[0]
+    return TaxRate(
+        rate_type=item["rate_type"],
+        basis_points=int(item["rate"] * 10_000) if item["rate"] is not None else None,
+        amount=None,
+        amount_currency=None,
+        display_name=item["display_name"],
+        country=item["country"],
+        state=item["state"],
+    )
+
+
+def taxability_reason_from_breakdown(
+    tax_breakdown: Sequence[TaxBreakdownItem],
+) -> TaxabilityReason | None:
+    if not tax_breakdown:
+        return None
+    return TaxabilityReason(tax_breakdown[0]["taxability_reason"])
 
 
 class TaxServiceProtocol(Protocol):

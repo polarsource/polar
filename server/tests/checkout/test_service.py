@@ -146,17 +146,19 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
         {
             "processor_id": "TAX_PROCESSOR_ID",
             "amount": 0,
-            "taxability_reason": TaxabilityReason.standard_rated,
             "tax_behavior": TaxBehavior.exclusive,
-            "tax_rate": {
-                "rate_type": "percentage",
-                "basis_points": 2000,
-                "amount": None,
-                "amount_currency": None,
-                "display_name": "Tax",
-                "country": "US",
-                "state": None,
-            },
+            "tax_breakdown": [
+                {
+                    "rate_type": "percentage",
+                    "rate": 0.2,
+                    "display_name": "Tax",
+                    "country": "US",
+                    "state": None,
+                    "subdivision": None,
+                    "amount": 0,
+                    "taxability_reason": TaxabilityReason.standard_rated,
+                }
+            ],
         },
         TaxProcessor.numeral,
     )
@@ -1000,17 +1002,19 @@ class TestCreate:
             {
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": tax_amount,
-                "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_behavior": tax_behavior,
-                "tax_rate": {
-                    "rate_type": "percentage",
-                    "basis_points": 2000,
-                    "amount": None,
-                    "amount_currency": None,
-                    "display_name": "Tax",
-                    "country": "US",
-                    "state": None,
-                },
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.2,
+                        "display_name": "Tax",
+                        "country": "US",
+                        "state": None,
+                        "subdivision": None,
+                        "amount": tax_amount,
+                        "taxability_reason": TaxabilityReason.standard_rated,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )
@@ -1039,6 +1043,18 @@ class TestCreate:
             "country": "US",
             "state": None,
         }
+        assert checkout.tax_breakdown == [
+            {
+                "rate_type": "percentage",
+                "rate": 0.2,
+                "display_name": "Tax",
+                "country": "US",
+                "state": None,
+                "subdivision": None,
+                "amount": tax_amount,
+                "taxability_reason": TaxabilityReason.standard_rated,
+            }
+        ]
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 
@@ -2996,17 +3012,19 @@ class TestUpdate:
             {
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": tax_amount,
-                "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_behavior": tax_behavior,
-                "tax_rate": {
-                    "rate_type": "percentage",
-                    "basis_points": 2000,
-                    "amount": None,
-                    "amount_currency": None,
-                    "display_name": "Tax",
-                    "country": "US",
-                    "state": None,
-                },
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.2,
+                        "display_name": "Tax",
+                        "country": "US",
+                        "state": None,
+                        "subdivision": None,
+                        "amount": tax_amount,
+                        "taxability_reason": TaxabilityReason.standard_rated,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )
@@ -3034,6 +3052,18 @@ class TestUpdate:
             "country": "US",
             "state": None,
         }
+        assert checkout.tax_breakdown == [
+            {
+                "rate_type": "percentage",
+                "rate": 0.2,
+                "display_name": "Tax",
+                "country": "US",
+                "state": None,
+                "subdivision": None,
+                "amount": tax_amount,
+                "taxability_reason": TaxabilityReason.standard_rated,
+            }
+        ]
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 

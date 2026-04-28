@@ -194,14 +194,25 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
         tax_ids: list[TaxID],
         tax_exempted: bool,
     ) -> tuple[TaxCalculation, TaxProcessor]:
+        tax_amount = polar_round(amount * 0.20)
         return (
             {
                 "processor_id": "TAX_PROCESSOR_ID",
-                "amount": polar_round(amount * 0.20),
+                "amount": tax_amount,
                 "currency": currency,
-                "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_behavior": get_tax_behavior_from_option(tax_behavior, address),
-                "tax_rate": None,
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.2,
+                        "display_name": "Tax",
+                        "country": address.country,
+                        "state": None,
+                        "subdivision": None,
+                        "amount": tax_amount,
+                        "taxability_reason": TaxabilityReason.standard_rated,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )
@@ -910,9 +921,19 @@ class TestCreateSubscriptionOrder:
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": tax_amount,
                 "currency": product.prices[0].price_currency,
-                "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_behavior": tax_behavior,
-                "tax_rate": None,
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.2,
+                        "display_name": "Tax",
+                        "country": "FR",
+                        "state": None,
+                        "subdivision": None,
+                        "amount": tax_amount,
+                        "taxability_reason": TaxabilityReason.standard_rated,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )
@@ -972,7 +993,12 @@ class TestCreateSubscriptionOrder:
         assert billing_entry.amount is not None
         assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
         assert order.taxability_reason == TaxabilityReason.standard_rated
-        assert order.tax_rate is None
+        assert order.tax_rate is not None
+        assert order.tax_breakdown is not None
+        assert (
+            order.tax_breakdown[0]["taxability_reason"]
+            == TaxabilityReason.standard_rated
+        )
         assert order.tax_transaction_processor_id is None
         assert order.tax_behavior == tax_behavior
 
@@ -1725,8 +1751,18 @@ class TestCreateSubscriptionOrder:
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": 0,
                 "tax_behavior": TaxBehavior.exclusive,
-                "taxability_reason": TaxabilityReason.not_subject_to_tax,
-                "tax_rate": None,
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.0,
+                        "display_name": "Tax",
+                        "country": "FR",
+                        "state": None,
+                        "subdivision": None,
+                        "amount": 0,
+                        "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )
@@ -1789,8 +1825,18 @@ class TestCreateSubscriptionOrder:
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": 0,
                 "tax_behavior": TaxBehavior.exclusive,
-                "taxability_reason": TaxabilityReason.not_subject_to_tax,
-                "tax_rate": None,
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.0,
+                        "display_name": "Tax",
+                        "country": "FR",
+                        "state": None,
+                        "subdivision": None,
+                        "amount": 0,
+                        "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )
@@ -1854,8 +1900,18 @@ class TestCreateSubscriptionOrder:
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": 0,
                 "tax_behavior": TaxBehavior.exclusive,
-                "taxability_reason": TaxabilityReason.not_subject_to_tax,
-                "tax_rate": None,
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.0,
+                        "display_name": "Tax",
+                        "country": "FR",
+                        "state": None,
+                        "subdivision": None,
+                        "amount": 0,
+                        "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )
@@ -1919,8 +1975,18 @@ class TestCreateSubscriptionOrder:
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": 0,
                 "tax_behavior": TaxBehavior.exclusive,
-                "taxability_reason": TaxabilityReason.not_subject_to_tax,
-                "tax_rate": None,
+                "tax_breakdown": [
+                    {
+                        "rate_type": "percentage",
+                        "rate": 0.0,
+                        "display_name": "Tax",
+                        "country": "FR",
+                        "state": None,
+                        "subdivision": None,
+                        "amount": 0,
+                        "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                    }
+                ],
             },
             TaxProcessor.numeral,
         )
@@ -2069,6 +2135,18 @@ class TestCreateWalletOrder:
                 "country": "US",
                 "state": None,
             },
+            tax_breakdown=[
+                {
+                    "rate_type": "percentage",
+                    "rate": 0.2,
+                    "display_name": "Tax",
+                    "country": "US",
+                    "state": None,
+                    "subdivision": None,
+                    "amount": 20_00,
+                    "taxability_reason": TaxabilityReason.standard_rated,
+                }
+            ],
             tax_calculation_processor_id="TAX_CALCULATION_ID",
         )
         payment = await create_payment(
@@ -2096,6 +2174,9 @@ class TestCreateWalletOrder:
             "country": "US",
             "state": None,
         }
+        assert order.tax_breakdown is not None
+        assert len(order.tax_breakdown) == 1
+        assert order.tax_breakdown[0]["amount"] == 20_00
 
         enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id=payment.processor_id

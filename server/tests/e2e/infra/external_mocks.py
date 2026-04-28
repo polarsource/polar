@@ -97,17 +97,19 @@ def mock_tax_calculation(mocker: MockerFixture) -> MagicMock:
         {
             "processor_id": "TAX_E2E_TEST",
             "amount": 0,
-            "taxability_reason": TaxabilityReason.standard_rated,
             "tax_behavior": TaxBehavior.exclusive,
-            "tax_rate": {
-                "rate_type": "percentage",
-                "basis_points": 0,
-                "amount": None,
-                "amount_currency": None,
-                "display_name": "Tax",
-                "country": "US",
-                "state": None,
-            },
+            "tax_breakdown": [
+                {
+                    "rate_type": "percentage",
+                    "rate": 0.0,
+                    "display_name": "Tax",
+                    "country": "US",
+                    "state": None,
+                    "subdivision": None,
+                    "amount": 0,
+                    "taxability_reason": TaxabilityReason.standard_rated,
+                }
+            ],
         },
         TaxProcessor.numeral,
     )

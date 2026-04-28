@@ -52,9 +52,9 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
     AccessTokenCreate | AccessTokenUpdate
   >()
 
-  const sortedScopes = Array.from(enums.availableScopeValues).sort((a, b) =>
-    a.localeCompare(b),
-  )
+  const sortedScopes = Array.from(enums.availableScopeValues)
+    .filter((scope) => scope !== 'web:read' && scope !== 'web:write')
+    .sort((a, b) => a.localeCompare(b))
 
   const currentScopes = watch('scopes')
 

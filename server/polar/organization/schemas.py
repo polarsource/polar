@@ -140,6 +140,13 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has access to reset proration behavior.",
     )
+    include_trials_in_mrr: bool = Field(
+        False,
+        description=(
+            "If true, MRR and Committed MRR metrics include trialing "
+            "subscriptions instead of excluding them."
+        ),
+    )
 
     @field_validator("overview_metrics", mode="before")
     @classmethod

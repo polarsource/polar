@@ -112,6 +112,26 @@ export default function FeatureSettings({
             />
           </SettingsGroupItem>
           <SettingsGroupItem
+            title="Include Trials in MRR"
+            description={
+              <>
+                Combine trialing subscriptions into MRR and Committed MRR on the
+                metrics dashboard and overview.
+              </>
+            }
+          >
+            <FormField
+              control={control}
+              name="include_trials_in_mrr"
+              render={({ field }) => (
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={(enabled) => field.onChange(enabled)}
+                />
+              )}
+            />
+          </SettingsGroupItem>
+          <SettingsGroupItem
             title="Seat-Based Billing"
             description={
               <>

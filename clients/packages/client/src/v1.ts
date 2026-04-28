@@ -601,8 +601,6 @@ export interface paths {
     /**
      * Get Organization
      * @description Get an organization by ID.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get']
     put?: never
@@ -624,8 +622,6 @@ export interface paths {
     /**
      * Update Organization
      * @description Update an organization.
-     *
-     *     **Scopes**: `organizations:write`
      */
     patch: operations['organizations:update']
     trace?: never
@@ -680,8 +676,6 @@ export interface paths {
     /**
      * Get Organization KYC Details
      * @description Get an organization's KYC/compliance details.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_kyc']
     put?: never
@@ -744,8 +738,6 @@ export interface paths {
     /**
      * Members
      * @description List members in an organization.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:members']
     put?: never
@@ -834,8 +826,6 @@ export interface paths {
     /**
      * Get AI Validation Status
      * @description Get the AI validation status. Review runs asynchronously in the background.
-     *
-     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:validate_with_ai']
     delete?: never
@@ -856,8 +846,6 @@ export interface paths {
     /**
      * Submit Appeal for Organization Review
      * @description Submit an appeal for organization review after AI validation failure.
-     *
-     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:submit_appeal']
     delete?: never
@@ -878,8 +866,6 @@ export interface paths {
     /**
      * Mark AI Onboarding Complete
      * @description Mark the AI onboarding as completed for this organization.
-     *
-     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:mark_ai_onboarding_complete']
     delete?: never
@@ -898,8 +884,6 @@ export interface paths {
     /**
      * Get Organization Review Status
      * @description Get the current review status and appeal information for an organization.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_review_status']
     put?: never
@@ -922,8 +906,6 @@ export interface paths {
     /**
      * Validate Website URL
      * @description Validate that a website URL is reachable and not targeting a private network.
-     *
-     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:validate_website']
     delete?: never
@@ -16773,9 +16755,92 @@ export interface components {
      * @enum {string}
      */
     DiscountDuration: 'once' | 'forever' | 'repeating'
-    DiscountFixedCreate:
-      | components['schemas']['DiscountFixedOnceForeverDurationCreate']
-      | components['schemas']['DiscountFixedRepeatDurationCreate']
+    /**
+     * DiscountFixedCreate
+     * @description Schema to create a fixed amount discount.
+     */
+    DiscountFixedCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Name
+       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
+       */
+      name: string
+      /**
+       * Code
+       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
+       */
+      code?: string | null
+      /**
+       * Starts At
+       * @description Optional timestamp after which the discount is redeemable.
+       */
+      starts_at?: string | null
+      /**
+       * Ends At
+       * @description Optional timestamp after which the discount is no longer redeemable.
+       */
+      ends_at?: string | null
+      /**
+       * Max Redemptions
+       * @description Optional maximum number of times the discount can be redeemed.
+       */
+      max_redemptions?: number | null
+      /** Products */
+      products?: string[] | null
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the discount. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'fixed'
+      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
+      duration: components['schemas']['DiscountDuration']
+      /**
+       * Duration In Months
+       * @description Number of months the discount should be applied.
+       *
+       *     Required when `duration` is `repeating`. Must be omitted otherwise.
+       *
+       *     For this to work on yearly pricing, you should multiply this by 12.
+       *     For example, to apply the discount for 2 years, set this to 24.
+       */
+      duration_in_months?: number | null
+      /**
+       * Amount
+       * @deprecated
+       */
+      amount?: number | null
+      /**
+       * @deprecated
+       * @default usd
+       */
+      currency: components['schemas']['PresentmentCurrency'] | null
+      /** Amounts */
+      amounts?: {
+        [key: string]: number
+      } | null
+    }
     /**
      * DiscountFixedOnceForeverDuration
      * @description Schema for a fixed amount discount that is applied once or forever.
@@ -16946,86 +17011,6 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
-    }
-    /**
-     * DiscountFixedOnceForeverDurationCreate
-     * @description Schema to create a fixed amount discount that is applied once or forever.
-     */
-    DiscountFixedOnceForeverDurationCreate: {
-      /**
-       * @description For subscriptions, determines if the discount should be applied once on the first invoice or forever. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      duration: 'forever' | 'once'
-      /**
-       * Type
-       * @default fixed
-       * @constant
-       */
-      type: 'fixed'
-      /**
-       * Amount
-       * @deprecated
-       */
-      amount?: number | null
-      /**
-       * @deprecated
-       * @default usd
-       */
-      currency: components['schemas']['PresentmentCurrency'] | null
-      /** Amounts */
-      amounts?: {
-        [key: string]: number
-      } | null
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /** Products */
-      products?: string[] | null
-      /**
-       * Organization Id
-       * @description The ID of the organization owning the discount. **Required unless you use an organization token.**
-       */
-      organization_id?: string | null
     }
     /**
      * DiscountFixedRepeatDuration
@@ -17204,44 +17189,10 @@ export interface components {
       organization_id: string
     }
     /**
-     * DiscountFixedRepeatDurationCreate
-     * @description Schema to create a fixed amount discount that is applied on every invoice
-     *     for a certain number of months.
+     * DiscountPercentageCreate
+     * @description Schema to create a percentage discount.
      */
-    DiscountFixedRepeatDurationCreate: {
-      /**
-       * @description For subscriptions, the discount should be applied on every invoice for a certain number of months, determined by `duration_in_months`. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      duration: 'repeating'
-      /**
-       * Duration In Months
-       * @description Number of months the discount should be applied.
-       *
-       *     For this to work on yearly pricing, you should multiply this by 12.
-       *     For example, to apply the discount for 2 years, set this to 24.
-       */
-      duration_in_months: number
-      /**
-       * Type
-       * @default fixed
-       * @constant
-       */
-      type: 'fixed'
-      /**
-       * Amount
-       * @deprecated
-       */
-      amount?: number | null
-      /**
-       * @deprecated
-       * @default usd
-       */
-      currency: components['schemas']['PresentmentCurrency'] | null
-      /** Amounts */
-      amounts?: {
-        [key: string]: number
-      } | null
+    DiscountPercentageCreate: {
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -17291,10 +17242,32 @@ export interface components {
        * @description The ID of the organization owning the discount. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'percentage'
+      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
+      duration: components['schemas']['DiscountDuration']
+      /**
+       * Duration In Months
+       * @description Number of months the discount should be applied.
+       *
+       *     Required when `duration` is `repeating`. Must be omitted otherwise.
+       *
+       *     For this to work on yearly pricing, you should multiply this by 12.
+       *     For example, to apply the discount for 2 years, set this to 24.
+       */
+      duration_in_months?: number | null
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points.
+       *
+       *     A basis point is 1/100th of a percent.
+       *     For example, to create a 25.5% discount, set this to 2550.
+       */
+      basis_points: number
     }
-    DiscountPercentageCreate:
-      | components['schemas']['DiscountPercentageOnceForeverDurationCreate']
-      | components['schemas']['DiscountPercentageRepeatDurationCreate']
     /**
      * DiscountPercentageOnceForeverDuration
      * @description Schema for a percentage discount that is applied once or forever.
@@ -17431,80 +17404,6 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
-    }
-    /**
-     * DiscountPercentageOnceForeverDurationCreate
-     * @description Schema to create a percentage discount that is applied once or forever.
-     */
-    DiscountPercentageOnceForeverDurationCreate: {
-      /**
-       * @description For subscriptions, determines if the discount should be applied once on the first invoice or forever. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      duration: 'forever' | 'once'
-      /**
-       * Type
-       * @default percentage
-       * @constant
-       */
-      type: 'percentage'
-      /**
-       * Basis Points
-       * @description Discount percentage in basis points.
-       *
-       *     A basis point is 1/100th of a percent.
-       *     For example, to create a 25.5% discount, set this to 2550.
-       */
-      basis_points: number
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /** Products */
-      products?: string[] | null
-      /**
-       * Organization Id
-       * @description The ID of the organization owning the discount. **Required unless you use an organization token.**
-       */
-      organization_id?: string | null
     }
     /**
      * DiscountPercentageRepeatDuration
@@ -17647,89 +17546,6 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
-    }
-    /**
-     * DiscountPercentageRepeatDurationCreate
-     * @description Schema to create a percentage discount that is applied on every invoice
-     *     for a certain number of months.
-     */
-    DiscountPercentageRepeatDurationCreate: {
-      /**
-       * @description For subscriptions, the discount should be applied on every invoice for a certain number of months, determined by `duration_in_months`. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      duration: 'repeating'
-      /**
-       * Duration In Months
-       * @description Number of months the discount should be applied.
-       *
-       *     For this to work on yearly pricing, you should multiply this by 12.
-       *     For example, to apply the discount for 2 years, set this to 24.
-       */
-      duration_in_months: number
-      /**
-       * Type
-       * @default percentage
-       * @constant
-       */
-      type: 'percentage'
-      /**
-       * Basis Points
-       * @description Discount percentage in basis points.
-       *
-       *     A basis point is 1/100th of a percent.
-       *     For example, to create a 25.5% discount, set this to 2550.
-       */
-      basis_points: number
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /** Products */
-      products?: string[] | null
-      /**
-       * Organization Id
-       * @description The ID of the organization owning the discount. **Required unless you use an organization token.**
-       */
-      organization_id?: string | null
     }
     /**
      * DiscountProduct
@@ -20081,11 +19897,13 @@ export interface components {
        */
       external_id?: string | null
       /**
-       * @description The role of the member within the customer.
+       * Role
+       * @description The role of the member within the customer. To assign or transfer ownership, use the member update endpoint.
        * @default member
        * @example member
+       * @enum {string}
        */
-      role: components['schemas']['MemberRole']
+      role: 'member' | 'billing_manager'
     }
     /**
      * MemberOwnerCreate
@@ -52140,18 +51958,12 @@ export const customerWalletSortPropertyValues: ReadonlyArray<
 export const discountDurationValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']
-export const discountFixedOnceForeverDurationCreateDurationValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['DiscountFixedOnceForeverDurationCreate']['duration']
-> = ['forever', 'once']
-export const discountFixedRepeatDurationCreateDurationValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['DiscountFixedRepeatDurationCreate']['duration']
-> = ['repeating']
-export const discountPercentageOnceForeverDurationCreateDurationValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['DiscountPercentageOnceForeverDurationCreate']['duration']
-> = ['forever', 'once']
-export const discountPercentageRepeatDurationCreateDurationValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['DiscountPercentageRepeatDurationCreate']['duration']
-> = ['repeating']
+export const discountFixedCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DiscountFixedCreate']['type']
+> = ['fixed']
+export const discountPercentageCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DiscountPercentageCreate']['type']
+> = ['percentage']
 export const discountSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountSortProperty']
 > = [
@@ -52284,6 +52096,9 @@ export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerNewProductSaleNotification']['type']
 > = ['MaintainerNewProductSaleNotification']
+export const memberCreateRoleValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MemberCreate']['role']
+> = ['member', 'billing_manager']
 export const memberRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberRole']
 > = ['owner', 'billing_manager', 'member']

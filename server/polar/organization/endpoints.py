@@ -9,7 +9,9 @@ from polar.account.service import account as account_service
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
+    AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
+    AuthorizeOrgAccessWrite,
     AuthorizeOrgDelete,
     AuthorizeOrgManagePayoutAccount,
 )
@@ -114,17 +116,10 @@ async def list(
     tags=[APITag.public],
 )
 async def get(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    authz: AuthorizeOrgAccess,
 ) -> Organization:
     """Get an organization by ID."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    return organization
+    return authz.organization
 
 
 @router.get(
@@ -201,17 +196,10 @@ async def set_payout_account(
     tags=[APITag.private],
 )
 async def get_kyc(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    authz: AuthorizeOrgAccess,
 ) -> Organization:
     """Get an organization's KYC/compliance details."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    return organization
+    return authz.organization
 
 
 @router.post(
@@ -246,18 +234,14 @@ async def create(
     tags=[APITag.public],
 )
 async def update(
-    id: OrganizationID,
+    authz: AuthorizeOrgAccessWrite,
     organization_update: OrganizationUpdate,
-    auth_subject: auth.OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Update an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    return await organization_service.update(session, organization, organization_update)
+    return await organization_service.update(
+        session, authz.organization, organization_update
+    )
 
 
 @router.delete(
@@ -333,17 +317,12 @@ async def get_payment_status(
     tags=[APITag.private],
 )
 async def members(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsRead,
+    authz: AuthorizeOrgAccess,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    members = await user_organization_service.list_by_org(session, id)
+    organization = authz.organization
+    members = await user_organization_service.list_by_org(session, organization.id)
 
     # Get admin user to set is_admin flag
     org_repo = OrganizationRepository.from_session(session)
@@ -521,17 +500,11 @@ async def remove_member(
     tags=[APITag.private],
 )
 async def validate_with_ai(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsWrite,
+    authz: AuthorizeOrgAccessWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationReviewStatus:
     """Get the AI validation status. Review runs asynchronously in the background."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    review = await organization_service.get_ai_review(session, organization)
+    review = await organization_service.get_ai_review(session, authz.organization)
 
     if review is None:
         # Review is pending (background task not yet complete)
@@ -559,20 +532,14 @@ async def validate_with_ai(
     tags=[APITag.private],
 )
 async def submit_appeal(
-    id: OrganizationID,
+    authz: AuthorizeOrgAccessWrite,
     appeal_request: OrganizationAppealRequest,
-    auth_subject: auth.OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationAppealResponse:
     """Submit an appeal for organization review after AI validation failure."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
     try:
         result = await organization_service.submit_appeal(
-            session, organization, appeal_request.reason
+            session, authz.organization, appeal_request.reason
         )
 
         return OrganizationAppealResponse(
@@ -604,17 +571,13 @@ async def submit_appeal(
     tags=[APITag.private],
 )
 async def mark_ai_onboarding_complete(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsWrite,
+    authz: AuthorizeOrgAccessWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Mark the AI onboarding as completed for this organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    return await organization_service.mark_ai_onboarding_complete(session, organization)
+    return await organization_service.mark_ai_onboarding_complete(
+        session, authz.organization
+    )
 
 
 @router.get(
@@ -628,18 +591,12 @@ async def mark_ai_onboarding_complete(
     tags=[APITag.private],
 )
 async def get_review_status(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsRead,
+    authz: AuthorizeOrgAccess,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewStatus:
     """Get the current review status and appeal information for an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
     review_repository = OrganizationReviewRepository.from_session(session)
-    review = await review_repository.get_by_organization(organization.id)
+    review = await review_repository.get_by_organization(authz.organization.id)
 
     if review is None:
         return OrganizationReviewStatus()
@@ -665,17 +622,10 @@ async def get_review_status(
     tags=[APITag.private],
 )
 async def validate_website(
-    id: OrganizationID,
+    authz: AuthorizeOrgAccessWrite,
     body: OrganizationValidateWebsiteRequest,
-    auth_subject: auth.OrganizationsWrite,
-    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationValidateWebsiteResponse:
     """Validate that a website URL is reachable and not targeting a private network."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
     try:
         validated_url = await validate_crawlable_url(body.url)
     except UnsafeCrawlableUrl as e:

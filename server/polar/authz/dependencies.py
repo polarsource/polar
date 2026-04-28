@@ -174,6 +174,15 @@ AuthorizeOrgManagePayoutAccount = Annotated[
 AuthorizeOrgAccess = Annotated[
     AuthzContext[User | Organization], Depends(OrgPolicyGuard(_always_allow))
 ]
+AuthorizeOrgAccessWrite = Annotated[
+    AuthzContext[User | Organization],
+    Depends(
+        OrgPolicyGuard(
+            _always_allow,
+            required_scopes={Scope.organizations_write},
+        )
+    ),
+]
 AuthorizeOrgAccessUser = Annotated[
     AuthzContext[User],
     Depends(

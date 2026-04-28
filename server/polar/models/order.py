@@ -30,7 +30,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.models.order_item import OrderItem
-from polar.tax.calculation import TaxabilityReason, TaxRate
+from polar.tax.calculation import TaxabilityReason, TaxBreakdownItem, TaxRate
 from polar.tax.tax_id import TaxID, TaxIDType
 
 if TYPE_CHECKING:
@@ -145,6 +145,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
     tax_id: Mapped[TaxID | None] = mapped_column(TaxIDType, nullable=True, default=None)
     tax_rate: Mapped[TaxRate | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=None
+    )
+    tax_breakdown: Mapped[list[TaxBreakdownItem] | None] = mapped_column(
         JSONB(none_as_null=True), nullable=True, default=None
     )
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(

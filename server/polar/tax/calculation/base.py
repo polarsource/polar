@@ -122,6 +122,16 @@ class TaxRate(TypedDict):
     state: str | None
 
 
+class TaxBreakdownItem(TypedDict):
+    rate_type: Literal["percentage", "fixed"]
+    rate: float | None
+    display_name: str
+    country: str | None
+    state: str | None
+    amount: int
+    taxability_reason: TaxabilityReason
+
+
 class TaxCalculation(TypedDict):
     processor_id: str | None
     amount: int

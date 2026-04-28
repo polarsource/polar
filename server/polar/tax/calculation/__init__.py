@@ -15,6 +15,7 @@ from .base import (
     CalculationExpiredError,
     InvalidTaxIDError,
     TaxabilityReason,
+    TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
@@ -206,6 +207,7 @@ tax_calculation = TaxCalculationService()
 __all__ = [
     "CalculationExpiredError",
     "InvalidTaxIDError",
+    "TaxBreakdownItem",
     "TaxCalculation",
     "TaxCalculationLogicalError",
     "TaxCalculationTechnicalError",

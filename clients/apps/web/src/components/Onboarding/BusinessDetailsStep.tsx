@@ -20,7 +20,8 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { FieldPath, useForm, useFormContext, useWatch } from 'react-hook-form'
+import { useForm, useFormContext, useWatch } from 'react-hook-form'
+import { setValidationErrors } from '@/utils/api/errors'
 import slugify from 'slugify'
 import { containsBlockedWord } from '@/utils/blocked-words'
 import { CurrencySelector } from '../CurrencySelector'
@@ -30,20 +31,13 @@ import { OnboardingShell } from './OnboardingShell'
 
 interface FormSchema {
   organizationType: 'individual' | 'company'
-  orgName: string
-  orgSlug: string
-  defaultCurrency: string
-  businessCountry: string
-  registeredBusinessName: string
-}
-
-const API_TO_FORM_FIELD: Record<string, FieldPath<FormSchema>> = {
-  name: 'orgName',
-  slug: 'orgSlug',
-  country: 'businessCountry',
-  default_presentment_currency: 'defaultCurrency',
-  'legal_entity.registered_name': 'registeredBusinessName',
-  'legal_entity.type': 'organizationType',
+  name: string
+  slug: string
+  default_presentment_currency: string
+  country: string
+  legal_entity: {
+    registered_name: string
+  }
 }
 
 function FormSync() {
@@ -52,12 +46,12 @@ function FormSync() {
 
   useEffect(() => {
     updateData({
-      orgName: values.orgName,
-      orgSlug: values.orgSlug,
-      defaultCurrency: values.defaultCurrency,
+      orgName: values.name,
+      orgSlug: values.slug,
+      defaultCurrency: values.default_presentment_currency,
       organizationType: values.organizationType,
-      businessCountry: values.businessCountry,
-      registeredBusinessName: values.registeredBusinessName,
+      businessCountry: values.country,
+      registeredBusinessName: values.legal_entity?.registered_name,
     })
   }, [values, updateData])
 
@@ -72,19 +66,19 @@ function OrgNameSync({
   editedBusinessName: boolean
 }) {
   const { setValue } = useFormContext<FormSchema>()
-  const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
+  const name = useWatch<FormSchema, 'name'>({ name: 'name' })
 
   useEffect(() => {
-    if (!editedSlug && orgName) {
-      setValue('orgSlug', slugify(orgName, { lower: true, strict: true }))
+    if (!editedSlug && name) {
+      setValue('slug', slugify(name, { lower: true, strict: true }))
     }
-  }, [orgName, editedSlug, setValue])
+  }, [name, editedSlug, setValue])
 
   useEffect(() => {
-    if (!editedBusinessName && orgName) {
-      setValue('registeredBusinessName', orgName)
+    if (!editedBusinessName && name) {
+      setValue('legal_entity.registered_name', name)
     }
-  }, [orgName, editedBusinessName, setValue])
+  }, [name, editedBusinessName, setValue])
 
   return null
 }
@@ -102,7 +96,7 @@ function CompanyFields({
 
   return (
     <FormField
-      name="registeredBusinessName"
+      name="legal_entity.registered_name"
       rules={{ required: 'Registered business name is required' }}
       render={({ field }) => (
         <FormItem className="w-full">
@@ -128,21 +122,17 @@ function CurrencyAndCountryFields() {
   const organizationType = useWatch<FormSchema, 'organizationType'>({
     name: 'organizationType',
   })
-  const businessCountry = useWatch<FormSchema, 'businessCountry'>({
-    name: 'businessCountry',
+  const country = useWatch<FormSchema, 'country'>({
+    name: 'country',
   })
 
   const isUnsupportedCountry =
-    businessCountry !== '' &&
-    !SUPPORTED_PAYOUT_COUNTRIES.includes(businessCountry)
+    country !== '' && !SUPPORTED_PAYOUT_COUNTRIES.includes(country)
 
   const countryDisplayName = useMemo(() => {
-    if (!businessCountry) return ''
-    return (
-      new Intl.DisplayNames([], { type: 'region' }).of(businessCountry) ??
-      businessCountry
-    )
-  }, [businessCountry])
+    if (!country) return ''
+    return new Intl.DisplayNames([], { type: 'region' }).of(country) ?? country
+  }, [country])
 
   return (
     <Box display="flex" flexDirection="column" rowGap="s">
@@ -156,7 +146,7 @@ function CurrencyAndCountryFields() {
         }
       >
         <FormField
-          name="defaultCurrency"
+          name="default_presentment_currency"
           rules={{ required: 'Currency is required' }}
           render={({ field }) => (
             <FormItem className="w-full">
@@ -174,7 +164,7 @@ function CurrencyAndCountryFields() {
 
         {organizationType === 'company' && (
           <FormField
-            name="businessCountry"
+            name="country"
             rules={{ required: 'Business country is required' }}
             render={({ field }) => (
               <FormItem className="w-full">
@@ -217,13 +207,13 @@ function CurrencyAndCountryFields() {
 }
 
 function SubmitButton({ loading }: { loading: boolean }) {
-  const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
-  const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
+  const name = useWatch<FormSchema, 'name'>({ name: 'name' })
+  const slug = useWatch<FormSchema, 'slug'>({ name: 'slug' })
   return (
     <Button
       type="submit"
       loading={loading}
-      disabled={orgName.length === 0 || orgSlug.length === 0}
+      disabled={name.length === 0 || slug.length === 0}
       fullWidth
     >
       Continue
@@ -253,11 +243,13 @@ export function BusinessDetailsStep() {
   const form = useForm<FormSchema>({
     defaultValues: {
       organizationType: data.organizationType || 'individual',
-      orgName: data.orgName || '',
-      orgSlug: data.orgSlug || '',
-      defaultCurrency: data.defaultCurrency || 'usd',
-      businessCountry: data.businessCountry || '',
-      registeredBusinessName: data.registeredBusinessName || '',
+      name: data.orgName || '',
+      slug: data.orgSlug || '',
+      default_presentment_currency: data.defaultCurrency || 'usd',
+      country: data.businessCountry || '',
+      legal_entity: {
+        registered_name: data.registeredBusinessName || '',
+      },
     },
   })
 
@@ -269,19 +261,19 @@ export function BusinessDetailsStep() {
 
     updateData({
       organizationType: formData.organizationType,
-      orgName: formData.orgName,
-      orgSlug: formData.orgSlug,
-      defaultCurrency: formData.defaultCurrency,
-      businessCountry: formData.businessCountry,
-      registeredBusinessName: formData.registeredBusinessName,
+      orgName: formData.name,
+      orgSlug: formData.slug,
+      defaultCurrency: formData.default_presentment_currency,
+      businessCountry: formData.country,
+      registeredBusinessName: formData.legal_entity.registered_name,
     })
 
     const { data: organization, error } = await createOrganization.mutateAsync({
-      name: formData.orgName,
-      slug: formData.orgSlug,
+      name: formData.name,
+      slug: formData.slug,
       default_presentment_currency:
-        formData.defaultCurrency as schemas['PresentmentCurrency'],
-      country: (formData.businessCountry || undefined) as
+        formData.default_presentment_currency as schemas['PresentmentCurrency'],
+      country: (formData.country || undefined) as
         | schemas['OrganizationCreate']['country']
         | undefined,
       default_tax_behavior: 'location',
@@ -289,32 +281,21 @@ export function BusinessDetailsStep() {
         formData.organizationType === 'company'
           ? {
               type: 'company' as const,
-              registered_name: formData.registeredBusinessName,
+              registered_name: formData.legal_entity.registered_name,
             }
           : { type: 'individual' as const },
     })
 
     if (error) {
       setSubmitting(false)
-      let mappedAny = false
       if (Array.isArray(error.detail)) {
-        for (const detail of error.detail) {
-          const apiPath = detail.loc.slice(1).join('.')
-          const formPath = API_TO_FORM_FIELD[apiPath]
-          if (formPath) {
-            setError(formPath, { type: detail.type, message: detail.msg })
-            mappedAny = true
-          }
-        }
-      }
-      if (!mappedAny) {
+        setValidationErrors(error.detail, setError)
+      } else {
         setError('root', {
           message:
             typeof error.detail === 'string'
               ? error.detail
-              : Array.isArray(error.detail)
-                ? (error.detail[0]?.msg ?? 'Failed to create organization')
-                : 'Failed to create organization',
+              : 'Failed to create organization',
         })
       }
       await showApiResponse(400, 'Failed to create organization')
@@ -364,8 +345,8 @@ export function BusinessDetailsStep() {
                     onValueChange={(value) => {
                       field.onChange(value)
                       if (value === 'individual') {
-                        setValue('businessCountry', '')
-                        setValue('registeredBusinessName', '')
+                        setValue('country', '')
+                        setValue('legal_entity.registered_name', '')
                       }
                     }}
                   >
@@ -396,7 +377,7 @@ export function BusinessDetailsStep() {
           >
             <FormField
               control={form.control}
-              name="orgName"
+              name="name"
               rules={{
                 required: 'Organization name is required',
                 validate: (v) =>
@@ -415,7 +396,7 @@ export function BusinessDetailsStep() {
 
             <FormField
               control={form.control}
-              name="orgSlug"
+              name="slug"
               rules={{
                 required: 'Slug is required',
                 validate: (v) =>

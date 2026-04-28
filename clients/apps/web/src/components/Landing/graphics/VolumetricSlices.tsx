@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useInView } from '../hooks/useInView'
+import { GraphicContainer } from './GraphicContainer'
 
 /**
  * VolumetricSlices — WebGL implementation. Each horizontal slice through
@@ -294,7 +295,9 @@ export const VolumetricSlices = () => {
 
   return (
     <div ref={wrapperRef}>
-      <canvas ref={canvasRef} className="h-full w-full" />
+      <GraphicContainer>
+        <canvas ref={canvasRef} className="h-full w-full" />
+      </GraphicContainer>
     </div>
   )
 }

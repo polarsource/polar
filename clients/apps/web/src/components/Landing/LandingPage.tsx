@@ -7,15 +7,13 @@ import { Stream } from '@cloudflare/stream-react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
-import { Adapters } from './Adapters'
-import { BillingDiagram } from './BillingDiagram'
-import Features from './Features'
 import { Logotypes } from './Logotypes'
 import { Pricing } from './Pricing'
-import { Products } from './Products'
 import { Section } from './Section'
 import { Upsell } from './Upsell'
 import { Usage } from './Usage'
+import { Vision } from './Vision'
+import { Features } from './Features'
 
 export default function Page() {
   return (
@@ -47,36 +45,15 @@ const PageContent = () => {
           </Link>
         </Hero>
       </Section>
-      <Section className="flex flex-col gap-y-32" border>
-        <Logotypes />
-        <Features />
-      </Section>
-      <Section className="flex flex-col gap-y-32">
-        <BillingDiagram />
+      <Features />
+      <Section>
+        <Vision />
         <Usage />
       </Section>
-      {isMobile ? null : (
-        <Section className="flex max-w-[1620px]! flex-col gap-y-32">
-          <div className="dark:border-polar-700 relative aspect-video w-full flex-col items-center overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
-            <Stream
-              src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
-              autoplay
-              muted
-              loop
-            />
-          </div>
-        </Section>
-      )}
-      <Section className="flex flex-col gap-y-32" border>
-        <Adapters />
-      </Section>
-      <Section className="flex flex-col gap-y-32" border>
-        <Products />
-      </Section>
-      <Section className="flex flex-col gap-y-24">
+      <Section>
         <Testimonials />
       </Section>
-      <Section className="flex flex-col gap-y-24">
+      <Section>
         <Pricing />
         <Upsell />
       </Section>

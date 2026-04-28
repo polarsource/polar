@@ -1,9 +1,8 @@
-import { StaticImage } from '@/components/Image/StaticImage'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
-import { JSX } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { Section } from './Section'
 import { StillaAI } from './Logos'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { StaticImage } from '../Image/StaticImage'
 
 export const companyTestimonials = [
   {
@@ -126,98 +125,38 @@ const userTestimonials = [
   },
 ]
 
-interface TestamonialProps {
-  name: string
-  company: string
-  avatar?: string
-  logo?: JSX.Element
-  text: React.ReactNode
-  link: string
-  className?: string
-  size?: 'sm' | 'lg'
-}
-
-export const Testamonial = ({
-  name,
-  company,
-  avatar,
-  logo,
-  text,
-  link,
-  className,
-  size = 'sm',
-}: TestamonialProps) => {
-  return (
-    <Link
-      href={link}
-      target="_blank"
-      className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 rounded-2xl border border-transparent bg-gray-50 p-8 transition-colors hover:bg-gray-100',
-        className,
-      )}
-    >
-      <div className="flex flex-col gap-y-8">
+export const Testimonials = () => (
+  <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+    {userTestimonials.map((t) => (
+      <Link
+        key={t.name}
+        href={t.link}
+        target="_blank"
+        className="dark:bg-dark-900 dark:hover:bg-dark-800 flex flex-col justify-between gap-y-12 bg-neutral-50 p-10 py-16 transition-colors hover:bg-neutral-100"
+      >
         <div className="flex flex-row items-center justify-between gap-x-2">
-          {logo ? (
-            logo
-          ) : (
-            <Avatar
-              name={name}
-              avatar_url={avatar ?? ''}
-              className="h-12 w-12"
-              width={64}
-              height={64}
-              loading="lazy"
-              CustomImageComponent={StaticImage}
-            />
-          )}
-        </div>
-        <div
-          className={twMerge(
-            'dark:text-polar-50 flex flex-col text-gray-950',
-            size === 'lg' ? 'gap-y-8 text-xl' : 'gap-y-4 text-lg',
-          )}
-        >
-          {text}
-        </div>
-      </div>
-      <div className="flex flex-col">
-        <p className="dark:text-polar-600 mb-4 text-gray-400">—</p>
-        <div className="flex flex-row items-center gap-x-2">
-          <span>{name}</span>
-        </div>
-        <span className="dark:text-polar-500 text-gray-500">{company}</span>
-      </div>
-    </Link>
-  )
-}
-
-export const Testimonials = () => {
-  return (
-    <div className="flex flex-col items-center gap-y-12 md:gap-y-24 md:py-12">
-      <div className="flex flex-col items-center gap-y-8">
-        <span className="dark:text-polar-500 text-lg text-gray-400">
-          Testimonials
-        </span>
-        <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
-          Trusted by industry leaders
-        </h1>
-      </div>
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-        {companyTestimonials.map((testimonial, index) => (
-          <Testamonial
-            key={`testimonial-${index}`}
-            size="lg"
-            className={index === 0 ? 'xl:col-span-2' : ''}
-            {...testimonial}
+          <Avatar
+            name={t.name}
+            avatar_url={t.avatar ?? ''}
+            className="h-12 w-12"
+            width={64}
+            height={64}
+            loading="lazy"
+            CustomImageComponent={StaticImage}
           />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {userTestimonials.map((testimonial, index) => (
-          <Testamonial key={`testimonial-${index}`} {...testimonial} />
-        ))}
-      </div>
-    </div>
-  )
-}
+        </div>
+        <div className="flex h-full flex-col gap-y-6 text-xl leading-snug text-neutral-900 dark:text-white">
+          {t.text}
+        </div>
+        <div>
+          <div className="text-xl text-neutral-900 dark:text-white">
+            {t.name}
+          </div>
+          <div className="dark:text-dark-400 text-xl text-neutral-400">
+            {t.company}
+          </div>
+        </div>
+      </Link>
+    ))}
+  </div>
+)

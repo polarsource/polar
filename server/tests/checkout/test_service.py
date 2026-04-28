@@ -1155,7 +1155,7 @@ class TestCreate:
             auth_subject,
         )
 
-        assert checkout.custom_field_data == {"text": "abc", "select": None}
+        assert checkout.custom_field_data == {"text": "abc"}
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -3158,7 +3158,7 @@ class TestUpdate:
             ),
         )
 
-        assert checkout.custom_field_data == {"text": "abc", "select": None}
+        assert checkout.custom_field_data == {"text": "abc"}
 
     async def test_valid_embed_origin(
         self,

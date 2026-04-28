@@ -12,17 +12,8 @@ const LAYERS = [
 
 export const Usage = () => (
   <div id="architecture" className="mx-auto flex flex-col gap-y-16 pt-8">
-    {/* Top row — heading */}
-    <div className="grid grid-cols-1 md:grid-cols-2">
-      <h1 className="font-display text-7xl leading-snug">
-        Usage billing
-        <br />
-        in 3 simple steps.
-      </h1>
-    </div>
-
     {/* Bottom row — 4 graphics, one per layer */}
-    <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {LAYERS.map((l, i) => (
         <div
           key={l.id}
@@ -37,7 +28,7 @@ export const Usage = () => (
           {/* Label */}
           <div className="flex flex-col px-8 py-8">
             <div className="flex flex-col gap-2">
-              <span className="text-2xl text-neutral-900 dark:text-neutral-300">
+              <span className="text-2xl text-neutral-900 dark:text-white">
                 {l.id} — {l.name}
               </span>
               <span className="dark:text-dark-300 text-lg text-neutral-500">

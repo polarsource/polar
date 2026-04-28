@@ -2,12 +2,9 @@
 
 import { Hero } from '@/components/Landing/Hero/Hero'
 import { Testimonials } from '@/components/Landing/Testimonials'
-import useIsMobile from '@/utils/mobile'
-import { Stream } from '@cloudflare/stream-react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
-import { Logotypes } from './Logotypes'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
 import { Upsell } from './Upsell'
@@ -24,10 +21,9 @@ export default function Page() {
 }
 
 const PageContent = () => {
-  const { isMobile } = useIsMobile()
   return (
     <>
-      <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
+      <Section className="flex flex-col pt-0 md:pt-0">
         <Hero
           title="Turn Usage Into Revenue"
           description="A billing platform built for AI companies"
@@ -44,11 +40,11 @@ const PageContent = () => {
             </Button>
           </Link>
         </Hero>
+        <Usage />
       </Section>
       <Features />
       <Section>
         <Vision />
-        <Usage />
       </Section>
       <Section>
         <Testimonials />

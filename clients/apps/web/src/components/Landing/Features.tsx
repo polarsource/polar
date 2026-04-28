@@ -61,10 +61,10 @@ export const Features = () => {
   }, [onScroll])
 
   return (
-    <div className="flex max-w-none! flex-col gap-y-24 py-32 dark:bg-black">
+    <div className="flex max-w-none! flex-col gap-y-24 py-32">
       <div className="mx-auto w-full max-w-7xl">
         <h1 className="font-display text-7xl leading-snug">
-          Everything you need.
+          All primitives you need.
           <br />
           In a single API.
         </h1>

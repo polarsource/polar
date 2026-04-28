@@ -54,22 +54,6 @@ const userTestimonials = [
     ),
   },
   {
-    link: 'https://x.com/steventey/status/1886124389357490670',
-    name: 'Steven Tey',
-    company: 'Dub',
-    verified: true,
-    avatar: '/assets/landing/testamonials/steven.jpg',
-    text: (
-      <>
-        <p>Open source + great DX + responsive support always wins.</p>
-        <p>
-          If you&apos;re selling stuff online and haven&apos;t tried Polar yet —
-          100% recommend doing so!
-        </p>
-      </>
-    ),
-  },
-  {
     link: 'https://x.com/mitchellh/status/1775925951668552005',
     name: 'Mitchell Hashimoto',
     company: 'Ghostty',
@@ -94,34 +78,6 @@ const userTestimonials = [
     verified: true,
     avatar: '/assets/landing/testamonials/lee.jpg',
     text: <p>I switched to Polar a few weeks back. Best decision ever.</p>,
-  },
-  {
-    link: 'https://x.com/pontusab/status/1886140577634463870',
-    name: 'Pontus Abrahamsson',
-    company: 'Midday',
-    verified: true,
-    avatar: '/assets/landing/testamonials/pontus.jpg',
-    text: <p>You can tell Polar is building DX first.</p>,
-  },
-  {
-    link: 'https://x.com/tonykelly/status/2016615925701570990',
-    name: 'Tony Kelly',
-    company: 'Spicebox',
-    verified: false,
-    avatar: '/assets/landing/testamonials/tony.jpg',
-    text: (
-      <>
-        <p>
-          Highly recommend using Polar for billing. Easiest and quickest payment
-          integration I’ve done in… ever actually!
-        </p>
-        <p>
-          Within 50 minutes of signing up had onboarded, integrated, tested in
-          sandbox and was migrating to Production.
-        </p>
-        <p>That’s hard to beat.</p>
-      </>
-    ),
   },
 ]
 

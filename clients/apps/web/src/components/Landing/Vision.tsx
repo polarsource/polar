@@ -7,8 +7,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 gsap.registerPlugin(ScrollTrigger)
 
 const PARAGRAPHS = [
-  `Polar is the financial layer for a new generation of software startups.`,
   'Event-based usage billing. Checkouts that convert. Realtime metrics. Worldwide tax handled.',
+  `Polar is the financial layer for a new generation of intelligent software.`,
 ]
 
 export const Vision = () => {
@@ -55,7 +55,7 @@ export const Vision = () => {
           <div className="dark:bg-polar-700 w-px self-stretch bg-neutral-200">
             <div
               ref={barRef}
-              className="w-full bg-neutral-900 dark:bg-white"
+              className="w-full bg-black dark:bg-white"
               style={{ height: '0%' }}
             />
           </div>

@@ -397,35 +397,18 @@ class Settings(BaseSettings):
         "usd": _DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE,
     }
 
-    # Stripe enforces per-country minimum payout amounts (in the recipient's
-    # local currency). Since we trigger payouts in USD, these have been
-    # converted using current FX rates and rounded up to the next multiple
-    # of $5 USD to give us headroom against FX fluctuations. Values are in
-    # USD cents and indexed by ISO 3166-1 alpha-2 country code. Only
-    # countries whose USD-equivalent minimum is meaningful (i.e., greater
-    # than the default $10 minimum) are listed here. See:
+    # Stripe enforces per-country minimum payout amounts in the recipient's
+    # local currency. For most countries the per-currency minimum above
+    # already exceeds the country minimum after FX conversion, but a few
+    # don't fit that pattern: USD-denominated countries with a higher local
+    # minimum than the default $10, and BSD (not listed per-currency above).
+    # Values are in USD cents and indexed by ISO 3166-1 alpha-2 country
+    # code, rounded up to the next multiple of $5 USD for FX headroom. See:
     # https://docs.stripe.com/global-payouts/send-money
     ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_COUNTRY: dict[str, int] = {
-        "AL": 3500,  # Albania: 3000 ALL
-        "AM": 3500,  # Armenia: 12100 AMD
         "BS": 3000,  # Bahamas: 25 BSD
-        "BT": 3500,  # Bhutan: 2500 BTN
-        "BA": 3000,  # Bosnia and Herzegovina: 50 BAM
         "SV": 3000,  # El Salvador: 30 USD
-        "GM": 3000,  # Gambia: 1900 GMD
-        "GY": 3500,  # Guyana: 6300 GYD
-        "MG": 3000,  # Madagascar: 132300 MGA
-        "MY": 3000,  # Malaysia: 133 MYR
-        "MD": 3000,  # Moldova: 500 MDL
-        "MN": 3500,  # Mongolia: 105000 MNT
-        "MZ": 3000,  # Mozambique: 1600 MZN
-        "NA": 3000,  # Namibia: 500 NAD
-        "MK": 3000,  # North Macedonia: 1500 MKD
         "PA": 5000,  # Panama: 50 USD
-        "RS": 3000,  # Serbia: 3000 RSD
-        "TW": 3000,  # Taiwan: 800 TWD
-        "TH": 2000,  # Thailand: 600 THB
-        "UZ": 3000,  # Uzbekistan: 343000 UZS
     }
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40

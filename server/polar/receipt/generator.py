@@ -14,7 +14,6 @@ from polar.invoice.generator import (
     InvoiceTotalsItem,
     format_date,
 )
-from polar.kit.address import Address
 from polar.kit.currency import format_currency
 from polar.kit.utils import utc_now
 
@@ -49,25 +48,11 @@ class ReceiptPayment(BaseModel):
 
 
 class Receipt(Invoice):
-    # The whole point of receipts is they don't gate on billing details —
-    # widen the parent's required fields. The generator falls back to the
-    # customer email when these are missing.
-    customer_name: str | None = None  # type: ignore[assignment]
-    customer_address: Address | None = None  # type: ignore[assignment]
-
     invoice_number: str | None = None
     paid_at: datetime | None = None
-    customer_email: str | None = None
     payments: list[ReceiptPayment] = []
     refunds: list[ReceiptRefund] = []
     rendered_at: datetime = Field(default_factory=utc_now)
-
-    @property
-    def fully_refunded(self) -> bool:
-        order_total = self.net_amount + self.tax_amount
-        if order_total <= 0:
-            return False
-        return self.total_refunded >= order_total
 
     @property
     def heading_items(self) -> list[InvoiceHeadingItem]:
@@ -110,18 +95,27 @@ class Receipt(Invoice):
         return items
 
     @classmethod
-    def build_for_order(
+    def from_order(  # type: ignore[override]
         cls,
         order: "Order",
         payments: list["Payment"],
         refunds: list["Refund"],
     ) -> Self:
         assert order.receipt_number is not None
+        assert order.billing_name is not None
+        assert order.billing_address is not None
 
         sorted_payments = sorted(payments, key=lambda p: p.created_at)
         paid_at = sorted_payments[0].created_at if sorted_payments else None
 
-        customer_additional_info = order.tax_id[0] if order.tax_id else None
+        additional_info_parts: list[str] = []
+        if order.tax_id:
+            additional_info_parts.append(order.tax_id[0])
+        if order.customer.email:
+            additional_info_parts.append(order.customer.email)
+        customer_additional_info = (
+            "\n".join(additional_info_parts) if additional_info_parts else None
+        )
 
         return cls(
             number=order.receipt_number,
@@ -132,7 +126,6 @@ class Receipt(Invoice):
             seller_address=settings.INVOICES_ADDRESS,
             seller_additional_info=settings.INVOICES_ADDITIONAL_INFO,
             customer_name=order.billing_name,
-            customer_email=order.customer.email,
             customer_additional_info=customer_additional_info,
             customer_address=order.billing_address,
             subtotal_amount=order.subtotal_amount,
@@ -178,29 +171,7 @@ class ReceiptGenerator(InvoiceGenerator):
     """Generate a receipt PDF, mirroring the invoice layout with payment history
     and an optional Refunds section."""
 
-    refund_stamp_color: tuple[int, int, int] = (192, 57, 43)
-
     data: Receipt
-
-    def header(self) -> None:
-        super().header()
-        if self.page_no() == 1 and self.data.fully_refunded:
-            x = self.get_x()
-            y = self.get_y()
-            self.set_xy(0, self.get_y())
-            self.set_fill_color(*self.refund_stamp_color)
-            self.set_text_color(255, 255, 255)
-            self.set_font(style="B", size=self.base_font_size)
-            self.cell(
-                self.w,
-                8,
-                "FULLY REFUNDED",
-                align=Align.C,
-                fill=True,
-            )
-            self.set_text_color(0, 0, 0)
-            self.set_font(style="", size=self.base_font_size)
-            self.set_xy(x, y + 8 + 2)
 
     def footer(self) -> None:
         self.set_y(-self.b_margin)
@@ -220,52 +191,6 @@ class ReceiptGenerator(InvoiceGenerator):
             self._render_payment_history_section()
         if self.data.refunds:
             self._render_refunds_section()
-
-    def _render_customer_block(self) -> float:
-        """Render the Bill-to block, falling back to the customer email when
-        billing details aren't set — receipts must work without an address."""
-        self.set_font(style="B")
-        self.cell(
-            h=self.cell_height(), text="Bill to", new_x=XPos.LEFT, new_y=YPos.NEXT
-        )
-
-        name = self.data.customer_name or self.data.customer_email
-        if name is not None:
-            self.set_font(style="B")
-            self.multi_cell(
-                80,
-                self.cell_height(),
-                text=self._shape_text(name),
-                new_x=XPos.LEFT,
-                new_y=YPos.NEXT,
-            )
-
-        self.set_font(style="")
-        if isinstance(self.data.customer_address, Address):
-            self.multi_cell(
-                80,
-                self.cell_height(),
-                self._shape_text(self.data.customer_address.to_text()),
-                new_x=XPos.LEFT,
-                new_y=YPos.NEXT,
-            )
-        elif self.data.customer_email and self.data.customer_email != name:
-            self.multi_cell(
-                80,
-                self.cell_height(),
-                self._shape_text(self.data.customer_email),
-                new_x=XPos.LEFT,
-                new_y=YPos.NEXT,
-            )
-
-        if self.data.customer_additional_info:
-            self.multi_cell(
-                80,
-                self.cell_height(),
-                text=self._shape_text(self.data.customer_additional_info),
-                markdown=True,
-            )
-        return self.get_y()
 
     def _render_section_title(self, title: str) -> None:
         self.set_y(self.get_y() + self.elements_y_margin)

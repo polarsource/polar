@@ -59,7 +59,7 @@ async def render_receipt_pdf(receipt: Receipt) -> bytes:
 def main() -> int:
     try:
         payload = ReceiptRenderRequest.model_validate_json(sys.stdin.buffer.read())
-        generator = ReceiptGenerator(payload.receipt, heading_title="RECEIPT")
+        generator = ReceiptGenerator(payload.receipt, heading_title="Receipt")
         generator.generate()
         output = generator.output()
         assert isinstance(output, bytearray)

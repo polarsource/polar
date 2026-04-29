@@ -69,9 +69,8 @@ def _build_receipt(
 class TestReceiptGenerator:
     def test_renders_pdf_bytes(self) -> None:
         receipt = _build_receipt()
-        assert receipt.fully_refunded is False
         generator = ReceiptGenerator(
-            receipt, heading_title="RECEIPT", add_sandbox_warning=False
+            receipt, heading_title="Receipt", add_sandbox_warning=False
         )
         generator.generate()
         output = generator.output()
@@ -80,7 +79,7 @@ class TestReceiptGenerator:
         assert len(output) > 100
         assert bytes(output).startswith(b"%PDF-")
 
-    def test_renders_with_refunds_and_stamp(self) -> None:
+    def test_renders_with_refunds(self) -> None:
         now = utc_now()
         receipt = _build_receipt(
             refunds=[
@@ -88,23 +87,13 @@ class TestReceiptGenerator:
                 ReceiptRefund(date=now, amount=5000, tax_amount=0),
             ],
         )
-        assert receipt.fully_refunded is True
         generator = ReceiptGenerator(
-            receipt, heading_title="RECEIPT", add_sandbox_warning=False
+            receipt, heading_title="Receipt", add_sandbox_warning=False
         )
         generator.generate()
         output = generator.output()
 
         assert bytes(output).startswith(b"%PDF-")
-
-    def test_fully_refunded_partial(self) -> None:
-        now = utc_now()
-        receipt = _build_receipt(
-            refunds=[
-                ReceiptRefund(date=now, amount=2500, tax_amount=0),
-            ],
-        )
-        assert receipt.fully_refunded is False
 
     def test_heading_items_include_invoice_and_paid_date(self) -> None:
         receipt = _build_receipt()

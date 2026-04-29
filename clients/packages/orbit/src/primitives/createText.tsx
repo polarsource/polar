@@ -3,10 +3,9 @@ import {
   type ComponentPropsWithoutRef,
   type ElementType,
   type JSX,
+  type ReactNode,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-// ─── Text tag union ───────────────────────────────────────────────────────────
 
 type TextTag =
   | 'p'
@@ -23,9 +22,6 @@ type TextTag =
   | 'h4'
   | 'h5'
   | 'h6'
-
-// ─── Variants ─────────────────────────────────────────────────────────────────
-// All styling is encoded here — consumers pick a semantic variant, not raw props.
 
 const HEADING_BASE = 'font-display tracking-tight text-black dark:text-white'
 
@@ -82,8 +78,6 @@ const textVariants = cva('', {
   },
 })
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type TextVariant = NonNullable<
   VariantProps<typeof textVariants>['variant']
 >
@@ -93,11 +87,50 @@ export type TextStyleProps = VariantProps<typeof textVariants>
 type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
   as?: E
   className?: string
-} & Omit<ComponentPropsWithoutRef<E>, keyof TextStyleProps | 'className'>
-
-// ─── Component ────────────────────────────────────────────────────────────────
+  loading?: boolean
+  placeholderText?: string
+  placeholderNumberOfLines?: number
+} & Omit<
+    ComponentPropsWithoutRef<E>,
+    keyof TextStyleProps | 'className' | 'loading'
+  >
 
 const HEADING_FONT_FEATURES = "'ss07' 1, 'ss08' 1, 'zero' 1, 'liga' 0"
+const SKELETON_CLASSES =
+  'dark:bg-polar-700 animate-pulse rounded-sm bg-gray-100'
+
+const renderMultiLineSkeleton = (lines: number): ReactNode =>
+  Array.from({ length: lines }, (_, i) => (
+    <span
+      key={i}
+      aria-hidden
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        height: '1lh',
+      }}
+    >
+      <span
+        className={SKELETON_CLASSES}
+        style={{
+          display: 'block',
+          height: '1em',
+          width: i === lines - 1 ? '60%' : '100%',
+        }}
+      />
+    </span>
+  ))
+
+const renderSingleLineSkeleton = (placeholder: ReactNode): ReactNode => (
+  <>
+    <span style={{ visibility: 'hidden' }}>{placeholder}</span>
+    <span
+      aria-hidden
+      className={SKELETON_CLASSES}
+      style={{ position: 'absolute', inset: 0 }}
+    />
+  </>
+)
 
 function Text<E extends TextTag = 'p'>({
   as,
@@ -108,14 +141,37 @@ function Text<E extends TextTag = 'p'>({
   className,
   children,
   style,
+  loading,
+  placeholderText,
+  placeholderNumberOfLines,
   ...props
 }: TextProps<E> & { style?: React.CSSProperties }): JSX.Element {
   const Tag = (as ?? 'p') as ElementType
   const isHeading =
     typeof variant === 'string' && variant.startsWith('heading-')
-  const mergedStyle = isHeading
-    ? { fontFeatureSettings: HEADING_FONT_FEATURES, ...style }
-    : style
+
+  let content: ReactNode = children
+  let loadingStyle: React.CSSProperties | undefined
+
+  if (loading) {
+    const lines = placeholderNumberOfLines ?? 1
+    if (lines > 1) {
+      content = renderMultiLineSkeleton(lines)
+      loadingStyle = undefined
+    } else {
+      content = renderSingleLineSkeleton(
+        placeholderText ?? children ?? 'Loading...',
+      )
+      loadingStyle = { position: 'relative', display: 'inline-block' }
+    }
+  }
+
+  const mergedStyle: React.CSSProperties = {
+    ...(isHeading && { fontFeatureSettings: HEADING_FONT_FEATURES }),
+    ...style,
+    ...loadingStyle,
+  }
+
   return (
     <Tag
       className={twMerge(
@@ -125,15 +181,12 @@ function Text<E extends TextTag = 'p'>({
       style={mergedStyle}
       {...(props as object)}
     >
-      {children}
+      {content}
     </Tag>
   )
 }
 
 Text.displayName = 'Text'
-
-// ─── createText ───────────────────────────────────────────────────────────────
-// Factory kept for extensibility — returns the standard Text component.
 
 export function createText() {
   return Text

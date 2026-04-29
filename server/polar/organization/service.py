@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any, cast
+from typing import Any, Literal, cast
 from uuid import UUID
 
 import structlog
@@ -70,6 +70,7 @@ from .schemas import (
     OrganizationDeletionBlockedReason,
     OrganizationReviewCheck,
     OrganizationReviewCheckKey,
+    OrganizationReviewCheckReason,
     OrganizationReviewCheckStatus,
     OrganizationReviewState,
     OrganizationReviewSubmissionBody,
@@ -1099,45 +1100,48 @@ class OrganizationService:
         return await repository.get_by_organization(organization.id)
 
     async def get_review_state(
-        self, session: AsyncReadSession, organization: Organization
+        self,
+        organization: Organization,
+        *,
+        status: Literal["pass", "fail"] | None = None,
     ) -> OrganizationReviewState:
         """Build the merchant self-review checklist state.
 
-        STUB: returns hardcoded "all passed" data so the new dashboard UI can
+        STUB: returns one of two hardcoded mocks so the new dashboard UI can
         integrate against the contract while the real check logic is built
         out incrementally. The shape is final; only the values are dummy.
+
+        - ``status="pass"`` (default): every check ``passed``.
+        - ``status="fail"``: every check ``failed`` with a representative reason.
         """
+        is_fail = status == "fail"
+        check_status = (
+            OrganizationReviewCheckStatus.FAILED
+            if is_fail
+            else OrganizationReviewCheckStatus.PASSED
+        )
+        identity_reasons = (
+            [OrganizationReviewCheckReason.IDENTITY_REJECTED] if is_fail else []
+        )
+        payout_reasons = (
+            [OrganizationReviewCheckReason.PAYOUT_ACCOUNT_REQUIREMENTS_DUE]
+            if is_fail
+            else []
+        )
+        checks = [
+            (OrganizationReviewCheckKey.IDENTITY_EMAIL, identity_reasons),
+            (OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS, identity_reasons),
+            (OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION, identity_reasons),
+            (OrganizationReviewCheckKey.PRODUCT_DESCRIPTION, []),
+            (OrganizationReviewCheckKey.PAYOUT_ACCOUNT, payout_reasons),
+        ]
         preliminary_steps = [
-            OrganizationReviewCheck(
-                key=OrganizationReviewCheckKey.IDENTITY,
-                status=OrganizationReviewCheckStatus.PASSED,
-                children=[
-                    OrganizationReviewCheck(
-                        key=OrganizationReviewCheckKey.IDENTITY_EMAIL,
-                        status=OrganizationReviewCheckStatus.PASSED,
-                    ),
-                    OrganizationReviewCheck(
-                        key=OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS,
-                        status=OrganizationReviewCheckStatus.PASSED,
-                    ),
-                    OrganizationReviewCheck(
-                        key=OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION,
-                        status=OrganizationReviewCheckStatus.PASSED,
-                    ),
-                ],
-            ),
-            OrganizationReviewCheck(
-                key=OrganizationReviewCheckKey.PRODUCT_DESCRIPTION,
-                status=OrganizationReviewCheckStatus.PASSED,
-            ),
-            OrganizationReviewCheck(
-                key=OrganizationReviewCheckKey.PAYOUT_ACCOUNT,
-                status=OrganizationReviewCheckStatus.PASSED,
-            ),
+            OrganizationReviewCheck(key=key, status=check_status, reasons=reasons)
+            for key, reasons in checks
         ]
 
         return OrganizationReviewState(
-            can_submit=True,
+            can_submit=not is_fail,
             submitted_at=None,
             verdict=None,
             appeal=None,

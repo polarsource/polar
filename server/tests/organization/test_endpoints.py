@@ -959,20 +959,58 @@ class TestGetReview:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        """Returns the v1 checklist shape: 3 top-level checks with identity expanded."""
+        """Returns the v1 checklist shape: a flat list of leaf checks."""
         response = await client.get(f"/v1/organizations/{organization.id}/review")
 
         assert response.status_code == 200
         json = response.json()
 
         assert [step["key"] for step in json["preliminary_steps"]] == [
-            "identity",
-            "product_description",
-            "payout_account",
-        ]
-        identity = json["preliminary_steps"][0]
-        assert [child["key"] for child in identity["children"]] == [
             "identity.email",
             "identity.social_links",
             "identity.stripe_identity_verification",
+            "product_description",
+            "payout_account",
         ]
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("status", "expected_check_status", "expected_can_submit"),
+        [("pass", "passed", True), ("fail", "failed", False)],
+    )
+    async def test_status_mock(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        status: str,
+        expected_check_status: str,
+        expected_can_submit: bool,
+    ) -> None:
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review",
+            params={"status": status},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["can_submit"] is expected_can_submit
+        assert len(json["preliminary_steps"]) == 5
+        assert all(
+            step["status"] == expected_check_status
+            for step in json["preliminary_steps"]
+        )
+
+    @pytest.mark.auth
+    async def test_status_invalid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review",
+            params={"status": "passed"},
+        )
+
+        assert response.status_code == 422

@@ -551,7 +551,6 @@ class OrganizationReviewStatus(Schema):
 class OrganizationReviewCheckKey(StrEnum):
     """Stable identifiers for each check. Adding a new key is a coordinated FE+BE change."""
 
-    IDENTITY = "identity"
     IDENTITY_EMAIL = "identity.email"
     IDENTITY_SOCIAL_LINKS = "identity.social_links"
     IDENTITY_STRIPE_VERIFICATION = "identity.stripe_identity_verification"
@@ -586,17 +585,13 @@ class OrganizationReviewCheckReason(StrEnum):
 
 
 class OrganizationReviewCheck(Schema):
-    """A single item in the self-review checklist. Recursive via `children`."""
+    """A single item in the self-review checklist."""
 
     key: OrganizationReviewCheckKey
     status: OrganizationReviewCheckStatus
     reasons: list[OrganizationReviewCheckReason] = Field(
         default_factory=list,
         description="Reasons for the current status. Empty when `passed`.",
-    )
-    children: list["OrganizationReviewCheck"] = Field(
-        default_factory=list,
-        description="Nested sub-checks. Empty for leaves.",
     )
 
 
@@ -619,10 +614,6 @@ class OrganizationReviewState(Schema):
     verdict: Literal["pass", "fail"] | None = None
     appeal: OrganizationReviewAppeal | None = None
     preliminary_steps: list[OrganizationReviewCheck] = Field(default_factory=list)
-
-
-# Required for the recursive `children` field.
-OrganizationReviewCheck.model_rebuild()
 
 
 class OrganizationDeletionBlockedReason(StrEnum):

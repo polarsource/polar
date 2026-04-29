@@ -30,7 +30,7 @@ jobs:
             -f enforcement=active
 
       - name: Announce in Slack
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@v3.0.1
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

@@ -584,16 +584,12 @@ class Settings(BaseSettings):
     def stripe_descriptor_suffix_max_length(self) -> int:
         return 22 - len("* ") - len(self.STRIPE_STATEMENT_DESCRIPTOR)
 
-    def get_minimum_payout(self, currency: str, country: str | None = None) -> int:
+    def get_minimum_payout(self, currency: str, country: str) -> int:
         currency_minimum = self.ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_CURRENCY.get(
             currency.lower(), self._DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE
         )
-        country_minimum = (
-            self.ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_COUNTRY.get(
-                country.upper(), 0
-            )
-            if country is not None
-            else 0
+        country_minimum = self.ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_COUNTRY.get(
+            country.upper(), 0
         )
         return max(currency_minimum, country_minimum)
 

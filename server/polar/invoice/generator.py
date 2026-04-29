@@ -276,18 +276,43 @@ class InvoiceGenerator(FPDF):
     arabic_font_name: ClassVar[str] = "notosansarabic"
     """Font family name for Arabic fallback glyphs."""
 
-    cjk_regular_font_files: ClassVar[tuple[Path, ...]] = (
-        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
-    )
-    """Candidate paths to the CJK regular fallback font file."""
+    cjk_script_font_files: ClassVar[dict[str, tuple[Path, Path]]] = {
+        "tc": (
+            Path(__file__).parent / "fonts/NotoSansTC-Regular.ttf",
+            Path(__file__).parent / "fonts/NotoSansTC-Bold.ttf",
+        ),
+        "sc": (
+            Path(__file__).parent / "fonts/NotoSansSC-Regular.ttf",
+            Path(__file__).parent / "fonts/NotoSansSC-Bold.ttf",
+        ),
+        "jp": (
+            Path(__file__).parent / "fonts/NotoSansJP-Regular.ttf",
+            Path(__file__).parent / "fonts/NotoSansJP-Bold.ttf",
+        ),
+        "kr": (
+            Path(__file__).parent / "fonts/NotoSansKR-Regular.ttf",
+            Path(__file__).parent / "fonts/NotoSansKR-Bold.ttf",
+        ),
+    }
+    """Per-script CJK fallback font files (regular, bold) keyed by short name."""
 
-    cjk_bold_font_files: ClassVar[tuple[Path, ...]] = (
-        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"),
-    )
-    """Candidate paths to the CJK bold fallback font file."""
+    cjk_script_country_map: ClassVar[dict[str, str]] = {
+        "JP": "jp",
+        "KR": "kr",
+        "CN": "sc",
+        "SG": "sc",
+        "MY": "sc",
+        "TW": "tc",
+        "MO": "tc",
+        "HK": "tc",
+    }
+    """Map ISO 3166-1 alpha-2 country to the preferred CJK script family."""
 
-    cjk_font_name: ClassVar[str] = "notosanscjk"
-    """Font family name for CJK fallback glyphs."""
+    cjk_default_script: ClassVar[str] = "sc"
+    """Default CJK script family when the customer's country is not mapped."""
+
+    cjk_font_name_prefix: ClassVar[str] = "notosans"
+    """Prefix used to derive the fpdf font family name for each script."""
 
     base_font_size: ClassVar[int] = 10
     """Base font size in points."""
@@ -322,7 +347,20 @@ class InvoiceGenerator(FPDF):
 
     @classmethod
     def has_cjk_fallback_fonts(cls) -> bool:
-        return cls.resolve_font_file(cls.cjk_regular_font_files) is not None
+        return all(
+            regular.exists() and bold.exists()
+            for regular, bold in cls.cjk_script_font_files.values()
+        )
+
+    @classmethod
+    def cjk_font_name_for_script(cls, script: str) -> str:
+        return f"{cls.cjk_font_name_prefix}{script}"
+
+    @classmethod
+    def resolve_cjk_script(cls, country: str | None) -> str:
+        if country is None:
+            return cls.cjk_default_script
+        return cls.cjk_script_country_map.get(country, cls.cjk_default_script)
 
     def __init__(
         self,
@@ -343,13 +381,18 @@ class InvoiceGenerator(FPDF):
             self.arabic_font_name, fname=self.arabic_bold_font_file, style="B"
         )
         fallback_fonts = [self.hebrew_font_name, self.arabic_font_name]
-        cjk_regular_font_file = self.resolve_font_file(self.cjk_regular_font_files)
-        if cjk_regular_font_file is not None:
-            self.add_font(self.cjk_font_name, fname=cjk_regular_font_file)
-            cjk_bold_font_file = self.resolve_font_file(self.cjk_bold_font_files)
-            if cjk_bold_font_file is not None:
-                self.add_font(self.cjk_font_name, fname=cjk_bold_font_file, style="B")
-            fallback_fonts.append(self.cjk_font_name)
+        if self.has_cjk_fallback_fonts():
+            for script, (regular, bold) in self.cjk_script_font_files.items():
+                family = self.cjk_font_name_for_script(script)
+                self.add_font(family, fname=regular)
+                self.add_font(family, fname=bold, style="B")
+
+            customer_script = self.resolve_cjk_script(data.customer_address.country)
+            customer_family = self.cjk_font_name_for_script(customer_script)
+            fallback_fonts.append(customer_family)
+            for script in self.cjk_script_font_files:
+                if script != customer_script:
+                    fallback_fonts.append(self.cjk_font_name_for_script(script))
         self.set_fallback_fonts(fallback_fonts, exact_match=False)
         self.set_font(self.font_name, size=self.base_font_size)
 

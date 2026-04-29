@@ -273,15 +273,46 @@ def test_generator_registers_unicode_fallback_fonts(invoice: Invoice) -> None:
         f"{generator.arabic_font_name}B"
     )
     if InvoiceGenerator.has_cjk_fallback_fonts():
-        assert generator.get_fallback_font("你") == generator.cjk_font_name
-        assert generator.get_fallback_font("안") == generator.cjk_font_name
-        assert generator.get_fallback_font("日") == generator.cjk_font_name
-        assert generator.get_fallback_font("你", style="B") == (
-            f"{generator.cjk_font_name}B"
+        # Default invoice has a US customer, so the SC family is preferred
+        # first; characters shared across scripts (Han) resolve to it. KR is
+        # the only family with Hangul.
+        sc_family = generator.cjk_font_name_for_script("sc")
+        kr_family = generator.cjk_font_name_for_script("kr")
+        assert generator.get_fallback_font("你") == sc_family
+        assert generator.get_fallback_font("日") == sc_family
+        assert generator.get_fallback_font("안") == kr_family
+        assert generator.get_fallback_font("你", style="B") == f"{sc_family}B"
+        assert generator.get_fallback_font("日", style="B") == f"{sc_family}B"
+        assert generator.get_fallback_font("안", style="B") == f"{kr_family}B"
+
+
+@pytest.mark.skipif(
+    not InvoiceGenerator.has_cjk_fallback_fonts(),
+    reason="CJK fallback fonts are not installed",
+)
+def test_generator_uses_traditional_chinese_for_tw_customer(invoice: Invoice) -> None:
+    generator = InvoiceGenerator(
+        invoice.model_copy(
+            update={
+                "customer_name": "範例股份有限公司",
+                "customer_address": Address(
+                    line1="123 Example St",
+                    city="Taipei City",
+                    postal_code="100",
+                    country=CountryAlpha2("TW"),
+                ),
+                "items": [
+                    InvoiceItem(
+                        description="年度訂閱",
+                        quantity=1,
+                        unit_amount=100_00,
+                        amount=100_00,
+                    ),
+                ],
+            }
         )
-        assert generator.get_fallback_font("안", style="B") == (
-            f"{generator.cjk_font_name}B"
-        )
-        assert generator.get_fallback_font("日", style="B") == (
-            f"{generator.cjk_font_name}B"
-        )
+    )
+
+    tc_family = generator.cjk_font_name_for_script("tc")
+    assert generator.get_fallback_font("範") == tc_family
+    assert generator.get_fallback_font("範", style="B") == f"{tc_family}B"

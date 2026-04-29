@@ -9,6 +9,7 @@ from polar.account.service import account as account_service
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
+    AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
     AuthorizeOrgDelete,
     AuthorizeOrgManagePayoutAccount,
@@ -690,8 +691,7 @@ async def get_review_status(
     tags=[APITag.private],
 )
 async def get_review(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsRead,
+    authz: AuthorizeOrgAccess,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewState:
     """Get the merchant self-review checklist state.
@@ -701,12 +701,7 @@ async def get_review(
     a hardcoded all-passed snapshot — real check logic will land
     incrementally without changing the response shape.
     """
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    return await organization_service.get_review_state(session, organization)
+    return await organization_service.get_review_state(session, authz.organization)
 
 
 @router.post(

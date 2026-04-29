@@ -1101,8 +1101,6 @@ class OrganizationService:
         integrate against the contract while the real check logic is built
         out incrementally. The shape is final; only the values are dummy.
         """
-        del session, organization  # unused in the stub
-
         preliminary_steps = [
             OrganizationReviewCheck(
                 key=OrganizationReviewCheckKey.IDENTITY,

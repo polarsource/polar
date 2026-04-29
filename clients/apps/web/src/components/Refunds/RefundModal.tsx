@@ -88,7 +88,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(handleRefundOrder)}
-          className="flex flex-col gap-8"
+          className="flex flex-col gap-4"
         >
           <div className="flex flex-col gap-4">
             <FormField
@@ -178,31 +178,23 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
               />
             )}
           </div>
-          <Well className="p-6">
-            <WellHeader>
-              <h3 className="font-medium">
-                Original payment fees are not returned
-              </h3>
-            </WellHeader>
-            <WellContent>
-              <p className="dark:text-polar-500 text-gray-500">
-                Underlying payment processors still charge us for the original
-                payment - even in case of a full refund. However, no additional
-                fees are applied of course.
-              </p>
-            </WellContent>
-            <WellFooter>
+          <div className="dark:text-polar-500 dark:bg-polar-800 space-y-1.5 rounded-xl bg-gray-50 p-3 text-sm text-gray-500">
+            <p>
+              The original payment processing fees stay deducted from your
+              balance. No additional fees are charged for the refund itself.
+            </p>
+            <p>
               <a
-                href="https://polar.sh/docs/documentation/features/refunds"
-                className="text-blue-500 dark:text-blue-400"
+                href="https://polar.sh/docs/features/refunds"
+                className="underline hover:no-underline"
                 target="_blank"
-                rel="noreferrer"
+                rel="noreferrer noopener"
               >
-                Learn more
+                Learn more about refunds
               </a>
-            </WellFooter>
-          </Well>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 md:flex-row-reverse md:items-center md:justify-start">
             <Button
               type="submit"
               disabled={!canRefund}
@@ -210,7 +202,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
             >
               Refund Order
             </Button>
-            <Button variant="secondary" onClick={hide}>
+            <Button variant="ghost" onClick={hide}>
               Cancel
             </Button>
           </div>

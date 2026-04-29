@@ -8,6 +8,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { StatusIcon } from './StatusIcon'
+import { Text } from '@polar-sh/orbit'
 
 type StepConfig = {
   label: string
@@ -101,7 +102,7 @@ export const ChecklistRow = ({ step, variant, isLoading }: Props) => {
   return (
     <Box display="flex" alignItems="center" columnGap="s">
       <StatusIcon status={step.status} variant={variant} />
-      <span className="text-sm font-medium">{label}</span>
+      <Text variant={variant === 'parent' ? 'body' : 'label'}>{label}</Text>
       {reasonText && (
         <span className="dark:text-polar-400 text-sm text-gray-500">
           {reasonText}

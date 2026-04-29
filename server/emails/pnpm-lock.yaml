@@ -37,8 +37,8 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
       '@yao-pkg/pkg':
-        specifier: ^6.15.0
-        version: 6.15.0
+        specifier: ^6.18.1
+        version: 6.18.1
       openapi-typescript:
         specifier: ^7.13.0
         version: 7.13.0(typescript@5.9.3)
@@ -1114,8 +1114,8 @@ packages:
     resolution: {integrity: sha512-V09ayfnb5GyysmvARbt+voFZAjGcf7hSYxOYxSkCc4fbH/DTfq5YWoec8cflvmHHqyIFbqvmGKmYFzqhr9zxDg==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
 
-  '@roberts_lando/vfs@0.3.2':
-    resolution: {integrity: sha512-whXj9v78S4n3t0RvoTGj8vui27VVtK/oy8YfBL+gDWdlfRFkKpPjry+U8p+3XM++5rAIpXEtXcTUgUAEHZVoFA==}
+  '@roberts_lando/vfs@0.3.3':
+    resolution: {integrity: sha512-YjkxVSLw5WMZQoARaryRAjcxA+GbBzWMJdwYZX5oLUt9cC/gew9as4Dn7tcLzPp7BPoR221VpTZ+78TRPawnjg==}
     engines: {node: '>= 22'}
 
   '@rollup/rollup-android-arm-eabi@4.53.5':
@@ -1272,8 +1272,8 @@ packages:
     resolution: {integrity: sha512-j2UoH+eP4VobfovQg1gkWwDoB4O/tv8rlLnEjUEEHuWXJ5eBLNUIrobMSEp773/2pgUJUfqqPUFIhS1pN8OZuQ==}
     hasBin: true
 
-  '@yao-pkg/pkg@6.15.0':
-    resolution: {integrity: sha512-mYfCg5AgM3nzI2aT8lGuRYZxB1YUY00qViu47gJXOTjxkF+XY8evNQERnj/jRkCmEkLgsEXhx9Z0npOn2yx56A==}
+  '@yao-pkg/pkg@6.18.1':
+    resolution: {integrity: sha512-yBSlMa9joDvBAAKNbrMt9KFBLdbOg1+M+dQlxYXVpa+VwPYUju6Tjt6hESpdNdYZXo6ndEUlW1Y6sa9ohJTldQ==}
     engines: {node: '>=22.0.0'}
     hasBin: true
 
@@ -1362,8 +1362,8 @@ packages:
       bare-buffer:
         optional: true
 
-  bare-os@3.8.7:
-    resolution: {integrity: sha512-G4Gr1UsGeEy2qtDTZwL7JFLo2wapUarz7iTMcYcMFdS89AIQuBoyjgXZz0Utv7uHs3xA9LckhVbeBi8lEQrC+w==}
+  bare-os@3.9.0:
+    resolution: {integrity: sha512-JTjuZyNIDpw+GytMO4a6TK1VXdVKKJr6DRxEHasyuYyShV2deuiHJK/ahGZlebc+SG0/wJCB9XK8gprBGDFi/Q==}
     engines: {bare: '>=1.14.0'}
 
   bare-path@3.0.0:
@@ -1383,8 +1383,8 @@ packages:
       bare-events:
         optional: true
 
-  bare-url@2.4.1:
-    resolution: {integrity: sha512-fZapLWNB25gS+etK27NV9KgBNXgo2yeYHuj+OyPblQd6GYAE3JVy6aKxszMV5jhGGFwraXQKA5fldvf3lMyEqw==}
+  bare-url@2.4.2:
+    resolution: {integrity: sha512-/9a2j4ac6ckpmAHvod/ob7x439OAHst/drc2Clnq+reRYd/ovddwcF4LfoxHyNk5AuGBnPg+HqFjmE/Zpq6v0A==}
 
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
@@ -3105,7 +3105,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@roberts_lando/vfs@0.3.2': {}
+  '@roberts_lando/vfs@0.3.3': {}
 
   '@rollup/rollup-android-arm-eabi@4.53.5':
     optional: true
@@ -3222,13 +3222,13 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@yao-pkg/pkg@6.15.0':
+  '@yao-pkg/pkg@6.18.1':
     dependencies:
       '@babel/generator': 7.29.1
       '@babel/parser': 7.29.2
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
-      '@roberts_lando/vfs': 0.3.2
+      '@roberts_lando/vfs': 0.3.3
       '@yao-pkg/pkg-fetch': 3.5.33
       esbuild: 0.27.7
       into-stream: 9.1.0
@@ -3309,17 +3309,17 @@ snapshots:
       bare-events: 2.8.2
       bare-path: 3.0.0
       bare-stream: 2.13.0(bare-events@2.8.2)
-      bare-url: 2.4.1
+      bare-url: 2.4.2
       fast-fifo: 1.3.2
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
 
-  bare-os@3.8.7: {}
+  bare-os@3.9.0: {}
 
   bare-path@3.0.0:
     dependencies:
-      bare-os: 3.8.7
+      bare-os: 3.9.0
 
   bare-stream@2.13.0(bare-events@2.8.2):
     dependencies:
@@ -3330,7 +3330,7 @@ snapshots:
     transitivePeerDependencies:
       - react-native-b4a
 
-  bare-url@2.4.1:
+  bare-url@2.4.2:
     dependencies:
       bare-path: 3.0.0
 

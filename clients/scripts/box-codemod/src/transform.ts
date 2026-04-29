@@ -43,6 +43,22 @@ export function runTransform(file: FileInfo): TransformResult {
     const tagName = el.openingElement.name.name
     if (!BOX_TAGS.has(tagName)) return
 
+    // Spread attributes (e.g. {...props}, {...getRootProps()}) often carry
+    // typed HTML element props (Ref<HTMLDivElement>, color: string, etc.)
+    // that conflict with Box's stricter prop types. Skip these elements.
+    const hasSpread = (el.openingElement.attributes ?? []).some(
+      (a) => a.type === 'JSXSpreadAttribute',
+    )
+    if (hasSpread) {
+      reports.push({
+        file: file.path,
+        line: el.loc?.start.line ?? 0,
+        status: 'skipped',
+        reason: 'spread attribute (e.g. {...props}) — typed HTML props would conflict with Box',
+      })
+      return
+    }
+
     const classNameAttr = findClassNameAttr(el)
     const report: ElementReport = {
       file: file.path,

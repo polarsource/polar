@@ -73,12 +73,23 @@ async function main(): Promise<void> {
   let modified = 0
 
   for (const file of files) {
-    const source = readFileSync(file, 'utf8')
-    const result = runTransform({ path: file, source })
-    allReports.push(...result.reports)
-    if (result.source && result.source !== source) {
-      modified++
-      if (!args.dryRun) writeFileSync(file, result.source, 'utf8')
+    try {
+      const source = readFileSync(file, 'utf8')
+      const result = runTransform({ path: file, source })
+      allReports.push(...result.reports)
+      if (result.source && result.source !== source) {
+        modified++
+        if (!args.dryRun) writeFileSync(file, result.source, 'utf8')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      allReports.push({
+        file,
+        line: 0,
+        status: 'skipped',
+        reason: `transform crashed: ${msg}`,
+      })
+      console.error(`Error transforming ${file}: ${msg}`)
     }
   }
 

@@ -203,7 +203,7 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
     if (!prop) return null
     // 'auto' is valid for margin* but not padding/gap
     if (value === 'auto') {
-      if (prop.startsWith('margin')) return { prop, value: 'auto' }
+      if (prop.startsWith('margin')) return one(prop, 'auto')
       return null
     }
     let px: number | null = null
@@ -211,7 +211,17 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
     else px = twUnitToPx(value)
     if (px === null) return null
     const snap = snapSpacing(px)
-    if (snap.drift > 0 && (snap.ambiguous || snap.drift >= 2)) {
+    // If the drift is large in both absolute and relative terms, it's not a
+    // good fit for any token. Leave the class in className so the human can
+    // decide (and flag for review).
+    if (snap.drift > 8 && snap.drift / Math.max(px, 1) > 0.15) {
+      report.ambiguous = report.ambiguous ?? []
+      report.ambiguous.push(
+        `${utility} — no close spacing token (closest ${snap.token}, drift ${snap.drift}px); left in className`,
+      )
+      return null
+    }
+    if (snap.ambiguous && snap.drift > 0) {
       report.ambiguous = report.ambiguous ?? []
       report.ambiguous.push(
         `${utility} (snapped to ${snap.token}, drift ${snap.drift}px)`,
@@ -337,28 +347,61 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
       if (m) return one(prop, m[1])
       return null
     }
+    const aliasPx = TW_SIZE_ALIAS_PX[v]
+    if (aliasPx !== undefined) return one(prop, `${aliasPx}px`)
+    const fracMatch = v.match(/^(\d+)\/(\d+)$/)
+    if (fracMatch) {
+      const pct = (Number(fracMatch[1]) / Number(fracMatch[2])) * 100
+      return one(prop, `${pct}%`)
+    }
     const px = twUnitToPx(v)
     if (px === null) return null
     return one(prop, px)
   }
 
+  // Grid: grid-cols-N, grid-rows-N (Tailwind = repeat(N, minmax(0, 1fr)))
+  const gridColsMatch = utility.match(/^grid-cols-(\d+)$/)
+  if (gridColsMatch) {
+    const n = Number(gridColsMatch[1])
+    return one('gridTemplateColumns', `repeat(${n}, minmax(0, 1fr))`)
+  }
+  const gridRowsMatch = utility.match(/^grid-rows-(\d+)$/)
+  if (gridRowsMatch) {
+    const n = Number(gridRowsMatch[1])
+    return one('gridTemplateRows', `repeat(${n}, minmax(0, 1fr))`)
+  }
+  const colSpanMatch = utility.match(/^col-span-(\d+|full)$/)
+  if (colSpanMatch) {
+    const v = colSpanMatch[1]
+    if (v === 'full') return one('gridColumn', '1 / -1')
+    return one('gridColumn', `span ${v} / span ${v}`)
+  }
+  const rowSpanMatch = utility.match(/^row-span-(\d+|full)$/)
+  if (rowSpanMatch) {
+    const v = rowSpanMatch[1]
+    if (v === 'full') return one('gridRow', '1 / -1')
+    return one('gridRow', `span ${v} / span ${v}`)
+  }
+
   // Position offsets: top-N, right-N, bottom-N, left-N, inset-N, inset-x-N, inset-y-N
+  // (also negative variants like -top-3)
   const posMatch = utility.match(
-    /^(top|right|bottom|left|inset|inset-x|inset-y)-(.+)$/,
+    /^(-?)(top|right|bottom|left|inset|inset-x|inset-y)-(.+)$/,
   )
   if (posMatch) {
-    const v = posMatch[2]
-    const value = positionValue(v)
+    const negative = posMatch[1] === '-'
+    const v = posMatch[3]
+    const value = positionValue(v, negative)
     if (value === null) return null
-    if (posMatch[1] === 'inset-x') return [
+    if (posMatch[2] === 'inset-x') return [
       { prop: 'left', value },
       { prop: 'right', value },
     ]
-    if (posMatch[1] === 'inset-y') return [
+    if (posMatch[2] === 'inset-y') return [
       { prop: 'top', value },
       { prop: 'bottom', value },
     ]
-    return one(posMatch[1], value)
+    return one(posMatch[2], value)
   }
 
   // z-index: z-N
@@ -416,22 +459,41 @@ function isWidth(prop: string): boolean {
   return prop === 'width' || prop === 'minWidth' || prop === 'maxWidth'
 }
 
-function positionValue(v: string): string | number | null {
-  if (v === 'full') return '100%'
+function positionValue(v: string, negative = false): string | number | null {
+  if (v === 'full') return negative ? '-100%' : '100%'
   if (v === 'auto') return 'auto'
-  if (v === 'px') return 1
+  if (v === 'px') return negative ? -1 : 1
   if (v.startsWith('[')) {
     const m = v.match(/^\[(.+)\]$/)
-    return m ? m[1] : null
+    if (!m) return null
+    return negative ? `-${m[1]}` : m[1]
   }
   // Fractional Tailwind values (1/2, 1/3, etc.)
   const fracMatch = v.match(/^(\d+)\/(\d+)$/)
   if (fracMatch) {
     const pct = (Number(fracMatch[1]) / Number(fracMatch[2])) * 100
-    return `${pct}%`
+    return `${negative ? -pct : pct}%`
   }
   const px = twUnitToPx(v)
-  return px
+  if (px === null) return null
+  return negative ? -px : px
+}
+
+// Tailwind's named size scale (used by w-*, max-w-*, etc.)
+const TW_SIZE_ALIAS_PX: Record<string, number> = {
+  '3xs': 256,
+  '2xs': 288,
+  xs: 320,
+  sm: 384,
+  md: 448,
+  lg: 512,
+  xl: 576,
+  '2xl': 672,
+  '3xl': 768,
+  '4xl': 896,
+  '5xl': 1024,
+  '6xl': 1152,
+  '7xl': 1280,
 }
 
 export function tryColorPair(

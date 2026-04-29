@@ -496,6 +496,37 @@ const TW_SIZE_ALIAS_PX: Record<string, number> = {
   '7xl': 1280,
 }
 
+const BREAKPOINTS: MapResult['bp'][] = ['sm', 'md', 'lg', 'xl']
+
+// Strip the optional "dark:" / "<bp>:" prefixes from a raw class so we can
+// compare just the utility part (e.g. "bg-white") against the pair table.
+function utilityOnly(c: ParsedClass): string {
+  // The parsed `utility` field already excludes recognised modifiers, so we
+  // can use it directly — but the pair table is keyed on the raw form
+  // including any "dark:" prefix, so reconstruct accordingly.
+  return c.utility
+}
+
+function modifierSet(c: ParsedClass): { dark: boolean; bp?: MapResult['bp'] } {
+  let dark = false
+  let bp: MapResult['bp'] | undefined
+  for (const m of c.modifiers) {
+    if (m === 'dark') dark = true
+    else if (m === 'sm' || m === 'md' || m === 'lg' || m === 'xl') bp = m
+    // Any other modifier (state, 2xl, etc.) → caller should reject.
+  }
+  return { dark, bp }
+}
+
+function hasOnlyDarkAndBp(c: ParsedClass): boolean {
+  for (const m of c.modifiers) {
+    if (m === 'dark') continue
+    if (m === 'sm' || m === 'md' || m === 'lg' || m === 'xl') continue
+    return false
+  }
+  return true
+}
+
 export function tryColorPair(
   classes: ParsedClass[],
 ): { mapped: MapResult; consumed: ParsedClass[] }[] {
@@ -503,17 +534,31 @@ export function tryColorPair(
   for (const [prop, table] of Object.entries(COLOR_PAIRS)) {
     for (const [pair, token] of Object.entries(table)) {
       const [light, dark] = pair.split('|')
-      const lightHit = classes.find(
-        (c) => c.modifiers.length === 0 && c.raw === light,
-      )
-      const darkHit = classes.find(
-        (c) => c.modifiers.length === 1 && c.raw === dark,
-      )
-      if (lightHit && darkHit) {
-        results.push({
-          mapped: { prop, value: token },
-          consumed: [lightHit, darkHit],
-        })
+      const lightUtility = light // e.g. "bg-white"
+      const darkUtility = dark.startsWith('dark:') ? dark.slice(5) : dark
+
+      // Pair across each breakpoint (and the unprefixed "base" case).
+      for (const bp of [undefined, ...BREAKPOINTS] as const) {
+        const lightHit = classes.find(
+          (c) =>
+            hasOnlyDarkAndBp(c) &&
+            !c.modifiers.includes('dark') &&
+            modifierSet(c).bp === bp &&
+            utilityOnly(c) === lightUtility,
+        )
+        const darkHit = classes.find(
+          (c) =>
+            hasOnlyDarkAndBp(c) &&
+            c.modifiers.includes('dark') &&
+            modifierSet(c).bp === bp &&
+            utilityOnly(c) === darkUtility,
+        )
+        if (lightHit && darkHit) {
+          results.push({
+            mapped: { prop, value: token, bp },
+            consumed: [lightHit, darkHit],
+          })
+        }
       }
     }
   }

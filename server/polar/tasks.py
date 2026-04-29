@@ -27,6 +27,7 @@ from polar.organization_review import tasks as organization_review
 from polar.payout import tasks as payout
 from polar.personal_access_token import tasks as personal_access_token
 from polar.processor_transaction import tasks as processor_transaction
+from polar.receipt import tasks as receipt
 from polar.subscription import tasks as subscription
 from polar.transaction import tasks as transaction
 from polar.user import tasks as user
@@ -59,6 +60,7 @@ __all__ = [
     "personal_access_token",
     "polar_self",
     "processor_transaction",
+    "receipt",
     "slo_report",
     "stripe",
     "subscription",

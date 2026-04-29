@@ -46,6 +46,7 @@ class S3Service:
         path: str,
         mime_type: str,
         checksum_sha256_base64: str | None = None,
+        cache_control: str | None = None,
     ) -> str:
         """
         Uploads a file directly to S3.
@@ -64,6 +65,9 @@ class S3Service:
 
         if checksum_sha256_base64:
             request["ChecksumSHA256"] = checksum_sha256_base64
+
+        if cache_control is not None:
+            request["CacheControl"] = cache_control
 
         response = self.client.put_object(**request)
         return path

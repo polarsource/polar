@@ -341,6 +341,7 @@ class Settings(BaseSettings):
 
     # Invoices
     S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"
+    S3_CUSTOMER_RECEIPTS_BUCKET_NAME: str = "polar-customer-receipts"
     S3_PAYOUT_INVOICES_BUCKET_NAME: str = "polar-payout-invoices"
     INVOICES_NAME: str = "Polar Software, Inc."
     INVOICES_ADDRESS: Address = Address(

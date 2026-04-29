@@ -43,6 +43,7 @@ x-common-backend-env: &common-backend-env
   POLAR_S3_FILES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
   POLAR_S3_FILES_PUBLIC_BUCKET_NAME: ${POLAR_S3_FILES_PUBLIC_BUCKET_NAME:-polar-s3-public}
   POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
+  POLAR_S3_CUSTOMER_RECEIPTS_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
   POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
   # CORS and allowed hosts - configured for Docker networking
   POLAR_CORS_ORIGINS: '["http://localhost:${WEB_PORT:-3000}", "http://127.0.0.1:${WEB_PORT:-3000}", "http://web:3000"]'

@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -13,6 +14,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import Refund
+from polar.models.refund import RefundStatus
 
 from .sorting import RefundSortProperty
 
@@ -34,6 +36,17 @@ class RefundRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_succeeded_by_order(self, order_id: UUID) -> Sequence[Refund]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Refund.order_id == order_id,
+                Refund.status == RefundStatus.succeeded,
+            )
+            .order_by(Refund.created_at.asc())
+        )
+        return await self.get_all(statement)
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

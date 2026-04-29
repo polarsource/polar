@@ -47,6 +47,7 @@ from polar.transaction.service.refund import (
 )
 from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
+from polar.worker import enqueue_job
 
 from .repository import RefundRepository
 from .schemas import RefundCreate
@@ -544,6 +545,9 @@ class RefundService:
             await webhook_service.send(
                 session, order.organization, WebhookEventType.order_refunded, order
             )
+
+            if order.receipt_number is not None:
+                enqueue_job("receipt.render", order.id)
 
     async def _on_updated(self, session: AsyncSession, refund: Refund) -> None:
         if refund.organization is not None:

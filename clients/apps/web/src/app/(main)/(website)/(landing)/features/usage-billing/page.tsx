@@ -2,11 +2,11 @@ import { UsageBillingPage } from '@/components/Landing/features/UsageBillingPage
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Usage Billing on Steroids — Polar',
+  title: 'Usage Billing — Polar',
   description:
-    'Flexible usage-based billing that scales with your business. Track consumption, meter usage, and bill customers accurately.',
+    'Bill what your customers actually use. Ingest events, aggregate them into meters, and charge with precision — built for tokens, API calls, and compute.',
   keywords:
-    'usage billing, metered billing, consumption billing, pay-as-you-go, usage tracking, saas billing',
+    'usage billing, metered billing, consumption billing, pay-as-you-go, event ingestion, saas billing',
   openGraph: {
     siteName: 'Polar',
     type: 'website',

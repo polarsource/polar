@@ -1,12 +1,12 @@
-import { ProductsPage } from '@/components/Landing/features/ProductsPage'
+import { SubscriptionsPage } from '@/components/Landing/features/SubscriptionsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Subscription billing for SaaS — Polar',
+  title: 'Subscriptions — Polar',
   description:
-    'Flexible subscription billing with multiple pricing models, trial periods, and seamless plan management.',
+    'Recurring revenue on autopilot. Renewals, proration, dunning, and customer self-service — all handled.',
   keywords:
-    'subscription billing, recurring payments, saas subscriptions, pricing tiers, billing management',
+    'subscriptions, recurring billing, saas billing, proration, dunning, renewal, customer portal',
   openGraph: {
     siteName: 'Polar',
     type: 'website',
@@ -32,5 +32,5 @@ export const metadata: Metadata = {
 }
 
 export default function Page() {
-  return <ProductsPage />
+  return <SubscriptionsPage />
 }

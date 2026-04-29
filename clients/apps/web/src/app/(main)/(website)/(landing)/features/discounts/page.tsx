@@ -1,12 +1,12 @@
-import { BenefitsPage } from '@/components/Landing/features/BenefitsPage'
+import { DiscountsPage } from '@/components/Landing/features/DiscountsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Product benefits & fulfillment — Polar',
+  title: 'Discounts — Polar',
   description:
-    'Automate product benefits with license keys, file downloads, GitHub access, Discord roles, and custom integrations.',
+    'Coupons, promo codes, and recurring discounts. Apply automatically at checkout, prefill via URL, or via the API.',
   keywords:
-    'product benefits, license keys, digital downloads, github access, discord integration, benefit fulfillment',
+    'discounts, coupons, promo codes, percentage discount, fixed amount discount, recurring discount',
   openGraph: {
     siteName: 'Polar',
     type: 'website',
@@ -32,5 +32,5 @@ export const metadata: Metadata = {
 }
 
 export default function Page() {
-  return <BenefitsPage />
+  return <DiscountsPage />
 }

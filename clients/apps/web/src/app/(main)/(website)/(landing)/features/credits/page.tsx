@@ -1,12 +1,12 @@
-import { CustomersPage } from '@/components/Landing/features/CustomersPage'
+import { CreditsPage } from '@/components/Landing/features/CreditsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Customer Management — Polar',
+  title: 'Credits — Polar',
   description:
-    'Streamlined customer lifecycle management with detailed profiles, subscription management, and customer analytics.',
+    'Prepaid usage for your API. Issue credits, draw down balances, and let metered pricing handle the overage.',
   keywords:
-    'customer management, customer portal, subscription management, customer analytics, saas customers',
+    'prepaid billing, api credits, usage credits, wallet, prepay, metered billing',
   openGraph: {
     siteName: 'Polar',
     type: 'website',
@@ -32,5 +32,5 @@ export const metadata: Metadata = {
 }
 
 export default function Page() {
-  return <CustomersPage />
+  return <CreditsPage />
 }

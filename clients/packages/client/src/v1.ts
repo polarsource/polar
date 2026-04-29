@@ -14570,6 +14570,18 @@ export interface components {
        * @description When the next payment retry is scheduled
        */
       next_payment_attempt_at?: string | null
+      /**
+       * Refundable Amount
+       * @description Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.
+       * @example 9000
+       */
+      readonly refundable_amount: number
+      /**
+       * Refundable Tax Amount
+       * @description Sales tax in cents that would be refunded if the full refundable amount is refunded.
+       * @example 720
+       */
+      readonly refundable_tax_amount: number
     }
     /**
      * CustomerOrderConfirmPayment
@@ -21286,6 +21298,18 @@ export interface components {
        * @example Pro Plan
        */
       description: string
+      /**
+       * Refundable Amount
+       * @description Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.
+       * @example 9000
+       */
+      readonly refundable_amount: number
+      /**
+       * Refundable Tax Amount
+       * @description Sales tax in cents that would be refunded if the full refundable amount is refunded.
+       * @example 720
+       */
+      readonly refundable_tax_amount: number
     }
     /**
      * OrderBillingReason

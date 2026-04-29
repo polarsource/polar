@@ -130,6 +130,28 @@ class OrderBase(TimestampedSchema, IDSchema):
     def from_balance_amount(self) -> SkipJsonSchema[int]:
         return self.applied_balance_amount
 
+    @computed_field(
+        description=(
+            "Amount in cents that can still be refunded (net, before taxes). "
+            "Accounts for any applied customer balance and previous refunds."
+        ),
+        examples=[9000],
+    )
+    def refundable_amount(self) -> int:
+        return max(
+            0, self.net_amount + self.applied_balance_amount - self.refunded_amount
+        )
+
+    @computed_field(
+        description=(
+            "Sales tax in cents that would be refunded if the full refundable "
+            "amount is refunded."
+        ),
+        examples=[720],
+    )
+    def refundable_tax_amount(self) -> int:
+        return max(0, self.tax_amount - self.refunded_tax_amount)
+
     def get_amount_display(self) -> str:
         return format_currency(self.net_amount, self.currency)
 

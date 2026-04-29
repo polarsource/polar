@@ -54,6 +54,7 @@ class _OrganizationTally:
 async def _load_active_organizations(
     session: AsyncSession,
     *,
+    self_org_id: uuid.UUID,
     exclude_external_ids: set[str],
     limit: int | None,
 ) -> Sequence[Organization]:
@@ -62,6 +63,7 @@ async def _load_active_organizations(
         .where(
             Organization.deleted_at.is_(None),
             Organization.status != OrganizationStatus.BLOCKED,
+            Organization.id != self_org_id,
         )
         .order_by(Organization.created_at)
     )
@@ -192,7 +194,10 @@ async def run_backfill(
     typer.echo(f"  Found {len(existing_external_ids)} existing customers")
 
     organizations = await _load_active_organizations(
-        session, exclude_external_ids=existing_external_ids, limit=limit
+        session,
+        self_org_id=self_org.id,
+        exclude_external_ids=existing_external_ids,
+        limit=limit,
     )
     typer.echo(f"Loaded {len(organizations)} candidate organizations")
 

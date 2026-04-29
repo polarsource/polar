@@ -9,7 +9,6 @@ from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
 from polar.worker import (
     AsyncSessionMaker,
-    CronTrigger,
     TaskPriority,
     actor,
     can_retry,
@@ -102,7 +101,6 @@ async def delete_customer(external_id: str) -> None:
 
 @actor(
     actor_name="polar_self.track_event_ingestion_v2",
-    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
     priority=TaskPriority.LOW,
 )
 async def track_event_ingestion() -> None:

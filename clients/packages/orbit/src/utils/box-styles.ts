@@ -282,45 +282,45 @@ export const borderColorStyles = stylex.create({
 
 export const borderRadiusStyles = stylex.create({
   none: { borderRadius: borderRadii.none },
-  sm: { borderRadius: borderRadii.sm },
-  md: { borderRadius: borderRadii.md },
-  lg: { borderRadius: borderRadii.lg },
+  s: { borderRadius: borderRadii.s },
+  m: { borderRadius: borderRadii.m },
+  l: { borderRadius: borderRadii.l },
   xl: { borderRadius: borderRadii.xl },
   full: { borderRadius: borderRadii.full },
 })
 
 export const borderTopLeftRadiusStyles = stylex.create({
   none: { borderTopLeftRadius: borderRadii.none },
-  sm: { borderTopLeftRadius: borderRadii.sm },
-  md: { borderTopLeftRadius: borderRadii.md },
-  lg: { borderTopLeftRadius: borderRadii.lg },
+  s: { borderTopLeftRadius: borderRadii.s },
+  m: { borderTopLeftRadius: borderRadii.m },
+  l: { borderTopLeftRadius: borderRadii.l },
   xl: { borderTopLeftRadius: borderRadii.xl },
   full: { borderTopLeftRadius: borderRadii.full },
 })
 
 export const borderTopRightRadiusStyles = stylex.create({
   none: { borderTopRightRadius: borderRadii.none },
-  sm: { borderTopRightRadius: borderRadii.sm },
-  md: { borderTopRightRadius: borderRadii.md },
-  lg: { borderTopRightRadius: borderRadii.lg },
+  s: { borderTopRightRadius: borderRadii.s },
+  m: { borderTopRightRadius: borderRadii.m },
+  l: { borderTopRightRadius: borderRadii.l },
   xl: { borderTopRightRadius: borderRadii.xl },
   full: { borderTopRightRadius: borderRadii.full },
 })
 
 export const borderBottomLeftRadiusStyles = stylex.create({
   none: { borderBottomLeftRadius: borderRadii.none },
-  sm: { borderBottomLeftRadius: borderRadii.sm },
-  md: { borderBottomLeftRadius: borderRadii.md },
-  lg: { borderBottomLeftRadius: borderRadii.lg },
+  s: { borderBottomLeftRadius: borderRadii.s },
+  m: { borderBottomLeftRadius: borderRadii.m },
+  l: { borderBottomLeftRadius: borderRadii.l },
   xl: { borderBottomLeftRadius: borderRadii.xl },
   full: { borderBottomLeftRadius: borderRadii.full },
 })
 
 export const borderBottomRightRadiusStyles = stylex.create({
   none: { borderBottomRightRadius: borderRadii.none },
-  sm: { borderBottomRightRadius: borderRadii.sm },
-  md: { borderBottomRightRadius: borderRadii.md },
-  lg: { borderBottomRightRadius: borderRadii.lg },
+  s: { borderBottomRightRadius: borderRadii.s },
+  m: { borderBottomRightRadius: borderRadii.m },
+  l: { borderBottomRightRadius: borderRadii.l },
   xl: { borderBottomRightRadius: borderRadii.xl },
   full: { borderBottomRightRadius: borderRadii.full },
 })
@@ -329,9 +329,9 @@ export const borderBottomRightRadiusStyles = stylex.create({
 
 export const boxShadowStyles = stylex.create({
   none: { boxShadow: shadows.none },
-  sm: { boxShadow: shadows.sm },
-  md: { boxShadow: shadows.md },
-  lg: { boxShadow: shadows.lg },
+  s: { boxShadow: shadows.s },
+  m: { boxShadow: shadows.m },
+  l: { boxShadow: shadows.l },
   xl: { boxShadow: shadows.xl },
 })
 

@@ -78,9 +78,9 @@ export const colors = stylex.defineVars({
 
 export const borderRadii = stylex.defineVars({
   none: '0',
-  sm: '8px',
-  md: '12px',
-  lg: '16px',
+  s: '8px',
+  m: '12px',
+  l: '16px',
   xl: '32px',
   full: '9999px',
 })
@@ -89,9 +89,9 @@ export const borderRadii = stylex.defineVars({
 
 export const shadows = stylex.defineVars({
   none: 'none',
-  sm: '0 1px 2px rgba(0, 0, 0, 0.05)',
-  md: '0 0px 15px rgba(0, 0, 0, 0.04), 0 0px 2px rgba(0, 0, 0, 0.06)',
-  lg: '0 0px 20px rgba(0, 0, 0, 0.04), 0 0px 5px rgba(0, 0, 0, 0.06)',
+  s: '0 1px 2px rgba(0, 0, 0, 0.05)',
+  m: '0 0px 15px rgba(0, 0, 0, 0.04), 0 0px 2px rgba(0, 0, 0, 0.06)',
+  l: '0 0px 20px rgba(0, 0, 0, 0.04), 0 0px 5px rgba(0, 0, 0, 0.06)',
   xl: '0 0px 30px rgba(0, 0, 0, 0.04), 0 0px 10px rgba(0, 0, 0, 0.06)',
 })
 

@@ -362,7 +362,7 @@ const CodeWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <Box
       width="100%"
-      borderRadius="md"
+      borderRadius="m"
       borderWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
@@ -396,7 +396,7 @@ const FrameworkCard = ({
         display="flex"
         flexDirection="column"
         rowGap="l"
-        borderRadius="md"
+        borderRadius="m"
         borderWidth={1}
         borderStyle="solid"
         borderColor={active ? 'border-secondary' : 'border-primary'}

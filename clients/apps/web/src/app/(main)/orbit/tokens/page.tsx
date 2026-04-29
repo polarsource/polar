@@ -1,4 +1,4 @@
-import { Headline, Stack, Text } from '@polar-sh/orbit'
+import { Stack, Text } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
@@ -273,7 +273,9 @@ export default function TokensPage() {
       {/* Color */}
       <Stack vertical gap={3}>
         <Stack vertical gap={1}>
-          <Headline as="h4" text="Color" />
+          <Text as="h4" variant="heading-s">
+            Color
+          </Text>
           <div className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
         <TableHeader cols={['Token', 'Light', 'Dark', 'Usage']} />
@@ -308,7 +310,9 @@ export default function TokensPage() {
       {/* Type scale */}
       <Stack vertical gap={3}>
         <Stack vertical gap={1}>
-          <Headline as="h4" text="Type Scale" />
+          <Text as="h4" variant="heading-s">
+            Type Scale
+          </Text>
           <div className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
         <TableHeader
@@ -344,7 +348,9 @@ export default function TokensPage() {
       {/* Motion */}
       <Stack vertical gap={3}>
         <Stack vertical gap={1}>
-          <Headline as="h4" text="Motion" />
+          <Text as="h4" variant="heading-s">
+            Motion
+          </Text>
           <div className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
         <TableHeader cols={['Token', 'Value', 'Usage']} />
@@ -366,7 +372,9 @@ export default function TokensPage() {
       {/* Spacing */}
       <Stack vertical gap={3}>
         <Stack vertical gap={1}>
-          <Headline as="h4" text="Spacing" />
+          <Text as="h4" variant="heading-s">
+            Spacing
+          </Text>
           <div className="dark:border-polar-800 border-t border-neutral-200" />
           <Text variant="subtle">
             All spacing follows a base-8 grid. Use these values exclusively.

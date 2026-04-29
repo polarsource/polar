@@ -4,7 +4,6 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-  Headline,
   Stack,
   Text,
 } from '@polar-sh/orbit'
@@ -47,7 +46,9 @@ export default function CardPage() {
           {/* Full */}
           <div className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
-              <Headline as="h6" text="Full" />
+              <Text as="h6" variant="heading-xxs">
+                Full
+              </Text>
               <Text as="span" variant="caption">
                 Header + Content + Footer
               </Text>
@@ -55,7 +56,9 @@ export default function CardPage() {
             <div className="col-span-3">
               <Card>
                 <CardHeader>
-                  <Headline as="h5" text="Card title" />
+                  <Text as="h5" variant="heading-xs">
+                    Card title
+                  </Text>
                 </CardHeader>
                 <CardContent>
                   <Text variant="subtle">
@@ -75,12 +78,16 @@ export default function CardPage() {
           {/* No footer */}
           <div className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
-              <Headline as="h6" text="Header + Content" />
+              <Text as="h6" variant="heading-xxs">
+                Header + Content
+              </Text>
             </Stack>
             <div className="col-span-3">
               <Card>
                 <CardHeader>
-                  <Headline as="h5" text="Card title" />
+                  <Text as="h5" variant="heading-xs">
+                    Card title
+                  </Text>
                 </CardHeader>
                 <CardContent>
                   <Text variant="subtle">
@@ -95,7 +102,9 @@ export default function CardPage() {
           {/* Content only */}
           <div className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
-              <Headline as="h6" text="Content only" />
+              <Text as="h6" variant="heading-xxs">
+                Content only
+              </Text>
             </Stack>
             <div className="col-span-3">
               <Card>
@@ -112,7 +121,9 @@ export default function CardPage() {
           {/* Composed */}
           <div className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
-              <Headline as="h6" text="Composed" />
+              <Text as="h6" variant="heading-xxs">
+                Composed
+              </Text>
               <Text as="span" variant="caption">
                 With richer content
               </Text>
@@ -121,14 +132,18 @@ export default function CardPage() {
               <Card>
                 <CardHeader>
                   <Stack alignItems="center" justifyContent="between">
-                    <Headline as="h5" text="Monthly Revenue" />
+                    <Text as="h5" variant="heading-xs">
+                      Monthly Revenue
+                    </Text>
                     <Text as="span" variant="caption">
                       Feb 2026
                     </Text>
                   </Stack>
                 </CardHeader>
                 <CardContent>
-                  <Headline as="h2" text="$12,480" />
+                  <Text as="h2" variant="heading-l">
+                    $12,480
+                  </Text>
                   <Text variant="caption" className="mt-1">
                     +18% from last month
                   </Text>
@@ -155,7 +170,9 @@ export default function CardPage() {
           {/* Single primary action in footer */}
           <div className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
-              <Headline as="h6" text="Primary action" />
+              <Text as="h6" variant="heading-xxs">
+                Primary action
+              </Text>
               <Text as="span" variant="caption">
                 Footer with a single CTA
               </Text>
@@ -163,7 +180,9 @@ export default function CardPage() {
             <div className="col-span-3">
               <Card>
                 <CardHeader>
-                  <Headline as="h5" text="Upgrade your plan" />
+                  <Text as="h5" variant="heading-xs">
+                    Upgrade your plan
+                  </Text>
                 </CardHeader>
                 <CardContent>
                   <Text variant="subtle">
@@ -179,7 +198,9 @@ export default function CardPage() {
           {/* Primary + secondary */}
           <div className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
-              <Headline as="h6" text="Primary + secondary" />
+              <Text as="h6" variant="heading-xxs">
+                Primary + secondary
+              </Text>
               <Text as="span" variant="caption">
                 Confirm / cancel pattern
               </Text>
@@ -187,7 +208,9 @@ export default function CardPage() {
             <div className="col-span-3">
               <Card>
                 <CardHeader>
-                  <Headline as="h5" text="Delete organization" />
+                  <Text as="h5" variant="heading-xs">
+                    Delete organization
+                  </Text>
                 </CardHeader>
                 <CardContent>
                   <Text variant="subtle">
@@ -208,7 +231,9 @@ export default function CardPage() {
           {/* Action in header */}
           <div className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
-              <Headline as="h6" text="Action in header" />
+              <Text as="h6" variant="heading-xxs">
+                Action in header
+              </Text>
               <Text as="span" variant="caption">
                 Secondary action alongside title
               </Text>
@@ -217,7 +242,9 @@ export default function CardPage() {
               <Card>
                 <CardHeader>
                   <Stack alignItems="center" justifyContent="between">
-                    <Headline as="h5" text="API Keys" />
+                    <Text as="h5" variant="heading-xs">
+                      API Keys
+                    </Text>
                     <Button size="sm" variant="secondary">
                       New key
                     </Button>
@@ -236,7 +263,9 @@ export default function CardPage() {
           {/* Full: header action + footer actions */}
           <div className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
-              <Headline as="h6" text="Full composition" />
+              <Text as="h6" variant="heading-xxs">
+                Full composition
+              </Text>
               <Text as="span" variant="caption">
                 Actions in both header and footer
               </Text>
@@ -245,7 +274,9 @@ export default function CardPage() {
               <Card>
                 <CardHeader>
                   <Stack alignItems="center" justifyContent="between">
-                    <Headline as="h5" text="Billing" />
+                    <Text as="h5" variant="heading-xs">
+                      Billing
+                    </Text>
                     <Button size="sm" variant="ghost">
                       View history
                     </Button>
@@ -253,7 +284,9 @@ export default function CardPage() {
                 </CardHeader>
                 <CardContent>
                   <Stack vertical gap={1}>
-                    <Headline as="h3" text="$49 / mo" />
+                    <Text as="h3" variant="heading-m">
+                      $49 / mo
+                    </Text>
                     <Text variant="subtle">Pro plan · renews Mar 1, 2026</Text>
                   </Stack>
                 </CardContent>

@@ -109,7 +109,7 @@ export default function Page() {
             borderColor="border-primary"
             borderWidth={1}
             borderStyle="solid"
-            borderRadius="lg"
+            borderRadius="l"
             display="flex"
             flexDirection="column"
             justifyContent="between"
@@ -137,7 +137,7 @@ export default function Page() {
             borderColor="border-primary"
             borderWidth={1}
             borderStyle="solid"
-            borderRadius="lg"
+            borderRadius="l"
             display="flex"
             flexDirection="column"
             justifyContent="between"

@@ -1,4 +1,4 @@
-import { Headline, Stack, Text } from '@polar-sh/orbit'
+import { Stack, Text } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
 
@@ -55,11 +55,6 @@ const sections = [
         desc: 'User avatar with Facehash fallback for missing images',
       },
       {
-        label: 'Headline',
-        href: '/orbit/components/headline',
-        desc: 'Display typography with staggered curtain animation',
-      },
-      {
         label: 'Text',
         href: '/orbit/components/text',
         desc: 'Body copy, labels, and captions with token-constrained styling',
@@ -109,7 +104,9 @@ export default function OrbitIntroductionPage() {
 
       {/* What is Orbit */}
       <Stack vertical gap={3}>
-        <Headline as="h5" text="What is Orbit" />
+        <Text as="h5" variant="heading-xs">
+          What is Orbit
+        </Text>
         <div className="dark:border-polar-800 border-t border-neutral-200" />
         <Stack vertical gap={2}>
           <Text variant="subtle">
@@ -130,7 +127,9 @@ export default function OrbitIntroductionPage() {
 
       {/* Design principles */}
       <Stack vertical gap={3}>
-        <Headline as="h5" text="Design Principles" />
+        <Text as="h5" variant="heading-xs">
+          Design Principles
+        </Text>
         <div className="dark:border-polar-800 border-t border-neutral-200" />
         <Stack
           vertical
@@ -139,7 +138,9 @@ export default function OrbitIntroductionPage() {
           {principles.map(({ title, description }) => (
             <div key={title} className="grid grid-cols-5 gap-8 py-5">
               <div className="col-span-2">
-                <Headline as="h6" text={title} />
+                <Text as="h6" variant="heading-xxs">
+                  {title}
+                </Text>
               </div>
               <Text variant="subtle" className="col-span-3">
                 {description}
@@ -151,7 +152,9 @@ export default function OrbitIntroductionPage() {
 
       {/* What's inside */}
       <Stack vertical gap={3}>
-        <Headline as="h5" text="What's inside" />
+        <Text as="h5" variant="heading-xs">
+          What&apos;s inside
+        </Text>
         <div className="dark:border-polar-800 border-t border-neutral-200" />
         <Stack vertical gap={5}>
           {sections.map(({ label, links }) => (
@@ -170,7 +173,9 @@ export default function OrbitIntroductionPage() {
                     href={href}
                     className="dark:bg-polar-950 dark:hover:bg-polar-900 flex flex-col gap-1 bg-white p-5 transition-colors hover:bg-neutral-50"
                   >
-                    <Headline as="h6" text={linkLabel} />
+                    <Text as="h6" variant="heading-xxs">
+                      {linkLabel}
+                    </Text>
                     <Text as="span" variant="caption">
                       {desc}
                     </Text>

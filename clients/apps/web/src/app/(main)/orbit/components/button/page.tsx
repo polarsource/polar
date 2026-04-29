@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Headline, Stack, Text } from '@polar-sh/orbit'
+import { Button, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [
@@ -96,7 +96,9 @@ export default function ButtonPage() {
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
               <Stack vertical className="col-span-2 gap-1">
-                <Headline as="h6" text={label} />
+                <Text as="h6" variant="heading-xxs">
+                  {label}
+                </Text>
                 <Text as="span" variant="caption">
                   {desc}
                 </Text>
@@ -142,7 +144,9 @@ export default function ButtonPage() {
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
               <Stack vertical className="col-span-2 gap-1">
-                <Headline as="h6" text={label} />
+                <Text as="h6" variant="heading-xxs">
+                  {label}
+                </Text>
                 <Text as="span" variant="mono">
                   {height}
                 </Text>

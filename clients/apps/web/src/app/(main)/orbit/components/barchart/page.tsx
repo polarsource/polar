@@ -1,4 +1,4 @@
-import { BarChart, Headline, Stack, Text } from '@polar-sh/orbit'
+import { BarChart, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -77,7 +77,9 @@ export default function BarChartPage() {
           ].map(({ heading, content }) => (
             <div key={heading} className="grid grid-cols-5 gap-8 py-6">
               <div className="col-span-2">
-                <Headline as="h6" text={heading} />
+                <Text as="h6" variant="heading-xxs">
+                  {heading}
+                </Text>
               </div>
               <Text variant="subtle" className="col-span-3">
                 {content}

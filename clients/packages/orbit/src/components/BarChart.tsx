@@ -4,7 +4,7 @@ import { motion, useInView } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Headline } from './Headline'
+import { Text } from './Text'
 
 export interface BarChartItem {
   label: string
@@ -109,8 +109,10 @@ export function BarChart({ data, animated, className }: BarChartProps) {
                 gap: 8,
               }}
             >
-              <Headline as="h6" text={item.label} />
-              <Headline as="h2" text={`${item.value}%`} />
+              <Text as="h6" variant="heading-xxs">
+                {item.label}
+              </Text>
+              <Text as="h2" variant="heading-l">{`${item.value}%`}</Text>
             </div>
 
             {/* Background — scaled from bottom */}
@@ -141,9 +143,9 @@ export function BarChart({ data, animated, className }: BarChartProps) {
                   : undefined
               }
             >
-              <Headline
+              <Text
                 as="h5"
-                text={item.label}
+                variant="heading-xs"
                 style={{
                   position: 'absolute',
                   top: 16,
@@ -151,17 +153,19 @@ export function BarChart({ data, animated, className }: BarChartProps) {
                   maxWidth: '80%',
                   color: fg,
                 }}
-              />
-              <Headline
+              >
+                {item.label}
+              </Text>
+              <Text
                 as="h2"
-                text={`${item.value}%`}
+                variant="heading-l"
                 style={{
                   position: 'absolute',
                   bottom: 16,
                   left: 16,
                   color: fg,
                 }}
-              />
+              >{`${item.value}%`}</Text>
             </motion.div>
           </div>
         )

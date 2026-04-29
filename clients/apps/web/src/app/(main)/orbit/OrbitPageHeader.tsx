@@ -1,4 +1,4 @@
-import { Headline, Stack, Text } from '@polar-sh/orbit'
+import { Stack, Text } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 
 // ─── Page header ─────────────────────────────────────────────────────────────
@@ -14,8 +14,14 @@ export function OrbitPageHeader({
 }) {
   return (
     <Stack vertical gap={3}>
-      {label && <Headline as="span" text={label} />}
-      <Headline as="h2" text={title} />
+      {label && (
+        <Text as="span" variant="heading-xxs">
+          {label}
+        </Text>
+      )}
+      <Text as="h2" variant="heading-l">
+        {title}
+      </Text>
       {description && <Text variant="subtle">{description}</Text>}
     </Stack>
   )
@@ -32,7 +38,9 @@ export function OrbitSectionHeader({
 }) {
   return (
     <Stack vertical gap={2}>
-      <Headline as="h4" text={title} />
+      <Text as="h4" variant="heading-s">
+        {title}
+      </Text>
       <div className="dark:border-polar-800 border-t border-neutral-200" />
       {description && <Text variant="subtle">{description}</Text>}
     </Stack>

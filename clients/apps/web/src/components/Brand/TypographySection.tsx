@@ -1,4 +1,4 @@
-import { Headline } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { SectionLayout } from './SectionLayout'
 
 export function TypographySection() {
@@ -8,7 +8,9 @@ export function TypographySection() {
         {/* Left column — description */}
         <div className="flex flex-col justify-between">
           <div className="flex flex-col gap-6">
-            <Headline as="h2" text="Typeface System" />
+            <Text as="h2" variant="heading-l">
+              Typeface System
+            </Text>
             <p className="dark:text-polar-500 text-lg leading-relaxed text-neutral-500">
               <a
                 href="https://rsms.me/inter/"

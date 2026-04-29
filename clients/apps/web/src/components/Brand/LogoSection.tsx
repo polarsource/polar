@@ -1,7 +1,7 @@
 'use client'
 
 import ArrowDownwardOutlined from '@mui/icons-material/ArrowDownwardOutlined'
-import { Headline } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { useTheme } from 'next-themes'
 import React, { useCallback, useState } from 'react'
 import { PolarLogotype } from '../Layout/Public/PolarLogotype'
@@ -238,7 +238,11 @@ export function LogoSection() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-16">
           {/* Title */}
           <div className="flex flex-col gap-6">
-            <Headline as="h2" text={['The Polar', 'Wordmark']} />
+            <Text as="h2" variant="heading-l">
+              The Polar
+              <br />
+              Wordmark
+            </Text>
             <DownloadButton />
           </div>
 
@@ -331,7 +335,9 @@ export function LogoSection() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-16">
           {/* Title */}
           <div className="flex flex-col gap-6">
-            <Headline as="h2" text="The Polar Globe" />
+            <Text as="h2" variant="heading-l">
+              The Polar Globe
+            </Text>
             <DownloadButton />
           </div>
 

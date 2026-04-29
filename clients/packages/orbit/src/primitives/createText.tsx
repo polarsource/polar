@@ -17,9 +17,17 @@ type TextTag =
   | 'small'
   | 'code'
   | 'div'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'h5'
+  | 'h6'
 
 // ─── Variants ─────────────────────────────────────────────────────────────────
 // All styling is encoded here — consumers pick a semantic variant, not raw props.
+
+const HEADING_BASE = 'font-display tracking-tight text-black dark:text-white'
 
 const textVariants = cva('', {
   variants: {
@@ -36,6 +44,18 @@ const textVariants = cva('', {
       disabled: 'text-sm text-gray-400 dark:text-polar-600',
       /** Inline code and technical values — monospace, 12 px. */
       mono: 'font-mono text-xs text-gray-900 dark:text-white',
+      /** Page-level headline — h1 sizing. */
+      'heading-xl': `${HEADING_BASE} text-5xl md:text-7xl font-light leading-tighter!`,
+      /** Section headline — h2 sizing. */
+      'heading-l': `${HEADING_BASE} text-4xl md:text-5xl leading-tight!`,
+      /** Section headline — h3 sizing. */
+      'heading-m': `${HEADING_BASE} text-3xl md:text-5xl leading-tight!`,
+      /** Subsection headline — h4 sizing. */
+      'heading-s': `${HEADING_BASE} text-2xl md:text-3xl leading-tight!`,
+      /** Card/list headline — h5 sizing. */
+      'heading-xs': `${HEADING_BASE} text-xl md:text-2xl leading-tight!`,
+      /** Smallest headline — h6 sizing. */
+      'heading-xxs': `${HEADING_BASE} text-lg md:text-xl leading-tight!`,
     },
     color: {
       /** Inherits color from variant (default behavior). */
@@ -77,6 +97,8 @@ type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const HEADING_FONT_FEATURES = "'ss07' 1, 'ss08' 1, 'zero' 1, 'liga' 0"
+
 function Text<E extends TextTag = 'p'>({
   as,
   variant,
@@ -85,15 +107,22 @@ function Text<E extends TextTag = 'p'>({
   wrap,
   className,
   children,
+  style,
   ...props
-}: TextProps<E>): JSX.Element {
+}: TextProps<E> & { style?: React.CSSProperties }): JSX.Element {
   const Tag = (as ?? 'p') as ElementType
+  const isHeading =
+    typeof variant === 'string' && variant.startsWith('heading-')
+  const mergedStyle = isHeading
+    ? { fontFeatureSettings: HEADING_FONT_FEATURES, ...style }
+    : style
   return (
     <Tag
       className={twMerge(
         textVariants({ variant, color, align, wrap }),
         className,
       )}
+      style={mergedStyle}
       {...(props as object)}
     >
       {children}

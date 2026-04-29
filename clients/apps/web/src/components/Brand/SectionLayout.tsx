@@ -1,4 +1,4 @@
-import { Headline } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -20,7 +20,13 @@ export function SectionLayout({
         className,
       )}
     >
-      {label ? <Headline as="h1" animate text={label} /> : <div />}
+      {label ? (
+        <Text as="h1" variant="heading-xl">
+          {label}
+        </Text>
+      ) : (
+        <div />
+      )}
       <div className={twMerge('flex flex-col')}>{children}</div>
       {footer ?? <div />}
     </div>

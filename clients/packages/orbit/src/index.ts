@@ -13,7 +13,6 @@ export type {
   DataTableSortingState,
   ReactQueryLoading,
 } from './components/DataTable'
-export { Headline } from './components/Headline'
 export { Input } from './components/Input'
 export type {
   CurrencyInputProps,

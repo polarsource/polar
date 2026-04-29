@@ -1,4 +1,4 @@
-import { Headline, Stack, Text } from '@polar-sh/orbit'
+import { Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
 const sections = [
@@ -125,7 +125,9 @@ export default function GuidelinesPage() {
       {sections.map(({ title, subsections }) => (
         <Stack vertical key={title} gap={5}>
           <Stack vertical gap={1}>
-            <Headline as="h3" text={title} />
+            <Text as="h3" variant="heading-m">
+              {title}
+            </Text>
             <div className="dark:border-polar-800 border-t border-neutral-200" />
           </Stack>
           <Stack
@@ -135,7 +137,9 @@ export default function GuidelinesPage() {
             {subsections.map(({ heading, content }) => (
               <div key={heading} className="grid grid-cols-5 gap-8 py-6">
                 <div className="col-span-2">
-                  <Headline as="h6" text={heading} />
+                  <Text as="h6" variant="heading-xxs">
+                    {heading}
+                  </Text>
                 </div>
                 <Text variant="subtle" className="col-span-3">
                   {content}

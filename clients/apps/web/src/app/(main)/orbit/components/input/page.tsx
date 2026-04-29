@@ -1,6 +1,6 @@
 'use client'
 
-import { Headline, Input, Stack, Text } from '@polar-sh/orbit'
+import { Input, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -72,7 +72,9 @@ export default function InputPage() {
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
               <div className="col-span-2">
-                <Headline as="h6" text={label} />
+                <Text as="h6" variant="heading-xxs">
+                  {label}
+                </Text>
                 <Text as="code" variant="mono">
                   type=&quot;{type}&quot;
                 </Text>
@@ -94,7 +96,9 @@ export default function InputPage() {
         >
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
-              <Headline as="h6" text="Prefix" />
+              <Text as="h6" variant="heading-xxs">
+                Prefix
+              </Text>
               <Text as="span" variant="caption">
                 URL scheme, unit label, icon
               </Text>
@@ -110,7 +114,9 @@ export default function InputPage() {
           </div>
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
-              <Headline as="h6" text="Suffix" />
+              <Text as="h6" variant="heading-xxs">
+                Suffix
+              </Text>
               <Text as="span" variant="caption">
                 Unit, format hint
               </Text>
@@ -122,7 +128,9 @@ export default function InputPage() {
           </div>
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
-              <Headline as="h6" text="Both" />
+              <Text as="h6" variant="heading-xxs">
+                Both
+              </Text>
             </div>
             <div className="col-span-3">
               <Input type="number" prefix="$" suffix="USD" placeholder="0.00" />
@@ -166,7 +174,9 @@ export default function InputPage() {
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
               <div className="col-span-2">
-                <Headline as="h6" text={label} />
+                <Text as="h6" variant="heading-xxs">
+                  {label}
+                </Text>
               </div>
               <div className="col-span-3">
                 <Input
@@ -185,7 +195,9 @@ export default function InputPage() {
         <OrbitSectionHeader title="Textarea" />
         <div className="grid grid-cols-5 items-start gap-8">
           <div className="col-span-2">
-            <Headline as="h6" text="Multiline" />
+            <Text as="h6" variant="heading-xxs">
+              Multiline
+            </Text>
             <Text as="span" variant="caption">
               Resizable vertically
             </Text>
@@ -205,7 +217,9 @@ export default function InputPage() {
         >
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
-              <Headline as="h6" text="Disabled" />
+              <Text as="h6" variant="heading-xxs">
+                Disabled
+              </Text>
             </div>
             <div className="col-span-3">
               <Input type="text" placeholder="Disabled field" disabled />
@@ -213,7 +227,9 @@ export default function InputPage() {
           </div>
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
-              <Headline as="h6" text="With value" />
+              <Text as="h6" variant="heading-xxs">
+                With value
+              </Text>
             </div>
             <div className="col-span-3">
               <Input type="text" defaultValue="Polar Software Inc" readOnly />

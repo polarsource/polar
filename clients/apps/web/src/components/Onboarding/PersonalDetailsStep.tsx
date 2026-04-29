@@ -292,7 +292,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
                 display="flex"
                 flexDirection="column"
                 rowGap="m"
-                borderRadius="md"
+                borderRadius="m"
                 borderWidth={1}
                 borderStyle="solid"
                 borderColor="border-warning"

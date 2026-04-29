@@ -1,6 +1,6 @@
 'use client'
 
-import { Headline, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import {
   Sidebar,
   SidebarContent,
@@ -28,7 +28,6 @@ const nav = [
       { label: 'Avatar', href: '/orbit/components/avatar' },
       { label: 'Box', href: '/orbit/components/box' },
       { label: 'Stack', href: '/orbit/components/stack' },
-      { label: 'Headline', href: '/orbit/components/headline' },
       { label: 'Text', href: '/orbit/components/text' },
       { label: 'Button', href: '/orbit/components/button' },
       { label: 'Card', href: '/orbit/components/card' },
@@ -47,7 +46,9 @@ export function OrbitNav() {
     <Sidebar className="border-none" collapsible="offcanvas">
       <SidebarHeader className="px-8 pt-10 pb-0">
         <Link href="/orbit" className="flex flex-col gap-1">
-          <Headline as="h6" text="Orbit" />
+          <Text as="h6" variant="heading-xxs">
+            Orbit
+          </Text>
         </Link>
       </SidebarHeader>
 

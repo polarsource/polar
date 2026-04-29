@@ -1006,7 +1006,7 @@ export interface components {
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
       /** Formatted Price With Interval */
-      readonly formatted_price_with_interval: string
+      readonly formatted_price_with_interval?: string
     }
     /** MaintainerNewProductSaleNotificationPayload */
     MaintainerNewProductSaleNotificationPayload: {

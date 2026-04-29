@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       mintlify:
-        specifier: ^4.2.513
-        version: 4.2.513(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.12.2)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+        specifier: ^4.2.525
+        version: 4.2.525(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.12.2)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
     devDependencies:
       '@scalar/openapi-parser':
         specifier: ^0.25.8
@@ -529,19 +529,19 @@ packages:
       '@types/react': '>=16'
       react: '>=16'
 
-  '@mintlify/cli@4.0.1116':
-    resolution: {integrity: sha512-ZUndBEycuZPxbhRXRXz2N9iq9Bao4vAlrVMDrYTLv7lhqEcVlZaOpWbMS9P1luUJXYLR8va2EZMQwqJ1dw3umg==}
+  '@mintlify/cli@4.0.1128':
+    resolution: {integrity: sha512-O/U3ymQ80hOKYmEPd3JyHgIWYvXBCbmCZLCQ7J837eWfUw2Fy+doLhfdPL/+jY/Sz1ZTt3GQ5GJ3wuEdDXST/g==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
   '@mintlify/common@1.0.661':
     resolution: {integrity: sha512-/Hdiblzaomp+AWStQ4smhVMgesQhffzQjC9aYBnmLReNdh2Js+ccQFUaWL3TNIxwiS2esaZvsHSV/D+zyRS3hg==}
 
-  '@mintlify/common@1.0.853':
-    resolution: {integrity: sha512-rPz+S+aM9QV5sTnENJlv0YkhfIGJaby5lBAayXh1X7rtsHQ8mcmkyKR+LdFLDp7XGeMxVmzWZt1+ztSFiMpcHA==}
+  '@mintlify/common@1.0.861':
+    resolution: {integrity: sha512-Mf42N8A1RVp7K8qdS94xLldzTrw/X8tSymcpD+MLLldE5DGzCOrQ5+cfUHC+XPdHvNnP0OGSORz+hf5egABBAA==}
 
-  '@mintlify/link-rot@3.0.1028':
-    resolution: {integrity: sha512-3fgNhMe4ka9bFwXtuamFiY4p1WmpWRXvmcpjTXrKRhYtP6iRccK4rWhyaRTW6KOxkxfVtbNZVhVJW78JTOX+AQ==}
+  '@mintlify/link-rot@3.0.1037':
+    resolution: {integrity: sha512-sDumiv/Ahb1VF77NOurizJqRR7jQV8bOEI9DnW8LLpochr0ElRQE7U8iU+1wQJtOlc2OAPydjd5i53iVLh/74A==}
     engines: {node: '>=18.0.0'}
 
   '@mintlify/mdx@3.0.4':
@@ -555,19 +555,19 @@ packages:
     resolution: {integrity: sha512-LIUkfA7l7ypHAAuOW74ZJws/NwNRqlDRD/U466jarXvvSlGhJec/6J4/I+IEcBvWDnc9anLFKmnGO04jPKgAsg==}
     engines: {node: '>=18.0.0'}
 
-  '@mintlify/models@0.0.291':
-    resolution: {integrity: sha512-jPY4JKJU859Xc8eY9YnYRPhaHPvIS9wIt/Zft7qH+dXiHCG9Vqta+OguGcub5aRAmJsUfa5Gu4qMWHQs1shIMA==}
+  '@mintlify/models@0.0.292':
+    resolution: {integrity: sha512-j89c57C3H79Av9ivzV0+MbAHHWB4ZgcGqwFTIX91EjwyVhQIFVtKx6Bo+T/XGzJlbbt8JTlEqs4l9tz/KJwP2A==}
     engines: {node: '>=18.0.0'}
 
   '@mintlify/openapi-parser@0.0.8':
     resolution: {integrity: sha512-9MBRq9lS4l4HITYCrqCL7T61MOb20q9IdU7HWhqYMNMM1jGO1nHjXasFy61yZ8V6gMZyyKQARGVoZ0ZrYN48Og==}
     engines: {node: '>=18'}
 
-  '@mintlify/prebuild@1.0.995':
-    resolution: {integrity: sha512-uP8l3SV8+YMXxXcT+FHoReBVCJbZ25HuUjw5jFYeUGzaIOSs2hAN0iCGnGHWQq5C6jP5WtzreZjvnX/GqhrJ2A==}
+  '@mintlify/prebuild@1.0.1003':
+    resolution: {integrity: sha512-0cb4QZOXUaaufcmhs6aGYRzZ+iRBKe8QsuGklbAkWPksHRad+eUs9OwJo3XUkg9y8lcA9x1RDooRET7caeltaA==}
 
-  '@mintlify/previewing@4.0.1056':
-    resolution: {integrity: sha512-eQ0sFuHl8gMaYfAQRHSGlBwecMVOs/0qXzKpZIpdC+NrT61ElU+Z/l4Tc8v3kIhXz2E3vNuSgd3BMB+yL1XnmQ==}
+  '@mintlify/previewing@4.0.1064':
+    resolution: {integrity: sha512-ZJ/eADVA1wufdTeTymqNED4LpTvzSuDPB3JKZxBb/L4CZw7UBp72H1PJ09ssR5Sqy7OHJhkt8DgjzDfgZDDhSQ==}
     engines: {node: '>=18.0.0'}
 
   '@mintlify/scraping@4.0.522':
@@ -575,16 +575,16 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  '@mintlify/scraping@4.0.717':
-    resolution: {integrity: sha512-Ea8uM3yU3RpFvzKUdQjF2HLs+Pnk/kDSJxQcYkq1quHfSoAyaBtUSihC5LeS8QinIKmIC2c4dmO+21WZ9lV6UQ==}
+  '@mintlify/scraping@4.0.725':
+    resolution: {integrity: sha512-PEFWetdSzozJS24ZqRqRKczF3Y+x6oUJ6EPVVzfE4CLou1xqlehJRwCzv2GO25NTaGosQLlZaG20brVAwNBtow==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
   '@mintlify/validation@0.1.555':
     resolution: {integrity: sha512-11QVUReL4N5u8wSCgZt4RN7PA0jYQoMEBZ5IrUp5pgb5ZJBOoGV/vPsQrxPPa1cxsUDAuToNhtGxRQtOav/w8w==}
 
-  '@mintlify/validation@0.1.665':
-    resolution: {integrity: sha512-qwEdlPnnNtR2eSMpSnx24wh33h1tq4mGR5xFdwRjqd/75B1L1h8AuufVj6z4eoP2+Fz+8EcUXA3zGm/jOWLqUQ==}
+  '@mintlify/validation@0.1.672':
+    resolution: {integrity: sha512-8l3+gZEi4o82g1LWh3RUL25xKdYV2RJsMbfmYW/4kydMpfBZdgiSeVkkTNykPsPi2CymYXEijqeiROtxA4Vkjg==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -1109,6 +1109,9 @@ packages:
   ajv@8.18.0:
     resolution: {integrity: sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==}
 
+  ajv@8.20.0:
+    resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
+
   ansi-escapes@4.3.2:
     resolution: {integrity: sha512-gKXj5ALrKWQLsYG9jlTRmR/xKluxHV+Z9QEwNIgCfM1/uwPMCuzVVnh5mwTd+OuBZcwSIMbqssNWRm1lE51QaQ==}
     engines: {node: '>=8'}
@@ -1237,8 +1240,8 @@ packages:
       bare-buffer:
         optional: true
 
-  bare-os@3.8.7:
-    resolution: {integrity: sha512-G4Gr1UsGeEy2qtDTZwL7JFLo2wapUarz7iTMcYcMFdS89AIQuBoyjgXZz0Utv7uHs3xA9LckhVbeBi8lEQrC+w==}
+  bare-os@3.9.0:
+    resolution: {integrity: sha512-JTjuZyNIDpw+GytMO4a6TK1VXdVKKJr6DRxEHasyuYyShV2deuiHJK/ahGZlebc+SG0/wJCB9XK8gprBGDFi/Q==}
     engines: {bare: '>=1.14.0'}
 
   bare-path@3.0.0:
@@ -1258,8 +1261,8 @@ packages:
       bare-events:
         optional: true
 
-  bare-url@2.4.1:
-    resolution: {integrity: sha512-fZapLWNB25gS+etK27NV9KgBNXgo2yeYHuj+OyPblQd6GYAE3JVy6aKxszMV5jhGGFwraXQKA5fldvf3lMyEqw==}
+  bare-url@2.4.2:
+    resolution: {integrity: sha512-/9a2j4ac6ckpmAHvod/ob7x439OAHst/drc2Clnq+reRYd/ovddwcF4LfoxHyNk5AuGBnPg+HqFjmE/Zpq6v0A==}
 
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
@@ -1268,8 +1271,8 @@ packages:
     resolution: {integrity: sha512-lGe34o6EHj9y3Kts9R4ZYs/Gr+6N7MCaMlIFA3F1R2O5/m7K06AxfSeO5530PEERE6/WyEg3lsuyw4GHlPZHog==}
     engines: {node: ^4.5.0 || >= 5.9}
 
-  basic-ftp@5.3.0:
-    resolution: {integrity: sha512-5K9eNNn7ywHPsYnFwjKgYH8Hf8B5emh7JKcPaVjjrMJFQQwGpwowEnZNEtHs7DfR7hCZsmaK3VA4HUK0YarT+w==}
+  basic-ftp@5.3.1:
+    resolution: {integrity: sha512-bopVNp6ugyA150DDuZfPFdt1KZ5a94ZDiwX4hMgZDzF+GttD80lEy8kj98kbyhLXnPvhtIo93mdnLIjpCAeeOw==}
     engines: {node: '>=10.0.0'}
 
   better-opn@3.0.2:
@@ -1710,8 +1713,8 @@ packages:
     resolution: {integrity: sha512-w+5mJ3GuFL+NjVtJlvydShqE1eN3h3PbI7/5LAsYJP/2qtuMXjfL2LpHSRqo4b4eSF5K/DH1JXKUAHSB2UW50g==}
     engines: {node: '>= 0.4'}
 
-  es-toolkit@1.45.1:
-    resolution: {integrity: sha512-/jhoOj/Fx+A+IIyDNOvO3TItGmlMKhtX8ISAHKE90c4b/k1tqaqEZ+uUqfpU8DMnW5cgNJv606zS55jGvza0Xw==}
+  es-toolkit@1.46.0:
+    resolution: {integrity: sha512-IToJ6ct9OLl5zz6WsC/1vZEwfSZ7Myil+ygl5Tf30Xjn9AEkzNB4kqp2G7VUJKF1DtTx/ra5M5KLlXvzOg51BA==}
 
   esast-util-from-estree@2.0.0:
     resolution: {integrity: sha512-4CyanoAudUSBAn5K13H4JhsMH6L9ZP7XbLVe/dKybkxMO7eDyLsT8UHl9TRNrU2Gr9nz+FovfSIjuXWJ81uVwQ==}
@@ -2188,8 +2191,8 @@ packages:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
     engines: {node: '>= 0.4'}
 
-  ip-address@10.1.0:
-    resolution: {integrity: sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q==}
+  ip-address@10.1.1:
+    resolution: {integrity: sha512-1FMu8/N15Ck1BL551Jf42NYIoin2unWjLQ2Fze/DXryJRl5twqtwNHlO39qERGbIOcKYWHdgRryhOC+NG4eaLw==}
     engines: {node: '>= 12'}
 
   ip-regex@4.3.0:
@@ -2370,8 +2373,8 @@ packages:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
 
-  jose@6.2.2:
-    resolution: {integrity: sha512-d7kPDd34KO/YnzaDOlikGpOurfF0ByC2sEV4cANCtdqLlTfBlw2p14O/5d/zv40gJPbIQxfES3nSx1/oYNyuZQ==}
+  jose@6.2.3:
+    resolution: {integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -2722,8 +2725,8 @@ packages:
     resolution: {integrity: sha512-bAxsR8BVfj60DWXHE3u30oHzfl4G7khkSuPW+qvpd7jFRHm7dLxOjUk1EHACJ/hxLY8phGJ0YhYHZo7jil7Qdg==}
     engines: {node: '>= 8'}
 
-  mintlify@4.2.513:
-    resolution: {integrity: sha512-c1N0HbJ6cJS8bnpf/mde7UaOIQlAtLbund5ag1WjLyzTLlKfwHNoqPANmnJo3wtdOdxF+5ZqH/gNxPbYGrhMaQ==}
+  mintlify@4.2.525:
+    resolution: {integrity: sha512-lA1mAnyh5YeTT4zt0lAkIgC8BpkT+y+8ma/AUYI9jnStK+A8mi6HrsEIsqbX8cL+zM/d/9E05KPqm3ALdtFiaw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -2822,8 +2825,8 @@ packages:
     resolution: {integrity: sha512-JYc0DPlpGWB40kH5g07gGTrYuMqV653k3uBKY6uITPWds3M0ov3GaWGp9lbE3Bzngx8+XkfzgvASb9vk9JDFXQ==}
     engines: {node: '>=14.16'}
 
-  oauth4webapi@3.8.5:
-    resolution: {integrity: sha512-A8jmyUckVhRJj5lspguklcl90Ydqk61H3dcU0oLhH3Yv13KpAliKTt5hknpGGPZSSfOwGyraNEFmofDYH+1kSg==}
+  oauth4webapi@3.8.6:
+    resolution: {integrity: sha512-iwemM91xz8nryHti2yTmg5fhyEMVOkOXwHNqbvcATjyajb5oQxCQzrNOA6uElRHuMhQQTKUyFKV9y/CNyg25BQ==}
 
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
@@ -2872,8 +2875,8 @@ packages:
   openapi-types@12.1.3:
     resolution: {integrity: sha512-N4YtSYJqghVu4iek2ZUvcN/0aqH1kRDuNqzcycDxhOUpg7GdvLa2F3DgS6yBNhInhv2r/6I0Flkn7CqL8+nIcw==}
 
-  openid-client@6.8.3:
-    resolution: {integrity: sha512-AoY/NaN9esS3+xvHInFSK0g3skSfeE0uqQAKRj4rB6/GsBIvzwTUaYo9+HcqpKIaP0dP85p5W07hayKgS4GAeA==}
+  openid-client@6.8.4:
+    resolution: {integrity: sha512-QSw0BA08piujetEwfZsHoTrDpMEha7GDZDicQqVwX4u0ChCjefvjDB++TZ8BTg76UpwhzIQgdvvfgfl3HpCSAw==}
 
   own-keys@1.0.1:
     resolution: {integrity: sha512-qFOyK5PjiWZd+QQIh+1jhdb9LpxTF0qs7Pm8o5QHYZ0M3vKqSqzsZaEB6oWlxZ+q2sJBMI/Ktgd2N5ZwQoRHfg==}
@@ -3989,9 +3992,9 @@ snapshots:
       '@stoplight/types': 13.20.0
       '@types/json-schema': 7.0.15
       '@types/urijs': 1.19.26
-      ajv: 8.18.0
-      ajv-errors: 3.0.0(ajv@8.18.0)
-      ajv-formats: 2.1.1(ajv@8.18.0)
+      ajv: 8.20.0
+      ajv-errors: 3.0.0(ajv@8.20.0)
+      ajv-formats: 2.1.1(ajv@8.20.0)
       avsc: 5.7.9
       js-yaml: 4.1.1
       jsonpath-plus: 10.4.0
@@ -4377,14 +4380,14 @@ snapshots:
       '@types/react': 19.2.14
       react: 19.2.3
 
-  '@mintlify/cli@4.0.1116(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.12.2)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
+  '@mintlify/cli@4.0.1128(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.12.2)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
     dependencies:
       '@inquirer/prompts': 7.9.0(@types/node@24.12.2)
-      '@mintlify/common': 1.0.853(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/link-rot': 3.0.1028(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/prebuild': 1.0.995(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/previewing': 4.0.1056(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/validation': 0.1.665(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      '@mintlify/common': 1.0.861(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/link-rot': 3.0.1037(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/prebuild': 1.0.1003(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/previewing': 4.0.1064(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/validation': 0.1.672(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       adm-zip: 0.5.16
       chalk: 5.2.0
       color: 4.2.3
@@ -4396,7 +4399,7 @@ snapshots:
       js-yaml: 4.1.0
       mdast-util-mdx-jsx: 3.2.0
       open: 8.4.2
-      openid-client: 6.8.3
+      openid-client: 6.8.4
       posthog-node: 5.17.2
       react: 19.2.3
       semver: 7.7.2
@@ -4484,14 +4487,14 @@ snapshots:
       - ts-node
       - typescript
 
-  '@mintlify/common@1.0.853(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
+  '@mintlify/common@1.0.861(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
     dependencies:
       '@asyncapi/parser': 3.4.0
       '@asyncapi/specs': 6.8.1
       '@mintlify/mdx': 3.0.4(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      '@mintlify/models': 0.0.291
+      '@mintlify/models': 0.0.292
       '@mintlify/openapi-parser': 0.0.8
-      '@mintlify/validation': 0.1.665(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      '@mintlify/validation': 0.1.672(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       '@sindresorhus/slugify': 2.2.0
       '@types/mdast': 4.0.4
       acorn: 8.11.2
@@ -4548,13 +4551,13 @@ snapshots:
       - typescript
       - yaml
 
-  '@mintlify/link-rot@3.0.1028(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
+  '@mintlify/link-rot@3.0.1037(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
     dependencies:
-      '@mintlify/common': 1.0.853(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/prebuild': 1.0.995(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/previewing': 4.0.1056(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/common': 1.0.861(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/prebuild': 1.0.1003(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/previewing': 4.0.1064(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
       '@mintlify/scraping': 4.0.522(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      '@mintlify/validation': 0.1.665(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      '@mintlify/validation': 0.1.672(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       fs-extra: 11.1.0
       unist-util-visit: 4.1.2
     transitivePeerDependencies:
@@ -4609,7 +4612,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@mintlify/models@0.0.291':
+  '@mintlify/models@0.0.292':
     dependencies:
       axios: 1.13.2
       openapi-types: 12.1.3
@@ -4618,19 +4621,19 @@ snapshots:
 
   '@mintlify/openapi-parser@0.0.8':
     dependencies:
-      ajv: 8.18.0
-      ajv-draft-04: 1.0.0(ajv@8.18.0)
-      ajv-formats: 3.0.1(ajv@8.18.0)
+      ajv: 8.20.0
+      ajv-draft-04: 1.0.0(ajv@8.20.0)
+      ajv-formats: 3.0.1(ajv@8.20.0)
       jsonpointer: 5.0.1
       leven: 4.1.0
       yaml: 2.8.3
 
-  '@mintlify/prebuild@1.0.995(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
+  '@mintlify/prebuild@1.0.1003(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
     dependencies:
-      '@mintlify/common': 1.0.853(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/common': 1.0.861(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
       '@mintlify/openapi-parser': 0.0.8
-      '@mintlify/scraping': 4.0.717(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/validation': 0.1.665(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      '@mintlify/scraping': 4.0.725(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/validation': 0.1.672(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       chalk: 5.3.0
       favicons: 7.2.0
       front-matter: 4.0.2
@@ -4658,11 +4661,11 @@ snapshots:
       - utf-8-validate
       - yaml
 
-  '@mintlify/previewing@4.0.1056(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
+  '@mintlify/previewing@4.0.1064(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
     dependencies:
-      '@mintlify/common': 1.0.853(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/prebuild': 1.0.995(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      '@mintlify/validation': 0.1.665(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      '@mintlify/common': 1.0.861(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/prebuild': 1.0.1003(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/validation': 0.1.672(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       adm-zip: 0.5.16
       better-opn: 3.0.2
       chalk: 5.2.0
@@ -4733,9 +4736,9 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@mintlify/scraping@4.0.717(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
+  '@mintlify/scraping@4.0.725(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)':
     dependencies:
-      '@mintlify/common': 1.0.853(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/common': 1.0.861(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
       '@mintlify/openapi-parser': 0.0.8
       fs-extra: 11.1.1
       hast-util-to-mdast: 10.1.0
@@ -4791,10 +4794,10 @@ snapshots:
       - supports-color
       - typescript
 
-  '@mintlify/validation@0.1.665(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)':
+  '@mintlify/validation@0.1.672(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)':
     dependencies:
       '@mintlify/mdx': 3.0.4(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      '@mintlify/models': 0.0.291
+      '@mintlify/models': 0.0.292
       arktype: 2.1.27
       js-yaml: 4.1.0
       lcm: 0.0.3
@@ -5116,9 +5119,9 @@ snapshots:
 
   '@socket.io/component-emitter@3.1.2': {}
 
-  '@stoplight/better-ajv-errors@1.0.3(ajv@8.18.0)':
+  '@stoplight/better-ajv-errors@1.0.3(ajv@8.20.0)':
     dependencies:
-      ajv: 8.18.0
+      ajv: 8.20.0
       jsonpointer: 5.0.1
       leven: 3.1.0
 
@@ -5157,7 +5160,7 @@ snapshots:
 
   '@stoplight/spectral-core@1.22.0':
     dependencies:
-      '@stoplight/better-ajv-errors': 1.0.3(ajv@8.18.0)
+      '@stoplight/better-ajv-errors': 1.0.3(ajv@8.20.0)
       '@stoplight/json': 3.21.0
       '@stoplight/path': 1.3.2
       '@stoplight/spectral-parsers': 1.0.5
@@ -5166,9 +5169,9 @@ snapshots:
       '@stoplight/types': 13.6.0
       '@types/es-aggregate-error': 1.0.6
       '@types/json-schema': 7.0.15
-      ajv: 8.18.0
-      ajv-errors: 3.0.0(ajv@8.18.0)
-      ajv-formats: 2.1.1(ajv@8.18.0)
+      ajv: 8.20.0
+      ajv-errors: 3.0.0(ajv@8.20.0)
+      ajv-formats: 2.1.1(ajv@8.20.0)
       es-aggregate-error: 1.0.14
       expr-eval-fork: 3.0.3
       jsonpath-plus: 10.4.0
@@ -5192,15 +5195,15 @@ snapshots:
 
   '@stoplight/spectral-functions@1.10.2':
     dependencies:
-      '@stoplight/better-ajv-errors': 1.0.3(ajv@8.18.0)
+      '@stoplight/better-ajv-errors': 1.0.3(ajv@8.20.0)
       '@stoplight/json': 3.21.0
       '@stoplight/spectral-core': 1.22.0
       '@stoplight/spectral-formats': 1.8.2
       '@stoplight/spectral-runtime': 1.1.5
-      ajv: 8.18.0
-      ajv-draft-04: 1.0.0(ajv@8.18.0)
-      ajv-errors: 3.0.0(ajv@8.18.0)
-      ajv-formats: 2.1.1(ajv@8.18.0)
+      ajv: 8.20.0
+      ajv-draft-04: 1.0.0(ajv@8.20.0)
+      ajv-errors: 3.0.0(ajv@8.20.0)
+      ajv-formats: 2.1.1(ajv@8.20.0)
       lodash: 4.18.1
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -5375,19 +5378,34 @@ snapshots:
     optionalDependencies:
       ajv: 8.18.0
 
-  ajv-errors@3.0.0(ajv@8.18.0):
-    dependencies:
-      ajv: 8.18.0
-
-  ajv-formats@2.1.1(ajv@8.18.0):
+  ajv-draft-04@1.0.0(ajv@8.20.0):
     optionalDependencies:
-      ajv: 8.18.0
+      ajv: 8.20.0
+
+  ajv-errors@3.0.0(ajv@8.20.0):
+    dependencies:
+      ajv: 8.20.0
+
+  ajv-formats@2.1.1(ajv@8.20.0):
+    optionalDependencies:
+      ajv: 8.20.0
 
   ajv-formats@3.0.1(ajv@8.18.0):
     optionalDependencies:
       ajv: 8.18.0
 
+  ajv-formats@3.0.1(ajv@8.20.0):
+    optionalDependencies:
+      ajv: 8.20.0
+
   ajv@8.18.0:
+    dependencies:
+      fast-deep-equal: 3.1.3
+      fast-uri: 3.1.0
+      json-schema-traverse: 1.0.0
+      require-from-string: 2.0.2
+
+  ajv@8.20.0:
     dependencies:
       fast-deep-equal: 3.1.3
       fast-uri: 3.1.0
@@ -5507,17 +5525,17 @@ snapshots:
       bare-events: 2.8.2
       bare-path: 3.0.0
       bare-stream: 2.13.0(bare-events@2.8.2)
-      bare-url: 2.4.1
+      bare-url: 2.4.2
       fast-fifo: 1.3.2
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
 
-  bare-os@3.8.7: {}
+  bare-os@3.9.0: {}
 
   bare-path@3.0.0:
     dependencies:
-      bare-os: 3.8.7
+      bare-os: 3.9.0
 
   bare-stream@2.13.0(bare-events@2.8.2):
     dependencies:
@@ -5528,7 +5546,7 @@ snapshots:
     transitivePeerDependencies:
       - react-native-b4a
 
-  bare-url@2.4.1:
+  bare-url@2.4.2:
     dependencies:
       bare-path: 3.0.0
 
@@ -5536,7 +5554,7 @@ snapshots:
 
   base64id@2.0.0: {}
 
-  basic-ftp@5.3.0: {}
+  basic-ftp@5.3.1: {}
 
   better-opn@3.0.2:
     dependencies:
@@ -6027,7 +6045,7 @@ snapshots:
       is-date-object: 1.1.0
       is-symbol: 1.1.1
 
-  es-toolkit@1.45.1: {}
+  es-toolkit@1.46.0: {}
 
   esast-util-from-estree@2.0.0:
     dependencies:
@@ -6369,7 +6387,7 @@ snapshots:
 
   get-uri@6.0.5:
     dependencies:
-      basic-ftp: 5.3.0
+      basic-ftp: 5.3.1
       data-uri-to-buffer: 6.0.2
       debug: 4.4.3
     transitivePeerDependencies:
@@ -6700,7 +6718,7 @@ snapshots:
       cli-cursor: 4.0.0
       cli-truncate: 4.0.0
       code-excerpt: 4.0.0
-      es-toolkit: 1.45.1
+      es-toolkit: 1.46.0
       indent-string: 5.0.0
       is-in-ci: 2.0.0
       patch-console: 2.0.0
@@ -6740,7 +6758,7 @@ snapshots:
       hasown: 2.0.3
       side-channel: 1.1.0
 
-  ip-address@10.1.0: {}
+  ip-address@10.1.1: {}
 
   ip-regex@4.3.0: {}
 
@@ -6908,7 +6926,7 @@ snapshots:
 
   jiti@1.21.7: {}
 
-  jose@6.2.2: {}
+  jose@6.2.3: {}
 
   js-tokens@4.0.0: {}
 
@@ -7562,9 +7580,9 @@ snapshots:
       minipass: 3.3.6
       yallist: 4.0.0
 
-  mintlify@4.2.513(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.12.2)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3):
+  mintlify@4.2.525(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.12.2)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3):
     dependencies:
-      '@mintlify/cli': 4.0.1116(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.12.2)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      '@mintlify/cli': 4.0.1128(@radix-ui/react-popover@1.1.15(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(react@19.2.3))(@types/node@24.12.2)(@types/react@19.2.14)(react-dom@18.3.1(react@19.2.3))(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
     transitivePeerDependencies:
       - '@radix-ui/react-popover'
       - '@types/node'
@@ -7666,7 +7684,7 @@ snapshots:
 
   normalize-url@8.1.1: {}
 
-  oauth4webapi@3.8.5: {}
+  oauth4webapi@3.8.6: {}
 
   object-assign@4.1.1: {}
 
@@ -7719,10 +7737,10 @@ snapshots:
 
   openapi-types@12.1.3: {}
 
-  openid-client@6.8.3:
+  openid-client@6.8.4:
     dependencies:
-      jose: 6.2.2
-      oauth4webapi: 3.8.5
+      jose: 6.2.3
+      oauth4webapi: 3.8.6
 
   own-keys@1.0.1:
     dependencies:
@@ -8551,7 +8569,7 @@ snapshots:
 
   socks@2.8.7:
     dependencies:
-      ip-address: 10.1.0
+      ip-address: 10.1.1
       smart-buffer: 4.2.0
 
   source-map-js@1.2.1: {}

@@ -29,30 +29,28 @@ export const TrialsPage = () => {
       <FeaturePageGraphic graphic={VectorField} />
 
       <FeaturePageIntro>
-        Trials in Polar collect the payment method up front, defer the
-        charge until the period ends, and then convert without manual
-        intervention.
+        Trials in Polar collect the payment method up front, defer the charge
+        until the period ends, and then convert without manual intervention.
       </FeaturePageIntro>
 
       <FeatureSection title="How trials work">
         <p>
-          When a customer checks out with a trial, the subscription is
-          created in a <strong>trialing</strong> state with full access to
-          every benefit on the product. The card is captured at checkout,
-          but no money moves yet.
+          When a customer checks out with a trial, the subscription is created
+          in a <strong>trialing</strong> state with full access to every benefit
+          on the product. The card is captured at checkout, but no money moves
+          yet.
         </p>
         <p>
-          When the trial period ends, Polar charges the saved card and the
-          first regular billing cycle begins, all without your code in the
-          loop. If the customer cancels mid-trial, no charge is ever
-          attempted.
+          When the trial period ends, Polar charges the saved card and the first
+          regular billing cycle begins, all without your code in the loop. If
+          the customer cancels mid-trial, no charge is ever attempted.
         </p>
         <p>
           The edge case is conversion that fails because the card declines.
           Rather than treating that as the end of the relationship, the
-          subscription enters the same payment recovery flow as any
-          past-due renewal, so a temporary card issue has multiple chances
-          to resolve before benefits are revoked.
+          subscription enters the same payment recovery flow as any past-due
+          renewal, so a temporary card issue has multiple chances to resolve
+          before benefits are revoked.
         </p>
       </FeatureSection>
 
@@ -113,13 +111,11 @@ export const TrialsPage = () => {
         items={[
           {
             title: 'Trials of 3 days or more',
-            description:
-              'Reminder sent 3 days before the trial ends.',
+            description: 'Reminder sent 3 days before the trial ends.',
           },
           {
             title: 'Trials of 1 to 3 days',
-            description:
-              'Reminder sent 1 day before the trial ends.',
+            description: 'Reminder sent 1 day before the trial ends.',
           },
           {
             title: 'Trials shorter than 1 day',
@@ -137,23 +133,22 @@ export const TrialsPage = () => {
       <FeatureSection title="Trial abuse prevention">
         <p>
           Repeat sign-ups are a common problem with trials, especially for
-          products that rely on free evaluation periods to drive
-          conversion. Polar offers an optional layer of detection that
-          tracks redemptions across your products without any setup beyond
-          a toggle.
+          products that rely on free evaluation periods to drive conversion.
+          Polar offers an optional layer of detection that tracks redemptions
+          across your products without any setup beyond a toggle.
         </p>
         <p>
-          When <strong>Prevent trial abuse</strong> is enabled, a new
-          checkout is matched against past trial redemptions on two
-          signals: the customer&apos;s normalized email (so{' '}
+          When <strong>Prevent trial abuse</strong> is enabled, a new checkout
+          is matched against past trial redemptions on two signals: the
+          customer&apos;s normalized email (so{' '}
           <strong>user+alias@example.com</strong> is treated as{' '}
-          <strong>user@example.com</strong>) and the fingerprint of the
-          payment method on file. A match on either blocks the trial.
+          <strong>user@example.com</strong>) and the fingerprint of the payment
+          method on file. A match on either blocks the trial.
         </p>
         <p>
           The customer never hits a dead end. Polar refreshes the session
-          without the trial period and the regular paid checkout continues,
-          so a returning user can still convert at full price.
+          without the trial period and the regular paid checkout continues, so a
+          returning user can still convert at full price.
         </p>
       </FeatureSection>
 

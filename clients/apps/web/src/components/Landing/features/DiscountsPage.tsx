@@ -29,32 +29,31 @@ export const DiscountsPage = () => {
       <FeaturePageGraphic graphic={WaveBars} />
 
       <FeaturePageIntro>
-        Configure a discount with the right shape, the right duration, and
-        the right way to apply it. The same primitive covers public promo
-        codes, private partner deals, and programmatic offers from inside
-        your product.
+        Configure a discount with the right shape, the right duration, and the
+        right way to apply it. The same primitive covers public promo codes,
+        private partner deals, and programmatic offers from inside your product.
       </FeaturePageIntro>
 
       <FeatureSection title="Three knobs">
         <p>
-          Every discount in Polar is built from three decisions. The first
-          is <strong>shape</strong>, which sets how the discount reduces
-          the price: a percentage off the order, or a fixed amount off in
-          the customer&apos;s currency.
+          Every discount in Polar is built from three decisions. The first is{' '}
+          <strong>shape</strong>, which sets how the discount reduces the price:
+          a percentage off the order, or a fixed amount off in the
+          customer&apos;s currency.
         </p>
         <p>
           The second is <strong>duration</strong>, and it only matters for
-          recurring products. A discount can apply once on the next
-          charge, for a fixed number of months, or forever as long as the
-          subscription keeps renewing.
+          recurring products. A discount can apply once on the next charge, for
+          a fixed number of months, or forever as long as the subscription keeps
+          renewing.
         </p>
         <p>
-          The third is <strong>delivery</strong>, which decides who can
-          actually use it. A discount can carry a code customers type at
-          checkout, or no code at all so it can only be applied
-          programmatically through a Checkout Link or the API. That
-          single distinction separates a public Black Friday promotion
-          from a quiet partner deal you don&apos;t want indexed.
+          The third is <strong>delivery</strong>, which decides who can actually
+          use it. A discount can carry a code customers type at checkout, or no
+          code at all so it can only be applied programmatically through a
+          Checkout Link or the API. That single distinction separates a public
+          Black Friday promotion from a quiet partner deal you don&apos;t want
+          indexed.
         </p>
       </FeatureSection>
 
@@ -133,23 +132,20 @@ export const DiscountsPage = () => {
 
       <FeatureSection title="How discounts compose">
         <p>
-          Discounts apply before tax, so the customer sees a single
-          accurate total in the right currency at checkout. The reduction
-          is itemized on every invoice and surfaced in the Customer
-          Portal, which gives finance and the customer the same paper
-          trail to point at.
+          Discounts apply before tax, so the customer sees a single accurate
+          total in the right currency at checkout. The reduction is itemized on
+          every invoice and surfaced in the Customer Portal, which gives finance
+          and the customer the same paper trail to point at.
         </p>
         <p>
-          On the operations side, discount events fire on every order,
-          refund, and renewal, so a CRM or analytics pipeline can credit
-          the right campaign for any conversion without you wiring up
-          separate tracking.
+          On the operations side, discount events fire on every order, refund,
+          and renewal, so a CRM or analytics pipeline can credit the right
+          campaign for any conversion without you wiring up separate tracking.
         </p>
         <p>
-          Combined with redemption limits, scoped products, and time
-          windows, that&apos;s enough for marketing to run a full
-          promotion calendar without engineering involvement after the
-          first setup.
+          Combined with redemption limits, scoped products, and time windows,
+          that&apos;s enough for marketing to run a full promotion calendar
+          without engineering involvement after the first setup.
         </p>
       </FeatureSection>
 

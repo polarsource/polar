@@ -36,22 +36,22 @@ export const SubscriptionsPage = () => {
 
       <FeatureSection title="How a subscription works">
         <p>
-          A subscription is created the moment a customer checks out a
-          product with a recurring price. Polar issues the first order,
-          collects the first payment, and grants every{' '}
-          <strong>benefit</strong> attached to the product.
+          A subscription is created the moment a customer checks out a product
+          with a recurring price. Polar issues the first order, collects the
+          first payment, and grants every <strong>benefit</strong> attached to
+          the product.
         </p>
         <p>
-          From that point on, the subscription advances itself. At the end
-          of every cycle, Polar generates a new order with tax and any
-          active discount applied, then charges the saved payment method
-          without your code in the loop.
+          From that point on, the subscription advances itself. At the end of
+          every cycle, Polar generates a new order with tax and any active
+          discount applied, then charges the saved payment method without your
+          code in the loop.
         </p>
         <p>
           Benefits track the subscription&apos;s state throughout. While
-          it&apos;s active or trialing, the customer keeps access; when it
-          moves to canceled or unpaid, benefits are revoked, optionally
-          after a grace period you control.
+          it&apos;s active or trialing, the customer keeps access; when it moves
+          to canceled or unpaid, benefits are revoked, optionally after a grace
+          period you control.
         </p>
       </FeatureSection>
 
@@ -135,17 +135,16 @@ export const SubscriptionsPage = () => {
 
       <FeatureSection title="The Customer Portal">
         <p>
-          Every Polar account includes a hosted{' '}
-          <strong>Customer Portal</strong> where subscribers can update
-          payment methods, download invoices, change plans, manage seats,
-          and cancel. You can either link to it directly or embed it inside
-          your product.
+          Every Polar account includes a hosted <strong>Customer Portal</strong>{' '}
+          where subscribers can update payment methods, download invoices,
+          change plans, manage seats, and cancel. You can either link to it
+          directly or embed it inside your product.
         </p>
         <p>
           Cancellation comes in two flavors that work the same way from the
           dashboard, the API, and the portal.{' '}
-          <strong>Cancel at period end</strong> keeps benefits live until
-          the paid term runs out and is reversible until the end date.{' '}
+          <strong>Cancel at period end</strong> keeps benefits live until the
+          paid term runs out and is reversible until the end date.{' '}
           <strong>Revoke immediately</strong> ends access on the spot and
           isn&apos;t reversible.
         </p>

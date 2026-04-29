@@ -29,34 +29,34 @@ export const UsageBillingPage = () => {
       <FeaturePageGraphic graphic={Dumbbell} />
 
       <FeaturePageIntro>
-        Send events from your application. Polar aggregates them into meters
-        and writes line items on the next invoice.
+        Send events from your application. Polar aggregates them into meters and
+        writes line items on the next invoice.
       </FeaturePageIntro>
 
       <FeatureSection title="Events, meters, prices">
         <p>
           The model is built on three primitives that compose. It starts with{' '}
-          <strong>events</strong>, immutable records of something that
-          happened in your product, posted with a customer ID and any
-          metadata you want to keep.
+          <strong>events</strong>, immutable records of something that happened
+          in your product, posted with a customer ID and any metadata you want
+          to keep.
         </p>
         <p>
-          On top of those events sit <strong>meters</strong>, which filter
-          and aggregate the stream into a number per customer. Pick how the
-          number is calculated (count, sum, average, min, max, or unique)
-          and the rest is bookkeeping.
+          On top of those events sit <strong>meters</strong>, which filter and
+          aggregate the stream into a number per customer. Pick how the number
+          is calculated (count, sum, average, min, max, or unique) and the rest
+          is bookkeeping.
         </p>
         <p>
           A meter only matters once it&apos;s priced, which is what{' '}
-          <strong>metered prices</strong> are for. Attach one to a product
-          and Polar reads the meter at the end of each cycle, then adds the
+          <strong>metered prices</strong> are for. Attach one to a product and
+          Polar reads the meter at the end of each cycle, then adds the
           corresponding line item to the next invoice.
         </p>
         <p>
-          The whole pipeline reuses the rest of the system. Renewals,
-          proration, tax, and discounts behave the same way they do for
-          fixed-price products, so usage billing slots in next to whatever
-          you&apos;re already selling.
+          The whole pipeline reuses the rest of the system. Renewals, proration,
+          tax, and discounts behave the same way they do for fixed-price
+          products, so usage billing slots in next to whatever you&apos;re
+          already selling.
         </p>
       </FeatureSection>
 
@@ -150,18 +150,18 @@ export const UsageBillingPage = () => {
 
       <FeatureSection title="Customer meters">
         <p>
-          Every metered customer carries a live{' '}
-          <strong>customer meter</strong> that updates as events arrive,
-          readable from the API or shown directly in the Customer Portal.
-          Your dashboards and your customers&apos; in-app views can read
-          from the same source without you keeping a parallel ledger.
+          Every metered customer carries a live <strong>customer meter</strong>{' '}
+          that updates as events arrive, readable from the API or shown directly
+          in the Customer Portal. Your dashboards and your customers&apos;
+          in-app views can read from the same source without you keeping a
+          parallel ledger.
         </p>
         <p>
           One thing Polar deliberately does not do is block usage when a
-          customer crosses a quota. That decision belongs in your product,
-          where you know the context. The meter exposes the signal, and you
-          choose what to do with it: enforce a hard limit, prompt for an
-          upgrade, or let the overage flow through to the next invoice.
+          customer crosses a quota. That decision belongs in your product, where
+          you know the context. The meter exposes the signal, and you choose
+          what to do with it: enforce a hard limit, prompt for an upgrade, or
+          let the overage flow through to the next invoice.
         </p>
       </FeatureSection>
 

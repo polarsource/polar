@@ -29,34 +29,33 @@ export const CreditsPage = () => {
       <FeaturePageGraphic graphic={CreditArc} />
 
       <FeaturePageIntro>
-        Customers prepay for usage and Polar deducts from the balance as
-        events arrive. When the balance reaches zero, the meter falls back
-        to your metered price or stops, depending on how you configure it.
+        Customers prepay for usage and Polar deducts from the balance as events
+        arrive. When the balance reaches zero, the meter falls back to your
+        metered price or stops, depending on how you configure it.
       </FeaturePageIntro>
 
       <FeatureSection title="Why prepaid">
         <p>
-          Pure usage billing is honest with the customer, but it&apos;s
-          also unpredictable. Opening an invoice that&apos;s four times
-          larger than last month&apos;s makes any product feel volatile,
-          even when the underlying behavior is correct.
+          Pure usage billing is honest with the customer, but it&apos;s also
+          unpredictable. Opening an invoice that&apos;s four times larger than
+          last month&apos;s makes any product feel volatile, even when the
+          underlying behavior is correct.
         </p>
         <p>
-          <strong>Credits</strong> rebuild that predictability without
-          giving up usage-based pricing. The customer prepays for a defined
-          amount of usage, draws it down over time, and only pays again
-          when they top up.
+          <strong>Credits</strong> rebuild that predictability without giving up
+          usage-based pricing. The customer prepays for a defined amount of
+          usage, draws it down over time, and only pays again when they top up.
         </p>
         <p>
-          Underneath, credits ride on the meters you already have.
-          Incoming events deduct from the credit balance first; only when
-          the balance hits zero does the metered price kick in, and even
-          that step is optional.
+          Underneath, credits ride on the meters you already have. Incoming
+          events deduct from the credit balance first; only when the balance
+          hits zero does the metered price kick in, and even that step is
+          optional.
         </p>
         <p>
-          That choice is yours: charge the metered rate beyond the
-          prepaid amount, or block usage entirely so the customer can
-          never owe more than they paid up front.
+          That choice is yours: charge the metered rate beyond the prepaid
+          amount, or block usage entirely so the customer can never owe more
+          than they paid up front.
         </p>
       </FeatureSection>
 
@@ -135,21 +134,19 @@ export const CreditsPage = () => {
 
       <FeatureSection title="Enforcement is yours">
         <p>
-          Polar deliberately stops short of blocking usage on its own.
-          When a balance hits zero, the API surfaces the empty state and
-          your application decides what happens next.
+          Polar deliberately stops short of blocking usage on its own. When a
+          balance hits zero, the API surfaces the empty state and your
+          application decides what happens next.
         </p>
         <p>
           That separation matters because the right response is
           context-dependent. Some flows should keep serving and bill the
-          overage; others should prompt for an upgrade or throttle until
-          the customer tops up. Those are product decisions, not billing
-          ones.
+          overage; others should prompt for an upgrade or throttle until the
+          customer tops up. Those are product decisions, not billing ones.
         </p>
         <p>
-          Polar&apos;s job is to keep the balance accurate and the API
-          current, so the rule you write in your code can rely on the
-          number it reads.
+          Polar&apos;s job is to keep the balance accurate and the API current,
+          so the rule you write in your code can rely on the number it reads.
         </p>
       </FeatureSection>
 

@@ -29,31 +29,31 @@ export const SeatsPage = () => {
       <FeaturePageGraphic graphic={LinkedRings} />
 
       <FeaturePageIntro>
-        Sell a product where one customer pays for a team. Invitations,
-        claims, and proration are handled by Polar so you don&apos;t have
-        to build seat management yourself.
+        Sell a product where one customer pays for a team. Invitations, claims,
+        and proration are handled by Polar so you don&apos;t have to build seat
+        management yourself.
       </FeaturePageIntro>
 
       <FeatureSection title="One product, many seats">
         <p>
           A seat-based product is purchased by a single{' '}
-          <strong>billing manager</strong> who decides how many seats they
-          need. From there, they assign seats to teammates by email or by
-          your own external customer ID.
+          <strong>billing manager</strong> who decides how many seats they need.
+          From there, they assign seats to teammates by email or by your own
+          external customer ID.
         </p>
         <p>
-          Benefits only fire when a seat is actually claimed by the
-          recipient, which keeps usage in step with billing. The billing
-          manager doesn&apos;t receive benefits unless they assign a seat
-          to themselves, so a finance buyer can pay without consuming a
-          seat they&apos;ll never use.
+          Benefits only fire when a seat is actually claimed by the recipient,
+          which keeps usage in step with billing. The billing manager
+          doesn&apos;t receive benefits unless they assign a seat to themselves,
+          so a finance buyer can pay without consuming a seat they&apos;ll never
+          use.
         </p>
         <p>
-          The same primitive covers <strong>recurring subscriptions</strong>{' '}
-          and <strong>perpetual licenses</strong>. Subscriptions stay in
-          sync with the team while the plan is active; licenses grant
-          benefits forever once a seat is claimed, and growth happens
-          through new orders rather than mutating the original purchase.
+          The same primitive covers <strong>recurring subscriptions</strong> and{' '}
+          <strong>perpetual licenses</strong>. Subscriptions stay in sync with
+          the team while the plan is active; licenses grant benefits forever
+          once a seat is claimed, and growth happens through new orders rather
+          than mutating the original purchase.
         </p>
       </FeatureSection>
 
@@ -137,23 +137,21 @@ export const SeatsPage = () => {
 
       <FeatureSection title="API and webhooks">
         <p>
-          Seat assignments are first-class objects in the API. List them on
-          a subscription, assign them programmatically when a customer
-          onboards a teammate inside your app, and revoke them through the
-          same endpoint.
+          Seat assignments are first-class objects in the API. List them on a
+          subscription, assign them programmatically when a customer onboards a
+          teammate inside your app, and revoke them through the same endpoint.
         </p>
         <p>
           On the receiving side, <strong>seat.claimed</strong>,{' '}
           <strong>seat.revoked</strong>, and{' '}
-          <strong>subscription.updated</strong> webhooks let your own
-          permission system stay in lockstep without polling.
+          <strong>subscription.updated</strong> webhooks let your own permission
+          system stay in lockstep without polling.
         </p>
         <p>
-          The model supports up to 1,000 seats per subscription and
-          arbitrary metadata on every seat, so role, team, or external user
-          ID can travel with the assignment. Seat-based pricing is in beta
-          today; enable it under{' '}
-          <strong>Settings → General → Features</strong>.
+          The model supports up to 1,000 seats per subscription and arbitrary
+          metadata on every seat, so role, team, or external user ID can travel
+          with the assignment. Seat-based pricing is in beta today; enable it
+          under <strong>Settings → General → Features</strong>.
         </p>
       </FeatureSection>
 

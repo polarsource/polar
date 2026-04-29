@@ -364,12 +364,12 @@ export async function POST(req: Request) {
     : google('gemini-2.5-flash')
 
   const sonnet = phClient
-    ? withTracing(anthropic('claude-sonnet-4-5'), phClient, {
+    ? withTracing(anthropic('claude-sonnet-4-6'), phClient, {
         posthogDistinctId: user.id,
         posthogTraceId: conversationId,
         posthogGroups: { organization: organizationId },
       })
-    : anthropic('claude-sonnet-4-5')
+    : anthropic('claude-sonnet-4-6')
 
   const router = await generateObject({
     model: geminiLite,

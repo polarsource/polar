@@ -12,6 +12,7 @@ import { Usage } from './Usage'
 import { Vision } from './Vision'
 import { Features } from './Features'
 import { Logotypes } from './Logotypes'
+import { UseCases } from './UseCases'
 
 export default function Page() {
   return (
@@ -47,9 +48,10 @@ const PageContent = () => {
       <Section>
         <Vision />
       </Section>
+      <UseCases />
       <Section>
-        <Testimonials />
         <Logotypes />
+        <Testimonials />
       </Section>
       <Section>
         <Upsell />

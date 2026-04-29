@@ -1,0 +1,21 @@
+{
+  "name": "@polar-sh/box-codemod",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "box-codemod": "./src/cli.ts"
+  },
+  "scripts": {
+    "box-codemod": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "jscodeshift": "^17.1.2"
+  },
+  "devDependencies": {
+    "@types/jscodeshift": "^17.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -12,6 +12,7 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "knip": "knip",
+    "box-codemod": "pnpm --filter @polar-sh/box-codemod box-codemod",
     "preinstall": "npx only-allow pnpm",
     "prepare": "turbo run build --filter='./packages/*'",
     "release-packages": "turbo run build lint test --filter='./packages/*' && changeset publish"

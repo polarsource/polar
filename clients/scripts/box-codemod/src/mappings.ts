@@ -255,22 +255,26 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
     const key = cornerRound[2] ?? ''
     const token = roundKeyToToken(key)
     if (token === null) return null
-    if (corner === 't') return [
-      { prop: 'borderTopLeftRadius', value: token },
-      { prop: 'borderTopRightRadius', value: token },
-    ]
-    if (corner === 'b') return [
-      { prop: 'borderBottomLeftRadius', value: token },
-      { prop: 'borderBottomRightRadius', value: token },
-    ]
-    if (corner === 'l') return [
-      { prop: 'borderTopLeftRadius', value: token },
-      { prop: 'borderBottomLeftRadius', value: token },
-    ]
-    if (corner === 'r') return [
-      { prop: 'borderTopRightRadius', value: token },
-      { prop: 'borderBottomRightRadius', value: token },
-    ]
+    if (corner === 't')
+      return [
+        { prop: 'borderTopLeftRadius', value: token },
+        { prop: 'borderTopRightRadius', value: token },
+      ]
+    if (corner === 'b')
+      return [
+        { prop: 'borderBottomLeftRadius', value: token },
+        { prop: 'borderBottomRightRadius', value: token },
+      ]
+    if (corner === 'l')
+      return [
+        { prop: 'borderTopLeftRadius', value: token },
+        { prop: 'borderBottomLeftRadius', value: token },
+      ]
+    if (corner === 'r')
+      return [
+        { prop: 'borderTopRightRadius', value: token },
+        { prop: 'borderBottomRightRadius', value: token },
+      ]
     const cornerProp = {
       tl: 'borderTopLeftRadius',
       tr: 'borderTopRightRadius',
@@ -293,10 +297,11 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
   const axisMatch = utility.match(/^border-([xy])(?:-(\d+))?$/)
   if (axisMatch) {
     const w = axisMatch[2] ? Number(axisMatch[2]) : 1
-    if (axisMatch[1] === 'x') return [
-      { prop: 'borderLeftWidth', value: w },
-      { prop: 'borderRightWidth', value: w },
-    ]
+    if (axisMatch[1] === 'x')
+      return [
+        { prop: 'borderLeftWidth', value: w },
+        { prop: 'borderRightWidth', value: w },
+      ]
     return [
       { prop: 'borderTopWidth', value: w },
       { prop: 'borderBottomWidth', value: w },
@@ -329,15 +334,12 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
   if (utility === 'flex-none') return one('flex', 'none')
 
   // Sizing: w/h/min-w/min-h/max-w/max-h
-  const sizeMatch = utility.match(
-    /^(min-w|max-w|min-h|max-h|w|h)-(.+)$/,
-  )
+  const sizeMatch = utility.match(/^(min-w|max-w|min-h|max-h|w|h)-(.+)$/)
   if (sizeMatch) {
     const prop = sizingProp(sizeMatch[1])
     const v = sizeMatch[2]
     if (v === 'full') return one(prop, '100%')
-    if (v === 'screen')
-      return one(prop, isWidth(prop) ? '100vw' : '100vh')
+    if (v === 'screen') return one(prop, isWidth(prop) ? '100vw' : '100vh')
     if (v === 'auto') return one(prop, 'auto')
     if (v === 'fit') return one(prop, 'fit-content')
     if (v === 'min') return one(prop, 'min-content')
@@ -393,14 +395,16 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
     const v = posMatch[3]
     const value = positionValue(v, negative)
     if (value === null) return null
-    if (posMatch[2] === 'inset-x') return [
-      { prop: 'left', value },
-      { prop: 'right', value },
-    ]
-    if (posMatch[2] === 'inset-y') return [
-      { prop: 'top', value },
-      { prop: 'bottom', value },
-    ]
+    if (posMatch[2] === 'inset-x')
+      return [
+        { prop: 'left', value },
+        { prop: 'right', value },
+      ]
+    if (posMatch[2] === 'inset-y')
+      return [
+        { prop: 'top', value },
+        { prop: 'bottom', value },
+      ]
     return one(posMatch[2], value)
   }
 
@@ -445,13 +449,20 @@ function roundKeyToToken(key: string): string | null {
 
 function sizingProp(prefix: string): string {
   switch (prefix) {
-    case 'w': return 'width'
-    case 'h': return 'height'
-    case 'min-w': return 'minWidth'
-    case 'max-w': return 'maxWidth'
-    case 'min-h': return 'minHeight'
-    case 'max-h': return 'maxHeight'
-    default: return 'width'
+    case 'w':
+      return 'width'
+    case 'h':
+      return 'height'
+    case 'min-w':
+      return 'minWidth'
+    case 'max-w':
+      return 'maxWidth'
+    case 'min-h':
+      return 'minHeight'
+    case 'max-h':
+      return 'maxHeight'
+    default:
+      return 'width'
   }
 }
 
@@ -497,65 +508,79 @@ const TW_SIZE_ALIAS_PX: Record<string, number> = {
 }
 
 const BREAKPOINTS: MapResult['bp'][] = ['sm', 'md', 'lg', 'xl']
-
-// Strip the optional "dark:" / "<bp>:" prefixes from a raw class so we can
-// compare just the utility part (e.g. "bg-white") against the pair table.
-function utilityOnly(c: ParsedClass): string {
-  // The parsed `utility` field already excludes recognised modifiers, so we
-  // can use it directly — but the pair table is keyed on the raw form
-  // including any "dark:" prefix, so reconstruct accordingly.
-  return c.utility
+const STATES: MapResult['state'][] = [
+  'hover',
+  'focus',
+  'active',
+  'focusVisible',
+  'focusWithin',
+]
+const RAW_STATE_TO_KEY: Record<string, MapResult['state']> = {
+  hover: 'hover',
+  focus: 'focus',
+  active: 'active',
+  'focus-visible': 'focusVisible',
+  'focus-within': 'focusWithin',
 }
 
-function modifierSet(c: ParsedClass): { dark: boolean; bp?: MapResult['bp'] } {
+interface ClassScope {
+  dark: boolean
+  bp?: MapResult['bp']
+  state?: MapResult['state']
+  ok: boolean // false if the class has any unrecognised modifier
+}
+
+function classScope(c: ParsedClass): ClassScope {
   let dark = false
   let bp: MapResult['bp'] | undefined
+  let state: MapResult['state'] | undefined
   for (const m of c.modifiers) {
-    if (m === 'dark') dark = true
-    else if (m === 'sm' || m === 'md' || m === 'lg' || m === 'xl') bp = m
-    // Any other modifier (state, 2xl, etc.) → caller should reject.
+    if (m === 'dark') {
+      dark = true
+    } else if (m === 'sm' || m === 'md' || m === 'lg' || m === 'xl') {
+      if (bp) return { dark, bp, state, ok: false }
+      bp = m
+    } else if (RAW_STATE_TO_KEY[m]) {
+      if (state) return { dark, bp, state, ok: false }
+      state = RAW_STATE_TO_KEY[m]
+    } else {
+      return { dark, bp, state, ok: false }
+    }
   }
-  return { dark, bp }
-}
-
-function hasOnlyDarkAndBp(c: ParsedClass): boolean {
-  for (const m of c.modifiers) {
-    if (m === 'dark') continue
-    if (m === 'sm' || m === 'md' || m === 'lg' || m === 'xl') continue
-    return false
-  }
-  return true
+  return { dark, bp, state, ok: true }
 }
 
 export function tryColorPair(
   classes: ParsedClass[],
 ): { mapped: MapResult; consumed: ParsedClass[] }[] {
   const results: { mapped: MapResult; consumed: ParsedClass[] }[] = []
+  const scopes: { bp?: MapResult['bp']; state?: MapResult['state'] }[] = []
+  for (const bp of [undefined, ...BREAKPOINTS]) {
+    for (const state of [undefined, ...STATES]) {
+      scopes.push({ bp, state })
+    }
+  }
+
   for (const [prop, table] of Object.entries(COLOR_PAIRS)) {
     for (const [pair, token] of Object.entries(table)) {
       const [light, dark] = pair.split('|')
-      const lightUtility = light // e.g. "bg-white"
+      const lightUtility = light
       const darkUtility = dark.startsWith('dark:') ? dark.slice(5) : dark
 
-      // Pair across each breakpoint (and the unprefixed "base" case).
-      for (const bp of [undefined, ...BREAKPOINTS] as const) {
+      for (const { bp, state } of scopes) {
+        const matchScope = (c: ParsedClass, wantDark: boolean) => {
+          const s = classScope(c)
+          return s.ok && s.dark === wantDark && s.bp === bp && s.state === state
+        }
         const lightHit = classes.find(
-          (c) =>
-            hasOnlyDarkAndBp(c) &&
-            !c.modifiers.includes('dark') &&
-            modifierSet(c).bp === bp &&
-            utilityOnly(c) === lightUtility,
+          (c) => matchScope(c, false) && c.utility === lightUtility,
         )
         const darkHit = classes.find(
-          (c) =>
-            hasOnlyDarkAndBp(c) &&
-            c.modifiers.includes('dark') &&
-            modifierSet(c).bp === bp &&
-            utilityOnly(c) === darkUtility,
+          (c) => matchScope(c, true) && c.utility === darkUtility,
         )
         if (lightHit && darkHit) {
           results.push({
-            mapped: { prop, value: token, bp },
+            mapped: { prop, value: token, bp, state },
             consumed: [lightHit, darkHit],
           })
         }

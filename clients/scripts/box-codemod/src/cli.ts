@@ -22,7 +22,8 @@ function parseArgs(argv: string[]): Args {
     const a = argv[i]
     if (a === '--dry-run' || a === '-d') out.dryRun = true
     else if (a === '--report' || a === '-r') out.reportPath = argv[++i]
-    else if (a.startsWith('--report=')) out.reportPath = a.slice('--report='.length)
+    else if (a.startsWith('--report='))
+      out.reportPath = a.slice('--report='.length)
     else out.paths.push(a)
   }
   return out
@@ -50,7 +51,11 @@ async function expandPaths(paths: string[]): Promise<string[]> {
 async function walk(dir: string, out: string[]): Promise<void> {
   const entries = await readdir(dir, { withFileTypes: true })
   for (const e of entries) {
-    if (e.name === 'node_modules' || e.name === '.next' || e.name.startsWith('.'))
+    if (
+      e.name === 'node_modules' ||
+      e.name === '.next' ||
+      e.name.startsWith('.')
+    )
       continue
     const full = join(dir, e.name)
     if (e.isDirectory()) {
@@ -64,7 +69,9 @@ async function walk(dir: string, out: string[]): Promise<void> {
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2))
   if (args.paths.length === 0) {
-    console.error('Usage: box-codemod <file-or-dir>... [--dry-run] [--report=path.md]')
+    console.error(
+      'Usage: box-codemod <file-or-dir>... [--dry-run] [--report=path.md]',
+    )
     process.exit(1)
   }
 

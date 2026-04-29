@@ -54,7 +54,8 @@ export function runTransform(file: FileInfo): TransformResult {
         file: file.path,
         line: el.loc?.start.line ?? 0,
         status: 'skipped',
-        reason: 'spread attribute (e.g. {...props}) — typed HTML props would conflict with Box',
+        reason:
+          'spread attribute (e.g. {...props}) — typed HTML props would conflict with Box',
       })
       return
     }
@@ -171,9 +172,7 @@ function applyConversion(
   const newAttrs: JSXAttribute[] = []
 
   if (tagName !== 'div') {
-    newAttrs.push(
-      j.jsxAttribute(j.jsxIdentifier('as'), j.literal(tagName)),
-    )
+    newAttrs.push(j.jsxAttribute(j.jsxIdentifier('as'), j.literal(tagName)))
   }
 
   for (const [prop, mappings] of result.props) {
@@ -227,10 +226,7 @@ function buildPropAttr(
       j.property('init', j.identifier(quoteKey(k)), valueLiteral(j, v)),
     ),
   )
-  return j.jsxAttribute(
-    j.jsxIdentifier(prop),
-    j.jsxExpressionContainer(obj),
-  )
+  return j.jsxAttribute(j.jsxIdentifier(prop), j.jsxExpressionContainer(obj))
 }
 
 function quoteKey(k: string): string {

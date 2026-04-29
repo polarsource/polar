@@ -107,7 +107,7 @@ def _numeral_jurisdiction_to_breakdown_item(
     jurisdiction: NumeralTaxJurisdiction,
     country: str,
     state: str | None,
-    amount: int,
+    subtotal_amount: int,
     customer_exempt: bool,
 ) -> TaxBreakdownItem:
     note = jurisdiction["note"].lower()
@@ -120,7 +120,7 @@ def _numeral_jurisdiction_to_breakdown_item(
     else:
         assert jurisdiction["tax_rate"] is not None
         rate = jurisdiction["tax_rate"]
-        item_amount = polar_round(amount * rate)
+        item_amount = polar_round(subtotal_amount * rate)
 
     subdivision: str | None = None
     if "general state" not in jurisdiction["rate_type"]:
@@ -143,7 +143,7 @@ def _build_numeral_tax_breakdown(
     *,
     country: str,
     state: str | None,
-    amount: int,
+    subtotal_amount: int,
     customer_exempt: bool,
 ) -> list[TaxBreakdownItem]:
     tax_breakdown: list[TaxBreakdownItem] = []
@@ -154,7 +154,7 @@ def _build_numeral_tax_breakdown(
                 jurisdiction,
                 country=country,
                 state=state,
-                amount=amount,
+                subtotal_amount=subtotal_amount,
                 customer_exempt=customer_exempt,
             )
         )
@@ -301,7 +301,7 @@ class NumeralTaxService(TaxServiceProtocol):
             jurisdictions,
             country=country,
             state=state,
-            amount=amount,
+            subtotal_amount=calculation["total_amount_excluding_tax"],
             customer_exempt=customer_exempt,
         )
 

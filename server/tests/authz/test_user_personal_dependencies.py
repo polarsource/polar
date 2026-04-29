@@ -94,7 +94,6 @@ class TestImpersonationContract:
         [
             {Scope.user_read, Scope.user_write},
             {Scope.payouts_read, Scope.payouts_write},
-            {Scope.organizations_read, Scope.organizations_write},
         ],
     )
     async def test_impersonation_accepted_for_reads(

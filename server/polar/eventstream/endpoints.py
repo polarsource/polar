@@ -9,7 +9,7 @@ from sse_starlette.sse import EventSourceResponse
 from uvicorn import Server
 
 from polar.auth.models import is_user
-from polar.authz.dependencies import AuthorizeOrgAccess, AuthorizeUserRead
+from polar.authz.dependencies import AuthorizeOrgAccess, AuthorizeWebUserRead
 from polar.observability import HTTP_SSE_CONNECTIONS_OPENED
 from polar.observability.utils import get_path_template
 from polar.postgres import AsyncSession, get_db_session
@@ -106,7 +106,7 @@ async def subscribe(
 @router.get("/user")
 async def user_stream(
     request: Request,
-    auth_subject: AuthorizeUserRead,
+    auth_subject: AuthorizeWebUserRead,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:

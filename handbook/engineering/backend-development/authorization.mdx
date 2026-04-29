@@ -145,25 +145,34 @@ Some endpoints don't operate on an organization — they act on the authenticate
 For these, use one of the user-personal `Authorize*` aliases from `server/polar/authz/dependencies.py`:
 
 ```python
-from polar.authz.dependencies import AuthorizeUserRead, AuthorizeUserWrite
+from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 
 @router.get("/me")
-async def get_authenticated(auth_subject: AuthorizeUserRead) -> User:
+async def get_authenticated(auth_subject: AuthorizeWebUserRead) -> User:
     return auth_subject.subject
 
 @router.patch("/me")
-async def update_authenticated(auth_subject: AuthorizeUserWrite, ...) -> User:
+async def update_authenticated(auth_subject: AuthorizeWebUserWrite, ...) -> User:
     ...
 ```
 
-Each alias gates on a scope appropriate to what the endpoint does. Read aliases accept either the matching `_read` or `_write` scope (write implies read); write aliases require the `_write` scope. Available aliases today:
+### Two prefixes: `Web*` vs not
 
-| Alias | Required scopes | Use case |
-|-------|-----------------|----------|
-| `AuthorizeUserRead` | `user:read` or `user:write` | Reading the user's own state |
-| `AuthorizeUserWrite` | `user:write` | Mutating the user's own account (profile, OAuth links, PATs, email, …) |
-| `AuthorizePayoutsRead` | `payouts:read` or `payouts:write` | Reading the user's payout accounts |
-| `AuthorizePayoutsWrite` | `payouts:write` | Creating a payout account |
+User-personal aliases come in two flavours that differ in **which kinds of authenticated User subjects they accept**:
+
+- **`AuthorizeWeb{User,Payouts}{Read,Write}`** — User **via web session** only. Rejects API tokens (PATs, OATs, OAuth2 access tokens). Use for browser/dashboard-only flows. This is the right default for almost every user-personal endpoint.
+- **`Authorize{User}{Read,Write}`** — Any User subject (web session, PAT, OAuth2 access token) with the appropriate scope. Use **only** for endpoints that legitimately need to accept API tokens — for example, the mobile app calling `DELETE /v1/users/me` with an OAuth2 bearer.
+
+In both flavours, read aliases accept either the matching `_read` or `_write` scope (write implies read); write aliases require the `_write` scope. Available aliases today:
+
+| Alias | Subjects | Required scopes | Use case |
+|-------|----------|-----------------|----------|
+| `AuthorizeWebUserRead` | Web session only | `user:read` or `user:write` | Reading the user's own state from the dashboard |
+| `AuthorizeWebUserWrite` | Web session only | `user:write` | Mutating the user's own account from the dashboard |
+| `AuthorizeWebPayoutsRead` | Web session only | `payouts:read` or `payouts:write` | Reading the user's payout accounts |
+| `AuthorizeWebPayoutsWrite` | Web session only | `payouts:write` | Creating a payout account |
+| `AuthorizeUserRead` | Any User (web/PAT/OAuth2) | `user:read` or `user:write` | API-token-accessible user reads |
+| `AuthorizeUserWrite` | Any User (web/PAT/OAuth2) | `user:write` | API-token-accessible user writes (e.g. mobile delete-account) |
 
 Add a new alias to `authz/dependencies.py` if a new endpoint needs a scope combination that isn't listed. Endpoints that resolve an organization from a path parameter belong with the `OrgPolicyGuard` family above, not here — even when the operation is read-only.
 
@@ -171,14 +180,14 @@ Add a new alias to `authz/dependencies.py` if a new endpoint needs a scope combi
 
 The split between authentication and authorization still applies:
 
-- `WebUserSession` (in `server/polar/auth/dependencies.py`) — pure authentication. Accepts only web-session users; rejects API tokens (PATs, OATs, customer sessions).
+- `WebUserSession` (in `server/polar/auth/dependencies.py`) — pure authentication for the `Web*` aliases. Accepts only web-session users; rejects API tokens.
 - `Authorize*` aliases (above) — the authorization layer. Add the scope check, and are the place to attach future cross-cutting per-user checks (account suspended, identity not verified, MFA required, …) without touching endpoint signatures.
 
 Endpoints depend on the `Authorize*` alias, never on `WebUserSession` directly.
 
 ### Why scopes here too
 
-The scope check on user-personal endpoints is what enforces **read-only impersonation**. Backoffice impersonation creates a user session with only `READ_ONLY_SCOPES` (the `_read` set). Resource endpoints already block writes via their org-scoped guards' `required_scopes`. Mirroring that on user-personal endpoints means an impersonating admin can read profile/PATs/OAuth state but can't mutate it — same mechanism, single invariant: any endpoint declaring a `_write` scope is automatically off-limits to impersonation.
+The scope check on user-personal endpoints is what enforces **read-only impersonation**. Backoffice impersonation creates a user session with only `READ_ONLY_SCOPES` (the `_read` set). Resource endpoints already block writes via their org-scoped guards' `required_scopes`. Mirroring that on user-personal endpoints means an impersonating admin can read profile/PATs/OAuth state but can't mutate it — same mechanism, single invariant: any endpoint declaring a `_write` scope is automatically off-limits to impersonation, regardless of which prefix is used.
 
 ## Scopes
 

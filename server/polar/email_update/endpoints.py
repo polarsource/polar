@@ -1,7 +1,7 @@
 from fastapi import Depends, Form
 from fastapi.responses import RedirectResponse
 
-from polar.authz.dependencies import AuthorizeUserWrite
+from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
 from polar.integrations.loops.service import loops as loops_service
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/email-update", tags=["email-update", APITag.private]
 @router.post("/request")
 async def request_email_update(
     email_update_request: EmailUpdateRequest,
-    auth_subject: AuthorizeUserWrite,
+    auth_subject: AuthorizeWebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     email_update_record, token = await email_update_service.request_email_update(
@@ -45,7 +45,7 @@ async def request_email_update(
 @router.post("/verify")
 async def verify_email_update(
     return_to: ReturnTo,
-    auth_subject: AuthorizeUserWrite,
+    auth_subject: AuthorizeWebUserWrite,
     token: str = Form(),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:

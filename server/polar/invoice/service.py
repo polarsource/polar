@@ -7,7 +7,6 @@ from polar.kit.utils import utc_now
 from polar.models import Account, Order, Payout
 from polar.models.transaction import PlatformFeeType
 from polar.postgres import AsyncSession
-from polar.tax.calculation import TaxabilityReason
 from polar.transaction.repository import TransactionRepository
 
 from .generator import (
@@ -129,9 +128,8 @@ class InvoiceService:
             customer_additional_info=settings.INVOICES_ADDITIONAL_INFO,
             subtotal_amount=payout.amount,
             discount_amount=0,
-            taxability_reason=TaxabilityReason.product_exempt,
             tax_amount=0,
-            tax_rate=None,
+            tax_breakdown=[],
             net_amount=payout.amount,
             currency=payout.currency,
             items=items,

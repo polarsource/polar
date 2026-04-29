@@ -37,9 +37,8 @@ def receipt() -> Receipt:
         ),
         subtotal_amount=100_00,
         discount_amount=0,
-        taxability_reason=None,
         tax_amount=0,
-        tax_rate=None,
+        tax_breakdown=[],
         net_amount=100_00,
         currency="usd",
         items=[

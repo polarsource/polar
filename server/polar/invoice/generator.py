@@ -1,7 +1,7 @@
 import textwrap
 from datetime import date, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 import arabic_reshaper
 import pycountry
@@ -18,7 +18,7 @@ from polar.config import Environment, settings
 from polar.kit.address import Address
 from polar.kit.currency import format_currency
 from polar.kit.utils import utc_now
-from polar.tax.calculation.base import TaxabilityReason, TaxRate
+from polar.tax.calculation.base import TaxabilityReason, TaxBreakdownItem
 
 if TYPE_CHECKING:
     from polar.models import Order
@@ -28,8 +28,12 @@ def format_number(n: int) -> str:
     return _format_decimal(n, locale="en_US")
 
 
-def format_percent(basis_points: int) -> str:
-    return _format_percent(basis_points / 10000, locale="en_US")
+def format_percent(rate: float) -> str:
+    return _format_percent(
+        rate,
+        locale="en_US",
+        decimal_quantization=False,  # Don't truncate very small rates
+    )
 
 
 def format_date(date: date | datetime) -> str:
@@ -72,9 +76,8 @@ class Invoice(BaseModel):
     subtotal_amount: int
     applied_balance_amount: int | None = None
     discount_amount: int
-    taxability_reason: TaxabilityReason | None
     tax_amount: int
-    tax_rate: TaxRate | None
+    tax_breakdown: list[TaxBreakdownItem] = []
     net_amount: int
     currency: str
     items: list[InvoiceItem]
@@ -91,31 +94,58 @@ class Invoice(BaseModel):
         ]
 
     @property
-    def tax_displayed(self) -> bool:
-        return self.taxability_reason is not None and self.taxability_reason in {
-            TaxabilityReason.standard_rated,
-            TaxabilityReason.reverse_charge,
-        }
+    def tax_items(self) -> list[InvoiceTotalsItem]:
+        items: list[InvoiceTotalsItem] = []
+        for item in self.tax_breakdown:
+            if item["taxability_reason"] not in {
+                TaxabilityReason.standard_rated,
+                TaxabilityReason.reverse_charge,
+            }:
+                continue
 
-    @property
-    def tax_label(self) -> str:
-        if self.tax_rate is None:
-            return "Tax"
+            label = item["display_name"]
 
-        label = self.tax_rate["display_name"]
+            if item["taxability_reason"] == TaxabilityReason.reverse_charge:
+                label = f"{label} (0% Reverse Charge)"
+            else:
+                if item["country"] is not None:
+                    country = pycountry.countries.get(alpha_2=item["country"])
+                    if country is not None:
+                        parts = [country.name]
 
-        if self.taxability_reason == TaxabilityReason.reverse_charge:
-            return f"{label} (0% Reverse Charge)"
+                        if item["state"] is not None:
+                            state: Any | None = pycountry.subdivisions.get(
+                                code=f"{item['country']}-{item['state']}"
+                            )
+                            if state is not None:
+                                parts = [state.name] + parts
 
-        if self.tax_rate["country"] is not None:
-            country = pycountry.countries.get(alpha_2=self.tax_rate["country"])
-            if country is not None:
-                label += f" — {country.name}"
+                        if item["subdivision"] is not None:
+                            parts = [item["subdivision"]] + parts
 
-        if self.tax_rate["basis_points"] is not None:
-            label += f" ({format_percent(self.tax_rate['basis_points'])})"
+                        label += f" — {', '.join(parts)}"
 
-        return label
+                if item["rate"] is not None:
+                    label += f" ({format_percent(item['rate'])})"
+
+            items.append(
+                InvoiceTotalsItem(
+                    label=label,
+                    amount=item["amount"],
+                    currency=self.currency,
+                )
+            )
+
+        if len(self.tax_breakdown) > 1:
+            items.append(
+                InvoiceTotalsItem(
+                    label="Total tax",
+                    amount=self.tax_amount,
+                    currency=self.currency,
+                )
+            )
+
+        return items
 
     @property
     def totals_items(self) -> list[InvoiceTotalsItem]:
@@ -136,7 +166,8 @@ class Invoice(BaseModel):
                 )
             )
 
-        if self.tax_displayed:
+        tax_items = self.tax_items
+        if len(tax_items) > 0:
             items.append(
                 InvoiceTotalsItem(
                     label="Total excluding tax",
@@ -144,13 +175,7 @@ class Invoice(BaseModel):
                     currency=self.currency,
                 )
             )
-            items.append(
-                InvoiceTotalsItem(
-                    label=self.tax_label,
-                    amount=self.tax_amount,
-                    currency=self.currency,
-                )
-            )
+            items.extend(tax_items)
 
         total = self.net_amount + self.tax_amount
         items.append(
@@ -198,9 +223,8 @@ class Invoice(BaseModel):
             subtotal_amount=order.subtotal_amount,
             applied_balance_amount=order.applied_balance_amount,
             discount_amount=order.discount_amount,
-            taxability_reason=order.taxability_reason,
             tax_amount=order.tax_amount,
-            tax_rate=order.tax_rate,
+            tax_breakdown=order.tax_breakdown or [],
             net_amount=order.net_amount,
             currency=order.currency,
             items=[

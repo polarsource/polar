@@ -47,9 +47,8 @@ def _build_receipt(
         customer_additional_info="buyer@example.com",
         subtotal_amount=10000,
         discount_amount=0,
-        taxability_reason=None,
+        tax_breakdown=[],
         tax_amount=0,
-        tax_rate=None,
         net_amount=10000,
         currency="usd",
         items=[

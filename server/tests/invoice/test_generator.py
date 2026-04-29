@@ -34,17 +34,19 @@ def invoice() -> Invoice:
         customer_additional_info="FR61954506077",
         subtotal_amount=100_00,
         discount_amount=10_00,
-        taxability_reason=TaxabilityReason.standard_rated,
         tax_amount=18_00,
-        tax_rate={
-            "rate_type": "percentage",
-            "display_name": "VAT",
-            "basis_points": 2000,
-            "country": "FR",
-            "amount": None,
-            "amount_currency": None,
-            "state": None,
-        },
+        tax_breakdown=[
+            {
+                "rate_type": "percentage",
+                "display_name": "VAT",
+                "rate": 0.2,
+                "country": "FR",
+                "state": None,
+                "subdivision": None,
+                "amount": 18_00,
+                "taxability_reason": TaxabilityReason.standard_rated,
+            }
+        ],
         net_amount=90_00,
         currency="usd",
         items=[
@@ -103,6 +105,34 @@ Thank you for your business!
                 ],
             },
             "long_item_description",
+        ),
+        (
+            {
+                "tax_amount": 540,
+                "tax_breakdown": [
+                    {
+                        "rate": 0.05,
+                        "amount": 500,
+                        "country": "US",
+                        "state": "TX",
+                        "subdivision": None,
+                        "rate_type": "percentage",
+                        "display_name": "Sales Tax",
+                        "taxability_reason": "standard_rated",
+                    },
+                    {
+                        "rate": 0.004,
+                        "amount": 40,
+                        "country": "US",
+                        "state": "TX",
+                        "subdivision": "Bee",
+                        "rate_type": "percentage",
+                        "display_name": "Sales Tax",
+                        "taxability_reason": "standard_rated",
+                    },
+                ],
+            },
+            "multiple_tax_breakdown",
         ),
         (
             {

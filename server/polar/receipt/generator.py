@@ -131,9 +131,8 @@ class Receipt(Invoice):
             subtotal_amount=order.subtotal_amount,
             applied_balance_amount=order.applied_balance_amount,
             discount_amount=order.discount_amount,
-            taxability_reason=order.taxability_reason,
             tax_amount=order.tax_amount,
-            tax_rate=order.tax_rate,
+            tax_breakdown=order.tax_breakdown or [],
             net_amount=order.net_amount,
             currency=order.currency,
             items=[

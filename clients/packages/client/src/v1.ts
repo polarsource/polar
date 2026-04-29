@@ -19818,6 +19818,11 @@ export interface components {
       tier_price_amount: number | null
       /** Tier Price Recurring Interval */
       tier_price_recurring_interval: string
+      /**
+       * Tier Price Recurring Interval Count
+       * @default 1
+       */
+      tier_price_recurring_interval_count: number
       /** Tier Organization Name */
       tier_organization_name: string
       /** Tier Organization Slug */
@@ -19831,6 +19836,8 @@ export interface components {
       currency: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
+      /** Formatted Price With Interval */
+      readonly formatted_price_with_interval: string
     }
     /** MaintainerNewProductSaleNotification */
     MaintainerNewProductSaleNotification: {

@@ -51,6 +51,22 @@ async def test_MaintainerNewPaidSubscriptionNotification() -> None:
 
 
 @pytest.mark.asyncio
+async def test_MaintainerNewPaidSubscriptionNotification_every_6_months() -> None:
+    n = MaintainerNewPaidSubscriptionNotificationPayload(
+        subscriber_name="John Doe",
+        tier_name="My Paid Tier",
+        tier_price_amount=5000,
+        tier_organization_name="myorg",
+        tier_organization_slug="myorg",
+        tier_price_recurring_interval="month",
+        tier_price_recurring_interval_count=6,
+        subscription_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    )
+
+    await check_diff(n)
+
+
+@pytest.mark.asyncio
 async def test_MaintainerNewProductSaleNotification() -> None:
     n = MaintainerNewProductSaleNotificationPayload(
         customer_email="birk@polar.sh",

@@ -66,6 +66,7 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     tier_name: str
     tier_price_amount: int | None
     tier_price_recurring_interval: str
+    tier_price_recurring_interval_count: int = 1
     tier_organization_name: str
     tier_organization_slug: str | None = None
     subscription_id: str | None = None
@@ -77,14 +78,24 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
             return ""
         return format_currency(self.tier_price_amount, self.currency)
 
-    def subject(self) -> str:
-        if self.tier_price_amount:
-            price = (
-                f"{self.formatted_price_amount}/{self.tier_price_recurring_interval}"
+    @computed_field
+    def formatted_price_with_interval(self) -> str:
+        if self.tier_price_amount is None:
+            return "free"
+        amount = self.formatted_price_amount
+        count = self.tier_price_recurring_interval_count
+        if count > 1:
+            if 11 <= (count % 100) <= 13:
+                suffix = "th"
+            else:
+                suffix = {1: "st", 2: "nd", 3: "rd"}.get(count % 10, "th")
+            return (
+                f"{amount} / every {count}{suffix} {self.tier_price_recurring_interval}"
             )
-        else:
-            price = "free"
-        return f"You have a new subscriber on {self.tier_name} ({price})!"
+        return f"{amount}/{self.tier_price_recurring_interval}"
+
+    def subject(self) -> str:
+        return f"You have a new subscriber on {self.tier_name} ({self.formatted_price_with_interval})!"
 
     @classmethod
     def template_name(cls) -> str:

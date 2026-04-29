@@ -119,7 +119,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .repository import OrderRepository
-from .schemas import OrderInvoice, OrderUpdate
+from .schemas import OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
@@ -189,6 +189,13 @@ class InvoiceDoesNotExist(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
         message = f"No invoice exists for order {order.id}."
+        super().__init__(message, 404)
+
+
+class ReceiptNotAllocated(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"No receipt allocated for order {order.id}."
         super().__init__(message, 404)
 
 
@@ -488,6 +495,16 @@ class OrderService:
 
         url, _ = await invoice_service.get_order_invoice_url(order)
         return OrderInvoice(url=url)
+
+    async def get_order_receipt(self, order: Order) -> OrderReceipt | None:
+        if order.receipt_number is None:
+            raise ReceiptNotAllocated(order)
+
+        result = await receipt_service.get_pdf_url_or_status(order)
+        if result is None:
+            return None
+        url, _ = result
+        return OrderReceipt(url=url)
 
     async def create_from_checkout_one_time(
         self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None

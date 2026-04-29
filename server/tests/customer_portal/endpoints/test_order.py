@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -439,3 +440,90 @@ class TestConfirmRetryPayment:
             json={"confirmation_token_id": "ctoken_test"},
         )
         assert response.status_code >= 409
+
+
+@pytest.mark.asyncio
+class TestGetOrderReceipt:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+        response = await client.get(f"/v1/customer-portal/orders/{order.id}/receipt")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_other_customer_order(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer_second: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture, product=product, customer=customer_second
+        )
+        order.receipt_number = "RCPT-FOO-0001"
+        await save_fixture(order)
+        response = await client.get(f"/v1/customer-portal/orders/{order.id}/receipt")
+        assert response.status_code == 404
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_404_when_no_receipt_number(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+        response = await client.get(f"/v1/customer-portal/orders/{order.id}/receipt")
+        assert response.status_code == 404
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_202_when_pending_render(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+        order.receipt_number = "RCPT-FOO-0001"
+        await save_fixture(order)
+
+        enqueue_mock = mocker.patch("polar.receipt.service.enqueue_job")
+
+        response = await client.get(f"/v1/customer-portal/orders/{order.id}/receipt")
+
+        assert response.status_code == 202
+        enqueue_mock.assert_called_once_with("receipt.render", order_id=order.id)
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_200_when_receipt_ready(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+        order.receipt_number = "RCPT-FOO-0001"
+        order.receipt_path = f"{order.organization_id}/{order.id}/receipt.pdf"
+        await save_fixture(order)
+
+        s3_mock = mocker.patch("polar.receipt.service.S3Service")
+        s3_mock.return_value.generate_presigned_download_url.return_value = (
+            "https://example.com/signed-url",
+            datetime(2030, 1, 1, tzinfo=UTC),
+        )
+
+        response = await client.get(f"/v1/customer-portal/orders/{order.id}/receipt")
+
+        assert response.status_code == 200
+        assert response.json() == {"url": "https://example.com/signed-url"}

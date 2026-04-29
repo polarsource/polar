@@ -15,13 +15,15 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Order, Product
 from polar.models.product import ProductBillingType
-from polar.order.service import InvoiceDoesNotExist
+from polar.order.service import InvoiceDoesNotExist, ReceiptNotAllocated
 from polar.order.service import order as order_service
+from polar.receipt.service import receipt as receipt_service
 
 from ..repository.order import CustomerOrderRepository
 from ..schemas.order import (
     CustomerOrderInvoice,
     CustomerOrderPaymentConfirmation,
+    CustomerOrderReceipt,
     CustomerOrderUpdate,
 )
 
@@ -148,6 +150,16 @@ class CustomerOrderService:
 
         url, _ = await invoice_service.get_order_invoice_url(order)
         return CustomerOrderInvoice(url=url)
+
+    async def get_order_receipt(self, order: Order) -> CustomerOrderReceipt | None:
+        if order.receipt_number is None:
+            raise ReceiptNotAllocated(order)
+
+        result = await receipt_service.get_pdf_url_or_status(order)
+        if result is None:
+            return None
+        url, _ = result
+        return CustomerOrderReceipt(url=url)
 
     async def confirm_retry_payment(
         self,

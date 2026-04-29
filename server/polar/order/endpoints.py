@@ -26,7 +26,7 @@ from polar.subscription.schemas import SubscriptionID
 
 from . import auth, sorting
 from .schemas import Order as OrderSchema
-from .schemas import OrderID, OrderInvoice, OrderNotFound, OrderUpdate
+from .schemas import OrderID, OrderInvoice, OrderNotFound, OrderReceipt, OrderUpdate
 from .service import MissingInvoiceBillingDetails, NotPaidOrder
 from .service import order as order_service
 
@@ -252,3 +252,30 @@ async def invoice(
         raise ResourceNotFound()
 
     return await order_service.get_order_invoice(order)
+
+
+@router.get(
+    "/{id}/receipt",
+    summary="Get Order Receipt",
+    response_model=OrderReceipt,
+    responses={
+        202: {"description": "Receipt generation in progress."},
+        404: OrderNotFound,
+    },
+)
+async def receipt(
+    id: OrderID,
+    auth_subject: auth.OrdersRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Response | OrderReceipt:
+    """Get a presigned URL to download an order's receipt PDF."""
+    order = await order_service.get(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    receipt = await order_service.get_order_receipt(order)
+    if receipt is None:
+        return Response(status_code=202)
+
+    return receipt

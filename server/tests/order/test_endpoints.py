@@ -1,8 +1,10 @@
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.models import Customer, Order, Product, UserOrganization
@@ -138,6 +140,8 @@ class TestGetOrder:
 
         json = response.json()
         assert json["id"] == str(orders[0].id)
+        assert "receipt_number" in json
+        assert json["receipt_number"] is None
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
@@ -381,3 +385,81 @@ class TestGetOrderInvoice:
         )
 
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestGetOrderReceipt:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/orders/{uuid.uuid4()}/receipt")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_order(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        order_organization_second: Order,
+    ) -> None:
+        response = await client.get(
+            f"/v1/orders/{order_organization_second.id}/receipt"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    async def test_404_when_no_receipt_number(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        orders: list[Order],
+    ) -> None:
+        order = orders[0]
+        response = await client.get(f"/v1/orders/{order.id}/receipt")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    async def test_202_when_pending_render(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        user_organization: UserOrganization,
+        orders: list[Order],
+    ) -> None:
+        order = orders[0]
+        order.receipt_number = "RCPT-FOO-0001"
+        await save_fixture(order)
+
+        enqueue_mock = mocker.patch("polar.receipt.service.enqueue_job")
+
+        response = await client.get(f"/v1/orders/{order.id}/receipt")
+
+        assert response.status_code == 202
+        enqueue_mock.assert_called_once_with("receipt.render", order_id=order.id)
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    async def test_200_when_receipt_ready(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        user_organization: UserOrganization,
+        orders: list[Order],
+    ) -> None:
+        order = orders[0]
+        order.receipt_number = "RCPT-FOO-0001"
+        order.receipt_path = f"{order.organization_id}/{order.id}/receipt.pdf"
+        await save_fixture(order)
+
+        s3_mock = mocker.patch("polar.receipt.service.S3Service")
+        s3_mock.return_value.generate_presigned_download_url.return_value = (
+            "https://example.com/signed-url",
+            datetime(2030, 1, 1, tzinfo=UTC),
+        )
+
+        response = await client.get(f"/v1/orders/{order.id}/receipt")
+
+        assert response.status_code == 200
+        assert response.json() == {"url": "https://example.com/signed-url"}

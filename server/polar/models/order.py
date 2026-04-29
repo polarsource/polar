@@ -381,6 +381,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return f"Invoice-{self.invoice_number}.pdf"
 
     @property
+    def receipt_filename(self) -> str:
+        return f"Receipt-{self.receipt_number}.pdf"
+
+    @property
     def statement_descriptor_suffix(self) -> str:
         if (
             self.billing_reason

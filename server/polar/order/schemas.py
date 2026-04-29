@@ -97,6 +97,14 @@ class OrderBase(TimestampedSchema, IDSchema):
         description="Whether an invoice has been generated for this order."
     )
 
+    receipt_number: str | None = Field(
+        description=(
+            "The receipt number for this order. "
+            "Set once the order is paid for organizations with receipts enabled. "
+            "When set, a downloadable receipt PDF can be obtained via the receipt endpoint."
+        ),
+    )
+
     seats: int | None = Field(
         None, description="Number of seats purchased (for seat-based one-time orders)."
     )
@@ -263,3 +271,9 @@ class OrderInvoice(Schema):
     """Order's invoice data."""
 
     url: str = Field(..., description="The URL to the invoice.")
+
+
+class OrderReceipt(Schema):
+    """Order's receipt data."""
+
+    url: str = Field(..., description="The URL to the receipt PDF.")

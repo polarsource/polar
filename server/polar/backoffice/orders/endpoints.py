@@ -86,6 +86,29 @@ class InvoicePDFItem(description_list.DescriptionListItem[Order]):
         return None
 
 
+class ReceiptPDFItem(description_list.DescriptionListItem[Order]):
+    def __init__(self, url: str | None):
+        super().__init__("Receipt PDF")
+        self.url = url
+
+    def render(self, request: Request, item: Order) -> Generator[None] | None:
+        with tag.div(classes="flex items-center gap-1"):
+            if self.url is not None:
+                with tag.a(href=self.url, classes="link flex flex-row gap-1"):
+                    attr("target", "_blank")
+                    attr("rel", "noopener noreferrer")
+                    text("Download PDF")
+                    with tag.div(classes="icon-external-link"):
+                        pass
+            elif item.receipt_number is not None:
+                with tag.span(classes="text-gray-500"):
+                    text("Pending render")
+            else:
+                with tag.span(classes="text-gray-500"):
+                    text("Not generated")
+        return None
+
+
 # Table Columns
 @contextlib.contextmanager
 def order_status_badge(status: OrderStatus) -> Generator[None]:
@@ -274,6 +297,15 @@ async def get(
             # If there's an error getting the URL, we'll show "Not generated"
             pass
 
+    receipt_url: str | None = None
+    if order.receipt_number is not None:
+        try:
+            receipt = await order_service.get_order_receipt(order)
+            if receipt is not None:
+                receipt_url = receipt.url
+        except Exception:
+            pass
+
     # Get all payments for this order
     payment_repository = PaymentRepository.from_session(session)
     payments = await payment_repository.get_all_by_order(order.id)
@@ -370,6 +402,10 @@ async def get(
                                 external=True,
                             ),
                             InvoicePDFItem(invoice_url),
+                            description_list.DescriptionListAttrItem(
+                                "receipt_number", "Receipt Number"
+                            ),
+                            ReceiptPDFItem(receipt_url),
                         ).render(request, order):
                             pass
 

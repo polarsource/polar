@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -10,6 +11,7 @@ from polar.models import Order
 from polar.order.repository import OrderRepository
 from polar.payment.repository import PaymentRepository
 from polar.refund.repository import RefundRepository
+from polar.worker import enqueue_job
 
 from .generator import Receipt
 from .render import render_receipt_pdf
@@ -107,6 +109,18 @@ class ReceiptService:
                 order, update_dict={"receipt_path": key}
             )
             return order
+
+    async def get_pdf_url_or_status(self, order: Order) -> tuple[str, datetime] | None:
+        if order.receipt_path is None:
+            enqueue_job("receipt.render", order_id=order.id)
+            return None
+
+        s3 = S3Service(settings.S3_CUSTOMER_RECEIPTS_BUCKET_NAME)
+        return s3.generate_presigned_download_url(
+            path=order.receipt_path,
+            filename=order.receipt_filename,
+            mime_type="application/pdf",
+        )
 
 
 receipt = ReceiptService()

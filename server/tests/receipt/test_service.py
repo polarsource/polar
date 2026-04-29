@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -255,3 +257,50 @@ class TestGenerateOrderReceipt:
         result = await receipt_service.generate_order_receipt(session, locker, order)
 
         assert result.receipt_path == "org/order/ts.pdf"
+
+
+@pytest.mark.asyncio
+class TestGetPdfUrlOrStatus:
+    async def test_enqueues_render_when_path_missing(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        order.receipt_number = "RCPT-FOO-0001"
+        await save_fixture(order)
+
+        enqueue_mock = mocker.patch("polar.receipt.service.enqueue_job")
+
+        result = await receipt_service.get_pdf_url_or_status(order)
+
+        assert result is None
+        enqueue_mock.assert_called_once_with("receipt.render", order_id=order.id)
+
+    async def test_returns_url_when_path_set(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        order.receipt_number = "RCPT-FOO-0001"
+        order.receipt_path = f"{order.organization_id}/{order.id}/receipt.pdf"
+        await save_fixture(order)
+
+        s3_mock = mocker.patch("polar.receipt.service.S3Service")
+        expires_at = datetime(2030, 1, 1, tzinfo=UTC)
+        s3_mock.return_value.generate_presigned_download_url.return_value = (
+            "https://example.com/signed-url",
+            expires_at,
+        )
+
+        result = await receipt_service.get_pdf_url_or_status(order)
+
+        assert result == ("https://example.com/signed-url", expires_at)
+        s3_mock.return_value.generate_presigned_download_url.assert_called_once_with(
+            path=order.receipt_path,
+            filename=order.receipt_filename,
+            mime_type="application/pdf",
+        )

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, Query
+from fastapi import Depends, Query, Response
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
@@ -29,6 +29,7 @@ from ..schemas.order import (
     CustomerOrderInvoice,
     CustomerOrderPaymentConfirmation,
     CustomerOrderPaymentStatus,
+    CustomerOrderReceipt,
     CustomerOrderUpdate,
 )
 from ..service.order import (
@@ -177,6 +178,33 @@ async def invoice(
         raise ResourceNotFound()
 
     return await customer_order_service.get_order_invoice(order)
+
+
+@router.get(
+    "/{id}/receipt",
+    summary="Get Order Receipt",
+    response_model=CustomerOrderReceipt,
+    responses={
+        202: {"description": "Receipt generation in progress."},
+        404: OrderNotFound,
+    },
+)
+async def receipt(
+    id: OrderID,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> Response | CustomerOrderReceipt:
+    """Get a presigned URL to download an order's receipt PDF."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    receipt = await customer_order_service.get_order_receipt(order)
+    if receipt is None:
+        return Response(status_code=202)
+
+    return receipt
 
 
 @router.get(

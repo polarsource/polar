@@ -64,6 +64,12 @@ class CustomerOrderInvoice(Schema):
     url: str = Field(..., description="The URL to the invoice.")
 
 
+class CustomerOrderReceipt(Schema):
+    """Order's receipt data."""
+
+    url: str = Field(..., description="The URL to the receipt PDF.")
+
+
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
 

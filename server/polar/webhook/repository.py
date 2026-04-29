@@ -174,3 +174,16 @@ class WebhookEndpointRepository(
         return self.get_base_statement().where(
             WebhookEndpoint.organization_id.in_(org_ids)
         )
+
+    async def get_accessible_ids(
+        self,
+        org_ids: set[AccessibleOrganizationID],
+        endpoint_ids: Sequence[UUID],
+    ) -> Sequence[UUID]:
+        statement = (
+            self.get_statement_by_org_ids(org_ids)
+            .with_only_columns(WebhookEndpoint.id)
+            .where(WebhookEndpoint.id.in_(endpoint_ids))
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()

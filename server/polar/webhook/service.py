@@ -220,16 +220,22 @@ class WebhookService:
         repository = WebhookDeliveryRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
 
-        statement = (
-            repository.get_statement_by_org_ids(org_ids)
-            .options(joinedload(WebhookDelivery.webhook_event))
-            .order_by(desc(WebhookDelivery.created_at))
-        )
-
         if endpoint_id is not None:
-            statement = statement.where(
-                WebhookDelivery.webhook_endpoint_id.in_(endpoint_id)
+            endpoint_repository = WebhookEndpointRepository.from_session(session)
+            allowed_endpoint_ids = await endpoint_repository.get_accessible_ids(
+                org_ids, endpoint_id
             )
+            if not allowed_endpoint_ids:
+                return [], 0
+            base_statement = repository.get_base_statement().where(
+                WebhookDelivery.webhook_endpoint_id.in_(allowed_endpoint_ids)
+            )
+        else:
+            base_statement = repository.get_statement_by_org_ids(org_ids)
+
+        statement = base_statement.options(
+            joinedload(WebhookDelivery.webhook_event)
+        ).order_by(desc(WebhookDelivery.created_at))
 
         if start_timestamp is not None:
             statement = statement.where(WebhookDelivery.created_at > start_timestamp)

@@ -1,4 +1,3 @@
-import builtins
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
@@ -600,7 +599,7 @@ class CustomerService:
         self,
         session: AsyncReadSession,
         customer: Customer,
-    ) -> "builtins.list[str]":
+    ) -> Sequence[str]:
         """Return deduplicated email addresses to use for notifications.
 
         For team customers: customer.email (if any) + owner/billing_manager emails.
@@ -609,7 +608,7 @@ class CustomerService:
         In Sandbox, only recipients matching a member of the customer's
         organization are kept (using alias scrubbing on the local part).
         """
-        emails: builtins.list[str] = []
+        emails: list[str] = []
 
         if customer.email is not None:
             emails.append(customer.email)
@@ -627,7 +626,7 @@ class CustomerService:
                     emails.append(m.email)
 
         if settings.is_sandbox():
-            emails = await self._filter_sandbox_recipients(session, customer, emails)
+            return await self._filter_sandbox_recipients(session, customer, emails)
 
         return emails
 
@@ -635,8 +634,8 @@ class CustomerService:
         self,
         session: AsyncReadSession,
         customer: Customer,
-        emails: "builtins.list[str]",
-    ) -> "builtins.list[str]":
+        emails: Sequence[str],
+    ) -> Sequence[str]:
         """Restrict recipients to organization members in Sandbox.
 
         In Sandbox we never want a customer-facing email to leave the platform
@@ -654,7 +653,7 @@ class CustomerService:
             except EmailNotValidError:
                 continue
 
-        filtered: builtins.list[str] = []
+        filtered: list[str] = []
         for email in emails:
             try:
                 normalized = unalias_email(email).lower()

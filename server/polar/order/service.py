@@ -50,6 +50,7 @@ from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
 from polar.invoice.service import invoice as invoice_service
+from polar.kit.currency import get_minimum_currency_amount
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -1063,9 +1064,9 @@ class OrderService:
 
         if (
             payment_method.processor == PaymentProcessor.stripe
-            and order.due_amount < 50
+            and order.due_amount < get_minimum_currency_amount(order.currency)
         ):
-            # Stripe requires a minimum amount of 50 cents, mark it as paid
+            # Under the currency minimum, mark it as paid
             repository = OrderRepository.from_session(session)
             previous_status = order.status
             order = await repository.update(

@@ -15,21 +15,18 @@
   },
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
-    "@react-email/components": "^1.0.12",
-    "@react-email/render": "^2.0.7",
     "commander": "^14.0.3",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "react-email": "^6.0.0"
   },
   "devDependencies": {
-    "@react-email/preview-server": "^5.2.10",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@yao-pkg/pkg": "^6.18.1",
     "openapi-typescript": "^7.13.0",
     "oxfmt": "^0.46.0",
-    "react-email": "^6.0.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   },

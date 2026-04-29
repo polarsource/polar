@@ -1,4 +1,4 @@
-import { Link, Preview, Section, Text } from '@react-email/components'
+import { Link, Preview, Section, Text } from 'react-email'
 import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
 import WrapperPolar from '../components/WrapperPolar'

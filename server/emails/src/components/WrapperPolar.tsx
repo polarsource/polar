@@ -1,4 +1,4 @@
-import { Container } from '@react-email/components'
+import { Container } from 'react-email'
 import PolarHeader from './PolarHeader'
 import WrapperBase from './WrapperBase'
 

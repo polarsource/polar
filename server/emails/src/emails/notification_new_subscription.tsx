@@ -1,4 +1,4 @@
-import { Preview } from '@react-email/components'
+import { Preview } from 'react-email'
 import Footer from '../components/Footer'
 import Intro from '../components/Intro'
 import WrapperPolar from '../components/WrapperPolar'

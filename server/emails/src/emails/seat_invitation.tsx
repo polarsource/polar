@@ -1,4 +1,4 @@
-import { Preview, Text } from '@react-email/components'
+import { Preview, Text } from 'react-email'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
 import Intro from '../components/Intro'

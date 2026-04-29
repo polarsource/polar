@@ -1,4 +1,4 @@
-import { Hr, Preview, Section } from '@react-email/components'
+import { Hr, Preview, Section } from 'react-email'
 import Benefits from '../components/Benefits'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'

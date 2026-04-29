@@ -1,4 +1,4 @@
-import { Container } from '@react-email/components'
+import { Container } from 'react-email'
 import { schemas } from '../types'
 import OrganizationHeader from './OrganizationHeader'
 import WrapperBase from './WrapperBase'

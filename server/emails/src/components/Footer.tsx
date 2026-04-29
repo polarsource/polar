@@ -1,4 +1,4 @@
-import { Hr, Section, Text } from '@react-email/components'
+import { Hr, Section, Text } from 'react-email'
 
 const Footer = ({ email }: { email: string | null }) => (
   <>

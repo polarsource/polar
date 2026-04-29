@@ -1,4 +1,4 @@
-import { Img } from '@react-email/components'
+import { Img } from 'react-email'
 
 export const Check = ({ width, height }: { width: number; height: number }) => {
   return (

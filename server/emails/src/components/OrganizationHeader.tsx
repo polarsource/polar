@@ -1,4 +1,4 @@
-import { Column, Img, Link, Row, Section, Text } from '@react-email/components'
+import { Column, Img, Link, Row, Section, Text } from 'react-email'
 import type { schemas } from '../types'
 
 const S3_TO_CDN: Record<string, string> = {

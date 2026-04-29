@@ -1,4 +1,4 @@
-import { Section, Text } from '@react-email/components'
+import { Section, Text } from 'react-email'
 
 export function OTPCode({ code, domain }: { code: string; domain?: string }) {
   return (

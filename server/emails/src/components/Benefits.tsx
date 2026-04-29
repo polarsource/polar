@@ -1,4 +1,4 @@
-import { Heading, Markdown, Section } from '@react-email/components'
+import { Heading, Markdown, Section } from 'react-email'
 import { schemas } from '../types'
 import { Check, Discord, Download, Gauge, GitHub, Key } from './Icons'
 

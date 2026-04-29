@@ -1,4 +1,4 @@
-import { Font, Head, Html, Tailwind } from '@react-email/components'
+import { Font, Head, Html, Tailwind } from 'react-email'
 
 const WrapperBase = ({ children }: { children: React.ReactNode }) => {
   return (

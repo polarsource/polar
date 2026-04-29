@@ -1,4 +1,4 @@
-import { Column, Heading, Hr, Row, Section } from '@react-email/components'
+import { Column, Heading, Hr, Row, Section } from 'react-email'
 import type { schemas } from '../types'
 
 const ZERO_DECIMAL_CURRENCIES = new Set<string>([

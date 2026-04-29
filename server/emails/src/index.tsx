@@ -1,4 +1,4 @@
-import { render } from '@react-email/render'
+import { render } from 'react-email'
 import { Command } from 'commander'
 
 import emails from './emails'

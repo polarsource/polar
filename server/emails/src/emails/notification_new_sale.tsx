@@ -1,4 +1,4 @@
-import { Hr, Img, Preview, Section, Text } from '@react-email/components'
+import { Hr, Img, Preview, Section, Text } from 'react-email'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import WrapperPolar from '../components/WrapperPolar'

@@ -1,11 +1,11 @@
-import { Hr, Link, Preview, Section } from '@react-email/components'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
-import OrderSummary from '../components/OrderSummary'
-import WrapperOrganization from '../components/WrapperOrganization'
-import { order, organization, product } from '../preview'
-import type { schemas } from '../types'
+import { Hr, Link, Preview, Section } from "react-email";
+import Button from "../components/Button";
+import FooterCustomer from "../components/FooterCustomer";
+import Intro from "../components/Intro";
+import OrderSummary from "../components/OrderSummary";
+import WrapperOrganization from "../components/WrapperOrganization";
+import { order, organization, product } from "../preview";
+import type { schemas } from "../types";
 
 export function SubscriptionCycledAfterTrial({
   email,
@@ -14,7 +14,7 @@ export function SubscriptionCycledAfterTrial({
   subscription,
   order,
   url,
-}: schemas['SubscriptionCycledAfterTrialProps']) {
+}: schemas["SubscriptionCycledAfterTrialProps"]) {
   return (
     <WrapperOrganization organization={organization}>
       <Preview>Your {product.name} trial ended</Preview>
@@ -23,8 +23,8 @@ export function SubscriptionCycledAfterTrial({
         and your subscription is now active. Your first invoice is attached.
         {order.receipt_number && (
           <>
-            {' '}
-            You can find your receipt in the{' '}
+            {" "}
+            You can find your receipt in the{" "}
             <Link href={url} className="text-blue-600 underline">
               Customer Portal
             </Link>
@@ -39,19 +39,19 @@ export function SubscriptionCycledAfterTrial({
       <OrderSummary order={order} />
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
-  )
+  );
 }
 
 SubscriptionCycledAfterTrial.PreviewProps = {
-  email: 'john@example.com',
+  email: "john@example.com",
   organization,
   product,
   subscription: {
-    id: '12345',
-    status: 'active',
+    id: "12345",
+    status: "active",
   },
   order,
-  url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
-}
+  url: "https://polar.sh/acme-inc/portal/subscriptions/12345",
+};
 
-export default SubscriptionCycledAfterTrial
+export default SubscriptionCycledAfterTrial;

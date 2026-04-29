@@ -8,12 +8,13 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import { useEventNames, useInfiniteEvents } from '@/hooks/queries/events'
+import Pagination from '@/components/Pagination/Pagination'
+import { useEventNames, useEvents } from '@/hooks/queries/events'
 import useDebounce from '@/utils/useDebounce'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import Search from '@mui/icons-material/Search'
-import { schemas } from '@polar-sh/client'
+import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -30,9 +31,10 @@ import {
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
 import { endOfToday } from 'date-fns'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   parseAsArrayOf,
+  parseAsInteger,
   parseAsIsoDateTime,
   parseAsJson,
   parseAsString,
@@ -73,6 +75,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     'customerIds',
     parseAsArrayOf(parseAsString),
   )
+  const [currentPage, setCurrentPage] = useQueryState(
+    'page',
+    parseAsInteger.withDefault(1),
+  )
   const [metadata, setMetadata] = useQueryState(
     'metadata',
     parseAsJson(
@@ -110,24 +116,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const debouncedQuery = useDebounce(query, 500)
   const debouncedMetadata = useDebounce(metadata, 500)
 
-  const eventParameters = useMemo(() => {
+  const eventParameters = useMemo(():
+    | operations['events:list']['parameters']['query']
+    | undefined => {
     return {
       name:
         selectedEventTypes && selectedEventTypes.length > 0
           ? selectedEventTypes
           : null,
+      page: currentPage,
       customer_id: selectedCustomerIds ?? null,
       limit: PAGE_SIZE,
-      sorting: [sorting] as ['-timestamp' | 'timestamp'],
+      sorting: [sorting],
       start_timestamp: startDate.toISOString(),
       end_timestamp: endDate.toISOString(),
       query:
         debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null,
       metadata: debouncedMetadata ?? null,
-      cursor_pagination: false,
     }
   }, [
     selectedEventTypes,
+    currentPage,
     startDate,
     endDate,
     sorting,
@@ -136,17 +145,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     debouncedMetadata,
   ])
 
-  const {
-    data: eventsData,
-    fetchNextPage,
-    hasNextPage,
-    isFetching,
-  } = useInfiniteEvents(organization.id, eventParameters)
+  const { data: events, isFetching } = useEvents(
+    organization.id,
+    eventParameters,
+  )
 
-  const events = useMemo(() => {
-    if (!eventsData) return []
-    return eventsData.pages.flatMap((page) => page.items)
-  }, [eventsData])
+  const totalCount =
+    events?.pagination && 'total_count' in events.pagination
+      ? events.pagination.total_count
+      : 0
+
+  const searchParams = useSearchParams()
 
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
@@ -179,12 +188,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       title="Events"
       header={
         <h3 className="dark:text-polar-500 text-xl text-gray-500">
-          {events.length > 0 && (
-            <>
-              {events.length}
-              {hasNextPage && '+'} Events
-            </>
-          )}
+          {totalCount} {totalCount === 1 ? 'Event' : 'Events'}
         </h3>
       }
       contextViewPlacement="left"
@@ -365,7 +369,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       wide
     >
       <div className="flex h-full flex-col gap-y-4">
-        {events.length === 0 && !isFetching ? (
+        {events?.items.length === 0 && !isFetching ? (
           <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-8 text-center md:p-24">
             <h1 className="text-2xl font-normal">No Events Found</h1>
             <p className="dark:text-polar-500 text-gray-500">
@@ -374,26 +378,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           </div>
         ) : (
           <>
-            <Events events={events} organization={organization} />
-            <div className="dark:border-polar-700 flex justify-center rounded-xl border border-gray-200">
-              {hasNextPage ? (
-                <button
-                  className="group dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-300 relative flex h-10 w-full cursor-pointer items-center justify-center gap-x-2 rounded-xl py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
-                  onClick={() => fetchNextPage()}
-                >
-                  <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 transition-all duration-200 group-hover:opacity-0 group-hover:blur-[2px]">
-                    Showing {events.length} events
-                  </span>
-                  <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:blur-none">
-                    Show more
-                  </span>
-                </button>
-              ) : (
-                <span className="dark:text-polar-500/60 dark:bg-polar-800 flex h-10 w-full items-center justify-center rounded-xl bg-gray-50 text-sm text-gray-400">
-                  Showing all {events.length} events
-                </span>
-              )}
-            </div>
+            <Events events={events?.items ?? []} organization={organization} />
+            <Pagination
+              className="self-end"
+              totalCount={totalCount}
+              pageSize={PAGE_SIZE}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              currentURL={searchParams}
+            />
           </>
         )}
       </div>

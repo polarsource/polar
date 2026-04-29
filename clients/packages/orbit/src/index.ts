@@ -1,10 +1,22 @@
 // ─── Components ───────────────────────────────────────────────────────────────
+export { AnimatedBox } from './components/AnimatedBox'
+export type { Props as AnimatedBoxProps } from './components/AnimatedBox'
 export { Avatar } from './components/Avatar'
 export type { AvatarProps } from './components/Avatar'
 export { BarChart } from './components/BarChart'
 export type { BarChartItem } from './components/BarChart'
 export { Button } from './components/Button'
 export type { ButtonProps } from './components/Button'
+
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+export { animationDelays, animations } from './tokens/animations'
+export type {
+  AnimationDelay,
+  AnimationEasing,
+  AnimationName,
+  AnimationProperties,
+  AnimationToken,
+} from './tokens/animations'
 export { Card, CardContent, CardFooter, CardHeader } from './components/Card'
 export { DataTable, DataTableColumnHeader } from './components/DataTable'
 export type {

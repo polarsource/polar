@@ -15,24 +15,15 @@ export default function Page() {
   return (
     <>
       <Section>
-        <SectionDescription
-          title="Personal Information"
-          description="Your personal details"
-        />
+        <SectionDescription title="Personal Information" />
         <PersonalInformationSettings />
       </Section>
       <Section>
-        <SectionDescription
-          title="General"
-          description="Configure the general settings for your account"
-        />
+        <SectionDescription title="General" />
         <GeneralSettings />
       </Section>
       <Section>
-        <SectionDescription
-          title="Account Connections"
-          description="Manage third-party connections to your account"
-        />
+        <SectionDescription title="Authentication Methods" />
         <AuthenticationSettings />
       </Section>
       <Section>

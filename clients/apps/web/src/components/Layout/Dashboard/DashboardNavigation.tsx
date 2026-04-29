@@ -48,7 +48,7 @@ export const AccountNavigation = () => {
               <span className="flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]">
                 <ArrowBack fontSize="inherit" />
               </span>
-              <span>Account Settings</span>
+              <span>User Settings</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

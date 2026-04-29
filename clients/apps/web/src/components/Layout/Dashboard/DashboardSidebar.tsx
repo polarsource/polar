@@ -236,7 +236,7 @@ export const DashboardSidebar = ({
                   <DropdownMenuItem
                     onClick={() => router.push('/dashboard/account')}
                   >
-                    Account Settings
+                    User Settings
                   </DropdownMenuItem>
                   {!CONFIG.IS_SANDBOX && (
                     <DropdownMenuItem

@@ -916,7 +916,6 @@ class TestConfirmOrganizationReviewed:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org denied with a rejected appeal
         organization.status = OrganizationStatus.DENIED
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -942,8 +941,7 @@ class TestConfirmOrganizationReviewed:
             session, organization, 15000, reason="Appeal re-examined"
         )
 
-        # Then: appeal decision is overridden to approved
-        assert result.status == OrganizationStatus.ACTIVE
+        assert result.status == OrganizationStatus.CREATED
         assert review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
         assert review.appeal_reviewed_at is not None
 
@@ -2409,7 +2407,7 @@ class TestStatusTransitions:
             (OrganizationStatus.BLOCKED, "unblocked"),
         ],
     )
-    async def test_reactivation_with_reason_succeeds(
+    async def test_reactivation_without_gates_reverts_to_created(
         self,
         current: OrganizationStatus,
         expected_note_fragment: str,
@@ -2425,10 +2423,43 @@ class TestStatusTransitions:
             session, organization, 15000, reason="Merchant provided additional docs"
         )
 
-        assert result.status == OrganizationStatus.ACTIVE
+        assert result.status == OrganizationStatus.CREATED
         assert result.internal_notes is not None
         assert expected_note_fragment in result.internal_notes
         assert "Merchant provided additional docs" in result.internal_notes
+        assert "pending Stripe Identity" in result.internal_notes
+
+    @pytest.mark.parametrize(
+        "current",
+        [OrganizationStatus.DENIED, OrganizationStatus.BLOCKED],
+    )
+    async def test_reactivation_with_gates_met_activates(
+        self,
+        current: OrganizationStatus,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = current
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.details = {"about": "Test"}
+        await save_fixture(organization)
+
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        await create_payout_account(save_fixture, organization, user)
+
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000, reason="Merchant provided additional docs"
+        )
+
+        assert result.status == OrganizationStatus.ACTIVE
 
     async def test_self_transition_is_noop(
         self,
@@ -2441,14 +2472,13 @@ class TestStatusTransitions:
     @pytest.mark.parametrize(
         "target",
         [
-            OrganizationStatus.CREATED,
             OrganizationStatus.REVIEW,
             OrganizationStatus.SNOOZED,
             OrganizationStatus.DENIED,
             OrganizationStatus.OFFBOARDING,
         ],
     )
-    async def test_blocked_only_transitions_to_active(
+    async def test_blocked_only_transitions_to_active_or_created(
         self,
         target: OrganizationStatus,
         organization: Organization,
@@ -2456,6 +2486,19 @@ class TestStatusTransitions:
         organization.status = OrganizationStatus.BLOCKED
         with pytest.raises(InvalidStatusTransitionError):
             organization.set_status(target)
+
+    @pytest.mark.parametrize(
+        "previous_status",
+        [OrganizationStatus.DENIED, OrganizationStatus.BLOCKED],
+    )
+    async def test_reactivation_to_created_is_allowed(
+        self,
+        previous_status: OrganizationStatus,
+        organization: Organization,
+    ) -> None:
+        organization.status = previous_status
+        organization.set_status(OrganizationStatus.CREATED)
+        assert organization.status == OrganizationStatus.CREATED
 
 
 @pytest.mark.asyncio

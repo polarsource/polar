@@ -839,22 +839,10 @@ class OrganizationService:
             )
 
         previous_status = organization.status
-        organization.set_status(OrganizationStatus.ACTIVE)
-        organization.next_review_threshold = next_review_threshold
+        reactivation_note = reactivation_notes.get(previous_status)
 
-        if previous_status in reactivation_notes:
-            _append_internal_note(
-                organization, reactivation_notes[previous_status], reason=reason
-            )
-
-        initial_review = False
-        if organization.initially_reviewed_at is None:
-            organization.initially_reviewed_at = datetime.now(UTC)
-            initial_review = True
-
-        session.add(organization)
-
-        # If there's an appeal, mark it as approved (handles both pending and previously rejected appeals)
+        # Mark the appeal approved before the gate check so a later
+        # webhook-driven maybe_activate sees an approved review.
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
         if (
@@ -866,6 +854,36 @@ class OrganizationService:
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)
 
+        # Reactivations require completed Stripe onboarding to go straight to
+        # ACTIVE; otherwise revert to CREATED and let the webhook-driven
+        # maybe_activate promote them once Stripe finishes.
+        target_status = OrganizationStatus.ACTIVE
+        if reactivation_note and not await self._is_activation_ready(
+            session, organization
+        ):
+            target_status = OrganizationStatus.CREATED
+
+        organization.set_status(target_status)
+        organization.next_review_threshold = next_review_threshold
+
+        if reactivation_note:
+            suffix = (
+                " Status reverted to created — pending Stripe Identity and "
+                "Stripe Connect Express completion before activation."
+                if target_status == OrganizationStatus.CREATED
+                else ""
+            )
+            _append_internal_note(
+                organization, reactivation_note + suffix, reason=reason
+            )
+
+        initial_review = False
+        if organization.initially_reviewed_at is None:
+            organization.initially_reviewed_at = datetime.now(UTC)
+            initial_review = True
+
+        session.add(organization)
+
         enqueue_job(
             "organization.reviewed",
             organization_id=organization.id,
@@ -873,6 +891,38 @@ class OrganizationService:
             silent=silent,
         )
         return organization
+
+    async def _is_activation_ready(
+        self, session: AsyncSession, organization: Organization
+    ) -> bool:
+        """Whether onboarding gates (details, payout account, KYC) are met.
+
+        Mirrors the non-review gates checked by :meth:`maybe_activate` so the
+        backoffice approval path can decide whether a reactivation should go
+        straight to ACTIVE or revert to CREATED to finish onboarding.
+        """
+        if not organization.details_submitted_at or not organization.details:
+            return False
+
+        if organization.payout_account_id is None:
+            return False
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_id(
+            organization.payout_account_id,
+            options=(joinedload(PayoutAccount.admin),),
+        )
+        if payout_account is None or not payout_account.is_payout_ready:
+            return False
+
+        admin = payout_account.admin
+        if (
+            admin is None
+            or admin.identity_verification_status != IdentityVerificationStatus.verified
+        ):
+            return False
+
+        return True
 
     async def maybe_activate(
         self, session: AsyncSession, organization: Organization
@@ -901,30 +951,12 @@ class OrganizationService:
         ):
             return False
 
-        if not organization.details_submitted_at or not organization.details:
-            return False
-
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
         if review is None or not review.is_approved:
             return False
 
-        if organization.payout_account_id is None:
-            return False
-
-        payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_id(
-            organization.payout_account_id,
-            options=(joinedload(PayoutAccount.admin),),
-        )
-        if payout_account is None or not payout_account.is_payout_ready:
-            return False
-
-        admin = payout_account.admin
-        if (
-            admin is None
-            or admin.identity_verification_status != IdentityVerificationStatus.verified
-        ):
+        if not await self._is_activation_ready(session, organization):
             return False
 
         reason: str | None = None

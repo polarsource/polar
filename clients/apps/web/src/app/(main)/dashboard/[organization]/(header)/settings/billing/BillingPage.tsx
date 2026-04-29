@@ -6,7 +6,9 @@ import OrganizationCustomerEmailSettings from '@/components/Settings/Organizatio
 import OrganizationCustomerPortalSettings from '@/components/Settings/OrganizationCustomerPortalSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
+import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
+import Alert from '@polar-sh/ui/components/atoms/Alert'
 
 export default function BillingPage({
   organization,
@@ -36,6 +38,14 @@ export default function BillingPage({
             title="Customer notifications"
             description="Emails automatically sent to customers for purchases, renewals, and other subscription lifecycle events"
           />
+          {CONFIG.IS_SANDBOX && (
+            <Alert color="blue" className="p-3 px-4 text-sm">
+              In sandbox, customer-facing emails are only delivered to members
+              of your organization. Manage them under{' '}
+              <strong>Settings → Members</strong>. Sub-addressing aliases like{' '}
+              <code>you+test@example.com</code> are accepted.
+            </Alert>
+          )}
           <OrganizationCustomerEmailSettings organization={organization} />
         </Section>
       </div>

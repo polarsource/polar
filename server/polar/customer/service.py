@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.config import settings
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError, ValidationError
@@ -22,6 +23,7 @@ from polar.kit.anonymization import (
     anonymize_email_for_deletion,
     anonymize_for_deletion,
 )
+from polar.kit.email import EmailNotValidError, unalias_email
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -40,6 +42,9 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.tax.tax_id import InvalidTaxID, validate_tax_id
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -600,6 +605,9 @@ class CustomerService:
 
         For team customers: customer.email (if any) + owner/billing_manager emails.
         For individual customers: customer.email.
+
+        In Sandbox, only recipients matching a member of the customer's
+        organization are kept (using alias scrubbing on the local part).
         """
         emails: builtins.list[str] = []
 
@@ -618,7 +626,52 @@ class CustomerService:
                 ):
                     emails.append(m.email)
 
+        if settings.is_sandbox():
+            emails = await self._filter_sandbox_recipients(session, customer, emails)
+
         return emails
+
+    async def _filter_sandbox_recipients(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+        emails: "builtins.list[str]",
+    ) -> "builtins.list[str]":
+        """Restrict recipients to organization members in Sandbox.
+
+        In Sandbox we never want a customer-facing email to leave the platform
+        unless it lands in the inbox of someone working on the organization.
+        Aliases (like `pieter+123@polar.sh`) are accepted as long as the
+        unaliased address matches an organization member.
+        """
+        user_orgs = await user_organization_service.list_by_org(
+            session, customer.organization_id
+        )
+        allowed: set[str] = set()
+        for user_org in user_orgs:
+            try:
+                allowed.add(unalias_email(user_org.user.email).lower())
+            except EmailNotValidError:
+                continue
+
+        filtered: builtins.list[str] = []
+        for email in emails:
+            try:
+                normalized = unalias_email(email).lower()
+            except EmailNotValidError:
+                continue
+            if normalized in allowed:
+                filtered.append(email)
+
+        if len(filtered) < len(emails):
+            log.info(
+                "customer.sandbox_recipients_filtered",
+                customer_id=str(customer.id),
+                organization_id=str(customer.organization_id),
+                blocked_count=len(emails) - len(filtered),
+            )
+
+        return filtered
 
     async def create_session_token_for_recipient(
         self,

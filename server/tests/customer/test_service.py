@@ -1426,3 +1426,117 @@ class TestWebhook:
         )
 
         assert send_mock.call_count == 1
+
+
+@pytest.mark.asyncio
+class TestGetEmailRecipients:
+    async def test_individual_customer(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        recipients = await customer_service.get_email_recipients(session, customer)
+        assert recipients == [customer.email]
+
+    async def test_team_customer_includes_billing_managers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        team_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        team_customer.type = CustomerType.team
+        await save_fixture(team_customer)
+
+        await create_member(
+            save_fixture,
+            customer=team_customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="owner@example.com",
+        )
+        await create_member(
+            save_fixture,
+            customer=team_customer,
+            organization=organization,
+            role=MemberRole.billing_manager,
+            email="billing@example.com",
+        )
+        await create_member(
+            save_fixture,
+            customer=team_customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="readonly@example.com",
+        )
+
+        recipients = await customer_service.get_email_recipients(session, team_customer)
+        assert "team@example.com" in recipients
+        assert "owner@example.com" in recipients
+        assert "billing@example.com" in recipients
+        assert "readonly@example.com" not in recipients
+
+    async def test_sandbox_filters_non_members(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.customer.service.settings.is_sandbox", return_value=True)
+
+        # The customer's email doesn't match any user in the org -> filtered out.
+        recipients = await customer_service.get_email_recipients(session, customer)
+        assert recipients == []
+
+    async def test_sandbox_allows_organization_members(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.customer.service.settings.is_sandbox", return_value=True)
+
+        member_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email=user.email,
+        )
+
+        recipients = await customer_service.get_email_recipients(
+            session, member_customer
+        )
+        assert recipients == [user.email]
+
+    async def test_sandbox_allows_aliased_recipient(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.customer.service.settings.is_sandbox", return_value=True)
+
+        # The customer email uses a `+alias` suffix that should be unaliased
+        # before comparing against organization members.
+        local, _, domain = user.email.partition("@")
+        aliased_email = f"{local}+sandbox@{domain}"
+        member_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email=aliased_email,
+        )
+
+        recipients = await customer_service.get_email_recipients(
+            session, member_customer
+        )
+        assert recipients == [aliased_email]

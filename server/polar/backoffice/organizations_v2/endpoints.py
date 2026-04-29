@@ -96,7 +96,11 @@ from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .views.detail_view import OrganizationDetailView
-from .views.list_view import OrganizationListView
+from .views.list_view import (
+    DeletedFilter,
+    OrganizationListView,
+    apply_deleted_filter,
+)
 from .views.modals import DeletePayoutAccountModal, SetCapabilityModal
 from .views.sections._shared import RISK_LEVEL_BADGE, VERDICT_BADGE
 from .views.sections.account_section import AccountSection
@@ -207,6 +211,7 @@ async def list_organizations(
     days_in_status: str | None = Query(""),
     has_appeal: str | None = Query(""),
     first_reviews: str | None = Query(""),
+    deleted: DeletedFilter | None = Query(None),
 ) -> None:
     """
     List organizations with enhanced filtering and smart grouping.
@@ -225,6 +230,8 @@ async def list_organizations(
     risk_level = risk_level if risk_level else None
     has_appeal = has_appeal if has_appeal else None
     days_in_status_int = int(days_in_status) if days_in_status else None
+    # When searching, include deleted so matches surface.
+    deleted_filter: DeletedFilter = deleted or ("include" if q else "exclude")
 
     # Parse status filter
     status_filter: OrganizationStatus | None = None
@@ -339,6 +346,8 @@ async def list_organizations(
     if first_reviews == "true":
         stmt = stmt.where(Organization.is_first_review.is_(True))
 
+    stmt = apply_deleted_filter(stmt, deleted_filter)
+
     # Apply sorting
     is_desc = direction == "desc"
 
@@ -417,7 +426,7 @@ async def list_organizations(
         ):
             pass
     else:
-        status_counts = await list_view.get_status_counts()
+        status_counts = await list_view.get_status_counts(deleted_filter)
         countries = await list_view.get_distinct_countries()
         with layout(
             request,
@@ -440,6 +449,7 @@ async def list_organizations(
                 selected_risk_level=risk_level,
                 selected_days_in_status=days_in_status,
                 selected_has_appeal=has_appeal,
+                selected_deleted=deleted_filter,
             ):
                 pass
 

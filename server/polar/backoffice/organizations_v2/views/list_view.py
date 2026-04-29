@@ -4,10 +4,11 @@ import contextlib
 import json
 from collections.abc import Generator
 from datetime import UTC, datetime
+from typing import Any, Literal
 
 import pycountry
 from fastapi import Request
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from tagflow import tag, text
 
 from polar.models import Organization, PayoutAccount
@@ -31,6 +32,18 @@ FIRST_REVIEW_THRESHOLD_LABEL = formatters.currency(
     FIRST_REVIEW_MAX_THRESHOLD_CENTS, "usd"
 )
 
+DeletedFilter = Literal["exclude", "include", "only"]
+
+
+def apply_deleted_filter[T: tuple[Any, ...]](
+    stmt: Select[T], deleted: DeletedFilter
+) -> Select[T]:
+    if deleted == "only":
+        return stmt.where(Organization.deleted_at.is_not(None))
+    if deleted == "exclude":
+        return stmt.where(Organization.deleted_at.is_(None))
+    return stmt
+
 
 class OrganizationListView:
     """Render the enhanced organization list view."""
@@ -38,12 +51,15 @@ class OrganizationListView:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_status_counts(self) -> dict[OrganizationStatus, int]:
+    async def get_status_counts(
+        self, deleted: DeletedFilter = "exclude"
+    ) -> dict[OrganizationStatus, int]:
         """Get count of organizations by status for tab badges."""
         stmt = select(
             Organization.status,
             func.count(Organization.id).label("count"),
         ).group_by(Organization.status)
+        stmt = apply_deleted_filter(stmt, deleted)
         result = await self.session.execute(stmt)
         return {row.status: row.count for row in result}  # type: ignore[misc]
 
@@ -296,6 +312,7 @@ class OrganizationListView:
         selected_risk_level: str | None = None,
         selected_days_in_status: str | None = None,
         selected_has_appeal: str | None = None,
+        selected_deleted: DeletedFilter = "exclude",
     ) -> Generator[None]:
         """Render the complete list view."""
 
@@ -550,6 +567,28 @@ class OrganizationListView:
                                     ):
                                         opt_attrs = {"value": opt_value}
                                         if (selected_has_appeal or "") == opt_value:
+                                            opt_attrs["selected"] = ""
+                                        with tag.option(**opt_attrs):
+                                            text(opt_label)
+
+                            # Deleted
+                            with tag.div():
+                                with tag.label(classes="label"):
+                                    with tag.span(
+                                        classes="label-text text-xs font-semibold"
+                                    ):
+                                        text("Deleted")
+                                with tag.select(
+                                    classes="select select-bordered select-sm w-full filter-select",
+                                    name="deleted",
+                                ):
+                                    for opt_value, opt_label in (
+                                        ("exclude", "Exclude Deleted"),
+                                        ("include", "Include Deleted"),
+                                        ("only", "Only Deleted"),
+                                    ):
+                                        opt_attrs = {"value": opt_value}
+                                        if selected_deleted == opt_value:
                                             opt_attrs["selected"] = ""
                                         with tag.option(**opt_attrs):
                                             text(opt_label)

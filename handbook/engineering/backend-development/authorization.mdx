@@ -164,9 +164,8 @@ Each alias gates on a scope appropriate to what the endpoint does. Read aliases 
 | `AuthorizeUserWrite` | `user:write` | Mutating the user's own account (profile, OAuth links, PATs, email, …) |
 | `AuthorizePayoutsRead` | `payouts:read` or `payouts:write` | Reading the user's payout accounts |
 | `AuthorizePayoutsWrite` | `payouts:write` | Creating a payout account |
-| `AuthorizeOrganizationsRead` | `organizations:read` or `organizations:write` | Reading user-scoped org data (e.g. SSE streams) |
 
-Add a new alias to `authz/dependencies.py` if a new endpoint needs a scope combination that isn't listed.
+Add a new alias to `authz/dependencies.py` if a new endpoint needs a scope combination that isn't listed. Endpoints that resolve an organization from a path parameter belong with the `OrgPolicyGuard` family above, not here — even when the operation is read-only.
 
 ### Two layers, same model
 

@@ -133,7 +133,7 @@ async def user_callback(
     description="Lists available repositories for this user",
 )
 async def user_repositories(
-    auth_subject: AuthorizeUserRead,
+    auth_subject: AuthorizeUserWrite,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> GitHubInvitesBenefitRepositories:

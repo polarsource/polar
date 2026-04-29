@@ -8,12 +8,10 @@ from redis.exceptions import ConnectionError
 from sse_starlette.sse import EventSourceResponse
 from uvicorn import Server
 
-from polar.authz.dependencies import AuthorizeOrganizationsRead, AuthorizeUserRead
-from polar.exceptions import ResourceNotFound
+from polar.auth.models import is_user
+from polar.authz.dependencies import AuthorizeOrgAccess, AuthorizeUserRead
 from polar.observability import HTTP_SSE_CONNECTIONS_OPENED
 from polar.observability.utils import get_path_template
-from polar.organization.schemas import OrganizationID
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
@@ -119,19 +117,13 @@ async def user_stream(
 
 @router.get("/organizations/{id}")
 async def org_stream(
-    id: OrganizationID,
     request: Request,
-    auth_subject: AuthorizeOrganizationsRead,
+    authz: AuthorizeOrgAccess,
     redis: Redis = Depends(get_redis),
     session: AsyncSession = Depends(get_db_session),
 ) -> EventSourceResponse:
-    organization = await organization_service.get(session, auth_subject, id)
-    if organization is None:
-        raise ResourceNotFound()
-
     await session.commit()
 
-    receivers = Receivers(
-        user_id=auth_subject.subject.id, organization_id=organization.id
-    )
+    user_id = authz.auth_subject.subject.id if is_user(authz.auth_subject) else None
+    receivers = Receivers(user_id=user_id, organization_id=authz.organization.id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))

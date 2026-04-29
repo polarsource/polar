@@ -119,3 +119,8 @@ class TestImpersonationGate:
             "/v1/users/me", json={"avatar_url": "https://example.com/x.png"}
         )
         assert response.status_code == 403
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_cannot_delete_me(self, user: User, client: AsyncClient) -> None:
+        response = await client.delete("/v1/users/me")
+        assert response.status_code == 403

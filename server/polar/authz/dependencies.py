@@ -242,10 +242,6 @@ AuthorizePayoutsWrite = Annotated[
     AuthSubject[User],
     Depends(WebUserAuthorizer({Scope.payouts_write})),
 ]
-AuthorizeOrganizationsRead = Annotated[
-    AuthSubject[User],
-    Depends(WebUserAuthorizer({Scope.organizations_read, Scope.organizations_write})),
-]
 
 
 # ---------------------------------------------------------------------------

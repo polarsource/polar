@@ -72,28 +72,13 @@ async def _delete_postgres(
     return total
 
 
-async def _delete_tinybird(organization_id: uuid.UUID, batch_size: int) -> int:
-    condition = (
-        f"id IN (SELECT id FROM {DATASOURCE_EVENTS} "
-        f"WHERE organization_id = '{organization_id}' "
-        f"AND name = '{EVENT_NAME}' "
-        f"LIMIT {batch_size})"
-    )
+async def _delete_tinybird(organization_id: uuid.UUID) -> int:
+    condition = f"organization_id = '{organization_id}' AND name = '{EVENT_NAME}'"
 
-    total = 0
-    batch_number = 0
-    while True:
-        result = await tinybird_client.delete(DATASOURCE_EVENTS, condition)
-        rows = await _await_tinybird_job(result)
-
-        if rows == 0:
-            break
-
-        batch_number += 1
-        total += rows
-        typer.echo(f"Tinybird batch {batch_number}: deleted {rows} (total {total})")
-
-    return total
+    result = await tinybird_client.delete(DATASOURCE_EVENTS, condition)
+    rows = await _await_tinybird_job(result)
+    typer.echo(f"Tinybird: deleted {rows}")
+    return rows
 
 
 async def _await_tinybird_job(result: dict[str, Any]) -> int:
@@ -126,9 +111,10 @@ async def run(
     """Delete all `event_ingestion` events from the Polar-for-Polar org.
 
     These are the per-org rollup events emitted by the (now disabled)
-    `polar_self.track_event_ingestion_v2` cron. Postgres and Tinybird each
-    loop independently, deleting `--batch-size` rows per iteration via a
-    SQL subquery + LIMIT.
+    `polar_self.track_event_ingestion_v2` cron. Postgres deletes in
+    `--batch-size` batches via a SQL subquery + LIMIT. Tinybird does a
+    single deterministic `ALTER TABLE ... DELETE` (subqueries are rejected
+    as nondeterministic).
     """
     configure_script_logging()
 
@@ -159,7 +145,7 @@ async def run(
         )
         typer.echo(f"\nDeleted {deleted_pg} events from Postgres")
 
-        deleted_tb = await _delete_tinybird(organization_id, batch_size)
+        deleted_tb = await _delete_tinybird(organization_id)
         typer.echo(f"Deleted {deleted_tb} events from Tinybird")
     finally:
         await engine.dispose()

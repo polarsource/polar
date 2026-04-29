@@ -1006,7 +1006,7 @@ export interface components {
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
       /** Formatted Price With Interval */
-      readonly formatted_price_with_interval?: string
+      readonly formatted_price_with_interval: string
     }
     /** MaintainerNewProductSaleNotificationPayload */
     MaintainerNewProductSaleNotificationPayload: {
@@ -1909,6 +1909,12 @@ export interface components {
        * @default false
        */
       reset_proration_behavior_enabled: boolean
+      /**
+       * Billing Enabled
+       * @description If this organization has billing enabled
+       * @default false
+       */
+      billing_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {

@@ -1,12 +1,12 @@
-import { Hr, Link, Preview, Section } from "react-email";
-import Benefits from "../components/Benefits";
-import Button from "../components/Button";
-import FooterCustomer from "../components/FooterCustomer";
-import Intro from "../components/Intro";
-import OrderSummary from "../components/OrderSummary";
-import WrapperOrganization from "../components/WrapperOrganization";
-import { order, organization, product } from "../preview";
-import type { schemas } from "../types";
+import { Hr, Link, Preview, Section } from 'react-email'
+import Benefits from '../components/Benefits'
+import Button from '../components/Button'
+import FooterCustomer from '../components/FooterCustomer'
+import Intro from '../components/Intro'
+import OrderSummary from '../components/OrderSummary'
+import WrapperOrganization from '../components/WrapperOrganization'
+import { order, organization, product } from '../preview'
+import type { schemas } from '../types'
 
 export function SubscriptionConfirmation({
   email,
@@ -15,18 +15,18 @@ export function SubscriptionConfirmation({
   subscription,
   order,
   url,
-}: schemas["SubscriptionConfirmationProps"]) {
+}: schemas['SubscriptionConfirmationProps']) {
   return (
     <WrapperOrganization organization={organization}>
       <Preview>You're now subscribed to {product.name}</Preview>
       <Intro headline={`You're now subscribed to ${product.name}`}>
-        Thank you for subscribing to{" "}
+        Thank you for subscribing to{' '}
         <strong className="font-medium">{product.name}</strong>. Your invoice is
         attached.
         {order.receipt_number && (
           <>
-            {" "}
-            You can find your receipt in the{" "}
+            {' '}
+            You can find your receipt in the{' '}
             <Link href={url} className="text-blue-600 underline">
               Customer Portal
             </Link>
@@ -42,19 +42,19 @@ export function SubscriptionConfirmation({
       <OrderSummary order={order} />
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
-  );
+  )
 }
 
 SubscriptionConfirmation.PreviewProps = {
-  email: "john@example.com",
+  email: 'john@example.com',
   organization,
   product,
   subscription: {
-    id: "12345",
-    status: "active",
+    id: '12345',
+    status: 'active',
   },
   order,
-  url: "https://polar.sh/acme-inc/portal/subscriptions/12345",
-};
+  url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
+}
 
-export default SubscriptionConfirmation;
+export default SubscriptionConfirmation

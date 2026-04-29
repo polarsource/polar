@@ -1,11 +1,11 @@
-import { Hr, Link, Preview, Section } from "react-email";
-import Button from "../components/Button";
-import FooterCustomer from "../components/FooterCustomer";
-import Intro from "../components/Intro";
-import OrderSummary from "../components/OrderSummary";
-import WrapperOrganization from "../components/WrapperOrganization";
-import { order, organization, product } from "../preview";
-import type { schemas } from "../types";
+import { Hr, Link, Preview, Section } from 'react-email'
+import Button from '../components/Button'
+import FooterCustomer from '../components/FooterCustomer'
+import Intro from '../components/Intro'
+import OrderSummary from '../components/OrderSummary'
+import WrapperOrganization from '../components/WrapperOrganization'
+import { order, organization, product } from '../preview'
+import type { schemas } from '../types'
 
 export function SubscriptionCycled({
   email,
@@ -14,7 +14,7 @@ export function SubscriptionCycled({
   subscription,
   order,
   url,
-}: schemas["SubscriptionCycledProps"]) {
+}: schemas['SubscriptionCycledProps']) {
   return (
     <WrapperOrganization organization={organization}>
       <Preview>Your {product.name} subscription renewed</Preview>
@@ -23,8 +23,8 @@ export function SubscriptionCycled({
         has just renewed. Your invoice is attached.
         {order.receipt_number && (
           <>
-            {" "}
-            You can find your receipt in the{" "}
+            {' '}
+            You can find your receipt in the{' '}
             <Link href={url} className="text-blue-600 underline">
               Customer Portal
             </Link>
@@ -40,19 +40,19 @@ export function SubscriptionCycled({
 
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
-  );
+  )
 }
 
 SubscriptionCycled.PreviewProps = {
-  email: "john@example.com",
+  email: 'john@example.com',
   organization,
   product,
   subscription: {
-    id: "12345",
-    status: "active",
+    id: '12345',
+    status: 'active',
   },
   order,
-  url: "https://polar.sh/acme-inc/portal/subscriptions/12345",
-};
+  url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
+}
 
-export default SubscriptionCycled;
+export default SubscriptionCycled

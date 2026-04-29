@@ -1,12 +1,12 @@
-import { Hr, Link, Preview, Section } from "react-email";
-import Benefits from "../components/Benefits";
-import Button from "../components/Button";
-import FooterCustomer from "../components/FooterCustomer";
-import { Intro } from "../components/Intro";
-import OrderSummary from "../components/OrderSummary";
-import WrapperOrganization from "../components/WrapperOrganization";
-import { order, organization, product } from "../preview";
-import type { schemas } from "../types";
+import { Hr, Link, Preview, Section } from 'react-email'
+import Benefits from '../components/Benefits'
+import Button from '../components/Button'
+import FooterCustomer from '../components/FooterCustomer'
+import { Intro } from '../components/Intro'
+import OrderSummary from '../components/OrderSummary'
+import WrapperOrganization from '../components/WrapperOrganization'
+import { order, organization, product } from '../preview'
+import type { schemas } from '../types'
 
 export function OrderConfirmation({
   email,
@@ -14,18 +14,18 @@ export function OrderConfirmation({
   product,
   order,
   url,
-}: schemas["OrderConfirmationProps"]) {
+}: schemas['OrderConfirmationProps']) {
   return (
     <WrapperOrganization organization={organization}>
       <Preview>Your {order.description} purchase</Preview>
       <Intro headline="Thank you for your purchase!">
-        Thank you for purchasing{" "}
+        Thank you for purchasing{' '}
         <span className="font-medium">{order.description}</span>. Your invoice
         is attached.
         {order.receipt_number && (
           <>
-            {" "}
-            You can find your receipt in the{" "}
+            {' '}
+            You can find your receipt in the{' '}
             <Link href={url} className="text-blue-600 underline">
               Customer Portal
             </Link>
@@ -48,15 +48,15 @@ export function OrderConfirmation({
 
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
-  );
+  )
 }
 
 OrderConfirmation.PreviewProps = {
-  email: "john@example.com",
+  email: 'john@example.com',
   organization,
   product,
   order,
-  url: "https://polar.sh/acme-inc/portal/orders/12345",
-};
+  url: 'https://polar.sh/acme-inc/portal/orders/12345',
+}
 
-export default OrderConfirmation;
+export default OrderConfirmation

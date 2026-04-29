@@ -4,6 +4,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
+from polar.auth.scope import READ_ONLY_SCOPES
 from polar.models import Feedback, Organization, User, UserOrganization
 from polar.models.feedback import FeedbackStatus, FeedbackType
 from polar.postgres import AsyncSession
@@ -106,3 +107,14 @@ class TestSubmitFeedback:
         assert stored.message == "Something is broken in the dashboard."
         assert stored.user_id == user.id
         assert stored.organization_id == organization.id
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_impersonation_session_blocked(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Impersonation (READ_ONLY_SCOPES) cannot submit feedback."""
+        response = await client.post("/v1/feedbacks/", json=_payload(organization))
+        assert response.status_code == 403

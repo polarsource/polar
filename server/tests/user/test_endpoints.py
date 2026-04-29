@@ -1,8 +1,10 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.auth.scope import READ_ONLY_SCOPES
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserOrganization
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
 
@@ -99,3 +101,21 @@ class TestDeleteUser:
         assert response.status_code == 200
         json = response.json()
         assert json["deleted"] is True
+
+
+@pytest.mark.asyncio
+class TestImpersonationGate:
+    """Sessions with ``READ_ONLY_SCOPES`` (i.e. backoffice impersonation)
+    can read user-personal endpoints but cannot mutate them."""
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_can_get_me(self, user: User, client: AsyncClient) -> None:
+        response = await client.get("/v1/users/me")
+        assert response.status_code == 200
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_cannot_patch_me(self, user: User, client: AsyncClient) -> None:
+        response = await client.patch(
+            "/v1/users/me", json={"avatar_url": "https://example.com/x.png"}
+        )
+        assert response.status_code == 403

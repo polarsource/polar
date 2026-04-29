@@ -4,7 +4,9 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.auth.scope import READ_ONLY_SCOPES
 from polar.models import Organization, PayoutAccount, User, UserOrganization
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
@@ -67,6 +69,33 @@ class TestCreatePayoutAccount:
         )
 
         assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_impersonation_session_blocked(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Impersonation (READ_ONLY_SCOPES) cannot create a payout account."""
+        response = await client.post(
+            "/v1/payout-accounts/",
+            json={
+                "type": "stripe",
+                "country": "US",
+                "organization_id": str(organization.id),
+            },
+        )
+        assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+class TestImpersonationCanList:
+    @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
+    async def test_impersonation_can_list(self, client: AsyncClient) -> None:
+        """Impersonation (READ_ONLY_SCOPES) can list payout accounts."""
+        response = await client.get("/v1/payout-accounts/")
+        assert response.status_code == 200
 
 
 @pytest.mark.asyncio

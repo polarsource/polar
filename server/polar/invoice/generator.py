@@ -289,21 +289,6 @@ class InvoiceGenerator(FPDF):
     cjk_font_name: ClassVar[str] = "notosanscjk"
     """Font family name for CJK fallback glyphs."""
 
-    cjk_subfont_index_by_country: ClassVar[dict[str, int]] = {
-        "JP": 0,
-        "KR": 1,
-        "CN": 2,
-        "SG": 2,
-        "MY": 2,
-        "TW": 3,
-        "MO": 3,
-        "HK": 4,
-    }
-    """Sub-font index in NotoSansCJK-Regular.ttc per ISO 3166-1 alpha-2 country."""
-
-    cjk_subfont_default_index: ClassVar[int] = 2
-    """Default CJK sub-font index (Simplified Chinese) when country is unmapped."""
-
     base_font_size: ClassVar[int] = 10
     """Base font size in points."""
 
@@ -339,14 +324,6 @@ class InvoiceGenerator(FPDF):
     def has_cjk_fallback_fonts(cls) -> bool:
         return cls.resolve_font_file(cls.cjk_regular_font_files) is not None
 
-    @classmethod
-    def resolve_cjk_subfont_index(cls, country: str | None) -> int:
-        if country is None:
-            return cls.cjk_subfont_default_index
-        return cls.cjk_subfont_index_by_country.get(
-            country, cls.cjk_subfont_default_index
-        )
-
     def __init__(
         self,
         data: Invoice,
@@ -368,22 +345,10 @@ class InvoiceGenerator(FPDF):
         fallback_fonts = [self.hebrew_font_name, self.arabic_font_name]
         cjk_regular_font_file = self.resolve_font_file(self.cjk_regular_font_files)
         if cjk_regular_font_file is not None:
-            cjk_subfont_index = self.resolve_cjk_subfont_index(
-                data.customer_address.country
-            )
-            self.add_font(
-                self.cjk_font_name,
-                fname=cjk_regular_font_file,
-                collection_font_number=cjk_subfont_index,
-            )
+            self.add_font(self.cjk_font_name, fname=cjk_regular_font_file)
             cjk_bold_font_file = self.resolve_font_file(self.cjk_bold_font_files)
             if cjk_bold_font_file is not None:
-                self.add_font(
-                    self.cjk_font_name,
-                    fname=cjk_bold_font_file,
-                    style="B",
-                    collection_font_number=cjk_subfont_index,
-                )
+                self.add_font(self.cjk_font_name, fname=cjk_bold_font_file, style="B")
             fallback_fonts.append(self.cjk_font_name)
         self.set_fallback_fonts(fallback_fonts, exact_match=False)
         self.set_font(self.font_name, size=self.base_font_size)

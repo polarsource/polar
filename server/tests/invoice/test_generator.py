@@ -233,23 +233,6 @@ Thank you for your business!
                 reason="CJK fallback fonts are not installed",
             ),
         ),
-        pytest.param(
-            {
-                "customer_name": "鳴眾科技股份有限公司",
-                "customer_address": Address(
-                    line1="10 F., No. 201",
-                    line2="Sec. 3, Nanjing E. Rd., Zhongshan Dist.",
-                    city="Taipei City",
-                    postal_code="104",
-                    country=CountryAlpha2("TW"),
-                ),
-            },
-            "unicode_cjk_traditional",
-            marks=pytest.mark.skipif(
-                not InvoiceGenerator.has_cjk_fallback_fonts(),
-                reason="CJK fallback fonts are not installed",
-            ),
-        ),
     ],
 )
 def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None:
@@ -261,23 +244,6 @@ def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None
     generator.output(str(path))
 
     assert path.exists()
-
-
-@pytest.mark.parametrize(
-    ("country", "expected_index"),
-    [
-        ("JP", 0),
-        ("KR", 1),
-        ("CN", 2),
-        ("SG", 2),
-        ("TW", 3),
-        ("HK", 4),
-        ("US", 2),
-        (None, 2),
-    ],
-)
-def test_resolve_cjk_subfont_index(country: str | None, expected_index: int) -> None:
-    assert InvoiceGenerator.resolve_cjk_subfont_index(country) == expected_index
 
 
 def test_generator_registers_unicode_fallback_fonts(invoice: Invoice) -> None:

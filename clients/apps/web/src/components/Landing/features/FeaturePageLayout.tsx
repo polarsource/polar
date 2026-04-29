@@ -1,7 +1,6 @@
 "use client";
 
 import GetStartedButton from "@/components/Auth/GetStartedButton";
-import ArrowOutwardOutlined from "@mui/icons-material/ArrowOutwardOutlined";
 import Button from "@polar-sh/ui/components/atoms/Button";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -42,7 +41,7 @@ export const FeaturePageHeader = ({ title, description, docsHref }: FeaturePageH
         {title}
       </motion.h1>
       <motion.p
-        className="dark:text-polar-300 max-w-2xl text-xl text-balance text-gray-500"
+        className="dark:text-polar-300 max-w-2xl text-2xl text-balance text-gray-500"
         variants={itemVariants}
       >
         {description}
@@ -93,51 +92,154 @@ export const FeaturePageIntro = ({ children }: PropsWithChildren) => {
   );
 };
 
+export const FeatureSection = ({ title, children }: PropsWithChildren<{ title: string }>) => {
+  return (
+    <motion.section
+      className="mx-auto flex max-w-3xl flex-col gap-y-6"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={containerVariants}
+    >
+      <motion.h2 className="text-2xl md:text-3xl leading-snug" variants={itemVariants}>
+        {title}
+      </motion.h2>
+      <motion.div
+        className="dark:text-polar-300 flex flex-col gap-y-5 text-lg leading-relaxed text-gray-600 md:text-xl [&_strong]:text-gray-900 dark:[&_strong]:text-white [&_strong]:font-medium"
+        variants={itemVariants}
+      >
+        {children}
+      </motion.div>
+    </motion.section>
+  );
+};
+
+export const FeatureSplit = ({
+  title,
+  description,
+  bullets,
+}: {
+  title: string;
+  description: string;
+  bullets: { title: string; description: string }[];
+}) => {
+  return (
+    <motion.section
+      className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-16"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={containerVariants}
+    >
+      <div className="flex flex-col gap-y-6">
+        <motion.h2 className="text-2xl leading-snug md:text-3xl" variants={itemVariants}>
+          {title}
+        </motion.h2>
+        <motion.p
+          className="dark:text-polar-300 text-lg leading-relaxed text-gray-600 md:text-xl"
+          variants={itemVariants}
+        >
+          {description}
+        </motion.p>
+      </div>
+      <motion.ul
+        className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200"
+        variants={containerVariants}
+      >
+        {bullets.map((b, i) => (
+          <motion.li
+            key={i}
+            className="flex flex-col gap-y-2 py-6 first:pt-0"
+            variants={itemVariants}
+          >
+            <span className="text-lg text-gray-900 dark:text-white">{b.title}</span>
+            <span className="dark:text-polar-400 text-lg text-gray-500">{b.description}</span>
+          </motion.li>
+        ))}
+      </motion.ul>
+    </motion.section>
+  );
+};
+
+export const FeatureRichList = ({
+  title,
+  description,
+  items,
+}: {
+  title: string;
+  description?: string;
+  items: { title: string; description: string }[];
+}) => {
+  return (
+    <motion.section
+      className="mx-auto flex max-w-3xl flex-col gap-y-10"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={containerVariants}
+    >
+      <div className="flex flex-col gap-y-4">
+        <motion.h2 className="text-2xl leading-snug md:text-3xl" variants={itemVariants}>
+          {title}
+        </motion.h2>
+        {description ? (
+          <motion.p
+            className="dark:text-polar-300 text-lg leading-relaxed text-gray-600 md:text-xl"
+            variants={itemVariants}
+          >
+            {description}
+          </motion.p>
+        ) : null}
+      </div>
+      <motion.ul
+        className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-y dark:border-polar-700 border-gray-200"
+        variants={containerVariants}
+      >
+        {items.map((it, i) => (
+          <motion.li
+            key={i}
+            className="grid grid-cols-1 gap-2 py-6 md:grid-cols-[1fr_2fr] md:gap-10"
+            variants={itemVariants}
+          >
+            <span className="text-lg text-gray-900 dark:text-white">{it.title}</span>
+            <span className="dark:text-polar-400 text-lg leading-relaxed text-gray-500">
+              {it.description}
+            </span>
+          </motion.li>
+        ))}
+      </motion.ul>
+    </motion.section>
+  );
+};
+
 export interface FeatureCard {
   icon: ReactNode;
   title: string;
   description: string;
 }
 
-export const FeatureCardGrid = ({
-  title,
-  description,
-  cards,
-}: {
-  title: string;
-  description: string;
-  cards: FeatureCard[];
-}) => {
+export const FeatureCardGrid = ({ cards }: { cards: FeatureCard[] }) => {
   return (
     <motion.div
-      className="flex flex-col gap-y-12"
+      className="grid grid-cols-1 md:grid-cols-2 gap-12"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
       variants={containerVariants}
     >
-      <div className="flex flex-col gap-y-4 text-center">
-        <motion.h2 className="text-2xl md:text-3xl" variants={itemVariants}>
-          {title}
-        </motion.h2>
-        <motion.p
-          className="dark:text-polar-400 mx-auto max-w-2xl text-xl text-gray-500"
+      {cards.map((c, i) => (
+        <motion.div
+          key={i}
+          className="flex flex-col gap-y-6 dark:border-polar-700 border-gray-300"
           variants={itemVariants}
         >
-          {description}
-        </motion.p>
-      </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 divide-x dark:divide-polar-700 divide-gray-300">
-        {cards.map((c, i) => (
-          <motion.div key={i} className="flex flex-col gap-y-6 p-8" variants={itemVariants}>
-            <div className="dark:text-polar-100 text-gray-900">{c.icon}</div>
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-xl">{c.title}</h3>
-              <p className="dark:text-polar-400 text-gray-500 text-lg">{c.description}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+          <div className="dark:text-polar-100 text-gray-900">{c.icon}</div>
+          <div className="flex flex-col gap-y-2">
+            <h3 className="text-xl">{c.title}</h3>
+            <p className="dark:text-polar-400 text-gray-500 text-lg">{c.description}</p>
+          </div>
+        </motion.div>
+      ))}
     </motion.div>
   );
 };
@@ -145,7 +247,7 @@ export const FeatureCardGrid = ({
 export const FeatureCTA = ({ title, description }: { title: string; description: string }) => {
   return (
     <motion.div
-      className="flex flex-col items-center gap-y-8 text-center"
+      className="flex flex-col items-center gap-y-8 text-center border-t dark:border-polar-700 border-gray-300 pt-16"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
@@ -170,7 +272,7 @@ export const FeatureCTA = ({ title, description }: { title: string; description:
 export const FeaturePageLayout = ({ children }: PropsWithChildren) => {
   return (
     <div className="flex flex-col">
-      <Section className="flex flex-col gap-y-16 pt-12 md:gap-y-24 md:pt-24 max-w-5xl!">
+      <Section className="flex flex-col gap-y-16 pt-12 md:gap-y-24 md:pt-24 max-w-3xl!">
         {children}
       </Section>
     </div>

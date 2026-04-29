@@ -85,18 +85,18 @@ export const Testimonials = () => (
         key={t.name}
         href={t.link}
         target="_blank"
-        className="dark:bg-dark-900 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-12 bg-neutral-50 p-10 transition-colors hover:bg-neutral-100"
+        className="dark:bg-polar-900 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-12 bg-gray-50 p-10 transition-colors hover:bg-gray-100"
       >
-        <span className="dark:text-dark-500 text-neutral-500 tabular-nums">{`— 0${i + 1}`}</span>
-        <div className="flex h-full flex-col gap-y-6 text-xl leading-snug text-neutral-900 dark:text-white">
+        <span className="dark:text-polar-500 text-gray-500 tabular-nums">{`— 0${i + 1}`}</span>
+        <div className="flex h-full flex-col gap-y-6 text-xl leading-snug text-gray-900 dark:text-white">
           {t.text}
         </div>
         <div className="dark:bg-polar-700 h-1 w-6 bg-gray-100" />
         <div>
-          <div className="text-lg text-neutral-900 dark:text-white">
+          <div className="text-lg text-gray-900 dark:text-white">
             {t.name}
           </div>
-          <div className="dark:text-dark-400 text-lg text-neutral-400">
+          <div className="dark:text-polar-400 text-lg text-gray-400">
             {t.company}
           </div>
         </div>

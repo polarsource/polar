@@ -7,7 +7,7 @@ export const Pricing = () => {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {/* Left — text */}
-      <div className="dark:bg-dark-900 col-span-1 flex flex-col gap-y-8 bg-gray-50 p-12 md:col-span-2 md:flex-1">
+      <div className="dark:bg-polar-900 col-span-1 flex flex-col gap-y-8 bg-gray-50 p-12 md:col-span-2 md:flex-1">
         <h2 className="font-display text-3xl leading-tight! md:text-5xl">
           Eveything you need
           <br />
@@ -20,7 +20,7 @@ export const Pricing = () => {
 
         <div className="flex gap-x-3">
           <Link href="/resources/pricing" target="_blank">
-            <Button className="dark:hover:bg-polar-50 rounded-full border-none bg-black hover:bg-neutral-900 dark:bg-white dark:text-black">
+            <Button className="dark:hover:bg-polar-50 rounded-full border-none bg-black hover:bg-gray-900 dark:bg-white dark:text-black">
               Pricing Guide
             </Button>
           </Link>
@@ -28,7 +28,7 @@ export const Pricing = () => {
       </div>
 
       {/* Right — visual fee breakdown */}
-      <div className="dark:bg-dark-900 flex flex-col gap-y-4 bg-gray-50 md:flex-1">
+      <div className="dark:bg-polar-900 flex flex-col gap-y-4 bg-gray-50 md:flex-1">
         {/* Fee display */}
         <div className="flex flex-col gap-y-8 p-12">
           <div className="flex flex-col gap-y-4">

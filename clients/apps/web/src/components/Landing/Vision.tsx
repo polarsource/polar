@@ -52,7 +52,7 @@ export const Vision = () => {
     <div ref={wrapperRef} style={{ height: '300vh' }}>
       <div className="sticky top-0 flex h-screen items-center justify-center">
         <div className="flex flex-row gap-x-6 px-4 md:gap-x-24 md:px-0">
-          <div className="dark:bg-polar-700 w-px self-stretch bg-neutral-200">
+          <div className="dark:bg-polar-700 w-px self-stretch bg-gray-200">
             <div
               ref={barRef}
               className="w-full bg-black dark:bg-white"
@@ -63,7 +63,7 @@ export const Vision = () => {
             {PARAGRAPHS.map((paragraph, pi) => (
               <p
                 key={pi}
-                className="font-display text-[clamp(2rem,4.5vw,4rem)] leading-[1.3] font-normal text-neutral-900 not-last:mb-16 dark:text-white"
+                className="font-display text-[clamp(2rem,4.5vw,4rem)] leading-[1.3] font-normal text-gray-900 not-last:mb-16 dark:text-white"
               >
                 {paragraph.split(' ').map((word, wi) => {
                   const idx = wordIndex++

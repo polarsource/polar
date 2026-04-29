@@ -94,7 +94,7 @@ jobs:
               echo '<details><summary>Diff stat</summary>'
               echo ''
               echo '```'
-              git diff --stat -- clients/packages/client/src/v1.ts
+              git diff -- clients/packages/client/src/v1.ts
               echo '```'
               echo ''
               echo '</details>'

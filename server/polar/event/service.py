@@ -590,34 +590,57 @@ class EventService:
             limit=limit,
         )
 
-        # Fetch customer details for all rows that have a Polar customer_id
+        # Fetch customer details for all rows that have a Polar customer_id,
+        # or an external_customer_id that maps to a readable Polar customer.
         row_customer_ids = [
             uuid.UUID(row.customer_id) for row in rows if row.customer_id
         ]
+        row_external_customer_ids = [
+            row.external_customer_id
+            for row in rows
+            if row.external_customer_id and not row.customer_id
+        ]
         customers_by_id: dict[uuid.UUID, Customer] = {}
-        if row_customer_ids:
-            customer_stmt = customer_repository.get_base_statement().where(
-                Customer.id.in_(row_customer_ids)
-            )
+        customers_by_external_id: dict[str, Customer] = {}
+        if row_customer_ids or row_external_customer_ids:
+            conditions = []
+            if row_customer_ids:
+                conditions.append(Customer.id.in_(row_customer_ids))
+            if row_external_customer_ids:
+                conditions.append(
+                    Customer.external_id.in_(row_external_customer_ids),
+                )
+            customer_stmt = customer_repository.get_statement_by_org_ids(
+                organization_ids
+            ).where(or_(*conditions))
             found = await customer_repository.get_all(customer_stmt)
             customers_by_id = {c.id: c for c in found}
+            customers_by_external_id = {
+                c.external_id: c for c in found if c.external_id is not None
+            }
 
-        items = [
-            CustomerStat(
-                customer_id=uuid.UUID(row.customer_id) if row.customer_id else None,
-                external_customer_id=row.external_customer_id,
-                name=customers_by_id[uuid.UUID(row.customer_id)].name
-                if row.customer_id and uuid.UUID(row.customer_id) in customers_by_id
-                else None,
-                email=customers_by_id[uuid.UUID(row.customer_id)].email
-                if row.customer_id and uuid.UUID(row.customer_id) in customers_by_id
-                else None,
-                occurrences=row.occurrences,
-                totals={k: Decimal(str(round(v, 12))) for k, v in row.totals.items()},
-                share=Decimal(str(round(row.share, 6))),
+        items = []
+        for row in rows:
+            customer: Customer | None = None
+            if row.customer_id:
+                customer = customers_by_id.get(uuid.UUID(row.customer_id))
+            elif row.external_customer_id:
+                customer = customers_by_external_id.get(row.external_customer_id)
+            items.append(
+                CustomerStat(
+                    customer_id=customer.id
+                    if customer
+                    else (uuid.UUID(row.customer_id) if row.customer_id else None),
+                    external_customer_id=row.external_customer_id,
+                    name=customer.name if customer else None,
+                    email=customer.email if customer else None,
+                    occurrences=row.occurrences,
+                    totals={
+                        k: Decimal(str(round(v, 12))) for k, v in row.totals.items()
+                    },
+                    share=Decimal(str(round(row.share, 6))),
+                )
             )
-            for row in rows
-        ]
         return ListCustomerStats(items=items)
 
     async def list_variance_events(

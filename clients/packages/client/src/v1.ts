@@ -894,6 +894,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/review': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization Self-Review Checklist
+     * @description Get the merchant self-review checklist state.
+     *
+     *     Powers the new account review UI: pre-submission gating checks plus,
+     *     after submission, the AI verdict and appeal state. Currently returns
+     *     a hardcoded mock — `?status=pass|fail` switches between the two
+     *     canned responses while the real check logic is built out.
+     */
+    get: operations['organizations:get_review']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/validate-website': {
     parameters: {
       query?: never
@@ -18204,22 +18229,20 @@ export interface components {
     /** EventTypeWithStats */
     EventTypeWithStats: {
       /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
+       * Id
+       * @description The ID of the event type. Null for system event types.
        */
-      created_at: string
+      id?: string | null
+      /**
+       * Created At
+       * @description Creation timestamp of the event type. Null for system event types.
+       */
+      created_at?: string | null
       /**
        * Modified At
-       * @description Last modification timestamp of the object.
+       * @description Last modification timestamp of the event type. Null for system event types.
        */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
+      modified_at?: string | null
       /**
        * Name
        * @description The name of the event type.
@@ -23004,18 +23027,6 @@ export interface components {
        */
       member_model_enabled: boolean
       /**
-       * Tinybird Read
-       * @description If this organization reads from Tinybird
-       * @default false
-       */
-      tinybird_read: boolean
-      /**
-       * Tinybird Compare
-       * @description If this organization compares Tinybird results with database
-       * @default false
-       */
-      tinybird_compare: boolean
-      /**
        * Checkout Localization Enabled
        * @description If this organization has checkout localization enabled
        * @default false
@@ -23454,6 +23465,79 @@ export interface components {
        * @description ID of the payout account to set on the organization.
        */
       payout_account_id: string
+    }
+    /** OrganizationReviewAppeal */
+    OrganizationReviewAppeal: {
+      /**
+       * Submitted At
+       * Format: date-time
+       */
+      submitted_at: string
+      /** Reviewed At */
+      reviewed_at?: string | null
+      decision?: components['schemas']['AppealDecision'] | null
+    }
+    /**
+     * OrganizationReviewCheck
+     * @description A single item in the self-review checklist.
+     */
+    OrganizationReviewCheck: {
+      key: components['schemas']['OrganizationReviewCheckKey']
+      status: components['schemas']['OrganizationReviewCheckStatus']
+      /**
+       * Reasons
+       * @description Reasons for the current status. Empty when `passed`.
+       */
+      reasons?: components['schemas']['OrganizationReviewCheckReason'][]
+    }
+    /**
+     * OrganizationReviewCheckKey
+     * @description Stable identifiers for each check. Adding a new key is a coordinated FE+BE change.
+     * @enum {string}
+     */
+    OrganizationReviewCheckKey:
+      | 'identity.email'
+      | 'identity.social_links'
+      | 'identity.stripe_identity_verification'
+      | 'product_description'
+      | 'payout_account'
+    /**
+     * OrganizationReviewCheckReason
+     * @description Reasons explaining a check's status. Scoped reasons are namespaced
+     *     with the prefix of the check key they apply to.
+     * @enum {string}
+     */
+    OrganizationReviewCheckReason:
+      | 'not_started'
+      | 'in_progress'
+      | 'external_pending'
+      | 'identity.rejected'
+      | 'identity.personal_email'
+      | 'identity.domain_mismatch'
+      | 'payout_account.requirements_due'
+      | 'payout_account.payouts_disabled'
+    /**
+     * OrganizationReviewCheckStatus
+     * @enum {string}
+     */
+    OrganizationReviewCheckStatus: 'passed' | 'warning' | 'failed' | 'pending'
+    /**
+     * OrganizationReviewState
+     * @description Merchant self-review checklist. Frozen once `submitted_at` is set.
+     */
+    OrganizationReviewState: {
+      /**
+       * Can Submit
+       * @description True when `submitted_at` is null AND no preliminary check is `failed` or `pending`. Warnings do not block submission.
+       */
+      can_submit: boolean
+      /** Submitted At */
+      submitted_at?: string | null
+      /** Verdict */
+      verdict?: ('pass' | 'fail') | null
+      appeal?: components['schemas']['OrganizationReviewAppeal'] | null
+      /** Preliminary Steps */
+      preliminary_steps?: components['schemas']['OrganizationReviewCheck'][]
     }
     /** OrganizationReviewStatus */
     OrganizationReviewStatus: {
@@ -31743,6 +31827,49 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationReviewStatus']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_review': {
+    parameters: {
+      query?: {
+        /** @description STUB: switch the mocked response. `pass` returns an all-passed checklist, `fail` returns an all-failed one. Omit for the default (all-passed) mock. */
+        status?: ('pass' | 'fail') | null
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Organization self-review checklist returned. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationReviewState']
         }
       }
       /** @description Organization not found. */
@@ -46289,6 +46416,9 @@ type FlattenedDeepRequired<T> = {
 type ReadonlyArray<T> = [Exclude<T, undefined>] extends [unknown[]]
   ? Readonly<Exclude<T, undefined>>
   : Readonly<Exclude<T, undefined>[]>
+export const pathsV1OrganizationsIdReviewGetParametersQueryStatusAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<paths>['/v1/organizations/{id}/review']['get']['parameters']['query']['status']
+> = ['pass', 'fail']
 export const pathsV1WebhooksDeliveriesGetParametersQueryHttp_code_classAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/webhooks/deliveries']['get']['parameters']['query']['http_code_class']
 > = ['2xx', '3xx', '4xx', '5xx']
@@ -52980,6 +53110,33 @@ export const organizationKYCCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const organizationReviewCheckKeyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckKey']
+> = [
+  'identity.email',
+  'identity.social_links',
+  'identity.stripe_identity_verification',
+  'product_description',
+  'payout_account',
+]
+export const organizationReviewCheckReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckReason']
+> = [
+  'not_started',
+  'in_progress',
+  'external_pending',
+  'identity.rejected',
+  'identity.personal_email',
+  'identity.domain_mismatch',
+  'payout_account.requirements_due',
+  'payout_account.payouts_disabled',
+]
+export const organizationReviewCheckStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckStatus']
+> = ['passed', 'warning', 'failed', 'pending']
+export const organizationReviewStateVerdictAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationReviewState']['verdict']
+> = ['pass', 'fail']
 export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']

@@ -426,6 +426,41 @@ class TestListEventTypes:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["name"] == "system.event"
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user", scopes={Scope.events_read}),
+        AuthSubjectFixture(subject="organization", scopes={Scope.events_read}),
+    )
+    async def test_system_event_without_event_type_row(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+    ) -> None:
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            name="order.paid",
+            source=EventSource.system,
+        )
+
+        await flush_tinybird_events()
+
+        response = await client.get("/v1/event-types/", params={"source": "system"})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        item = json["items"][0]
+        assert item["name"] == "order.paid"
+        assert item["source"] == "system"
+        assert item["label"] == "Order Paid"
+        assert item["id"] is None
+        assert item["created_at"] is None
+        assert item["modified_at"] is None
+        assert item["label_property_selector"] is None
+
 
 @pytest.mark.asyncio
 class TestUpdateEventType:

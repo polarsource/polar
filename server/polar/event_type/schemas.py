@@ -49,7 +49,28 @@ class EventType(IDSchema, TimestampedSchema):
     )
 
 
-class EventTypeWithStats(EventType):
+class EventTypeWithStats(Schema):
+    id: UUID4 | None = Field(
+        None,
+        description="The ID of the event type. Null for system event types.",
+    )
+    created_at: datetime | None = Field(
+        None,
+        description="Creation timestamp of the event type. Null for system event types.",
+    )
+    modified_at: datetime | None = Field(
+        None,
+        description="Last modification timestamp of the event type. Null for system event types.",
+    )
+    name: str = Field(..., description="The name of the event type.")
+    label: str = Field(..., description="The label for the event type.")
+    label_property_selector: str | None = Field(
+        None,
+        description="Property path to extract dynamic label from event metadata.",
+    )
+    organization_id: UUID4 = Field(
+        ..., description="The ID of the organization owning the event type."
+    )
     source: EventSource = Field(
         description="The source of the events (system or user)."
     )

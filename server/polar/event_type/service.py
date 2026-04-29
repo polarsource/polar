@@ -107,11 +107,7 @@ class EventTypeService:
                 s
                 for s in tinybird_stats
                 if query_lower in s.name.lower()
-                or (
-                    (et := event_types_by_key.get((s.organization_id, s.name)))
-                    is not None
-                    and query_lower in (et.label or "").lower()
-                )
+                or query_lower in self._resolve_label(s, event_types_by_key).lower()
             ]
 
         total_count = len(tinybird_stats)
@@ -125,6 +121,19 @@ class EventTypeService:
 
         return results, total_count
 
+    def _resolve_label(
+        self,
+        stat: TinybirdEventTypeStats,
+        event_types_by_key: dict[tuple[UUID, str], EventType],
+    ) -> str:
+        event_type = event_types_by_key.get((stat.organization_id, stat.name))
+        if stat.source == EventSource.system:
+            fallback = event_type.label if event_type is not None else stat.name
+            return SYSTEM_EVENT_LABELS.get(stat.name, fallback)
+        if event_type is not None:
+            return event_type.label
+        return stat.name
+
     def _build_event_types_from_tinybird(
         self,
         stats: list[TinybirdEventTypeStats],
@@ -133,13 +142,29 @@ class EventTypeService:
         results: list[EventTypeWithStats] = []
         for s in stats:
             event_type = event_types_by_key.get((s.organization_id, s.name))
-            if event_type is None:
-                continue
+            label = self._resolve_label(s, event_types_by_key)
 
-            if s.source == EventSource.system:
-                label = SYSTEM_EVENT_LABELS.get(s.name, event_type.label)
-            else:
-                label = event_type.label
+            if event_type is None:
+                if s.source != EventSource.system:
+                    continue
+                results.append(
+                    EventTypeWithStats.model_validate(
+                        {
+                            "id": None,
+                            "created_at": None,
+                            "modified_at": None,
+                            "name": s.name,
+                            "label": label,
+                            "label_property_selector": None,
+                            "organization_id": s.organization_id,
+                            "source": s.source,
+                            "occurrences": s.occurrences,
+                            "first_seen": s.first_seen,
+                            "last_seen": s.last_seen,
+                        }
+                    )
+                )
+                continue
 
             results.append(
                 EventTypeWithStats.model_validate(

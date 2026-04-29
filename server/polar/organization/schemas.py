@@ -555,6 +555,83 @@ class OrganizationReviewStatus(Schema):
     )
 
 
+class OrganizationReviewCheckKey(StrEnum):
+    """Stable identifiers for each check. Adding a new key is a coordinated FE+BE change."""
+
+    IDENTITY = "identity"
+    IDENTITY_EMAIL = "identity.email"
+    IDENTITY_SOCIAL_LINKS = "identity.social_links"
+    IDENTITY_STRIPE_VERIFICATION = "identity.stripe_identity_verification"
+    PRODUCT_DESCRIPTION = "product_description"
+    PAYOUT_ACCOUNT = "payout_account"
+
+
+class OrganizationReviewCheckStatus(StrEnum):
+    PASSED = "passed"
+    WARNING = "warning"  # attention flag; does NOT block submission
+    FAILED = "failed"
+    PENDING = "pending"
+
+
+class OrganizationReviewCheckReason(StrEnum):
+    """Reasons explaining a check's status. Scoped reasons are namespaced
+    with the prefix of the check key they apply to."""
+
+    # Universal
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    EXTERNAL_PENDING = "external_pending"
+
+    # Identity
+    IDENTITY_REJECTED = "identity.rejected"
+    IDENTITY_PERSONAL_EMAIL = "identity.personal_email"
+    IDENTITY_DOMAIN_MISMATCH = "identity.domain_mismatch"
+
+    # Payout account
+    PAYOUT_ACCOUNT_REQUIREMENTS_DUE = "payout_account.requirements_due"
+    PAYOUT_ACCOUNT_PAYOUTS_DISABLED = "payout_account.payouts_disabled"
+
+
+class OrganizationReviewCheck(Schema):
+    """A single item in the self-review checklist. Recursive via `children`."""
+
+    key: OrganizationReviewCheckKey
+    status: OrganizationReviewCheckStatus
+    reasons: list[OrganizationReviewCheckReason] = Field(
+        default_factory=list,
+        description="Reasons for the current status. Empty when `passed`.",
+    )
+    children: list["OrganizationReviewCheck"] = Field(
+        default_factory=list,
+        description="Nested sub-checks. Empty for leaves.",
+    )
+
+
+class OrganizationReviewAppeal(Schema):
+    submitted_at: datetime
+    reviewed_at: datetime | None = None
+    decision: OrganizationReview.AppealDecision | None = None
+
+
+class OrganizationReviewState(Schema):
+    """Merchant self-review checklist. Frozen once `submitted_at` is set."""
+
+    can_submit: bool = Field(
+        description=(
+            "True when `submitted_at` is null AND no preliminary check is "
+            "`failed` or `pending`. Warnings do not block submission."
+        )
+    )
+    submitted_at: datetime | None = None
+    verdict: Literal["pass", "fail"] | None = None
+    appeal: OrganizationReviewAppeal | None = None
+    preliminary_steps: list[OrganizationReviewCheck] = Field(default_factory=list)
+
+
+# Required for the recursive `children` field.
+OrganizationReviewCheck.model_rebuild()
+
+
 class OrganizationDeletionBlockedReason(StrEnum):
     """Reasons why an organization cannot be immediately deleted."""
 

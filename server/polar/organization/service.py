@@ -68,6 +68,10 @@ from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
     OrganizationCreate,
     OrganizationDeletionBlockedReason,
+    OrganizationReviewCheck,
+    OrganizationReviewCheckKey,
+    OrganizationReviewCheckStatus,
+    OrganizationReviewState,
     OrganizationReviewSubmissionBody,
     OrganizationUpdate,
 )
@@ -1087,6 +1091,54 @@ class OrganizationService:
         """
         repository = OrganizationReviewRepository.from_session(session)
         return await repository.get_by_organization(organization.id)
+
+    async def get_review_state(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> OrganizationReviewState:
+        """Build the merchant self-review checklist state.
+
+        STUB: returns hardcoded "all passed" data so the new dashboard UI can
+        integrate against the contract while the real check logic is built
+        out incrementally. The shape is final; only the values are dummy.
+        """
+        del session, organization  # unused in the stub
+
+        preliminary_steps = [
+            OrganizationReviewCheck(
+                key=OrganizationReviewCheckKey.IDENTITY,
+                status=OrganizationReviewCheckStatus.PASSED,
+                children=[
+                    OrganizationReviewCheck(
+                        key=OrganizationReviewCheckKey.IDENTITY_EMAIL,
+                        status=OrganizationReviewCheckStatus.PASSED,
+                    ),
+                    OrganizationReviewCheck(
+                        key=OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS,
+                        status=OrganizationReviewCheckStatus.PASSED,
+                    ),
+                    OrganizationReviewCheck(
+                        key=OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION,
+                        status=OrganizationReviewCheckStatus.PASSED,
+                    ),
+                ],
+            ),
+            OrganizationReviewCheck(
+                key=OrganizationReviewCheckKey.PRODUCT_DESCRIPTION,
+                status=OrganizationReviewCheckStatus.PASSED,
+            ),
+            OrganizationReviewCheck(
+                key=OrganizationReviewCheckKey.PAYOUT_ACCOUNT,
+                status=OrganizationReviewCheckStatus.PASSED,
+            ),
+        ]
+
+        return OrganizationReviewState(
+            can_submit=True,
+            submitted_at=None,
+            verdict=None,
+            appeal=None,
+            preliminary_steps=preliminary_steps,
+        )
 
     async def submit_appeal(
         self, session: AsyncSession, organization: Organization, appeal_reason: str

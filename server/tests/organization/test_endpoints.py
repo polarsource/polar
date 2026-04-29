@@ -930,3 +930,49 @@ class TestDeleteOrganization:
         assert response.status_code == 403
         json = response.json()
         assert json["detail"] == "Only the account admin can delete the organization"
+
+
+@pytest.mark.asyncio
+class TestGetReview:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/review")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/review")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Returns the v1 checklist shape: 3 top-level checks with identity expanded."""
+        response = await client.get(f"/v1/organizations/{organization.id}/review")
+
+        assert response.status_code == 200
+        json = response.json()
+
+        assert [step["key"] for step in json["preliminary_steps"]] == [
+            "identity",
+            "product_description",
+            "payout_account",
+        ]
+        identity = json["preliminary_steps"][0]
+        assert [child["key"] for child in identity["children"]] == [
+            "identity.email",
+            "identity.social_links",
+            "identity.stripe_identity_verification",
+        ]

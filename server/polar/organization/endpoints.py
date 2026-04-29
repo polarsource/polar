@@ -62,6 +62,7 @@ from .schemas import (
     OrganizationKYC,
     OrganizationPaymentStatus,
     OrganizationPayoutAccountSet,
+    OrganizationReviewState,
     OrganizationReviewStatus,
     OrganizationUpdate,
     OrganizationValidateWebsiteRequest,
@@ -676,6 +677,36 @@ async def get_review_status(
         appeal_decision=review.appeal_decision,
         appeal_reviewed_at=review.appeal_reviewed_at,
     )
+
+
+@router.get(
+    "/{id}/review",
+    response_model=OrganizationReviewState,
+    summary="Get Organization Self-Review Checklist",
+    responses={
+        200: {"description": "Organization self-review checklist returned."},
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def get_review(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> OrganizationReviewState:
+    """Get the merchant self-review checklist state.
+
+    Powers the new account review UI: pre-submission gating checks plus,
+    after submission, the AI verdict and appeal state. Currently returns
+    a hardcoded all-passed snapshot — real check logic will land
+    incrementally without changing the response shape.
+    """
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    return await organization_service.get_review_state(session, organization)
 
 
 @router.post(

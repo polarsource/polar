@@ -2,10 +2,10 @@ from collections.abc import Sequence
 
 from fastapi import Depends, Query
 
-from polar.auth.dependencies import WebUserRead, WebUserWrite
 from polar.authz.dependencies import (
     AuthorizePayoutAccountRead,
     AuthorizePayoutAccountWrite,
+    AuthorizeWebUser,
 )
 from polar.kit.pagination import ListResource, Pagination
 from polar.models import PayoutAccount
@@ -27,7 +27,7 @@ router = APIRouter(prefix="/payout-accounts", tags=["payout_accounts", APITag.pr
 
 @router.get("/", response_model=ListResource[PayoutAccountSchema])
 async def list(
-    auth_subject: WebUserRead,
+    auth_subject: AuthorizeWebUser,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[PayoutAccountSchema]:
     """List payout accounts accessible to the authenticated user."""
@@ -44,7 +44,7 @@ async def list(
 @router.post("/", response_model=PayoutAccountSchema)
 async def create(
     payout_account_create: PayoutAccountCreate,
-    auth_subject: WebUserWrite,
+    auth_subject: AuthorizeWebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> PayoutAccount:
     return await payout_account_service.create(

@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import Depends
 
 from polar.account.repository import AccountRepository
-from polar.auth.dependencies import Authenticator
+from polar.auth.dependencies import Authenticator, WebUserSession
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
 from polar.exceptions import NotPermitted, ResourceNotFound
@@ -193,6 +193,27 @@ AuthorizeOrgAccessUser = Annotated[
         )
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# User-personal authorization
+# ---------------------------------------------------------------------------
+# For endpoints that operate on the authenticated user themselves (own
+# profile, own PATs, OAuth identity links, email update, etc.) — i.e. no
+# organization resource to authorize against. The user-personal analogue of
+# the always-allow OrgPolicyGuard variants above: no per-user policies today,
+# but this is the layer to add them (account suspended, identity not
+# verified, MFA required, …) without touching endpoint signatures.
+# ---------------------------------------------------------------------------
+
+
+async def _authorize_web_user(
+    auth_subject: WebUserSession,
+) -> AuthSubject[User]:
+    return auth_subject
+
+
+AuthorizeWebUser = Annotated[AuthSubject[User], Depends(_authorize_web_user)]
 
 
 # ---------------------------------------------------------------------------

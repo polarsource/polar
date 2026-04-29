@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 
-from polar.auth.dependencies import WebUserWrite
+from polar.authz.dependencies import AuthorizeWebUser
 from polar.config import settings
 from polar.eventstream.service import publish
 from polar.exceptions import (
@@ -80,7 +80,7 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
     "/user/authorize", name="integrations.github_repository_benefit.user_authorize"
 )
 async def user_authorize(
-    request: Request, return_to: ReturnTo, auth_subject: WebUserWrite
+    request: Request, return_to: ReturnTo, auth_subject: AuthorizeWebUser
 ) -> RedirectResponse:
     state = {"return_to": return_to}
 
@@ -102,7 +102,7 @@ async def user_authorize(
     "/user/callback", name="integrations.github_repository_benefit.user_callback"
 )
 async def user_callback(
-    auth_subject: WebUserWrite,
+    auth_subject: AuthorizeWebUser,
     session: AsyncSession = Depends(get_db_session),
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_authorize_callback
@@ -133,7 +133,7 @@ async def user_callback(
     description="Lists available repositories for this user",
 )
 async def user_repositories(
-    auth_subject: WebUserWrite,
+    auth_subject: AuthorizeWebUser,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> GitHubInvitesBenefitRepositories:
@@ -170,7 +170,7 @@ async def user_repositories(
     name="integrations.github_repository_benefit.installation_install",
 )
 async def installation_install(
-    request: Request, auth_subject: WebUserWrite
+    request: Request, auth_subject: AuthorizeWebUser
 ) -> RedirectResponse:
     return RedirectResponse(
         f"https://github.com/apps/{settings.GITHUB_REPOSITORY_BENEFITS_APP_NAMESPACE}/installations/new",
@@ -183,7 +183,7 @@ async def installation_install(
     name="integrations.github_repository_benefit.installation_callback",
 )
 async def installation_callback(
-    request: Request, auth_subject: WebUserWrite
+    request: Request, auth_subject: AuthorizeWebUser
 ) -> Response:
     await publish(
         "integrations.github_repository_benefit.installed",

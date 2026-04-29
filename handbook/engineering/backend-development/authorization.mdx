@@ -138,6 +138,31 @@ class ProductService:
 - For an **Organization** token: just that org's ID
 - For anything else: empty set
 
+## User-personal endpoints
+
+Some endpoints don't operate on an organization — they act on the authenticated user themselves. Examples: own profile (`/users/me`), Personal Access Token management, OAuth identity linking, email update, per-user integration callbacks. There's no organization to resolve, so no membership check or org-scoped policy applies.
+
+For these, use `AuthorizeWebUser` from `server/polar/authz/dependencies.py`:
+
+```python
+from polar.authz.dependencies import AuthorizeWebUser
+
+@router.get("/me")
+async def get_authenticated(auth_subject: AuthorizeWebUser) -> User:
+    return auth_subject.subject
+```
+
+`AuthorizeWebUser` is the user-personal analogue of the always-allow `OrgPolicyGuard` variants. It returns `AuthSubject[User]` directly — same shape as the underlying authentication — since there's no resolved resource to wrap.
+
+### Two layers, still
+
+The split between authentication and authorization still applies:
+
+- `WebUserSession` (in `server/polar/auth/dependencies.py`) — pure authentication. Accepts only web-session users; rejects API tokens (PATs, OATs, customer sessions).
+- `AuthorizeWebUser` — the authorization layer. Today it's policy-free, but it exists so future cross-cutting per-user checks (account suspended, identity not verified, MFA required, …) can be added in one place without touching endpoint signatures.
+
+Endpoints rarely depend on `WebUserSession` directly — `AuthorizeWebUser` wraps it and is the public entry point.
+
 ## Scopes
 
 Token scopes are checked by the `Authenticator` as a first-pass filter. They represent what the **token** is allowed to do, not what the **user** is allowed to do.

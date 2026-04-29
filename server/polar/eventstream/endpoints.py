@@ -8,7 +8,7 @@ from redis.exceptions import ConnectionError
 from sse_starlette.sse import EventSourceResponse
 from uvicorn import Server
 
-from polar.auth.dependencies import WebUserRead
+from polar.authz.dependencies import AuthorizeWebUser
 from polar.exceptions import ResourceNotFound
 from polar.observability import HTTP_SSE_CONNECTIONS_OPENED
 from polar.observability.utils import get_path_template
@@ -108,7 +108,7 @@ async def subscribe(
 @router.get("/user")
 async def user_stream(
     request: Request,
-    auth_subject: WebUserRead,
+    auth_subject: AuthorizeWebUser,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
@@ -121,7 +121,7 @@ async def user_stream(
 async def org_stream(
     id: OrganizationID,
     request: Request,
-    auth_subject: WebUserRead,
+    auth_subject: AuthorizeWebUser,
     redis: Redis = Depends(get_redis),
     session: AsyncSession = Depends(get_db_session),
 ) -> EventSourceResponse:

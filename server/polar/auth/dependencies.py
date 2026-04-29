@@ -244,5 +244,4 @@ async def _web_user(
     return auth_subject
 
 
-WebUserRead = Annotated[AuthSubject[User], Depends(_web_user)]
-WebUserWrite = Annotated[AuthSubject[User], Depends(_web_user)]
+WebUserSession = Annotated[AuthSubject[User], Depends(_web_user)]

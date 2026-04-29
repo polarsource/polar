@@ -7,9 +7,10 @@ from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 
-from polar.auth.dependencies import WebUserOrAnonymous, WebUserWrite
+from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.auth.service import auth as auth_service
+from polar.authz.dependencies import AuthorizeWebUser
 from polar.config import settings
 from polar.exceptions import NotPermitted
 from polar.integrations.loops.service import loops as loops_service
@@ -158,7 +159,7 @@ link_router = APIRouter(
 @link_router.get("/authorize", name="integrations.github.link.authorize")
 async def link_authorize(
     request: Request,
-    auth_subject: WebUserWrite,
+    auth_subject: AuthorizeWebUser,
     return_to: ReturnTo,
     redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
@@ -175,7 +176,7 @@ async def link_authorize(
 @link_router.get("/callback", name="integrations.github.link.callback")
 async def link_callback(
     request: Request,
-    auth_subject: WebUserWrite,
+    auth_subject: AuthorizeWebUser,
     session: AsyncSession = Depends(get_db_session),
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_link_authorize_callback

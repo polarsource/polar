@@ -1,7 +1,7 @@
 from fastapi import Depends
 from pydantic import UUID4
 
-from polar.auth.dependencies import WebUserRead, WebUserWrite
+from polar.authz.dependencies import AuthorizeWebUser
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.openapi import APITag
@@ -18,7 +18,7 @@ router = APIRouter(
 
 @router.get("/", response_model=ListResource[PersonalAccessToken])
 async def list_personal_access_tokens(
-    auth_subject: WebUserRead,
+    auth_subject: AuthorizeWebUser,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PersonalAccessToken]:
@@ -37,7 +37,7 @@ async def list_personal_access_tokens(
 @router.delete("/{id}", status_code=204)
 async def delete_personal_access_token(
     id: UUID4,
-    auth_subject: WebUserWrite,
+    auth_subject: AuthorizeWebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     personal_access_token = await personal_access_token_service.get_by_id(

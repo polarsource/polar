@@ -1,14 +1,18 @@
-from typing import Any
-
 from authlib.oauth2.rfc6750 import InvalidTokenError as _InvalidTokenError
 
 from polar.config import settings
 
 
 class InvalidTokenError(_InvalidTokenError):
-    def __init__(self, description: str | None = None, **extra_attributes: Any) -> None:
+    def __init__(
+        self,
+        description: str | None = None,
+        extra_attributes: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(
-            description, realm=settings.WWW_AUTHENTICATE_REALM, **extra_attributes
+            description,
+            realm=settings.WWW_AUTHENTICATE_REALM,
+            extra_attributes=extra_attributes,
         )
 
 
@@ -33,7 +37,8 @@ class InsufficientScopeError(_InvalidTokenError):
 
     def __init__(self, required_scopes: set[str]) -> None:
         super().__init__(
-            realm=settings.WWW_AUTHENTICATE_REALM, scope=" ".join(required_scopes)
+            realm=settings.WWW_AUTHENTICATE_REALM,
+            extra_attributes={"scope": " ".join(required_scopes)},
         )
 
 

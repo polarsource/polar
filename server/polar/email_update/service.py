@@ -91,13 +91,13 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
             subject="Update your email",
         )
 
-    async def verify(self, session: AsyncSession, token: str) -> User:
+    async def verify(self, session: AsyncSession, token: str, user: User) -> User:
         token_hash = get_token_hash(token, secret=settings.SECRET)
         email_update_record = await self._get_email_update_record_by_token_hash(
             session, token_hash
         )
 
-        if email_update_record is None:
+        if email_update_record is None or email_update_record.user_id != user.id:
             raise InvalidEmailUpdate()
 
         user = email_update_record.user

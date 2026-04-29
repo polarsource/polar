@@ -45,11 +45,12 @@ async def request_email_update(
 @router.post("/verify")
 async def verify_email_update(
     return_to: ReturnTo,
+    auth_subject: WebUserWrite,
     token: str = Form(),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     try:
-        user = await email_update_service.verify(session, token)
+        user = await email_update_service.verify(session, token, auth_subject.subject)
     except EmailUpdateError as e:
         raise PolarRedirectionError(
             e.message, e.status_code, return_to=return_to

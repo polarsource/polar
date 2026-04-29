@@ -1,7 +1,9 @@
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { CONFIG } from '@/utils/config'
+import { getAuthenticatedUser } from '@/utils/user'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
   title: 'Email Update confirmation',
@@ -13,6 +15,12 @@ export default async function Page(props: {
   const searchParams = await props.searchParams
 
   const { token, return_to } = searchParams
+
+  const user = await getAuthenticatedUser()
+  if (!user) {
+    const returnTo = `/verify-email?${new URLSearchParams({ token, ...(return_to && { return_to }) })}`
+    redirect(`/login?${new URLSearchParams({ return_to: returnTo })}`)
+  }
 
   const urlSearchParams = new URLSearchParams({
     ...(return_to && { return_to }),

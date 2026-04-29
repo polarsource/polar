@@ -162,7 +162,7 @@ const STATE_MAP: Record<string, MapResult['state']> = {
 export function mapSingle(
   parsed: ParsedClass,
   report: ElementReport,
-): MapResult | null {
+): MapResult[] | null {
   if (parsed.important) return null
   const mods = parsed.modifiers.filter((m) => m !== 'dark')
   let bp: MapResult['bp'] | undefined
@@ -180,14 +180,17 @@ export function mapSingle(
   }
 
   const v = mapUtility(parsed.utility, report)
-  if (!v) return null
-  return { ...v, bp, state }
+  if (!v || v.length === 0) return null
+  return v.map((m) => ({ ...m, bp, state }))
 }
 
-function mapUtility(
-  utility: string,
-  report: ElementReport,
-): { prop: string; value: unknown } | null {
+type RawMap = { prop: string; value: unknown }
+
+function one(prop: string, value: unknown): RawMap[] {
+  return [{ prop, value }]
+}
+
+function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
   // Spacing: p-4, pt-2, px-[10px], gap-x-3
   // NOTE: longest prefixes first so `gap-y-12` doesn't get matched as `gap` + `y-12`
   const spaceMatch = utility.match(
@@ -214,48 +217,81 @@ function mapUtility(
         `${utility} (snapped to ${snap.token}, drift ${snap.drift}px)`,
       )
     }
-    return { prop, value: snap.token }
+    return one(prop, snap.token)
   }
 
   // Display
-  if (DISPLAY_MAP[utility]) return { prop: 'display', value: DISPLAY_MAP[utility] }
+  if (DISPLAY_MAP[utility]) return one('display', DISPLAY_MAP[utility])
   // Flex direction & wrap
-  if (FLEX_DIR_MAP[utility]) return { prop: 'flexDirection', value: FLEX_DIR_MAP[utility] }
-  if (FLEX_WRAP_MAP[utility]) return { prop: 'flexWrap', value: FLEX_WRAP_MAP[utility] }
-  if (ALIGN_ITEMS[utility]) return { prop: 'alignItems', value: ALIGN_ITEMS[utility] }
-  if (JUSTIFY[utility]) return { prop: 'justifyContent', value: JUSTIFY[utility] }
-  if (POSITION[utility]) return { prop: 'position', value: POSITION[utility] }
-  if (OVERFLOW[utility]) return { prop: 'overflow', value: OVERFLOW[utility] }
-  if (TEXT_ALIGN[utility]) return { prop: 'textAlign', value: TEXT_ALIGN[utility] }
-  if (CURSOR[utility]) return { prop: 'cursor', value: CURSOR[utility] }
-  if (POINTER[utility]) return { prop: 'pointerEvents', value: POINTER[utility] }
-  if (USER_SELECT[utility]) return { prop: 'userSelect', value: USER_SELECT[utility] }
-  if (utility === 'overflow-x-hidden') return { prop: 'overflowX', value: 'hidden' }
-  if (utility === 'overflow-x-auto') return { prop: 'overflowX', value: 'auto' }
-  if (utility === 'overflow-y-hidden') return { prop: 'overflowY', value: 'hidden' }
-  if (utility === 'overflow-y-auto') return { prop: 'overflowY', value: 'auto' }
+  if (FLEX_DIR_MAP[utility]) return one('flexDirection', FLEX_DIR_MAP[utility])
+  if (FLEX_WRAP_MAP[utility]) return one('flexWrap', FLEX_WRAP_MAP[utility])
+  if (ALIGN_ITEMS[utility]) return one('alignItems', ALIGN_ITEMS[utility])
+  if (JUSTIFY[utility]) return one('justifyContent', JUSTIFY[utility])
+  if (POSITION[utility]) return one('position', POSITION[utility])
+  if (OVERFLOW[utility]) return one('overflow', OVERFLOW[utility])
+  if (TEXT_ALIGN[utility]) return one('textAlign', TEXT_ALIGN[utility])
+  if (CURSOR[utility]) return one('cursor', CURSOR[utility])
+  if (POINTER[utility]) return one('pointerEvents', POINTER[utility])
+  if (USER_SELECT[utility]) return one('userSelect', USER_SELECT[utility])
+  if (utility === 'overflow-x-hidden') return one('overflowX', 'hidden')
+  if (utility === 'overflow-x-auto') return one('overflowX', 'auto')
+  if (utility === 'overflow-y-hidden') return one('overflowY', 'hidden')
+  if (utility === 'overflow-y-auto') return one('overflowY', 'auto')
 
-  // Border radius: rounded-* and rounded
+  // Border radius: rounded-* and rounded, and per-corner rounded-{t,r,b,l,tl,tr,bl,br}-*
+  const cornerRound = utility.match(/^rounded-(t|r|b|l|tl|tr|bl|br)(?:-(.+))?$/)
+  if (cornerRound) {
+    const corner = cornerRound[1]
+    const key = cornerRound[2] ?? ''
+    const token = roundKeyToToken(key)
+    if (token === null) return null
+    if (corner === 't') return [
+      { prop: 'borderTopLeftRadius', value: token },
+      { prop: 'borderTopRightRadius', value: token },
+    ]
+    if (corner === 'b') return [
+      { prop: 'borderBottomLeftRadius', value: token },
+      { prop: 'borderBottomRightRadius', value: token },
+    ]
+    if (corner === 'l') return [
+      { prop: 'borderTopLeftRadius', value: token },
+      { prop: 'borderBottomLeftRadius', value: token },
+    ]
+    if (corner === 'r') return [
+      { prop: 'borderTopRightRadius', value: token },
+      { prop: 'borderBottomRightRadius', value: token },
+    ]
+    const cornerProp = {
+      tl: 'borderTopLeftRadius',
+      tr: 'borderTopRightRadius',
+      bl: 'borderBottomLeftRadius',
+      br: 'borderBottomRightRadius',
+    }[corner]!
+    return one(cornerProp, token)
+  }
   const roundMatch = utility.match(/^rounded(?:-(.+))?$/)
   if (roundMatch) {
-    const key = roundMatch[1] ?? ''
-    if (key === 'full') return { prop: 'borderRadius', value: 'full' }
-    if (key.startsWith('[')) {
-      const px = arbitraryPx(key)
-      if (px === null) return null
-      const snap = snapRadius(px)
-      return { prop: 'borderRadius', value: snap.token }
-    }
-    const px = TW_RADIUS_PX[key]
-    if (px === undefined) return null
-    const snap = snapRadius(px)
-    return { prop: 'borderRadius', value: snap.token }
+    const token = roundKeyToToken(roundMatch[1] ?? '')
+    if (token === null) return null
+    return one('borderRadius', token)
   }
 
-  // Border width: border, border-N, border-t, border-t-N (and r/b/l)
-  if (utility === 'border') return { prop: 'borderWidth', value: 1 }
+  // Border width: border, border-N, border-t/r/b/l[-N], border-x/y[-N]
+  if (utility === 'border') return one('borderWidth', 1)
   const bwMatch = utility.match(/^border-(\d+)$/)
-  if (bwMatch) return { prop: 'borderWidth', value: Number(bwMatch[1]) }
+  if (bwMatch) return one('borderWidth', Number(bwMatch[1]))
+  const axisMatch = utility.match(/^border-([xy])(?:-(\d+))?$/)
+  if (axisMatch) {
+    const w = axisMatch[2] ? Number(axisMatch[2]) : 1
+    if (axisMatch[1] === 'x') return [
+      { prop: 'borderLeftWidth', value: w },
+      { prop: 'borderRightWidth', value: w },
+    ]
+    return [
+      { prop: 'borderTopWidth', value: w },
+      { prop: 'borderBottomWidth', value: w },
+    ]
+  }
   const sideMatch = utility.match(/^border-([trbl])(?:-(\d+))?$/)
   if (sideMatch) {
     const sideProp = {
@@ -264,40 +300,138 @@ function mapUtility(
       b: 'borderBottomWidth',
       l: 'borderLeftWidth',
     }[sideMatch[1]]!
-    const width = sideMatch[2] ? Number(sideMatch[2]) : 1
-    return { prop: sideProp, value: width }
+    return one(sideProp, sideMatch[2] ? Number(sideMatch[2]) : 1)
   }
 
-  // Flex grow/shrink
-  if (utility === 'grow') return { prop: 'flexGrow', value: 1 }
-  if (utility === 'grow-0') return { prop: 'flexGrow', value: 0 }
-  if (utility === 'shrink') return { prop: 'flexShrink', value: 1 }
-  if (utility === 'shrink-0') return { prop: 'flexShrink', value: 0 }
+  // Flex grow/shrink and flex-1/auto/initial/none
+  if (utility === 'grow') return one('flexGrow', 1)
+  if (utility === 'grow-0') return one('flexGrow', 0)
+  if (utility === 'shrink') return one('flexShrink', 1)
+  if (utility === 'shrink-0') return one('flexShrink', 0)
   const flexNumMatch = utility.match(/^(grow|shrink)-(\d+)$/)
   if (flexNumMatch) {
     const prop = flexNumMatch[1] === 'grow' ? 'flexGrow' : 'flexShrink'
-    return { prop, value: Number(flexNumMatch[2]) }
+    return one(prop, Number(flexNumMatch[2]))
   }
+  if (utility === 'flex-1') return one('flex', 1)
+  if (utility === 'flex-auto') return one('flex', '1 1 auto')
+  if (utility === 'flex-initial') return one('flex', '0 1 auto')
+  if (utility === 'flex-none') return one('flex', 'none')
 
-  // Sizing: w-full, w-N, w-[Npx], h-..., w-screen, h-screen
-  const sizeMatch = utility.match(/^([wh])-(.+)$/)
+  // Sizing: w/h/min-w/min-h/max-w/max-h
+  const sizeMatch = utility.match(
+    /^(min-w|max-w|min-h|max-h|w|h)-(.+)$/,
+  )
   if (sizeMatch) {
-    const prop = sizeMatch[1] === 'w' ? 'width' : 'height'
+    const prop = sizingProp(sizeMatch[1])
     const v = sizeMatch[2]
-    if (v === 'full') return { prop, value: '100%' }
-    if (v === 'screen') return { prop, value: prop === 'width' ? '100vw' : '100vh' }
-    if (v === 'auto') return { prop, value: 'auto' }
+    if (v === 'full') return one(prop, '100%')
+    if (v === 'screen')
+      return one(prop, isWidth(prop) ? '100vw' : '100vh')
+    if (v === 'auto') return one(prop, 'auto')
+    if (v === 'fit') return one(prop, 'fit-content')
+    if (v === 'min') return one(prop, 'min-content')
+    if (v === 'max') return one(prop, 'max-content')
     if (v.startsWith('[')) {
       const m = v.match(/^\[(.+)\]$/)
-      if (m) return { prop, value: m[1] }
+      if (m) return one(prop, m[1])
       return null
     }
     const px = twUnitToPx(v)
     if (px === null) return null
-    return { prop, value: px }
+    return one(prop, px)
   }
 
+  // Position offsets: top-N, right-N, bottom-N, left-N, inset-N, inset-x-N, inset-y-N
+  const posMatch = utility.match(
+    /^(top|right|bottom|left|inset|inset-x|inset-y)-(.+)$/,
+  )
+  if (posMatch) {
+    const v = posMatch[2]
+    const value = positionValue(v)
+    if (value === null) return null
+    if (posMatch[1] === 'inset-x') return [
+      { prop: 'left', value },
+      { prop: 'right', value },
+    ]
+    if (posMatch[1] === 'inset-y') return [
+      { prop: 'top', value },
+      { prop: 'bottom', value },
+    ]
+    return one(posMatch[1], value)
+  }
+
+  // z-index: z-N
+  const zMatch = utility.match(/^z-(\d+|\[.+\]|auto)$/)
+  if (zMatch) {
+    const v = zMatch[1]
+    if (v === 'auto') return one('zIndex', 'auto')
+    if (v.startsWith('[')) return one('zIndex', v.slice(1, -1))
+    return one('zIndex', Number(v))
+  }
+
+  // opacity: opacity-N (Tailwind percent → 0-1)
+  const opMatch = utility.match(/^opacity-(\d+|\[.+\])$/)
+  if (opMatch) {
+    const v = opMatch[1]
+    if (v.startsWith('[')) return one('opacity', Number(v.slice(1, -1)))
+    return one('opacity', Number(v) / 100)
+  }
+
+  // aspect-ratio: aspect-square, aspect-video, aspect-[N/M]
+  if (utility === 'aspect-square') return one('aspectRatio', '1 / 1')
+  if (utility === 'aspect-video') return one('aspectRatio', '16 / 9')
+  const aspectMatch = utility.match(/^aspect-\[(.+)\]$/)
+  if (aspectMatch) return one('aspectRatio', aspectMatch[1].replace(/_/g, ' '))
+
   return null
+}
+
+function roundKeyToToken(key: string): string | null {
+  if (key === 'full') return 'full'
+  if (key === 'none') return 'none'
+  if (key.startsWith('[')) {
+    const px = arbitraryPx(key)
+    if (px === null) return null
+    return snapRadius(px).token
+  }
+  const px = TW_RADIUS_PX[key]
+  if (px === undefined) return null
+  return snapRadius(px).token
+}
+
+function sizingProp(prefix: string): string {
+  switch (prefix) {
+    case 'w': return 'width'
+    case 'h': return 'height'
+    case 'min-w': return 'minWidth'
+    case 'max-w': return 'maxWidth'
+    case 'min-h': return 'minHeight'
+    case 'max-h': return 'maxHeight'
+    default: return 'width'
+  }
+}
+
+function isWidth(prop: string): boolean {
+  return prop === 'width' || prop === 'minWidth' || prop === 'maxWidth'
+}
+
+function positionValue(v: string): string | number | null {
+  if (v === 'full') return '100%'
+  if (v === 'auto') return 'auto'
+  if (v === 'px') return 1
+  if (v.startsWith('[')) {
+    const m = v.match(/^\[(.+)\]$/)
+    return m ? m[1] : null
+  }
+  // Fractional Tailwind values (1/2, 1/3, etc.)
+  const fracMatch = v.match(/^(\d+)\/(\d+)$/)
+  if (fracMatch) {
+    const pct = (Number(fracMatch[1]) / Number(fracMatch[2])) * 100
+    return `${pct}%`
+  }
+  const px = twUnitToPx(v)
+  return px
 }
 
 export function tryColorPair(

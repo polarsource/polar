@@ -76,7 +76,7 @@ export function runTransform(file: FileInfo): TransformResult {
   if (!touched) return { source: null, reports }
 
   ensureBoxImport(j, root)
-  return { source: root.toSource({ quote: 'single' }), reports }
+  return { source: root.toSource({ quote: 'double' }), reports }
 }
 
 function findClassNameAttr(el: JSXElement): JSXAttribute | null {
@@ -130,11 +130,13 @@ function convertClassName(raw: string, report: ElementReport): ConvertResult {
 
   for (const cls of parsed) {
     if (consumed.has(cls)) continue
-    const m = mapSingle(cls, report)
-    if (!m) continue
-    const list = props.get(m.prop) ?? []
-    list.push(m)
-    props.set(m.prop, list)
+    const ms = mapSingle(cls, report)
+    if (!ms) continue
+    for (const m of ms) {
+      const list = props.get(m.prop) ?? []
+      list.push(m)
+      props.set(m.prop, list)
+    }
     consumed.add(cls)
   }
 

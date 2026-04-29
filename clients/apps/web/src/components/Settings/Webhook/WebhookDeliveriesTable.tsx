@@ -11,7 +11,7 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
   getAPIParams,
-  serializeSearchParams,
+  sortingStateToQueryParam,
 } from '@/utils/datatable'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
@@ -24,7 +24,7 @@ import {
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { CellContext } from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -59,15 +59,24 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   eventTypes,
   query,
 }) => {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   const getSearchParams = (
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
   ) => {
-    const params = serializeSearchParams(pagination, sorting)
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('page')
+    params.delete('limit')
+    params.delete('sorting')
+    params.set('page', (pagination.pageIndex + 1).toString())
+    params.set('limit', pagination.pageSize.toString())
+    for (const criteria of sortingStateToQueryParam(sorting)) {
+      params.append('sorting', criteria)
+    }
     return params
   }
-
-  const router = useRouter()
 
   const setPagination = (
     updaterOrValue:

@@ -34,7 +34,8 @@ export const Vision = () => {
         for (let i = 0; i < total; i++) {
           const wordProgress = i / total
           const filled = progress > wordProgress
-          words[i].style.color = filled ? '' : 'var(--color-graphic-dim)'
+          words[i].classList.toggle('text-gray-300', !filled)
+          words[i].classList.toggle('dark:text-polar-700', !filled)
         }
 
         if (barRef.current) {
@@ -73,8 +74,7 @@ export const Vision = () => {
                       ref={(el) => {
                         if (el) wordsRef.current[idx] = el
                       }}
-                      className="inline-block transition-colors duration-200"
-                      style={{ color: 'var(--color-graphic-dim)' }}
+                      className="dark:text-polar-700 inline-block text-gray-300 transition-colors duration-200"
                     >
                       {word}
                       &nbsp;

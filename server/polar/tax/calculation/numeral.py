@@ -304,7 +304,14 @@ class NumeralTaxService(TaxServiceProtocol):
             amount=amount,
             customer_exempt=customer_exempt,
         )
-        assert sum(item["amount"] for item in tax_breakdown) == total_tax_amount
+
+        if sum(item["amount"] for item in tax_breakdown) != total_tax_amount:
+            log.warning(
+                "Numeral tax breakdown does not sum up to total tax amount",
+                calculation_id=calculation["id"],
+                total_tax_amount=total_tax_amount,
+                breakdown_sum=sum(item["amount"] for item in tax_breakdown),
+            )
 
         return TaxCalculation(
             processor_id=calculation["id"],

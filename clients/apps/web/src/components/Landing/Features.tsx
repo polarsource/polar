@@ -11,7 +11,7 @@ import { VectorField } from './graphics/VectorField'
 const TILES = [
   {
     title: 'Usage Billing',
-    desc: 'Meter tokens, API calls, compute, storage — bill with precision down to the event.',
+    desc: 'Meter tokens, API calls, compute, storage. Bill with precision down to the event.',
     Graphic: Dumbbell,
   },
   {
@@ -26,12 +26,12 @@ const TILES = [
   },
   {
     title: 'Credits',
-    desc: 'Prepay and draw down over time — like a wallet for your API.',
+    desc: 'Prepay and draw down over time, like a wallet for your API.',
     Graphic: CreditArc,
   },
   {
     title: 'Analytics',
-    desc: 'Revenue, MRR, churn, and cost insights — no custom tracking needed.',
+    desc: 'Revenue, MRR, churn, and cost insights. No custom tracking needed.',
     Graphic: WaveBars,
   },
   {
@@ -78,13 +78,13 @@ export const Features = () => {
           return (
             <div
               key={tile.title}
-              className="dark:bg-dark-900 flex w-[340px] shrink-0 flex-col bg-neutral-50 md:w-[420px]"
+              className="dark:bg-polar-900 flex w-[340px] shrink-0 flex-col bg-gray-50 md:w-[420px]"
             >
               <div className="flex flex-col gap-4 p-8">
-                <span className="font-display text-3xl text-neutral-900 dark:text-white">
+                <span className="font-display text-3xl text-gray-900 dark:text-white">
                   {tile.title}
                 </span>
-                <span className="dark:text-dark-300 text-xl text-neutral-500">
+                <span className="dark:text-polar-300 text-xl text-gray-500">
                   {tile.desc}
                 </span>
               </div>
@@ -96,9 +96,9 @@ export const Features = () => {
         })}
       </div>
 
-      <div className="dark:bg-dark-800 mx-auto h-px w-full max-w-7xl bg-neutral-200">
+      <div className="dark:bg-polar-800 mx-auto h-px w-full max-w-7xl bg-gray-200">
         <div
-          className="h-full bg-neutral-900 dark:bg-white"
+          className="h-full bg-gray-900 dark:bg-white"
           style={{ width: `${progress * 100}%` }}
         />
       </div>

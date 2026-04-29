@@ -5,7 +5,11 @@ import { GaugeSweep } from './graphics/GaugeSweep'
 import { OrbitingSpheres } from './graphics/OrbitingSpheres'
 
 const LAYERS = [
-  { id: '01', name: 'Ingest', desc: 'Stream every call, inference & request.' },
+  {
+    id: '01',
+    name: 'Ingest',
+    desc: 'Ingest usage & inference on behalf of your users.',
+  },
   {
     id: '02',
     name: 'Aggregate',
@@ -21,7 +25,7 @@ const LAYERS = [
 export const Usage = () => (
   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
     {LAYERS.map((l, i) => (
-      <div key={l.id} className="dark:bg-dark-900 flex flex-col bg-neutral-50">
+      <div key={l.id} className="dark:bg-polar-900 flex flex-col bg-gray-50">
         {/* Graphic */}
         <div className="aspect-square">
           {i === 0 && <RadialSpinner />}
@@ -31,10 +35,10 @@ export const Usage = () => (
         {/* Label */}
         <div className="flex flex-col px-8 py-8">
           <div className="flex flex-col gap-4">
-            <span className="text-2xl text-neutral-900 dark:text-white">
+            <span className="text-2xl text-gray-900 dark:text-white">
               {l.id} — {l.name}
             </span>
-            <span className="dark:text-dark-300 text-xl text-neutral-500">
+            <span className="dark:text-polar-300 text-xl text-gray-500">
               {l.desc}
             </span>
           </div>

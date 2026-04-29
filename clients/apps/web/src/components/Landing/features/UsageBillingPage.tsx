@@ -21,37 +21,42 @@ export const UsageBillingPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
-        title="Bill what your customers actually use"
-        description="Ingest events. Meter them. Charge with precision."
+        title="Usage-based billing on events"
+        description="Ingest events. Aggregate them into meters. Bill on the result."
         docsHref="/docs/features/usage-based-billing/introduction"
       />
 
       <FeaturePageGraphic graphic={Dumbbell} />
 
       <FeaturePageIntro>
-        Send events as they happen. Polar rolls them up into the next invoice.
-        No batch jobs. No ledgers to maintain.
+        Send events from your application. Polar aggregates them into meters
+        and writes line items on the next invoice.
       </FeaturePageIntro>
 
-      <FeatureSection title="Three pieces, cleanly composed">
+      <FeatureSection title="Events, meters, prices">
         <p>
-          <strong>Events</strong> are immutable records of something that
-          happened in your product. Post them with a customer ID and any
-          metadata you need.
+          The model is built on three primitives that compose. It starts with{' '}
+          <strong>events</strong>, immutable records of something that
+          happened in your product, posted with a customer ID and any
+          metadata you want to keep.
         </p>
         <p>
-          <strong>Meters</strong> filter and aggregate those events. Count
-          them. Sum a property. Take a max. Dedupe to count unique values.
+          On top of those events sit <strong>meters</strong>, which filter
+          and aggregate the stream into a number per customer. Pick how the
+          number is calculated (count, sum, average, min, max, or unique)
+          and the rest is bookkeeping.
         </p>
         <p>
-          <strong>Metered prices</strong> attach a meter to a product. At the
-          close of each cycle, Polar reads the balance and writes the line
-          item.
+          A meter only matters once it&apos;s priced, which is what{' '}
+          <strong>metered prices</strong> are for. Attach one to a product
+          and Polar reads the meter at the end of each cycle, then adds the
+          corresponding line item to the next invoice.
         </p>
         <p>
-          Renewals, proration, tax, and discounts run through the same
-          pipeline as fixed-price products. Usage billing slots in without
-          forking the codebase.
+          The whole pipeline reuses the rest of the system. Renewals,
+          proration, tax, and discounts behave the same way they do for
+          fixed-price products, so usage billing slots in next to whatever
+          you&apos;re already selling.
         </p>
       </FeatureSection>
 
@@ -59,49 +64,49 @@ export const UsageBillingPage = () => {
         cards={[
           {
             icon: <KeyboardDoubleArrowRightOutlined fontSize="large" />,
-            title: 'Event Ingestion',
+            title: 'Event ingestion',
             description:
-              'Send events from your app or use SDK strategies for LLMs, streams, and more.',
+              'Post events from your application or use SDK strategies for LLMs, streams, and S3.',
           },
           {
             icon: <ElectricMeterOutlined fontSize="large" />,
-            title: 'Customer Meters',
+            title: 'Customer meters',
             description:
-              'Aggregate events into meters that track usage per customer in real time.',
+              'Per-customer meters that update in real time as events arrive.',
           },
           {
             icon: <ReceiptLongOutlined fontSize="large" />,
-            title: 'Metered Pricing',
+            title: 'Metered prices',
             description:
-              'Attach metered prices to products and bill the difference at the end of each cycle.',
+              'Attach a meter to a product. Polar bills the consumed amount on the next invoice.',
           },
           {
             icon: <InsightsOutlined fontSize="large" />,
-            title: 'Customer State',
+            title: 'Customer state',
             description:
-              'A single API call returns every active meter and balance, ready to render in your product.',
+              'A single API call returns every active meter and current balance.',
           },
         ]}
       />
 
       <FeatureSplit
-        title="Aggregations for any pricing model"
-        description="Pick the function that matches how you charge. The same event stream can power multiple meters, so you can experiment with pricing without re-instrumenting your product."
+        title="Six aggregation functions"
+        description="The same event stream can power multiple meters. Change pricing without re-instrumenting your application."
         bullets={[
           {
             title: 'Count',
             description:
-              'Total number of events that match the filter. Ideal for API calls or per-action billing.',
+              'Total number of events that match the filter. For API calls or per-action billing.',
           },
           {
             title: 'Sum',
             description:
-              'Add up a metadata field, like total tokens, bytes processed, or seconds of compute.',
+              'Add a metadata property, like total tokens, bytes processed, or seconds of compute.',
           },
           {
-            title: 'Min, Max, Average',
+            title: 'Min, max, average',
             description:
-              'Useful for derived metrics like peak concurrency or average response size.',
+              'Derived metrics like peak concurrency or average response size.',
           },
           {
             title: 'Unique',
@@ -112,58 +117,57 @@ export const UsageBillingPage = () => {
       />
 
       <FeatureRichList
-        title="Ingestion strategies, ready out of the box"
-        description="Polar ships drop-in helpers for the integrations developers ask for most. Wrap a model client, an S3 bucket, or any HTTP body and the events flow without extra plumbing."
+        title="Ingestion strategies"
+        description="The Polar SDK ships helpers for the most common event sources. Wrap a model client, an S3 bucket, or any HTTP body and the events flow."
         items={[
           {
-            title: 'LLM Strategy',
+            title: 'LLM strategy',
             description:
-              'Wrap an OpenAI-compatible model with one line and Polar will count prompt and completion tokens automatically. Works with the Vercel AI SDK and any model that exposes a usage block.',
+              'Wrap an OpenAI-compatible model. Polar counts prompt and completion tokens automatically. Works with the Vercel AI SDK and any model that returns a usage block.',
           },
           {
-            title: 'Stream Strategy',
+            title: 'Stream strategy',
             description:
-              'Tap a streaming response and count chunks, bytes, or duration as they pass through. Useful for transcription, generation, or any long-lived call.',
+              'Tap a streaming response and count chunks, bytes, or duration. For transcription, generation, or any long-lived call.',
           },
           {
-            title: 'S3 Strategy',
+            title: 'S3 strategy',
             description:
-              'Meter file uploads or downloads through your S3-compatible storage and bill on bytes transferred or objects created.',
+              'Meter file uploads and downloads through your S3-compatible storage. Bill on bytes transferred or objects created.',
           },
           {
-            title: 'Delta-Time Strategy',
+            title: 'Delta-time strategy',
             description:
-              'Measure wall-clock time spent inside a function or session and charge per second of usage.',
+              'Measure wall-clock time spent inside a function or session. Bill per second of usage.',
           },
           {
             title: 'Manual ingestion',
             description:
-              'When the strategies don’t fit, use the SDK to post events directly. Same shape, same guarantees, fully under your control.',
+              "When the strategies don't fit, post events directly through the SDK.",
           },
         ]}
       />
 
-      <FeatureSection title="Balances you can trust">
+      <FeatureSection title="Customer meters">
         <p>
-          Every metered customer gets a live{' '}
-          <strong>customer meter</strong>. Read it from the API or expose it
-          in the portal.
+          Every metered customer carries a live{' '}
+          <strong>customer meter</strong> that updates as events arrive,
+          readable from the API or shown directly in the Customer Portal.
+          Your dashboards and your customers&apos; in-app views can read
+          from the same source without you keeping a parallel ledger.
         </p>
         <p>
-          Balances update as events stream in. Your dashboards and your
-          customers&apos; in-app views stay in sync, no second source of
-          truth.
-        </p>
-        <p>
-          Polar never blocks usage on its own. Overage is a signal, you
-          decide what to do with it. Enforce a limit, prompt an upgrade, or
-          let it flow to the next invoice.
+          One thing Polar deliberately does not do is block usage when a
+          customer crosses a quota. That decision belongs in your product,
+          where you know the context. The meter exposes the signal, and you
+          choose what to do with it: enforce a hard limit, prompt for an
+          upgrade, or let the overage flow through to the next invoice.
         </p>
       </FeatureSection>
 
       <FeatureCTA
-        title="Ready to bill on usage?"
-        description="Join companies that trust Polar for accurate, scalable usage-based billing."
+        title="Start metering events"
+        description="Set up a meter and ingest your first event with the SDK."
       />
     </FeaturePageLayout>
   )

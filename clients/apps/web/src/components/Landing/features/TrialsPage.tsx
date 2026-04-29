@@ -21,35 +21,38 @@ export const TrialsPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
-        title="Free trials that convert themselves"
-        description="Capture the card. Convert automatically when the trial ends."
+        title="Trials with automatic conversion"
+        description="Capture the card. Convert when the trial ends."
         docsHref="/docs/features/subscriptions/trials"
       />
 
       <FeaturePageGraphic graphic={VectorField} />
 
       <FeaturePageIntro>
-        Capture the card up front. Defer the charge. Convert automatically
-        when the trial ends.
+        Trials in Polar collect the payment method up front, defer the
+        charge until the period ends, and then convert without manual
+        intervention.
       </FeaturePageIntro>
 
-      <FeatureSection title="Pay-up-front, without the friction">
+      <FeatureSection title="How trials work">
         <p>
-          The customer enters a <strong>trialing</strong> subscription with
-          full access to every benefit on the product.
+          When a customer checks out with a trial, the subscription is
+          created in a <strong>trialing</strong> state with full access to
+          every benefit on the product. The card is captured at checkout,
+          but no money moves yet.
         </p>
         <p>
-          The card is captured at checkout. The charge is deferred until
-          the trial ends.
+          When the trial period ends, Polar charges the saved card and the
+          first regular billing cycle begins, all without your code in the
+          loop. If the customer cancels mid-trial, no charge is ever
+          attempted.
         </p>
         <p>
-          When it converts, Polar charges the saved card and the cycle
-          starts. Cancel mid-trial and no money moves.
-        </p>
-        <p>
-          If conversion fails, the subscription enters the same recovery
-          flow as any past-due renewal. A temporary card issue doesn&apos;t
-          cost you the customer.
+          The edge case is conversion that fails because the card declines.
+          Rather than treating that as the end of the relationship, the
+          subscription enters the same payment recovery flow as any
+          past-due renewal, so a temporary card issue has multiple chances
+          to resolve before benefits are revoked.
         </p>
       </FeatureSection>
 
@@ -65,95 +68,98 @@ export const TrialsPage = () => {
             icon: <NotificationsActiveOutlined fontSize="large" />,
             title: 'Conversion reminders',
             description:
-              'Polar emails customers before the trial ends so the charge is never a surprise.',
+              'Polar emails the customer before the trial ends so the charge is expected.',
           },
           {
             icon: <ShieldOutlined fontSize="large" />,
-            title: 'Abuse protection',
+            title: 'Abuse prevention',
             description:
-              'Detect repeat trial sign-ups by email or payment fingerprint and block them.',
+              'Block repeat trial sign-ups by normalized email or payment-method fingerprint.',
           },
           {
             icon: <EditCalendarOutlined fontSize="large" />,
-            title: 'Adjust on the fly',
+            title: 'Edit any trial',
             description:
-              'Extend, shorten, or end any trial from the dashboard or the API. Status flips automatically.',
+              'Extend, shorten, or end a trial from the dashboard or the API.',
           },
         ]}
       />
 
       <FeatureSplit
         title="Configure a trial in three places"
-        description="Set a default at the product level for predictable behavior, then override it per campaign or per customer when you need to. Whichever value is closest to the customer wins."
+        description="Set a default on the product. Override per Checkout Link or per Checkout Session. The most specific value wins."
         bullets={[
           {
             title: 'On the product',
             description:
-              'A baseline trial that applies to every checkout for that product. Set the unit (day, week, month, year) and the duration. Edit the product, edit the trial.',
+              'A baseline trial that applies to every checkout for the product. Choose unit (day, week, month, year) and duration.',
           },
           {
             title: 'On a Checkout Link',
             description:
-              'Override the product trial for a specific link. Useful for partner deals, longer trials in cold-traffic ads, or shorter trials in retargeting.',
+              'Override the product trial for a specific link. Useful for partner deals or campaign-specific durations.',
           },
           {
             title: 'On a Checkout Session',
             description:
-              'Set the trial programmatically when you create a session via the API. Hand customers a trial length tuned to their plan, region, or referral source.',
+              'Set the trial programmatically when you create a session. Tune length per plan, region, or referral source.',
           },
         ]}
       />
 
       <FeatureRichList
-        title="Reminders timed to the trial"
-        description="Polar emails the customer before the trial ends so the conversion charge feels expected. The reminder timing is calibrated to the trial length so it lands when it&apos;s actually useful."
+        title="Conversion reminders"
+        description="Polar emails the customer before the trial ends so the conversion charge is expected. Reminder timing is calibrated to the trial length."
         items={[
           {
             title: 'Trials of 3 days or more',
             description:
-              'A reminder goes out 3 days before the trial ends. Long enough for the customer to act on the email but short enough to still feel relevant.',
+              'Reminder sent 3 days before the trial ends.',
           },
           {
             title: 'Trials of 1 to 3 days',
             description:
-              'A reminder is sent 1 day before the trial ends. Useful for short evaluation windows where 3 days would land before the customer even started.',
+              'Reminder sent 1 day before the trial ends.',
           },
           {
             title: 'Trials shorter than 1 day',
             description:
-              'No reminder is sent. The trial is so short the customer is already in the product. Skipping the email keeps the inbox clean.',
+              'No reminder is sent. The trial is short enough that the customer is already in the product.',
           },
           {
             title: 'Optional, per organization',
             description:
-              'If you prefer to handle conversion communication yourself, turn reminders off under Settings → Billing → Customer notifications.',
+              'Turn reminders off under Settings → Billing → Customer notifications if you handle conversion communication yourself.',
           },
         ]}
       />
 
-      <FeatureSection title="Stop abuse without breaking the funnel">
+      <FeatureSection title="Trial abuse prevention">
         <p>
-          Toggle <strong>Prevent trial abuse</strong> and Polar tracks
-          redemptions across your products.
+          Repeat sign-ups are a common problem with trials, especially for
+          products that rely on free evaluation periods to drive
+          conversion. Polar offers an optional layer of detection that
+          tracks redemptions across your products without any setup beyond
+          a toggle.
         </p>
         <p>
-          Repeat sign-ups are blocked when they match a normalized email
-          (so <strong>user+alias@example.com</strong> reads as{' '}
-          <strong>user@example.com</strong>) or share a payment-method
-          fingerprint with a previous trial.
+          When <strong>Prevent trial abuse</strong> is enabled, a new
+          checkout is matched against past trial redemptions on two
+          signals: the customer&apos;s normalized email (so{' '}
+          <strong>user+alias@example.com</strong> is treated as{' '}
+          <strong>user@example.com</strong>) and the fingerprint of the
+          payment method on file. A match on either blocks the trial.
         </p>
         <p>
-          The checkout doesn&apos;t dead-end. Polar refreshes the session
-          without the trial, and the customer can complete a paid checkout.
-        </p>
-        <p>
-          Fewer free-tier farmers. Zero lost paying conversions.
+          The customer never hits a dead end. Polar refreshes the session
+          without the trial period and the regular paid checkout continues,
+          so a returning user can still convert at full price.
         </p>
       </FeatureSection>
 
       <FeatureCTA
-        title="Turn evaluators into customers."
-        description="Add a trial to any subscription product and let Polar handle the timing."
+        title="Add a trial"
+        description="Set unit and duration on the product, the Checkout Link, or the API."
       />
     </FeaturePageLayout>
   )

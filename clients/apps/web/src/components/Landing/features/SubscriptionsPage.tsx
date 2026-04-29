@@ -21,33 +21,37 @@ export const SubscriptionsPage = () => {
   return (
     <FeaturePageLayout>
       <FeaturePageHeader
-        title="Recurring revenue, on autopilot"
-        description="Renewals, proration, dunning, all handled."
+        title="Subscriptions, end to end"
+        description="Renewals, proration, dunning, and benefits."
         docsHref="/docs/features/subscriptions/introduction"
       />
 
       <FeaturePageGraphic graphic={CycleArrow} />
 
       <FeaturePageIntro>
-        Each cycle, Polar advances the period and charges the saved card.
-        If the charge fails, dunning takes over.
+        At the close of each cycle, Polar advances the period and charges the
+        saved card. If the charge fails, the subscription enters payment
+        recovery before anything is revoked.
       </FeaturePageIntro>
 
-      <FeatureSection title="The lifecycle, end to end">
+      <FeatureSection title="How a subscription works">
         <p>
-          A subscription starts when a customer checks out a recurring
-          product. Polar issues the first order, charges the card, and grants
-          every <strong>benefit</strong> on the product.
+          A subscription is created the moment a customer checks out a
+          product with a recurring price. Polar issues the first order,
+          collects the first payment, and grants every{' '}
+          <strong>benefit</strong> attached to the product.
         </p>
         <p>
-          From there it renews itself. New order at the start of every
-          cycle, with tax and any active discount baked in. Saved payment
-          method, charged automatically.
+          From that point on, the subscription advances itself. At the end
+          of every cycle, Polar generates a new order with tax and any
+          active discount applied, then charges the saved payment method
+          without your code in the loop.
         </p>
         <p>
-          Benefits stay synced with status. Active or trialing means access
-          stays on. Canceled or unpaid means access drops, optionally after
-          a grace period you control.
+          Benefits track the subscription&apos;s state throughout. While
+          it&apos;s active or trialing, the customer keeps access; when it
+          moves to canceled or unpaid, benefits are revoked, optionally
+          after a grace period you control.
         </p>
       </FeatureSection>
 
@@ -55,7 +59,7 @@ export const SubscriptionsPage = () => {
         cards={[
           {
             icon: <CreditCardOutlined fontSize="large" />,
-            title: 'Flexible billing',
+            title: 'Flexible pricing',
             description:
               'Fixed, pay-what-you-want, or free recurring prices on any cadence.',
           },
@@ -63,36 +67,36 @@ export const SubscriptionsPage = () => {
             icon: <TrendingUpOutlined fontSize="large" />,
             title: 'Plan changes',
             description:
-              'Upgrades and downgrades with prorated charges and credits, instantly.',
+              'Upgrades and downgrades with prorated charges and credits.',
           },
           {
             icon: <AutorenewOutlined fontSize="large" />,
-            title: 'Failed payment recovery',
+            title: 'Payment recovery',
             description:
-              'Smart retry logic and grace periods keep more customers paying.',
+              'Automatic retries on past_due with optional grace periods.',
           },
           {
             icon: <AccountCircleOutlined fontSize="large" />,
             title: 'Customer Portal',
             description:
-              'Subscribers update payment, swap plans, and cancel themselves, with no support tickets to triage.',
+              'Subscribers update payment, change plans, and cancel from a hosted page.',
           },
         ]}
       />
 
       <FeatureSplit
-        title="Three proration behaviors, one switch"
-        description="Set a default at the organization level and override per API call when a particular change deserves different handling."
+        title="Three proration behaviors"
+        description="Set a default at the organization level. Override per API call when a particular change deserves different handling."
         bullets={[
           {
             title: 'Invoice immediately',
             description:
-              'The plan changes now and the prorated difference is invoiced and charged on the spot. Best for upgrades where you want to collect revenue as soon as the customer commits.',
+              'The plan changes now and the prorated difference is invoiced and charged in the same call. For upgrades, when you want the revenue immediately.',
           },
           {
             title: 'Apply on next invoice',
             description:
-              'The plan changes now, but the prorated difference rides along on the next renewal invoice. The smoothest experience for routine plan changes.',
+              'The plan changes now, but the prorated difference rides along on the next renewal invoice. The default for routine plan changes.',
           },
           {
             title: 'Apply on next period',
@@ -103,55 +107,53 @@ export const SubscriptionsPage = () => {
       />
 
       <FeatureRichList
-        title="Failed payment recovery, handled"
-        description="When a renewal charge fails, Polar moves the subscription to past due and runs an automated dunning schedule before revoking anything."
+        title="Payment recovery"
+        description="When a renewal charge fails, the subscription moves to past_due and Polar runs a four-attempt retry schedule before revoking benefits."
         items={[
           {
             title: 'Four retries over 21 days',
             description:
-              'Polar retries the charge after 2, 5, 7, and 7 days. Any successful retry returns the subscription to active and the cycle continues normally.',
+              'Polar retries the charge after 2, 5, 7, and 7 days. A successful retry restores the subscription to active.',
           },
           {
             title: 'Customer reminders',
             description:
-              'The customer is emailed at the first failure with a link to the Customer Portal so they can update their payment method without contacting support.',
+              'The customer is emailed at the first failure with a link to the Customer Portal so they can update their payment method.',
           },
           {
             title: 'Configurable grace period',
             description:
-              'Choose whether benefits are revoked immediately or after 2, 7, 14, or 21 days. Keeps paying customers from being locked out by a single expired card.',
+              'Choose whether benefits are revoked immediately or after 2, 7, 14, or 21 days. Keeps paying customers from being locked out by a single declined card.',
           },
           {
             title: 'Long-cycle renewal reminders',
             description:
-              'For subscriptions on cycles of six months or more, Polar emails the customer 7 days before renewal so an annual charge is never a surprise.',
+              'For subscriptions on cycles of six months or more, the customer is emailed 7 days before renewal.',
           },
         ]}
       />
 
-      <FeatureSection title="Self-service from day one">
+      <FeatureSection title="The Customer Portal">
         <p>
-          Every account ships with a hosted{' '}
-          <strong>Customer Portal</strong>. Update payment methods, download
-          invoices, change plans, manage seats, cancel.
+          Every Polar account includes a hosted{' '}
+          <strong>Customer Portal</strong> where subscribers can update
+          payment methods, download invoices, change plans, manage seats,
+          and cancel. You can either link to it directly or embed it inside
+          your product.
         </p>
         <p>
-          Send customers there with a one-click link, or embed it in your
-          product.
-        </p>
-        <p>
+          Cancellation comes in two flavors that work the same way from the
+          dashboard, the API, and the portal.{' '}
           <strong>Cancel at period end</strong> keeps benefits live until
-          the paid term runs out, and is reversible.{' '}
-          <strong>Revoke immediately</strong> ends access right away.
-        </p>
-        <p>
-          Both work from the dashboard, the API, and the portal.
+          the paid term runs out and is reversible until the end date.{' '}
+          <strong>Revoke immediately</strong> ends access on the spot and
+          isn&apos;t reversible.
         </p>
       </FeatureSection>
 
       <FeatureCTA
-        title="Launch subscriptions today."
-        description="Connect a product, set a recurring price, and start billing in minutes."
+        title="Connect a recurring product"
+        description="Set a recurring price on a product and Polar runs the rest of the lifecycle."
       />
     </FeaturePageLayout>
   )

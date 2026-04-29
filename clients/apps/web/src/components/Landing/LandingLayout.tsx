@@ -212,6 +212,21 @@ const LandingPageDesktopNavigation = () => {
           label: 'Discounts',
           subtitle: 'Promo codes & recurring deals',
         },
+        {
+          href: '/features/cost-insights',
+          label: 'Cost Insights',
+          subtitle: 'Cost, profit, and LTV per customer',
+        },
+        {
+          href: '/features/finance',
+          label: 'Finance',
+          subtitle: 'Balance, ledger, fees, payouts',
+        },
+        {
+          href: '/features/merchant-of-record',
+          label: 'Merchant of Record',
+          subtitle: 'Global tax compliance, on us',
+        },
       ],
     },
   ]

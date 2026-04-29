@@ -1,6 +1,3 @@
-'use client'
-
-import { useRef, useState, useCallback, useEffect } from 'react'
 import { Dumbbell } from './graphics/Dumbbell'
 import { CycleArrow } from './graphics/CycleArrow'
 import { LinkedRings } from './graphics/LinkedRings'
@@ -30,55 +27,33 @@ const TILES = [
     Graphic: CreditArc,
   },
   {
-    title: 'Analytics',
-    desc: 'Revenue, MRR, churn, and cost insights. No custom tracking needed.',
-    Graphic: WaveBars,
+    title: 'Trials',
+    desc: 'Free or paid trials with automatic conversion, reminders, and grace periods.',
+    Graphic: VectorField,
   },
   {
-    title: 'Webhooks',
-    desc: 'Real-time event notifications with Standard Webhooks and signature validation.',
-    Graphic: VectorField,
+    title: 'Discounts',
+    desc: 'Coupons, promo codes, and volume tiers. Applied automatically at checkout.',
+    Graphic: WaveBars,
   },
 ]
 
 export const Features = () => {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [progress, setProgress] = useState(0)
-
-  const onScroll = useCallback(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const max = el.scrollWidth - el.clientWidth
-    setProgress(max > 0 ? el.scrollLeft / max : 0)
-  }, [])
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [onScroll])
-
   return (
-    <div className="flex max-w-none! flex-col gap-y-12 py-32 md:gap-y-24">
-      <div className="mx-auto w-full max-w-7xl">
-        <h1 className="font-display px-4 text-4xl leading-snug md:px-0 md:text-7xl">
-          All billing primitives you need.
-          <br />
-          In a single API.
-        </h1>
-      </div>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 py-32 md:gap-y-24">
+      <h1 className="font-display px-4 text-4xl leading-snug md:px-0 md:text-7xl">
+        All billing primitives you need.
+        <br />
+        In a single API.
+      </h1>
 
-      <div
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-auto pr-16 pl-[max(1rem,calc((100vw-1280px)/2-1rem))] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {TILES.map((tile) => {
           const G = tile.Graphic
           return (
             <div
               key={tile.title}
-              className="dark:bg-polar-900 flex w-[340px] shrink-0 flex-col bg-gray-50 md:w-[420px]"
+              className="dark:bg-polar-900 flex flex-col bg-gray-50"
             >
               <div className="flex flex-col gap-4 p-8">
                 <span className="font-display text-3xl text-gray-900 dark:text-white">
@@ -94,13 +69,6 @@ export const Features = () => {
             </div>
           )
         })}
-      </div>
-
-      <div className="dark:bg-polar-800 mx-auto h-px w-full max-w-7xl bg-gray-200">
-        <div
-          className="h-full bg-gray-900 dark:bg-white"
-          style={{ width: `${progress * 100}%` }}
-        />
       </div>
     </div>
   )

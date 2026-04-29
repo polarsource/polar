@@ -279,6 +279,20 @@
   }
 }
 
+/* ─── Landing graphic tokens — read by canvas/SVG components via getComputedStyle ── */
+
+@layer base {
+  :root {
+    --color-graphic-stroke: #000;
+    --color-graphic-dim: #ccc;
+  }
+
+  .dark {
+    --color-graphic-stroke: #fff;
+    --color-graphic-dim: rgb(40, 40, 40);
+  }
+}
+
 /* shadcn/ui */
 
 @layer base {

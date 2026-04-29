@@ -47,9 +47,11 @@ export const WaveBars = () => {
       lastTime = now
       time += dt
 
+      const styles = getComputedStyle(canvas)
       ctx.clearRect(0, 0, size, size)
-      ctx.fillStyle = 'rgb(190, 190, 190)'
-
+      ctx.fillStyle =
+        styles.getPropertyValue('--color-graphic-stroke').trim() ||
+        'rgb(190, 190, 190)'
       // Max vertical displacement per bar
       const maxDisp = rowH * 5.0
 

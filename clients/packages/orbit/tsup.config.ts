@@ -1,7 +1,7 @@
 import { defineConfig, type Options } from 'tsup'
 
 export const options: Options = {
-  entry: ['./src/index.ts'],
+  entry: ['./src/index.ts', './src/tokens/tokens.stylex.ts'],
   format: ['cjs', 'esm'],
   minify: true,
   dts: true,

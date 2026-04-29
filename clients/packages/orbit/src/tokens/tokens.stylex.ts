@@ -44,6 +44,18 @@ export const colors = stylex.defineVars({
     default: 'oklch(0.97 0.026 102.5)',
     [DARK]: 'oklch(0.445 0.1 82.5 / 0.2)',
   },
+  'background-success': {
+    default: 'oklch(0.97 0.04 162)',
+    [DARK]: 'oklch(0.696 0.17 162 / 0.2)',
+  },
+  'background-danger': {
+    default: 'oklch(0.97 0.04 25)',
+    [DARK]: 'oklch(0.637 0.237 25 / 0.2)',
+  },
+  'background-pending': {
+    default: 'oklch(0.96 0.005 264)',
+    [DARK]: 'oklch(0.6 0.02 264 / 0.2)',
+  },
 
   // Text
   'text-primary': {
@@ -57,6 +69,22 @@ export const colors = stylex.defineVars({
   'text-tertiary': {
     default: 'oklch(0.707 0.022 261.325)',
     [DARK]: 'hsl(233, 4%, 46%)',
+  },
+  'text-success': {
+    default: 'oklch(0.696 0.17 162)',
+    [DARK]: 'oklch(0.696 0.17 162)',
+  },
+  'text-danger': {
+    default: 'oklch(0.637 0.237 25)',
+    [DARK]: 'oklch(0.637 0.237 25)',
+  },
+  'text-warning': {
+    default: 'oklch(0.769 0.188 70)',
+    [DARK]: 'oklch(0.769 0.188 70)',
+  },
+  'text-pending': {
+    default: 'oklch(0.65 0.02 264)',
+    [DARK]: 'oklch(0.7 0.02 264)',
   },
 
   // Borders

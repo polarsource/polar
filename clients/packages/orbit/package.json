@@ -22,6 +22,10 @@
       "types": "./dist/index.d.ts",
       "default": "./src/index.ts"
     },
+    "./theme": {
+      "types": "./dist/tokens/tokens.stylex.d.ts",
+      "default": "./src/tokens/tokens.stylex.ts"
+    },
     "./*": {
       "types": "./dist/components/*.d.ts",
       "default": "./src/components/*.tsx"

@@ -293,6 +293,40 @@ export const useOrganizationAppeal = (id: string) =>
     retry: defaultRetry,
   })
 
+export const useOrganizationReviewState = (id: string) =>
+  useQuery({
+    queryKey: ['organizationReviewState', id],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/review', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
+export const useSubmitOrganizationReview = (id: string) =>
+  useMutation({
+    mutationFn: () =>
+      api.POST('/v1/organizations/{id}/submit-review', {
+        params: { path: { id } },
+      }),
+    onSuccess: async (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizations', id],
+      })
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizationReviewState', id],
+      })
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizationReviewStatus', id],
+      })
+      await revalidate(`organizations:${id}`)
+    },
+  })
+
 export const useOrganizationReviewStatus = (
   id: string,
   enabled: boolean = true,

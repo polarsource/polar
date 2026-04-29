@@ -13,6 +13,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import Organization as OrganizationModel
 from polar.models import PayoutAccount as PayoutAccountModel
 from polar.models.account import Account as AccountModel
+from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationID
 from polar.payout_account.repository import PayoutAccountRepository
@@ -201,19 +202,50 @@ AuthorizeOrgAccessUser = Annotated[
 # For endpoints that operate on the authenticated user themselves (own
 # profile, own PATs, OAuth identity links, email update, etc.) — i.e. no
 # organization resource to authorize against. The user-personal analogue of
-# the always-allow OrgPolicyGuard variants above: no per-user policies today,
-# but this is the layer to add them (account suspended, identity not
-# verified, MFA required, …) without touching endpoint signatures.
+# OrgPolicyGuard.
+#
+# Each guard checks an appropriate scope. Read aliases accept either the
+# matching ``_read`` or ``_write`` scope (write implies read). Write aliases
+# require the ``_write`` scope. This is the read/write gate for impersonation:
+# impersonation sessions only carry ``READ_ONLY_SCOPES``, so they are
+# rejected from any endpoint requiring a ``_write`` scope.
 # ---------------------------------------------------------------------------
 
 
-async def _authorize_web_user(
-    auth_subject: WebUserSession,
-) -> AuthSubject[User]:
-    return auth_subject
+def WebUserAuthorizer(required_scopes: set[Scope]) -> Any:
+    """FastAPI dependency: authenticate as a web-session user (via
+    ``WebUserSession``) and require at least one of the given scopes."""
+
+    async def dependency(
+        auth_subject: WebUserSession,
+    ) -> AuthSubject[User]:
+        if not (auth_subject.scopes & required_scopes):
+            raise InsufficientScopeError({s.value for s in required_scopes})
+        return auth_subject
+
+    return dependency
 
 
-AuthorizeWebUser = Annotated[AuthSubject[User], Depends(_authorize_web_user)]
+AuthorizeUserRead = Annotated[
+    AuthSubject[User],
+    Depends(WebUserAuthorizer({Scope.user_read, Scope.user_write})),
+]
+AuthorizeUserWrite = Annotated[
+    AuthSubject[User],
+    Depends(WebUserAuthorizer({Scope.user_write})),
+]
+AuthorizePayoutsRead = Annotated[
+    AuthSubject[User],
+    Depends(WebUserAuthorizer({Scope.payouts_read, Scope.payouts_write})),
+]
+AuthorizePayoutsWrite = Annotated[
+    AuthSubject[User],
+    Depends(WebUserAuthorizer({Scope.payouts_write})),
+]
+AuthorizeOrganizationsRead = Annotated[
+    AuthSubject[User],
+    Depends(WebUserAuthorizer({Scope.organizations_read, Scope.organizations_write})),
+]
 
 
 # ---------------------------------------------------------------------------

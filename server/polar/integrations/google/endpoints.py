@@ -9,7 +9,7 @@ from httpx_oauth.oauth2 import OAuth2Token
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.auth.service import auth as auth_service
-from polar.authz.dependencies import AuthorizeWebUser
+from polar.authz.dependencies import AuthorizeUserWrite
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.http import ReturnTo, get_safe_return_url
 from polar.kit.oauth import (
@@ -143,7 +143,7 @@ link_router = APIRouter(
 @link_router.get("/authorize", name="integrations.google.link.authorize")
 async def link_authorize(
     request: Request,
-    auth_subject: AuthorizeWebUser,
+    auth_subject: AuthorizeUserWrite,
     return_to: ReturnTo,
     redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
@@ -160,7 +160,7 @@ async def link_authorize(
 @link_router.get("/callback", name="integrations.google.link.callback")
 async def link_callback(
     request: Request,
-    auth_subject: AuthorizeWebUser,
+    auth_subject: AuthorizeUserWrite,
     session: AsyncSession = Depends(get_db_session),
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_link_authorize_callback

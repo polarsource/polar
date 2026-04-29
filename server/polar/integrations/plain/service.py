@@ -1,7 +1,6 @@
 # pyright: reportCallIssue=false
 import asyncio
 import contextlib
-import random
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 
@@ -24,7 +23,6 @@ from plain_client import (
     ComponentTextColor,
     ComponentTextInput,
     ComponentTextSize,
-    CreateThreadAssignedToInput,
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
@@ -66,11 +64,6 @@ from .schemas import (
 )
 
 log = structlog.get_logger(__name__)
-
-SUPPORT_AGENT_IDS: list[str] = [
-    "u_01K8JEAC8BS0ED0KBCGHYCHA70",  # Isac
-    "u_01K0RC6SY9Q8KSVNAYGD7EY6M5",  # Rishi
-]
 
 PLAIN_WORKSPACE_ID = "w_01JE9TRRX9KT61D8P2CH77XDQM"
 
@@ -180,9 +173,6 @@ class PlainService:
                     customer_identifier=customer_identifier,
                     title=f"Organization Appeal - {organization.slug}",
                     label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
-                    assigned_to=CreateThreadAssignedToInput(
-                        user_id=random.choice(SUPPORT_AGENT_IDS)
-                    ),
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(

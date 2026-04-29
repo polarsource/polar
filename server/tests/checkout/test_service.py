@@ -2594,8 +2594,7 @@ class TestUpdate:
         checkout_one_time_custom: Checkout,
     ) -> None:
         # Amounts 1-49 are in the "Stripe gap" - too low for Stripe but not free
-        # Validated at the schema level, raising pydantic ValidationError
-        with pytest.raises(ValidationError):
+        with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
                 checkout_one_time_custom,

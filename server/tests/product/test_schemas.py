@@ -227,20 +227,6 @@ class TestProductPriceFixedCurrencyMinimums:
         assert errors[0]["type"] == "minimum_price"
         assert "Amount must be at least" in errors[0]["msg"]
 
-    def test_below_global_floor_rejected(self) -> None:
-        """Values below GLOBAL_MINIMUM_PRICE_AMOUNT are caught by the ge constraint."""
-        with pytest.raises(ValidationError) as exc_info:
-            ProductPriceFixedCreate(
-                amount_type=ProductPriceAmountType.fixed,
-                price_amount=9,
-                price_currency=PresentmentCurrency.mxn,
-            )
-
-        errors = exc_info.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["loc"] == ("price_amount",)
-        assert errors[0]["type"] == "greater_than_equal"
-
     @pytest.mark.parametrize(
         ("currency", "amount"),
         [

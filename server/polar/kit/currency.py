@@ -213,3 +213,72 @@ def format_currency(
         locale="en_US",
         decimal_quantization=decimal_quantization,
     )
+
+
+# Minimums as provided by Stripe, but with some changes on some currencies.
+# Stripe indeeds enforces the source amount converted to target currency match the minimum
+# of the target currency.
+# Comment added for the cases where our minimum differs from Stripe's.
+# Ref: https://docs.stripe.com/currencies#minimum-and-maximum-charge-amounts
+MINIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
+    "usd": 50,
+    "aed": 200,
+    "ars": 50,
+    "aud": 50,
+    "brl": 50,
+    "cad": 50,
+    "chf": 50,
+    "cop": 50,
+    "czk": 1500,
+    "dkk": 250,
+    "eur": 50,
+    "gbp": 30,
+    "hkd": 400,
+    "huf": 17500,
+    "idr": 50,
+    "ils": 50,
+    "inr": 6000,  # 60.00 INR > 0.50 USD
+    "jpy": 50,
+    "krw": 800,  # 800 KRW > 0.50 USD
+    "mxn": 10,
+    "myr": 200,
+    "nok": 300,
+    "nzd": 50,
+    "php": 50,
+    "pln": 200,
+    "ron": 200,
+    "rub": 50,
+    "sek": 300,
+    "sgd": 50,
+    "thb": 10,
+    "zar": 50,
+}
+
+MINIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
+    f"- {currency.upper()}: {format_currency(amount, currency)}"
+    for currency, amount in MINIMUM_PRICE_PER_CURRENCY.items()
+)
+
+
+def get_minimum_currency_amount(currency: PresentmentCurrency | str) -> int:
+    """Get the minimum price amount for a given currency.
+
+    Args:
+        currency: The currency code.
+
+    Returns:
+        The minimum price amount in the smallest currency unit.
+    """
+    return MINIMUM_PRICE_PER_CURRENCY.get(currency.lower(), 50)
+
+
+def get_maximum_currency_amount(currency: PresentmentCurrency | str) -> int:
+    """Get the maximum price amount for a given currency.
+
+    Args:
+        currency: The currency code.
+
+    Returns:
+        The maximum price amount in the smallest currency unit.
+    """
+    return 99999999  # TODO: Define maximum price amounts per currency

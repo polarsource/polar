@@ -15,7 +15,6 @@ from polar.auth.models import Anonymous, AuthSubject
 from polar.authz.service import get_accessible_org_ids
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
-    MINIMUM_PRICE_AMOUNT,
     CheckoutConfirm,
     CheckoutConfirmStripe,
     CheckoutCreate,
@@ -50,7 +49,12 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_fingerprint
 from polar.kit.address import AddressInput
 from polar.kit.crypto import generate_token
-from polar.kit.currency import get_presentment_currency
+from polar.kit.currency import (
+    format_currency,
+    get_maximum_currency_amount,
+    get_minimum_currency_amount,
+    get_presentment_currency,
+)
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
@@ -373,7 +377,7 @@ class CheckoutService:
             raise NotPermitted()
 
         if checkout_create.amount is not None and is_custom_price(price):
-            self._validate_custom_price_amount(price, checkout_create.amount)
+            self._validate_custom_price_amount(price, checkout_create.amount, currency)
 
         discount: Discount | None = None
         if checkout_create.discount_id is not None:
@@ -713,7 +717,9 @@ class CheckoutService:
             if query_amount_str is not None and isinstance(query_amount_str, str):
                 try:
                     query_amount_int = int(float(query_amount_str))
-                    self._validate_custom_price_amount(price, query_amount_int)
+                    self._validate_custom_price_amount(
+                        price, query_amount_int, currency
+                    )
                     valid_query_amount = query_amount_int
                 except (ValueError, TypeError, PolarRequestValidationError):
                     pass
@@ -1937,7 +1943,7 @@ class CheckoutService:
             and is_custom_price(checkout.product_price)
         ):
             self._validate_custom_price_amount(
-                checkout.product_price, checkout_update.amount
+                checkout.product_price, checkout_update.amount, checkout.currency
             )
             checkout.amount = checkout_update.amount
 
@@ -2309,6 +2315,7 @@ class CheckoutService:
         self,
         price: ProductPrice,
         amount: int,
+        currency: str,
         loc: tuple[str, ...] = ("body", "amount"),
     ) -> None:
         """Validate that an amount is within the min/max bounds for a custom price."""
@@ -2316,35 +2323,35 @@ class CheckoutService:
             return
 
         if price.minimum_amount == 0:
-            # Free is allowed: accept $0 or any amount >= MINIMUM_PRICE_AMOUNT
+            # Free is allowed: accept $0 or any amount >= currency minimum
             if amount == 0:
                 return
 
-            if 0 < amount < MINIMUM_PRICE_AMOUNT:
+            currency_minimum = get_minimum_currency_amount(currency)
+            if 0 < amount < currency_minimum:
                 raise PolarRequestValidationError(
                     [
                         {
                             "type": "invalid_amount",
                             "loc": loc,
-                            "msg": "Amount must be $0 or at least $0.50.",
+                            "msg": f"Amount must be 0 or at least {format_currency(currency_minimum, currency)}.",  # pyright: ignore
                             "input": amount,
-                            "ctx": {"allowed": [0], "ge": MINIMUM_PRICE_AMOUNT},
+                            "ctx": {"allowed": [0], "ge": currency_minimum},
                         }
                     ]
                 )
-        else:
-            if amount < price.minimum_amount:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "greater_than_equal",
-                            "loc": loc,
-                            "msg": "Amount is below minimum.",
-                            "input": amount,
-                            "ctx": {"ge": price.minimum_amount},
-                        }
-                    ]
-                )
+        elif amount < price.minimum_amount:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "greater_than_equal",
+                        "loc": loc,
+                        "msg": "Amount is below minimum.",
+                        "input": amount,
+                        "ctx": {"ge": price.minimum_amount},
+                    }
+                ]
+            )
 
         if price.maximum_amount is not None and amount > price.maximum_amount:
             raise PolarRequestValidationError(
@@ -2355,6 +2362,20 @@ class CheckoutService:
                         "msg": "Amount is above maximum.",
                         "input": amount,
                         "ctx": {"le": price.maximum_amount},
+                    }
+                ]
+            )
+
+        currency_maximum = get_maximum_currency_amount(currency)
+        if amount > currency_maximum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": loc,
+                        "msg": f"Amount must be at most {format_currency(currency_maximum, currency)}.",  # pyright: ignore
+                        "input": amount,
+                        "ctx": {"le": currency_maximum},
                     }
                 ]
             )

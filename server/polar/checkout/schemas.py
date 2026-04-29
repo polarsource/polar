@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from annotated_types import Ge, Le, MaxLen, MinLen
+from annotated_types import Ge, MaxLen, MinLen
 from pydantic import (
     UUID4,
-    AfterValidator,
     AliasChoices,
     Discriminator,
     Field,
@@ -70,18 +69,6 @@ from polar.product.schemas import (
     ProductPriceList,
 )
 
-# Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
-MAXIMUM_PRICE_AMOUNT = 99999999
-MINIMUM_PRICE_AMOUNT = 50
-
-
-def validate_amount_not_in_minimum_gap(v: int | None) -> int | None:
-    """Validate that amount is not in the 1-49 cent gap (0 or >= 50 allowed)."""
-    if v is not None and 0 < v < MINIMUM_PRICE_AMOUNT:
-        raise ValueError(f"Amount must be 0 or at least {MINIMUM_PRICE_AMOUNT} cents")
-    return v
-
-
 Amount = Annotated[
     int,
     Field(
@@ -91,8 +78,6 @@ Amount = Annotated[
         )
     ),
     Ge(0),  # Allow 0 for free PWYW
-    Le(MAXIMUM_PRICE_AMOUNT),
-    AfterValidator(validate_amount_not_in_minimum_gap),  # Reject 1-49 gap
 ]
 CustomerEmail = Annotated[
     EmailStrDNS,

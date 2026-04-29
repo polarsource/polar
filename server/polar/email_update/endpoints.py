@@ -45,7 +45,6 @@ async def request_email_update(
 @router.post("/verify")
 async def verify_email_update(
     return_to: ReturnTo,
-    auth_subject: WebUserWrite,
     token: str = Form(),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:

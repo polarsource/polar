@@ -63,6 +63,7 @@ dependencies = [
   "polar-sdk==0.31.3",
   "anyio>=4.13.0",
   "markdown-it-py>=4.0.0",
+  "tzdata>=2025.3",
 ]
 
 [dependency-groups]

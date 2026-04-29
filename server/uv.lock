@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer = "2026-04-22T11:14:11.319152Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -2135,6 +2135,7 @@ dependencies = [
     { name = "taskipy" },
     { name = "trafilatura" },
     { name = "typer" },
+    { name = "tzdata" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -2227,6 +2228,7 @@ requires-dist = [
     { name = "taskipy", specifier = ">=1.10.3" },
     { name = "trafilatura", specifier = ">=2.0.0" },
     { name = "typer", specifier = ">=0.12.5" },
+    { name = "tzdata", specifier = ">=2025.3" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.42.0" },
 ]
 

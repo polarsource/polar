@@ -44,7 +44,7 @@ async def _delete_postgres(
         .where(
             Event.organization_id == organization_id,
             Event.name == EVENT_NAME,
-            Event.source == EventSource.system,
+            Event.source == EventSource.user,
         )
         .limit(batch_size)
         .scalar_subquery()

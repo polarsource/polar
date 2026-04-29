@@ -68,8 +68,6 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   redis \
   fonts-noto-cjk \
   libpq-dev \
-  # tzdata-legacy is needed to accept legacy timezone names in Python like "Asia/Calcutta"
-  tzdata-legacy \
   && uv sync --no-group dev --frozen \
   && uv tool install tinybird --python 3.13 \
   && apt-get autoremove -y build-essential

@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     fonts-noto-cjk \
     libpq-dev \
     curl \
-    tzdata-legacy \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 

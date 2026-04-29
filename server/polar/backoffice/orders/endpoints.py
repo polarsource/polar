@@ -3,6 +3,8 @@ import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
 
+import pycountry
+from babel.numbers import format_percent
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
@@ -22,6 +24,7 @@ from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.refund.schemas import RefundCreate
 from polar.refund.service import refund as refund_service
+from polar.tax.calculation.base import TaxabilityReason
 
 from .. import formatters
 from ..components import button, datatable, description_list, input, modal
@@ -533,56 +536,106 @@ async def get(
                                                     )
 
                                         if order.tax_amount > 0:
-                                            with tag.tr():
-                                                with tag.td(
-                                                    colspan="3", classes="text-right"
-                                                ):
-                                                    # Build tax label with additional information
-                                                    tax_label_parts = ["Tax"]
-
-                                                    # Add tax rate if available
-                                                    if (
-                                                        order.tax_rate
-                                                        and order.tax_rate.get(
-                                                            "basis_points"
-                                                        )
+                                            for tax_item in order.tax_breakdown or []:
+                                                with tag.tr():
+                                                    with tag.td(
+                                                        colspan="3",
+                                                        classes="text-right",
                                                     ):
-                                                        basis_points = order.tax_rate[
-                                                            "basis_points"
-                                                        ]
-                                                        if basis_points is not None:
-                                                            rate_percentage = (
-                                                                basis_points / 100
-                                                            )
-                                                            tax_label_parts.append(
-                                                                f"({rate_percentage:.2f}%)"
-                                                            )
+                                                        label = tax_item["display_name"]
 
-                                                    # Add tax ID if available
-                                                    if order.tax_id:
-                                                        formatted_tax_id = (
-                                                            formatters.tax_id(
-                                                                order.tax_id
+                                                        if (
+                                                            tax_item[
+                                                                "taxability_reason"
+                                                            ]
+                                                            == TaxabilityReason.reverse_charge
+                                                        ):
+                                                            label += (
+                                                                " (0% Reverse Charge)"
+                                                            )
+                                                        else:
+                                                            if tax_item["country"]:
+                                                                country = pycountry.countries.get(
+                                                                    alpha_2=tax_item[
+                                                                        "country"
+                                                                    ]
+                                                                )
+                                                                if country is not None:
+                                                                    parts = [
+                                                                        country.name
+                                                                    ]
+
+                                                                    if tax_item[
+                                                                        "state"
+                                                                    ]:
+                                                                        state: Any = pycountry.subdivisions.get(
+                                                                            code=f"{tax_item['country']}-{tax_item['state']}"
+                                                                        )
+                                                                        if (
+                                                                            state
+                                                                            is not None
+                                                                        ):
+                                                                            parts = [
+                                                                                state.name
+                                                                            ] + parts
+
+                                                                    if (
+                                                                        tax_item[
+                                                                            "subdivision"
+                                                                        ]
+                                                                        is not None
+                                                                    ):
+                                                                        parts = [
+                                                                            tax_item[
+                                                                                "subdivision"
+                                                                            ]
+                                                                        ] + parts
+
+                                                                    label += f" — {', '.join(parts)}"
+
+                                                            rate = tax_item.get("rate")
+                                                            if rate is not None:
+                                                                label += f" ({format_percent(rate, decimal_quantization=False)})"
+
+                                                        text(label)
+                                                    with tag.td(classes="text-right"):
+                                                        text(
+                                                            formatters.currency(
+                                                                tax_item.get(
+                                                                    "amount", 0
+                                                                ),
+                                                                order.currency,
                                                             )
                                                         )
-                                                        tax_label_parts.append(
-                                                            f"• {formatted_tax_id}"
-                                                        )
 
-                                                    # Add taxability reason if available
-                                                    if order.taxability_reason:
-                                                        tax_label_parts.append(
-                                                            f"• {order.taxability_reason}"
+                                            # Show total tax row if multiple items
+                                            if (
+                                                order.tax_breakdown
+                                                and len(order.tax_breakdown) > 1
+                                            ):
+                                                with tag.tr():
+                                                    with tag.td(
+                                                        colspan="3",
+                                                        classes="text-right",
+                                                    ):
+                                                        label = "Total tax"
+                                                        if order.tax_id:
+                                                            formatted_tax_id = (
+                                                                formatters.tax_id(
+                                                                    order.tax_id
+                                                                )
+                                                            )
+                                                            label += (
+                                                                f" • {formatted_tax_id}"
+                                                            )
+                                                        text(label)
+                                                    with tag.td(classes="text-right"):
+                                                        text(
+                                                            formatters.currency(
+                                                                order.tax_amount,
+                                                                order.currency,
+                                                            )
                                                         )
-
-                                                    text(" ".join(tax_label_parts))
-                                                with tag.td(classes="text-right"):
-                                                    text(
-                                                        formatters.currency(
-                                                            order.tax_amount,
-                                                            order.currency,
-                                                        )
-                                                    )
 
                                         with tag.tr(classes="border-t-2"):
                                             with tag.td(

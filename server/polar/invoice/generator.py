@@ -371,21 +371,24 @@ class InvoiceGenerator(FPDF):
     def generate(self) -> None:
         self.set_metadata()
         self.add_page()
+        self._render_title()
+        self._render_heading_items()
+        self._render_addresses()
+        self._render_items_table()
+        self._render_totals_table()
+        self._render_notes()
 
-        # Title
+    def _render_title(self) -> None:
         self.set_font(style="B", size=18)
         self.cell(
             text=self._shape_text(self.heading_title),
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
-
-        # Logo on top right
         self.image(str(self.logo), x=Align.R, y=10, w=15)
-
         self.set_y(self.get_y() + self.elements_y_margin)
 
-        # Heading items
+    def _render_heading_items(self) -> None:
         label_width = 30
         self.set_font(size=self.base_font_size)
         for heading_item in self.data.heading_items:
@@ -404,11 +407,18 @@ class InvoiceGenerator(FPDF):
                 new_y=YPos.NEXT,
             )
 
-        # Billing addresses
+    def _render_addresses(self) -> None:
         self.set_y(self.get_y() + self.elements_y_margin)
-        addresses_y_start = self.get_y()
+        y_start = self.get_y()
 
-        # Seller on left column
+        seller_end_y = self._render_seller_block()
+
+        self.set_xy(110, y_start)
+        customer_end_y = self._render_customer_block()
+
+        self.set_y(max(seller_end_y, customer_end_y) + self.elements_y_margin)
+
+    def _render_seller_block(self) -> float:
         self.set_font(style="B")
         self.multi_cell(
             80,
@@ -432,10 +442,9 @@ class InvoiceGenerator(FPDF):
                 text=self._shape_text(self.data.seller_additional_info),
                 markdown=True,
             )
-        left_seller_end_y = self.get_y()
+        return self.get_y()
 
-        # Customer on right column
-        self.set_xy(110, addresses_y_start)
+    def _render_customer_block(self) -> float:
         self.set_font(style="B")
         self.cell(
             h=self.cell_height(), text="Bill to", new_x=XPos.LEFT, new_y=YPos.NEXT
@@ -463,13 +472,9 @@ class InvoiceGenerator(FPDF):
                 text=self._shape_text(self.data.customer_additional_info),
                 markdown=True,
             )
-        right_seller_end_y = self.get_y()
-        bottom = max(left_seller_end_y, right_seller_end_y)
+        return self.get_y()
 
-        # Add spacing before table
-        self.set_y(bottom + self.elements_y_margin)
-
-        # Invoice items table
+    def _render_items_table(self) -> None:
         self.set_draw_color(*self.table_borders_color)  # Light grey color for borders
         with self.table(
             col_widths=(90, 30, 30, 30),
@@ -478,14 +483,12 @@ class InvoiceGenerator(FPDF):
             line_height=self.items_table_row_height,
             borders_layout=TableBordersLayout.HORIZONTAL_LINES,
         ) as table:
-            # Header
             header = table.row()
             header.cell("Description")
             header.cell("Quantity")
             header.cell("Unit Price")
             header.cell("Amount")
 
-            # Body
             for item in self.data.items:
                 row = table.row()
                 row.cell(
@@ -497,10 +500,8 @@ class InvoiceGenerator(FPDF):
                 row.cell(format_currency(item.unit_amount, self.data.currency))
                 row.cell(format_currency(item.amount, self.data.currency))
 
-        # Add totals section after the table
+    def _render_totals_table(self) -> None:
         self.set_y(self.get_y() + self.elements_y_margin)
-
-        # Create a table for totals
         with self.table(
             col_widths=(150, 30),
             text_align=(Align.R, Align.R),
@@ -515,7 +516,7 @@ class InvoiceGenerator(FPDF):
                 self.set_font(style="")
                 row.cell(format_currency(total_item.amount, total_item.currency))
 
-        # Add notes section
+    def _render_notes(self) -> None:
         self.set_font(style="")
         if self.data.notes:
             self.set_xy(self.l_margin, self.get_y() + self.elements_y_margin)

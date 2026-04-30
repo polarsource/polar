@@ -210,10 +210,6 @@ class OrganizationRepository(
 
         Excludes $0 orders (e.g. free products or fully discounted orders)
         so that test accounts with only free activity can self-serve delete.
-
-        Subtracts refunds from the total: a fully refunded order has no
-        money on the books, so it shouldn't block deletion. Partially
-        refunded orders still count if there's a remaining net balance.
         """
         statement = (
             select(func.count(Order.id))
@@ -221,7 +217,7 @@ class OrganizationRepository(
             .where(
                 Customer.organization_id == organization_id,
                 Customer.is_deleted.is_(False),
-                (Order.total_amount - Order.refunded_amount) > 0,
+                Order.total_amount > 0,
             )
         )
         result = await self.session.execute(statement)

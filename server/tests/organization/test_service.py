@@ -1588,56 +1588,6 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
-    async def test_not_blocked_with_fully_refunded_orders(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        """Organization with only fully refunded orders can be deleted."""
-        from polar.models.order import OrderStatus
-        from tests.fixtures.random_objects import create_order
-
-        await create_order(
-            save_fixture,
-            customer=customer,
-            subtotal_amount=1000,
-            tax_amount=0,
-            refunded_amount=1000,
-            status=OrderStatus.refunded,
-        )
-
-        result = await organization_service.check_can_delete(session, organization)
-
-        assert result.can_delete_immediately is True
-        assert result.blocked_reasons == []
-
-    async def test_blocked_with_partially_refunded_orders(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        """Partially refunded orders still have a net balance and block deletion."""
-        from polar.models.order import OrderStatus
-        from tests.fixtures.random_objects import create_order
-
-        await create_order(
-            save_fixture,
-            customer=customer,
-            subtotal_amount=1000,
-            tax_amount=0,
-            refunded_amount=400,
-            status=OrderStatus.partially_refunded,
-        )
-
-        result = await organization_service.check_can_delete(session, organization)
-
-        assert result.can_delete_immediately is False
-        assert "has_orders" in [r.value for r in result.blocked_reasons]
-
     async def test_blocked_with_paid_active_subscriptions(
         self,
         session: AsyncSession,

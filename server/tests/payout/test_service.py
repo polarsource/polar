@@ -321,6 +321,7 @@ class TestCreate:
             payout_account=payout_account,
             # Set an invoice number that would conflict with the next one
             invoice_number=f"{settings.PAYOUT_INVOICES_PREFIX}0002",
+            created_at=utc_now() - datetime.timedelta(hours=25),
         )
 
         payment_transaction_1 = await create_payment_transaction(save_fixture)

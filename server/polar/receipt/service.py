@@ -3,6 +3,7 @@ from datetime import datetime
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.eventstream.service import publish as eventstream_publish
 from polar.integrations.aws.s3 import S3Service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
@@ -107,6 +108,12 @@ class ReceiptService:
             order_repository = OrderRepository.from_session(session)
             order = await order_repository.update(
                 order, update_dict={"receipt_path": key}
+            )
+            await eventstream_publish(
+                "order.receipt_generated",
+                {"order_id": order.id},
+                customer_id=order.customer_id,
+                organization_id=order.organization_id,
             )
             return order
 

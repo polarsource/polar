@@ -258,6 +258,54 @@ class TestGenerateOrderReceipt:
 
         assert result.receipt_path == "org/order/ts.pdf"
 
+    async def test_publishes_eventstream(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+        locker: Locker,
+        mocker: MockerFixture,
+    ) -> None:
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"receipts_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="event@example.com"
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            billing_name="Buyer",
+            billing_address=Address(
+                line1="1 Test Way",
+                city="SF",
+                state="CA",
+                postal_code="94104",
+                country=CountryAlpha2("US"),
+            ),
+        )
+        await create_payment(save_fixture, organization, order=order)
+        await receipt_service.allocate(session, order)
+
+        mocker.patch.object(
+            receipt_service,
+            "_create_order_receipt",
+            new=mocker.AsyncMock(return_value="org/order/ts.pdf"),
+        )
+        publish_mock = mocker.patch(
+            "polar.receipt.service.eventstream_publish",
+            new=mocker.AsyncMock(),
+        )
+
+        await receipt_service.generate_order_receipt(session, locker, order)
+
+        publish_mock.assert_awaited_once_with(
+            "order.receipt_generated",
+            {"order_id": order.id},
+            customer_id=customer.id,
+            organization_id=organization.id,
+        )
+
 
 @pytest.mark.asyncio
 class TestGetPdfUrlOrStatus:

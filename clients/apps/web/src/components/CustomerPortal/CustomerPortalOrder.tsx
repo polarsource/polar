@@ -8,7 +8,7 @@ import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
+import { OrderDownloadActions } from '../Orders/OrderDownloadActions'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
@@ -227,13 +227,10 @@ const CustomerPortalOrder = ({
             )}
           </div>
           {order.paid && (
-            <div className="flex flex-col gap-2">
-              <DownloadInvoicePortal
-                customerSessionToken={customerSessionToken}
-                order={order}
-                onInvoiceGenerated={() => {}}
-              />
-            </div>
+            <OrderDownloadActions
+              order={order}
+              customerSessionToken={customerSessionToken}
+            />
           )}
         </div>
 

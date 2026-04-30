@@ -206,8 +206,8 @@ class ReceiptGenerator(InvoiceGenerator):
     def _render_payment_history_section(self) -> None:
         self._render_section_title("Payment history")
         with self.table(
-            col_widths=(60, 40, 40, 40),
-            text_align=(Align.L, Align.L, Align.R, Align.R),
+            col_widths=(60, 40, 40),
+            text_align=(Align.L, Align.L, Align.R),
             headings_style=FontFace(size_pt=self.table_header_font_size),
             line_height=self.items_table_row_height,
             borders_layout=TableBordersLayout.HORIZONTAL_LINES,
@@ -216,14 +216,12 @@ class ReceiptGenerator(InvoiceGenerator):
             header.cell("Payment method")
             header.cell("Date")
             header.cell("Amount paid")
-            header.cell("Receipt number")
 
             for payment in self.data.payments:
                 row = table.row()
                 row.cell(self._shape_text(payment.display_method))
                 row.cell(format_date(payment.date))
                 row.cell(format_currency(payment.amount, payment.currency))
-                row.cell(self._shape_text(self.data.number))
 
     def _render_refunds_section(self) -> None:
         self._render_section_title("Refunds")

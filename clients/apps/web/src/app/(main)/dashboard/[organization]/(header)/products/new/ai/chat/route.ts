@@ -348,20 +348,20 @@ export async function POST(req: Request) {
     .join('\n---\n')
 
   const geminiLite = phClient
-    ? withTracing(google('gemini-2.5-flash-lite'), phClient, {
+    ? withTracing(google('gemini-3.1-flash-lite-preview'), phClient, {
         posthogDistinctId: user.id,
         posthogTraceId: conversationId,
         posthogGroups: { organization: organizationId },
       })
-    : google('gemini-2.5-flash-lite')
+    : google('gemini-3.1-flash-lite-preview')
 
   const gemini = phClient
-    ? withTracing(google('gemini-2.5-flash'), phClient, {
+    ? withTracing(google('gemini-3-flash-preview'), phClient, {
         posthogDistinctId: user.id,
         posthogTraceId: conversationId,
         posthogGroups: { organization: organizationId },
       })
-    : google('gemini-2.5-flash')
+    : google('gemini-3-flash-preview')
 
   const sonnet = phClient
     ? withTracing(anthropic('claude-sonnet-4-6'), phClient, {

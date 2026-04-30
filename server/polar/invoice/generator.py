@@ -10,7 +10,7 @@ from babel.numbers import format_decimal as _format_decimal
 from babel.numbers import format_percent as _format_percent
 from bidi.algorithm import get_display
 from fpdf import FPDF
-from fpdf.enums import Align, TableBordersLayout, XPos, YPos
+from fpdf.enums import Align, TableBordersLayout, TextEmphasis, XPos, YPos
 from fpdf.fonts import FontFace
 from pydantic import BaseModel
 
@@ -73,6 +73,7 @@ class Invoice(BaseModel):
     customer_name: str
     customer_address: Address
     customer_additional_info: str | None = None
+    customer_locale: str | None = None
     subtotal_amount: int
     applied_balance_amount: int | None = None
     discount_amount: int
@@ -220,6 +221,7 @@ class Invoice(BaseModel):
             customer_name=order.billing_name,
             customer_additional_info=order.tax_id[0] if order.tax_id else None,
             customer_address=order.billing_address,
+            customer_locale=order.customer.locale,
             subtotal_amount=order.subtotal_amount,
             applied_balance_amount=order.applied_balance_amount,
             discount_amount=order.discount_amount,
@@ -362,6 +364,23 @@ class InvoiceGenerator(FPDF):
             return cls.cjk_default_script
         return cls.cjk_script_country_map.get(country, cls.cjk_default_script)
 
+    @classmethod
+    def cjk_script_from_locale(cls, locale: str | None) -> str | None:
+        if not locale:
+            return None
+        parts = locale.replace("_", "-").lower().split("-")
+        language = parts[0]
+        if language == "ja":
+            return "jp"
+        if language == "ko":
+            return "kr"
+        if language == "zh":
+            for tag in parts[1:]:
+                if tag in {"hant", "tw", "hk", "mo"}:
+                    return "tc"
+            return "sc"
+        return None
+
     def __init__(
         self,
         data: Invoice,
@@ -387,7 +406,9 @@ class InvoiceGenerator(FPDF):
                 self.add_font(family, fname=regular)
                 self.add_font(family, fname=bold, style="B")
 
-            customer_script = self.resolve_cjk_script(data.customer_address.country)
+            customer_script = self.cjk_script_from_locale(
+                data.customer_locale
+            ) or self.resolve_cjk_script(data.customer_address.country)
             customer_family = self.cjk_font_name_for_script(customer_script)
             fallback_fonts.append(customer_family)
             for script in self.cjk_script_font_files:
@@ -400,6 +421,26 @@ class InvoiceGenerator(FPDF):
         self.data = data
         self.heading_title = heading_title
         self.add_sandbox_warning = add_sandbox_warning
+
+    def set_font(
+        self,
+        family: str | None = None,
+        style: str | TextEmphasis = "",
+        size: float = 0,
+    ) -> None:
+        # fpdf2's set_font short-circuits when family/style/size match the
+        # currently tracked values. But `current_font` can drift to a
+        # fallback font during fragment rendering (fpdf.py sets
+        # `current_font = frag.font` per fragment), so the next set_font call
+        # for the same family is a no-op and `current_font` stays stale —
+        # causing subsequent ASCII cells to render with the CJK font's
+        # cmap. Re-resolve `current_font` from the canonical font_family +
+        # font_style after delegating, so it always matches the logical
+        # font selection.
+        super().set_font(family, style, size)
+        fontkey = self.font_family + self.font_style
+        if fontkey in self.fonts:
+            self.current_font = self.fonts[fontkey]
 
     def _shape_text(self, text: str) -> str:
         lines = text.split("\n")

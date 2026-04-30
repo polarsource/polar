@@ -1,4 +1,6 @@
 import datetime
+import re
+import zlib
 from pathlib import Path
 from typing import Any
 
@@ -316,3 +318,144 @@ def test_generator_uses_traditional_chinese_for_tw_customer(invoice: Invoice) ->
     tc_family = generator.cjk_font_name_for_script("tc")
     assert generator.get_fallback_font("範") == tc_family
     assert generator.get_fallback_font("範", style="B") == f"{tc_family}B"
+
+
+@pytest.mark.skipif(
+    not InvoiceGenerator.has_cjk_fallback_fonts(),
+    reason="CJK fallback fonts are not installed",
+)
+def test_generator_locale_overrides_country_for_cjk_script(invoice: Invoice) -> None:
+    generator = InvoiceGenerator(
+        invoice.model_copy(
+            update={
+                "customer_name": "山田太郎",
+                "customer_locale": "ja-JP",
+                "customer_address": Address(
+                    line1="123 Example St",
+                    city="Taipei City",
+                    postal_code="100",
+                    country=CountryAlpha2("TW"),
+                ),
+            }
+        )
+    )
+
+    jp_family = generator.cjk_font_name_for_script("jp")
+    assert generator.get_fallback_font("山") == jp_family
+    assert generator.get_fallback_font("山", style="B") == f"{jp_family}B"
+
+
+@pytest.mark.parametrize(
+    ("locale", "expected"),
+    [
+        (None, None),
+        ("", None),
+        ("en-US", None),
+        ("ja", "jp"),
+        ("ja-JP", "jp"),
+        ("ko", "kr"),
+        ("ko-KR", "kr"),
+        ("zh", "sc"),
+        ("zh-CN", "sc"),
+        ("zh-Hans", "sc"),
+        ("zh-SG", "sc"),
+        ("zh-TW", "tc"),
+        ("zh-HK", "tc"),
+        ("zh-MO", "tc"),
+        ("zh-Hant", "tc"),
+        ("zh_TW", "tc"),
+        ("ZH-tw", "tc"),
+    ],
+)
+def test_cjk_script_from_locale(locale: str | None, expected: str | None) -> None:
+    assert InvoiceGenerator.cjk_script_from_locale(locale) == expected
+
+
+@pytest.mark.skipif(
+    not InvoiceGenerator.has_cjk_fallback_fonts(),
+    reason="CJK fallback fonts are not installed",
+)
+def test_generator_renders_amounts_in_primary_font_after_cjk(
+    invoice: Invoice, tmp_path: Path
+) -> None:
+    """fpdf2's set_font short-circuits when family/style/size match, but
+    current_font can drift to a fallback after a CJK fragment renders. The
+    set_font override on InvoiceGenerator force-resolves current_font so
+    subsequent ASCII cells (quantity, unit price, amount) render with Inter
+    and not the CJK font that was used for the description.
+    """
+    generator = InvoiceGenerator(
+        invoice.model_copy(
+            update={
+                "customer_name": "Yamada Taro",
+                "customer_locale": "ja-JP",
+                "customer_address": Address(
+                    line1="1-1 Chiyoda",
+                    city="Tokyo",
+                    postal_code="100-0001",
+                    country=CountryAlpha2("JP"),
+                ),
+                "currency": "jpy",
+                "items": [
+                    InvoiceItem(
+                        description="年間プラン",
+                        quantity=1,
+                        unit_amount=10_000,
+                        amount=10_000,
+                    ),
+                ],
+            }
+        )
+    )
+    generator.generate()
+    path = tmp_path / "amounts.pdf"
+    generator.output(str(path))
+
+    raw = path.read_bytes()
+
+    font_objs: dict[int, str] = {}
+    for obj_match in re.finditer(rb"(\d+) 0 obj\b(.*?)endobj", raw, re.DOTALL):
+        body = obj_match.group(2)
+        if not re.search(rb"/Type\s*/Font\b", body):
+            continue
+        base_font = re.search(rb"/BaseFont\s*/([^\s/<>]+)", body)
+        if base_font:
+            font_objs[int(obj_match.group(1))] = base_font.group(1).decode()
+
+    font_alias_to_basefont: dict[str, str] = {}
+    for entry in re.finditer(rb"/(F\d+)\s+(\d+)\s+0\s+R", raw):
+        alias = entry.group(1).decode()
+        ref = int(entry.group(2))
+        if ref in font_objs:
+            font_alias_to_basefont.setdefault(alias, font_objs[ref])
+
+    page_stream_match = re.search(rb"\b4 0 obj\b(.*?)endobj", raw, re.DOTALL)
+    assert page_stream_match is not None
+    obj_body = page_stream_match.group(1)
+    stream_start = re.search(rb"stream\r?\n", obj_body)
+    stream_end = obj_body.rfind(b"\nendstream")
+    assert stream_start is not None
+    assert stream_end > 0
+    decompressed = zlib.decompress(obj_body[stream_start.end() : stream_end]).decode(
+        "latin1", errors="replace"
+    )
+
+    cjk_basefont_substrings = ("NotoSansTC", "NotoSansSC", "NotoSansJP", "NotoSansKR")
+    cjk_aliases = {
+        alias
+        for alias, base_font in font_alias_to_basefont.items()
+        if any(token in base_font for token in cjk_basefont_substrings)
+    }
+
+    cjk_tf_ops = [
+        tf_match.group(1)
+        for tf_match in re.finditer(r"/(F\d+)\s+[\d.]+\s+Tf", decompressed)
+        if tf_match.group(1) in cjk_aliases
+    ]
+    assert cjk_tf_ops, "Expected the CJK font to be used for the description cell"
+    assert len(cjk_tf_ops) == 1, (
+        f"Expected the CJK font to be selected exactly once (for the "
+        f"description cell), but got {len(cjk_tf_ops)} Tf ops referencing "
+        f"{cjk_tf_ops}. This means current_font drifted after the "
+        f"description cell and amounts rendered in the CJK font."
+    )

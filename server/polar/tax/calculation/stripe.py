@@ -20,7 +20,6 @@ from .base import (
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
     TaxCode,
-    TaxRate,
     TaxServiceProtocol,
 )
 
@@ -52,26 +51,6 @@ class InvalidTaxLocation(StripeTaxCalculationLogicalError):
                 "based on the provided customer address."
             ),
         )
-
-
-def from_stripe_tax_rate(tax_rate: stripe_lib.TaxRate) -> TaxRate | None:
-    rate_type = tax_rate.rate_type
-    if rate_type is None:
-        return None
-
-    return {
-        "rate_type": "fixed" if rate_type == "flat_amount" else "percentage",
-        "basis_points": int(tax_rate.percentage * 100)
-        if tax_rate.percentage is not None
-        else None,
-        "amount": tax_rate.flat_amount.amount if tax_rate.flat_amount else None,
-        "amount_currency": tax_rate.flat_amount.currency
-        if tax_rate.flat_amount
-        else None,
-        "display_name": tax_rate.display_name,
-        "country": tax_rate.country,
-        "state": tax_rate.state,
-    }
 
 
 def _get_stripe_tax_display_name(

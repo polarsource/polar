@@ -99,11 +99,7 @@ from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
-from polar.tax.calculation import (
-    TaxCode,
-    tax_rate_from_breakdown,
-    taxability_reason_from_breakdown,
-)
+from polar.tax.calculation import TaxCode
 from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.tax.calculation.base import TaxCalculationLogicalError
 from polar.tax.tax_id import InvalidTaxID, TaxID, to_stripe_tax_id, validate_tax_id
@@ -2176,20 +2172,12 @@ class CheckoutService:
                     else checkout.net_amount
                 )
                 checkout.tax_processor_id = tax_calculation["processor_id"]
-                checkout.taxability_reason = taxability_reason_from_breakdown(
-                    tax_calculation["tax_breakdown"]
-                )
-                checkout.tax_rate = tax_rate_from_breakdown(
-                    tax_calculation["tax_breakdown"]
-                )
                 checkout.tax_breakdown = tax_calculation["tax_breakdown"] or None
             except TaxCalculationLogicalError:
                 checkout.tax_processor = None
                 checkout.tax_amount = None
                 checkout.tax_behavior = None
                 checkout.tax_processor_id = None
-                checkout.taxability_reason = None
-                checkout.tax_rate = None
                 checkout.tax_breakdown = None
                 raise
             finally:

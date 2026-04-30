@@ -126,7 +126,7 @@ from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from polar.product.price_set import PriceSet
-from polar.tax.calculation import TaxabilityReason, TaxBreakdownItem, TaxRate
+from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID
 from tests.fixtures.database import SaveFixture
 
@@ -2371,8 +2371,6 @@ async def create_wallet_transaction(
     wallet: Wallet,
     amount: int,
     tax_amount: int = 0,
-    taxability_reason: TaxabilityReason | None = None,
-    tax_rate: TaxRate | None = None,
     tax_breakdown: list[TaxBreakdownItem] | None = None,
     tax_calculation_processor_id: str | None = None,
 ) -> WalletTransaction:
@@ -2383,8 +2381,6 @@ async def create_wallet_transaction(
         tax_amount=tax_amount,
         tax_processor=TaxProcessor.stripe,
         tax_calculation_processor_id=tax_calculation_processor_id,
-        taxability_reason=taxability_reason,
-        tax_rate=tax_rate,
         tax_breakdown=tax_breakdown,
     )
     await save_fixture(wallet_transaction)

@@ -992,8 +992,6 @@ class TestCreateSubscriptionOrder:
 
         assert billing_entry.amount is not None
         assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
-        assert order.taxability_reason == TaxabilityReason.standard_rated
-        assert order.tax_rate is not None
         assert order.tax_breakdown is not None
         assert (
             order.tax_breakdown[0]["taxability_reason"]
@@ -1311,7 +1309,11 @@ class TestCreateSubscriptionOrder:
         assert order.subtotal_amount == 4250
         assert order.tax_amount == 850
         assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
-        assert order.taxability_reason == TaxabilityReason.standard_rated
+        assert order.tax_breakdown is not None
+        assert (
+            order.tax_breakdown[0]["taxability_reason"]
+            == TaxabilityReason.standard_rated
+        )
         assert order.tax_transaction_processor_id is None
 
         for entry in [billing_entry_credit, billing_entry_debit, billing_entry_cycle]:
@@ -1564,12 +1566,15 @@ class TestCreateSubscriptionOrder:
         if order.subtotal_amount < 0:
             assert order.status == OrderStatus.paid
             assert order.tax_calculation_processor_id is None
-            assert order.taxability_reason == TaxabilityReason.standard_rated
             assert order.tax_transaction_processor_id is None
         else:
             assert order.status == OrderStatus.pending
             assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
-            assert order.taxability_reason == TaxabilityReason.standard_rated
+            assert order.tax_breakdown is not None
+            assert (
+                order.tax_breakdown[0]["taxability_reason"]
+                == TaxabilityReason.standard_rated
+            )
             assert order.tax_transaction_processor_id is None
 
         assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
@@ -2125,16 +2130,6 @@ class TestCreateWalletOrder:
             wallet=wallet,
             amount=100_00,
             tax_amount=20_00,
-            taxability_reason=TaxabilityReason.standard_rated,
-            tax_rate={
-                "rate_type": "percentage",
-                "basis_points": 2000,
-                "amount": None,
-                "amount_currency": None,
-                "display_name": "Tax",
-                "country": "US",
-                "state": None,
-            },
             tax_breakdown=[
                 {
                     "rate_type": "percentage",
@@ -2164,19 +2159,13 @@ class TestCreateWalletOrder:
         assert order.subtotal_amount == 100_00
         assert order.tax_amount == 20_00
         assert order.total_amount == 120_00
-        assert order.taxability_reason == TaxabilityReason.standard_rated
-        assert order.tax_rate == {
-            "rate_type": "percentage",
-            "basis_points": 2000,
-            "amount": None,
-            "amount_currency": None,
-            "display_name": "Tax",
-            "country": "US",
-            "state": None,
-        }
         assert order.tax_breakdown is not None
         assert len(order.tax_breakdown) == 1
         assert order.tax_breakdown[0]["amount"] == 20_00
+        assert (
+            order.tax_breakdown[0]["taxability_reason"]
+            == TaxabilityReason.standard_rated
+        )
 
         enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id=payment.processor_id

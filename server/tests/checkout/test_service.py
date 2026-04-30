@@ -1033,16 +1033,6 @@ class TestCreate:
         assert checkout.total_amount == expected_net_amount + tax_amount
         assert checkout.tax_behavior == tax_behavior
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
-        assert checkout.taxability_reason == TaxabilityReason.standard_rated
-        assert checkout.tax_rate == {
-            "rate_type": "percentage",
-            "basis_points": 2000,
-            "amount": None,
-            "amount_currency": None,
-            "display_name": "Tax",
-            "country": "US",
-            "state": None,
-        }
         assert checkout.tax_breakdown == [
             {
                 "rate_type": "percentage",
@@ -2978,8 +2968,7 @@ class TestUpdate:
 
         assert checkout.tax_amount is None
         assert checkout.tax_processor_id is None
-        assert checkout.taxability_reason is None
-        assert checkout.tax_rate is None
+        assert checkout.tax_breakdown is None
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "US"
 
@@ -3042,16 +3031,6 @@ class TestUpdate:
         assert checkout.total_amount == expected_net_amount + tax_amount
         assert checkout.tax_behavior == tax_behavior
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
-        assert checkout.taxability_reason == TaxabilityReason.standard_rated
-        assert checkout.tax_rate == {
-            "rate_type": "percentage",
-            "basis_points": 2000,
-            "amount": None,
-            "amount_currency": None,
-            "display_name": "Tax",
-            "country": "US",
-            "state": None,
-        }
         assert checkout.tax_breakdown == [
             {
                 "rate_type": "percentage",

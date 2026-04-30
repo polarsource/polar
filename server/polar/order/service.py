@@ -102,8 +102,6 @@ from polar.tax.calculation import (
     TaxCalculation,
     TaxCalculationLogicalError,
     TaxCode,
-    tax_rate_from_breakdown,
-    taxability_reason_from_breakdown,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -611,9 +609,7 @@ class OrderService:
                 billing_name=customer.billing_name,
                 billing_address=customer.billing_address,
                 tax_id=customer.tax_id,
-                taxability_reason=checkout.taxability_reason,
                 tax_behavior=checkout.tax_behavior,
-                tax_rate=checkout.tax_rate,
                 tax_breakdown=checkout.tax_breakdown,
                 invoice_number=invoice_number,
                 organization=organization,
@@ -787,10 +783,8 @@ class OrderService:
                     billing_reason=billing_reason,
                     billing_name=customer.billing_name,
                     billing_address=billing_address,
-                    taxability_reason=taxability_reason_from_breakdown(tax_breakdown),
                     tax_behavior=tax_behavior,
                     tax_id=tax_id,
-                    tax_rate=tax_rate_from_breakdown(tax_breakdown),
                     tax_breakdown=tax_breakdown or None,
                     tax_processor=tax_processor,
                     tax_calculation_processor_id=tax_calculation_processor_id,
@@ -918,9 +912,7 @@ class OrderService:
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
                 billing_address=customer.billing_address,
-                taxability_reason=None,
                 tax_id=customer.tax_id,
-                tax_rate=None,
                 tax_breakdown=None,
                 invoice_number=invoice_number,
                 organization=organization,
@@ -974,8 +966,6 @@ class OrderService:
                 billing_name=customer.billing_name,
                 billing_address=billing_address,
                 tax_id=customer.tax_id,
-                taxability_reason=wallet_transaction.taxability_reason,
-                tax_rate=wallet_transaction.tax_rate,
                 tax_breakdown=wallet_transaction.tax_breakdown,
                 invoice_number=invoice_number,
                 organization=wallet.organization,
@@ -1107,10 +1097,10 @@ class OrderService:
                 if payment_trigger is not None:
                     metadata[STRIPE_METADATA_PAYMENT_TRIGGER] = payment_trigger
 
-                if order.tax_rate is not None:
+                if order.tax_breakdown:
                     metadata["tax_amount"] = order.tax_amount
-                    metadata["tax_country"] = order.tax_rate["country"]
-                    metadata["tax_state"] = order.tax_rate["state"]
+                    metadata["tax_country"] = order.tax_breakdown[0]["country"]
+                    metadata["tax_state"] = order.tax_breakdown[0]["state"]
 
                 stripe_customer_id = order.customer.stripe_customer_id
                 assert stripe_customer_id is not None
@@ -1264,10 +1254,10 @@ class OrderService:
             "order_id": str(order.id),
             STRIPE_METADATA_PAYMENT_TRIGGER: PaymentTrigger.retry_customer,
         }
-        if order.tax_rate is not None:
+        if order.tax_breakdown:
             metadata["tax_amount"] = str(order.tax_amount)
-            metadata["tax_country"] = order.tax_rate["country"]
-            metadata["tax_state"] = order.tax_rate["state"]
+            metadata["tax_country"] = order.tax_breakdown[0]["country"]
+            metadata["tax_state"] = order.tax_breakdown[0]["state"]
 
         try:
             async with self.acquire_payment_lock(session, order):
@@ -1477,10 +1467,6 @@ class OrderService:
                     "tax_calculation_processor_id": tax_calculation_processor_id,
                     "tax_amount": tax_amount,
                     "tax_behavior": tax_behavior,
-                    "taxability_reason": taxability_reason_from_breakdown(
-                        tax_breakdown
-                    ),
-                    "tax_rate": tax_rate_from_breakdown(tax_breakdown),
                     "tax_breakdown": tax_breakdown or None,
                 }
 
@@ -1893,11 +1879,11 @@ class OrderService:
                 "tax_amount": order.tax_amount,
                 "fee": fee,
             }
-            if order.tax_rate is not None:
-                if order.tax_rate["country"] is not None:
-                    metadata["tax_country"] = order.tax_rate["country"]
-                if order.tax_rate["state"] is not None:
-                    metadata["tax_state"] = order.tax_rate["state"]
+            if order.tax_breakdown:
+                if order.tax_breakdown[0]["country"] is not None:
+                    metadata["tax_country"] = order.tax_breakdown[0]["country"]
+                if order.tax_breakdown[0]["state"] is not None:
+                    metadata["tax_state"] = order.tax_breakdown[0]["state"]
             if order.subscription_id is not None:
                 metadata["subscription_id"] = str(order.subscription_id)
             if order.product_id is not None:
@@ -2082,11 +2068,11 @@ class OrderService:
                 "tax_amount": order.tax_amount,
                 "fee": order.platform_fee_amount,
             }
-            if order.tax_rate is not None:
-                if order.tax_rate["country"] is not None:
-                    credit_metadata["tax_country"] = order.tax_rate["country"]
-                if order.tax_rate["state"] is not None:
-                    credit_metadata["tax_state"] = order.tax_rate["state"]
+            if order.tax_breakdown:
+                if order.tax_breakdown[0]["country"] is not None:
+                    credit_metadata["tax_country"] = order.tax_breakdown[0]["country"]
+                if order.tax_breakdown[0]["state"] is not None:
+                    credit_metadata["tax_state"] = order.tax_breakdown[0]["state"]
             if order.subscription_id is not None:
                 credit_metadata["subscription_id"] = str(order.subscription_id)
             if order.product_id is not None:

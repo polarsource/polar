@@ -98,11 +98,11 @@ async def backfill(
                 "tax_amount": order.tax_amount,
                 "fee": order.platform_fee_amount,
             }
-            if order.tax_rate is not None:
-                if order.tax_rate["country"] is not None:
-                    metadata["tax_country"] = order.tax_rate["country"]
-                if order.tax_rate["state"] is not None:
-                    metadata["tax_state"] = order.tax_rate["state"]
+            if order.tax_breakdown:
+                if order.tax_breakdown[0]["country"] is not None:
+                    metadata["tax_country"] = order.tax_breakdown[0]["country"]
+                if order.tax_breakdown[0]["state"] is not None:
+                    metadata["tax_state"] = order.tax_breakdown[0]["state"]
             if order.subscription_id is not None:
                 metadata["subscription_id"] = str(order.subscription_id)
             if order.product_id is not None:
@@ -133,11 +133,11 @@ async def backfill(
                 "tax_amount": order.tax_amount,
                 "fee": order.platform_fee_amount,
             }
-            if order.tax_rate is not None:
-                if order.tax_rate["country"] is not None:
-                    credit_metadata["tax_country"] = order.tax_rate["country"]
-                if order.tax_rate["state"] is not None:
-                    credit_metadata["tax_state"] = order.tax_rate["state"]
+            if order.tax_breakdown:
+                if order.tax_breakdown[0]["country"] is not None:
+                    credit_metadata["tax_country"] = order.tax_breakdown[0]["country"]
+                if order.tax_breakdown[0]["state"] is not None:
+                    credit_metadata["tax_state"] = order.tax_breakdown[0]["state"]
             if order.subscription_id is not None:
                 credit_metadata["subscription_id"] = str(order.subscription_id)
             if order.product_id is not None:

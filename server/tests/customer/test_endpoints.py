@@ -362,9 +362,7 @@ class TestCreateCustomer:
         assert json["external_id"] == "customer_ext_123"
 
         member_repository = MemberRepository.from_session(session)
-        owner = await member_repository.get_owner_by_customer_id(
-            session, uuid.UUID(json["id"])
-        )
+        owner = await member_repository.get_owner_by_customer_id(uuid.UUID(json["id"]))
         assert owner is not None
         assert owner.email == "owner@polar.sh"
         assert owner.name == "Owner Name"

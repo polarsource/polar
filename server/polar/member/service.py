@@ -132,7 +132,7 @@ class MemberService:
 
         # Prevent deleting the only owner
         if member.role == MemberRole.owner:
-            members = await repository.list_by_customer(session, member.customer_id)
+            members = await repository.list_by_customer(member.customer_id)
             owner_count = sum(1 for m in members if m.role == MemberRole.owner)
             if owner_count <= 1:
                 raise PolarRequestValidationError(
@@ -184,7 +184,7 @@ class MemberService:
         )
 
         repository = MemberRepository.from_session(session)
-        members = await repository.list_by_customer(session, customer_id)
+        members = await repository.list_by_customer(customer_id)
 
         if not members:
             return []
@@ -233,7 +233,7 @@ class MemberService:
             return
 
         repository = MemberRepository.from_session(session)
-        owner = await repository.get_owner_by_customer_id(session, customer.id)
+        owner = await repository.get_owner_by_customer_id(customer.id)
         if owner is None or owner.email.lower() == customer.email.lower():
             return
 
@@ -307,7 +307,7 @@ class MemberService:
         # regardless of email — if we only dedupe by (customer_id, email), a drifted
         # owner.email (e.g., typo in original email that was later corrected on the
         # customer) produces a duplicate owner on the next sign-in.
-        existing_owner = await repository.get_owner_by_customer_id(session, customer.id)
+        existing_owner = await repository.get_owner_by_customer_id(customer.id)
         if existing_owner is not None:
             log.debug(
                 "member.create_owner_member.skipped",
@@ -351,9 +351,7 @@ class MemberService:
                 error=str(e),
                 reason="Likely race condition - member already exists",
             )
-            existing_owner = await repository.get_owner_by_customer_id(
-                session, customer.id
-            )
+            existing_owner = await repository.get_owner_by_customer_id(customer.id)
             if existing_owner is not None:
                 log.info(
                     "member.create_owner_member.found_existing",
@@ -466,7 +464,7 @@ class MemberService:
         customer_id: UUID,
     ) -> Sequence[Member]:
         repository = MemberRepository.from_session(session)
-        return await repository.list_by_customer(session, customer_id)
+        return await repository.list_by_customer(customer_id)
 
     async def get_by_customer_and_id(
         self,
@@ -518,7 +516,7 @@ class MemberService:
         Get all members for multiple customers (batch loading to avoid N+1 queries).
         """
         repository = MemberRepository.from_session(session)
-        return await repository.list_by_customers(session, customer_ids)
+        return await repository.list_by_customers(customer_ids)
 
     async def create(
         self,
@@ -577,7 +575,7 @@ class MemberService:
         # NULL type is treated as 'individual' (legacy customers)
         customer_type = customer.type or CustomerType.individual
         if customer_type == CustomerType.individual:
-            existing_members = await repository.list_by_customer(session, customer_id)
+            existing_members = await repository.list_by_customer(customer_id)
             active_members = [m for m in existing_members if not m.is_deleted]
             if len(active_members) >= 1:
                 raise NotPermitted(
@@ -586,7 +584,7 @@ class MemberService:
                 )
 
         existing_member = await repository.get_by_customer_and_email(
-            session, customer, email=email
+            customer, email=email
         )
         if existing_member:
             log.info(
@@ -632,7 +630,7 @@ class MemberService:
                 error=str(e),
             )
             existing_member = await repository.get_by_customer_and_email(
-                session, customer, email=email
+                customer, email=email
             )
             if existing_member:
                 log.info(
@@ -674,7 +672,7 @@ class MemberService:
         transferred = False
 
         if role is not None and member.role != role:
-            members = await repository.list_by_customer(session, member.customer_id)
+            members = await repository.list_by_customer(member.customer_id)
             owner_count = sum(1 for m in members if m.role == MemberRole.owner)
 
             is_current_owner = member.role == MemberRole.owner
@@ -706,7 +704,7 @@ class MemberService:
                     else next(m for m in members if m.role == MemberRole.owner)
                 )
                 await repository.transfer_ownership(
-                    session, current_owner=current_owner, new_owner=member
+                    current_owner=current_owner, new_owner=member
                 )
                 transferred = True
                 log.info(

@@ -616,7 +616,7 @@ class CustomerService:
         is_team = customer.type == CustomerType.team
         if is_team:
             member_repository = MemberRepository.from_session(session)
-            members = await member_repository.list_by_customer(session, customer.id)
+            members = await member_repository.list_by_customer(customer.id)
             for m in members:
                 if (
                     m.email is not None
@@ -691,7 +691,7 @@ class CustomerService:
 
         member_repository = MemberRepository.from_session(session)
         member = await member_repository.get_by_customer_and_email(
-            session, customer, recipient_email
+            customer, recipient_email
         )
         if member is None:
             return None

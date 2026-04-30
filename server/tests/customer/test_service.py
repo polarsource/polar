@@ -205,7 +205,7 @@ class TestCreate:
         assert customer.name == "Test Customer"
 
         member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_customer_and_email(session, customer)
+        member = await member_repository.get_by_customer_and_email(customer)
         assert member is not None
         assert member.customer_id == customer.id
         assert member.email == customer.email
@@ -239,7 +239,7 @@ class TestCreate:
         assert customer.email == "customer.without.member@example.com"
 
         member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_customer_and_email(session, customer)
+        member = await member_repository.get_by_customer_and_email(customer)
         assert member is None
 
     @pytest.mark.auth(
@@ -280,7 +280,7 @@ class TestCreate:
         assert customer.external_id == "customer_ext_123"
 
         member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_owner_by_customer_id(session, customer.id)
+        member = await member_repository.get_owner_by_customer_id(customer.id)
         assert member is not None
         assert member.customer_id == customer.id
         assert member.email == "owner@polar.sh"
@@ -1065,7 +1065,7 @@ class TestDelete:
         await session.flush()
 
         repository = MemberRepository.from_session(session)
-        active_members = await repository.list_by_customer(session, customer.id)
+        active_members = await repository.list_by_customer(customer.id)
         assert len(active_members) == 0
 
     async def test_delete_prevents_duplicate_members_on_recreate(
@@ -1110,7 +1110,7 @@ class TestDelete:
 
         repository = MemberRepository.from_session(session)
         active_members = await repository.list_by_email_and_organization(
-            session, "duplicate-test@example.com", organization.id
+            "duplicate-test@example.com", organization.id
         )
         assert len(active_members) == 1
         assert active_members[0].id == member2.id
@@ -1141,7 +1141,7 @@ class TestDelete:
         await session.flush()
 
         repository = MemberRepository.from_session(session)
-        active_members = await repository.list_by_customer(session, customer.id)
+        active_members = await repository.list_by_customer(customer.id)
         assert len(active_members) == 0
 
     async def test_delete_with_multiple_members(
@@ -1175,7 +1175,7 @@ class TestDelete:
         await session.flush()
 
         repository = MemberRepository.from_session(session)
-        active_members = await repository.list_by_customer(session, customer.id)
+        active_members = await repository.list_by_customer(customer.id)
         assert len(active_members) == 0
 
 

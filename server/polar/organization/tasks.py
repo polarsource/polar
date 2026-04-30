@@ -296,9 +296,7 @@ async def _backfill_seats(
 
     async def _get_owner_member(customer_id: uuid.UUID) -> Member | None:
         if customer_id not in owner_members_map:
-            owner = await member_repository.get_owner_by_customer_id(
-                session, customer_id
-            )
+            owner = await member_repository.get_owner_by_customer_id(customer_id)
             if owner is not None:
                 owner_members_map[customer_id] = owner
         return owner_members_map.get(customer_id)
@@ -559,7 +557,7 @@ async def _backfill_benefit_grants(
             else:
                 if grant.customer_id not in owner_members_map:
                     owner = await member_repository.get_owner_by_customer_id(
-                        session, grant.customer_id
+                        grant.customer_id
                     )
                     if owner is not None:
                         owner_members_map[grant.customer_id] = owner
@@ -733,7 +731,7 @@ async def _cleanup_orphaned_seat_customers(
             continue
 
         # Soft-delete members first (FK restrict on customer_id)
-        members = await member_repository.list_by_customer(session, customer_id)
+        members = await member_repository.list_by_customer(customer_id)
         for member in members:
             await member_repository.soft_delete(member)
 
@@ -851,9 +849,7 @@ async def _prepare_seats(
 
     async def _get_owner_member(customer_id: uuid.UUID) -> Member | None:
         if customer_id not in owner_members_map:
-            owner = await member_repository.get_owner_by_customer_id(
-                session, customer_id
-            )
+            owner = await member_repository.get_owner_by_customer_id(customer_id)
             if owner is not None:
                 owner_members_map[customer_id] = owner
         return owner_members_map.get(customer_id)
@@ -1058,7 +1054,7 @@ async def _prepare_benefit_grants(
             if target_member_id is None:
                 if grant.customer_id not in owner_members_map:
                     owner = await member_repository.get_owner_by_customer_id(
-                        session, grant.customer_id
+                        grant.customer_id
                     )
                     if owner is not None:
                         owner_members_map[grant.customer_id] = owner

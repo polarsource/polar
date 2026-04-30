@@ -120,7 +120,7 @@ class CustomerSessionService:
         """
         member_repository = MemberRepository.from_session(session)
         members = await member_repository.list_by_email_and_organization(
-            session, email, organization.id
+            email, organization.id
         )
 
         if not members:
@@ -268,7 +268,7 @@ class CustomerSessionService:
 
             # Look up member by (customer, email) - unique combination
             member = await member_repository.get_by_customer_and_email(
-                session, customer, customer_session_code.email
+                customer, customer_session_code.email
             )
 
             if member is None:

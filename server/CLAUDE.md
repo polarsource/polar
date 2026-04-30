@@ -79,12 +79,14 @@ class ResourceRepository(
 **Key methods from base:**
 - `get_base_statement()` - Returns `select(self.model)`
 - `get_one(statement)` - Single result, raises if not found
-- `get_one_or_none(statement)` - Single result or None
-- `get_all(statement)` - All matching results
+- `get_one_or_none(statement)` - Single result or None (calls `.unique()` — safe with `joinedload`)
+- `get_all(statement)` - All matching results (calls `.unique()` — safe with `joinedload`)
 - `paginate(statement, limit, page)` - Returns (results, count)
 - `create(object, flush=False)` - Add to session
 - `update(object, update_dict)` - Update fields
 - `from_session(session)` - Factory method
+
+**Repository methods use `self.session`, not a `session` parameter.** Once constructed via `from_session(session)`, the session lives on the instance. Don't add a `session` arg to repository methods — pass domain args only. Use `self.session.execute(...)` for raw queries (writes, refreshes), or the base helpers above for selects.
 
 **Subqueries must project explicit columns.** `select(Model).subquery()` re-materializes every mapped column — `deferred=True` does NOT propagate. For count subqueries, use `count_subquery(statement)` from `polar.kit.pagination`; otherwise narrow with `.with_only_columns(...)` before calling `.subquery()`. Enforced by `uv run task lint_subquery`.
 

@@ -19,6 +19,19 @@ uv run task test              # Backend tests
 pnpm test                     # Frontend tests
 ```
 
+## Worktree Setup
+
+Fresh `.claude/worktrees/` checkouts don't carry `.env` or built artifacts. Before running tests in a new worktree:
+
+```bash
+cd server
+./dev/setup-environment       # generates .env
+uv run task generate_dev_jwks # creates .jwks.json
+uv run task emails            # builds emails/bin/react-email-pkg
+```
+
+Without these, pytest fails at config load with `JWKS` and `EMAIL_RENDERER_BINARY_PATH` validation errors.
+
 ## Documentation
 
 - **Handbook**: https://handbook.polar.sh/engineering/

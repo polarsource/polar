@@ -12,7 +12,6 @@ from polar.kit.repository import (
 )
 from polar.models.customer import Customer
 from polar.models.member import Member, MemberRole
-from polar.postgres import AsyncReadSession, AsyncSession
 
 
 class MemberRepository(
@@ -24,7 +23,6 @@ class MemberRepository(
 
     async def get_by_customer_and_email(
         self,
-        session: AsyncSession,
         customer: Customer,
         email: str | None = None,
     ) -> Member | None:
@@ -42,8 +40,7 @@ class MemberRepository(
             func.lower(Member.email) == email.lower(),
             Member.is_deleted.is_(False),
         )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return await self.get_one_or_none(statement)
 
     async def get_by_customer_id_and_email(
         self,
@@ -101,19 +98,16 @@ class MemberRepository(
 
     async def list_by_customer(
         self,
-        session: AsyncReadSession,
         customer_id: UUID,
     ) -> Sequence[Member]:
         statement = select(Member).where(
             Member.customer_id == customer_id,
             Member.is_deleted.is_(False),
         )
-        result = await session.execute(statement)
-        return result.scalars().all()
+        return await self.get_all(statement)
 
     async def get_owner_by_customer_id(
         self,
-        session: AsyncReadSession,
         customer_id: UUID,
         *,
         include_deleted: bool = False,
@@ -133,12 +127,10 @@ class MemberRepository(
         )
         if not include_deleted:
             statement = statement.where(Member.is_deleted.is_(False))
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        return await self.get_one_or_none(statement)
 
     async def transfer_ownership(
         self,
-        session: AsyncSession,
         *,
         current_owner: Member,
         new_owner: Member,
@@ -153,22 +145,21 @@ class MemberRepository(
         the customer briefly has zero owners (allowed by the partial index),
         then promote the new owner.
         """
-        await session.execute(
+        await self.session.execute(
             update(Member)
             .where(Member.id == current_owner.id)
             .values(role=MemberRole.billing_manager)
         )
-        await session.execute(
+        await self.session.execute(
             update(Member)
             .where(Member.id == new_owner.id)
             .values(role=MemberRole.owner)
         )
-        await session.refresh(current_owner, attribute_names=["role"])
-        await session.refresh(new_owner, attribute_names=["role"])
+        await self.session.refresh(current_owner, attribute_names=["role"])
+        await self.session.refresh(new_owner, attribute_names=["role"])
 
     async def list_by_email_and_organization(
         self,
-        session: AsyncReadSession,
         email: str,
         organization_id: UUID,
     ) -> Sequence[Member]:
@@ -186,12 +177,10 @@ class MemberRepository(
             )
             .options(joinedload(Member.customer))
         )
-        result = await session.execute(statement)
-        return result.scalars().unique().all()
+        return await self.get_all(statement)
 
     async def list_by_customers(
         self,
-        session: AsyncReadSession,
         customer_ids: Sequence[UUID],
     ) -> Sequence[Member]:
         """
@@ -204,8 +193,7 @@ class MemberRepository(
             Member.customer_id.in_(customer_ids),
             Member.is_deleted.is_(False),
         )
-        result = await session.execute(statement)
-        return result.scalars().all()
+        return await self.get_all(statement)
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

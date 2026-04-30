@@ -570,7 +570,7 @@ class CheckoutService:
             ):
                 member_repository = MemberRepository.from_session(session)
                 owner_member = await member_repository.get_owner_by_customer_id(
-                    session, checkout.customer.id
+                    checkout.customer.id
                 )
                 if owner_member is not None and owner_member.email is not None:
                     checkout.customer_email = owner_member.email

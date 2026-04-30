@@ -420,7 +420,7 @@ class TestCreateOwnerMember:
         assert member is not None
         assert member.id == existing.id
         repository = MemberRepository.from_session(session)
-        members = await repository.list_by_customer(session, customer.id)
+        members = await repository.list_by_customer(customer.id)
         assert len([m for m in members if m.role == MemberRole.owner]) == 1
 
 

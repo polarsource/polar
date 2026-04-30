@@ -183,7 +183,7 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         member_repository: MemberRepository,
         customer: Customer,
     ) -> Member:
-        member = await member_repository.get_owner_by_customer_id(session, customer.id)
+        member = await member_repository.get_owner_by_customer_id(customer.id)
         if member is None:
             # create_owner_member doesn't set the customer relationship,
             # set it for response serialization

@@ -123,7 +123,7 @@ async def resolve_member(
         raise MemberIdRequired()
 
     member = await member_repository.get_owner_by_customer_id(
-        session, customer_id, include_deleted=include_deleted
+        customer_id, include_deleted=include_deleted
     )
     if member is None:
         # Auto-create owner member (graceful fallback during migration)

@@ -151,7 +151,7 @@ class SeatService:
         if customer.email is not None:
             return customer.email
         owner = await MemberRepository.from_session(session).get_owner_by_customer_id(
-            session, customer.id
+            customer.id
         )
         return (owner.email if owner else None) or customer.display_name
 

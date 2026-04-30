@@ -82,6 +82,29 @@ const JUSTIFY: Record<string, string> = {
   'justify-evenly': 'evenly',
 }
 
+const ALIGN_SELF: Record<string, string> = {
+  'self-auto': 'auto',
+  'self-start': 'start',
+  'self-end': 'end',
+  'self-center': 'center',
+  'self-stretch': 'stretch',
+  'self-baseline': 'baseline',
+}
+
+// Tailwind shadow scale → Box boxShadow token (none|s|m|l|xl).
+// `shadow` (no suffix) and `shadow-md` both map to `m`.
+const SHADOW_MAP: Record<string, string> = {
+  'shadow-none': 'none',
+  'shadow-xs': 's',
+  'shadow-sm': 's',
+  shadow: 'm',
+  'shadow-md': 'm',
+  'shadow-lg': 'l',
+  'shadow-xl': 'xl',
+  'shadow-2xl': 'xl',
+  'shadow-3xl': 'xl',
+}
+
 const POSITION: Record<string, string> = {
   static: 'static',
   relative: 'relative',
@@ -236,7 +259,9 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
   if (FLEX_DIR_MAP[utility]) return one('flexDirection', FLEX_DIR_MAP[utility])
   if (FLEX_WRAP_MAP[utility]) return one('flexWrap', FLEX_WRAP_MAP[utility])
   if (ALIGN_ITEMS[utility]) return one('alignItems', ALIGN_ITEMS[utility])
+  if (ALIGN_SELF[utility]) return one('alignSelf', ALIGN_SELF[utility])
   if (JUSTIFY[utility]) return one('justifyContent', JUSTIFY[utility])
+  if (SHADOW_MAP[utility]) return one('boxShadow', SHADOW_MAP[utility])
   if (POSITION[utility]) return one('position', POSITION[utility])
   if (OVERFLOW[utility]) return one('overflow', OVERFLOW[utility])
   if (TEXT_ALIGN[utility]) return one('textAlign', TEXT_ALIGN[utility])
@@ -332,6 +357,17 @@ function mapUtility(utility: string, report: ElementReport): RawMap[] | null {
   if (utility === 'flex-auto') return one('flex', '1 1 auto')
   if (utility === 'flex-initial') return one('flex', '0 1 auto')
   if (utility === 'flex-none') return one('flex', 'none')
+
+  // size-N: shorthand for both width and height. Must come before w-/h-.
+  const sizeShortMatch = utility.match(/^size-(.+)$/)
+  if (sizeShortMatch) {
+    const wh = resolveSizeValue(sizeShortMatch[1], true)
+    if (wh === null) return null
+    return [
+      { prop: 'width', value: wh },
+      { prop: 'height', value: wh },
+    ]
+  }
 
   // Sizing: w/h/min-w/min-h/max-w/max-h
   const sizeMatch = utility.match(/^(min-w|max-w|min-h|max-h|w|h)-(.+)$/)
@@ -468,6 +504,27 @@ function sizingProp(prefix: string): string {
 
 function isWidth(prop: string): boolean {
   return prop === 'width' || prop === 'minWidth' || prop === 'maxWidth'
+}
+
+// Shared resolver for `size-X` and `(min|max)-(w|h)-X` value strings.
+// `square=true` means the value applies to both width & height (no vw/vh).
+function resolveSizeValue(v: string, square: boolean): string | number | null {
+  if (v === 'full') return '100%'
+  if (v === 'screen') return square ? null : '100vw'
+  if (v === 'auto') return 'auto'
+  if (v === 'fit') return 'fit-content'
+  if (v === 'min') return 'min-content'
+  if (v === 'max') return 'max-content'
+  if (v.startsWith('[')) {
+    const m = v.match(/^\[(.+)\]$/)
+    return m ? m[1] : null
+  }
+  const fracMatch = v.match(/^(\d+)\/(\d+)$/)
+  if (fracMatch) {
+    const pct = (Number(fracMatch[1]) / Number(fracMatch[2])) * 100
+    return `${pct}%`
+  }
+  return twUnitToPx(v)
 }
 
 function positionValue(v: string, negative = false): string | number | null {

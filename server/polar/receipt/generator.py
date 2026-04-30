@@ -128,6 +128,7 @@ class Receipt(Invoice):
             customer_name=order.billing_name,
             customer_additional_info=customer_additional_info,
             customer_address=order.billing_address,
+            customer_locale=order.customer.locale,
             subtotal_amount=order.subtotal_amount,
             applied_balance_amount=order.applied_balance_amount,
             discount_amount=order.discount_amount,

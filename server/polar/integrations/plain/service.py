@@ -51,7 +51,6 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.organization_review import OrganizationReview
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.user.repository import UserRepository
@@ -82,12 +81,6 @@ class AccountReviewThreadCreationError(PlainServiceError):
         super().__init__(
             f"Error creating thread for account ID {account_id}: {message}"
         )
-
-
-class NoUserFoundError(PlainServiceError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        super().__init__(f"No user found for organization {organization_id}")
 
 
 class PlainCustomerError(PlainServiceError):
@@ -143,104 +136,6 @@ class PlainService:
 
         cards = [card for task in tasks if (card := task.result()) is not None]
         return CustomerCardsResponse(cards=cards)
-
-    async def create_appeal_review_thread(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        review: OrganizationReview,
-    ) -> None:
-        """Create Plain ticket for organization appeal review."""
-        if not self.enabled:
-            return
-
-        user_repository = UserRepository.from_session(session)
-        users = await user_repository.get_all_by_organization(organization.id)
-        if len(users) == 0:
-            raise NoUserFoundError(organization.id)
-        user = users[0]
-
-        # Create Plain ticket for appeal review
-        async with self._get_plain_client() as plain:
-            try:
-                customer_identifier = await self._get_or_create_customer(plain, user)
-            except PlainCustomerError as e:
-                raise AccountReviewThreadCreationError(user.id, e.message) from e
-
-            # Create the thread with detailed appeal information
-            thread_result = await plain.create_thread(
-                CreateThreadInput(
-                    customer_identifier=customer_identifier,
-                    title=f"Organization Appeal - {organization.slug}",
-                    label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
-                    components=[
-                        ComponentInput(
-                            component_text=ComponentTextInput(
-                                text=f"The organization `{organization.slug}` has submitted an appeal for review after AI validation {review.verdict}."
-                            )
-                        ),
-                        ComponentInput(
-                            component_container=ComponentContainerInput(
-                                container_content=[
-                                    ComponentContainerContentInput(
-                                        component_text=ComponentTextInput(
-                                            text=organization.name or organization.slug
-                                        )
-                                    ),
-                                    ComponentContainerContentInput(
-                                        component_divider=ComponentDividerInput(
-                                            divider_spacing_size=ComponentDividerSpacingSize.M
-                                        )
-                                    ),
-                                    # Organization ID
-                                    ComponentContainerContentInput(
-                                        component_row=ComponentRowInput(
-                                            row_main_content=[
-                                                ComponentRowContentInput(
-                                                    component_text=ComponentTextInput(
-                                                        text="Organization ID",
-                                                        text_size=ComponentTextSize.S,
-                                                        text_color=ComponentTextColor.MUTED,
-                                                    )
-                                                ),
-                                                ComponentRowContentInput(
-                                                    component_text=ComponentTextInput(
-                                                        text=str(organization.id)
-                                                    )
-                                                ),
-                                            ],
-                                            row_aside_content=[
-                                                ComponentRowContentInput(
-                                                    component_copy_button=ComponentCopyButtonInput(
-                                                        copy_button_value=str(
-                                                            organization.id
-                                                        ),
-                                                        copy_button_tooltip_label="Copy Organization ID",
-                                                    )
-                                                )
-                                            ],
-                                        )
-                                    ),
-                                    # Backoffice Link
-                                    ComponentContainerContentInput(
-                                        component_link_button=ComponentLinkButtonInput(
-                                            link_button_url=settings.generate_backoffice_url(
-                                                f"/organizations/{organization.id}"
-                                            ),
-                                            link_button_label="View in Backoffice",
-                                        )
-                                    ),
-                                ]
-                            )
-                        ),
-                    ],
-                )
-            )
-
-            if thread_result.error is not None:
-                raise AccountReviewThreadCreationError(
-                    user.id, thread_result.error.message
-                )
 
     async def create_organization_deletion_thread(
         self,

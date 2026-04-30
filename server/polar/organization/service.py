@@ -958,6 +958,23 @@ class OrganizationService:
             return False
 
         if not await self._is_activation_ready(session, organization):
+            if organization.status in (
+                OrganizationStatus.DENIED,
+                OrganizationStatus.BLOCKED,
+            ):
+                organization.set_status(OrganizationStatus.CREATED)
+                _append_internal_note(
+                    organization,
+                    "Appeal approved — reverted to created pending Stripe "
+                    "Identity and Stripe Connect Express completion.",
+                    reason=review.appeal_reason or "Appeal approved",
+                )
+                session.add(organization)
+                log.info(
+                    "organization.maybe_activate.reverted_to_created",
+                    organization_id=str(organization.id),
+                    slug=organization.slug,
+                )
             return False
 
         reason: str | None = None
@@ -1219,8 +1236,9 @@ class OrganizationService:
         Recording the approval flips the review's ``appeal_decision`` and then
         delegates to :meth:`maybe_activate` — which runs the remaining gates
         (payout account ready, admin identity verified) before transitioning
-        DENIED → ACTIVE. If a gate is still missing the org stays DENIED and
-        will activate later when the relevant webhook fires.
+        DENIED → ACTIVE. If a gate is still missing the org is moved to
+        CREATED so the merchant can finish Stripe onboarding; a later
+        webhook-triggered ``maybe_activate`` then promotes it to ACTIVE.
         """
 
         repository = OrganizationReviewRepository.from_session(session)

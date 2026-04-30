@@ -1353,7 +1353,7 @@ class TestApproveAppeal:
         assert result.appeal_decision == OrganizationReview.AppealDecision.APPROVED
         assert result.appeal_reviewed_at is not None
 
-    async def test_approve_appeal_records_decision_but_stays_denied_when_gates_missing(
+    async def test_approve_appeal_reverts_to_created_when_gates_missing(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1377,7 +1377,10 @@ class TestApproveAppeal:
 
         result = await organization_service.approve_appeal(session, organization)
 
-        assert organization.status == OrganizationStatus.DENIED
+        assert organization.status == OrganizationStatus.CREATED
+        assert organization.internal_notes is not None
+        assert "Appeal approved" in organization.internal_notes
+        assert "pending Stripe Identity" in organization.internal_notes
         assert result.appeal_decision == OrganizationReview.AppealDecision.APPROVED
         assert result.appeal_reviewed_at is not None
 

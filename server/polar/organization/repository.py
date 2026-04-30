@@ -31,7 +31,9 @@ from polar.models.discount import (
 )
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
+from polar.models.product_price import ProductPrice, ProductPriceAmountType
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.postgres import AsyncReadSession
 
 from .sorting import OrganizationSortProperty
@@ -226,16 +228,38 @@ class OrganizationRepository(
     ) -> int:
         """Count active subscriptions that involve real payments.
 
-        Excludes free subscriptions (amount == 0) when they are inherently
-        free or permanently free via a forever discount. Subscriptions made
-        temporarily free by a once/repeating discount are still counted,
-        since they will become paid when the discount expires.
+        A subscription counts only if it has at least one non-free price
+        (fixed, custom, metered_unit, seat_based). Subscriptions whose
+        prices are all of `amount_type=free` don't generate any billing
+        and shouldn't block deletion.
 
-        Excludes subscriptions that have already been cancelled (e.g. trials
-        or active subscriptions set to cancel at period end): they keep an
-        active-looking status until the period ends, but will end on their
-        own without further billing, so they shouldn't block deletion.
+        Subscriptions made permanently free by a forever 100% percentage
+        discount are also excluded; subscriptions made temporarily free by
+        a once/repeating discount are still counted, since they will
+        become paid when the discount expires.
+
+        Subscriptions that have already been cancelled (e.g. trials or
+        active subscriptions set to cancel at period end) are excluded as
+        well: they keep an active-looking status until the period ends,
+        but will end on their own without further billing.
         """
+        has_paid_price = (
+            select(SubscriptionProductPrice.subscription_id)
+            .join(
+                ProductPrice,
+                SubscriptionProductPrice.product_price_id == ProductPrice.id,
+            )
+            .where(
+                SubscriptionProductPrice.subscription_id == Subscription.id,
+                ProductPrice.amount_type != ProductPriceAmountType.free,
+            )
+            .exists()
+        )
+        is_forever_full_percentage_discount = (
+            (Discount.type == DiscountType.percentage)
+            & (DiscountPercentage.basis_points == 10000)
+            & (Discount.duration == DiscountDuration.forever)
+        )
         statement = (
             select(func.count(Subscription.id))
             .join(Customer, Subscription.customer_id == Customer.id)
@@ -245,17 +269,8 @@ class OrganizationRepository(
                 Customer.is_deleted.is_(False),
                 Subscription.status.in_(SubscriptionStatus.active_statuses()),
                 Subscription.canceled_at.is_(None),
-                ~(
-                    (Subscription.amount == 0)
-                    & (
-                        Subscription.discount_id.is_(None)
-                        | (
-                            (Discount.type == DiscountType.percentage)
-                            & (DiscountPercentage.basis_points == 10000)
-                            & (Discount.duration == DiscountDuration.forever)
-                        )
-                    )
-                ),
+                has_paid_price,
+                ~is_forever_full_percentage_discount,
             )
         )
         result = await self.session.execute(statement)

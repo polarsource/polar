@@ -314,3 +314,22 @@ class CustomerRepository(
         result = await self.session.execute(stmt)
         next_number = result.scalar_one()
         return next_number - 1
+
+    async def increment_receipt_next_number_by(
+        self, customer_id: UUID, count: int
+    ) -> int:
+        """Atomically reserve a contiguous range of ``count`` receipt numbers.
+
+        Returns the first reserved number (the value before increment).
+        """
+        if count <= 0:
+            raise ValueError("count must be positive")
+        stmt = (
+            update(Customer)
+            .where(Customer.id == customer_id)
+            .values(receipt_next_number=Customer.receipt_next_number + count)
+            .returning(Customer.receipt_next_number)
+        )
+        result = await self.session.execute(stmt)
+        next_value = result.scalar_one()
+        return next_value - count

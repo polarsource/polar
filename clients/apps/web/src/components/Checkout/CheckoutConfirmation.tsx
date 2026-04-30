@@ -76,6 +76,7 @@ const StripeRequiresAction = ({
     if (!stripe) {
       return
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     handleNextAction(stripe)
   }, [stripe, handleNextAction, pendingHandling])
 

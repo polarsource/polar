@@ -44,13 +44,13 @@
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
-    "ai": "^6.0.167",
+    "ai": "^6.0.168",
     "dotenv": "^16.6.1",
     "react": "^19.2.5",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "latest",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.5"
   },
   "peerDependencies": {
     "react": "^19.2.4"

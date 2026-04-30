@@ -24,6 +24,7 @@ const ImageUpload = ({
   const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>()
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setImagePreviewSrc(defaultValue)
   }, [defaultValue])
 

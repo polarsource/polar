@@ -45,6 +45,7 @@ export const BenefitSearchComplex = ({
   }, [searchQuery])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsDropdownOpen(debouncedQuery.trim().length > 0)
   }, [debouncedQuery])
 
@@ -104,6 +105,7 @@ export const BenefitSearchComplex = ({
   const searchResults = searchResultsQuery.data?.items ?? []
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEnabledPage(1)
     setAvailablePage(1)
   }, [selectedBenefitIds.length])

@@ -37,6 +37,7 @@ export const SUPPORTED_PAYOUT_COUNTRIES = [
   'FI',
   'FR',
   'GA',
+  'GH',
   'GM',
   'DE',
   'GR',

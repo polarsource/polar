@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { useContext } from 'react'
 import { StatusIcon } from './StatusIcon'
 import { Text } from '@polar-sh/orbit'
+import { ReviewChecklistStep } from './types'
 
 type StepConfig = {
   label: string
@@ -31,7 +32,7 @@ const REASON_LABELS: Record<schemas['OrganizationReviewCheckReason'], string> =
   }
 
 const useStepConfig = (): Partial<
-  Record<schemas['OrganizationReviewCheckKey'], StepConfig>
+  Record<ReviewChecklistStep['key'], StepConfig>
 > => {
   const { organization } = useContext(OrganizationContext)
 
@@ -39,15 +40,23 @@ const useStepConfig = (): Partial<
     identity: {
       label: 'Verify your identity',
       cta: {
-        label: 'Change',
+        label: 'Update',
         href: `/dashboard/${organization.slug}/settings`,
       },
     },
     'identity.email': {
       label: 'Email',
+      cta: {
+        label: 'Update',
+        href: `/dashboard/${organization.slug}/settings`,
+      },
     },
     'identity.social_links': {
       label: 'Social Links',
+      cta: {
+        label: 'Update',
+        href: `/dashboard/${organization.slug}/settings`,
+      },
     },
     'identity.stripe_identity_verification': {
       label: 'Identity verification',
@@ -55,14 +64,14 @@ const useStepConfig = (): Partial<
     product_description: {
       label: 'Product description',
       cta: {
-        label: 'Change',
+        label: 'Update',
         href: `/dashboard/${organization.slug}/settings`,
       },
     },
     payout_account: {
       label: 'Setup a payout account',
       cta: {
-        label: 'Change',
+        label: 'Update',
         onClick: () => {
           console.log('hello!')
         },
@@ -72,7 +81,7 @@ const useStepConfig = (): Partial<
 }
 
 interface Props {
-  step?: schemas['OrganizationReviewCheck']
+  step?: ReviewChecklistStep
   variant: 'parent' | 'child'
   isLoading: boolean
 }
@@ -96,23 +105,45 @@ export const ChecklistRow = ({ step, variant, isLoading }: Props) => {
 
   const entry = stepConfig[step.key]
   const label = entry?.label ?? step.key
-  const cta = variant === 'parent' ? entry?.cta : undefined
+  const cta = entry?.cta
+    ? {
+        ...entry.cta,
+        label: step.status === 'pending' ? 'Add' : entry.cta.label,
+      }
+    : undefined
+  const showCta =
+    !!cta &&
+    step.status !== 'passed' &&
+    (variant === 'child' || step.key !== 'identity')
   const reasonText = step.reasons?.map((r) => REASON_LABELS[r] ?? r).join(', ')
 
   return (
-    <Box display="flex" alignItems="center" columnGap="s">
+    <Box
+      display="flex"
+      alignItems="center"
+      columnGap="s"
+      minHeight={variant === 'child' ? 24 : undefined}
+    >
       <StatusIcon status={step.status} variant={variant} />
       <Text variant={variant === 'parent' ? 'body' : 'label'}>{label}</Text>
       {reasonText && (
-        <span className="dark:text-polar-400 text-sm text-gray-500">
+        <span className="dark:text-polar-400 text-xs text-gray-500">
           {reasonText}
         </span>
       )}
-      {cta && (
+      {showCta && cta && (
         <Box marginLeft="auto">
           {'href' in cta ? (
             <Link href={cta.href}>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={
+                  variant === 'child'
+                    ? 'h-5 min-h-0 px-1 py-0 leading-none'
+                    : undefined
+                }
+              >
                 {cta.label}
               </Button>
             </Link>
@@ -120,6 +151,11 @@ export const ChecklistRow = ({ step, variant, isLoading }: Props) => {
             <Button
               variant="ghost"
               size="sm"
+              className={
+                variant === 'child'
+                  ? 'h-5 min-h-0 px-1 py-0 leading-none'
+                  : undefined
+              }
               onClick={cta.onClick}
               disabled={cta.disabled}
             >

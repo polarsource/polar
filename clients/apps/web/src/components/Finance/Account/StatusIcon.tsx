@@ -29,6 +29,16 @@ const STATUS_TOKENS: Record<
   pending: { backgroundColor: 'background-pending', color: 'text-pending' },
 }
 
+const CHILD_ICON_COLOR_CLASS: Record<
+  schemas['OrganizationReviewCheckStatus'],
+  string
+> = {
+  passed: 'text-gray-900 dark:text-gray-100',
+  failed: 'text-red-600 dark:text-red-400',
+  warning: 'text-yellow-500 dark:text-yellow-300',
+  pending: 'text-gray-500 dark:text-polar-400',
+}
+
 interface Props {
   status: schemas['OrganizationReviewCheckStatus']
   variant: 'parent' | 'child'
@@ -39,7 +49,7 @@ export const StatusIcon = ({ status, variant }: Props) => {
 
   if (variant === 'child') {
     return (
-      <Icon className="dark:text-polar-200 h-4 w-4 shrink-0 text-gray-900" />
+      <Icon className={`h-4 w-4 shrink-0 ${CHILD_ICON_COLOR_CLASS[status]}`} />
     )
   }
 

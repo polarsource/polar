@@ -1,12 +1,12 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { useTheme } from 'next-themes'
 import { ChecklistRow } from './ChecklistRow'
+import { ReviewChecklistStep } from './types'
 
 interface Props {
-  steps: schemas['OrganizationReviewCheck'][]
+  steps: ReviewChecklistStep[]
   isLoading: boolean
 }
 
@@ -19,13 +19,13 @@ export const ReviewChecklist = ({ steps, isLoading }: Props) => {
   return (
     <Box display="flex" flexDirection="column" rowGap="s">
       {items.map((step, i) => {
-        const children = step?.children ?? []
+        const children: ReviewChecklistStep[] = step?.children ?? []
         return (
           <Box
             key={step?.key ?? i}
             display="flex"
             flexDirection="column"
-            rowGap="s"
+            rowGap="m"
             borderRadius="md"
             padding="l"
             backgroundColor="background-card"
@@ -42,7 +42,7 @@ export const ReviewChecklist = ({ steps, isLoading }: Props) => {
               <Box
                 display="flex"
                 flexDirection="column"
-                rowGap="xs"
+                rowGap="s"
                 paddingLeft="xs"
               >
                 {children.map((child) => (

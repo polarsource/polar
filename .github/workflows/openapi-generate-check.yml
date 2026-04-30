@@ -17,8 +17,6 @@ concurrency:
 jobs:
   check:
     name: "Check generated client"
-    # TODO: Remove this and fix flakiness
-    if: false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: read
@@ -33,14 +31,15 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
+          fetch-depth: 100
+          filter: blob:none
 
       - name: Merge base branch
         if: github.event_name == 'pull_request'
         run: |
           git config user.email "actions@github.com"
           git config user.name "github-actions"
-          git fetch origin ${{ github.event.pull_request.base.ref }}
+          git fetch --depth=100 origin ${{ github.event.pull_request.base.ref }}
           if ! git merge --no-edit origin/${{ github.event.pull_request.base.ref }}; then
             git merge --abort
             echo "::error::Could not merge ${{ github.event.pull_request.base.ref }} into the PR cleanly. Please update your branch locally and push."

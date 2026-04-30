@@ -205,10 +205,11 @@ class TestProductPriceFixedCurrencyMinimums:
         [
             pytest.param(PresentmentCurrency.usd, 49, "$0.50", id="usd-below-min"),
             pytest.param(PresentmentCurrency.inr, 5999, "₹60.00", id="inr-below-min"),
-            pytest.param(PresentmentCurrency.gbp, 29, "£0.30", id="gbp-below-min"),
+            pytest.param(PresentmentCurrency.gbp, 39, "£0.40", id="gbp-below-min"),
             pytest.param(
                 PresentmentCurrency.huf, 17499, "Ft17,500.00", id="huf-below-min"
             ),
+            pytest.param(PresentmentCurrency.mxn, 899, "MX$9.00", id="mxn-below-min"),
         ],
     )
     def test_below_minimum_shows_currency_specific_error(
@@ -232,8 +233,8 @@ class TestProductPriceFixedCurrencyMinimums:
         [
             pytest.param(PresentmentCurrency.usd, 50, id="usd-at-min"),
             pytest.param(PresentmentCurrency.inr, 6000, id="inr-at-min"),
-            pytest.param(PresentmentCurrency.gbp, 30, id="gbp-at-min"),
-            pytest.param(PresentmentCurrency.mxn, 10, id="mxn-at-min"),
+            pytest.param(PresentmentCurrency.gbp, 40, id="gbp-at-min"),
+            pytest.param(PresentmentCurrency.mxn, 900, id="mxn-at-min"),
             pytest.param(PresentmentCurrency.usd, 1000, id="usd-above-min"),
             pytest.param(PresentmentCurrency.inr, 10000, id="inr-above-min"),
         ],

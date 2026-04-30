@@ -78,7 +78,7 @@ jobs:
 
       - name: Install client dependencies
         working-directory: ./clients
-        run: pnpm install
+        run: pnpm install --ignore-scripts
 
       - name: Regenerate OpenAPI client
         working-directory: ./clients

@@ -75,6 +75,7 @@ jobs:
             stale=true
             echo "::warning::Generated client (clients/packages/client/src/v1.ts) is out of date. Run 'pnpm generate' in clients/."
           fi
+          echo "stale=$stale" >> "$GITHUB_OUTPUT"
           {
             echo 'body<<COMMENT_EOF'
             echo '<!-- __OPENAPI_CLIENT_REGEN -->'
@@ -118,3 +119,9 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           edit-mode: replace
           body: ${{ steps.body.outputs.body }}
+
+      - name: Fail if generated client is out of date
+        if: steps.body.outputs.stale == 'true'
+        run: |
+          echo "Generated OpenAPI client is out of date. Run 'pnpm generate' in clients/ and commit the result."
+          exit 1

@@ -1720,6 +1720,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/orders/{id}/receipt': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Order Receipt
+     * @description Get a presigned URL to download an order's receipt PDF.
+     *
+     *     **Scopes**: `orders:read`
+     */
+    get: operations['orders:receipt']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/refunds/': {
     parameters: {
       query?: never
@@ -3557,6 +3579,26 @@ export interface paths {
      * @description Trigger generation of an order's invoice.
      */
     post: operations['customer_portal:orders:generate_invoice']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/orders/{id}/receipt': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Order Receipt
+     * @description Get a presigned URL to download an order's receipt PDF.
+     */
+    get: operations['customer_portal:orders:receipt']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -14560,6 +14602,11 @@ export interface components {
        */
       is_invoice_generated: boolean
       /**
+       * Receipt Number
+       * @description The receipt number for this order. Set once the order is paid for organizations with receipts enabled. When set, a downloadable receipt PDF can be obtained via the receipt endpoint.
+       */
+      receipt_number: string | null
+      /**
        * Seats
        * @description Number of seats purchased (for seat-based one-time orders).
        */
@@ -14747,6 +14794,17 @@ export interface components {
        */
       medias: components['schemas']['ProductMediaFileRead'][]
       organization: components['schemas']['CustomerOrganization']
+    }
+    /**
+     * CustomerOrderReceipt
+     * @description Order's receipt data.
+     */
+    CustomerOrderReceipt: {
+      /**
+       * Url
+       * @description The URL to the receipt PDF.
+       */
+      url: string
     }
     /**
      * CustomerOrderSortProperty
@@ -21249,6 +21307,11 @@ export interface components {
        */
       is_invoice_generated: boolean
       /**
+       * Receipt Number
+       * @description The receipt number for this order. Set once the order is paid for organizations with receipts enabled. When set, a downloadable receipt PDF can be obtained via the receipt endpoint.
+       */
+      receipt_number: string | null
+      /**
        * Seats
        * @description Number of seats purchased (for seat-based one-time orders).
        */
@@ -21648,6 +21711,17 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+    }
+    /**
+     * OrderReceipt
+     * @description Order's receipt data.
+     */
+    OrderReceipt: {
+      /**
+       * Url
+       * @description The URL to the receipt PDF.
+       */
+      url: string
     }
     /**
      * OrderRefundedEvent
@@ -33815,6 +33889,54 @@ export interface operations {
       }
     }
   }
+  'orders:receipt': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The order ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrderReceipt']
+        }
+      }
+      /** @description Receipt generation in progress. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Order not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'refunds:list': {
     parameters: {
       query?: {
@@ -39753,6 +39875,54 @@ export interface operations {
           'application/json':
             | components['schemas']['MissingInvoiceBillingDetails']
             | components['schemas']['NotPaidOrder']
+        }
+      }
+    }
+  }
+  'customer_portal:orders:receipt': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The order ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerOrderReceipt']
+        }
+      }
+      /** @description Receipt generation in progress. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Order not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }

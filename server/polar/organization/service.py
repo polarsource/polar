@@ -505,7 +505,8 @@ class OrganizationService:
         An organization can be deleted immediately if it has:
         - No paid orders (excludes $0 orders from free/discounted products)
         - No paid active subscriptions (excludes inherently free or
-          permanently discounted subscriptions)
+          permanently discounted subscriptions, and subscriptions already
+          set to cancel at period end / trial end)
 
         If it has an account but no orders/subscriptions, we'll attempt to
         delete the Stripe account first.

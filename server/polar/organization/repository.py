@@ -230,6 +230,11 @@ class OrganizationRepository(
         free or permanently free via a forever discount. Subscriptions made
         temporarily free by a once/repeating discount are still counted,
         since they will become paid when the discount expires.
+
+        Excludes subscriptions that have already been cancelled (e.g. trials
+        or active subscriptions set to cancel at period end): they keep an
+        active-looking status until the period ends, but will end on their
+        own without further billing, so they shouldn't block deletion.
         """
         statement = (
             select(func.count(Subscription.id))
@@ -239,6 +244,7 @@ class OrganizationRepository(
                 Customer.organization_id == organization_id,
                 Customer.is_deleted.is_(False),
                 Subscription.status.in_(SubscriptionStatus.active_statuses()),
+                Subscription.canceled_at.is_(None),
                 ~(
                     (Subscription.amount == 0)
                     & (

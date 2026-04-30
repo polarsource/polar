@@ -1731,6 +1731,56 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
+    async def test_not_blocked_with_canceled_trialing_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Trialing subscriptions cancelled to end at trial end shouldn't block."""
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_subscription
+
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trialing,
+            cancel_at_period_end=True,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_not_blocked_with_active_subscriptions_set_to_cancel(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Active subscriptions set to cancel at period end shouldn't block."""
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_subscription
+
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            cancel_at_period_end=True,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
 
 @pytest.mark.asyncio
 class TestRequestDeletion:

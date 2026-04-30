@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { BundledLanguage } from 'shiki'
+import { BundledLanguage, type ThemeRegistration } from 'shiki'
 import { createHighlighterCore, HighlighterCore } from 'shiki/core'
 import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
 import langBash from 'shiki/langs/bash.mjs'
@@ -38,6 +38,15 @@ const highlighterPromise = createHighlighterCore({
 
 const getHighlighter = async (): Promise<HighlighterCore> => {
   return highlighterPromise
+}
+
+const addLineNumbersToHtml = (html: string): string => {
+  let lineNumber = 1
+  return html.replace(
+    /<span class="line">/g,
+    () =>
+      `<span class="line"><span class="line-number">${lineNumber++}</span>`,
+  )
 }
 
 interface SyntaxHighlighterContextType {
@@ -111,10 +120,15 @@ export const SyntaxHighlighterClient = ({
   lang,
   code,
   customThemeConfig,
+  lineNumbers = false,
 }: {
   lang: keyof typeof LANGUAGE_MAP
   code: string
-  customThemeConfig?: typeof themeConfig
+  customThemeConfig?: {
+    light: string | ThemeRegistration
+    dark: string | ThemeRegistration
+  }
+  lineNumbers?: boolean
 }) => {
   const { highlighter, loadLanguage } = useContext(SyntaxHighlighterContext)
   const [highlightedCode, setHighlightedCode] = useState<string | null>(null)
@@ -123,13 +137,14 @@ export const SyntaxHighlighterClient = ({
     if (!highlighter) return
 
     loadLanguage(lang).then((success) => {
-      const highlightedCode = highlighter.codeToHtml(code, {
+      const html = highlighter.codeToHtml(code, {
         lang: success ? lang : 'text',
         themes: customThemeConfig ?? themeConfig,
       })
+      const highlightedCode = lineNumbers ? addLineNumbersToHtml(html) : html
       setHighlightedCode(highlightedCode)
     })
-  }, [highlighter, loadLanguage, customThemeConfig, lang, code])
+  }, [highlighter, loadLanguage, customThemeConfig, lang, code, lineNumbers])
 
   return highlightedCode ? (
     // eslint-disable-next-line react/no-danger

@@ -4,6 +4,56 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Link from 'next/link'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import type { ThemeRegistration } from 'shiki'
+import {
+  SyntaxHighlighterClient,
+  SyntaxHighlighterProvider,
+} from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+
+const USE_CASES_THEME: { light: ThemeRegistration; dark: ThemeRegistration } = {
+  light: {
+    name: 'polar-usecases-gray-light',
+    type: 'light',
+    colors: {
+      'editor.background': '#ffffff',
+      'editor.foreground': '#374151',
+    },
+    settings: [
+      { settings: { foreground: '#374151' } },
+      { scope: ['comment'], settings: { foreground: '#d1d5db' } },
+      { scope: ['keyword', 'storage'], settings: { foreground: '#000000' } },
+      { scope: ['string'], settings: { foreground: '#9ca3af' } },
+      { scope: ['constant.numeric'], settings: { foreground: '#111827' } },
+      { scope: ['entity.name.function'], settings: { foreground: '#000000' } },
+      {
+        scope: ['variable', 'identifier'],
+        settings: { foreground: '#374151' },
+      },
+      { scope: ['punctuation'], settings: { foreground: '#6b7280' } },
+    ],
+  },
+  dark: {
+    name: 'polar-usecases-gray-dark',
+    type: 'dark',
+    colors: {
+      'editor.background': '#0a0a0a',
+      'editor.foreground': '#f3f4f6',
+    },
+    settings: [
+      { settings: { foreground: '#f3f4f6' } },
+      { scope: ['comment'], settings: { foreground: '#6b7280' } },
+      { scope: ['keyword', 'storage'], settings: { foreground: '#f9fafb' } },
+      { scope: ['string'], settings: { foreground: '#9ca3af' } },
+      { scope: ['constant.numeric'], settings: { foreground: '#ffffff' } },
+      { scope: ['entity.name.function'], settings: { foreground: '#ffffff' } },
+      {
+        scope: ['variable', 'identifier'],
+        settings: { foreground: '#d1d5db' },
+      },
+      { scope: ['punctuation'], settings: { foreground: '#9ca3af' } },
+    ],
+  },
+}
 
 const CASES = [
   {
@@ -126,16 +176,16 @@ export const UseCases = () => {
           </div>
 
           <div className="dark:bg-polar-950 bg-white">
-            <pre className="overflow-x-auto p-6 font-mono text-xs leading-relaxed text-gray-900 dark:text-gray-200">
-              {active.snippet.split('\n').map((line, i) => (
-                <div key={i} className="flex">
-                  <span className="dark:text-polar-700 w-8 shrink-0 pr-4 text-right text-gray-300 select-none">
-                    {i + 1}
-                  </span>
-                  <code>{line || ' '}</code>
-                </div>
-              ))}
-            </pre>
+            <div className="landing-usecases-code overflow-x-auto p-6 font-mono text-xs leading-relaxed brightness-[0.98] contrast-[1.35] grayscale">
+              <SyntaxHighlighterProvider>
+                <SyntaxHighlighterClient
+                  lang="typescript"
+                  code={active.snippet}
+                  customThemeConfig={USE_CASES_THEME}
+                  lineNumbers
+                />
+              </SyntaxHighlighterProvider>
+            </div>
           </div>
         </div>
       </div>

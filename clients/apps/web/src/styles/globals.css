@@ -383,6 +383,24 @@ pre.shiki {
   }
 }
 
+.landing-usecases-code pre.shiki .line {
+  display: inline-block;
+  width: 100%;
+}
+
+.landing-usecases-code pre.shiki .line .line-number {
+  display: inline-block;
+  width: 1.25rem;
+  margin-right: 1rem;
+  color: var(--color-gray-400);
+  text-align: right;
+  user-select: none;
+}
+
+.dark .landing-usecases-code pre.shiki .line .line-number {
+  color: var(--color-polar-600);
+}
+
 @media (prefers-color-scheme: dark) {
   .shiki,
   .shiki span {

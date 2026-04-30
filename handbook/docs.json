@@ -76,7 +76,8 @@
               "engineering/design-documents/multi-currency",
               "engineering/design-documents/business-entity",
               "engineering/design-documents/event-storage",
-              "engineering/design-documents/platform-api"
+              "engineering/design-documents/platform-api",
+              "engineering/design-documents/rbac"
             ]
           },
           "engineering/tech-notes",

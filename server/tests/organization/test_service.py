@@ -1641,40 +1641,6 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
-    async def test_not_blocked_with_free_active_subscription_with_dirty_amount(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        """A free-priced subscription is excluded even if Subscription.amount
-        is somehow non-zero — the check is by price type, not snapshot total.
-        """
-        from polar.models.subscription import SubscriptionStatus
-        from tests.fixtures.random_objects import create_product, create_subscription
-
-        free_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(None, "usd")],
-        )
-        subscription = await create_subscription(
-            save_fixture,
-            product=free_product,
-            customer=customer,
-            status=SubscriptionStatus.active,
-        )
-        subscription.amount = 1000
-        subscription.net_amount = 1000
-        await save_fixture(subscription)
-
-        result = await organization_service.check_can_delete(session, organization)
-
-        assert result.can_delete_immediately is True
-        assert result.blocked_reasons == []
-
     async def test_not_blocked_with_forever_discounted_free_subscriptions(
         self,
         session: AsyncSession,

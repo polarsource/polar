@@ -37,7 +37,7 @@ const google = createGoogleGenerativeAI({
 
 const anthropic = createAnthropic({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
-  baseURL: 'https://gateway-us.pydantic.dev/proxy/anthropic',
+  baseURL: 'https://gateway-us.pydantic.dev/proxy/anthropic/v1/',
 })
 
 const sharedSystemPrompt = `

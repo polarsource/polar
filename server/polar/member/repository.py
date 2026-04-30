@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, case, func, select, update
+from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -143,26 +143,26 @@ class MemberRepository(
         current_owner: Member,
         new_owner: Member,
     ) -> None:
-        """Swap the `owner` role from one member to another in a single UPDATE,
-        and refresh both instances so their in-memory `role` matches the DB.
+        """Swap the `owner` role from one member to another, and refresh both
+        instances so their in-memory `role` matches the DB.
 
         The partial unique index on `(customer_id) WHERE role = 'owner'` is
-        evaluated at statement end, so running demote+promote as two separate
-        statements would briefly expose two owners and trip the constraint.
-        A single CASE-based UPDATE moves both rows atomically.
+        non-deferrable and evaluated per-row, so a single CASE-based UPDATE
+        can momentarily produce two owner rows depending on physical row
+        order and trip the constraint. We demote the current owner first so
+        the customer briefly has zero owners (allowed by the partial index),
+        then promote the new owner.
         """
-        statement = (
+        await session.execute(
             update(Member)
-            .where(Member.id.in_([current_owner.id, new_owner.id]))
-            .values(
-                role=case(
-                    (Member.id == new_owner.id, MemberRole.owner),
-                    (Member.id == current_owner.id, MemberRole.billing_manager),
-                    else_=Member.role,
-                )
-            )
+            .where(Member.id == current_owner.id)
+            .values(role=MemberRole.billing_manager)
         )
-        await session.execute(statement)
+        await session.execute(
+            update(Member)
+            .where(Member.id == new_owner.id)
+            .values(role=MemberRole.owner)
+        )
         await session.refresh(current_owner, attribute_names=["role"])
         await session.refresh(new_owner, attribute_names=["role"])
 

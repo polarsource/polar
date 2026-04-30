@@ -1,4 +1,7 @@
+import uuid
+
 import pytest
+from sqlalchemy import text
 
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
@@ -240,3 +243,59 @@ class TestListByEmailAndOrganization:
         # Access customer without additional query (eager loaded)
         assert members[0].customer.id == customer.id
         assert members[0].customer.name == "Test Customer"
+
+
+@pytest.mark.asyncio
+class TestTransferOwnership:
+    async def test_succeeds_when_new_owner_id_sorts_before_current(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """
+        In a large table the planner picks an Index Scan on `members_pkey`
+        for the bulk UPDATE used during ownership transfer, visiting rows in
+        id-ASC order. If the new owner's id sorts before the current owner's,
+        the new row is updated to `role='owner'` before the current owner is
+        demoted, tripping the partial unique index.
+
+        In small tables the planner picks Seq/Bitmap scan (heap order)
+        and hides the bug. We disable seq/bitmap scans to force the prod plan.
+        """
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+
+        # Pick UUIDs so new_owner.id < current_owner.id under btree ordering.
+        current_owner_id = uuid.UUID("ffffffff-ffff-4fff-bfff-ffffffffffff")
+        new_owner_id = uuid.UUID("00000000-0000-4000-8000-000000000000")
+
+        current_owner = Member(
+            id=current_owner_id,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            role=MemberRole.owner,
+        )
+        new_owner = Member(
+            id=new_owner_id,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            role=MemberRole.member,
+        )
+        await save_fixture(current_owner)
+        await save_fixture(new_owner)
+
+        # Force the prod-style Index Scan plan on members_pkey.
+        await session.execute(text("SET LOCAL enable_seqscan = off"))
+        await session.execute(text("SET LOCAL enable_bitmapscan = off"))
+
+        repository = MemberRepository.from_session(session)
+        await repository.transfer_ownership(
+            session, current_owner=current_owner, new_owner=new_owner
+        )
+
+        assert new_owner.role == MemberRole.owner
+        assert current_owner.role == MemberRole.billing_manager

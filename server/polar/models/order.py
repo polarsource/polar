@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -29,7 +29,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.models.order_item import OrderItem
-from polar.tax.calculation import TaxabilityReason, TaxBreakdownItem
+from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
 if TYPE_CHECKING:
@@ -136,16 +136,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         String, nullable=True, unique=True, default=None
     )
 
-    taxability_reason: Mapped[TaxabilityReason | None] = mapped_column(
-        String, nullable=True, default=None, deferred=True
-    )
     tax_behavior: Mapped[TaxBehavior | None] = mapped_column(
         StringEnum(TaxBehavior), nullable=True, default=None
     )
     tax_id: Mapped[TaxID | None] = mapped_column(TaxIDType, nullable=True, default=None)
-    tax_rate: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=None, deferred=True
-    )
     tax_breakdown: Mapped[list[TaxBreakdownItem] | None] = mapped_column(
         JSONB(none_as_null=True), nullable=True, default=None
     )

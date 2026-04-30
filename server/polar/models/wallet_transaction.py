@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
@@ -11,7 +11,7 @@ from polar.enums import TaxProcessor
 from polar.kit.db.models import IDModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import utc_now
-from polar.tax.calculation import TaxabilityReason, TaxBreakdownItem
+from polar.tax.calculation import TaxBreakdownItem
 
 if TYPE_CHECKING:
     from .order import Order
@@ -36,12 +36,6 @@ class WalletTransaction(IDModel):
     )
     tax_amount: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, default=None
-    )
-    tax_rate: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=None, deferred=True
-    )
-    taxability_reason: Mapped[TaxabilityReason | None] = mapped_column(
-        String, nullable=True, default=None, deferred=True
     )
     tax_breakdown: Mapped[list[TaxBreakdownItem] | None] = mapped_column(
         JSONB(none_as_null=True), nullable=True, default=None

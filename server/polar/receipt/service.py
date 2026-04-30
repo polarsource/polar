@@ -1,5 +1,4 @@
 import asyncio
-from collections.abc import Sequence
 from datetime import datetime
 
 from polar.config import settings
@@ -9,7 +8,7 @@ from polar.integrations.aws.s3 import S3Service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.locker import Locker
-from polar.models import Customer, Order
+from polar.models import Order
 from polar.order.repository import OrderRepository
 from polar.payment.repository import PaymentRepository
 from polar.refund.repository import RefundRepository
@@ -33,9 +32,7 @@ class ReceiptService:
         """Allocate ``receipt_number`` for ``order``.
 
         Idempotent under concurrent calls: the row-level lock plus the
-        post-lock null-check prevents double-allocation. The backfill script
-        uses :meth:`bulk_allocate_for_customer` instead — it bypasses the
-        flag check and the row lock for the operator-controlled case.
+        post-lock null-check prevents double-allocation.
         """
         if not order.organization.is_receipts_enabled:
             return order
@@ -65,45 +62,6 @@ class ReceiptService:
         )
 
         return order
-
-    async def bulk_allocate_for_customer(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        orders: Sequence[Order],
-    ) -> int:
-        """Allocate receipt numbers for many orders of one customer at once.
-
-        Backfill-only: skips the ``is_receipts_enabled`` gate and the row
-        lock used by :meth:`allocate`. Caller must guarantee
-        (a) no concurrent allocator — safe while the org's flag is still off,
-        and (b) every passed order has a succeeded payment. Orders that
-        already have a ``receipt_number`` are filtered out for idempotency.
-
-        Returns the number of orders allocated. Does not write the new
-        number back to in-memory ``Order`` instances (would mark them dirty
-        and re-trigger per-row UPDATEs at commit, defeating the bulk path).
-        Use :meth:`session.refresh` to read it.
-        """
-        eligible = [o for o in orders if o.receipt_number is None]
-        if not eligible:
-            return 0
-
-        customer_repository = CustomerRepository.from_session(session)
-        start_number = await customer_repository.increment_receipt_next_number_by(
-            customer.id, len(eligible)
-        )
-
-        short_id = customer.short_id_str
-        mapping = {
-            order.id: f"{RECEIPT_NUMBER_PREFIX}-{short_id}-{(start_number + i):04d}"
-            for i, order in enumerate(eligible)
-        }
-
-        order_repository = OrderRepository.from_session(session)
-        await order_repository.bulk_set_receipt_numbers(mapping)
-
-        return len(eligible)
 
     async def _create_order_receipt(self, session: AsyncSession, order: Order) -> str:
         """Render the receipt PDF and upload it to S3, returning the new key."""

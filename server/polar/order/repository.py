@@ -2,20 +2,8 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import (
-    CursorResult,
-    Select,
-    String,
-    Uuid,
-    case,
-    column,
-    select,
-    tuple_,
-    update,
-    values,
-)
+from sqlalchemy import CursorResult, Select, case, select, update
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy.sql import ColumnElement
 
 from polar.auth.models import (
     AuthSubject,
@@ -42,14 +30,12 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
-    Payment,
     Product,
     ProductPrice,
     Subscription,
     UserOrganization,
 )
 from polar.models.order import OrderStatus
-from polar.models.payment import PaymentStatus
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrderSortProperty
@@ -119,120 +105,6 @@ class OrderRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar_one()
-
-    @staticmethod
-    def _has_succeeded_payment() -> ColumnElement[bool]:
-        """EXISTS subquery used by the receipt-eligibility predicates.
-
-        ``Order.paid`` is a status check, so we semi-join ``payments`` to
-        exclude $0 / fully-discounted orders that look paid but have no
-        payment row.
-        """
-        return (
-            select(Payment.order_id)
-            .where(
-                Payment.order_id == Order.id,
-                Payment.status == PaymentStatus.succeeded,
-            )
-            .exists()
-        )
-
-    async def list_unallocated_paid_for_organization(
-        self,
-        organization_id: UUID,
-        *,
-        after: tuple[UUID, UUID] | None = None,
-        limit: int = 100,
-    ) -> Sequence[Order]:
-        """Page through receipt-eligible orders for an org.
-
-        Filters: paid status + missing ``receipt_number`` + at least one
-        succeeded payment.
-
-        Ordered by ``(customer_id, id)`` so each customer's orders cluster
-        in the same batch — the bulk allocator does one counter UPDATE plus
-        one orders UPDATE per (customer, batch) pair, so fewer customers per
-        batch means fewer round-trips. ``after`` is a composite keyset of
-        the last row's ``(customer_id, id)``.
-        """
-        statement = (
-            self.get_base_statement()
-            .where(
-                Order.organization_id == organization_id,
-                Order.receipt_number.is_(None),
-                Order.paid,
-                self._has_succeeded_payment(),
-            )
-            .options(joinedload(Order.customer))
-            .order_by(Order.customer_id.asc(), Order.id.asc())
-            .limit(limit)
-        )
-        if after is not None:
-            statement = statement.where(tuple_(Order.customer_id, Order.id) > after)
-        return await self.get_all(statement)
-
-    async def list_organizations_with_unallocated_paid_orders(
-        self,
-    ) -> Sequence[UUID]:
-        """Organization IDs that have receipt-eligible orders, balance-ordered.
-
-        Sorted by ``Organization.total_balance`` ascending (NULLs first), so
-        the backfill ``--all`` mode lands smaller orgs before the largest
-        ones. Snapshot is taken at call time — orgs that gain their first
-        eligible order mid-run are missed; operators re-run to pick them up.
-
-        Materialized eagerly rather than streamed: a server-side cursor held
-        for the full ``--all`` run would be killed by asyncpg's
-        ``command_timeout``, and the result set fits comfortably in memory.
-        """
-        eligible_order = (
-            select(Order.id)
-            .where(
-                Order.organization_id == Organization.id,
-                Order.receipt_number.is_(None),
-                Order.deleted_at.is_(None),
-                Order.paid,
-                self._has_succeeded_payment(),
-            )
-            .exists()
-        )
-        statement = (
-            select(Organization.id)
-            .where(
-                Organization.deleted_at.is_(None),
-                eligible_order,
-            )
-            .order_by(Organization.total_balance.asc().nullsfirst())
-        )
-        result = await self.session.execute(statement)
-        return [row[0] for row in result.all()]
-
-    async def bulk_set_receipt_numbers(self, mapping: dict[UUID, str]) -> int:
-        """Apply a ``{order_id: receipt_number}`` map in a single UPDATE.
-
-        Backfill-only. ``synchronize_session=False`` — in-memory ``Order``
-        instances won't see the new value; ``session.refresh`` if needed.
-
-        Uses ``UPDATE … FROM (VALUES …)`` rather than a 500-branch ``CASE``:
-        Postgres builds a hash table from the VALUES and joins on it, so the
-        per-row cost is O(1) instead of O(N) and the parsed SQL stays small
-        even at large batch sizes.
-        """
-        if not mapping:
-            return 0
-        data = values(
-            column("order_id", Uuid),
-            column("number", String),
-            name="data",
-        ).data(list(mapping.items()))
-        statement = (
-            update(Order)
-            .values(receipt_number=data.c.number)
-            .where(Order.id == data.c.order_id)
-            .execution_options(synchronize_session=False)
-        )
-        result = cast(CursorResult[Order], await self.session.execute(statement))
-        return result.rowcount
 
     async def get_due_dunning_orders(self, *, options: Options = ()) -> Sequence[Order]:
         """Get orders that are due for dunning retry based on next_payment_attempt_at.

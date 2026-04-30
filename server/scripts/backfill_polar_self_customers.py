@@ -7,7 +7,7 @@ import dramatiq
 import structlog
 import typer
 from rich.progress import Progress
-from sqlalchemy import String, cast, select
+from sqlalchemy import select
 
 from polar import tasks  # noqa: F401
 from polar.auth.models import AuthSubject
@@ -67,14 +67,15 @@ async def _load_active_organizations(
         )
         .order_by(Organization.created_at)
     )
-    if exclude_external_ids:
-        statement = statement.where(
-            cast(Organization.id, String).notin_(exclude_external_ids)
-        )
-    if limit is not None:
-        statement = statement.limit(limit)
     result = await session.execute(statement)
-    return result.scalars().all()
+    organizations = [
+        org
+        for org in result.scalars().all()
+        if str(org.id) not in exclude_external_ids
+    ]
+    if limit is not None:
+        organizations = organizations[:limit]
+    return organizations
 
 
 async def _load_active_members(

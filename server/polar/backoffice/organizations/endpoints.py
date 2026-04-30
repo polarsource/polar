@@ -1356,13 +1356,12 @@ async def get(
                                                         if not organization.is_deleted:
                                                             with tag.button(
                                                                 classes="btn btn-primary btn-sm",
-                                                                name="user_id",
-                                                                value=str(user.id),
                                                                 hx_post=str(
                                                                     request.url_for(
                                                                         "backoffice:start_impersonation",
                                                                     )
                                                                 ),
+                                                                hx_vals=f'{{"user_id": "{user.id}", "organization_id": "{organization.id}"}}',
                                                                 hx_confirm="Are you sure you want to impersonate this user?",
                                                             ):
                                                                 text("Impersonate")

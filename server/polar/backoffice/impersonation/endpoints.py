@@ -37,6 +37,7 @@ async def start_impersonation(
     request: Request,
     admin_session: UserSession = Depends(get_admin),
     user_id: str = Form(),
+    organization_id: str | None = Form(default=None),
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:  # RedirectResponse | HXRedirectResponse:
     """Start impersonating a user. Only available to admin users."""
@@ -69,8 +70,17 @@ async def start_impersonation(
     # Create response object
     org_repository = OrganizationRepository.from_session(session)
     user_orgs = await org_repository.get_all_by_user(target_user.id)
+    target_org = next(
+        (org for org in user_orgs if str(org.id) == organization_id),
+        user_orgs[0] if user_orgs else None,
+    )
+    if target_org is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User has no organizations to impersonate into",
+        )
     response = HXRedirectResponse(
-        request, f"{settings.FRONTEND_BASE_URL}/dashboard/{user_orgs[0].slug}", 307
+        request, f"{settings.FRONTEND_BASE_URL}/dashboard/{target_org.slug}", 307
     )
 
     # Set admin session cookie

@@ -115,7 +115,7 @@ class TeamSection:
                                                 "backoffice:start_impersonation",
                                             )
                                         ),
-                                        hx_vals=f'{{"user_id": "{member.user_id}"}}',
+                                        hx_vals=f'{{"user_id": "{member.user_id}", "organization_id": "{self.org.id}"}}',
                                         hx_confirm="Are you sure you want to impersonate this user?",
                                     ):
                                         text("Impersonate")

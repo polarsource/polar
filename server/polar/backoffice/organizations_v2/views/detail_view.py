@@ -218,6 +218,12 @@ class OrganizationDetailView:
                             value=str(self.impersonate_user.id),
                         ):
                             pass
+                        with tag.input(
+                            type="hidden",
+                            name="organization_id",
+                            value=str(self.org.id),
+                        ):
+                            pass
                         with button(
                             variant="secondary",
                             size="sm",

@@ -17,6 +17,7 @@ from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payment import PaymentTrigger
 from polar.order import sorting
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
@@ -25,6 +26,7 @@ from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.refund.schemas import RefundCreate
 from polar.refund.service import refund as refund_service
 from polar.tax.calculation.base import TaxabilityReason
+from polar.worker import enqueue_job
 
 from .. import formatters
 from ..components import button, datatable, description_list, input, modal
@@ -358,8 +360,14 @@ async def get(
                         ):
                             text("Refund")
 
-                    # Add Void button if order is pending and can be voided
                     if order.status == OrderStatus.pending:
+                        with button(
+                            hx_get=str(
+                                request.url_for("orders:retry_payment", id=order.id)
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Retry Payment")
                         with button(
                             hx_get=str(request.url_for("orders:void", id=order.id)),
                             hx_target="#modal",
@@ -884,6 +892,74 @@ async def unblock_refunds(
     await order_service.set_refunds_blocked(session, order, blocked=False)
     await add_toast(request, "Refunds have been unblocked for this order.", "success")
     return HXRedirectResponse(request, str(request.url_for("orders:get", id=id)), 303)
+
+
+@router.api_route(
+    "/{id}/retry-payment", name="orders:retry_payment", methods=["GET", "POST"]
+)
+async def retry_payment(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    order_repository = OrderRepository.from_session(session)
+    order = await order_repository.get_by_id(
+        id,
+        options=order_repository.get_eager_options(),
+    )
+
+    if order is None:
+        raise HTTPException(status_code=404)
+
+    if order.status != OrderStatus.pending:
+        await add_toast(request, "Only pending orders can be retried.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+
+    subscription_payment_method_id = (
+        order.subscription.payment_method_id if order.subscription else None
+    )
+    payment_method_id = (
+        subscription_payment_method_id or order.customer.default_payment_method_id
+    )
+
+    if payment_method_id is None:
+        await add_toast(request, "No payment method available for this order.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+
+    if request.method == "POST":
+        enqueue_job(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=payment_method_id,
+            payment_trigger=PaymentTrigger.retry_admin,
+        )
+        await add_toast(request, "Payment retry triggered.", "success")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+
+    with modal("Retry payment", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    "Trigger a payment retry for this order? "
+                    "Make sure the payment method has been added to "
+                    "the Stripe Radar allow list if needed."
+                )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    hx_post=str(request.url_for("orders:retry_payment", id=id)),
+                    hx_target="#modal",
+                    variant="primary",
+                ):
+                    text("Retry Payment")
 
 
 @router.api_route("/{id}/void", name="orders:void", methods=["GET", "POST"])

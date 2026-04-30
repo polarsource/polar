@@ -1,1 +1,3 @@
 minimumReleaseAge: 1440
+
+storeDir: /root/.local/share/pnpm/store

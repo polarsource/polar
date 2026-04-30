@@ -1,12 +1,14 @@
 'use client'
 
+import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { useTheme } from 'next-themes'
 import { ChecklistRow } from './ChecklistRow'
+import { groupChecklistSteps } from './groupChecklistSteps'
 import { ReviewChecklistStep } from './types'
 
 interface Props {
-  steps: ReviewChecklistStep[]
+  steps: schemas['OrganizationReviewCheck'][]
   isLoading: boolean
 }
 
@@ -14,7 +16,9 @@ export const ReviewChecklist = ({ steps, isLoading }: Props) => {
   const { resolvedTheme: theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const items = isLoading ? Array.from({ length: 3 }, () => null) : steps
+  const items = isLoading
+    ? Array.from({ length: 3 }, () => null)
+    : groupChecklistSteps(steps)
 
   return (
     <Box display="flex" flexDirection="column" rowGap="s">
@@ -26,7 +30,7 @@ export const ReviewChecklist = ({ steps, isLoading }: Props) => {
             display="flex"
             flexDirection="column"
             rowGap="m"
-            borderRadius="md"
+            borderRadius="m"
             padding="l"
             backgroundColor="background-card"
             borderWidth={isDark ? 0 : 1}

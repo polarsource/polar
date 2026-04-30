@@ -93,10 +93,10 @@ export const ChecklistRow = ({ step, variant, isLoading }: Props) => {
     return (
       <Box display="flex" alignItems="center" columnGap="s">
         <LoadingBox width={24} height={24} borderRadius="full" />
-        <LoadingBox width={140} height={14} borderRadius="sm" />
+        <LoadingBox width={140} height={14} borderRadius="s" />
         {variant === 'parent' && (
           <Box marginLeft="auto">
-            <LoadingBox width={60} height={20} borderRadius="md" />
+            <LoadingBox width={60} height={20} borderRadius="m" />
           </Box>
         )}
       </Box>

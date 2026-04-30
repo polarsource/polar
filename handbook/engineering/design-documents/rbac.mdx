@@ -6,14 +6,14 @@
 
 ## Summary
 
-Introduce role-based access control for users on a Polar organization. Two roles ship in this iteration — `admin` and `member` — replacing today's implicit binary where the lone "admin" capability (Finance pages and payouts) is gated by whoever happens to own the payout account at Stripe.
+Introduce role-based access control for users on a Polar organization. Two roles ship in this iteration — `admin` and `member` — replacing today's implicit binary where org-level admin capability (member management, organization deletion, payout-account selection, Finance and payouts) is gated by `Account.admin_id`: the single user who is recorded as the admin on the org's Polar-side billing `Account`, today set at org creation.
 
-The change is mostly additive on top of the existing two-layer authorization architecture. Role lives on the user–organization membership and is consulted by policies. Scopes remain a per-token capability filter and do not encode role.
+The change is mostly additive on top of the existing two-layer authorization architecture. Role lives on the user–organization membership and is consulted by policies. Scopes remain a per-token capability filter and do not encode role. The Stripe-side `PayoutAccount.admin_id` is a separate concept and is unaffected by this design.
 
 ## Goals
 
 - Introduce an `OrganizationRole` (`admin`, `member`) attached to organization membership.
-- Decouple "admin" from payout-account ownership. The payout-account owner remains a real, separate concept (legal owner of the Stripe account); it stops being read as an authorization signal.
+- Decouple org-level admin capability from `Account.admin_id`. The Account admin remains a real concept — the legal/billing primary contact for the org's Polar-side `Account` — but stops being the authorization signal for org-level admin actions.
 - Allow multiple admins per organization.
 - Enforce that an organization always has at least one admin.
 - Provide back-end and front-end utilities to answer "can this user do X in this org?" cleanly.
@@ -24,13 +24,17 @@ The change is mostly additive on top of the existing two-layer authorization arc
 - Invitation/accept-link flow. Members continue to be added immediately on invite; an asynchronous invitation flow is a follow-up.
 - Audit trail of role changes. Will be addressed via system events as a follow-up.
 - Role-as-scope-filter at token issuance. Considered and explicitly deferred — see [Roles vs scopes](#roles-vs-scopes).
-- Removing or renaming the payout-account-owner concept. It stays as legal/billing metadata.
+- Removing or renaming `Account.admin_id`. It stays as the legal/billing primary contact for the org's `Account`.
+- Modifying `PayoutAccount.admin_id` semantics. It is the legal owner of a Stripe Connect account, gates Stripe-account-level actions (onboarding link, dashboard link, delete), and is unrelated to this change. See [Relationship to `PayoutAccount.admin_id`](#relationship-to-payoutaccount-admin_id).
 
 ## Key Concepts
 
 - **`OrganizationRole`** — new enum (`admin`, `member`) attached to a membership.
 - **Membership** — the link between a user and an organization. Today it carries no role; this design adds one.
-- **Payout-account owner** — the human who legally owns the Stripe payout account. Today it is the sole authorization signal for Finance and payout actions. After this change it becomes pure legal/billing metadata.
+- **`Account`** — Polar's internal financial container for an organization. Holds the credit balance, fee structure, billing identity (name, address) for invoices and receipts, and a single `admin_id`. One per org. Distinct from the Stripe-side payout account.
+- **`Account.admin_id`** — today, the singular authorization signal for org-level admin actions: member management, organization deletion, payout-account selection, Finance and payout reads/writes. This design moves all those gates onto `OrganizationRole.admin`. After the cutover, `Account.admin_id` becomes a single legal/billing contact (Stripe-identity-verified, recipient of billing notifications, owner-side of the Polar-self-customer relationship) but no longer an authorization signal.
+- **`PayoutAccount`** — represents a Stripe Connect account. User-personal: each `PayoutAccount` has a single `admin_id` set at creation, immutable thereafter, representing the human whose KYC backs the Stripe account. A `PayoutAccount` can be linked to multiple organizations.
+- **`PayoutAccount.admin_id`** — gates Stripe-account-level actions (onboarding link, dashboard link, delete) and the user-personal `GET /v1/payout-accounts/` listing. Unrelated to organization admin role; not changing in this design.
 - **Policies** — the runtime authority for authorization decisions, organized per resource area.
 - **Scopes** — describe what a *token* can do, not what a *user* can do. Sessions, personal access tokens, and organization access tokens all carry a scope set; the scope set is org-agnostic.
 
@@ -43,7 +47,7 @@ Polar's authorization model has two distinct layers:
 1. **Authentication** resolves the caller into an `AuthSubject` and attaches the token's scope set.
 2. **Authorization** atomically resolves the target resource, verifies org membership, and evaluates a policy function before the endpoint body runs.
 
-Today's policies for admin-only actions consult the payout-account owner. After this change, the same policies consult the role on the membership instead. The shape of policies and guards does not change — only the predicate inside them.
+Today's policies for org-level admin-only actions consult `Account.admin_id`. After this change, the same policies consult the role on the membership instead. The shape of policies and guards does not change — only the predicate inside them.
 
 ### Roles vs scopes
 
@@ -58,21 +62,37 @@ So **policies remain the runtime authority for role**. Scopes stay what the hand
 
 ### Where role lives
 
-A small helper inside the authorization policy layer already centralises today's "is the caller the admin?" check. Three policies route through it: member management, organization deletion, and payout-account management. Replacing the body of that helper with a role check flips all three at once. The Finance and payout-account policies make their admin checks slightly differently and switch to the role check directly. No new dependency aliases are needed; existing scope-gated guards keep their names and required scopes.
+A small helper inside the authorization policy layer already centralises today's `Account.admin_id` check. Three policies route through it:
 
-The role lookup itself is a single helper: given a user and an organization, return their role (or `None` if not a member). It is consumed by policies and by service-layer invariants.
+- **Member management** — invite/remove org members.
+- **Organization deletion** — delete the org.
+- **Payout-account selection** — choose or change which `PayoutAccount` this org is paid out to (i.e. set `Organization.payout_account_id`). This is *not* the same as managing a Stripe Connect account; that remains gated by `PayoutAccount.admin_id`.
 
-### Relationship to the payout-account owner
+Replacing the body of that helper with a role check flips all three at once. The **Finance** policies (transactions, payouts, billing-info read/write on the org) make the same `Account.admin_id` check directly without going through the helper, and switch to the role check too.
 
-The payout-account-owner attribute continues to identify the human who legally owns the Stripe payout account. It is no longer consulted for authorization. Until the cutover is complete, changes to the payout-account owner also keep the corresponding role aligned (demote the old owner, promote the new) so the two sources of truth do not drift in flight. After the cutover the two concerns are independent: payout-account ownership transfers do not modify Polar roles, and role changes do not modify payout ownership.
+The **payout-account** policies (operations on a specific `PayoutAccount` itself: onboarding link, dashboard link, delete) check `PayoutAccount.admin_id` and **do not move**. A `PayoutAccount` can be linked to multiple organizations (a real feature), so the legal Stripe-side owner is not a per-org concept; routing those checks through org-role would let any admin of any consuming org reach into a Stripe identity that isn't theirs.
+
+No new dependency aliases are needed; existing scope-gated guards keep their names and required scopes. The role lookup itself is a single helper: given a user and an organization, return their role (or `None` if not a member). It is consumed by policies and by service-layer invariants.
+
+### Relationship to `Account.admin_id`
+
+`Account.admin_id` continues to identify a real human responsibility on the org — the primary legal/billing contact for the Polar-side `Account`, the user expected to hold KYC for finance interactions, the recipient of billing notifications, and the owner-side of the Polar-self-customer relationship. It is no longer consulted for authorization.
+
+Until the cutover is complete, changes to `Account.admin_id` (today only via the backoffice `change_admin` flow) also keep the corresponding `OrganizationRole` aligned — demote the old admin, promote the new — so the two states do not drift in flight. After the cutover, the two concerns are independent: changing the Account contact does not modify Polar roles, and role changes do not modify the Account contact.
+
+### Relationship to `PayoutAccount.admin_id`
+
+`PayoutAccount.admin_id` is the legal owner of a Stripe Connect account. It is set at the time `POST /v1/payout-accounts/` creates the account and is not mutable through any code path afterwards. It continues to gate Stripe-account-level actions (onboarding link, dashboard link, delete) and the user-personal `GET /v1/payout-accounts/` listing.
+
+Because a `PayoutAccount` can be linked to multiple organizations, its admin is necessarily a per-Stripe-account concept rather than a per-org one. This design does not move authorization for those actions. What the new `OrganizationRole.admin` *does* govern in the payout space is the org-level decision of which `PayoutAccount` to use — i.e. setting `Organization.payout_account_id`. The conservative rule for that selection is that an org admin can only switch to a `PayoutAccount` they themselves own (`PayoutAccount.admin_id == subject.id`), preserving Stripe-identity boundaries between orgs.
 
 ## Data Model
 
 A new `OrganizationRole` enum with two members: `admin` and `member`. The enum is attached to the user–organization membership row.
 
-The new role attribute is required (non-null) and defaults to `member` for new memberships. Backfill maps each existing payout-account-owner into the `admin` role on their membership; everyone else is `member`.
+The new role attribute is required (non-null) and defaults to `member` for new memberships. Backfill maps each existing `Account.admin_id` user into the `admin` role on their membership of the owning org; everyone else is `member`.
 
-The payout-account-owner attribute stays where it is, with narrowed semantics (legal/billing metadata only).
+`Account.admin_id` stays where it is, with narrowed semantics (legal/billing primary contact only). `PayoutAccount.admin_id` is unchanged.
 
 ## Authorization Flow
 
@@ -95,7 +115,7 @@ sequenceDiagram
     Endpoint-->>Client: Response
 ```
 
-The diagram changes nothing structurally from today; only the *content* of the policy step changes (role lookup instead of payout-owner lookup).
+The diagram changes nothing structurally from today; only the *content* of the policy step changes (role lookup instead of `Account.admin_id` lookup).
 
 ## API Surface
 
@@ -128,7 +148,7 @@ The change ships as a sequence of PRs. Each step preserves two invariants at eve
 
 ### Phase 1 — Additive schema, dual-write
 
-Add the role attribute with a default value and backfill existing admins from the payout-account-owner relationship. The application keeps the role aligned whenever the payout-account owner is set or changed, so the two sources of truth stay synchronised through the cutover. Authorization code does not yet read the new attribute.
+Add the role attribute with a default value and backfill existing admins from `Account.admin_id`. The application keeps the role aligned whenever `Account.admin_id` is set (org creation) or changed (the backoffice `change_admin` flow), so the two sources of truth stay synchronised through the cutover. Authorization code does not yet read the new attribute.
 
 Old code that doesn't know about the new attribute continues to function because the default keeps inserts well-formed.
 
@@ -138,9 +158,9 @@ Once every row has a value and all running code writes one, tighten the attribut
 
 ### Phase 3 — Authorization cutover
 
-Backend authorization switches from the payout-owner check to the role check. The new role-change endpoint and last-admin invariant ship in this phase. The members API response gains the `role` field; the legacy `is_admin` boolean becomes a derived alias.
+Backend authorization switches from the `Account.admin_id` check to the role check. The new role-change endpoint and last-admin invariant ship in this phase. The members API response gains the `role` field; the legacy `is_admin` boolean becomes a derived alias. The `PayoutAccount.admin_id` policy is unchanged.
 
-A pre-deploy verification asserts that every pre-existing payout-account owner has a corresponding `admin` role and that no organization is left without an admin. The deploy is gated on that check.
+A pre-deploy verification asserts that every pre-existing `Account.admin_id` user has a corresponding `admin` role on that org and that no organization is left without an admin. The deploy is gated on that check.
 
 ### Phase 4 — Frontend adopts role
 
@@ -148,9 +168,9 @@ The dashboard reads `role` directly via the new hooks, gates UI controls on the 
 
 ### Phase 5 — Cleanup
 
-Remove the legacy `is_admin` field from the API. Stop maintaining the role-side-effect on payout-account-owner changes; payout-account ownership and Polar role become independent concerns from this point.
+Remove the legacy `is_admin` field from the API. Stop maintaining the role-side-effect on `Account.admin_id` changes; the Account billing contact and Polar role become independent concerns from this point.
 
-The dashboard auto-deploys on every merge but does not currently force-refresh stale tabs, so a tab from phase 3 keeps consuming `is_admin` until the user reloads. Two acceptable orderings for phase 5:
+The dashboard auto-deploys on every merge but does not currently force-refresh stale tabs, so a tab from phase 3 keeps consuming `is_admin` until the user reloads. Three acceptable orderings for phase 5:
 
 1. **Time-based** — wait long enough after phase 4 that weekly-active sessions have refreshed at least once. Cheapest path; small residual risk for very long-lived idle tabs.
 2. **Bundle-mismatch prompt** — ship a "new version available — please refresh" prompt as part of phase 4. Phase 5 can then ship immediately because any stale tab self-heals.
@@ -174,7 +194,7 @@ A defense-in-depth design where personal-access tokens and organization-access t
 
 ## Open Questions
 
-- **Dual-write lifetime.** During phases 1–2 the dual-write keeps payout-account ownership and role aligned. Phase 5 cuts that link. Should we keep the side-effect through phase 3 (safer rollback path) or drop it the moment the cutover lands (cleaner separation)?
+- **Dual-write lifetime.** During phases 1–2 the dual-write keeps `Account.admin_id` and role aligned. Phase 5 cuts that link. Should we keep the side-effect through phase 3 (safer rollback path) or drop it the moment the cutover lands (cleaner separation)?
 - **Phase 5 strategy.** Time-based wait, bundle-mismatch prompt, or accept the brief break for stale tabs?
 - **First-class "Finance" role.** The original RBAC request anticipates Finance/Support/Developer roles. Should the enum reserve those values now (forward-compat) or add them when needed?
 - **Front-end action vocabulary.** The initial set is small (`manage_members`, `read_finance`, `manage_finance`, `manage_payout_account`, `delete_organization`). Is the vocabulary the right shape, or should we expose role directly and let pages compose their own checks?

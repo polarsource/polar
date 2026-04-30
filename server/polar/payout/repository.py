@@ -35,6 +35,15 @@ class PayoutRepository(
         statement = self.get_base_statement().where(Payout.account_id == account)
         return await self.count(statement)
 
+    async def get_latest_by_account(self, account: UUID) -> Payout | None:
+        statement = (
+            self.get_base_statement()
+            .where(Payout.account_id == account)
+            .order_by(Payout.created_at.desc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
     async def count_pending_by_payout_account(self, payout_account_id: UUID) -> int:
         statement = self.get_base_statement().where(
             Payout.payout_account_id == payout_account_id,

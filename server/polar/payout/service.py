@@ -21,6 +21,7 @@ from polar.kit.currency import format_currency
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Account, Organization, Payout, PayoutAttempt
@@ -127,6 +128,13 @@ class PendingPayoutCreation(PayoutError):
         self.account = account
         message = f"A payout is already being created for the account {account.id}."
         super().__init__(message, 409)
+
+
+class DailyPayoutLimitReached(PayoutError):
+    def __init__(self, account: Account) -> None:
+        self.account = account
+        message = "You can only request a payout once per 24 hours."
+        super().__init__(message, 400)
 
 
 class PayoutAttemptDoesNotExist(PayoutError):
@@ -301,6 +309,14 @@ class PayoutService:
             raise PendingPayoutCreation(account)
 
         async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
+            repository = PayoutRepository.from_session(session)
+            latest_payout = await repository.get_latest_by_account(account.id)
+            if (
+                latest_payout is not None
+                and latest_payout.created_at > utc_now() - datetime.timedelta(hours=24)
+            ):
+                raise DailyPayoutLimitReached(account)
+
             payout_account = organization.get_ready_payout_account()
 
             balance_amount = await transaction_service.get_transactions_sum(
@@ -327,7 +343,6 @@ class PayoutService:
             except PayoutAmountTooLow as e:
                 raise InsufficientBalance(account, balance_amount) from e
 
-            repository = PayoutRepository.from_session(session)
             payout = await repository.create(
                 Payout(
                     processor=payout_account.type,

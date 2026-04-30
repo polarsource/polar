@@ -40,6 +40,16 @@
         ]
       },
       {
+        "group": "Design",
+        "pages": [
+          "design/introduction",
+          "design/principles",
+          "design/product-design",
+          "design/visual-design",
+          "design/voice-and-tone"
+        ]
+      },
+      {
         "group": "Engineering",
         "pages": [
           "engineering/introduction",

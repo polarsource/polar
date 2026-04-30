@@ -8,9 +8,10 @@ on:
       - "clients/packages/client/src/v1.ts"
       - "clients/packages/client/package.json"
       - ".github/workflows/openapi-generate-check.yml"
+  merge_group:
 
 concurrency:
-  group: openapi-generate-check-${{ github.event.pull_request.number }}
+  group: openapi-generate-check-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -29,10 +30,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Merge base branch
+        if: github.event_name == 'pull_request'
         run: |
           git config user.email "actions@github.com"
           git config user.name "github-actions"
@@ -120,6 +122,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Find existing comment
+        if: github.event_name == 'pull_request'
         uses: peter-evans/find-comment@v4
         id: fc
         with:
@@ -127,6 +130,7 @@ jobs:
           body-includes: "<!-- __OPENAPI_CLIENT_REGEN -->"
 
       - name: Create or update PR comment
+        if: github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}

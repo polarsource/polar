@@ -231,17 +231,30 @@ class OrganizationService:
             }
             create_data["status_updated_at"] = datetime.now(UTC)
 
-        organization = await repository.create(
-            Organization(
-                **create_data,
-                customer_invoice_prefix=create_schema.slug.upper(),
+        nested = await session.begin_nested()
+        try:
+            organization = await repository.create(
+                Organization(
+                    **create_data,
+                    customer_invoice_prefix=create_schema.slug.upper(),
+                )
             )
-        )
-        organization.account = await account_service.create(
-            session, auth_subject.subject
-        )
-
-        await session.flush()
+            organization.account = await account_service.create(
+                session, auth_subject.subject
+            )
+            await session.flush()
+        except IntegrityError as e:
+            await nested.rollback()
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "slug"),
+                        "msg": "An organization with this slug already exists.",
+                        "type": "value_error",
+                        "input": create_schema.slug,
+                    }
+                ]
+            ) from e
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
             name=organization.name,

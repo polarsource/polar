@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from typing import cast
+from unittest.mock import AsyncMock
 
 import pytest
 from pydantic import HttpUrl, ValidationError
@@ -36,6 +37,7 @@ from polar.organization.schemas import (
     OrganizationSocialPlatforms,
     OrganizationUpdate,
 )
+from polar.organization.repository import OrganizationRepository
 from polar.organization.service import OrganizationError
 from polar.organization.service import organization as organization_service
 from polar.organization_review.schemas import ReviewContext, ReviewVerdict
@@ -257,6 +259,33 @@ class TestCreate:
             organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.CREATED]
         )
 
+
+    @pytest.mark.auth
+    async def test_concurrent_slug_creation(
+        self, mocker, auth_subject, session, organization
+    ) -> None:
+        """Concurrent slug creation (TOCTOU race) is handled as a validation error.
+
+        Simulates the race where slug_exists() returns False for both requests
+        but the DB unique constraint catches the duplicate on INSERT.
+        """
+        # Bypass the pre-check to simulate both requests passing the pre-check
+        mocker.patch.object(
+            OrganizationRepository,
+            "slug_exists",
+            new=AsyncMock(return_value=False),
+        )
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await organization_service.create(
+                session,
+                OrganizationCreate(name=organization.name, slug=organization.slug),
+                auth_subject,
+            )
+        errors = exc_info.value.errors()
+        assert any(
+            error["loc"] == ("body", "slug") and "already exists" in error["msg"]
+            for error in errors
+        )
 
 @pytest.mark.asyncio
 class TestUpdateReviewSubmission:

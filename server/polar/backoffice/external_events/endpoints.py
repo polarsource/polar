@@ -106,6 +106,12 @@ async def list(
                         target="#modal",
                         hidden=lambda _, i: i.is_handled,
                     ),
+                    datatable.DatatableActionHTMX[ExternalEvent](
+                        "Ignore",
+                        lambda r, i: str(r.url_for("external_events:ignore", id=i.id)),
+                        target="#modal",
+                        hidden=lambda _, i: i.is_handled,
+                    ),
                 ),
                 datatable.DatatableAttrColumn("id", "ID", clipboard=True),
                 datatable.DatatableDateTimeColumn(
@@ -173,3 +179,46 @@ async def resend(
                     hx_target="#modal",
                 ):
                     text("Resend")
+
+
+@router.api_route(
+    "/{id}/ignore", name="external_events:ignore", methods=["GET", "POST"]
+)
+async def ignore(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = ExternalEventRepository.from_session(session)
+    external_event = await repository.get_by_id(id)
+
+    if external_event is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        await repository.update(
+            external_event,
+            update_dict={"handled_at": external_event.created_at},
+            flush=True,
+        )
+        await add_toast(request, "Event has been ignored.", "success")
+        return
+
+    with modal(f"Ignore Event {external_event.id}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text("Are you sure you want to ignore this event? ")
+                text(
+                    "It will be marked as handled and hidden from the unhandled filter."
+                )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="button",
+                    variant="primary",
+                    hx_post=str(request.url),
+                    hx_target="#modal",
+                ):
+                    text("Ignore")

@@ -4,6 +4,7 @@ import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Modal } from '../Modal'
@@ -12,6 +13,7 @@ import { toast } from '../Toast/use-toast'
 
 interface WithdrawModalProps {
   organization: schemas['Organization']
+  account: schemas['Account']
   isShown: boolean
   hide: () => void
   onSuccess?: (payoutId: string) => void
@@ -19,6 +21,7 @@ interface WithdrawModalProps {
 
 const WithdrawModal: React.FC<WithdrawModalProps> = ({
   organization,
+  account,
   isShown,
   hide,
   onSuccess,
@@ -31,9 +34,17 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     () => organization.capabilities.payouts,
     [organization.capabilities.payouts],
   )
+  const nextPayoutAt = useMemo(
+    () => (account.next_payout_at ? new Date(account.next_payout_at) : null),
+    [account.next_payout_at],
+  )
+  const isPayoutIntervalLimited = useMemo(
+    () => nextPayoutAt !== null && nextPayoutAt > new Date(),
+    [nextPayoutAt],
+  )
 
   const getPayoutEstimate = useCallback(async () => {
-    if (!canWithdraw) {
+    if (!canWithdraw || isPayoutIntervalLimited) {
       return
     }
 
@@ -55,7 +66,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     if (data) {
       setPayoutEstimate(data)
     }
-  }, [organization, canWithdraw])
+  }, [organization, canWithdraw, isPayoutIntervalLimited])
 
   /* eslint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
   useEffect(() => {
@@ -119,6 +130,21 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                   </Button>
                 </Link>
               </p>
+            </div>
+          )}
+
+          {canWithdraw && isPayoutIntervalLimited && nextPayoutAt && (
+            <div className="flex flex-col gap-6">
+              <p>
+                You&apos;ve recently requested a withdrawal. The next one can be
+                requested at{' '}
+                <FormattedDateTime datetime={nextPayoutAt} resolution="time" />.
+              </p>
+              <div className="flex flex-row gap-x-4">
+                <Button variant="default" onClick={hide}>
+                  Close
+                </Button>
+              </div>
             </div>
           )}
 

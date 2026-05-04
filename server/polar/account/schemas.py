@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import Field
 
 from polar.kit.address import Address, AddressInput
@@ -11,6 +13,14 @@ class Account(TimestampedSchema, IDSchema):
     billing_notes: str | None
     currency: str
     credit_balance: int
+    next_payout_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Timestamp at which the next payout can be requested, if the "
+            "payout interval limit has been reached. `null` if a payout can "
+            "be requested immediately."
+        ),
+    )
 
 
 class AccountUpdate(Schema):

@@ -5509,6 +5509,11 @@ export interface components {
       currency: string
       /** Credit Balance */
       credit_balance: number
+      /**
+       * Next Payout At
+       * @description Timestamp at which the next payout can be requested, if the payout interval limit has been reached. `null` if a payout can be requested immediately.
+       */
+      next_payout_at?: string | null
     }
     /** AccountCredit */
     AccountCredit: {

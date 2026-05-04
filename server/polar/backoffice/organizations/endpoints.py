@@ -901,7 +901,7 @@ async def create_plain_thread(
         if not organization:
             raise HTTPException(status_code=404)
 
-        admin_user = await org_repo.get_admin_user(session, organization)
+        admin_user = await org_repo.get_admin_user(organization)
         if not admin_user:
             raise HTTPException(status_code=404, detail="No admin user found")
 
@@ -1273,10 +1273,7 @@ async def get(
                             with tag.h2(classes="card-title"):
                                 text(f"Team Members ({len(users)})")
 
-                        # Check if current organization has admin
-                        admin_user = await repository.get_admin_user(
-                            session, organization
-                        )
+                        admin_user = await repository.get_admin_user(organization)
 
                         if users:
                             # Users table
@@ -1549,7 +1546,7 @@ async def get_plain_search_url(
     if not organization:
         raise HTTPException(status_code=404)
 
-    admin_user = await org_repo.get_admin_user(session, organization)
+    admin_user = await org_repo.get_admin_user(organization)
     if not admin_user:
         raise HTTPException(status_code=404, detail="No admin user found")
 

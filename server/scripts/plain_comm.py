@@ -188,7 +188,7 @@ async def _send_email(
     organization = await organization_repository.get_by_id(organization_id)
     if organization is None:
         raise PlainScriptError("Organization not found")
-    admin = await organization_repository.get_admin_user(session, organization)
+    admin = await organization_repository.get_admin_user(organization)
     if admin is None:
         user_repository = UserRepository.from_session(session)
         users = await user_repository.get_all_by_organization(organization_id)

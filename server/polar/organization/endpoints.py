@@ -352,7 +352,7 @@ async def members(
 
     # Get admin user to set is_admin flag
     org_repo = OrganizationRepository.from_session(session)
-    admin_user = await org_repo.get_admin_user(session, organization)
+    admin_user = await org_repo.get_admin_user(organization)
     admin_user_id = admin_user.id if admin_user else None
 
     # Build response with is_admin flag
@@ -453,9 +453,8 @@ async def leave_organization(
     organization = authz.organization
     user = authz.auth_subject.subject
 
-    # Check if user is the admin
     org_repo = OrganizationRepository.from_session(session)
-    admin_user = await org_repo.get_admin_user(session, organization)
+    admin_user = await org_repo.get_admin_user(organization)
 
     if admin_user and admin_user.id == user.id:
         raise NotPermitted("Organization admins cannot leave the organization.")

@@ -197,7 +197,7 @@ async def _collect_history(organization: Organization) -> HistoryData:
         org_repository = OrganizationRepository.from_session(session)
         review_repository = OrganizationReviewRepository.from_session(session)
 
-        admin_user = await org_repository.get_admin_user(session, organization)
+        admin_user = await org_repository.get_admin_user(organization)
         admin_user_id = admin_user.id if admin_user else None
 
         user = (

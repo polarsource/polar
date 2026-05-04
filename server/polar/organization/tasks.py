@@ -99,7 +99,7 @@ async def organization_reviewed(
 
         # Send an email after the initial review
         if initial_review and not silent:
-            admin_user = await repository.get_admin_user(session, organization)
+            admin_user = await repository.get_admin_user(organization)
             if admin_user:
                 email = OrganizationReviewedEmail(
                     props=OrganizationReviewedProps.model_validate(

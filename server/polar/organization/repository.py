@@ -32,7 +32,6 @@ from polar.models.discount import (
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.subscription import SubscriptionStatus
-from polar.postgres import AsyncReadSession
 
 from .sorting import OrganizationSortProperty
 
@@ -188,9 +187,7 @@ class OrganizationRepository(
             Organization.status != OrganizationStatus.BLOCKED,
         )
 
-    async def get_admin_user(
-        self, session: AsyncReadSession, organization: Organization
-    ) -> User | None:
+    async def get_admin_user(self, organization: Organization) -> User | None:
         """Get the admin user of the organization from the associated account."""
         statement = (
             select(User)
@@ -200,7 +197,7 @@ class OrganizationRepository(
                 User.is_deleted.is_(False),
             )
         )
-        result = await session.execute(statement)
+        result = await self.session.execute(statement)
         return result.unique().scalar_one_or_none()
 
     async def count_paid_orders_by_organization(self, organization_id: UUID) -> int:

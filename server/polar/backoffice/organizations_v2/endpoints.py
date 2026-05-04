@@ -515,7 +515,7 @@ async def get_organization_detail(
         ai_verdict = parsed.report.verdict.value
 
     # Fetch admin user email for Plain search
-    admin_user = await repository.get_admin_user(session, organization)
+    admin_user = await repository.get_admin_user(organization)
     admin_email = admin_user.email if admin_user else None
 
     # Determine impersonation target: admin, or first member as fallback
@@ -691,8 +691,6 @@ async def get_organization_detail(
                 ):
                     pass
             elif section == "team":
-                # Get admin user for the organization
-                admin_user = await repository.get_admin_user(session, organization)
                 identity_country = None
                 if admin_user:
                     identity_country = await user_service.get_identity_verified_country(
@@ -1772,7 +1770,7 @@ async def create_review_ticket(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    admin_user = await repository.get_admin_user(session, organization)
+    admin_user = await repository.get_admin_user(organization)
     if not admin_user:
         await add_toast(request, "No admin user found for this organization.", "error")
         return

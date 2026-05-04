@@ -404,7 +404,7 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
             deps._organization_id = org.id
 
             # Find admin user
-            admin = await org_repo.get_admin_user(session, org)
+            admin = await org_repo.get_admin_user(org)
             if admin:
                 deps._admin_user_id = admin.id
                 deps._admin_email = admin.email

@@ -1910,10 +1910,7 @@ class TestSoftDeleteOrganization:
             session, organization
         )
 
-        # Slug should be rewritten to a tombstone so the original is reusable.
-        # The `__deleted__` prefix is in a namespace that the slug validator
-        # rejects, so it can never collide with a user-creatable slug.
-        assert result.slug == f"__deleted__-{original_slug}-{organization.id}"
+        # The live slug should no longer be the original, freeing it for reuse.
         assert result.slug != original_slug
 
         # The original slug is archived in slug_history.

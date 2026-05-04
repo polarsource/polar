@@ -6,9 +6,14 @@ from dramatiq import Retry
 
 from polar.config import settings
 from polar.event.repository import EventRepository
+from polar.kit.db.postgres import (
+    create_async_engine as _create_async_engine,
+)
+from polar.kit.db.postgres import (
+    create_async_sessionmaker,
+)
 from polar.kit.utils import utc_now
 from polar.worker import (
-    AsyncSessionMaker,
     CronTrigger,
     TaskPriority,
     actor,
@@ -16,6 +21,8 @@ from polar.worker import (
 )
 
 from .client import get_client
+
+_TRACK_EVENT_INGESTION_QUERY_TIMEOUT_SECONDS = 600.0
 
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
@@ -110,16 +117,29 @@ async def track_event_ingestion() -> None:
         return
     self_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
     cutoff = utc_now() - timedelta(seconds=30)
-    async with AsyncSessionMaker() as session:
-        repository = EventRepository.from_session(session)
-        last_flush = await repository.get_latest_polar_self_ingestion_timestamp(
-            self_organization_id
-        )
-        counts = await repository.count_user_events_by_organization(
-            after=last_flush,
-            until=cutoff,
-            exclude_organization_id=self_organization_id,
-        )
+    engine = _create_async_engine(
+        dsn=str(settings.get_postgres_dsn("asyncpg")),
+        application_name=f"{settings.ENV.value}.worker.track_event_ingestion",
+        pool_logging_name="worker_track_event_ingestion",
+        debug=settings.SQLALCHEMY_DEBUG,
+        pool_size=1,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        command_timeout=_TRACK_EVENT_INGESTION_QUERY_TIMEOUT_SECONDS,
+    )
+    sessionmaker = create_async_sessionmaker(engine)
+    try:
+        async with sessionmaker() as session:
+            repository = EventRepository.from_session(session)
+            last_flush = await repository.get_latest_polar_self_ingestion_timestamp(
+                self_organization_id
+            )
+            counts = await repository.count_user_events_by_organization(
+                after=last_flush,
+                until=cutoff,
+                exclude_organization_id=self_organization_id,
+            )
+    finally:
+        await engine.dispose()
     if not counts:
         return
     await get_client().track_event_ingestion(counts=counts, cutoff=cutoff)

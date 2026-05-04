@@ -197,6 +197,23 @@ class TestFlushEventIngestion:
         settings.POLAR_SELF_ENABLED = enabled
         settings.POLAR_ORGANIZATION_ID = str(self.SELF_ORG_ID)
 
+    def _patch_engine(self, mocker: MockerFixture) -> None:
+        engine = MagicMock()
+        engine.dispose = AsyncMock()
+        mocker.patch(
+            "polar.integrations.polar.tasks._create_async_engine",
+            return_value=engine,
+        )
+        session = MagicMock()
+        session_cm = MagicMock()
+        session_cm.__aenter__ = AsyncMock(return_value=session)
+        session_cm.__aexit__ = AsyncMock(return_value=None)
+        sessionmaker = MagicMock(return_value=session_cm)
+        mocker.patch(
+            "polar.integrations.polar.tasks.create_async_sessionmaker",
+            return_value=sessionmaker,
+        )
+
     async def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
         self._patch_settings(mocker, enabled=False)
         client = AsyncMock(spec=PolarSelfClient)
@@ -210,6 +227,7 @@ class TestFlushEventIngestion:
 
     async def test_noop_when_no_counts(self, mocker: MockerFixture) -> None:
         self._patch_settings(mocker)
+        self._patch_engine(mocker)
         repository = MagicMock()
         repository.get_latest_polar_self_ingestion_timestamp = AsyncMock(
             return_value=None
@@ -230,6 +248,7 @@ class TestFlushEventIngestion:
         self, mocker: MockerFixture
     ) -> None:
         self._patch_settings(mocker)
+        self._patch_engine(mocker)
         org_a = uuid.UUID("00000000-0000-0000-0000-00000000000a")
         last_flush = MagicMock()
         counts = {org_a: 7}

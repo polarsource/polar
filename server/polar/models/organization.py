@@ -750,7 +750,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @property
     def payout_interval(self) -> timedelta:
-        return settings.ACCOUNT_PAYOUT_INTERVAL
+        return settings.ACCOUNT_DEFAULT_PAYOUT_INTERVAL
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

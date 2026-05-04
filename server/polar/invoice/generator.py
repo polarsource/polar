@@ -71,7 +71,7 @@ class Invoice(BaseModel):
     seller_address: Address
     seller_additional_info: str | None = None
     customer_name: str
-    customer_address: Address
+    customer_address: Address | None = None
     customer_additional_info: str | None = None
     customer_locale: str | None = None
     subtotal_amount: int
@@ -394,7 +394,9 @@ class InvoiceGenerator(FPDF):
         # customer locale/country first, and then all other scripts.
         customer_script = self.cjk_script_from_locale(
             data.customer_locale
-        ) or self.resolve_cjk_script(data.customer_address.country)
+        ) or self.resolve_cjk_script(
+            data.customer_address.country if data.customer_address else None
+        )
 
         fallback_fonts = [
             family
@@ -562,13 +564,14 @@ class InvoiceGenerator(FPDF):
             new_y=YPos.NEXT,
         )
         self.set_font(style="")
-        self.multi_cell(
-            80,
-            self.cell_height(),
-            self._shape_text(self.data.customer_address.to_text()),
-            new_x=XPos.LEFT,
-            new_y=YPos.NEXT,
-        )
+        if self.data.customer_address is not None:
+            self.multi_cell(
+                80,
+                self.cell_height(),
+                self._shape_text(self.data.customer_address.to_text()),
+                new_x=XPos.LEFT,
+                new_y=YPos.NEXT,
+            )
         if self.data.customer_additional_info:
             self.multi_cell(
                 80,

@@ -102,8 +102,11 @@ class Receipt(Invoice):
         refunds: list["Refund"],
     ) -> Self:
         assert order.receipt_number is not None
-        assert order.billing_name is not None
-        assert order.billing_address is not None
+
+        customer_name = (
+            order.billing_name or order.customer.name or order.customer.email
+        )
+        assert customer_name is not None
 
         sorted_payments = sorted(payments, key=lambda p: p.created_at)
         paid_at = sorted_payments[0].created_at if sorted_payments else None
@@ -111,7 +114,7 @@ class Receipt(Invoice):
         additional_info_parts: list[str] = []
         if order.tax_id:
             additional_info_parts.append(order.tax_id[0])
-        if order.customer.email:
+        if order.customer.email and order.customer.email != customer_name:
             additional_info_parts.append(order.customer.email)
         customer_additional_info = (
             "\n".join(additional_info_parts) if additional_info_parts else None
@@ -125,7 +128,7 @@ class Receipt(Invoice):
             seller_name=settings.INVOICES_NAME,
             seller_address=settings.INVOICES_ADDRESS,
             seller_additional_info=settings.INVOICES_ADDITIONAL_INFO,
-            customer_name=order.billing_name,
+            customer_name=customer_name,
             customer_additional_info=customer_additional_info,
             customer_address=order.billing_address,
             customer_locale=order.customer.locale,

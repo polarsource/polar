@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.db.postgres import AsyncSession
 from polar.locker import Locker
-from polar.models import Account, Customer, Organization
+from polar.models import Account, Customer, Order, Organization
 from polar.receipt.service import receipt as receipt_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -16,6 +16,52 @@ from tests.fixtures.random_objects import (
     create_payment,
     create_refund,
 )
+
+_US_ADDRESS = Address(
+    line1="1 Test Way",
+    city="SF",
+    state="CA",
+    postal_code="94104",
+    country=CountryAlpha2("US"),
+)
+
+
+async def _allocated_order(
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    account: Account,
+    *,
+    customer_email: str,
+    customer_name: str | None = "Customer",
+    billing_name: str | None,
+    billing_address: Address | None,
+) -> Order:
+    organization = await create_organization(
+        save_fixture, account, feature_settings={"receipts_enabled": True}
+    )
+    customer = await create_customer(
+        save_fixture,
+        organization=organization,
+        email=customer_email,
+        name=customer_name,  # type: ignore[arg-type]
+    )
+    order = await create_order(
+        save_fixture,
+        customer=customer,
+        billing_name=billing_name,
+        billing_address=billing_address,
+    )
+    await create_payment(save_fixture, organization, order=order)
+    await receipt_service.allocate(session, order)
+    return order
+
+
+def _mock_render(mocker: MockerFixture):  # type: ignore[no-untyped-def]
+    mocker.patch("polar.receipt.service.S3Service")
+    return mocker.patch(
+        "polar.receipt.service.render_receipt_pdf",
+        return_value=b"%PDF-fake",
+    )
 
 
 @pytest.mark.asyncio
@@ -197,6 +243,75 @@ class TestDoRender:
         receipt_arg = render_mock.call_args.args[0]
         assert len(receipt_arg.refunds) == 1
         assert receipt_arg.refunds[0].amount == 500
+
+    async def test_falls_back_to_customer_name_when_billing_name_missing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await _allocated_order(
+            save_fixture,
+            session,
+            account,
+            customer_email="fallback-name@example.com",
+            customer_name="Fallback Customer",
+            billing_name=None,
+            billing_address=_US_ADDRESS,
+        )
+        render_mock = _mock_render(mocker)
+
+        await receipt_service._create_order_receipt(session, order)
+
+        assert render_mock.call_args.args[0].customer_name == "Fallback Customer"
+
+    async def test_falls_back_to_customer_email_when_name_missing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await _allocated_order(
+            save_fixture,
+            session,
+            account,
+            customer_email="fallback-email@example.com",
+            customer_name=None,
+            billing_name=None,
+            billing_address=_US_ADDRESS,
+        )
+        render_mock = _mock_render(mocker)
+
+        await receipt_service._create_order_receipt(session, order)
+
+        assert (
+            render_mock.call_args.args[0].customer_name == "fallback-email@example.com"
+        )
+
+    async def test_renders_when_billing_address_missing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await _allocated_order(
+            save_fixture,
+            session,
+            account,
+            customer_email="no-address@example.com",
+            billing_name="Buyer",
+            billing_address=None,
+        )
+        render_mock = _mock_render(mocker)
+
+        await receipt_service._create_order_receipt(session, order)
+
+        receipt_arg = render_mock.call_args.args[0]
+        assert receipt_arg.customer_address is None
+        assert receipt_arg.customer_name == "Buyer"
 
 
 @pytest.mark.asyncio

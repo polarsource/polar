@@ -145,6 +145,16 @@ class TestReceiptGenerator:
 
         assert bytes(output).startswith(b"%PDF-")
 
+    def test_renders_without_customer_address(self) -> None:
+        receipt = _build_receipt().model_copy(update={"customer_address": None})
+        generator = ReceiptGenerator(
+            receipt, heading_title="Receipt", add_sandbox_warning=False
+        )
+        generator.generate()
+        output = generator.output()
+
+        assert bytes(output).startswith(b"%PDF-")
+
 
 class TestReceiptPayment:
     def test_card_with_brand_and_last4(self) -> None:

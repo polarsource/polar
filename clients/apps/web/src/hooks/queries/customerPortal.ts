@@ -651,3 +651,29 @@ export const useRemoveCustomerPortalMember = (api: Client) =>
       })
     },
   })
+
+export const useCustomerClearPendingSubscriptionUpdate = (api: Client) =>
+  useMutation({
+    mutationFn: async (id: string) => {
+      const result = await api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          pending_update: null,
+        } as schemas['CustomerSubscriptionUpdateClear'],
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(
+            result.error,
+            'Failed to clear pending subscription update',
+          ),
+        )
+      }
+      return result
+    },
+    onSuccess: async () => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+    },
+  })

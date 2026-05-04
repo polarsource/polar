@@ -3,6 +3,7 @@
 import revalidate from '@/app/actions'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
+  useCustomerClearPendingSubscriptionUpdate,
   useCustomerCancelSubscription,
   useCustomerUncancelSubscription,
 } from '@/hooks/queries/customerPortal'
@@ -15,6 +16,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
+import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
@@ -39,6 +41,8 @@ const CustomerSubscriptionDetails = ({
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showClearPendingUpdateModal, setShowClearPendingUpdateModal] =
+    useState(false)
 
   const {
     isShown: isBenefitGrantsModalOpen,
@@ -60,6 +64,7 @@ const CustomerSubscriptionDetails = ({
     organization.customer_portal_settings.subscription.update_plan === true
 
   const uncancelSubscription = useCustomerUncancelSubscription(api)
+  const clearPendingUpdate = useCustomerClearPendingSubscriptionUpdate(api)
   const router = useRouter()
 
   const pendingUpdate = subscription.pending_update
@@ -149,7 +154,17 @@ const CustomerSubscriptionDetails = ({
 
         {pendingUpdate && (
           <div className="mt-4 flex flex-col gap-y-2">
-            <h3>Pending Update</h3>
+            <div className="flex flex-row items-center justify-between">
+              <h3>Pending Update</h3>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowClearPendingUpdateModal(true)}
+                loading={clearPendingUpdate.isPending}
+              >
+                Cancel scheduled change
+              </Button>
+            </div>
             <div className="flex flex-col">
               {pendingProduct && (
                 <DetailRow
@@ -251,6 +266,18 @@ const CustomerSubscriptionDetails = ({
             />
           </div>
         }
+      />
+
+      <ConfirmModal
+        isShown={showClearPendingUpdateModal}
+        hide={() => setShowClearPendingUpdateModal(false)}
+        title="Cancel scheduled change"
+        description="Your subscription will remain unchanged on the next billing cycle. Are you sure you want to cancel this pending update?"
+        onConfirm={async () => {
+          await clearPendingUpdate.mutateAsync(subscription.id)
+          await revalidate(`customer_portal`)
+          router.refresh()
+        }}
       />
     </ShadowBox>
   )

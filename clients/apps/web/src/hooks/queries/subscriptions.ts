@@ -159,3 +159,54 @@ export const useUncancelSubscription = (id: string) =>
       })
     },
   })
+
+export const useClearPendingSubscriptionUpdate = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          pending_update: null,
+        } as schemas['SubscriptionUpdateClear'],
+      })
+    },
+    onSuccess: (result) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.setQueriesData<schemas['Subscription']>(
+        {
+          queryKey: ['subscriptions', { id }],
+        },
+        data,
+      )
+      queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
+        {
+          queryKey: [
+            'subscriptions',
+            { organizationId: data.product.organization_id },
+          ],
+        },
+        (old) => {
+          if (!old) {
+            return {
+              items: [data],
+              pagination: {
+                total_count: 1,
+                max_page: 1,
+              },
+            }
+          } else {
+            return {
+              items: old.items.map((item) =>
+                item.id === data.id ? data : item,
+              ),
+              pagination: old.pagination,
+            }
+          }
+        },
+      )
+    },
+  })

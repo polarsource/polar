@@ -88,5 +88,8 @@ jobs:
       - name: "🧪 Test: @polar-sh/checkout"
         run: pnpm --filter @polar-sh/checkout test
 
+      - name: "🧪 Test: @polar-sh/orbit"
+        run: pnpm --filter @polar-sh/orbit test
+
       - name: 🛠️ Build
         run: pnpm build

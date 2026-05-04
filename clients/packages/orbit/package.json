@@ -31,7 +31,8 @@
     "build": "rm -rf dist && tsup",
     "lint": "oxfmt --check . && eslint --max-warnings 0 .",
     "format": "oxfmt",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@stylexjs/stylex": "^0.18.2",
@@ -47,8 +48,10 @@
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@vitest/coverage-v8": "^3.2.4",
     "tsup": "^8.5.1",
-    "typescript": "latest"
+    "typescript": "latest",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "react": "^18 || ^19",

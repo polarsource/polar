@@ -113,6 +113,17 @@ function shadowCss(token: ShadowToken): string {
   return shadows[token] as string
 }
 
+const FLEX_KEYWORD_MAP: Record<string, string> = {
+  start: 'flex-start',
+  end: 'flex-end',
+  between: 'space-between',
+  around: 'space-around',
+  evenly: 'space-evenly',
+}
+function flexKeyword(v: string): string {
+  return FLEX_KEYWORD_MAP[v] ?? v
+}
+
 // --- Style prop keys (for separating style props from DOM props) ---
 // The Record<keyof BoxStyleProps, true> ensures a compile-time error if
 // BoxStyleProps gains or loses keys without updating this map.
@@ -463,19 +474,19 @@ export function resolveBoxStyles(
   addArbitraryProp('flexGrow', props.flexGrow, (v) => v)
   addArbitraryProp('flexShrink', props.flexShrink, (v) => v)
   addArbitraryProp('flexBasis', props.flexBasis, sizeValue)
-  addTokenProp(alignItemsStyles, 'align-items', props.alignItems, (v) => v)
-  addTokenProp(alignSelfStyles, 'align-self', props.alignSelf, (v) => v)
+  addTokenProp(alignItemsStyles, 'align-items', props.alignItems, flexKeyword)
+  addTokenProp(alignSelfStyles, 'align-self', props.alignSelf, flexKeyword)
   addTokenProp(
     justifyContentStyles,
     'justify-content',
     props.justifyContent,
-    (v) => v,
+    flexKeyword,
   )
   addTokenProp(
     alignContentStyles,
     'align-content',
     props.alignContent,
-    (v) => v,
+    flexKeyword,
   )
 
   // --- Grid ---

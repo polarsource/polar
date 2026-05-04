@@ -10,6 +10,7 @@ import {
 import { useBillingSubscription } from '@/components/Settings/Billing/useBillingStore'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 
 export default function BillingPage({
@@ -27,7 +28,7 @@ export default function BillingPage({
 
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-md)!" title="Billing">
-      <div className="flex flex-col gap-y-12">
+      <Box display="flex" flexDirection="column" rowGap="3xl">
         <Section id="subscription">
           <SectionDescription
             title="Subscription"
@@ -47,7 +48,7 @@ export default function BillingPage({
           />
           <BillingOrdersTable orders={MOCK_ORDERS} />
         </Section>
-      </div>
+      </Box>
     </DashboardBody>
   )
 }

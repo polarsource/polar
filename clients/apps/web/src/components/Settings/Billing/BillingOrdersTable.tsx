@@ -1,6 +1,8 @@
 'use client'
 
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DataTable,
   DataTableColumnDef,
@@ -44,7 +46,7 @@ export const BillingOrdersTable = ({ orders }: { orders: BillingOrder[] }) => {
       header: 'Description',
       size: 200,
       cell: ({ row: { original } }) => (
-        <span className="text-sm">{original.description}</span>
+        <Text as="span">{original.description}</Text>
       ),
     },
     {
@@ -52,9 +54,9 @@ export const BillingOrdersTable = ({ orders }: { orders: BillingOrder[] }) => {
       header: 'Amount',
       size: 90,
       cell: ({ row: { original } }) => (
-        <span className="text-sm font-medium">
+        <Text as="span" className="font-medium">
           {formatPrice(original.amount, original.currency)}
-        </span>
+        </Text>
       ),
     },
     {
@@ -73,7 +75,7 @@ export const BillingOrdersTable = ({ orders }: { orders: BillingOrder[] }) => {
       header: () => null,
       size: 56,
       cell: ({ row: { original } }) => (
-        <div className="flex justify-end">
+        <Box display="flex" justifyContent="end">
           <a
             href={original.invoiceUrl}
             aria-label={`Download invoice ${original.number}`}
@@ -81,18 +83,28 @@ export const BillingOrdersTable = ({ orders }: { orders: BillingOrder[] }) => {
           >
             <FileDownloadOutlined fontSize="small" />
           </a>
-        </div>
+        </Box>
       ),
     },
   ]
 
   if (orders.length === 0) {
     return (
-      <div className="dark:border-polar-700 dark:bg-polar-800 flex flex-col items-center justify-center gap-y-2 rounded-2xl border border-gray-200 bg-white py-12">
-        <p className="dark:text-polar-400 text-sm text-gray-500">
-          No orders yet
-        </p>
-      </div>
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        rowGap="s"
+        borderRadius="l"
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        backgroundColor="background-card"
+        paddingVertical="3xl"
+      >
+        <Text variant="subtle">No orders yet</Text>
+      </Box>
     )
   }
 

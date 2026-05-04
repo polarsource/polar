@@ -905,10 +905,8 @@ export interface paths {
      * Get Organization Self-Review Checklist
      * @description Get the merchant self-review checklist state.
      *
-     *     Powers the new account review UI: pre-submission gating checks plus,
-     *     after submission, the AI verdict and appeal state. Currently returns
-     *     a hardcoded mock — `?status=pass|fail` switches between the two
-     *     canned responses while the real check logic is built out.
+     *     Powers the account review UI: pre-submission gating checks plus,
+     *     after submission, the AI verdict and appeal state.
      */
     get: operations['organizations:get_review']
     put?: never
@@ -32296,10 +32294,7 @@ export interface operations {
   }
   'organizations:get_review': {
     parameters: {
-      query?: {
-        /** @description STUB: switch the mocked response. `pass` returns an all-passed checklist, `fail` returns an all-failed one. Omit for the default (all-passed) mock. */
-        status?: ('pass' | 'fail') | null
-      }
+      query?: never
       header?: never
       path: {
         id: string
@@ -46957,9 +46952,6 @@ type FlattenedDeepRequired<T> = {
 type ReadonlyArray<T> = [Exclude<T, undefined>] extends [unknown[]]
   ? Readonly<Exclude<T, undefined>>
   : Readonly<Exclude<T, undefined>[]>
-export const pathsV1OrganizationsIdReviewGetParametersQueryStatusAnyOf0Values: ReadonlyArray<
-  FlattenedDeepRequired<paths>['/v1/organizations/{id}/review']['get']['parameters']['query']['status']
-> = ['pass', 'fail']
 export const pathsV1WebhooksDeliveriesGetParametersQueryHttp_code_classAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/webhooks/deliveries']['get']['parameters']['query']['http_code_class']
 > = ['2xx', '3xx', '4xx', '5xx']

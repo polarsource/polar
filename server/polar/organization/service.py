@@ -1182,7 +1182,7 @@ class OrganizationService:
             )
 
         organization_repository = OrganizationRepository.from_session(session)
-        admin_user = await organization_repository.get_admin_user(session, organization)
+        admin_user = await organization_repository.get_admin_user(organization)
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)

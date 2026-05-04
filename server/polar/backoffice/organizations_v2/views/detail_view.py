@@ -168,15 +168,13 @@ class OrganizationDetailView:
                                                 datetime.now(UTC) - deleted_at_dt
                                             ).days
                                             tooltip = deleted_at_dt.strftime(
-                                                "%Y-%m-%d %H:%M:%S UTC"
+                                                "Deleted on %Y-%m-%d %H:%M:%S UTC"
                                             )
                                             with tag.span(
-                                                classes="flex items-center gap-1 text-xs text-base-content/60",
+                                                classes="text-xs text-base-content/60",
                                                 title=tooltip,
                                             ):
-                                                with tag.i(classes="icon-trash"):
-                                                    pass
-                                                text(f"{days_ago}d ago")
+                                                text(f"deleted {days_ago}d ago")
 
                     # ID (copyable)
                     with tag.div():

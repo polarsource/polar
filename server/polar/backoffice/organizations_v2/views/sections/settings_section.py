@@ -61,6 +61,21 @@ class SettingsSection:
                         with tag.div(classes="font-mono text-sm"):
                             text(self.org.customer_invoice_prefix)
 
+                    if self.org.slug_history:
+                        with tag.div():
+                            with tag.div(classes="text-sm text-base-content/60 mb-1"):
+                                text("Previous slugs")
+                            with tag.ul(classes="space-y-1"):
+                                for entry in self.org.slug_history:
+                                    with tag.li(classes="font-mono text-sm flex gap-2"):
+                                        text(entry.get("slug", ""))
+                                        deleted_at = entry.get("deleted_at")
+                                        if deleted_at:
+                                            with tag.span(
+                                                classes="text-base-content/60"
+                                            ):
+                                                text(f"({deleted_at})")
+
             # Order settings card
             with card(bordered=True):
                 with tag.div(classes="flex items-center justify-between mb-4"):

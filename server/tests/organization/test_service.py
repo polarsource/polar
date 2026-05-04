@@ -1892,13 +1892,12 @@ class TestSoftDeleteOrganization:
             organization_id=organization.id
         )
 
-    async def test_anonymizes_pii_preserves_slug(
+    async def test_anonymizes_pii_and_releases_slug(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Soft delete anonymizes PII but preserves slug."""
         original_slug = organization.slug
         organization.name = "Test Organization"
         organization.email = "test@example.com"
@@ -1911,8 +1910,16 @@ class TestSoftDeleteOrganization:
             session, organization
         )
 
-        # Slug should be preserved
-        assert result.slug == original_slug
+        # Slug should be rewritten to a tombstone so the original is reusable.
+        # The `__deleted__` prefix is in a namespace that the slug validator
+        # rejects, so it can never collide with a user-creatable slug.
+        assert result.slug == f"__deleted__-{original_slug}-{organization.id}"
+        assert result.slug != original_slug
+
+        # The original slug is archived in slug_history.
+        assert len(result.slug_history) == 1
+        assert result.slug_history[0]["slug"] == original_slug
+        assert "deleted_at" in result.slug_history[0]
 
         # PII should be anonymized
         assert result.name != "Test Organization"
@@ -1926,6 +1933,43 @@ class TestSoftDeleteOrganization:
 
         # Should be soft deleted
         assert result.deleted_at is not None
+
+    async def test_releases_slug_for_reuse(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        original_slug = organization.slug
+        await organization_service.soft_delete_organization(session, organization)
+        await session.flush()
+
+        repository = OrganizationRepository.from_session(session)
+        # Original slug is now free — slug_exists (which still inspects
+        # soft-deleted rows defensively) reports it as available.
+        assert await repository.slug_exists(original_slug) is False
+
+    async def test_appends_to_existing_slug_history(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        previous_entry = {
+            "slug": "previous-slug",
+            "deleted_at": "2026-01-01T00:00:00+00:00",
+        }
+        organization.slug_history = [previous_entry]
+        await save_fixture(organization)
+
+        result = await organization_service.soft_delete_organization(
+            session, organization
+        )
+
+        assert len(result.slug_history) == 2
+        assert result.slug_history[0] == previous_entry
+        assert result.slug_history[1]["slug"] != previous_entry["slug"]
 
     async def test_clears_details_and_socials(
         self,

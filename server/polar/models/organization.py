@@ -420,6 +420,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     slug: Mapped[str] = mapped_column(CITEXT, nullable=False, unique=True)
+    slug_history: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
     _avatar_url: Mapped[str | None] = mapped_column(
         String, name="avatar_url", nullable=True
     )

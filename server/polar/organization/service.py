@@ -614,15 +614,23 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
     ) -> Organization:
-        """Soft-delete an organization, preserving the slug for backoffice links.
+        """Soft-delete an organization, releasing its slug for reuse.
 
-        Anonymizes PII fields (except slug) and sets deleted_at timestamp.
+        Anonymizes PII fields, archives the previous slug to ``slug_history``,
+        and rewrites the live slug to a tombstone so a new organization can
+        claim the original.
         """
         repository = OrganizationRepository.from_session(session)
 
-        update_dict: dict[str, Any] = {}
+        now = datetime.now(UTC)
+        update_dict: dict[str, Any] = {
+            "slug_history": [
+                *organization.slug_history,
+                {"slug": organization.slug, "deleted_at": now.isoformat()},
+            ],
+            "slug": f"__deleted__-{organization.slug}-{organization.id}",
+        }
 
-        # Anonymize PII fields but NOT slug (to keep backoffice links working)
         pii_fields = ["name", "website", "customer_invoice_prefix"]
         github_fields = ["bio", "company", "blog", "location", "twitter_username"]
         for pii_field in pii_fields + github_fields:

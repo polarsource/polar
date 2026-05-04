@@ -5,6 +5,14 @@ import GitHubIcon from '../Icons/GitHubIcon'
 
 export type CreatableBenefit = schemas['BenefitType']
 
+const CUSTOMER_HIDDEN_BENEFIT_TYPES: ReadonlyArray<schemas['BenefitType']> = [
+  'feature_flag',
+]
+
+export const isCustomerVisibleBenefitType = (
+  type: schemas['BenefitType'],
+): boolean => !CUSTOMER_HIDDEN_BENEFIT_TYPES.includes(type)
+
 const resolveBenefitCategoryIcon = (
   type?: schemas['BenefitType'],
   className?: string,

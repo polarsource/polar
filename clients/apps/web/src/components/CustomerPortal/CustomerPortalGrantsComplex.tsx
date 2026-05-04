@@ -5,8 +5,9 @@ import { Client } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Loader2, Search } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
+import { isCustomerVisibleBenefitType } from '../Benefit/utils'
 import { Pagination } from './Pagination'
 
 export interface CustomerPortalGrantsComplexProps {
@@ -50,7 +51,13 @@ export const CustomerPortalGrantsComplex = ({
     ...filterParams,
   })
 
-  const grants = benefitGrants?.items ?? []
+  const grants = useMemo(
+    () =>
+      (benefitGrants?.items ?? []).filter((grant) =>
+        isCustomerVisibleBenefitType(grant.benefit.type),
+      ),
+    [benefitGrants],
+  )
   const pagination = benefitGrants?.pagination
 
   return (

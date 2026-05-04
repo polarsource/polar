@@ -1,5 +1,6 @@
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
+import { isCustomerVisibleBenefitType } from '../Benefit/utils'
 import { CustomerPortalGrantsComplex } from './CustomerPortalGrantsComplex'
 import { CustomerPortalGrantsSimple } from './CustomerPortalGrantsSimple'
 
@@ -34,11 +35,17 @@ export const CustomerPortalGrants = ({
     initialResponse?.pagination?.total_count ??
     initialResponse?.items?.length ??
     0
-  const initialBenefitGrants = initialResponse?.items ?? []
+  const initialBenefitGrants = (initialResponse?.items ?? []).filter((grant) =>
+    isCustomerVisibleBenefitType(grant.benefit.type),
+  )
 
   const isSimplifiedView = totalBenefitGrantCount <= SIMPLIFIED_VIEW_THRESHOLD
 
   if (totalBenefitGrantCount === 0) {
+    return null
+  }
+
+  if (isSimplifiedView && initialBenefitGrants.length === 0) {
     return null
   }
 

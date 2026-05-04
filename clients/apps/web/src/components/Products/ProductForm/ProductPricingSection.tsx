@@ -30,6 +30,7 @@ import { twMerge } from 'tailwind-merge'
 import { Section } from '../../Layout/Section'
 import { CurrencyTabs } from './Pricing/CurrencyTabs'
 import { ProductPriceItem } from './Pricing/ProductPriceItem'
+import { useAutoSwitchToErroredPriceTab } from './Pricing/useAutoSwitchToErroredPriceTab'
 import {
   getActiveCurrencies,
   groupPricesByCurrency,
@@ -78,6 +79,8 @@ export const ProductPricingSection = ({
   const validatedSelectedCurrency = activeCurrencies.includes(selectedCurrency)
     ? selectedCurrency
     : defaultCurrency
+
+  useAutoSwitchToErroredPriceTab(setSelectedCurrency)
 
   const isLegacyRecurringProduct = useMemo(
     () => (prices as ProductPrice[]).some(isLegacyRecurringPrice),

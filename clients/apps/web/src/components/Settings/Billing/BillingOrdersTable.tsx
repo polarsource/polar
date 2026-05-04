@@ -13,7 +13,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { twMerge } from 'tailwind-merge'
 import { BillingOrder } from './mockData'
 
-const formatPrice = formatCurrency('standard')
+const formatPrice = formatCurrency('standard', 'en-US')
 
 const STATUS_LABEL: Record<BillingOrder['status'], string> = {
   paid: 'Paid',

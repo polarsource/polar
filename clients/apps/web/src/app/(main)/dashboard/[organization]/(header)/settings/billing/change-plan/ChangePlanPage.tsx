@@ -5,7 +5,8 @@ import { ConfirmModal } from "@/components/Modal/ConfirmModal";
 import { useModal } from "@/components/Modal/useModal";
 import { BILLING_PLANS, BillingPlan, BillingPlanId } from "@/components/Settings/Billing/mockData";
 import {
-  setSubscriptionPlan,
+  applyPlanChange,
+  schedulePlanChange,
   useBillingSubscription,
 } from "@/components/Settings/Billing/useBillingStore";
 import { toast } from "@/components/Toast/use-toast";
@@ -22,7 +23,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
-const formatPrice = formatCurrency("standard");
+const formatPrice = formatCurrency("standard", "en-US");
 
 const PlanCard = ({
   plan,
@@ -41,7 +42,7 @@ const PlanCard = ({
       onClick={onSelect}
       disabled={isCurrent}
       className={twMerge(
-        "dark:border-polar-700 flex h-full flex-col gap-y-8 rounded-2xl border bg-white p-10 text-left transition-colors dark:bg-transparent",
+        "dark:border-polar-700 flex h-full flex-col gap-y-8 rounded-2xl border bg-white p-8 text-left transition-colors dark:bg-transparent",
         isCurrent
           ? "dark:bg-polar-800 cursor-not-allowed border-gray-200 bg-gray-50 opacity-70"
           : isSelected
@@ -156,14 +157,19 @@ export default function ChangePlanPage({
     setIsSubmitting(true);
     // Simulate API latency for the mocked flow.
     await new Promise((resolve) => setTimeout(resolve, 600));
-    setSubscriptionPlan(selectedPlanId);
-    toast({
-      title: changeKind === "upgrade" ? "Plan upgraded" : "Plan change scheduled",
-      description:
-        changeKind === "upgrade"
-          ? `You're now on the ${selectedPlan.name} plan.`
-          : `You'll move to ${selectedPlan.name} at the end of the current period.`,
-    });
+    if (changeKind === "upgrade") {
+      applyPlanChange(selectedPlanId);
+      toast({
+        title: "Plan upgraded",
+        description: `You're now on the ${selectedPlan.name} plan.`,
+      });
+    } else {
+      schedulePlanChange(selectedPlanId, subscription.currentPeriodEnd);
+      toast({
+        title: "Downgrade scheduled",
+        description: `You'll move to ${selectedPlan.name} at the end of the current period.`,
+      });
+    }
     setIsSubmitting(false);
     router.push(billingHref);
   };

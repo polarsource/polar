@@ -20,6 +20,11 @@ export type BillingPlan = {
   highlight?: boolean
 }
 
+export type ScheduledPlanChange = {
+  planId: BillingPlanId
+  effectiveAt: string
+}
+
 export type BillingSubscription = {
   planId: BillingPlanId
   status: 'active' | 'past_due' | 'canceled' | 'trialing'
@@ -27,6 +32,7 @@ export type BillingSubscription = {
   currentPeriodStart: string
   currentPeriodEnd: string
   cancelAtPeriodEnd: boolean
+  scheduledPlanChange: ScheduledPlanChange | null
   paymentMethod: {
     brand: string
     last4: string
@@ -115,6 +121,7 @@ export const MOCK_SUBSCRIPTION: BillingSubscription = {
   currentPeriodStart: '2026-04-12T09:30:00Z',
   currentPeriodEnd: '2026-05-12T09:30:00Z',
   cancelAtPeriodEnd: false,
+  scheduledPlanChange: null,
   paymentMethod: {
     brand: 'Visa',
     last4: '4242',

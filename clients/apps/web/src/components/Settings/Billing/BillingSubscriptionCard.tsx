@@ -6,9 +6,11 @@ import Button from "@polar-sh/ui/components/atoms/Button";
 import FormattedDateTime from "@polar-sh/ui/components/atoms/FormattedDateTime";
 import Pill from "@polar-sh/ui/components/atoms/Pill";
 import { formatCurrency } from "@polar-sh/currency";
-import { BillingPlan, BillingSubscription } from "./mockData";
+import { toast } from "@/components/Toast/use-toast";
+import { BILLING_PLANS, BillingPlan, BillingSubscription } from "./mockData";
+import { cancelScheduledPlanChange } from "./useBillingStore";
 
-const formatPrice = formatCurrency("standard");
+const formatPrice = formatCurrency("standard", "en-US");
 
 const STATUS_LABEL: Record<BillingSubscription["status"], string> = {
   active: "Active",
@@ -41,6 +43,17 @@ export const BillingSubscriptionCard = ({
   onChangePlan: () => void;
 }) => {
   const intervalLabel = plan.interval === "month" ? "month" : "year";
+  const scheduledPlan = subscription.scheduledPlanChange
+    ? BILLING_PLANS.find((p) => p.id === subscription.scheduledPlanChange?.planId)
+    : null;
+
+  const onCancelScheduledChange = () => {
+    cancelScheduledPlanChange();
+    toast({
+      title: "Scheduled change canceled",
+      description: `You'll stay on the ${plan.name} plan.`,
+    });
+  };
 
   return (
     <Box
@@ -68,6 +81,7 @@ export const BillingSubscriptionCard = ({
             <Pill color={STATUS_COLOR[subscription.status]}>
               {STATUS_LABEL[subscription.status]}
             </Pill>
+            {scheduledPlan && <Pill color="yellow">Switches to {scheduledPlan.name}</Pill>}
             {subscription.cancelAtPeriodEnd && <Pill color="yellow">Cancels at period end</Pill>}
           </Box>
           <Text variant="subtle">{plan.description}</Text>
@@ -119,6 +133,33 @@ export const BillingSubscriptionCard = ({
           {subscription.paymentMethod.brand} ending in {subscription.paymentMethod.last4}
         </Detail>
       </Box>
+
+      {scheduledPlan && subscription.scheduledPlanChange && (
+        <Box
+          display="flex"
+          flexDirection="column"
+          rowGap="m"
+          columnGap="m"
+          borderRadius="m"
+          alignItems="start"
+          backgroundColor="background-card"
+          padding="l"
+        >
+          <Box display="flex" flexDirection="column" columnGap="s">
+            <Text variant="body" as="h3">
+              Downgrade scheduled
+            </Text>
+            <Text variant="subtle">
+              Your plan will switch from {plan.name} to {scheduledPlan.name} on{" "}
+              <FormattedDateTime datetime={subscription.scheduledPlanChange.effectiveAt} />.
+              You&apos;ll keep {plan.name} access until then.
+            </Text>
+          </Box>
+          <Button variant="secondary" size="sm" onClick={onCancelScheduledChange}>
+            Cancel change
+          </Button>
+        </Box>
+      )}
 
       <Box display="flex" flexDirection="row" flexWrap="wrap" columnGap="m" rowGap="m">
         <Button onClick={onChangePlan}>Change plan</Button>

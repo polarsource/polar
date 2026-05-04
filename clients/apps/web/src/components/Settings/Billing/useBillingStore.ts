@@ -19,9 +19,28 @@ const subscribe = (listener: Listener) => {
 
 const getSnapshot = (): BillingSubscription => state
 
-export const setSubscriptionPlan = (planId: BillingPlanId): void => {
-  state = { ...state, planId }
+const emit = () => {
   listeners.forEach((listener) => listener())
+}
+
+// Apply a plan change immediately. Used for upgrades.
+export const applyPlanChange = (planId: BillingPlanId): void => {
+  state = { ...state, planId, scheduledPlanChange: null }
+  emit()
+}
+
+// Schedule a plan change for the end of the current period. Used for downgrades.
+export const schedulePlanChange = (
+  planId: BillingPlanId,
+  effectiveAt: string,
+): void => {
+  state = { ...state, scheduledPlanChange: { planId, effectiveAt } }
+  emit()
+}
+
+export const cancelScheduledPlanChange = (): void => {
+  state = { ...state, scheduledPlanChange: null }
+  emit()
 }
 
 export const useBillingSubscription = (): BillingSubscription =>

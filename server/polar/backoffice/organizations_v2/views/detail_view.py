@@ -147,6 +147,25 @@ class OrganizationDetailView:
                             with clipboard_button(self.org.slug):
                                 pass
 
+                    # Previous slugs
+                    if self.org.slug_history:
+                        with tag.div():
+                            with tag.dt(classes="text-base-content/60 mb-1"):
+                                text("Previous Slugs")
+                            with tag.dd(classes="space-y-1"):
+                                for entry in self.org.slug_history:
+                                    with tag.div(classes="flex items-center gap-2"):
+                                        with tag.code(
+                                            classes="font-mono text-xs bg-base-200 px-2 py-1 rounded"
+                                        ):
+                                            text(entry.get("slug", ""))
+                                        deleted_at = entry.get("deleted_at")
+                                        if deleted_at:
+                                            with tag.span(
+                                                classes="text-xs text-base-content/60"
+                                            ):
+                                                text(deleted_at)
+
                     # ID (copyable)
                     with tag.div():
                         with tag.dt(classes="text-base-content/60 mb-1"):

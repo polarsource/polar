@@ -2,7 +2,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from babel.numbers import format_currency as _format_currency
-from babel.numbers import get_territory_currencies
+from babel.numbers import format_decimal, get_territory_currencies
 
 
 class PresentmentCurrency(StrEnum):
@@ -350,7 +350,7 @@ MINIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
 }
 
 MINIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
-    f"- {currency.upper()}: {format_currency(amount, currency)}"
+    f"- {currency.upper()}: {format_decimal(amount / _get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
     for currency, amount in MINIMUM_PRICE_PER_CURRENCY.items()
 )
 

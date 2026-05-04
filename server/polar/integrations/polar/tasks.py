@@ -102,7 +102,7 @@ async def delete_customer(external_id: str) -> None:
 
 @actor(
     actor_name="polar_self.track_event_ingestion_v2",
-    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
+    cron_trigger=CronTrigger.from_crontab("0 */3 * * *"),
     priority=TaskPriority.LOW,
 )
 async def track_event_ingestion() -> None:

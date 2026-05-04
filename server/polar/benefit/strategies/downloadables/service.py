@@ -44,6 +44,14 @@ class BenefitDownloadablesService(
     ) -> BenefitGrantDownloadablesProperties:
         properties = self._get_properties(benefit)
         file_ids = get_active_file_ids(properties)
+
+        # If we already granted this before, verify that the set of files
+        # is the same. Otherwise revoke them and regrant them.
+        if update and grant_properties:
+            previous_file_ids = {UUID(f) for f in grant_properties.get("files", [])}
+            if previous_file_ids != set(file_ids):
+                await self.revoke(benefit, customer, grant_properties, attempt=attempt)
+
         if not file_ids:
             return {}
 

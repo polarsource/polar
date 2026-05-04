@@ -86,6 +86,19 @@ class TestDownloadable:
         return benefit, granted
 
     @classmethod
+    async def run_update_grant_task(
+        cls,
+        session: AsyncSession,
+        redis: Redis,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantDownloadablesProperties,
+    ) -> tuple[Benefit, BenefitGrantDownloadablesProperties]:
+        service = BenefitDownloadablesService(session, redis)
+        granted = await service.grant(benefit, customer, grant_properties, update=True)
+        return benefit, granted
+
+    @classmethod
     async def run_revoke_task(
         cls,
         session: AsyncSession,

@@ -381,3 +381,130 @@ class TestDownloadblesBenefit:
         assert len(customer_second_downloadables) == 1
         assert customer_second_downloadables[0].file_id == files[1].id
         assert customer_second_downloadables[0].status == DownloadableStatus.granted
+
+    @pytest.mark.auth
+    async def test_grant_update_revokes_removed_files(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        uploaded_logo_jpg: FileRead,
+        uploaded_logo_png: FileRead,
+    ) -> None:
+        files = [uploaded_logo_jpg, uploaded_logo_png]
+        benefit, granted = await TestDownloadable.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitDownloadablesCreateProperties(
+                files=[f.id for f in files],
+            ),
+        )
+        assert len(granted.get("files", [])) == 2
+
+        cast(BenefitDownloadablesProperties, benefit.properties)["files"] = [
+            uploaded_logo_jpg.id
+        ]
+        session.add(benefit)
+        await session.flush()
+
+        _, updated = await TestDownloadable.run_update_grant_task(
+            session, redis, benefit, customer, granted
+        )
+        assert updated.get("files", []) == [str(uploaded_logo_jpg.id)]
+
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
+        assert len(downloadables) == 2
+
+        by_file = {d.file_id: d for d in downloadables}
+        assert by_file[uploaded_logo_jpg.id].status == DownloadableStatus.granted
+        assert by_file[uploaded_logo_png.id].status == DownloadableStatus.revoked
+
+    @pytest.mark.auth
+    async def test_grant_update_no_change_keeps_grants(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        uploaded_logo_jpg: FileRead,
+        uploaded_logo_png: FileRead,
+    ) -> None:
+        files = [uploaded_logo_jpg, uploaded_logo_png]
+        benefit, granted = await TestDownloadable.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitDownloadablesCreateProperties(
+                files=[f.id for f in files],
+            ),
+        )
+
+        _, updated = await TestDownloadable.run_update_grant_task(
+            session, redis, benefit, customer, granted
+        )
+        assert set(updated.get("files", [])) == {str(f.id) for f in files}
+
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
+        assert len(downloadables) == 2
+        for downloadable in downloadables:
+            assert downloadable.status == DownloadableStatus.granted
+
+    @pytest.mark.auth
+    async def test_grant_update_revokes_archived_file(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        uploaded_logo_jpg: FileRead,
+        uploaded_logo_png: FileRead,
+    ) -> None:
+        files = [uploaded_logo_jpg, uploaded_logo_png]
+        benefit, granted = await TestDownloadable.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitDownloadablesCreateProperties(
+                files=[f.id for f in files],
+            ),
+        )
+        assert len(granted.get("files", [])) == 2
+
+        cast(BenefitDownloadablesProperties, benefit.properties)["archived"] = {
+            uploaded_logo_png.id: True
+        }
+        session.add(benefit)
+        await session.flush()
+
+        _, updated = await TestDownloadable.run_update_grant_task(
+            session, redis, benefit, customer, granted
+        )
+        assert updated.get("files", []) == [str(uploaded_logo_jpg.id)]
+
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
+        by_file = {d.file_id: d for d in downloadables}
+        assert by_file[uploaded_logo_jpg.id].status == DownloadableStatus.granted
+        assert by_file[uploaded_logo_png.id].status == DownloadableStatus.revoked

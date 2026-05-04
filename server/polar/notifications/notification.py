@@ -89,9 +89,7 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
                 suffix = "th"
             else:
                 suffix = {1: "st", 2: "nd", 3: "rd"}.get(count % 10, "th")
-            return (
-                f"{amount} / every {count}{suffix} {self.tier_price_recurring_interval}"
-            )
+            return f"{amount}/{count}{suffix} {self.tier_price_recurring_interval}"
         return f"{amount}/{self.tier_price_recurring_interval}"
 
     def subject(self) -> str:

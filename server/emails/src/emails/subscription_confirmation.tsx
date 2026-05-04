@@ -1,4 +1,4 @@
-import { Hr, Preview, Section } from '@react-email/components'
+import { Hr, Link, Preview, Section } from '@react-email/components'
 import Benefits from '../components/Benefits'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
@@ -23,6 +23,16 @@ export function SubscriptionConfirmation({
         Thank you for subscribing to{' '}
         <strong className="font-medium">{product.name}</strong>. Your invoice is
         attached.
+        {order.receipt_number && (
+          <>
+            {' '}
+            Your receipt is in the{' '}
+            <Link href={url} className="text-blue-600 underline">
+              customer portal
+            </Link>
+            .
+          </>
+        )}
       </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Section className="my-8 text-center">

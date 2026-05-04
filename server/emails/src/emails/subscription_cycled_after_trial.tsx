@@ -1,4 +1,4 @@
-import { Hr, Preview, Section } from '@react-email/components'
+import { Hr, Link, Preview, Section } from '@react-email/components'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
 import Intro from '../components/Intro'
@@ -20,8 +20,17 @@ export function SubscriptionCycledAfterTrial({
       <Preview>Your {product.name} trial ended</Preview>
       <Intro headline="Your trial has ended">
         Your <span className="font-medium">{product.name}</span> trial is over
-        and your subscription is now active. We've attached your first invoice
-        for your records.
+        and your subscription is now active. Your first invoice is attached.
+        {order.receipt_number && (
+          <>
+            {' '}
+            Your receipt is in the{' '}
+            <Link href={url} className="text-blue-600 underline">
+              customer portal
+            </Link>
+            .
+          </>
+        )}
       </Intro>
       <Section className="my-8 text-center">
         <Button href={url}>Manage subscription</Button>

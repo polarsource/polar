@@ -1,4 +1,4 @@
-import { Hr, Preview, Section } from '@react-email/components'
+import { Hr, Link, Preview, Section } from '@react-email/components'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
 import Intro from '../components/Intro'
@@ -21,6 +21,16 @@ export function SubscriptionCycled({
       <Intro headline="Your subscription renewed">
         Your <span className="font-medium">{product.name}</span> subscription
         has just renewed. Your invoice is attached.
+        {order.receipt_number && (
+          <>
+            {' '}
+            Your receipt is in the{' '}
+            <Link href={url} className="text-blue-600 underline">
+              customer portal
+            </Link>
+            .
+          </>
+        )}
       </Intro>
       <Section className="my-8 text-center">
         <Button href={url}>Manage subscription</Button>

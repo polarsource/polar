@@ -16430,6 +16430,15 @@ export interface components {
       | components['schemas']['CustomerSubscriptionUpdateProduct']
       | components['schemas']['CustomerSubscriptionUpdateSeats']
       | components['schemas']['CustomerSubscriptionCancel']
+      | components['schemas']['CustomerSubscriptionUpdateClear']
+    /** CustomerSubscriptionUpdateClear */
+    CustomerSubscriptionUpdateClear: {
+      /**
+       * Pending Update
+       * @description Clear the pending subscription update.
+       */
+      pending_update: null
+    }
     /** CustomerSubscriptionUpdateProduct */
     CustomerSubscriptionUpdateProduct: {
       /**
@@ -28092,6 +28101,7 @@ export interface components {
       | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
+      | components['schemas']['SubscriptionUpdateClear']
     /** SubscriptionUpdateBillingPeriod */
     SubscriptionUpdateBillingPeriod: {
       /**
@@ -28102,6 +28112,94 @@ export interface components {
        *     It is not possible to update the current billing period on a canceled subscription.
        */
       current_billing_period_end: string
+    }
+    /** SubscriptionUpdateClear */
+    SubscriptionUpdateClear: {
+      /**
+       * Pending Update
+       * @description Clear the pending subscription update. Set to null to remove scheduled changes.
+       */
+      pending_update: null
+    }
+    /**
+     * SubscriptionUpdateClearedEvent
+     * @description An event created by Polar when a pending subscription update is cleared without being applied.
+     */
+    SubscriptionUpdateClearedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.update_cleared'
+      metadata: components['schemas']['SubscriptionUpdateClearedMetadata']
+    }
+    /** SubscriptionUpdateClearedMetadata */
+    SubscriptionUpdateClearedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
     }
     /** SubscriptionUpdateDiscount */
     SubscriptionUpdateDiscount: {
@@ -28295,6 +28393,7 @@ export interface components {
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
       | components['schemas']['SubscriptionBillingPeriodUpdatedEvent']
+      | components['schemas']['SubscriptionUpdateClearedEvent']
       | components['schemas']['OrderPaidEvent']
       | components['schemas']['OrderRefundedEvent']
       | components['schemas']['OrderVoidedEvent']
@@ -54525,6 +54624,9 @@ export const subscriptionStatusValues: ReadonlyArray<
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']
 > = ['subscription.uncanceled']
+export const subscriptionUpdateClearedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionUpdateClearedEvent']['name']
+> = ['subscription.update_cleared']
 export const subscriptionUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdatedEvent']['name']
 > = ['subscription.updated']

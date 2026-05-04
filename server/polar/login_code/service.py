@@ -4,8 +4,6 @@ import string
 from math import ceil
 
 import structlog
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 
 from polar.config import settings
 from polar.email.schemas import LoginCodeEmail, LoginCodeProps
@@ -13,6 +11,7 @@ from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
+from polar.login_code.repository import LoginCodeRepository
 from polar.models import LoginCode, User
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
@@ -106,17 +105,8 @@ class LoginCodeService:
 
         code_hash = get_token_hash(code, secret=settings.SECRET)
 
-        statement = (
-            select(LoginCode)
-            .where(
-                LoginCode.code_hash == code_hash,
-                LoginCode.email == email,
-                LoginCode.expires_at > utc_now(),
-            )
-            .options(joinedload(LoginCode.user))
-        )
-        result = await session.execute(statement)
-        login_code = result.unique().scalar_one_or_none()
+        repository = LoginCodeRepository.from_session(session)
+        login_code = await repository.get_by_code(code_hash, email)
 
         if login_code is None:
             raise LoginCodeInvalidOrExpired()

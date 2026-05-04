@@ -1,4 +1,4 @@
-from sqlalchemy import Select, select
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
@@ -9,11 +9,10 @@ from polar.models import Customer, CustomerSessionCode
 class CustomerSessionCodeRepository(RepositoryBase[CustomerSessionCode]):
     model = CustomerSessionCode
 
-    def get_valid_by_code_hash_statement(
+    async def get_valid_by_code_hash_for_update(
         self, code_hash: str
-    ) -> Select[tuple[CustomerSessionCode]]:
-        """Get a valid (non-expired) CustomerSessionCode by its hash."""
-        return (
+    ) -> CustomerSessionCode | None:
+        statement = (
             select(CustomerSessionCode)
             .where(
                 CustomerSessionCode.expires_at > utc_now(),
@@ -24,12 +23,7 @@ class CustomerSessionCodeRepository(RepositoryBase[CustomerSessionCode]):
                     Customer.organization
                 )
             )
+            .with_for_update(nowait=True, of=CustomerSessionCode)
         )
-
-    async def get_valid_by_code_hash(
-        self, code_hash: str
-    ) -> CustomerSessionCode | None:
-        """Get a valid (non-expired) CustomerSessionCode by its hash."""
-        statement = self.get_valid_by_code_hash_statement(code_hash)
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()

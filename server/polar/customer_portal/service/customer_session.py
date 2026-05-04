@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from math import ceil
 
 import structlog
+from sqlalchemy.exc import DBAPIError
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -16,6 +17,7 @@ from polar.email.schemas import CustomerSessionCodeEmail, CustomerSessionCodePro
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
+from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -243,7 +245,14 @@ class CustomerSessionService:
         code_hash = get_token_hash(code, secret=settings.SECRET)
 
         code_repository = CustomerSessionCodeRepository.from_session(session)
-        customer_session_code = await code_repository.get_valid_by_code_hash(code_hash)
+        try:
+            customer_session_code = (
+                await code_repository.get_valid_by_code_hash_for_update(code_hash)
+            )
+        except DBAPIError as e:
+            if is_lock_not_available_error(e):
+                raise CustomerSessionCodeInvalidOrExpired() from e
+            raise
 
         if customer_session_code is None:
             raise CustomerSessionCodeInvalidOrExpired()

@@ -12,6 +12,9 @@ on:
       - ".github/workflows/deploy_server.sh"
   workflow_dispatch:
 
+concurrency:
+  group: build-deploy
+
 jobs:
   changes:
     name: "Detect Changes 🔍"
@@ -40,9 +43,6 @@ jobs:
 
   build:
     name: "Build Docker Image 🐳"
-    concurrency:
-      group: build-deploy
-
     needs: changes
     if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 20

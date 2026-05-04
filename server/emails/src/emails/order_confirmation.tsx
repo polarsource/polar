@@ -25,9 +25,9 @@ export function OrderConfirmation({
         {order.receipt_number && (
           <>
             {' '}
-            Your receipt is in the{' '}
+            You can find your receipt in the{' '}
             <Link href={url} className="text-blue-600 underline">
-              customer portal
+              Customer Portal
             </Link>
             .
           </>

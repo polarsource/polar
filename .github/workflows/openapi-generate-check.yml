@@ -3,11 +3,6 @@ name: OpenAPI Client Regeneration Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - "server/polar/**"
-      - "clients/packages/client/src/v1.ts"
-      - "clients/packages/client/package.json"
-      - ".github/workflows/openapi-generate-check.yml"
   merge_group:
 
 concurrency:
@@ -15,8 +10,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            relevant:
+              - 'server/polar/**'
+              - 'clients/packages/client/src/v1.ts'
+              - 'clients/packages/client/package.json'
+              - '.github/workflows/openapi-generate-check.yml'
+
   check:
     name: "Check generated client"
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: read

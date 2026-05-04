@@ -127,9 +127,14 @@ class CustomerSubscriptionCancel(Schema):
     )
 
 
+class CustomerSubscriptionUpdateClear(Schema):
+    pending_update: None = Field(description="Clear the pending subscription update.")
+
+
 CustomerSubscriptionUpdate = Annotated[
     CustomerSubscriptionUpdateProduct
     | CustomerSubscriptionUpdateSeats
-    | CustomerSubscriptionCancel,
+    | CustomerSubscriptionCancel
+    | CustomerSubscriptionUpdateClear,
     SetSchemaReference("CustomerSubscriptionUpdate"),
 ]

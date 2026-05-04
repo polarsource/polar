@@ -38,6 +38,7 @@ from polar.event.system import (
     SubscriptionRevokedMetadata,
     SubscriptionSeatsUpdatedMetadata,
     SubscriptionUncanceledMetadata,
+    SubscriptionUpdateClearedMetadata,
     SubscriptionUpdatedMetadata,
 )
 from polar.event.system import SystemEvent as SystemEventEnum
@@ -411,6 +412,17 @@ class SubscriptionSeatsUpdatedEvent(SystemEventBase):
     )
 
 
+class SubscriptionUpdateClearedEvent(SystemEventBase):
+    """An event created by Polar when a pending subscription update is cleared without being applied."""
+
+    name: Literal[SystemEventEnum.subscription_update_cleared] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionUpdateClearedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class SubscriptionBillingPeriodUpdatedEvent(SystemEventBase):
     """An event created by Polar when a subscription billing period is updated."""
 
@@ -571,6 +583,7 @@ SystemEvent = Annotated[
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent
     | SubscriptionBillingPeriodUpdatedEvent
+    | SubscriptionUpdateClearedEvent
     | OrderPaidEvent
     | OrderRefundedEvent
     | OrderVoidedEvent

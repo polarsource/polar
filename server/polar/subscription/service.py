@@ -110,6 +110,7 @@ from .schemas import (
     SubscriptionRevoke,
     SubscriptionUpdate,
     SubscriptionUpdateBillingPeriod,
+    SubscriptionUpdateClear,
     SubscriptionUpdateDiscount,
     SubscriptionUpdateProduct,
     SubscriptionUpdateSeats,
@@ -974,6 +975,9 @@ class SubscriptionService:
                 immediately=True,
             )
 
+        if isinstance(update, SubscriptionUpdateClear):
+            return await self.clear_pending_update(session, subscription)
+
     async def update_product(
         self,
         session: AsyncSession,
@@ -1193,6 +1197,56 @@ class SubscriptionService:
             subscription,
             previous_status=previous_status,
             previous_is_canceled=previous_is_canceled,
+        )
+
+        return subscription
+
+    async def clear_pending_update(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> Subscription:
+        """Clear the pending update for a subscription."""
+        if subscription.pending_update is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "pending_update"),
+                        "msg": "This subscription has no pending update to clear.",
+                        "input": None,
+                    }
+                ]
+            )
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        await subscription_update_repository.soft_delete_unapplied_by_subscription_id(
+            subscription.id
+        )
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(
+            subscription, update_dict={"pending_update": None}
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_update_cleared,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                },
+            ),
+        )
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=subscription.status,
+            previous_is_canceled=False,
         )
 
         return subscription

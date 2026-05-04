@@ -5024,3 +5024,105 @@ class TestCancelCustomer:
             "Expected no calls to 'benefit.enqueue_benefits_grants', "
             f"but found {len(benefit_grant_calls)} call(s)"
         )
+
+
+@pytest.mark.asyncio
+class TestClearPendingUpdate:
+    async def test_clear_pending_product_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        # Given: Subscription with a pending product update
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        # When: Clear the pending update
+        updated_subscription = await subscription_service.clear_pending_update(
+            session,
+            subscription,
+        )
+        await save_fixture(updated_subscription)
+
+        # Then: Pending update is cleared
+        assert updated_subscription.pending_update is None
+
+    async def test_clear_pending_update_no_pending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Given: Subscription with no pending update
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        # When/Then: Should raise validation error
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.clear_pending_update(
+                session,
+                subscription,
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "value_error"
+        assert errors[0]["loc"] == ("body", "pending_update")
+        assert "no pending update" in errors[0]["msg"]
+
+    async def test_clear_pending_seat_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Seat-based product and subscription with a pending seat update
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            seats=10,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        # When: Clear the pending update
+        updated_subscription = await subscription_service.clear_pending_update(
+            session,
+            subscription,
+        )
+        await save_fixture(updated_subscription)
+
+        # Then: Pending update is cleared
+        assert updated_subscription.pending_update is None

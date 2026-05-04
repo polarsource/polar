@@ -5,6 +5,7 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
+    CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
     CustomerSubscriptionUpdateSeats,
 )
@@ -15,6 +16,7 @@ from polar.customer_portal.service.subscription import (
 from polar.customer_portal.service.subscription import (
     customer_subscription as customer_subscription_service,
 )
+from polar.enums import SubscriptionProrationBehavior
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -27,6 +29,7 @@ from polar.models import (
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import AlreadyCanceledSubscription
+from polar.subscription.update import generate_subscription_update
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -382,3 +385,68 @@ class TestCancel:
         assert updated_subscription.ended_at is None
         assert updated_subscription.cancel_at_period_end
         assert updated_subscription.ends_at == updated_subscription.current_period_end
+
+
+@pytest.mark.asyncio
+class TestClearPendingUpdate:
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    async def test_clear_pending_product_update(
+        self,
+        auth_subject: AuthSubject[Customer],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        product_second: Product,
+    ) -> None:
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        updates = CustomerSubscriptionUpdateClear(pending_update=None)
+        updated = await customer_subscription_service.update(
+            session, subscription, updates=updates
+        )
+        await save_fixture(updated)
+
+        assert updated.pending_update is None
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    async def test_clear_pending_update_no_pending(
+        self,
+        auth_subject: AuthSubject[Customer],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        updates = CustomerSubscriptionUpdateClear(pending_update=None)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_subscription_service.update(
+                session, subscription, updates=updates
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "value_error"
+        assert errors[0]["loc"] == ("body", "pending_update")
+        assert "no pending update" in errors[0]["msg"]

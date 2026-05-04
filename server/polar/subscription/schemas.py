@@ -389,6 +389,12 @@ class SubscriptionRevoke(SubscriptionCancelBase):
     )
 
 
+class SubscriptionUpdateClear(Schema):
+    pending_update: Literal[None] = Field(
+        description="Clear the pending subscription update. Set to null to remove scheduled changes."
+    )
+
+
 SubscriptionUpdate = Annotated[
     SubscriptionUpdateProduct
     | SubscriptionUpdateDiscount
@@ -396,7 +402,8 @@ SubscriptionUpdate = Annotated[
     | SubscriptionUpdateSeats
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
-    | SubscriptionRevoke,
+    | SubscriptionRevoke
+    | SubscriptionUpdateClear,
     SetSchemaReference("SubscriptionUpdate"),
 ]
 

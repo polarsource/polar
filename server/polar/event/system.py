@@ -28,6 +28,7 @@ class SystemEvent(StrEnum):
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
     subscription_billing_period_updated = "subscription.billing_period_updated"
+    subscription_update_cleared = "subscription.update_cleared"
     order_paid = "order.paid"
     order_refunded = "order.refunded"
     order_voided = "order.voided"
@@ -61,6 +62,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "checkout.created": "Checkout Created",
     "subscription.seats_updated": "Subscription Seats Updated",
     "subscription.billing_period_updated": "Subscription Billing Period Updated",
+    "subscription.update_cleared": "Subscription Update Cleared",
     "customer.created": "Customer Created",
     "customer.updated": "Customer Updated",
     "customer.deleted": "Customer Deleted",
@@ -352,6 +354,17 @@ class SubscriptionBillingPeriodUpdatedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_billing_period_updated]]
         user_metadata: Mapped[SubscriptionBillingPeriodUpdatedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionUpdateClearedMetadata(TypedDict):
+    subscription_id: str
+
+
+class SubscriptionUpdateClearedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_update_cleared]]
+        user_metadata: Mapped[SubscriptionUpdateClearedMetadata]  # type: ignore[assignment]
 
 
 class OrderPaidMetadata(TypedDict):
@@ -688,6 +701,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionBillingPeriodUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_update_cleared],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionUpdateClearedMetadata,
 ) -> Event: ...
 
 

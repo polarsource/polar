@@ -4,12 +4,14 @@ import string
 from math import ceil
 
 import structlog
+from sqlalchemy.exc import DBAPIError
 
 from polar.config import settings
 from polar.email.schemas import LoginCodeEmail, LoginCodeProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
+from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.utils import utc_now
 from polar.login_code.repository import LoginCodeRepository
 from polar.models import LoginCode, User
@@ -106,7 +108,12 @@ class LoginCodeService:
         code_hash = get_token_hash(code, secret=settings.SECRET)
 
         repository = LoginCodeRepository.from_session(session)
-        login_code = await repository.get_by_code(code_hash, email)
+        try:
+            login_code = await repository.get_by_code_for_update(code_hash, email)
+        except DBAPIError as e:
+            if is_lock_not_available_error(e):
+                raise LoginCodeInvalidOrExpired() from e
+            raise
 
         if login_code is None:
             raise LoginCodeInvalidOrExpired()

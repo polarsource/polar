@@ -9,7 +9,9 @@ from polar.models import LoginCode
 class LoginCodeRepository(RepositoryBase[LoginCode]):
     model = LoginCode
 
-    async def get_by_code(self, code_hash: str, email: str) -> LoginCode | None:
+    async def get_by_code_for_update(
+        self, code_hash: str, email: str
+    ) -> LoginCode | None:
         statement = (
             select(LoginCode)
             .where(
@@ -18,5 +20,6 @@ class LoginCodeRepository(RepositoryBase[LoginCode]):
                 LoginCode.expires_at > utc_now(),
             )
             .options(joinedload(LoginCode.user))
+            .with_for_update(nowait=True, of=LoginCode)
         )
         return await self.get_one_or_none(statement)

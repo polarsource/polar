@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any, Literal, cast
+from typing import Any, assert_never, cast
 from uuid import UUID
 
 import structlog
@@ -68,12 +68,14 @@ from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
     OrganizationCreate,
     OrganizationDeletionBlockedReason,
+    OrganizationReviewAppeal,
     OrganizationReviewCheck,
     OrganizationReviewCheckKey,
     OrganizationReviewCheckReason,
     OrganizationReviewCheckStatus,
     OrganizationReviewState,
     OrganizationReviewSubmissionBody,
+    OrganizationReviewVerdict,
     OrganizationUpdate,
 )
 from .sorting import OrganizationSortProperty
@@ -1163,51 +1165,171 @@ class OrganizationService:
 
     async def get_review_state(
         self,
+        session: AsyncReadSession,
         organization: Organization,
-        *,
-        status: Literal["pass", "fail"] | None = None,
     ) -> OrganizationReviewState:
         """Build the merchant self-review checklist state.
 
-        STUB: returns one of two hardcoded mocks so the new dashboard UI can
-        integrate against the contract while the real check logic is built
-        out incrementally. The shape is final; only the values are dummy.
-
-        - ``status="pass"`` (default): every check ``passed``.
-        - ``status="fail"``: every check ``failed`` with a representative reason.
+        Pre-submission, the response surfaces gating checks that block
+        submission until resolved. Once submitted, ``submitted_at`` is set
+        and the response also carries the AI verdict and any appeal state.
         """
-        is_fail = status == "fail"
-        check_status = (
-            OrganizationReviewCheckStatus.FAILED
-            if is_fail
-            else OrganizationReviewCheckStatus.PASSED
-        )
-        identity_reasons = (
-            [OrganizationReviewCheckReason.IDENTITY_REJECTED] if is_fail else []
-        )
-        payout_reasons = (
-            [OrganizationReviewCheckReason.PAYOUT_ACCOUNT_REQUIREMENTS_DUE]
-            if is_fail
-            else []
-        )
-        checks = [
-            (OrganizationReviewCheckKey.IDENTITY_EMAIL, identity_reasons),
-            (OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS, identity_reasons),
-            (OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION, identity_reasons),
-            (OrganizationReviewCheckKey.PRODUCT_DESCRIPTION, []),
-            (OrganizationReviewCheckKey.PAYOUT_ACCOUNT, payout_reasons),
-        ]
+        payout_account: PayoutAccount | None = None
+        if organization.payout_account_id is not None:
+            payout_account_repository = PayoutAccountRepository.from_session(session)
+            payout_account = await payout_account_repository.get_by_id(
+                organization.payout_account_id
+            )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        admin_user = await organization_repository.get_admin_user(session, organization)
+
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+
         preliminary_steps = [
-            OrganizationReviewCheck(key=key, status=check_status, reasons=reasons)
-            for key, reasons in checks
+            self._build_email_check(organization),
+            self._build_socials_check(organization),
+            self._build_identity_verification_check(admin_user),
+            self._build_product_description_check(organization),
+            self._build_payout_account_check(payout_account),
         ]
+
+        submitted_at = organization.details_submitted_at
+        is_blocked = any(
+            step.status
+            in (
+                OrganizationReviewCheckStatus.FAILED,
+                OrganizationReviewCheckStatus.PENDING,
+            )
+            for step in preliminary_steps
+        )
+        can_submit = submitted_at is None and not is_blocked
+
+        verdict: OrganizationReviewVerdict | None = None
+        appeal: OrganizationReviewAppeal | None = None
+        if review is not None:
+            if review.verdict == OrganizationReview.Verdict.PASS:
+                verdict = "pass"
+            elif review.verdict == OrganizationReview.Verdict.FAIL:
+                verdict = "fail"
+            if review.appeal_submitted_at is not None:
+                appeal = OrganizationReviewAppeal(
+                    submitted_at=review.appeal_submitted_at,
+                    reviewed_at=review.appeal_reviewed_at,
+                    decision=review.appeal_decision,
+                )
 
         return OrganizationReviewState(
-            can_submit=not is_fail,
-            submitted_at=None,
-            verdict=None,
-            appeal=None,
+            can_submit=can_submit,
+            submitted_at=submitted_at,
+            verdict=verdict,
+            appeal=appeal,
             preliminary_steps=preliminary_steps,
+        )
+
+    @staticmethod
+    def _not_started_check(
+        key: OrganizationReviewCheckKey,
+    ) -> OrganizationReviewCheck:
+        return OrganizationReviewCheck(
+            key=key,
+            status=OrganizationReviewCheckStatus.PENDING,
+            reasons=[OrganizationReviewCheckReason.NOT_STARTED],
+        )
+
+    @staticmethod
+    def _passed_check(key: OrganizationReviewCheckKey) -> OrganizationReviewCheck:
+        return OrganizationReviewCheck(
+            key=key, status=OrganizationReviewCheckStatus.PASSED
+        )
+
+    def _build_email_check(self, organization: Organization) -> OrganizationReviewCheck:
+        key = OrganizationReviewCheckKey.IDENTITY_EMAIL
+        if not organization.email:
+            return self._not_started_check(key)
+        return self._passed_check(key)
+
+    def _build_socials_check(
+        self, organization: Organization
+    ) -> OrganizationReviewCheck:
+        key = OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS
+        if not organization.socials:
+            return self._not_started_check(key)
+        return self._passed_check(key)
+
+    def _build_identity_verification_check(
+        self, admin_user: User | None
+    ) -> OrganizationReviewCheck:
+        key = OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION
+        if admin_user is None:
+            return self._not_started_check(key)
+
+        status = admin_user.identity_verification_status
+        match status:
+            case IdentityVerificationStatus.verified:
+                return self._passed_check(key)
+            case IdentityVerificationStatus.pending:
+                return OrganizationReviewCheck(
+                    key=key,
+                    status=OrganizationReviewCheckStatus.PENDING,
+                    reasons=[OrganizationReviewCheckReason.EXTERNAL_PENDING],
+                )
+            case IdentityVerificationStatus.failed:
+                return OrganizationReviewCheck(
+                    key=key,
+                    status=OrganizationReviewCheckStatus.FAILED,
+                    reasons=[OrganizationReviewCheckReason.IDENTITY_REJECTED],
+                )
+            case IdentityVerificationStatus.unverified:
+                return self._not_started_check(key)
+            case _:
+                assert_never(status)
+
+    def _build_product_description_check(
+        self, organization: Organization
+    ) -> OrganizationReviewCheck:
+        key = OrganizationReviewCheckKey.PRODUCT_DESCRIPTION
+        description = organization.details.get("product_description")
+        # ``details`` is JSONB — defend against non-string values written by
+        # legacy migrations or backoffice tooling.
+        if not isinstance(description, str) or not description.strip():
+            return self._not_started_check(key)
+        # Mirrors OrganizationReviewSubmissionDetails: min_length=30 after strip.
+        if len(description.strip()) < 30:
+            return OrganizationReviewCheck(
+                key=key,
+                status=OrganizationReviewCheckStatus.FAILED,
+                reasons=[OrganizationReviewCheckReason.IN_PROGRESS],
+            )
+        return self._passed_check(key)
+
+    def _build_payout_account_check(
+        self, payout_account: PayoutAccount | None
+    ) -> OrganizationReviewCheck:
+        key = OrganizationReviewCheckKey.PAYOUT_ACCOUNT
+        if payout_account is None:
+            return self._not_started_check(key)
+        if payout_account.is_payout_ready:
+            return self._passed_check(key)
+        # Reserve PAYOUTS_DISABLED for the case where Stripe explicitly blocked
+        # payouts on an otherwise-complete account; everything else (incomplete
+        # onboarding, charges off, missing details) is a requirements gap that
+        # the merchant can resolve by finishing Stripe Connect.
+        stripe_blocked_payouts = (
+            payout_account.is_details_submitted
+            and payout_account.is_charges_enabled
+            and not payout_account.is_payouts_enabled
+        )
+        reason = (
+            OrganizationReviewCheckReason.PAYOUT_ACCOUNT_PAYOUTS_DISABLED
+            if stripe_blocked_payouts
+            else OrganizationReviewCheckReason.PAYOUT_ACCOUNT_REQUIREMENTS_DUE
+        )
+        return OrganizationReviewCheck(
+            key=key,
+            status=OrganizationReviewCheckStatus.FAILED,
+            reasons=[reason],
         )
 
     async def submit_appeal(

@@ -1,4 +1,3 @@
-from typing import Literal
 from uuid import UUID
 
 import httpx
@@ -648,25 +647,14 @@ async def get_review_status(
 )
 async def get_review(
     authz: AuthorizeOrgAccess,
-    status: Literal["pass", "fail"] | None = Query(
-        None,
-        description=(
-            "STUB: switch the mocked response. `pass` returns an all-passed "
-            "checklist, `fail` returns an all-failed one. Omit for the default "
-            "(all-passed) mock."
-        ),
-    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewState:
     """Get the merchant self-review checklist state.
 
-    Powers the new account review UI: pre-submission gating checks plus,
-    after submission, the AI verdict and appeal state. Currently returns
-    a hardcoded mock — `?status=pass|fail` switches between the two
-    canned responses while the real check logic is built out.
+    Powers the account review UI: pre-submission gating checks plus,
+    after submission, the AI verdict and appeal state.
     """
-    return await organization_service.get_review_state(
-        authz.organization, status=status
-    )
+    return await organization_service.get_review_state(session, authz.organization)
 
 
 @router.post(

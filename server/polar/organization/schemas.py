@@ -601,6 +601,9 @@ class OrganizationReviewAppeal(Schema):
     decision: OrganizationReview.AppealDecision | None = None
 
 
+OrganizationReviewVerdict = Literal["pass", "fail"]
+
+
 class OrganizationReviewState(Schema):
     """Merchant self-review checklist. Frozen once `submitted_at` is set."""
 
@@ -611,7 +614,7 @@ class OrganizationReviewState(Schema):
         )
     )
     submitted_at: datetime | None = None
-    verdict: Literal["pass", "fail"] | None = None
+    verdict: OrganizationReviewVerdict | None = None
     appeal: OrganizationReviewAppeal | None = None
     preliminary_steps: list[OrganizationReviewCheck] = Field(default_factory=list)
 

@@ -34,6 +34,11 @@ from polar.organization.schemas import (
     OrganizationCreate,
     OrganizationDetails,
     OrganizationFeatureSettings,
+    OrganizationReviewCheck,
+    OrganizationReviewCheckKey,
+    OrganizationReviewCheckReason,
+    OrganizationReviewCheckStatus,
+    OrganizationReviewState,
     OrganizationSocialLink,
     OrganizationSocialPlatforms,
     OrganizationUpdate,
@@ -1221,6 +1226,390 @@ class TestGetAIReview:
         assert result is not None
         assert result.id == review.id
         assert result.verdict == OrganizationReview.Verdict.PASS
+
+
+async def _setup_passing_org(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user: User,
+) -> None:
+    organization.email = "support@example.com"
+    organization.website = "https://example.com"
+    organization.socials = [{"platform": "x", "url": "https://x.com/polar"}]
+    organization.details = {
+        "product_description": "Subscription SaaS for software teams and agencies."
+    }
+    await save_fixture(organization)
+
+    user.identity_verification_status = IdentityVerificationStatus.verified
+    await save_fixture(user)
+    await create_payout_account(save_fixture, organization, user)
+
+
+def _step(
+    state: OrganizationReviewState, key: OrganizationReviewCheckKey
+) -> OrganizationReviewCheck:
+    for step in state.preliminary_steps:
+        if step.key == key:
+            return step
+    raise AssertionError(f"step {key} missing from {state}")
+
+
+@pytest.mark.asyncio
+class TestGetReviewState:
+    """Test the merchant self-review checklist."""
+
+    async def test_empty_org_blocks_submission(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        state = await organization_service.get_review_state(session, organization)
+
+        assert state.can_submit is False
+        assert state.submitted_at is None
+        assert state.verdict is None
+        assert state.appeal is None
+        assert all(
+            step.status == OrganizationReviewCheckStatus.PENDING
+            for step in state.preliminary_steps
+        )
+        assert all(
+            OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+            for step in state.preliminary_steps
+        )
+
+    async def test_email_set_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert step.reasons == []
+
+    async def test_socials_present_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.socials = [{"platform": "x", "url": "https://x.com/polar"}]
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    @pytest.mark.parametrize(
+        ("identity_status", "expected_status", "expected_reason"),
+        [
+            (
+                IdentityVerificationStatus.verified,
+                OrganizationReviewCheckStatus.PASSED,
+                None,
+            ),
+            (
+                IdentityVerificationStatus.pending,
+                OrganizationReviewCheckStatus.PENDING,
+                OrganizationReviewCheckReason.EXTERNAL_PENDING,
+            ),
+            (
+                IdentityVerificationStatus.failed,
+                OrganizationReviewCheckStatus.FAILED,
+                OrganizationReviewCheckReason.IDENTITY_REJECTED,
+            ),
+            (
+                IdentityVerificationStatus.unverified,
+                OrganizationReviewCheckStatus.PENDING,
+                OrganizationReviewCheckReason.NOT_STARTED,
+            ),
+        ],
+    )
+    async def test_identity_verification_branches(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        identity_status: IdentityVerificationStatus,
+        expected_status: OrganizationReviewCheckStatus,
+        expected_reason: OrganizationReviewCheckReason | None,
+    ) -> None:
+        user.identity_verification_status = identity_status
+        await save_fixture(user)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+
+        assert step.status == expected_status
+        if expected_reason is None:
+            assert step.reasons == []
+        else:
+            assert expected_reason in step.reasons
+
+    async def test_product_description_missing_is_not_started(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Empty/whitespace-only string is treated the same as missing.
+        organization.details = {"product_description": "   "}
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_DESCRIPTION)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
+    async def test_product_description_too_short_is_in_progress(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Started but not yet meeting the 30-char threshold — action required,
+        # not "to do". Distinguishes the merchant who tried from one who
+        # never started.
+        organization.details = {"product_description": "too short"}
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_DESCRIPTION)
+
+        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert OrganizationReviewCheckReason.IN_PROGRESS in step.reasons
+
+    async def test_product_description_long_enough(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams and agencies."
+        }
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_DESCRIPTION)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    async def test_payout_account_ready(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await create_payout_account(save_fixture, organization, user)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PAYOUT_ACCOUNT)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    async def test_payout_account_payouts_disabled_when_stripe_blocked(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # Details + charges submitted, but Stripe explicitly disabled payouts.
+        # This is the only case that should surface as PAYOUTS_DISABLED.
+        await create_payout_account(
+            save_fixture, organization, user, is_payouts_enabled=False
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PAYOUT_ACCOUNT)
+
+        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert (
+            OrganizationReviewCheckReason.PAYOUT_ACCOUNT_PAYOUTS_DISABLED
+            in step.reasons
+        )
+
+    async def test_payout_account_requirements_due_when_onboarding_incomplete(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # Merchant created the Stripe Connect account but never finished
+        # onboarding. ~4.5k orgs in this state in prod — they should see
+        # "complete onboarding", NOT "Stripe disabled your payouts".
+        payout = await create_payout_account(
+            save_fixture, organization, user, is_payouts_enabled=False
+        )
+        payout.is_details_submitted = False
+        payout.is_charges_enabled = False
+        await save_fixture(payout)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PAYOUT_ACCOUNT)
+
+        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert (
+            OrganizationReviewCheckReason.PAYOUT_ACCOUNT_REQUIREMENTS_DUE
+            in step.reasons
+        )
+
+    async def test_payout_account_requirements_due_when_no_stripe_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # is_payouts_enabled=True but stripe_id is None: is_payout_ready returns
+        # False via the stripe_id check. Falls through to REQUIREMENTS_DUE.
+        await create_payout_account(save_fixture, organization, user, stripe_id=None)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PAYOUT_ACCOUNT)
+
+        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert (
+            OrganizationReviewCheckReason.PAYOUT_ACCOUNT_REQUIREMENTS_DUE
+            in step.reasons
+        )
+
+    async def test_all_checks_pass_can_submit(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+
+        state = await organization_service.get_review_state(session, organization)
+
+        assert state.can_submit is True
+        assert all(
+            step.status == OrganizationReviewCheckStatus.PASSED
+            for step in state.preliminary_steps
+        )
+
+    async def test_submitted_blocks_resubmission(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+
+        assert state.submitted_at is not None
+        assert state.can_submit is False
+
+    @pytest.mark.parametrize(
+        ("verdict", "expected"),
+        [
+            (OrganizationReview.Verdict.PASS, "pass"),
+            (OrganizationReview.Verdict.FAIL, "fail"),
+            (OrganizationReview.Verdict.UNCERTAIN, None),
+        ],
+    )
+    async def test_verdict_mapping(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        verdict: OrganizationReview.Verdict,
+        expected: str | None,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=verdict,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="test",
+            timed_out=False,
+            organization_details_snapshot={},
+            model_used="test-model",
+        )
+        session.add(review)
+        await session.flush()
+
+        state = await organization_service.get_review_state(session, organization)
+
+        assert state.verdict == expected
+        assert state.appeal is None
+
+    async def test_appeal_pending_decision(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        appeal_submitted = datetime.now(UTC)
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=80.0,
+            violated_sections=[],
+            reason="High risk",
+            timed_out=False,
+            organization_details_snapshot={},
+            model_used="test-model",
+            appeal_submitted_at=appeal_submitted,
+            appeal_reason="Please reconsider, here's why...",
+        )
+        session.add(review)
+        await session.flush()
+
+        state = await organization_service.get_review_state(session, organization)
+
+        assert state.appeal is not None
+        assert state.appeal.submitted_at == appeal_submitted
+        assert state.appeal.reviewed_at is None
+        assert state.appeal.decision is None
+
+    async def test_appeal_approved(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        appeal_submitted = datetime.now(UTC)
+        appeal_reviewed = datetime.now(UTC) + timedelta(hours=1)
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=80.0,
+            violated_sections=[],
+            reason="High risk",
+            timed_out=False,
+            organization_details_snapshot={},
+            model_used="test-model",
+            appeal_submitted_at=appeal_submitted,
+            appeal_reason="Please reconsider, here's why...",
+            appeal_reviewed_at=appeal_reviewed,
+            appeal_decision=OrganizationReview.AppealDecision.APPROVED,
+        )
+        session.add(review)
+        await session.flush()
+
+        state = await organization_service.get_review_state(session, organization)
+
+        assert state.appeal is not None
+        assert state.appeal.decision == OrganizationReview.AppealDecision.APPROVED
+        assert state.appeal.reviewed_at == appeal_reviewed
 
 
 @pytest.mark.asyncio

@@ -24,6 +24,7 @@ def _build_receipt(
     *,
     payments: list[ReceiptPayment] | None = None,
     refunds: list[ReceiptRefund] | None = None,
+    applied_balance_amount: int | None = None,
 ) -> Receipt:
     addr = Address(
         line1="123 Test St",
@@ -46,6 +47,7 @@ def _build_receipt(
         customer_address=addr,
         customer_additional_info="buyer@example.com",
         subtotal_amount=10000,
+        applied_balance_amount=applied_balance_amount,
         discount_amount=0,
         tax_breakdown=[],
         tax_amount=0,
@@ -132,6 +134,16 @@ class TestReceiptGenerator:
         receipt = _build_receipt()
         totals_labels = [t.label for t in receipt.totals_items]
         assert "Amount refunded" not in totals_labels
+
+    def test_renders_payment_history_with_only_applied_balance(self) -> None:
+        receipt = _build_receipt(payments=[], applied_balance_amount=-10000)
+        generator = ReceiptGenerator(
+            receipt, heading_title="Receipt", add_sandbox_warning=False
+        )
+        generator.generate()
+        output = generator.output()
+
+        assert bytes(output).startswith(b"%PDF-")
 
 
 class TestReceiptPayment:

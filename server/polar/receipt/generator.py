@@ -187,10 +187,14 @@ class ReceiptGenerator(InvoiceGenerator):
 
     def generate(self) -> None:
         super().generate()
-        if self.data.payments:
+        if self.data.payments or self._has_applied_balance:
             self._render_payment_history_section()
         if self.data.refunds:
             self._render_refunds_section()
+
+    @property
+    def _has_applied_balance(self) -> bool:
+        return (self.data.applied_balance_amount or 0) < 0
 
     def _render_section_title(self, title: str) -> None:
         self.set_y(self.get_y() + self.elements_y_margin)
@@ -217,6 +221,16 @@ class ReceiptGenerator(InvoiceGenerator):
             header.cell("Payment method")
             header.cell("Date")
             header.cell("Amount paid")
+
+            if self._has_applied_balance:
+                row = table.row()
+                row.cell(self._shape_text("Existing customer balance"))
+                row.cell(format_date(self.data.date))
+                row.cell(
+                    format_currency(
+                        -(self.data.applied_balance_amount or 0), self.data.currency
+                    )
+                )
 
             for payment in self.data.payments:
                 row = table.row()

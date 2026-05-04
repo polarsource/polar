@@ -29,7 +29,6 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { setValidationErrors } from '@/utils/api/errors'
-import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 import { TermsCheckbox } from './TermsCheckbox'
@@ -148,7 +147,8 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
   // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('country')
   const isUnsupportedCountry =
-    country !== '' && !SUPPORTED_PAYOUT_COUNTRIES.includes(country)
+    country !== '' &&
+    !(enums.stripeAccountCountryValues as readonly string[]).includes(country)
   const countryDisplayName = useMemo(() => {
     if (!country) return ''
     return new Intl.DisplayNames([], { type: 'region' }).of(country) ?? country

@@ -25,7 +25,6 @@ import { setValidationErrors } from '@/utils/api/errors'
 import slugify from 'slugify'
 import { containsBlockedWord } from '@/utils/blocked-words'
 import { CurrencySelector } from '../CurrencySelector'
-import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -127,7 +126,8 @@ function CurrencyAndCountryFields() {
   })
 
   const isUnsupportedCountry =
-    country !== '' && !SUPPORTED_PAYOUT_COUNTRIES.includes(country)
+    country !== '' &&
+    !(enums.stripeAccountCountryValues as readonly string[]).includes(country)
 
   const countryDisplayName = useMemo(() => {
     if (!country) return ''

@@ -1,6 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createBaseCheckout,
   createCheckout,
@@ -76,6 +76,10 @@ const repeatingDiscount = (durationInMonths: number) =>
   }) satisfies schemas['CheckoutPublic']['discount']
 
 describe('CheckoutPricingBreakdown', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   describe('basic product, no tax, no discount', () => {
     it('shows subtotal and total as the same amount', () => {
       const checkout = createBaseCheckout({
@@ -522,6 +526,8 @@ describe('CheckoutPricingBreakdown', () => {
     })
 
     it('hides "Until" for every-30-days billing with 1mo discount', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-04-15T00:00:00Z'))
       const checkout = createDiscountedCheckout({
         interval: 'day',
         intervalCount: 30,
@@ -532,6 +538,8 @@ describe('CheckoutPricingBreakdown', () => {
     })
 
     it('shows "Until" for every-4-weeks billing with 1mo discount', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-05-15T00:00:00Z'))
       const checkout = createDiscountedCheckout({
         interval: 'week',
         intervalCount: 4,

@@ -1,0 +1,36 @@
+---
+title: "Run One-Off Jobs"
+description: "Trigger backend scripts in production via Render One-Off Jobs"
+---
+
+# Run One-Off Jobs
+
+[Render One-Off Jobs](https://render.com/docs/one-off-jobs) run a command in a fresh container using the same image and environment as the worker service. Use them for backfills, data migrations, and other ad-hoc scripts.
+
+<Note>
+  One-off jobs cannot be created from the dashboard. Use the [Render CLI](https://render.com/docs/cli) (`brew install render && render login`).
+</Note>
+
+## Procedure
+
+Run a dry run first (most scripts in `server/scripts/` preview without `--execute`):
+
+```bash
+render jobs create srv-d4k6otfgi27c73cicnpg \
+  --start-command "uv run python -m scripts.backfill_receipts --all" \
+  --confirm
+```
+
+Then run for real:
+
+```bash
+render jobs create srv-d4k6otfgi27c73cicnpg \
+  --start-command "uv run python -m scripts.backfill_receipts --all --execute" \
+  --confirm
+```
+
+Tail logs:
+
+```bash
+render logs --resources srv-d4k6otfgi27c73cicnpg --tail
+```

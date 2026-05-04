@@ -272,6 +272,10 @@ class NumeralTaxService(TaxServiceProtocol):
                         )
                     ],
                 )
+            elif error_code == "zip_state_mismatch":
+                raise TaxCalculationLogicalError(
+                    "Postal code does not match state"
+                ) from e
             error_meta = error_response["error"].get("error_meta")
             if error_meta is not None and error_meta["field"].startswith(
                 "customer.address"

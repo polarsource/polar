@@ -13,9 +13,13 @@ export function NotificationNewSubscription({
   tier_price_recurring_interval,
   tier_organization_name,
 }: schemas['MaintainerNewPaidSubscriptionNotificationPayload']) {
-  const formattedName = subscriber_email ?
-    <><strong>{subscriber_name}</strong> ({subscriber_email})</> :
+  const formattedName = subscriber_email ? (
+    <>
+      <strong>{subscriber_name}</strong> ({subscriber_email})
+    </>
+  ) : (
     <strong>{subscriber_name}</strong>
+  )
 
   return (
     <WrapperPolar>

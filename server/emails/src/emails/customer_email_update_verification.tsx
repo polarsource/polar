@@ -13,9 +13,7 @@ export function CustomerEmailUpdateVerification({
 }: schemas['CustomerEmailUpdateVerificationProps']) {
   return (
     <WrapperPolar>
-      <Preview>
-        Verify your new email address for {organization_name}
-      </Preview>
+      <Preview>Verify your new email address for {organization_name}</Preview>
       <Intro>
         You requested to change your email address for your{' '}
         <span className="font-bold">{organization_name}</span> account. Click

@@ -8,17 +8,18 @@
 
 Introduce role-based access control for users on a Polar organization. Three roles ship in this iteration — `owner`, `admin`, and `member` — replacing today's implicit binary where org-level admin capability (member management, organization deletion, payout-account selection, Finance and payouts) is gated by `Account.admin_id`: the single user who is recorded as the admin on the org's Polar-side billing `Account`, today set at org creation.
 
-All three roles are stored on the user–organization membership. `admin` and `member` are freely assignable; `owner` is constrained — only the user that holds `Account.admin_id` on the org's `Account` may carry the `owner` role, and that user always does (the two are kept aligned via the same `Account.admin_id` ↔ role dual-write described in [Rollout](#rollout)). There is therefore exactly one `owner` per org. What `owner` adds on top of `admin` is a small set of ownership-tied responsibilities retained for KYC/KYB / UBO reasons: the legal/billing primary contact for the org, the recipient of identity-verification notifications, the sole authority to transfer ownership of the org, and a member-removal exemption (the `owner` cannot be removed from the org without first transferring ownership).
+All three roles are stored on the user–organization membership. `admin` and `member` are freely assignable; there is exactly one `owner` per organization. During rollout, `owner` is anchored to today's `Account.admin_id` via dual-write so the two never disagree. The end state of this work drops `Account.admin_id` and makes the role table itself the sole source of truth for ownership (a partial unique index enforces the singularity invariant; the KYC/identity-verification gate moves onto role transitions into `owner`). What `owner` adds on top of `admin` is a small set of ownership-tied responsibilities retained for KYC/KYB / UBO reasons: the legal/billing primary contact for the org, the recipient of identity-verification notifications, the sole authority to transfer ownership of the org, and a member-removal exemption (the `owner` cannot be removed from the org without first transferring ownership).
 
 The change is mostly additive on top of the existing two-layer authorization architecture. Role lives on the user–organization membership and drives a fine-grained permission set that policies consult. Token scopes remain a per-token capability filter; policies AND a token-scope check with a role-permission check at runtime. The Stripe-side `PayoutAccount.admin_id` is a separate concept and is unaffected by this design.
 
 ## Goals
 
 - Introduce an `OrganizationRole` enum (`owner`, `admin`, `member`) attached to organization membership.
-- Move org-level admin authorization off direct `Account.admin_id` checks and onto **role permissions** evaluated at policy time. `Account.admin_id` continues to identify the org's `owner` (legal/billing primary contact) and is kept aligned with the `owner` role via dual-write, but the runtime authorization signal becomes the role-derived permission set.
+- Move org-level admin authorization off direct `Account.admin_id` checks and onto **role permissions** evaluated at policy time.
+- **Decommission `Account.admin_id`.** Once the role-based ownership has been validated in production, drop the column; the role table becomes the sole source of truth for ownership, the KYC/identity-verification gate moves onto role transitions into `owner`, and reads that previously joined `Account.admin_id` query the role instead.
 - Allow multiple admins per organization (alongside the singular `owner`).
 - Enforce that an organization always has at least one user with admin capability — i.e. `role ∈ {owner, admin}`. The singular `owner` always satisfies this.
-- Constrain `owner`: only the user that holds `Account.admin_id` may carry the role, and that user always does. Forbid removing the `owner` from the organization; ownership transfer remains a support/backoffice task in this iteration.
+- Forbid removing the `owner` from the organization; ownership transfer remains a support/backoffice task in this iteration.
 - Provide back-end and front-end utilities to answer "does this user have permission X in this org?" cleanly, plus a small `is_owner(user, org)` predicate for the few owner-keyed invariants (member-removal exemption, role-validity) that are enforced outside the permission system.
 - Lay foundations for additional roles (Finance, Support, Developer, …) without re-shaping the architecture.
 
@@ -27,17 +28,16 @@ The change is mostly additive on top of the existing two-layer authorization arc
 - Invitation/accept-link flow. Members continue to be added immediately on invite; an asynchronous invitation flow is a follow-up.
 - Audit trail of role changes. Will be addressed via system events as a follow-up.
 - Role-as-scope-filter at token issuance. Considered and explicitly deferred — see [Roles, scopes, and permissions](#roles-scopes-and-permissions).
-- Removing or renaming `Account.admin_id`. It stays as the legal/billing primary contact for the org's `Account` and as the source of truth for who carries the `owner` role.
 - Self-serve ownership transfer. Changing the `owner` of an organization remains a support/backoffice task in this iteration; a self-serve flow (current owner reassigns to a KYC-verified admin) is a follow-up.
 - Modifying `PayoutAccount.admin_id` semantics. It is the legal owner of a Stripe Connect account, gates Stripe-account-level actions (onboarding link, dashboard link, delete), and is unrelated to this change. See [Relationship to `PayoutAccount.admin_id`](#relationship-to-payoutaccount-admin_id).
 
 ## Key Concepts
 
-- **`OrganizationRole`** — new enum (`owner`, `admin`, `member`) attached to a membership. `admin` and `member` are freely assignable; `owner` is constrained to track `Account.admin_id` (see below).
-- **`owner`** — the singular role per organization. The user with `OrganizationRole.owner` on a membership is, by validation, the same user as `Account.admin_id` on the org's `Account`. Carries every `admin` capability plus a small set of ownership-tied responsibilities (legal/billing primary contact, identity-verification notification recipient, sole authority for ownership transfer, exemption from member removal).
+- **`OrganizationRole`** — new enum (`owner`, `admin`, `member`) attached to a membership. `admin` and `member` are freely assignable; `owner` is constrained to exactly one user per organization. During rollout that user is identified by `Account.admin_id`; in the end state, by a partial unique index on the role table itself.
+- **`owner`** — the singular role per organization. Carries every `admin` capability plus a small set of ownership-tied responsibilities (legal/billing primary contact, identity-verification notification recipient, sole authority for ownership transfer, exemption from member removal). The user holding it must be identity-verified (Stripe KYC); the gate sits on role transitions into `owner` once `Account.admin_id` is gone.
 - **Membership** — the link between a user and an organization. Today it carries no role; this design adds one.
 - **`Account`** — Polar's internal financial container for an organization. Holds the credit balance, fee structure, billing identity (name, address) for invoices and receipts, and a single `admin_id`. One per org. Distinct from the Stripe-side payout account.
-- **`Account.admin_id`** — today, the singular authorization signal for org-level admin actions: member management, organization deletion, payout-account selection, Finance and payout reads/writes. This design moves all those gates onto role-permission checks. After the cutover, `Account.admin_id` is no longer consulted directly by policies; instead, it is the source of truth for who carries the `owner` role on their membership (the two are kept aligned via dual-write). Its real-world meaning is unchanged: legal/billing primary contact, Stripe-identity-verified, recipient of identity-verification notifications, owner-side of the Polar-for-Polar relationship.
+- **`Account.admin_id`** — today, the singular authorization signal for org-level admin actions: member management, organization deletion, payout-account selection, Finance and payout reads/writes. This design moves all those gates onto role-permission checks and, in the final phase of the rollout, drops the column. While the column still exists (phases 1–5), it is dual-written with the `owner` role so the two cannot drift; once the cleanup phase lands, the role is the only source of truth and the responsibilities the column carried (legal/billing primary contact, identity-verification notification recipient, owner-side of the Polar-for-Polar relationship, Stripe-identity-verified KYC gate) are anchored on the user holding `owner` instead.
 - **`PayoutAccount`** — represents a Stripe Connect account. User-personal: each `PayoutAccount` has a single `admin_id` set at creation, immutable thereafter, representing the human whose KYC backs the Stripe account. A `PayoutAccount` can be linked to multiple organizations.
 - **`PayoutAccount.admin_id`** — gates Stripe-account-level actions (onboarding link, dashboard link, delete) and the user-personal `GET /v1/payout-accounts/` listing. Unrelated to organization admin role; not changing in this design.
 - **Policies** — the runtime authority for authorization decisions, organized per resource area.
@@ -95,7 +95,7 @@ Initial role → permissions assignments:
 |---|---|
 | `member` | Read and write across operational resources (products, customers, subscriptions, benefits, discounts, checkout links/sessions, orders, refunds, files, events, meters, custom fields, license keys, webhooks, metrics, OATs, notifications, customer seats) and read of the member list. **Excludes** Finance (`transactions:*`, `payouts:*`, `wallets:*`, `disputes:read`), member management (`members:invite`, `members:remove`, `members:set_role`), and org management (`organizations:edit_settings`, `organizations:delete`, `organizations:manage_payout_account`). Billing-info edits on the org's `Account` (legal name, address, etc.) fall under `organizations:edit_settings` and are therefore admin-only by way of the org-management exclusion. |
 | `admin` | Every `member` permission **plus** the excluded set above. |
-| `owner` | Identical to `admin` in this iteration. Distinguished from admin by invariants (member-removal exemption, role-validity tied to `Account.admin_id`), not by additional permissions. The `organizations:transfer_ownership` permission, if/when self-serve transfer ships, will be owner-only. |
+| `owner` | Identical to `admin` in this iteration. Distinguished from admin by invariants (member-removal exemption, singularity per org), not by additional permissions. The `organizations:transfer_ownership` permission, if/when self-serve transfer ships, will be owner-only. |
 
 This keeps the day-1 footprint small: one bundle to split (`organizations:write`), one near-identity scope-to-permission map elsewhere, and three role permission sets. New permissions are added at the seam where role granularity needs to diverge from scope granularity, not preemptively.
 
@@ -111,15 +111,20 @@ Replacing the body of that helper with a permission check flips all three at onc
 
 The **payout-account** policies (operations on a specific `PayoutAccount` itself: onboarding link, dashboard link, delete) check `PayoutAccount.admin_id` and **do not move**. A `PayoutAccount` can be linked to multiple organizations (a real feature), so the legal Stripe-side owner is not a per-org concept; routing those checks through org-role would let any admin of any consuming org reach into a Stripe identity that isn't theirs.
 
-A small set of **owner-exclusive** invariants live alongside policies but aren't permissions: the member-removal exemption (the `owner` cannot be removed from the org) and the role-validity rule (only the `Account.admin_id` user may carry `owner`, and they always do). They are data-integrity rules enforced in the membership service alongside the admin-capability invariant.
+A small set of **owner-exclusive** invariants live alongside policies but aren't permissions: the member-removal exemption (the `owner` cannot be removed from the org) and the singularity rule (exactly one user carries `owner` per org). They are data-integrity rules enforced in the membership service alongside the admin-capability invariant. While `Account.admin_id` still exists, the singularity rule is also expressed by anchoring `owner` to that column via dual-write; once the column is dropped, it is expressed by a partial unique index on `UserOrganization (organization_id) WHERE role = 'owner'`.
 
 No new dependency aliases are needed; existing scope-gated guards keep their names and required scopes. The role lookup remains a single helper: given a user and an organization, return their role (or `None` if not a member). The permission check is one step on top: `required ∈ implied_permissions(scopes) ∩ permissions(role)`. Both are consumed by policies and by service-layer invariants.
 
 ### Relationship to `Account.admin_id`
 
-`Account.admin_id` continues to identify a real human responsibility on the org — the primary legal/billing contact for the Polar-side `Account`, the user expected to hold KYC for finance interactions, the recipient of identity-verification notifications, and the owner-side of the Polar-for-Polar relationship. It is no longer consulted directly by policies, but it remains the source of truth for who carries the `owner` role on their membership.
+`Account.admin_id` is being decommissioned by this work, but only after the role system has been validated in production. While the column exists (phases 1–5), it is treated as the legacy storage for "who is the org's `owner`" and dual-written with the role: setting `Account.admin_id` (today via org creation and the backoffice `change_admin` flow) demotes the previous owner to `admin` and promotes the new admin to `owner` in the same transaction; conversely, the role-change endpoint refuses any transition that would put a user other than `Account.admin_id` into the `owner` role or move that user out of it. The two states cannot drift.
 
-Because `owner` validity is tied to `Account.admin_id`, the two are kept aligned by dual-write — both pre- and post-cutover, permanently. Setting `Account.admin_id` (today via org creation and the backoffice `change_admin` flow) demotes the previous owner to `admin` and promotes the new admin to `owner` in the same transaction; conversely, the role-change endpoint refuses any transition that would put a user other than `Account.admin_id` into the `owner` role or move that user out of it. The two states cannot drift.
+The cleanup phase (phase 6) drops the column and re-homes the responsibilities it was tracking:
+
+- **Singularity invariant** — moves from "anchored on the singular `Account.admin_id` column" to a partial unique index on `UserOrganization (organization_id) WHERE role = 'owner'`.
+- **KYC / identity-verification gate** — today enforced inside `account_service.change_admin` when `Account.admin_id` is mutated; moves onto role transitions into `owner` (which only the backoffice flow can perform until self-serve transfer ships).
+- **Legacy joins** — `repository.get_admin_user` and any caller that fetched "the org's admin" via `Account.admin_id` switch to a query against `UserOrganization` filtered to `role = 'owner'`.
+- **Notification routing and the Polar-for-Polar owner-side relationship** — re-anchored on the user holding `owner`. The user identified by these flows is unchanged; only the lookup path changes.
 
 ### Relationship to `PayoutAccount.admin_id`
 
@@ -133,9 +138,9 @@ A new `OrganizationRole` enum with three members: `owner`, `admin`, `member`. Th
 
 The new role attribute is required (non-null) and defaults to `member` for new memberships. Backfill maps each existing `Account.admin_id` user into the `owner` role on their membership of the owning org; everyone else is `member`. The `admin` role starts unused on existing data — it is opt-in promotion above `member`.
 
-A database constraint and a service-layer validation jointly enforce that the user with role `owner` on a membership matches `Account.admin_id` on the org's `Account`, and that the `Account.admin_id` user always carries `owner`. The role-change endpoint cannot move a user into or out of `owner`; ownership transfer flows through `Account.admin_id` mutations (today: backoffice `change_admin`, which performs the role swap as a side-effect).
+While `Account.admin_id` still exists (phases 1–5), service-layer validation enforces that the user with role `owner` on a membership matches `Account.admin_id` on the org's `Account`, and that the `Account.admin_id` user always carries `owner`. The role-change endpoint cannot move a user into or out of `owner`; ownership transfer flows through `Account.admin_id` mutations (today: backoffice `change_admin`, which performs the role swap as a side-effect).
 
-`Account.admin_id` stays where it is. Its real-world meaning is unchanged; after the cutover it is also the source of truth for the `owner` role. `PayoutAccount.admin_id` is unchanged.
+After phase 6, `Account.admin_id` is gone. The singularity invariant is then enforced by a partial unique index on `UserOrganization (organization_id) WHERE role = 'owner'`, and the KYC gate is enforced on role transitions into `owner` (still only callable by the backoffice flow, which mutates the role directly instead of `Account.admin_id`). `PayoutAccount.admin_id` is unchanged throughout.
 
 ## Authorization Flow
 
@@ -164,7 +169,7 @@ The diagram changes nothing structurally from today; only the *content* of the p
 
 Endpoints whose authorization already routes through the central authorization helper gain permission-based behaviour automatically when that helper is updated (its body switches from an `Account.admin_id` check to the permission intersection check). This covers member listing, invite, removal, organization deletion, and finance/payout endpoints.
 
-A net-new endpoint changes a member's role: `PATCH /v1/organizations/{id}/members/{user_id}` with a `role` body, guarded by the `members:set_role` permission. Only `admin` and `member` are accepted in the body; transitions to or from `owner` go through the `Account.admin_id` mutation flow (today: backoffice `change_admin`) and are rejected by this endpoint. The members listing response gains a `role` field. The pre-existing `is_admin` boolean on that response becomes a transitional alias for `role ∈ {owner, admin}` and is removed once the dashboard has migrated.
+A net-new endpoint changes a member's role: `PATCH /v1/organizations/{id}/members/{user_id}` with a `role` body, guarded by the `members:set_role` permission. Only `admin` and `member` are accepted in the body; transitions to or from `owner` are rejected by this endpoint and flow exclusively through the ownership-transfer path (today: backoffice `change_admin`, which mutates `Account.admin_id` and the role together; post-phase-6, the same backoffice flow mutates the role directly with the KYC gate inline). The members listing response gains a `role` field. The pre-existing `is_admin` boolean on that response becomes a transitional alias for `role ∈ {owner, admin}` and is removed once the dashboard has migrated.
 
 ## Frontend
 
@@ -176,7 +181,7 @@ The Settings → Members UI uses these hooks to render a role-change control on 
 
 ### Exactly one owner per org
 
-Enforced jointly by validation and the role/`Account.admin_id` dual-write: the user with role `owner` on a membership must match `Account.admin_id` on the org's `Account`, and that user always carries `owner`. The role-change endpoint refuses transitions that would violate either direction; ownership transfer flows through `Account.admin_id` mutations, which perform the role swap as a side-effect inside the same transaction.
+Enforced differently before and after phase 6. While `Account.admin_id` exists, the invariant is anchored on it: service-layer validation requires that the user with role `owner` matches `Account.admin_id`, and that the `Account.admin_id` user always carries `owner`. The role-change endpoint refuses transitions that would violate either direction; ownership transfer flows through `Account.admin_id` mutations, which perform the role swap as a side-effect inside the same transaction. After phase 6, the column is gone and the invariant is enforced by a partial unique index on `UserOrganization (organization_id) WHERE role = 'owner'`; ownership transfer flows directly through the role.
 
 ### Owner cannot be removed from the org
 
@@ -184,7 +189,7 @@ Enforced in the membership service: the `owner` is exempt from removal. To chang
 
 ### At least one user with admin capability per org
 
-Enforced in the membership service: any operation that would leave an organization with zero users in `role ∈ {owner, admin}` is rejected. The check is evaluated against the post-mutation state inside the same transaction. The owner-non-removable invariant alone guarantees this for any org with a valid `Account.admin_id`; the explicit check is defence-in-depth.
+Enforced in the membership service: any operation that would leave an organization with zero users in `role ∈ {owner, admin}` is rejected. The check is evaluated against the post-mutation state inside the same transaction. The owner-non-removable invariant alone guarantees this for any org that has an `owner` (which every org does, by the singularity invariant); the explicit check is defence-in-depth.
 
 ### Read-only impersonation rejection
 
@@ -195,7 +200,7 @@ The recently-codified read-only-impersonation invariant ([#11303](https://github
 The change ships as a sequence of PRs. Each step preserves two invariants at every boundary:
 
 1. During app/DB version skew, both old and new code can read and write the schema correctly.
-2. At any point, all running code agrees which signal authorization decisions follow. Pre-cutover that signal is `Account.admin_id`; post-cutover it is the role-permission check. The `Account.admin_id` ↔ `owner` dual-write means the two signals never disagree on the only user they both speak about (the owner), so the cutover itself is a no-op for that user; the only decisions that change are the new ones the role attribute now expresses (additional admins, finer permissions).
+2. At any point, all running code agrees which signal authorization decisions follow. Pre-cutover (Phase 3) that signal is `Account.admin_id`; from Phase 3 through Phase 5 it is the role-permission check, with `Account.admin_id` dual-written to keep the legacy column consistent for any code that still reads it. The dual-write means the two signals never disagree on the only user they both speak about (the owner). Phase 6 retires `Account.admin_id` entirely; from that point the role table is the only signal.
 
 ### Phase 1 — Additive schema, dual-write
 
@@ -207,7 +212,7 @@ Authorization code does not yet read the new role attribute. Old code that doesn
 
 ### Phase 2 — Tighten the schema
 
-Once every row has a value and all running code writes one, tighten the attribute to non-null and add a database-level CHECK that the membership's role is `owner` only when the user matches `Account.admin_id` on the org's `Account` (defence-in-depth alongside the service-layer validation shipped in Phase 1). Schema-only change, no application work beyond the constraint.
+Once every row has a value and all running code writes one, tighten the attribute to non-null. Schema-only change, no application work. Cross-table consistency between role and `Account.admin_id` continues to rest on the service-layer validation shipped in Phase 1 (Postgres CHECK can't span tables declaratively, and the column is being dropped in Phase 6 anyway, so a trigger isn't worth the trouble).
 
 ### Phase 3 — Authorization cutover
 
@@ -219,9 +224,9 @@ A pre-deploy verification asserts that every pre-existing `Account.admin_id` use
 
 The dashboard reads `role` directly via the new hooks, gates UI controls on the permission helper, and displays policy denial messages from the backend. The permission tables consumed by the hook are generated from the backend source (the same Phase 1 tables) into a TypeScript artefact at build time, so the two cannot drift. The backend continues to return both `role` and the legacy `is_admin` field, so any browser tab still on the previous bundle is unaffected.
 
-### Phase 5 — Cleanup
+### Phase 5 — Frontend cleanup
 
-Remove the legacy `is_admin` field from the API. The `Account.admin_id` ↔ `owner` role dual-write is permanent — it is part of the owner-validity invariant — and stays in place; phase 5 only retires the `is_admin` boolean.
+Remove the legacy `is_admin` field from the API. The `Account.admin_id` ↔ `owner` role dual-write stays in place through this phase — it is retired in Phase 6, alongside the column itself.
 
 The dashboard auto-deploys on every merge but does not currently force-refresh stale tabs, so a tab from phase 3 keeps consuming `is_admin` until the user reloads. Three acceptable orderings for phase 5:
 
@@ -230,6 +235,16 @@ The dashboard auto-deploys on every merge but does not currently force-refresh s
 3. **Accept the break** — ship phase 5 immediately after phase 4 and accept that any dashboard tab still on the previous bundle will see errors until the user reloads. Cheapest in engineering effort; the cost is a brief degraded experience for users with long-lived tabs.
 
 Default to (3) — the user-visible cost is small and short-lived, and it avoids both the wait and the engineering investment in a bundle-mismatch prompt.
+
+### Phase 6 — Drop `Account.admin_id`
+
+After phase 5 has soaked in production long enough to trust the role system as the live authorization signal, retire `Account.admin_id`. The work splits into three steps that ship together (the read-side migration first, the schema change last) so the column is never read after the dual-write stops:
+
+1. **Re-home the reads.** Migrate every remaining call site that still references `Account.admin_id` — `repository.get_admin_user`, the backoffice `change_admin` endpoint's storage layer, any notification or Polar-for-Polar lookup that resolved "the org's admin user" via the column, and any helpers that closed over it — to query `UserOrganization` filtered to `role = 'owner'`. The four authorization policies that historically read `Account.admin_id` are already off it (they switched to the permission check in Phase 3) so don't need further migration here. The backoffice ownership-transfer flow becomes a role mutation: it runs the existing KYC/identity-verification check on the incoming admin and then promotes them to `owner` (demoting the previous owner to `admin`) directly, instead of mutating `Account.admin_id` and letting the dual-write echo into the role.
+2. **Add the role-side enforcement.** Create a partial unique index on `UserOrganization (organization_id) WHERE role = 'owner'` so the singularity invariant survives the column's removal. Move the `IdentityVerificationStatus.verified` gate, today inside `account_service.change_admin`, to live alongside role transitions into `owner`.
+3. **Drop the column.** Remove `Account.admin_id` from the schema; remove the dual-write from any code path that previously kept it aligned with the role.
+
+A pre-deploy check asserts that no production code path still reads `Account.admin_id` (a grep gate plus a database log audit covering the previous bake period) before the destructive migration runs. After this phase, the role table is the only source of truth for ownership; `Account` is a pure financial container.
 
 ## Out of Scope (Follow-Ups)
 
@@ -248,5 +263,6 @@ A defense-in-depth design where personal-access tokens and organization-access t
 ## Open Questions
 
 - **Phase 5 strategy.** Time-based wait, bundle-mismatch prompt, or accept the brief break for stale tabs?
+- **Phase 6 bake time.** How long does the role system run as the live authorization signal (with `Account.admin_id` still dual-written) before we trust it enough to drop the column? Concrete signals to wait on (zero policy-denial reports tied to role lookups, audit log showing no remaining `Account.admin_id` reads in production for N days) help anchor the decision.
 - **First-class "Finance" role.** RBAC.md anticipates Finance/Support/Developer roles. Should the enum reserve those values now (forward-compat) or add them when needed?
 - **Permission-table source of truth.** The `role → permissions` and `scope → implied_permissions` tables live in code in this design, generated into a frontend artefact for the permission hook. Is that sufficient long-term, or do we need a richer config layer (YAML, DB) once customer-facing role customisation is on the roadmap?

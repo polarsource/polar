@@ -131,9 +131,11 @@ class PendingPayoutCreation(PayoutError):
 
 
 class DailyPayoutLimitReached(PayoutError):
-    def __init__(self, account: Account) -> None:
+    def __init__(self, account: Account, interval: datetime.timedelta) -> None:
         self.account = account
-        message = "You can only request a payout once per 24 hours."
+        self.interval = interval
+        hours = max(1, int(interval.total_seconds() // 3600))
+        message = f"You can only request a payout once per {hours} hours."
         super().__init__(message, 400)
 
 
@@ -311,11 +313,12 @@ class PayoutService:
         async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
             repository = PayoutRepository.from_session(session)
             latest_payout = await repository.get_latest_by_account(account.id)
+            payout_interval = organization.payout_interval
             if (
                 latest_payout is not None
-                and latest_payout.created_at > utc_now() - datetime.timedelta(hours=24)
+                and latest_payout.created_at > utc_now() - payout_interval
             ):
-                raise DailyPayoutLimitReached(account)
+                raise DailyPayoutLimitReached(account, payout_interval)
 
             payout_account = organization.get_ready_payout_account()
 

@@ -159,12 +159,24 @@ class OrganizationDetailView:
                                             classes="font-mono text-xs bg-base-200 px-2 py-1 rounded"
                                         ):
                                             text(entry.get("slug", ""))
-                                        deleted_at = entry.get("deleted_at")
-                                        if deleted_at:
+                                        deleted_at_raw = entry.get("deleted_at")
+                                        if deleted_at_raw:
+                                            deleted_at_dt = datetime.fromisoformat(
+                                                deleted_at_raw
+                                            )
+                                            days_ago = (
+                                                datetime.now(UTC) - deleted_at_dt
+                                            ).days
+                                            tooltip = deleted_at_dt.strftime(
+                                                "%Y-%m-%d %H:%M:%S UTC"
+                                            )
                                             with tag.span(
-                                                classes="text-xs text-base-content/60"
+                                                classes="flex items-center gap-1 text-xs text-base-content/60",
+                                                title=tooltip,
                                             ):
-                                                text(deleted_at)
+                                                with tag.i(classes="icon-trash"):
+                                                    pass
+                                                text(f"{days_ago}d ago")
 
                     # ID (copyable)
                     with tag.div():

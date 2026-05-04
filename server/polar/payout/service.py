@@ -130,7 +130,7 @@ class PendingPayoutCreation(PayoutError):
         super().__init__(message, 409)
 
 
-class DailyPayoutLimitReached(PayoutError):
+class PayoutIntervalLimitReached(PayoutError):
     def __init__(self, account: Account, interval: datetime.timedelta) -> None:
         self.account = account
         self.interval = interval
@@ -318,7 +318,7 @@ class PayoutService:
                 latest_payout is not None
                 and latest_payout.created_at > utc_now() - payout_interval
             ):
-                raise DailyPayoutLimitReached(account, payout_interval)
+                raise PayoutIntervalLimitReached(account, payout_interval)
 
             payout_account = organization.get_ready_payout_account()
 

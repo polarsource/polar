@@ -19,7 +19,7 @@ from polar.models.payout import PayoutStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
 from polar.payout.service import (
-    DailyPayoutLimitReached,
+    PayoutIntervalLimitReached,
     InsufficientBalance,
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
@@ -270,7 +270,7 @@ class TestCreate:
             created_at=utc_now() - datetime.timedelta(hours=1),
         )
 
-        with pytest.raises(DailyPayoutLimitReached):
+        with pytest.raises(PayoutIntervalLimitReached):
             await payout_service.create(session, locker, organization)
 
     async def test_previous_payout_older_than_24h(

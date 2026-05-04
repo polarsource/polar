@@ -131,6 +131,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         statement = select(OAuth2AuthorizationCode).where(
             OAuth2AuthorizationCode.code == code_hash,
             OAuth2AuthorizationCode.client_id == client.client_id,
+            OAuth2AuthorizationCode.deleted_at.is_(None),
         )
         result = self.server.session.execute(statement)
         authorization_code = result.unique().scalar_one_or_none()

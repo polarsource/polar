@@ -1016,6 +1016,45 @@ class TestOAuth2Token:
         refresh_token = json["refresh_token"]
         assert refresh_token.startswith("polar_rt_o_")
 
+    async def test_authorization_code_revoked_public_client(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        public_oauth2_client: OAuth2Client,
+    ) -> None:
+        code_verifier = "A" * 43
+        authorization_code = await create_oauth2_authorization_code(
+            save_fixture,
+            client=public_oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            user=user,
+            code_verifier=code_verifier,
+            code_challenge_method="S256",
+        )
+        authorization_code.set_deleted_at()
+        sync_session.add(authorization_code)
+        sync_session.flush()
+        sync_session.expunge(authorization_code)
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": public_oauth2_client.client_id,
+            "code_verifier": code_verifier,
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+        json = response.json()
+        assert "access_token" not in json
+        assert "refresh_token" not in json
+
     async def test_refresh_token_sub_user(
         self,
         save_fixture: SaveFixture,

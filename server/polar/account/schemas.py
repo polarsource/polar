@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import timedelta
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from polar.kit.address import Address, AddressInput
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
@@ -13,14 +13,16 @@ class Account(TimestampedSchema, IDSchema):
     billing_notes: str | None
     currency: str
     credit_balance: int
-    next_payout_at: datetime | None = Field(
-        default=None,
-        description=(
-            "Timestamp at which the next payout can be requested, if the "
-            "payout interval limit has been reached. `null` if a payout can "
-            "be requested immediately."
-        ),
+    payout_interval: int = Field(
+        description="Minimum delay, in seconds, between two payout requests.",
     )
+
+    @field_validator("payout_interval", mode="before")
+    @classmethod
+    def _payout_interval_to_seconds(cls, value: timedelta | int) -> int:
+        if isinstance(value, timedelta):
+            return int(value.total_seconds())
+        return value
 
 
 class AccountUpdate(Schema):

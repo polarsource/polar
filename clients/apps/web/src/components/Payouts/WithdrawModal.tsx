@@ -1,5 +1,6 @@
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
+import { usePayouts } from '@/hooks/queries/payouts'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -10,6 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Modal } from '../Modal'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
+import SpinnerNoMargin from '../Shared/Spinner'
 
 interface WithdrawModalProps {
   organization: schemas['Organization']
@@ -34,10 +36,22 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     () => organization.capabilities.payouts,
     [organization.capabilities.payouts],
   )
-  const nextPayoutAt = useMemo(
-    () => (account.next_payout_at ? new Date(account.next_payout_at) : null),
-    [account.next_payout_at],
-  )
+
+  const { data: latestPayouts, isPending } = usePayouts(account.id, {
+    limit: 1,
+    sorting: ['-created_at'],
+  })
+
+  const nextPayoutAt = useMemo(() => {
+    const latest = latestPayouts?.items?.[0]
+    if (!latest) {
+      return null
+    }
+    return new Date(
+      new Date(latest.created_at).getTime() + account.payout_interval * 1000,
+    )
+  }, [latestPayouts, account.payout_interval])
+
   const isPayoutIntervalLimited = useMemo(
     () => nextPayoutAt !== null && nextPayoutAt > new Date(),
     [nextPayoutAt],
@@ -100,6 +114,22 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     onSuccess?.(data.id)
   }, [organization, onSuccess])
 
+  if (isPending) {
+    return (
+      <Modal
+        title="Withdraw Balance"
+        className="min-w-100"
+        isShown={isShown}
+        hide={hide}
+        modalContent={
+          <div className="flex flex-col items-center justify-between overflow-auto p-6">
+            <SpinnerNoMargin />
+          </div>
+        }
+      />
+    )
+  }
+
   return (
     <Modal
       title="Withdraw Balance"
@@ -107,7 +137,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
       isShown={isShown}
       hide={hide}
       modalContent={
-        <div className="overflow-scroll p-6">
+        <div className="overflow-auto p-6">
           {!canWithdraw && (
             <div className="flex flex-col gap-6">
               <p>
@@ -136,7 +166,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
           {canWithdraw && isPayoutIntervalLimited && nextPayoutAt && (
             <div className="flex flex-col gap-6">
               <p>
-                You&apos;ve recently requested a withdrawal. The next one can be
+                You&apos;ve recently requested a payout. The next one can be
                 requested at{' '}
                 <FormattedDateTime datetime={nextPayoutAt} resolution="time" />.
               </p>

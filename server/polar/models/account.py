@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -89,6 +90,10 @@ class Account(RecordModel):
     @declared_attr
     def credits(cls) -> Mapped[list["AccountCredit"]]:
         return relationship("AccountCredit", lazy="raise", back_populates="account")
+
+    @property
+    def payout_interval(self) -> timedelta:
+        return settings.ACCOUNT_DEFAULT_PAYOUT_INTERVAL
 
     @property
     def platform_fee(self) -> Fees:

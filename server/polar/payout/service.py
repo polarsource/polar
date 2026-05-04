@@ -302,7 +302,6 @@ class PayoutService:
         self,
         session: AsyncReadSession,
         account: Account,
-        organization: Organization,
     ) -> datetime.datetime | None:
         """Earliest time a new payout can be requested for ``account``.
 
@@ -312,7 +311,7 @@ class PayoutService:
         latest_payout = await repository.get_latest_by_account(account.id)
         if latest_payout is None:
             return None
-        next_at = latest_payout.created_at + organization.payout_interval
+        next_at = latest_payout.created_at + account.payout_interval
         if next_at <= utc_now():
             return None
         return next_at
@@ -330,11 +329,9 @@ class PayoutService:
             raise PendingPayoutCreation(account)
 
         async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
-            next_payout_at = await self.get_next_payout_at(
-                session, account, organization
-            )
+            next_payout_at = await self.get_next_payout_at(session, account)
             if next_payout_at is not None:
-                raise PayoutIntervalLimitReached(account, organization.payout_interval)
+                raise PayoutIntervalLimitReached(account, account.payout_interval)
 
             payout_account = organization.get_ready_payout_account()
 

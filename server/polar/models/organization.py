@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
 from urllib.parse import urlparse
@@ -747,10 +747,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def checkout_require_3ds(self) -> bool:
         return self.checkout_settings.get("require_3ds", False)
-
-    @property
-    def payout_interval(self) -> timedelta:
-        return settings.ACCOUNT_DEFAULT_PAYOUT_INTERVAL
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

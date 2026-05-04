@@ -5510,10 +5510,10 @@ export interface components {
       /** Credit Balance */
       credit_balance: number
       /**
-       * Next Payout At
-       * @description Timestamp at which the next payout can be requested, if the payout interval limit has been reached. `null` if a payout can be requested immediately.
+       * Payout Interval
+       * @description Minimum delay, in seconds, between two payout requests.
        */
-      next_payout_at?: string | null
+      payout_interval: number
     }
     /** AccountCredit */
     AccountCredit: {

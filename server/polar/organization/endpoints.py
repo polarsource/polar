@@ -36,7 +36,6 @@ from polar.organization.repository import (
     OrganizationRepository,
     OrganizationReviewRepository,
 )
-from polar.payout.service import payout as payout_service
 from polar.payout_account.repository import PayoutAccountRepository
 from polar.postgres import (
     AsyncReadSession,
@@ -144,18 +143,13 @@ async def get(
 async def get_account(
     authz: AuthorizeFinanceRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> AccountSchema:
+) -> Account:
     """Get the account for an organization."""
     account = await account_service.get_by_organization(session, authz.organization.id)
     if account is None:
         raise ResourceNotFound()
 
-    next_payout_at = await payout_service.get_next_payout_at(
-        session, account, authz.organization
-    )
-    return AccountSchema.model_validate(account).model_copy(
-        update={"next_payout_at": next_payout_at}
-    )
+    return account
 
 
 @router.patch(

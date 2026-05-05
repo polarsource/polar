@@ -23608,7 +23608,7 @@ export interface components {
     }
     /**
      * OrganizationReviewCheck
-     * @description A single item in the self-review checklist. Recursive via `children`.
+     * @description A single item in the self-review checklist.
      */
     OrganizationReviewCheck: {
       key: components['schemas']['OrganizationReviewCheckKey']
@@ -23630,7 +23630,6 @@ export interface components {
      * @enum {string}
      */
     OrganizationReviewCheckKey:
-      | 'identity'
       | 'identity.email'
       | 'identity.social_links'
       | 'identity.stripe_identity_verification'
@@ -53777,7 +53776,6 @@ export const organizationKYCCountryAnyOf0Values: ReadonlyArray<
 export const organizationReviewCheckKeyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckKey']
 > = [
-  'identity',
   'identity.email',
   'identity.social_links',
   'identity.stripe_identity_verification',

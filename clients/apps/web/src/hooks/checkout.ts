@@ -127,7 +127,9 @@ export const useCheckoutConfirmedRedirect = (
         return
       }
 
-      router.push(parsedURL.toString())
+      if (isInternalURL || !embed) {
+        router.push(parsedURL.toString())
+      }
     },
     [router, embed, theme, listenFulfillment],
   )

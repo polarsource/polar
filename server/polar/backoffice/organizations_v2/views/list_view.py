@@ -2,6 +2,7 @@
 
 import contextlib
 import json
+import uuid
 from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -27,6 +28,7 @@ from ...components import (
     status_badge,
     tab_nav,
 )
+from ..priority import Signals
 
 FIRST_REVIEW_THRESHOLD_LABEL = formatters.currency(
     FIRST_REVIEW_MAX_THRESHOLD_CENTS, "usd"
@@ -192,8 +194,18 @@ class OrganizationListView:
                 _nav_button(page + 1, "Next →", disabled=not has_more)
 
     @contextlib.contextmanager
-    def organization_row(self, request: Request, org: Organization) -> Generator[None]:
-        """Render a single organization row in the table."""
+    def organization_row(
+        self,
+        request: Request,
+        org: Organization,
+        *,
+        signals: Signals | None = None,
+    ) -> Generator[None]:
+        """Render a single organization row in the table.
+
+        When ``signals`` is non-None the Review-tab Priority cell is rendered
+        so the column count matches ``_render_org_list``'s Review-only header.
+        """
         days_in_status = self.calculate_days_in_status(org)
 
         with tag.tr(classes="hover:bg-base-100"):
@@ -241,6 +253,18 @@ class OrganizationListView:
                         with tag.span(classes="badge badge-info badge-xs mt-1"):
                             text("Appeal Pending")
 
+            # Priority — Review tab only, sits next to Organization
+            if signals is not None:
+                tooltip = (
+                    f"Aging {signals.aging_pts:.0f} + "
+                    f"Risk {signals.risk_pts:.0f} + "
+                    f"Payments {signals.payment_pts:.0f} + "
+                    f"Fast Mover {signals.fast_mover_pts:.0f}"
+                )
+                with tag.td(classes="text-sm font-bold text-center"):
+                    with tag.span(title=tooltip):
+                        text(f"{signals.priority:.0f}")
+
             # Country
             with tag.td(classes="text-sm"):
                 if org.payout_account:
@@ -258,21 +282,22 @@ class OrganizationListView:
             with tag.td(classes="text-sm font-semibold text-center"):
                 text(f"{days_in_status}d")
 
-            # Risk score
-            with tag.td(classes="text-sm text-center"):
-                if org.review and org.review.risk_score is not None:
-                    risk = org.review.risk_score
-                    if risk >= 75:
-                        color = "text-error"
-                    elif risk >= 50:
-                        color = "text-warning"
+            # Risk — hidden on Review tab (encoded in Priority breakdown)
+            if signals is None:
+                with tag.td(classes="text-sm text-center"):
+                    if org.review and org.review.risk_score is not None:
+                        risk = org.review.risk_score
+                        if risk >= 75:
+                            color = "text-error"
+                        elif risk >= 50:
+                            color = "text-warning"
+                        else:
+                            color = "text-success"
+                        with tag.span(classes=f"font-bold {color}"):
+                            text(str(risk))
                     else:
-                        color = "text-success"
-                    with tag.span(classes=f"font-bold {color}"):
-                        text(str(risk))
-                else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                        with tag.span(classes="text-base-content/40"):
+                            text("—")
 
             # Total balance
             with tag.td(classes="text-sm text-right"):
@@ -313,6 +338,7 @@ class OrganizationListView:
         selected_days_in_status: str | None = None,
         selected_has_appeal: str | None = None,
         selected_deleted: DeletedFilter = "exclude",
+        signals_by_org: dict[uuid.UUID, Signals] | None = None,
     ) -> Generator[None]:
         """Render the complete list view."""
 
@@ -613,7 +639,38 @@ class OrganizationListView:
                                         with tag.option(**first_review_attrs):
                                             text("First Reviews")
 
-        # Organization table
+        self._render_org_list(
+            request,
+            organizations,
+            status_filter,
+            page,
+            has_more,
+            current_sort,
+            current_direction,
+            signals_by_org,
+        )
+
+        yield
+
+    def _render_org_list(
+        self,
+        request: Request,
+        organizations: list[Organization],
+        status_filter: OrganizationStatus | None,
+        page: int,
+        has_more: bool,
+        current_sort: str,
+        current_direction: str,
+        signals_by_org: dict[uuid.UUID, Signals] | None = None,
+    ) -> None:
+        """Render the ``#org-list`` block — table with Review-only columns.
+
+        Shared by ``render`` (full page) and ``render_table_only`` (HTMX
+        partial swap), so both paths agree on column count.
+        """
+        signals_by_org = signals_by_org or {}
+        is_review_tab = status_filter == OrganizationStatus.REVIEW
+
         with tag.div(id="org-list", classes="overflow-x-auto"):
             if not organizations:
                 with empty_state(
@@ -634,6 +691,20 @@ class OrganizationListView:
                                 status_filter=status_filter,
                             ):
                                 pass
+
+                            # Priority sits next to Organization on the Review
+                            # tab — primary sort, eye lands here second.
+                            if is_review_tab:
+                                with self.sortable_header(
+                                    request,
+                                    "Priority",
+                                    "priority",
+                                    current_sort,
+                                    current_direction,
+                                    "center",
+                                    status_filter=status_filter,
+                                ):
+                                    pass
 
                             with self.sortable_header(
                                 request,
@@ -666,16 +737,19 @@ class OrganizationListView:
                             ):
                                 pass
 
-                            with self.sortable_header(
-                                request,
-                                "Risk",
-                                "risk",
-                                current_sort,
-                                current_direction,
-                                "center",
-                                status_filter=status_filter,
-                            ):
-                                pass
+                            # Risk hidden on Review tab — it's already
+                            # encoded in the Priority breakdown tooltip.
+                            if not is_review_tab:
+                                with self.sortable_header(
+                                    request,
+                                    "Risk",
+                                    "risk",
+                                    current_sort,
+                                    current_direction,
+                                    "center",
+                                    status_filter=status_filter,
+                                ):
+                                    pass
 
                             with self.sortable_header(
                                 request,
@@ -693,7 +767,11 @@ class OrganizationListView:
 
                     with tag.tbody():
                         for org in organizations:
-                            with self.organization_row(request, org):
+                            with self.organization_row(
+                                request,
+                                org,
+                                signals=signals_by_org.get(org.id),
+                            ):
                                 pass
 
                 self.pagination_controls(
@@ -704,8 +782,6 @@ class OrganizationListView:
                     current_direction,
                     status_filter,
                 )
-
-        yield
 
     @contextlib.contextmanager
     def render_table_only(
@@ -717,100 +793,21 @@ class OrganizationListView:
         has_more: bool,
         current_sort: str = "priority",
         current_direction: str = "asc",
+        *,
+        signals_by_org: dict[uuid.UUID, Signals] | None = None,
     ) -> Generator[None]:
         """Render only the organization table (for HTMX updates)."""
 
-        # Organization table
-        with tag.div(id="org-list", classes="overflow-x-auto"):
-            if not organizations:
-                with empty_state(
-                    "No Organizations Found",
-                    "No organizations match your current filters.",
-                ):
-                    pass
-            else:
-                with tag.table(classes="table table-zebra w-full"):
-                    with tag.thead():
-                        with tag.tr():
-                            with self.sortable_header(
-                                request,
-                                "Organization",
-                                "name",
-                                current_sort,
-                                current_direction,
-                                status_filter=status_filter,
-                            ):
-                                pass
-
-                            with self.sortable_header(
-                                request,
-                                "Country",
-                                "country",
-                                current_sort,
-                                current_direction,
-                                status_filter=status_filter,
-                            ):
-                                pass
-
-                            with self.sortable_header(
-                                request,
-                                "Created",
-                                "created",
-                                current_sort,
-                                current_direction,
-                                status_filter=status_filter,
-                            ):
-                                pass
-
-                            with self.sortable_header(
-                                request,
-                                "In Status",
-                                "status_duration",
-                                current_sort,
-                                current_direction,
-                                "center",
-                                status_filter=status_filter,
-                            ):
-                                pass
-
-                            with self.sortable_header(
-                                request,
-                                "Risk",
-                                "risk",
-                                current_sort,
-                                current_direction,
-                                "center",
-                                status_filter=status_filter,
-                            ):
-                                pass
-
-                            with self.sortable_header(
-                                request,
-                                "Balance",
-                                "total_balance",
-                                current_sort,
-                                current_direction,
-                                "right",
-                                status_filter=status_filter,
-                            ):
-                                pass
-
-                            with tag.th(classes="text-right"):
-                                text("Actions")
-
-                    with tag.tbody():
-                        for org in organizations:
-                            with self.organization_row(request, org):
-                                pass
-
-                self.pagination_controls(
-                    request,
-                    page,
-                    has_more,
-                    current_sort,
-                    current_direction,
-                    status_filter,
-                )
+        self._render_org_list(
+            request,
+            organizations,
+            status_filter,
+            page,
+            has_more,
+            current_sort,
+            current_direction,
+            signals_by_org,
+        )
 
         yield
 

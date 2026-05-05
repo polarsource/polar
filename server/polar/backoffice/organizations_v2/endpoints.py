@@ -18,7 +18,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BaseModel, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
@@ -95,6 +95,8 @@ from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
+from . import priority as review_priority
+from .priority import Signals
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import (
     DeletedFilter,
@@ -195,6 +197,105 @@ async def count_test_sales(
     return orders_count, unrefunded_orders_count
 
 
+# Defensive cap on the Review-tab in-memory cohort when sorting by priority.
+REVIEW_TAB_MAX_COHORT = 2000
+
+
+async def _build_review_signals(
+    session: AsyncSession, orgs: Sequence[Organization]
+) -> dict[uuid.UUID, Signals]:
+    """Fetch each org's latest agent review, parse it, run ``priority.compute``."""
+    if not orgs:
+        return {}
+
+    org_ids = [o.id for o in orgs]
+    latest_review_stmt = (
+        select(OrganizationAgentReview)
+        .where(
+            OrganizationAgentReview.organization_id.in_(org_ids),
+            OrganizationAgentReview.deleted_at.is_(None),
+        )
+        .order_by(
+            OrganizationAgentReview.organization_id,
+            OrganizationAgentReview.reviewed_at.desc(),
+        )
+        .distinct(OrganizationAgentReview.organization_id)
+    )
+    result = await session.execute(latest_review_stmt)
+    latest_by_org: dict[uuid.UUID, OrganizationAgentReview] = {
+        ar.organization_id: ar for ar in result.scalars()
+    }
+
+    signals: dict[uuid.UUID, Signals] = {}
+    for org in orgs:
+        metrics = None
+        risk_score = org.review.risk_score if org.review else None
+        agent_review = latest_by_org.get(org.id)
+        if agent_review is not None:
+            try:
+                report = agent_review.parsed_report
+            except Exception:
+                logger.exception(
+                    "agent_review_parse_failed", organization_id=str(org.id)
+                )
+                report = None
+            if report is not None:
+                metrics = report.data_snapshot.metrics
+                risk_score = report.report.overall_risk_score
+        signals[org.id] = review_priority.compute(
+            org, metrics=metrics, risk_score=risk_score
+        )
+    return signals
+
+
+def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
+    is_desc = direction == "desc"
+    if sort == "name":
+        return stmt.order_by(
+            Organization.name.desc() if is_desc else Organization.name.asc()
+        )
+    if sort == "country":
+        return stmt.order_by(
+            PayoutAccount.country.desc().nullslast()
+            if is_desc
+            else PayoutAccount.country.asc().nullslast()
+        )
+    if sort == "created":
+        return stmt.order_by(
+            Organization.created_at.desc() if is_desc else Organization.created_at.asc()
+        )
+    if sort == "updated":
+        return stmt.order_by(
+            Organization.modified_at.desc()
+            if is_desc
+            else Organization.modified_at.asc()
+        )
+    if sort == "status_duration":
+        return stmt.order_by(
+            Organization.status_updated_at.desc().nullslast()
+            if is_desc
+            else Organization.status_updated_at.asc().nullsfirst()
+        )
+    if sort == "risk":
+        return stmt.join(Organization.review).order_by(
+            OrganizationReview.risk_score.asc().nullsfirst()
+            if is_desc
+            else OrganizationReview.risk_score.desc().nullslast()
+        )
+    if sort == "total_balance":
+        return stmt.order_by(
+            Organization.total_balance.desc().nullslast()
+            if is_desc
+            else Organization.total_balance.asc().nullsfirst()
+        )
+    if sort == "priority":
+        return stmt.order_by(
+            Organization.status.desc(),
+            Organization.status_updated_at.asc().nullsfirst(),
+        )
+    return stmt
+
+
 @router.get("/", name="organizations:list")
 async def list_organizations(
     request: Request,
@@ -202,7 +303,7 @@ async def list_organizations(
     status: str | None = Query(None),
     q: str | None = Query(None),
     sort: str = Query("priority"),
-    direction: str = Query("asc"),
+    direction: str | None = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     # Advanced filters
@@ -348,69 +449,49 @@ async def list_organizations(
 
     stmt = apply_deleted_filter(stmt, deleted_filter)
 
-    # Apply sorting
-    is_desc = direction == "desc"
+    is_review_tab = status_filter == OrganizationStatus.REVIEW
+    priority_sort = is_review_tab and sort == "priority"
 
-    if sort == "name":
-        stmt = stmt.order_by(
-            Organization.name.desc() if is_desc else Organization.name.asc()
-        )
-    elif sort == "country":
-        country_order = (
-            PayoutAccount.country.desc().nullslast()
-            if is_desc
-            else PayoutAccount.country.asc().nullslast()
-        )
-        stmt = stmt.order_by(country_order)
-    elif sort == "created":
-        stmt = stmt.order_by(
-            Organization.created_at.desc() if is_desc else Organization.created_at.asc()
-        )
-    elif sort == "updated":
-        stmt = stmt.order_by(
-            Organization.modified_at.desc()
-            if is_desc
-            else Organization.modified_at.asc()
-        )
-    elif sort == "status_duration":
-        status_order = (
-            Organization.status_updated_at.desc().nullslast()
-            if is_desc
-            else Organization.status_updated_at.asc().nullsfirst()
-        )
-        stmt = stmt.order_by(status_order)
-    elif sort == "risk":
-        risk_order = (
-            OrganizationReview.risk_score.asc().nullsfirst()
-            if is_desc
-            else OrganizationReview.risk_score.desc().nullslast()
-        )
-        stmt = stmt.join(Organization.review).order_by(risk_order)
-    elif sort == "total_balance":
-        balance_order = (
-            Organization.total_balance.desc().nullslast()
-            if is_desc
-            else Organization.total_balance.asc().nullsfirst()
-        )
-        stmt = stmt.order_by(balance_order)
-    elif sort == "priority":
-        # Priority: Under Review > Denied > Others, then by days in status
-        stmt = stmt.order_by(
-            Organization.status.desc(),
-            Organization.status_updated_at.asc().nullsfirst(),
-        )
+    # Priority sort defaults to "desc" (highest urgency first); other sorts
+    # keep the historical "asc" default.
+    if direction is None:
+        direction = "desc" if priority_sort else "asc"
 
-    # Pagination
-    offset = (page - 1) * limit
-    stmt = stmt.offset(offset).limit(limit + 1)
+    signals_by_org: dict[uuid.UUID, Signals] = {}
+    organizations: list[Organization]
 
-    result = await session.execute(stmt)
-    organizations = list(result.scalars().unique().all())
-
-    # Check if there are more results
-    has_more = len(organizations) > limit
-    if has_more:
-        organizations = organizations[:limit]
+    if priority_sort:
+        # Priority is a Python-computed composite, so we load the cohort,
+        # build signals, sort, and paginate in memory.
+        result = await session.execute(stmt.limit(REVIEW_TAB_MAX_COHORT + 1))
+        all_orgs = list(result.scalars().unique().all())
+        if len(all_orgs) > REVIEW_TAB_MAX_COHORT:
+            logger.warning(
+                "review_tab_cohort_truncated",
+                count=len(all_orgs),
+                cap=REVIEW_TAB_MAX_COHORT,
+            )
+            all_orgs = all_orgs[:REVIEW_TAB_MAX_COHORT]
+        signals_by_org = await _build_review_signals(session, all_orgs)
+        all_orgs.sort(
+            key=lambda o: signals_by_org[o.id].priority,
+            reverse=direction == "desc",
+        )
+        offset = (page - 1) * limit
+        page_slice = all_orgs[offset : offset + limit + 1]
+        has_more = len(page_slice) > limit
+        organizations = page_slice[:limit] if has_more else page_slice
+    else:
+        stmt = _apply_sql_sort(stmt, sort, direction)
+        offset = (page - 1) * limit
+        stmt = stmt.offset(offset).limit(limit + 1)
+        result = await session.execute(stmt)
+        organizations = list(result.scalars().unique().all())
+        has_more = len(organizations) > limit
+        if has_more:
+            organizations = organizations[:limit]
+        if is_review_tab:
+            signals_by_org = await _build_review_signals(session, organizations)
 
     is_htmx_table_request = request.headers.get("HX-Target") == "org-list"
 
@@ -423,6 +504,7 @@ async def list_organizations(
             has_more,
             sort,
             direction,
+            signals_by_org=signals_by_org,
         ):
             pass
     else:
@@ -450,6 +532,7 @@ async def list_organizations(
                 selected_days_in_status=days_in_status,
                 selected_has_appeal=has_appeal,
                 selected_deleted=deleted_filter,
+                signals_by_org=signals_by_org,
             ):
                 pass
 

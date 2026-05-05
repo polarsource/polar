@@ -970,6 +970,7 @@ class TestGetReview:
             "identity.social_links",
             "identity.stripe_identity_verification",
             "product_description",
+            "product_url",
             "payout_account",
         ]
 

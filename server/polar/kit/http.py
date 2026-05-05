@@ -1,9 +1,11 @@
 import ipaddress
 import socket
+from dataclasses import dataclass
 from typing import Annotated
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import anyio
+import httpx
 from fastapi import Depends, Query
 from pydantic import AfterValidator, HttpUrl, PlainSerializer, ValidationError
 from safe_redirect_url import url_has_allowed_host_and_scheme
@@ -68,6 +70,51 @@ async def validate_crawlable_url(url: HttpUrl | str) -> HttpUrl:
     except SSRFBlockedError as e:
         raise UnsafeCrawlableUrl(str(e)) from e
     return url
+
+
+@dataclass
+class UrlReachability:
+    reachable: bool
+    status: int | None = None
+    error: str | None = None
+
+
+async def check_url_reachable(
+    url: HttpUrl | str, *, timeout: float = 5.0
+) -> UrlReachability:
+    """Validate the URL and HEAD it, following redirects.
+
+    The check rejects URLs that resolve to private/reserved IPs (including any
+    redirect target) and treats HTTP 2xx/3xx as reachable.
+    """
+    try:
+        validated_url = await validate_crawlable_url(url)
+    except UnsafeCrawlableUrl as e:
+        return UrlReachability(reachable=False, error=str(e))
+
+    async def _check_redirect(response: httpx.Response) -> None:
+        if response.is_redirect:
+            location = response.headers.get("location", "")
+            await validate_crawlable_url(location)
+
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            timeout=timeout,
+            headers={"User-Agent": settings.POLAR_USER_AGENT},
+            event_hooks={"response": [_check_redirect]},
+        ) as client:
+            response = await client.head(str(validated_url))
+        return UrlReachability(
+            reachable=200 <= response.status_code < 400,
+            status=response.status_code,
+        )
+    except UnsafeCrawlableUrl as e:
+        return UrlReachability(reachable=False, error=str(e))
+    except httpx.TimeoutException:
+        return UrlReachability(reachable=False, error="Request timed out")
+    except httpx.HTTPError:
+        return UrlReachability(reachable=False, error="Unable to reach URL")
 
 
 def _unescape_checkout_id_placeholder(url: HttpUrl) -> str:

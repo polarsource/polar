@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any, assert_never, cast
+from urllib.parse import urlparse
 from uuid import UUID
 
 import structlog
@@ -25,6 +26,7 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.http import check_url_reachable
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
@@ -84,6 +86,14 @@ log = structlog.get_logger()
 
 _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_GRACE_PERIOD = timedelta(hours=24)
+
+
+def _website_domain(website: str | None) -> str | None:
+    if not website:
+        return None
+    parsed = urlparse(website)
+    host = (parsed.netloc or parsed.path).split("/", 1)[0].split(":", 1)[0]
+    return host.lower().removeprefix("www.") or None
 
 
 def _append_internal_note(
@@ -1201,6 +1211,7 @@ class OrganizationService:
             self._build_socials_check(organization),
             self._build_identity_verification_check(admin_user),
             self._build_product_description_check(organization),
+            await self._build_product_url_check(organization),
             self._build_payout_account_check(payout_account),
         ]
 
@@ -1257,7 +1268,46 @@ class OrganizationService:
         key = OrganizationReviewCheckKey.IDENTITY_EMAIL
         if not organization.email:
             return self._not_started_check(key)
+
+        email_domain = organization.email.rsplit("@", 1)[-1].lower()
+        website_domain = _website_domain(organization.website)
+        reasons: list[OrganizationReviewCheckReason] = []
+
+        if email_domain in settings.PERSONAL_EMAIL_DOMAINS:
+            reasons.append(OrganizationReviewCheckReason.IDENTITY_PERSONAL_EMAIL)
+
+        if website_domain and email_domain != website_domain:
+            reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
+
+        if reasons:
+            return OrganizationReviewCheck(
+                key=key,
+                status=OrganizationReviewCheckStatus.WARNING,
+                reasons=reasons,
+            )
         return self._passed_check(key)
+
+    async def _build_product_url_check(
+        self, organization: Organization
+    ) -> OrganizationReviewCheck:
+        key = OrganizationReviewCheckKey.PRODUCT_URL
+        if not organization.website:
+            return self._not_started_check(key)
+
+        result = await check_url_reachable(organization.website)
+        if not result.reachable:
+            return OrganizationReviewCheck(
+                key=key,
+                status=OrganizationReviewCheckStatus.FAILED,
+                reasons=[OrganizationReviewCheckReason.PRODUCT_URL_UNREACHABLE],
+                value=organization.website,
+            )
+
+        return OrganizationReviewCheck(
+            key=key,
+            status=OrganizationReviewCheckStatus.PASSED,
+            value=organization.website,
+        )
 
     def _build_socials_check(
         self, organization: Organization

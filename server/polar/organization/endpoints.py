@@ -1,6 +1,5 @@
 from uuid import UUID
 
-import httpx
 from fastapi import Depends, Query, Response, status
 from sqlalchemy.orm import joinedload
 
@@ -24,10 +23,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceNotFound,
 )
-from polar.kit.http import (
-    UnsafeCrawlableUrl,
-    validate_crawlable_url,
-)
+from polar.kit.http import check_url_reachable
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
@@ -672,36 +668,9 @@ async def validate_website(
     body: OrganizationValidateWebsiteRequest,
 ) -> OrganizationValidateWebsiteResponse:
     """Validate that a website URL is reachable and not targeting a private network."""
-    try:
-        validated_url = await validate_crawlable_url(body.url)
-    except UnsafeCrawlableUrl as e:
-        return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
-
-    async def _check_redirect(response: httpx.Response) -> None:
-        if response.is_redirect:
-            location = response.headers.get("location", "")
-            await validate_crawlable_url(location)
-
-    try:
-        async with httpx.AsyncClient(
-            follow_redirects=True,
-            timeout=5.0,
-            headers={"User-Agent": "Polar URL Validator/1.0"},
-            event_hooks={"response": [_check_redirect]},
-        ) as client:
-            response = await client.head(str(validated_url))
-
-        reachable = 200 <= response.status_code < 400
-        return OrganizationValidateWebsiteResponse(
-            reachable=reachable, status=response.status_code
-        )
-    except UnsafeCrawlableUrl as e:
-        return OrganizationValidateWebsiteResponse(reachable=False, error=str(e))
-    except httpx.TimeoutException:
-        return OrganizationValidateWebsiteResponse(
-            reachable=False, error="Request timed out"
-        )
-    except httpx.HTTPError:
-        return OrganizationValidateWebsiteResponse(
-            reachable=False, error="Unable to reach URL"
-        )
+    result = await check_url_reachable(body.url)
+    return OrganizationValidateWebsiteResponse(
+        reachable=result.reachable,
+        status=result.status,
+        error=result.error,
+    )

@@ -555,6 +555,7 @@ class OrganizationReviewCheckKey(StrEnum):
     IDENTITY_SOCIAL_LINKS = "identity.social_links"
     IDENTITY_STRIPE_VERIFICATION = "identity.stripe_identity_verification"
     PRODUCT_DESCRIPTION = "product_description"
+    PRODUCT_URL = "product_url"
     PAYOUT_ACCOUNT = "payout_account"
 
 
@@ -579,6 +580,9 @@ class OrganizationReviewCheckReason(StrEnum):
     IDENTITY_PERSONAL_EMAIL = "identity.personal_email"
     IDENTITY_DOMAIN_MISMATCH = "identity.domain_mismatch"
 
+    # Product URL
+    PRODUCT_URL_UNREACHABLE = "product_url.unreachable"
+
     # Payout account
     PAYOUT_ACCOUNT_REQUIREMENTS_DUE = "payout_account.requirements_due"
     PAYOUT_ACCOUNT_PAYOUTS_DISABLED = "payout_account.payouts_disabled"
@@ -592,6 +596,13 @@ class OrganizationReviewCheck(Schema):
     reasons: list[OrganizationReviewCheckReason] = Field(
         default_factory=list,
         description="Reasons for the current status. Empty when `passed`.",
+    )
+    value: str | None = Field(
+        default=None,
+        description=(
+            "Optional contextual value associated with the check, e.g. the "
+            "product URL for the `product_url` check."
+        ),
     )
 
 

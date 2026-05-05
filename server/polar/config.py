@@ -101,6 +101,11 @@ class Settings(BaseSettings):
 
     ALLOWED_HOSTS: set[str] = {"127.0.0.1:3000", "localhost:3000"}
 
+    # User-Agent sent by Polar's outbound HTTP clients (e.g. URL reachability
+    # checks). Excludes the org review website/setup collectors, which use a
+    # browser-like UA to avoid bot detection by CDNs.
+    POLAR_USER_AGENT: str = "Polar/1.0 (+https://polar.sh)"
+
     # Base URL for the backend. Used by generate_external_url to
     # generate URLs to the backend accessible from the outside.
     BASE_URL: str = "http://127.0.0.1:8000"

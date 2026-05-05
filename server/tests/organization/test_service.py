@@ -15,6 +15,7 @@ from polar.enums import (
     SubscriptionRecurringInterval,
 )
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.http import UrlReachability
 from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.account import Account
 from polar.models.organization import (
@@ -1261,6 +1262,15 @@ def _step(
 class TestGetReviewState:
     """Test the merchant self-review checklist."""
 
+    @pytest.fixture(autouse=True)
+    def mock_check_url_reachable(self, mocker: MockerFixture) -> AsyncMock:
+        # Default to reachable so existing tests don't make outbound requests.
+        # Individual tests can re-patch via `mocker.patch(...)` to override.
+        return mocker.patch(
+            "polar.organization.service.check_url_reachable",
+            new=AsyncMock(return_value=UrlReachability(reachable=True, status=200)),
+        )
+
     async def test_empty_org_blocks_submission(
         self,
         session: AsyncSession,
@@ -1288,6 +1298,69 @@ class TestGetReviewState:
         organization: Organization,
     ) -> None:
         organization.email = "support@example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert step.reasons == []
+
+    async def test_email_personal_domain_warns(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Free/personal email — the merchant can still submit, but we surface
+        # this as a soft warning so reviewers know the support address isn't
+        # tied to a business domain.
+        organization.email = "founder@gmail.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.WARNING
+        assert OrganizationReviewCheckReason.IDENTITY_PERSONAL_EMAIL in step.reasons
+        assert state.can_submit is False  # other checks still pending
+        # Warnings alone don't block — verified by isolating the failing keys.
+        non_email_failing = [
+            s
+            for s in state.preliminary_steps
+            if s.key != OrganizationReviewCheckKey.IDENTITY_EMAIL
+            and s.status
+            in (
+                OrganizationReviewCheckStatus.FAILED,
+                OrganizationReviewCheckStatus.PENDING,
+            )
+        ]
+        assert non_email_failing  # something else is blocking, not the warning
+
+    async def test_email_domain_mismatch_warns(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@otherdomain.com"
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.WARNING
+        assert OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH in step.reasons
+
+    async def test_email_matching_website_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@example.com"
+        organization.website = "https://www.example.com/products"
         await save_fixture(organization)
 
         state = await organization_service.get_review_state(session, organization)
@@ -1406,6 +1479,61 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.PRODUCT_DESCRIPTION)
 
         assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    async def test_product_url_missing_is_not_started(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        mock_check_url_reachable: AsyncMock,
+    ) -> None:
+        assert organization.website is None
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_URL)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+        assert step.value is None
+        mock_check_url_reachable.assert_not_called()
+
+    async def test_product_url_reachable_passes_with_value(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_URL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert step.value == "https://example.com"
+
+    async def test_product_url_unreachable_fails(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+        mocker.patch(
+            "polar.organization.service.check_url_reachable",
+            new=AsyncMock(
+                return_value=UrlReachability(reachable=False, error="DNS failed")
+            ),
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_URL)
+
+        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert OrganizationReviewCheckReason.PRODUCT_URL_UNREACHABLE in step.reasons
+        assert step.value == "https://example.com"
+        assert state.can_submit is False
 
     async def test_payout_account_ready(
         self,

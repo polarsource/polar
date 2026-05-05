@@ -1,11 +1,13 @@
 import uuid
-from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any
 
-import logfire
 from dramatiq import Retry
+from polar_sdk.models import (
+    WebhookSubscriptionActivePayload,
+    WebhookSubscriptionRevokedPayload,
+    WebhookSubscriptionUpdatedPayload,
+)
 
 from polar.config import settings
 from polar.event.repository import EventRepository
@@ -21,9 +23,7 @@ from polar.worker import (
 )
 
 from .client import get_client
-
-if TYPE_CHECKING:
-    from polar_sdk.models import BenefitGrant
+from .service import polar_self
 
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
@@ -157,43 +157,14 @@ async def track_organization_review_usage(
     )
 
 
-def _group_benefit_grants_by_metadata_type(
-    grants: list["BenefitGrant"],
-) -> "dict[str | None, list[BenefitGrant]]":
-    grouped: dict[str | None, list[BenefitGrant]] = defaultdict(list)
-    for grant in grants:
-        metadata = grant.benefit.metadata or {}
-        type_value = metadata.get("type")
-        key = type_value if isinstance(type_value, str) else None
-        grouped[key].append(grant)
-    return dict(grouped)
-
-
-async def _handle_subscription_event(payload: dict[str, Any]) -> None:
-    subscription = payload.get("data") or {}
-    customer_id = subscription.get("customer_id")
-    if not customer_id:
-        return
-
-    grants = await get_client().list_customer_benefit_grants(customer_id=customer_id)
-    grouped = _group_benefit_grants_by_metadata_type(grants)
-
-    logfire.info(
-        "polar_self.webhook.subscription.benefits",
-        subscription_id=subscription.get("id"),
-        customer_id=customer_id,
-        event_type=payload.get("type"),
-        groups={key: len(items) for key, items in grouped.items()},
-    )
-
-
 @actor(actor_name="polar_self.webhook.subscription.active", priority=TaskPriority.LOW)
 async def webhook_subscription_active(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            await _handle_subscription_event(event.data)
+            payload = WebhookSubscriptionActivePayload.model_validate(event.data)
+            await polar_self.handle_subscription_event(session, payload)
 
 
 @actor(actor_name="polar_self.webhook.subscription.updated", priority=TaskPriority.LOW)
@@ -202,7 +173,8 @@ async def webhook_subscription_updated(event_id: uuid.UUID) -> None:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            await _handle_subscription_event(event.data)
+            payload = WebhookSubscriptionUpdatedPayload.model_validate(event.data)
+            await polar_self.handle_subscription_event(session, payload)
 
 
 @actor(actor_name="polar_self.webhook.subscription.revoked", priority=TaskPriority.LOW)
@@ -211,4 +183,5 @@ async def webhook_subscription_revoked(event_id: uuid.UUID) -> None:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            await _handle_subscription_event(event.data)
+            payload = WebhookSubscriptionRevokedPayload.model_validate(event.data)
+            await polar_self.handle_subscription_event(session, payload)

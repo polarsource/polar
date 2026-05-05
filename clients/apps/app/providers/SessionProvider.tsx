@@ -1,25 +1,37 @@
+import { configureRefresher, type SessionData } from '@/auth/refresher'
 import { useStorageState } from '@/hooks/storage'
 import { ExtensionStorage } from '@bacons/apple-targets'
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   type PropsWithChildren,
 } from 'react'
 
-const storage = new ExtensionStorage('group.com.polarsource.Polar')
+const ACCESS_TOKEN_KEY = 'session'
+const REFRESH_TOKEN_KEY = 'session_refresh_token'
+const EXPIRES_AT_KEY = 'session_expires_at'
 
-const AuthContext = createContext<{
-  setSession: (session: string | null) => void
+const widgetStorage = new ExtensionStorage('group.com.polarsource.Polar')
+
+type AuthContextValue = {
+  setSession: (data: SessionData | null) => void
   session?: string | null
+  refreshToken?: string | null
+  expiresAt?: number | null
   isLoading: boolean
-}>({
+}
+
+const AuthContext = createContext<AuthContextValue>({
   setSession: () => null,
   session: null,
+  refreshToken: null,
+  expiresAt: null,
   isLoading: false,
 })
 
-// This hook can be used to access the user info.
 export function useSession() {
   const value = useContext(AuthContext)
   if (process.env.NODE_ENV !== 'production') {
@@ -27,24 +39,64 @@ export function useSession() {
       throw new Error('useSession must be wrapped in a <SessionProvider />')
     }
   }
-
   return value
 }
 
 export function SessionProvider({ children }: PropsWithChildren) {
-  const [[isLoading, session], setSession] = useStorageState('session')
+  const [[isLoadingAccess, accessToken], setAccessTokenStorage] =
+    useStorageState(ACCESS_TOKEN_KEY)
+  const [[isLoadingRefresh, refreshToken], setRefreshTokenStorage] =
+    useStorageState(REFRESH_TOKEN_KEY)
+  const [[isLoadingExpires, expiresAtRaw], setExpiresAtStorage] =
+    useStorageState(EXPIRES_AT_KEY)
+
+  const expiresAt = useMemo(() => {
+    if (!expiresAtRaw) return null
+    const parsed = Number.parseInt(expiresAtRaw, 10)
+    return Number.isFinite(parsed) ? parsed : null
+  }, [expiresAtRaw])
+
+  const isLoading = isLoadingAccess || isLoadingRefresh || isLoadingExpires
+
+  const setSession = useCallback(
+    (data: SessionData | null) => {
+      if (!data) {
+        setAccessTokenStorage(null)
+        setRefreshTokenStorage(null)
+        setExpiresAtStorage(null)
+        return
+      }
+      setAccessTokenStorage(data.accessToken)
+      setRefreshTokenStorage(data.refreshToken ?? null)
+      setExpiresAtStorage(
+        typeof data.expiresAt === 'number' ? String(data.expiresAt) : null,
+      )
+    },
+    [setAccessTokenStorage, setRefreshTokenStorage, setExpiresAtStorage],
+  )
 
   useEffect(() => {
-    if (session) {
-      storage.set('widget_api_token', session)
+    if (accessToken) {
+      widgetStorage.set('widget_api_token', accessToken)
     }
-  }, [session])
+  }, [accessToken])
+
+  useEffect(() => {
+    configureRefresher({
+      accessToken: accessToken ?? null,
+      refreshToken: refreshToken ?? null,
+      expiresAt,
+      setSession,
+    })
+  }, [accessToken, refreshToken, expiresAt, setSession])
 
   return (
     <AuthContext.Provider
       value={{
         setSession,
-        session,
+        session: accessToken,
+        refreshToken,
+        expiresAt,
         isLoading,
       }}
     >

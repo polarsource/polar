@@ -103,58 +103,27 @@ export const useListNotifications = (): UseQueryResult<
   schemas['NotificationsList'],
   Error
 > => {
+  const { polar } = usePolarClient()
   const { session } = useSession()
 
   return useQuery({
     queryKey: ['notifications'],
-    queryFn: async () => {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/notifications`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session}`,
-          },
-        },
-      )
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      return response.json()
-    },
+    queryFn: () => unwrap(polar.GET('/v1/notifications')),
+    enabled: !!session,
   })
 }
 
 export const useNotificationsMarkRead = () => {
-  const { session } = useSession()
+  const { polar } = usePolarClient()
 
   return useMutation({
-    mutationFn: async (variables: { notificationId: string }) => {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/notifications/read`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session}`,
-          },
-          body: JSON.stringify({
-            notification_id: variables.notificationId,
-          }),
-        },
-      )
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      return response.json()
-    },
-    onSuccess: (result, _variables, _ctx) => {
-      if (result && 'error' in result && result.error) {
-        return
-      }
-
+    mutationFn: (variables: { notificationId: string }) =>
+      unwrap(
+        polar.POST('/v1/notifications/read', {
+          body: { notification_id: variables.notificationId },
+        }),
+      ),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
   })

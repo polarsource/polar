@@ -1,14 +1,8 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
-import { useSession } from '@/providers/SessionProvider'
 import { queryClient } from '@/utils/query'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/react-native'
-import {
-  useMutation,
-  UseMutationResult,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export const useOrganizations = (
   {
@@ -112,36 +106,15 @@ export const useUpdateOrganization = () => {
   })
 }
 
-export const useDeleteOrganization = (): UseMutationResult<
-  {
-    data?: schemas['OrganizationDeletionResponse']
-    error?: { detail: string }
-  },
-  Error,
-  string
-> => {
-  const { session } = useSession()
+export const useDeleteOrganization = () => {
+  const { polar } = usePolarClient()
 
   return useMutation({
     mutationFn: async (organizationId: string) => {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/organizations/${organizationId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session}`,
-          },
-        },
-      )
-
-      if (!response.ok) {
-        const error = await response.json()
-        return { error }
-      }
-
-      const data = await response.json()
-      return { data }
+      const { data, error } = await polar.DELETE('/v1/organizations/{id}', {
+        params: { path: { id: organizationId } },
+      })
+      return { data, error }
     },
   })
 }

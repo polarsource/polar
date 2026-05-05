@@ -1,5 +1,11 @@
+import { refreshMiddleware } from '@/auth/refreshMiddleware'
 import { Client, createClient } from '@polar-sh/client'
-import { createContext, useContext, type PropsWithChildren } from 'react'
+import {
+  createContext,
+  useContext,
+  useMemo,
+  type PropsWithChildren,
+} from 'react'
 import { useSession } from './SessionProvider'
 
 const PolarClientContext = createContext<{
@@ -25,17 +31,17 @@ export function usePolarClient() {
 export function PolarClientProvider({ children }: PropsWithChildren) {
   const { session } = useSession()
 
-  const polar = createClient(
-    process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh',
-    session ?? '',
-  )
+  const polar = useMemo(() => {
+    const client = createClient(
+      process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh',
+      session ?? '',
+    )
+    client.use(refreshMiddleware)
+    return client
+  }, [session])
 
   return (
-    <PolarClientContext.Provider
-      value={{
-        polar,
-      }}
-    >
+    <PolarClientContext.Provider value={{ polar }}>
       {children}
     </PolarClientContext.Provider>
   )

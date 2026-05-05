@@ -6,7 +6,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc
 
-from polar.auth.models import AuthSubject, Organization, is_organization, is_user
+from polar.auth.models import AuthSubject, Organization, is_user
 from polar.auth.scope import Scope
 from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
@@ -165,8 +165,6 @@ class OrganizationAccessTokenService:
         auth_subject: AuthSubject[User | Organization],
         requested_scopes: Sequence[str],
     ) -> None:
-        if not is_organization(auth_subject):
-            return
         caller_scopes = auth_subject.scopes
         requested = {Scope(s) for s in requested_scopes}
         excess = requested - caller_scopes

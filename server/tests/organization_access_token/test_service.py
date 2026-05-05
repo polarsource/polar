@@ -4,12 +4,25 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
+from polar.auth.scope import Scope
 from polar.config import settings
 from polar.email.schemas import OrganizationAccessTokenLeakedEmail
 from polar.enums import TokenType
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
-from polar.models import Organization, OrganizationAccessToken, UserOrganization
+from polar.models import (
+    Organization,
+    OrganizationAccessToken,
+    PersonalAccessToken,
+    User,
+    UserOrganization,
+)
+from polar.organization_access_token.schemas import (
+    AvailableScope,
+    OrganizationAccessTokenCreate,
+)
 from polar.organization_access_token.service import (
     organization_access_token as organization_access_token_service,
 )
@@ -77,3 +90,29 @@ class TestRevokeLeaked:
         assert isinstance(
             enqueue_email_mock.call_args[0][0], OrganizationAccessTokenLeakedEmail
         )
+
+
+@pytest.mark.asyncio
+class TestCreateScopeValidation:
+    async def test_pat_caller_cannot_mint_broader_scope(
+        self,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        pat_session = MagicMock(spec=PersonalAccessToken)
+        auth_subject: AuthSubject[User] = AuthSubject(
+            user, {Scope.organization_access_tokens_write}, pat_session
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_access_token_service.create(
+                session,
+                auth_subject,
+                OrganizationAccessTokenCreate(
+                    organization_id=organization.id,
+                    comment="elevated",
+                    scopes=[AvailableScope("orders:write")],
+                ),
+            )

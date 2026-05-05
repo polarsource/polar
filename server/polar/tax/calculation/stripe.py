@@ -14,12 +14,14 @@ from polar.logging import Logger
 
 from ..tax_id import TaxID, to_stripe_tax_id
 from .base import (
+    AlreadyRevertedError,
     TaxabilityReason,
     TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
     TaxCode,
+    TaxRevertError,
     TaxServiceProtocol,
 )
 
@@ -196,15 +198,29 @@ class StripeTaxService(TaxServiceProtocol):
         reverted_amount: int | None = None,
         reverted_tax_amount: int | None = None,
     ) -> str:
-        if reverted_amount is None and reverted_tax_amount is None:
-            transaction = await stripe_service.revert_tax_transaction(
-                transaction_id, "full", reference
+        try:
+            if reverted_amount is None and reverted_tax_amount is None:
+                transaction = await stripe_service.revert_tax_transaction(
+                    transaction_id, "full", reference
+                )
+            else:
+                assert reverted_amount is not None
+                transaction = await stripe_service.revert_tax_transaction(
+                    transaction_id, "partial", reference, -reverted_amount
+                )
+        except stripe_lib.InvalidRequestError as e:
+            error = e.error
+            if error and error.message and "fully reversed" in error.message.lower():
+                raise AlreadyRevertedError() from e
+            log.error(
+                "Failed to revert tax transaction",
+                transaction_id=transaction_id,
+                reference=reference,
+                reverted_amount=reverted_amount,
+                reverted_tax_amount=reverted_tax_amount,
+                error=str(e),
             )
-        else:
-            assert reverted_amount is not None
-            transaction = await stripe_service.revert_tax_transaction(
-                transaction_id, "partial", reference, -reverted_amount
-            )
+            raise TaxRevertError() from e
         return transaction.id
 
     async def backfill(

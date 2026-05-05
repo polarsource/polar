@@ -39,14 +39,29 @@ class InvalidTaxIDError(TaxCalculationLogicalError):
 
 
 class TaxRecordError(TaxError):
-    def __init__(self) -> None:
-        message = "An error occurred while recording the tax calculation."
+    def __init__(
+        self, message: str = "An error occurred while recording the tax calculation."
+    ) -> None:
+
         super().__init__(message)
 
 
-class CalculationExpiredError(TaxError):
+class CalculationExpiredError(TaxRecordError):
     def __init__(self) -> None:
         message = "The tax calculation has expired and cannot be recorded."
+        super().__init__(message)
+
+
+class TaxRevertError(TaxError):
+    def __init__(
+        self, message: str = "An error occurred while reverting the tax record."
+    ) -> None:
+        super().__init__(message)
+
+
+class AlreadyRevertedError(TaxRevertError):
+    def __init__(self) -> None:
+        message = "The tax record has already been reverted."
         super().__init__(message)
 
 

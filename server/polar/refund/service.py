@@ -27,7 +27,6 @@ from polar.models import (
     Order,
     Organization,
     Payment,
-    Transaction,
     User,
 )
 from polar.models.dispute import DisputeAlertProcessor
@@ -38,6 +37,7 @@ from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
 from polar.tax.calculation import tax_calculation as tax_calculation_service
+from polar.tax.calculation.base import AlreadyRevertedError
 from polar.transaction.service.refund import (
     RefundTransactionAlreadyExistsError,
     RefundTransactionDoesNotExistError,
@@ -364,7 +364,19 @@ class RefundService:
             RefundStatus.failed,
         }
         if reverted:
-            await self._revert_refund_transaction(session, refund)
+            try:
+                await refund_transaction_service.revert(session, refund)
+            except RefundTransactionDoesNotExistError:
+                pass
+
+            order = refund.order
+            if order:
+                await order_service.update_refunds(
+                    session,
+                    order,
+                    refunded_amount=-refund.amount,
+                    refunded_tax_amount=-refund.tax_amount,
+                )
 
         return refund
 
@@ -441,18 +453,18 @@ class RefundService:
                 order=order,
             )
 
-    async def _create_refund_transaction(
-        self, session: AsyncSession, refund: Refund
-    ) -> Transaction | None:
+    async def _on_succeeded(
+        self,
+        session: AsyncSession,
+        refund: Refund,
+    ) -> None:
         try:
-            transaction = await refund_transaction_service.create(
-                session, refund=refund
-            )
+            await refund_transaction_service.create(session, refund=refund)
         except RefundTransactionAlreadyExistsError:
-            return None
+            pass
 
         order = refund.order
-        if order:
+        if order is not None:
             await order_service.update_refunds(
                 session,
                 order,
@@ -469,48 +481,25 @@ class RefundService:
                 assert order.tax_processor is not None
                 assert order.billing_address is not None
                 assert order.product is not None
-                transaction_id = await tax_calculation_service.revert(
-                    order.tax_processor,
-                    order.tax_transaction_processor_id,
-                    reference=str(refund.id),
-                    address=order.billing_address,
-                    tax_code=order.product.tax_code,
-                    currency=order.currency,
-                    total_amount=order.total_amount,
-                    reverted_amount=refund.total_amount,
-                    reverted_tax_amount=refund.tax_amount,
-                )
-                refund.tax_transaction_processor_id = transaction_id
-                session.add(refund)
+                try:
+                    transaction_id = await tax_calculation_service.revert(
+                        order.tax_processor,
+                        order.tax_transaction_processor_id,
+                        reference=str(refund.id),
+                        address=order.billing_address,
+                        tax_code=order.product.tax_code,
+                        currency=order.currency,
+                        total_amount=order.total_amount,
+                        reverted_amount=refund.total_amount,
+                        reverted_tax_amount=refund.tax_amount,
+                    )
+                    refund.tax_transaction_processor_id = transaction_id
+                    session.add(refund)
+                # Case where we retry a failed refund:
+                # the tax is already reverted, so we can ignore the error.
+                except AlreadyRevertedError:
+                    pass
 
-        return transaction
-
-    async def _revert_refund_transaction(
-        self, session: AsyncSession, refund: Refund
-    ) -> None:
-        try:
-            await refund_transaction_service.revert(session, refund)
-        except RefundTransactionDoesNotExistError:
-            return None
-
-        order = refund.order
-        if order:
-            await order_service.update_refunds(
-                session,
-                order,
-                refunded_amount=-refund.amount,
-                refunded_tax_amount=-refund.tax_amount,
-            )
-
-    async def _on_succeeded(
-        self,
-        session: AsyncSession,
-        refund: Refund,
-    ) -> None:
-        await self._create_refund_transaction(session, refund)
-
-        order = refund.order
-        if order is not None:
             # Reduce positive customer balance
             customer_balance = await wallet_service.get_billing_wallet_balance(
                 session, order.customer, order.currency

@@ -910,6 +910,8 @@ async def create_order(
     discount: Discount | None = None,
     next_payment_attempt_at: datetime | None = None,
     payment_lock_acquired_at: datetime | None = None,
+    tax_processor: TaxProcessor | None = None,
+    tax_transaction_processor_id: str | None = None,
 ) -> Order:
     if order_items is None:
         order_items = [
@@ -951,6 +953,8 @@ async def create_order(
         user_metadata=user_metadata or {},
         next_payment_attempt_at=next_payment_attempt_at,
         payment_lock_acquired_at=payment_lock_acquired_at,
+        tax_processor=tax_processor,
+        tax_transaction_processor_id=tax_transaction_processor_id,
     )
     await save_fixture(order)
     return order
@@ -964,6 +968,9 @@ async def create_order_and_payment(
     subtotal_amount: int,
     tax_amount: int,
     applied_balance_amount: int = 0,
+    tax_processor: TaxProcessor | None = None,
+    tax_transaction_processor_id: str | None = None,
+    billing_address: Address | None = None,
 ) -> tuple[Order, Payment, Transaction]:
     order = await create_order(
         save_fixture,
@@ -972,6 +979,9 @@ async def create_order_and_payment(
         subtotal_amount=subtotal_amount,
         tax_amount=tax_amount,
         applied_balance_amount=applied_balance_amount,
+        billing_address=billing_address,
+        tax_processor=tax_processor,
+        tax_transaction_processor_id=tax_transaction_processor_id,
     )
     payment = await create_payment(
         save_fixture,

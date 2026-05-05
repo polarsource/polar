@@ -7,12 +7,13 @@ from pytest_mock import MockerFixture
 from polar.benefit.grant.service import BenefitGrantService
 from polar.dispute.service import DisputePaymentNotFoundError
 from polar.dispute.service import dispute as dispute_service
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
 from polar.models import Customer, Organization, Product
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
+from polar.tax.calculation.base import AlreadyRevertedError
 from polar.transaction.service.dispute import DisputeTransactionService
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -418,6 +419,69 @@ class TestUpsertFromStripe:
 
         dispute_transaction_service_mock.create_dispute.assert_not_awaited()
         refund_service_mock.create_from_dispute.assert_not_awaited()
+
+    async def test_update_closed_rapid_resolution_dispute_with_failed_refund(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+        refund_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            tax_amount=100,
+            tax_processor=TaxProcessor.stripe,
+            tax_transaction_processor_id="TAX_TRANSACTION_ID",
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        payment = await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute_balance_transaction = build_stripe_balance_transaction(
+            amount=-order.due_amount,
+            reporting_category="dispute",
+            fee=0,  # Our heuristic to detect RDR disputes
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[stripe_dispute_balance_transaction],
+        )
+        dispute = await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            status=DisputeStatus.needs_response,
+            payment_processor=PaymentProcessor.stripe,
+            payment_processor_id=stripe_dispute.id,
+        )
+        failed_refund = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            dispute=dispute,
+            status="failed",
+            processor_id="REFUND_ID",
+        )
+
+        mocker.patch(
+            "polar.refund.service.tax_calculation_service.revert",
+            side_effect=AlreadyRevertedError(),
+        )
+
+        updated_dispute = await dispute_service.upsert_from_stripe(
+            session, stripe_dispute
+        )
+
+        assert updated_dispute.status == DisputeStatus.prevented
+
+        dispute_transaction_service_mock.create_dispute.assert_not_awaited()
+        refund_service_mock.create_from_dispute.assert_awaited()
 
     async def test_revoke_order(
         self,

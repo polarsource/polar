@@ -12,6 +12,7 @@ from polar.observability import TAX_CALCULATION_TOTAL
 
 from ..tax_id import TaxID
 from .base import (
+    AlreadyRevertedError,
     CalculationExpiredError,
     InvalidTaxIDError,
     TaxabilityReason,
@@ -20,6 +21,7 @@ from .base import (
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
     TaxCode,
+    TaxRevertError,
     TaxServiceProtocol,
 )
 from .numeral import numeral_tax_service
@@ -204,6 +206,7 @@ class TaxCalculationService:
 tax_calculation = TaxCalculationService()
 
 __all__ = [
+    "AlreadyRevertedError",
     "CalculationExpiredError",
     "InvalidTaxIDError",
     "TaxBreakdownItem",
@@ -211,6 +214,7 @@ __all__ = [
     "TaxCalculationLogicalError",
     "TaxCalculationTechnicalError",
     "TaxCode",
+    "TaxRevertError",
     "TaxabilityReason",
     "tax_calculation",
 ]

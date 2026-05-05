@@ -6,7 +6,9 @@ import stripe as stripe_lib
 from httpx import AsyncClient, Response
 from pytest_mock import MockerFixture
 
+from polar.enums import TaxProcessor
 from polar.integrations.stripe.service import StripeService
+from polar.kit.address import Address, CountryAlpha2
 from polar.models import (
     Customer,
     Order,
@@ -24,6 +26,8 @@ from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
 from polar.refund.service import MissingRelatedDispute, RefundedAlready
 from polar.refund.service import refund as refund_service
+from polar.tax.calculation import TaxCalculationService
+from polar.tax.calculation.base import AlreadyRevertedError
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -41,6 +45,13 @@ from tests.fixtures.stripe import build_stripe_refund
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.refund.service.stripe_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def tax_calculation_service_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock(spec=TaxCalculationService)
+    mocker.patch("polar.refund.service.tax_calculation_service", new=mock)
     return mock
 
 
@@ -669,6 +680,51 @@ class TestCreateFromDispute:
         assert order.refundable_tax_amount == 0
         assert order.refunded_amount == 1050
         assert order.refunded_tax_amount == 300
+
+        assert refund_transaction_service_mock.create.call_count == 1
+
+    async def test_valid_tax_already_reverted(
+        self,
+        session: AsyncSession,
+        tax_calculation_service_service_mock: MagicMock,
+        refund_transaction_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, payment, transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+            tax_processor=TaxProcessor.stripe,
+            tax_transaction_processor_id="TAX_TRANSACTION_ID",
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        dispute = await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            amount=1000,
+            tax_amount=250,
+        )
+
+        tax_calculation_service_service_mock.revert.side_effect = AlreadyRevertedError()
+
+        refund = await refund_service.create_from_dispute(
+            session, dispute, "DISPUTE_BALANCE_TRANSACTION_ID"
+        )
+        assert refund.status == RefundStatus.succeeded
+        assert refund.reason == RefundReason.dispute_prevention
+        assert refund.amount == dispute.amount
+        assert refund.currency == dispute.currency
+        assert refund.tax_amount == dispute.tax_amount
+        assert refund.dispute_id == dispute.id
+        assert refund.order_id == order.id
+        assert refund.processor == dispute.payment_processor
+        assert refund.processor_id == dispute.payment_processor_id
+        assert refund.revoke_benefits is True
 
         assert refund_transaction_service_mock.create.call_count == 1
 

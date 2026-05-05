@@ -686,6 +686,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/check-slug': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Check Organization Slug Availability
+     * @description Check whether a slug is valid and available for a new organization.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:check_slug']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/submit-review': {
     parameters: {
       query?: never
@@ -23705,6 +23727,27 @@ export interface components {
        */
       appeal_reviewed_at?: string | null
     }
+    /** OrganizationSlugAvailability */
+    OrganizationSlugAvailability: {
+      /**
+       * Available
+       * @description Whether the slug is available for a new organization.
+       */
+      available: boolean
+      /**
+       * Reason
+       * @description If unavailable, the reason why. `format` if the slug doesn't match the required format, `reserved` if it's a reserved keyword, `blocked` if it contains a disallowed word, `taken` if another organization already uses it.
+       */
+      reason?: ('format' | 'reserved' | 'blocked' | 'taken') | null
+    }
+    /** OrganizationSlugCheck */
+    OrganizationSlugCheck: {
+      /**
+       * Slug
+       * @description The slug to check availability for.
+       */
+      slug: string
+    }
     /** OrganizationSocialLink */
     OrganizationSocialLink: {
       /** @description The social platform of the URL */
@@ -32181,6 +32224,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:check_slug': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationSlugCheck']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSlugAvailability']
         }
       }
       /** @description Validation Error */
@@ -53989,6 +54065,9 @@ export const organizationReviewStateVerdictAnyOf0Values: ReadonlyArray<
 export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']
+export const organizationSlugAvailabilityReasonAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationSlugAvailability']['reason']
+> = ['format', 'reserved', 'blocked', 'taken']
 export const organizationSocialPlatformsValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSocialPlatforms']
 > = [

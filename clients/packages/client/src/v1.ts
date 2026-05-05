@@ -23606,6 +23606,11 @@ export interface components {
        * @description Reasons for the current status. Empty when `passed`.
        */
       reasons?: components['schemas']['OrganizationReviewCheckReason'][]
+      /**
+       * Value
+       * @description Optional contextual value associated with the check, e.g. the product URL for the `product_url` check.
+       */
+      value?: string | null
     }
     /**
      * OrganizationReviewCheckKey
@@ -23617,6 +23622,7 @@ export interface components {
       | 'identity.social_links'
       | 'identity.stripe_identity_verification'
       | 'product_description'
+      | 'product_url'
       | 'payout_account'
     /**
      * OrganizationReviewCheckReason
@@ -23631,6 +23637,7 @@ export interface components {
       | 'identity.rejected'
       | 'identity.personal_email'
       | 'identity.domain_mismatch'
+      | 'product_url.unreachable'
       | 'payout_account.requirements_due'
       | 'payout_account.payouts_disabled'
     /**
@@ -53761,6 +53768,7 @@ export const organizationReviewCheckKeyValues: ReadonlyArray<
   'identity.social_links',
   'identity.stripe_identity_verification',
   'product_description',
+  'product_url',
   'payout_account',
 ]
 export const organizationReviewCheckReasonValues: ReadonlyArray<
@@ -53772,6 +53780,7 @@ export const organizationReviewCheckReasonValues: ReadonlyArray<
   'identity.rejected',
   'identity.personal_email',
   'identity.domain_mismatch',
+  'product_url.unreachable',
   'payout_account.requirements_due',
   'payout_account.payouts_disabled',
 ]

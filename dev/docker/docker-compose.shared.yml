@@ -33,6 +33,9 @@ services:
 
   redis:
     image: redis:alpine
+    # 100 DBs > the 1..99 range produced by _detect_instance in dev/cli/commands/docker.py,
+    # so each per-instance app stack gets its own DB index without collisions.
+    command: ["redis-server", "--databases", "100"]
     expose:
       - "6379"
     networks:

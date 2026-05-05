@@ -31,9 +31,9 @@ SHARED_NETWORK_NAME = "polar-shared"
 
 # Per-instance naming. Single source of truth — referenced both here and in
 # docker-compose.dev.yml (via env interpolation) and dev/docker/scripts/startup.sh.
-# Redis only has 16 DBs by default, so the index wraps; instance numbers stay
-# small in practice.
-REDIS_DB_COUNT = 16
+# Instance numbers from `_detect_instance` are in [1, 99]; the shared redis is
+# launched with `--databases 100` so we can map instance → redis DB index 1:1
+# (no modulo, no collisions).
 
 
 def app_project(instance: int) -> str:
@@ -45,7 +45,7 @@ def db_name(instance: int) -> str:
 
 
 def redis_db(instance: int) -> int:
-    return instance % REDIS_DB_COUNT
+    return instance
 
 
 def s3_bucket(instance: int) -> str:
@@ -278,19 +278,6 @@ def _shared_is_running() -> bool:
         text=True,
     )
     return result.returncode == 0 and bool(result.stdout.strip())
-
-
-def _ensure_shared_running() -> None:
-    """Auto-start shared infra if it isn't running. Idempotent."""
-    _ensure_network()
-    if _shared_is_running():
-        return
-    console.print("[dim]Shared infra not running — starting it now...[/dim]")
-    cmd = _shared_compose_cmd() + ["up", "-d"]
-    result = run_command(cmd)
-    if not result or result.returncode != 0:
-        console.print("[red]Failed to start shared infra[/red]")
-        raise typer.Exit(1)
 
 
 # --------------------------------------------------------------------------- #
@@ -734,7 +721,11 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         offset = instance * 100
         console.print(f"[green]Stored instance {instance} in .env.docker[/green]")
         console.print(
-            f"[dim]Ports: API={8000 + offset}, Web={3000 + offset}, DB={db_name(instance)}[/dim]"
+            f"[dim]Ports: API={8000 + offset}, Web={3000 + offset}, DB=5432 (shared)[/dim]"
+        )
+        console.print(
+            f"[dim]Database: {db_name(instance)}, Redis DB: {redis_db(instance)}, "
+            f"Buckets: {s3_bucket(instance)}, {s3_public_bucket(instance)}[/dim]"
         )
 
     @docker_app.command("clear-instance")

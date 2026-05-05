@@ -1,8 +1,7 @@
 'use client'
 
-import { useAuth } from '@/hooks'
-import { useCreateOrganization } from '@/hooks/queries'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
+import { api } from '@/utils/client'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -21,12 +20,27 @@ import {
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
-import { setValidationErrors } from '@/utils/api/errors'
 import slugify from 'slugify'
 import { containsBlockedWord } from '@/utils/blocked-words'
 import { CurrencySelector } from '../CurrencySelector'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
+
+function slugUnavailableMessage(
+  reason: schemas['OrganizationSlugAvailability']['reason'],
+): string {
+  switch (reason) {
+    case 'taken':
+      return 'This slug is already taken.'
+    case 'reserved':
+      return 'This slug is reserved.'
+    case 'blocked':
+      return 'This slug is not allowed.'
+    case 'format':
+    default:
+      return 'This slug is invalid.'
+  }
+}
 
 interface FormSchema {
   organizationType: 'individual' | 'company'
@@ -223,12 +237,8 @@ function SubmitButton({ loading }: { loading: boolean }) {
 
 export function BusinessDetailsStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
-  const { data, updateData, setApiLoading, showApiResponse } =
-    useOnboardingData()
-  const createOrganization = useCreateOrganization()
-  const [submitting, setSubmitting] = useState(false)
+  const { data, updateData } = useOnboardingData()
 
   trackStepViewed('business')
   const [editedSlug, setEditedSlug] = useState(
@@ -253,12 +263,9 @@ export function BusinessDetailsStep() {
     },
   })
 
-  const { handleSubmit, setError, setValue } = form
+  const { handleSubmit, setValue } = form
 
-  const onSubmit = async (formData: FormSchema) => {
-    setSubmitting(true)
-    setApiLoading(true)
-
+  const onSubmit = (formData: FormSchema) => {
     updateData({
       organizationType: formData.organizationType,
       orgName: formData.name,
@@ -268,48 +275,7 @@ export function BusinessDetailsStep() {
       registeredBusinessName: formData.legal_entity.registered_name,
     })
 
-    const { data: organization, error } = await createOrganization.mutateAsync({
-      name: formData.name,
-      slug: formData.slug,
-      default_presentment_currency:
-        formData.default_presentment_currency as schemas['PresentmentCurrency'],
-      country: (formData.country || undefined) as
-        | schemas['OrganizationCreate']['country']
-        | undefined,
-      default_tax_behavior: 'location',
-      legal_entity:
-        formData.organizationType === 'company'
-          ? {
-              type: 'company' as const,
-              registered_name: formData.legal_entity.registered_name,
-            }
-          : { type: 'individual' as const },
-    })
-
-    if (error) {
-      setSubmitting(false)
-      if (Array.isArray(error.detail)) {
-        setValidationErrors(error.detail, setError)
-      } else {
-        setError('root', {
-          message:
-            typeof error.detail === 'string'
-              ? error.detail
-              : 'Failed to create organization',
-        })
-      }
-      await showApiResponse(400, 'Failed to create organization')
-      return
-    }
-
-    setUserOrganizations((previous) => [...previous, organization])
-    updateData({
-      organizationId: organization.id,
-      orgSlug: organization.slug,
-    })
-
-    trackStepCompleted('business', { organization_id: organization.id })
-    await showApiResponse(201, 'Created')
+    trackStepCompleted('business')
     router.push('/onboarding/product')
   }
 
@@ -399,8 +365,20 @@ export function BusinessDetailsStep() {
               name="slug"
               rules={{
                 required: 'Slug is required',
-                validate: (v) =>
-                  !containsBlockedWord(v) || 'This slug is not allowed.',
+                validate: async (v) => {
+                  if (containsBlockedWord(v)) return 'This slug is not allowed.'
+                  const { data: result, error } = await api.POST(
+                    '/v1/organizations/check-slug',
+                    { body: { slug: v } },
+                  )
+                  if (error || !result) {
+                    return 'Could not validate slug. Please try again.'
+                  }
+                  if (!result.available) {
+                    return slugUnavailableMessage(result.reason)
+                  }
+                  return true
+                },
               }}
               render={({ field }) => (
                 <FormItem className="w-full">
@@ -439,7 +417,9 @@ export function BusinessDetailsStep() {
             </p>
           )}
 
-          <SubmitButton loading={submitting} />
+          <SubmitButton
+            loading={form.formState.isValidating || form.formState.isSubmitting}
+          />
         </Box>
       </Form>
     </OnboardingShell>

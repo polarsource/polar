@@ -40,9 +40,6 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         if cast(bool, token.is_revoked()):
             return None
 
-        if cast(bool, token.is_expired()):
-            return None
-
         if not token.sub.can_authenticate:
             return None
 

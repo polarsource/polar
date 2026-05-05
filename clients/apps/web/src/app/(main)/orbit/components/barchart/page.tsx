@@ -1,4 +1,5 @@
 import { BarChart, Stack, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -81,9 +82,9 @@ export default function BarChartPage() {
                   {heading}
                 </Text>
               </div>
-              <Text color="muted" className="col-span-3">
-                {content}
-              </Text>
+              <Box gridColumn="span 3">
+                <Text color="muted">{content}</Text>
+              </Box>
             </div>
           ))}
         </Stack>
@@ -98,12 +99,14 @@ export default function BarChartPage() {
         >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" variant="mono" className="col-span-1">
+              <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="mono" className="col-span-2">
-                {type}
-              </Text>
+              <Box gridColumn="span 2">
+                <Text as="code" variant="mono">
+                  {type}
+                </Text>
+              </Box>
               <Text as="code" variant="mono">
                 {def}
               </Text>

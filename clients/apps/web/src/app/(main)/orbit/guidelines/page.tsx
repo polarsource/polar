@@ -1,4 +1,5 @@
 import { Stack, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
 const sections = [
@@ -141,9 +142,9 @@ export default function GuidelinesPage() {
                     {heading}
                   </Text>
                 </div>
-                <Text color="muted" className="col-span-3">
-                  {content}
-                </Text>
+                <Box gridColumn="span 3">
+                  <Text color="muted">{content}</Text>
+                </Box>
               </div>
             ))}
           </Stack>

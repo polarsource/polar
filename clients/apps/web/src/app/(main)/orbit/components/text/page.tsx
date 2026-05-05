@@ -1,4 +1,5 @@
 import { Stack, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -196,9 +197,7 @@ export default function TextPage() {
         {/* Variant × color matrix */}
         <div className="dark:divide-polar-800 dark:border-polar-700 divide-y divide-neutral-200 rounded-xl border border-neutral-200">
           <div className="grid grid-cols-5 gap-4 px-4 py-2">
-            <Text variant="caption" className="col-span-1">
-              variant
-            </Text>
+            <Text variant="caption">variant</Text>
             <Text variant="caption">default</Text>
             <Text variant="caption">error</Text>
             <Text variant="caption">warning</Text>
@@ -206,7 +205,7 @@ export default function TextPage() {
           </div>
           {(['body', 'label', 'caption', 'mono'] as const).map((v) => (
             <div key={v} className="grid grid-cols-5 gap-4 px-4 py-3">
-              <Text as="code" variant="mono" className="col-span-1">
+              <Text as="code" variant="mono">
                 {v}
               </Text>
               <Text variant={v} color="default">
@@ -321,9 +320,11 @@ export default function TextPage() {
               <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="mono" className="col-span-2 text-wrap">
-                {type}
-              </Text>
+              <Box gridColumn="span 2">
+                <Text as="code" variant="mono" wrap="wrap">
+                  {type}
+                </Text>
+              </Box>
               <Text as="code" variant="mono">
                 {def}
               </Text>

@@ -67,7 +67,7 @@ const PlanCard = ({
 
       <Box display="flex" flexDirection="column" rowGap="s">
         <Box display="flex" alignItems="baseline" columnGap="m">
-          <Text className="text-3xl" as="span">
+          <Text variant="heading-s" as="span">
             {plan.contactSales
               ? 'Custom'
               : plan.amount === 0

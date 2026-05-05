@@ -108,7 +108,7 @@ export const BillingSubscriptionCard = ({
           alignItems={{ base: 'start', md: 'end' }}
         >
           <Box display="flex" alignItems="baseline" columnGap="xs">
-            <Text className="text-2xl font-medium" as="span">
+            <Text variant="heading-xs" as="span">
               {plan.contactSales
                 ? 'Custom'
                 : plan.amount === 0

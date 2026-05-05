@@ -1,4 +1,5 @@
 import { Stack, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
@@ -217,14 +218,12 @@ function TableHeader({ cols }: { cols: string[] }) {
       style={{ gridTemplateColumns: `repeat(${cols.length}, 1fr)` }}
     >
       {cols.map((col) => (
-        <Text
+        <span
           key={col}
-          as="span"
-          variant="caption"
-          className="tracking-widest uppercase"
+          className="dark:text-polar-400 text-xs tracking-widest text-neutral-500 uppercase"
         >
           {col}
-        </Text>
+        </span>
       ))}
     </div>
   )
@@ -394,9 +393,11 @@ export default function TokensPage() {
                 </div>
                 <Mono>{px}</Mono>
                 <Mono>{rem}</Mono>
-                <Text as="span" variant="caption" className="flex-1">
-                  {usage}
-                </Text>
+                <Box flex={1}>
+                  <Text as="span" variant="caption">
+                    {usage}
+                  </Text>
+                </Box>
               </Stack>
             )
           })}

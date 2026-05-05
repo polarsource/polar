@@ -34,11 +34,7 @@ export function MissionSection() {
           >
             <div className="flex flex-col items-center gap-8 md:gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
-              <Text
-                as="h3"
-                variant="heading-m"
-                className="text-center text-pretty"
-              >
+              <Text as="h3" variant="heading-m" align="center" wrap="pretty">
                 From prompt to revenue.
                 <br />
                 Automatically.
@@ -53,11 +49,7 @@ export function MissionSection() {
           >
             <div className="flex flex-col items-center gap-8 md:gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
-              <Text
-                as="h3"
-                variant="heading-m"
-                className="text-center text-pretty"
-              >
+              <Text as="h3" variant="heading-m" align="center" wrap="pretty">
                 We count tokens.
                 <br />
                 So you don&apos;t have to.

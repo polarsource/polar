@@ -54,7 +54,7 @@ export const BillingOrdersTable = ({ orders }: { orders: BillingOrder[] }) => {
       header: 'Amount',
       size: 90,
       cell: ({ row: { original } }) => (
-        <Text as="span" className="font-medium">
+        <Text as="span" variant="label">
           {formatPrice(original.amount, original.currency)}
         </Text>
       ),

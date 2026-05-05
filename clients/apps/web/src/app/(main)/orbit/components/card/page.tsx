@@ -7,6 +7,7 @@ import {
   Stack,
   Text,
 } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 export default function CardPage() {
@@ -144,9 +145,9 @@ export default function CardPage() {
                   <Text as="h2" variant="heading-l">
                     $12,480
                   </Text>
-                  <Text variant="caption" className="mt-1">
-                    +18% from last month
-                  </Text>
+                  <Box marginTop="xs">
+                    <Text variant="caption">+18% from last month</Text>
+                  </Box>
                 </CardContent>
                 <CardFooter>
                   <Text as="span" variant="caption">
@@ -335,12 +336,14 @@ export default function CardPage() {
               <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="mono" className="col-span-2">
-                {props}
-              </Text>
-              <Text variant="caption" className="col-span-2">
-                {desc}
-              </Text>
+              <Box gridColumn="span 2">
+                <Text as="code" variant="mono">
+                  {props}
+                </Text>
+              </Box>
+              <Box gridColumn="span 2">
+                <Text variant="caption">{desc}</Text>
+              </Box>
             </div>
           ))}
         </Stack>

@@ -7,6 +7,7 @@ import {
   Stack,
   Text,
 } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
@@ -65,10 +66,13 @@ const data: Transaction[] = [
   },
 ]
 
-const statusColors: Record<Transaction['status'], string> = {
-  completed: 'text-green-600 dark:text-green-400',
-  pending: 'text-yellow-600 dark:text-yellow-400',
-  failed: 'text-red-500 dark:text-red-400',
+const statusSemanticColor: Record<
+  Transaction['status'],
+  'success' | 'warning' | 'error'
+> = {
+  completed: 'success',
+  pending: 'warning',
+  failed: 'error',
 }
 
 const columns: DataTableColumnDef<Transaction>[] = [
@@ -117,7 +121,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const status = row.getValue('status') as Transaction['status']
       return (
-        <Text as="span" variant="caption" className={statusColors[status]}>
+        <Text as="span" variant="caption" color={statusSemanticColor[status]}>
           {status}
         </Text>
       )
@@ -348,12 +352,14 @@ export default function DataTablePage() {
               <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="mono" className="col-span-2">
-                {type}
-              </Text>
-              <Text variant="caption" className="col-span-2">
-                {desc}
-              </Text>
+              <Box gridColumn="span 2">
+                <Text as="code" variant="mono">
+                  {type}
+                </Text>
+              </Box>
+              <Box gridColumn="span 2">
+                <Text variant="caption">{desc}</Text>
+              </Box>
             </div>
           ))}
         </Stack>

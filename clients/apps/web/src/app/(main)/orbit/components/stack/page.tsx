@@ -1,4 +1,5 @@
 import { Stack, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 // ─── Examples data ────────────────────────────────────────────────────────────
@@ -341,12 +342,14 @@ export default function StackPage() {
         >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" variant="mono" className="col-span-1">
+              <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="mono" className="col-span-2">
-                {type}
-              </Text>
+              <Box gridColumn="span 2">
+                <Text as="code" variant="mono">
+                  {type}
+                </Text>
+              </Box>
               <Text as="code" variant="mono">
                 {def}
               </Text>

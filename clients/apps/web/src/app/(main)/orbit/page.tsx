@@ -1,4 +1,5 @@
 import { Stack, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
 
@@ -142,9 +143,9 @@ export default function OrbitIntroductionPage() {
                   {title}
                 </Text>
               </div>
-              <Text color="muted" className="col-span-3">
-                {description}
-              </Text>
+              <Box gridColumn="span 3">
+                <Text color="muted">{description}</Text>
+              </Box>
             </div>
           ))}
         </Stack>
@@ -159,13 +160,9 @@ export default function OrbitIntroductionPage() {
         <Stack vertical gap={5}>
           {sections.map(({ label, links }) => (
             <Stack vertical key={label} gap={1}>
-              <Text
-                as="span"
-                variant="caption"
-                className="tracking-widest uppercase"
-              >
+              <span className="dark:text-polar-400 text-xs tracking-widest text-neutral-500 uppercase">
                 {label}
-              </Text>
+              </span>
               <div className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
                 {links.map(({ label: linkLabel, href, desc }) => (
                   <Link

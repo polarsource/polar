@@ -15,7 +15,7 @@ export function CoverSection() {
         <PhyllotaxisSunflower />
       </div>
       <div className="flex items-end justify-between">
-        <Text as="h1" variant="heading-xl" className="tracking-tight">
+        <Text as="h1" variant="heading-xl">
           Brand
           <br />
           Guidelines

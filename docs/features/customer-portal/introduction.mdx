@@ -15,6 +15,7 @@ From the Customer Portal, your customers can:
 
 - View their **active subscriptions** and past **purchase history**
 - **Download and edit invoices** (e.g. add a company name, VAT number, or billing address)
+- **Download payment receipts** for every paid order, with the payment method and any refunds
 - **Access benefits** they're entitled to — license keys, file downloads, Discord access, etc.
 - **Cancel active subscriptions** on their own
 - **Update their default payment method** — the primary way for customers to recover from failed payments
@@ -26,7 +27,7 @@ The Customer Portal isn't just a convenience feature — it's a critical piece o
 
 - **Failed payment recovery.** When a subscription renewal fails, the portal is where customers update their card so they don't lose access. Because Polar is PCI-compliant, you never have to handle card details yourself.
 - **Self-service cancellations.** Some jurisdictions (notably California under the [Automatic Renewal Law](https://oag.ca.gov/consumers/auto-renewing-subscriptions)) legally require customers to be able to cancel a subscription the same way they signed up. The Customer Portal satisfies that requirement out of the box.
-- **Invoice access.** Customers can always retrieve and edit their invoices for bookkeeping and tax purposes, without pulling you into a support thread.
+- **Invoice and receipt access.** Customers retrieve and edit their invoices, and download a receipt for any paid order, without pulling you into a support thread.
 
 ## Next steps
 
@@ -66,8 +67,7 @@ The Customer Portal isn't just a convenience feature — it's a critical piece o
     This is a deliberate design decision. The portal is how we guarantee that
     your customers can always:
 
-    - **Access their invoices**, which they often need for tax and bookkeeping
-      reasons.
+    - **Access their invoices and payment receipts** for tax and bookkeeping.
     - **Cancel their subscriptions on their own**, which is legally required in
       some jurisdictions (for example California's [Automatic Renewal Law](https://oag.ca.gov/consumers/auto-renewing-subscriptions),
       which requires that customers be able to cancel the same way they signed
@@ -86,7 +86,8 @@ The Customer Portal isn't just a convenience feature — it's a critical piece o
     If you need a branded experience, you can build your own portal on top of
     the [Customer Portal API](/api-reference/customer-portal/get-customer),
     which covers the day-to-day actions: viewing subscriptions and orders,
-    downloading invoices, managing benefits and seats, and reading meter usage.
+    downloading invoices and receipts, managing benefits and seats, and reading
+    meter usage.
 
     <Note>
       Not every action is exposed through the Customer Portal API. Most

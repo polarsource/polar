@@ -58,6 +58,21 @@ Customers can download and edit their own invoices — adding a company name, VA
   their invoice from the Customer Portal, which regenerates it.
 </Note>
 
+## Receipts
+
+A **receipt** is the proof of payment for an order — what was charged, how, and what's been refunded since. Polar issues one for every paid order and assigns a per-customer number in the form `RCPT-{customer-id}-{NNNN}`.
+
+Each receipt includes:
+
+- The **payment method** used (e.g. `Visa — 4242`), the **date paid**, and the **amount**.
+- Any **customer balance** applied to the order.
+- Any **refunds** issued against the order, with dates and amounts.
+- The same line items, taxes, totals, and linked invoice number as the order's invoice.
+
+Customers download receipts from the [Customer Portal](/features/customer-portal/introduction) — a **Download Receipt** button appears on each paid order. Programmatically, use [Get Order Receipt](/api-reference/orders/get-receipt) for the merchant API or its [customer-portal counterpart](/api-reference/customer-portal/orders/get-receipt).
+
+The first request for a given order may return `202 Accepted` while the PDF renders. Retry shortly after for a presigned download URL. The Customer Portal handles this for you.
+
 ## Refunds
 
 Orders can be refunded in full or in part from the dashboard, or programmatically via the [Refunds API](/api-reference/refunds/create). Refunds are a separate resource linked to the order — see [Refunds](/features/refunds) for the rules around what's refundable and how it interacts with payouts.
@@ -84,6 +99,6 @@ If you're integrating orders into your own system, Polar emits an event on every
     List and fetch orders, update billing details, and generate invoices.
   </Card>
   <Card title="Customer Portal" icon="user" href="/features/customer-portal/introduction">
-    Where customers view their own orders and download invoices.
+    Where customers view their own orders and download invoices and receipts.
   </Card>
 </CardGroup>

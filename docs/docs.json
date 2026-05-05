@@ -282,7 +282,8 @@
                   "api-reference/orders/patch",
                   "api-reference/orders/list",
                   "api-reference/orders/post-invoice",
-                  "api-reference/orders/get-invoice"
+                  "api-reference/orders/get-invoice",
+                  "api-reference/orders/get-receipt"
                 ]
               },
               {
@@ -424,7 +425,8 @@
                   "api-reference/customer-portal/orders/patch",
                   "api-reference/customer-portal/orders/list",
                   "api-reference/customer-portal/orders/post-invoice",
-                  "api-reference/customer-portal/orders/get-invoice"
+                  "api-reference/customer-portal/orders/get-invoice",
+                  "api-reference/customer-portal/orders/get-receipt"
                 ]
               },
               {

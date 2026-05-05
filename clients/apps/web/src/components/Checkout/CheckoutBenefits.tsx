@@ -50,6 +50,10 @@ const CheckoutBenefits = ({
     return () => clearInterval(intervalId)
   }, [benefitGrants, expectedBenefits, maxWaitingTimeMs, refetch])
 
+  if (expectedBenefits === 0) {
+    return null
+  }
+
   return (
     <div className="flex w-full flex-col gap-4 text-left">
       <List className="rounded-3xl">

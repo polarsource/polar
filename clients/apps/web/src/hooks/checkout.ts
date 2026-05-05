@@ -90,27 +90,21 @@ export const useCheckoutConfirmedRedirect = (
           checkoutId: checkout.id,
           customerId: checkout.customer_id,
         }
+
         listenFulfillment().then(
-          () =>
+          () => {
             PolarEmbedCheckout.postMessage(
               { ...basePayload, status: 'completed' },
               origin,
-            ),
-          () =>
+            )
+          },
+          () => {
             PolarEmbedCheckout.postMessage(
               { ...basePayload, status: 'timeout' },
               origin,
-            ),
+            )
+          },
         )
-      }
-
-      // In embed mode, the parent window owns post-success navigation via the
-      // `success` postMessage above. Navigating the iframe ourselves would
-      // strand the customer inside the overlay (e.g. on the customer portal
-      // sign-in page) with no way back to the merchant's site short of a hard
-      // reload.
-      if (embed) {
-        return
       }
 
       // If we don't have a customer session token, redirect to customer portal login

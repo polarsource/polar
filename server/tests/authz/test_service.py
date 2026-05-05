@@ -98,3 +98,17 @@ class TestGetAccessibleOrgIds:
     ) -> None:
         result = await get_accessible_org_ids(session, auth_subject)
         assert result == {organization.id}
+
+    @pytest.mark.auth
+    async def test_excludes_soft_deleted_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.set_deleted_at()
+        await session.flush()
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()

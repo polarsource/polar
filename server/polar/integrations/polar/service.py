@@ -35,6 +35,9 @@ class PolarSelfWebhookError(PolarError): ...
 class TransactionFeeBenefitError(PolarSelfWebhookError): ...
 
 
+class SupportBenefitError(PolarSelfWebhookError): ...
+
+
 class PolarSelfService:
     INITIAL_MEMBER_DELAY_MS = 1000
 
@@ -158,6 +161,7 @@ class PolarSelfService:
         await self._apply_transaction_fee(
             session, organization_id, grouped.get("transaction_fee")
         )
+        await self._apply_support(session, organization_id, grouped.get("support"))
 
     def _resolve_organization_id(
         self,
@@ -253,6 +257,48 @@ class PolarSelfService:
                 take_rate=take_rate,
                 flat_fee_in_cents=flat_fee_in_cents,
             )
+
+    def _extract_support(
+        self,
+        grant: "BenefitGrant",
+    ) -> tuple[int, bool, bool]:
+        metadata = grant.benefit.metadata or {}
+        level = metadata.get("level")
+        slack = metadata.get("slack")
+        prioritized = metadata.get("prioritized")
+        if not isinstance(level, int) or isinstance(level, bool):
+            raise SupportBenefitError(
+                f"Benefit {grant.benefit_id} has invalid level: {level!r}"
+            )
+        if not isinstance(slack, bool):
+            raise SupportBenefitError(
+                f"Benefit {grant.benefit_id} has invalid slack: {slack!r}"
+            )
+        if not isinstance(prioritized, bool):
+            raise SupportBenefitError(
+                f"Benefit {grant.benefit_id} has invalid prioritized: {prioritized!r}"
+            )
+        return level, slack, prioritized
+
+    async def _apply_support(
+        self,
+        session: AsyncSession,
+        organization_id: uuid.UUID,
+        grant: "BenefitGrant | None",
+    ) -> None:
+        if grant is None:
+            level, slack, prioritized = None, None, None
+        else:
+            level, slack, prioritized = self._extract_support(grant)
+
+        # TODO: persist once support tier fields exist on the org/account.
+        logfire.info(
+            "polar_self.webhook.support.applied",
+            organization_id=str(organization_id),
+            level=level,
+            slack=slack,
+            prioritized=prioritized,
+        )
 
 
 polar_self = PolarSelfService()

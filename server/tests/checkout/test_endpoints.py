@@ -210,7 +210,7 @@ class TestGet:
         await save_fixture(product)
 
         response = await client.get(f"{api_prefix}/{checkout.id}")
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
     async def test_valid(
@@ -264,7 +264,7 @@ class TestCreateCheckout:
                 "product_id": str(product.id),
             },
         )
-        assert response.status_code == 403
+        assert response.status_code == 422
 
         response = await client.post(
             f"{api_prefix}/",
@@ -273,7 +273,7 @@ class TestCreateCheckout:
                 "product_price_id": str(product.prices[0].id),
             },
         )
-        assert response.status_code == 403
+        assert response.status_code == 422
 
         product.organization.set_status(OrganizationStatus.ACTIVE)
         await save_fixture(product)

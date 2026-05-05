@@ -5,6 +5,7 @@ import pytest
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids, get_accessible_organization
 from polar.models import Organization, User
+from polar.models.organization import OrganizationStatus
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -108,6 +109,20 @@ class TestGetAccessibleOrgIds:
         user_organization: UserOrganization,
     ) -> None:
         organization.set_deleted_at()
+        await session.flush()
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()
+
+    @pytest.mark.auth
+    async def test_excludes_blocked_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.BLOCKED)
         await session.flush()
 
         result = await get_accessible_org_ids(session, auth_subject)

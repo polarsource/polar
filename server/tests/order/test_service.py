@@ -51,6 +51,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
@@ -96,6 +97,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_benefit,
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
@@ -111,6 +113,7 @@ from tests.fixtures.random_objects import (
     create_wallet,
     create_wallet_billing,
     create_wallet_transaction,
+    set_product_benefits,
 )
 from tests.transaction.conftest import create_transaction
 
@@ -2355,6 +2358,45 @@ class TestSendConfirmationEmail:
         assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
+
+    async def test_excludes_feature_flag_benefits(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        custom_benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.custom
+        )
+        feature_flag_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+        )
+        await set_product_benefits(
+            save_fixture,
+            product=product,
+            benefits=[custom_benefit, feature_flag_benefit],
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, OrderConfirmationEmail)
+        assert email.props.product is not None
+        benefit_ids = {benefit.id for benefit in email.props.product.benefits}
+        assert custom_benefit.id in benefit_ids
+        assert feature_flag_benefit.id not in benefit_ids
 
 
 @pytest.mark.asyncio

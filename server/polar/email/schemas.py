@@ -3,8 +3,9 @@ import sys
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Discriminator, TypeAdapter
+from pydantic import BaseModel, Discriminator, TypeAdapter, field_validator
 
+from polar.models.benefit import BenefitType
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
     MaintainerCreateAccountNotificationPayload,
@@ -56,6 +57,11 @@ class SubscriptionEmail(SubscriptionBase): ...
 
 class ProductEmail(ProductBase):
     benefits: BenefitList
+
+    @field_validator("benefits", mode="after")
+    @classmethod
+    def filter_feature_flag_benefits(cls, benefits: BenefitList) -> BenefitList:
+        return [b for b in benefits if b.type != BenefitType.feature_flag]
 
 
 class OrderEmail(OrderBase):

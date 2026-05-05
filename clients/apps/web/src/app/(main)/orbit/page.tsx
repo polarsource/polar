@@ -109,13 +109,13 @@ export default function OrbitIntroductionPage() {
         </Text>
         <div className="dark:border-polar-800 border-t border-neutral-200" />
         <Stack vertical gap={2}>
-          <Text variant="subtle">
+          <Text color="muted">
             Orbit is the shared design language across every Polar product. It
             captures decisions that would otherwise be made inconsistently
             across teams — how things move, how type is set, what surfaces look
             like in the dark — and promotes them to named, reusable primitives.
           </Text>
-          <Text variant="subtle">
+          <Text color="muted">
             Rather than a component library alone, Orbit is a system of
             constraints. Design tokens encode the raw values. Guidelines encode
             the rules for applying them. Components encode the patterns those
@@ -142,7 +142,7 @@ export default function OrbitIntroductionPage() {
                   {title}
                 </Text>
               </div>
-              <Text variant="subtle" className="col-span-3">
+              <Text color="muted" className="col-span-3">
                 {description}
               </Text>
             </div>

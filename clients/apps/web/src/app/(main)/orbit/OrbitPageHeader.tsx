@@ -22,7 +22,7 @@ export function OrbitPageHeader({
       <Text as="h2" variant="heading-l">
         {title}
       </Text>
-      {description && <Text variant="subtle">{description}</Text>}
+      {description && <Text color="muted">{description}</Text>}
     </Stack>
   )
 }
@@ -42,7 +42,7 @@ export function OrbitSectionHeader({
         {title}
       </Text>
       <div className="dark:border-polar-800 border-t border-neutral-200" />
-      {description && <Text variant="subtle">{description}</Text>}
+      {description && <Text color="muted">{description}</Text>}
     </Stack>
   )
 }

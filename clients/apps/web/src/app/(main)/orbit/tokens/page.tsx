@@ -376,7 +376,7 @@ export default function TokensPage() {
             Spacing
           </Text>
           <div className="dark:border-polar-800 border-t border-neutral-200" />
-          <Text variant="subtle">
+          <Text color="muted">
             All spacing follows a base-8 grid. Use these values exclusively.
           </Text>
         </Stack>

@@ -62,7 +62,7 @@ const PlanCard = ({
           {isCurrent && <Pill color="gray">Current</Pill>}
           {plan.highlight && !isCurrent && <Pill color="blue">Popular</Pill>}
         </Box>
-        <Text variant="subtle">{plan.description}</Text>
+        <Text color="muted">{plan.description}</Text>
       </Box>
 
       <Box display="flex" flexDirection="column" rowGap="s">
@@ -75,7 +75,7 @@ const PlanCard = ({
                 : formatPrice(plan.amount, plan.currency)}
           </Text>
           {!plan.contactSales && plan.amount > 0 && (
-            <Text variant="subtle" as="span">
+            <Text color="muted" as="span">
               / {plan.interval}
             </Text>
           )}
@@ -84,7 +84,7 @@ const PlanCard = ({
           <Box as="ul" display="flex" flexDirection="column">
             {plan.fees.map((fee) => (
               <Box as="li" key={fee}>
-                <Text variant="subtle">{fee} per transaction</Text>
+                <Text color="muted">{fee} per transaction</Text>
               </Box>
             ))}
           </Box>
@@ -229,7 +229,7 @@ export default function ChangePlanPage({
             <Text variant="heading-s" as="h1">
               Change plan
             </Text>
-            <Text variant="subtle">
+            <Text color="muted">
               Pick a new plan for your Polar subscription. You can change again
               at any time.
             </Text>
@@ -252,7 +252,7 @@ export default function ChangePlanPage({
               <Text variant="heading-xxs" as="h3">
                 Need something custom?
               </Text>
-              <Text variant="subtle">
+              <Text color="muted">
                 Talk to our team about Enterprise pricing, volume discounts, and
                 tailored contracts.
               </Text>

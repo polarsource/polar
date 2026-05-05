@@ -61,7 +61,7 @@ export default function CardPage() {
                   </Text>
                 </CardHeader>
                 <CardContent>
-                  <Text variant="subtle">
+                  <Text color="muted">
                     This is the main body of the card. Use it for any content —
                     text, form fields, data, or other components.
                   </Text>
@@ -90,7 +90,7 @@ export default function CardPage() {
                   </Text>
                 </CardHeader>
                 <CardContent>
-                  <Text variant="subtle">
+                  <Text color="muted">
                     A card without a footer — the most common pattern for
                     informational surfaces.
                   </Text>
@@ -109,7 +109,7 @@ export default function CardPage() {
             <div className="col-span-3">
               <Card>
                 <CardContent>
-                  <Text variant="subtle">
+                  <Text color="muted">
                     Just the surface. Useful as a highlight box or when the
                     content itself provides the structure.
                   </Text>
@@ -185,7 +185,7 @@ export default function CardPage() {
                   </Text>
                 </CardHeader>
                 <CardContent>
-                  <Text variant="subtle">
+                  <Text color="muted">
                     Get access to unlimited projects, priority support, and
                     advanced analytics.
                   </Text>
@@ -213,7 +213,7 @@ export default function CardPage() {
                   </Text>
                 </CardHeader>
                 <CardContent>
-                  <Text variant="subtle">
+                  <Text color="muted">
                     This action cannot be undone. All data associated with this
                     organization will be permanently removed.
                   </Text>
@@ -251,7 +251,7 @@ export default function CardPage() {
                   </Stack>
                 </CardHeader>
                 <CardContent>
-                  <Text variant="subtle">
+                  <Text color="muted">
                     Manage your personal API keys. Keys are shown only once at
                     creation time.
                   </Text>
@@ -287,7 +287,7 @@ export default function CardPage() {
                     <Text as="h3" variant="heading-m">
                       $49 / mo
                     </Text>
-                    <Text variant="subtle">Pro plan · renews Mar 1, 2026</Text>
+                    <Text color="muted">Pro plan · renews Mar 1, 2026</Text>
                   </Stack>
                 </CardContent>
                 <CardFooter

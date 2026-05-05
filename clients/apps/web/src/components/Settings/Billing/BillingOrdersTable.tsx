@@ -103,7 +103,7 @@ export const BillingOrdersTable = ({ orders }: { orders: BillingOrder[] }) => {
         backgroundColor="background-card"
         paddingVertical="3xl"
       >
-        <Text variant="subtle">No orders yet</Text>
+        <Text color="muted">No orders yet</Text>
       </Box>
     )
   }

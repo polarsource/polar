@@ -37,7 +37,7 @@ const Detail = ({
   children: React.ReactNode
 }) => (
   <Box display="flex" flexDirection="column" rowGap="xs">
-    <Text variant="subtle">{label}</Text>
+    <Text color="muted">{label}</Text>
     <Text>{children}</Text>
   </Box>
 )
@@ -99,7 +99,7 @@ export const BillingSubscriptionCard = ({
               <Pill color="yellow">Cancels at period end</Pill>
             )}
           </Box>
-          <Text variant="subtle">{plan.description}</Text>
+          <Text color="muted">{plan.description}</Text>
         </Box>
         <Box
           display="flex"
@@ -116,13 +116,13 @@ export const BillingSubscriptionCard = ({
                   : formatPrice(plan.amount, plan.currency)}
             </Text>
             {!plan.contactSales && plan.amount > 0 && (
-              <Text variant="subtle" as="span">
+              <Text color="muted" as="span">
                 / {intervalLabel}
               </Text>
             )}
           </Box>
           {plan.fees.length > 0 && (
-            <Text variant="subtle" align="right">
+            <Text color="muted" align="right">
               {plan.fees.join(' · ')}
             </Text>
           )}
@@ -167,7 +167,7 @@ export const BillingSubscriptionCard = ({
             <Text variant="body" as="h3">
               Downgrade scheduled
             </Text>
-            <Text variant="subtle">
+            <Text color="muted">
               Your plan will switch from {plan.name} to {scheduledPlan.name} on{' '}
               <FormattedDateTime
                 datetime={subscription.scheduledPlanChange.effectiveAt}

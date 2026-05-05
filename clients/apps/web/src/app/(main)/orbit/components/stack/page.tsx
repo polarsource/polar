@@ -275,7 +275,7 @@ export default function StackPage() {
           <div className="grid grid-cols-5 items-start gap-8 py-6">
             <Stack vertical gap={1} className="col-span-2">
               <Text variant="body">Card</Text>
-              <Text variant="subtle">
+              <Text color="muted">
                 Vertical stack · surface · padding · radius
               </Text>
             </Stack>
@@ -283,7 +283,7 @@ export default function StackPage() {
               <article className="dark:border-polar-800 dark:bg-polar-900 rounded-2xl border border-neutral-200 bg-gray-50 p-6">
                 <Stack vertical gap={2}>
                   <Text variant="label">Card title</Text>
-                  <Text variant="subtle">Supporting description text.</Text>
+                  <Text color="muted">Supporting description text.</Text>
                 </Stack>
               </article>
             </div>
@@ -293,16 +293,14 @@ export default function StackPage() {
           <div className="grid grid-cols-5 items-start gap-8 py-6">
             <Stack vertical gap={1} className="col-span-2">
               <Text variant="body">Toolbar</Text>
-              <Text variant="subtle">
-                Horizontal · space-between · centered
-              </Text>
+              <Text color="muted">Horizontal · space-between · centered</Text>
             </Stack>
             <div className="col-span-3">
               <div className="dark:border-polar-800 dark:bg-polar-900 rounded-2xl border border-neutral-200 bg-gray-50 px-6 py-4">
                 <Stack alignItems="center" justifyContent="between">
                   <Text variant="label">Section title</Text>
                   <div className="dark:bg-polar-800 rounded-lg bg-gray-100 px-4 py-2">
-                    <Text variant="subtle">Action</Text>
+                    <Text color="muted">Action</Text>
                   </div>
                 </Stack>
               </div>
@@ -313,7 +311,7 @@ export default function StackPage() {
           <div className="grid grid-cols-5 items-start gap-8 py-6">
             <Stack vertical gap={1} className="col-span-2">
               <Text variant="body">Responsive card row</Text>
-              <Text variant="subtle">
+              <Text color="muted">
                 Column on mobile · row from xl · each card fills remaining space
               </Text>
             </Stack>
@@ -352,7 +350,7 @@ export default function StackPage() {
               <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text as="span" variant="subtle">
+              <Text as="span" color="muted">
                 {desc}
               </Text>
             </div>

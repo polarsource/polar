@@ -81,7 +81,7 @@ export default function BarChartPage() {
                   {heading}
                 </Text>
               </div>
-              <Text variant="subtle" className="col-span-3">
+              <Text color="muted" className="col-span-3">
                 {content}
               </Text>
             </div>

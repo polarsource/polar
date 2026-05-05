@@ -76,7 +76,7 @@ styles + scoped CSS at build time. Tokens are CSS variables that auto-swap on
 ### Importing
 
 ```tsx
-import { Box } from "@polar-sh/orbit/Box";
+import { Box } from '@polar-sh/orbit/Box'
 ```
 
 `Box` is exposed as a deep import (`@polar-sh/orbit/Box`), not from the package root.
@@ -87,21 +87,21 @@ Box defaults to a `<div>`, but the underlying element is selectable for semantic
 accessibility. Allowed values:
 
 ```ts
-"div" |
-    "span" |
-    "section" |
-    "article" |
-    "aside" |
-    "main" |
-    "nav" |
-    "header" |
-    "footer" |
-    "form" |
-    "fieldset" |
-    "label" |
-    "ul" |
-    "ol" |
-    "li";
+;'div' |
+  'span' |
+  'section' |
+  'article' |
+  'aside' |
+  'main' |
+  'nav' |
+  'header' |
+  'footer' |
+  'form' |
+  'fieldset' |
+  'label' |
+  'ul' |
+  'ol' |
+  'li'
 ```
 
 ```tsx
@@ -243,12 +243,16 @@ keys (`sm`/`md`/`lg`/`xl`), and the pseudo-state keys (`hover`, `focus`, `active
 
 ```tsx
 <Box
-    display="flex"
-    flexDirection={{ base: "column", md: "row" }}
-    padding={{ base: "l", lg: "2xl" }}
-    gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }}
-    backgroundColor={{ base: "background-card", hover: "background-secondary" }}
-    cursor={{ hover: "pointer" }}
+  display="flex"
+  flexDirection={{ base: 'column', md: 'row' }}
+  padding={{ base: 'l', lg: '2xl' }}
+  gridTemplateColumns={{
+    base: '1fr',
+    md: 'repeat(2, 1fr)',
+    xl: 'repeat(4, 1fr)',
+  }}
+  backgroundColor={{ base: 'background-card', hover: 'background-secondary' }}
+  cursor={{ hover: 'pointer' }}
 />
 ```
 
@@ -261,7 +265,7 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 
 ```tsx
 <Box display="flex" flexDirection="column" rowGap="l">
-    …
+  …
 </Box>
 ```
 
@@ -269,7 +273,7 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 
 ```tsx
 <Box display="flex" alignItems="center" columnGap="m">
-    …
+  …
 </Box>
 ```
 
@@ -277,20 +281,20 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 
 ```tsx
 <Box
-    borderRadius="l"
-    backgroundColor="background-card"
-    borderWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-    padding="xl"
-    display="flex"
-    flexDirection="column"
-    rowGap="m"
+  borderRadius="l"
+  backgroundColor="background-card"
+  borderWidth={1}
+  borderStyle="solid"
+  borderColor="border-primary"
+  padding="xl"
+  display="flex"
+  flexDirection="column"
+  rowGap="m"
 >
-    <Text variant="heading-xs" as="h3">
-        Title
-    </Text>
-    <Text variant="subtle">Description</Text>
+  <Text variant="heading-xs" as="h3">
+    Title
+  </Text>
+  <Text color="muted">Description</Text>
 </Box>
 ```
 
@@ -298,13 +302,17 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 
 ```tsx
 <Box
-    display="grid"
-    gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }}
-    gap="l"
+  display="grid"
+  gridTemplateColumns={{
+    base: '1fr',
+    md: 'repeat(2, 1fr)',
+    xl: 'repeat(4, 1fr)',
+  }}
+  gap="l"
 >
-    {items.map((item) => (
-        <Card key={item.id} {...item} />
-    ))}
+  {items.map((item) => (
+    <Card key={item.id} {...item} />
+  ))}
 </Box>
 ```
 
@@ -312,42 +320,47 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 
 ```tsx
 <Box
-    position="sticky"
-    top={0}
-    zIndex={10}
-    backgroundColor="background-primary"
-    borderBottomWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-    paddingHorizontal="xl"
-    paddingVertical="m"
-    display="flex"
-    alignItems="center"
-    justifyContent="between"
+  position="sticky"
+  top={0}
+  zIndex={10}
+  backgroundColor="background-primary"
+  borderBottomWidth={1}
+  borderStyle="solid"
+  borderColor="border-primary"
+  paddingHorizontal="xl"
+  paddingVertical="m"
+  display="flex"
+  alignItems="center"
+  justifyContent="between"
 >
-    …
+  …
 </Box>
 ```
 
 **Loading skeleton**:
 
 ```tsx
-<Box height={128} borderRadius="m" backgroundColor="background-card" className="animate-pulse" />
+<Box
+  height={128}
+  borderRadius="m"
+  backgroundColor="background-card"
+  className="animate-pulse"
+/>
 ```
 
 **Empty state**:
 
 ```tsx
 <Box
-    display="flex"
-    flexDirection="column"
-    alignItems="center"
-    justifyContent="center"
-    paddingVertical="3xl"
-    rowGap="l"
+  display="flex"
+  flexDirection="column"
+  alignItems="center"
+  justifyContent="center"
+  paddingVertical="3xl"
+  rowGap="l"
 >
-    <Text variant="subtle">No items found</Text>
-    <Button variant="secondary">Create First Item</Button>
+  <Text color="muted">No items found</Text>
+  <Button variant="secondary">Create First Item</Button>
 </Box>
 ```
 
@@ -355,14 +368,14 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 
 ```tsx
 <Box
-    borderRadius="m"
-    backgroundColor="background-warning"
-    borderWidth={1}
-    borderStyle="solid"
-    borderColor="border-warning"
-    padding="l"
+  borderRadius="m"
+  backgroundColor="background-warning"
+  borderWidth={1}
+  borderStyle="solid"
+  borderColor="border-warning"
+  padding="l"
 >
-    <Text>{error.message}</Text>
+  <Text>{error.message}</Text>
 </Box>
 ```
 
@@ -385,11 +398,17 @@ support where applicable) over a tailwind escape hatch. Flag this on the PR.
 Use these instead of hand-rolled tailwind components:
 
 ```tsx
-import { Text } from "@polar-sh/orbit"; // typography (variant-driven)
-import { Stack } from "@polar-sh/orbit"; // shorthand for flex stacks (when Box is overkill)
-import { Card, CardHeader, CardContent, CardFooter } from "@polar-sh/orbit";
-import { Button } from "@polar-sh/orbit";
-import { Status, Avatar, Input, SegmentedControl, DataTable } from "@polar-sh/orbit";
+import { Text } from '@polar-sh/orbit' // typography (variant-driven)
+import { Stack } from '@polar-sh/orbit' // shorthand for flex stacks (when Box is overkill)
+import { Card, CardHeader, CardContent, CardFooter } from '@polar-sh/orbit'
+import { Button } from '@polar-sh/orbit'
+import {
+  Status,
+  Avatar,
+  Input,
+  SegmentedControl,
+  DataTable,
+} from '@polar-sh/orbit'
 ```
 
 Prefer `Box` when you need full control; prefer the named primitive when one exists for
@@ -412,98 +431,105 @@ than expanding the tailwind surface area.
 ### Query Pattern
 
 ```tsx
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/utils/api";
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/utils/api'
 
 const useProducts = (organizationId: string) => {
-    return useQuery({
-        queryKey: ["products", organizationId],
-        queryFn: () => api.products.list({ organizationId }),
-        enabled: !!organizationId,
-    });
-};
+  return useQuery({
+    queryKey: ['products', organizationId],
+    queryFn: () => api.products.list({ organizationId }),
+    enabled: !!organizationId,
+  })
+}
 
 // In component
-const { data: products, isLoading, error } = useProducts(orgId);
+const { data: products, isLoading, error } = useProducts(orgId)
 ```
 
 ### Mutation Pattern
 
 ```tsx
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 const useCreateProduct = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
-    return useMutation({
-        mutationFn: (data: ProductCreate) => api.products.create(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["products"] });
-        },
-    });
-};
+  return useMutation({
+    mutationFn: (data: ProductCreate) => api.products.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+}
 ```
 
 ## State Management with Zustand
 
 ```tsx
-import { create } from "zustand";
+import { create } from 'zustand'
 
 interface AppState {
-    sidebarOpen: boolean;
-    toggleSidebar: () => void;
+  sidebarOpen: boolean
+  toggleSidebar: () => void
 }
 
 const useAppStore = create<AppState>((set) => ({
-    sidebarOpen: true,
-    toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-}));
+  sidebarOpen: true,
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+}))
 ```
 
 ## Form Handling
 
 ```tsx
-import { useForm } from "react-hook-form";
+import { useForm } from 'react-hook-form'
 
 const MyForm = () => {
-    const form = useForm({
-        defaultValues: { name: "", email: "" },
-    });
+  const form = useForm({
+    defaultValues: { name: '', email: '' },
+  })
 
-    return (
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-            <Input {...form.register("name")} />
-            {form.formState.errors.name && (
-                <span className="text-sm text-red-500">{form.formState.errors.name.message}</span>
-            )}
-        </form>
-    );
-};
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      <Input {...form.register('name')} />
+      {form.formState.errors.name && (
+        <span className="text-sm text-red-500">
+          {form.formState.errors.name.message}
+        </span>
+      )}
+    </form>
+  )
+}
 ```
 
 ## Imports
 
 ```tsx
 // Orbit (preferred — design-system primitives)
-import { Box } from "@polar-sh/orbit/Box";
+import { Box } from '@polar-sh/orbit/Box'
 import {
-    Text,
-    Button,
-    Stack,
-    Card,
-    CardHeader,
-    CardContent,
-    CardFooter,
-    Avatar,
-    Input,
-    Status,
-    SegmentedControl,
-    DataTable,
-} from "@polar-sh/orbit";
+  Text,
+  Button,
+  Stack,
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+  Avatar,
+  Input,
+  Status,
+  SegmentedControl,
+  DataTable,
+} from '@polar-sh/orbit'
 
 // Legacy @polar-sh/ui (use only when an Orbit equivalent doesn't exist)
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@polar-sh/ui/components/atoms/Tabs";
-import { Banner } from "@polar-sh/ui/components/molecules/Banner";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '@polar-sh/ui/components/atoms/Tabs'
+import { Banner } from '@polar-sh/ui/components/molecules/Banner'
 ```
 
 ## Common Patterns
@@ -512,14 +538,14 @@ import { Banner } from "@polar-sh/ui/components/molecules/Banner";
 
 ```tsx
 if (isLoading) {
-    return (
-        <Box
-            height={128}
-            borderRadius="m"
-            backgroundColor="background-card"
-            className="animate-pulse"
-        />
-    );
+  return (
+    <Box
+      height={128}
+      borderRadius="m"
+      backgroundColor="background-card"
+      className="animate-pulse"
+    />
+  )
 }
 ```
 
@@ -527,20 +553,20 @@ if (isLoading) {
 
 ```tsx
 if (!data?.length) {
-    return (
-        <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            paddingVertical="3xl"
-            rowGap="l"
-            textAlign="center"
-        >
-            <Text variant="subtle">No items found</Text>
-            <Button variant="secondary">Create First Item</Button>
-        </Box>
-    );
+  return (
+    <Box
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      paddingVertical="3xl"
+      rowGap="l"
+      textAlign="center"
+    >
+      <Text color="muted">No items found</Text>
+      <Button variant="secondary">Create First Item</Button>
+    </Box>
+  )
 }
 ```
 
@@ -548,18 +574,18 @@ if (!data?.length) {
 
 ```tsx
 if (error) {
-    return (
-        <Box
-            borderRadius="m"
-            backgroundColor="background-warning"
-            borderWidth={1}
-            borderStyle="solid"
-            borderColor="border-warning"
-            padding="l"
-        >
-            <Text>{error.message}</Text>
-        </Box>
-    );
+  return (
+    <Box
+      borderRadius="m"
+      backgroundColor="background-warning"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-warning"
+      padding="l"
+    >
+      <Text>{error.message}</Text>
+    </Box>
+  )
 }
 ```
 

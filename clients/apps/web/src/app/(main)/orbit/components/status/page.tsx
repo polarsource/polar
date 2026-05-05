@@ -79,7 +79,7 @@ export default function StatusPage() {
             >
               <Stack vertical className="col-span-2 gap-1">
                 <Text variant="label">{label}</Text>
-                <Text as="span" variant="subtle">
+                <Text as="span" color="muted">
                   {desc}
                 </Text>
               </Stack>
@@ -179,7 +179,7 @@ export default function StatusPage() {
               <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle">{desc}</Text>
+              <Text color="muted">{desc}</Text>
             </div>
           ))}
         </Stack>

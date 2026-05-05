@@ -1,17 +1,12 @@
 # Shared Polar dev infrastructure
 # One copy of postgres/redis/minio/tinybird (and optional prometheus/grafana)
 # is brought up per machine, regardless of how many app instances run on top.
-#
-# Managed via: dev docker shared up [--monitoring] [--expose]
+# Auto-started by `dev docker up` when not already running.
 #
 # Per-instance app stacks (api/worker/web) live in docker-compose.dev.yml and
 # attach to the external `polar-shared` network created here, so they reach
-# infra by container name (db, redis, minio, tinybird).
-#
-# Host ports are NOT exposed by default. Pass `--expose` to also load
-# docker-compose.shared.host-ports.yml, which publishes db/redis/minio/
-# tinybird/prometheus/grafana on configurable host ports (so you can attach
-# TablePlus/psql/etc. from the host).
+# infra by container name (db, redis, minio, tinybird). No host ports — use
+# `dev docker exec <service>` to run psql/redis-cli/etc. on the shared infra.
 
 services:
   db:

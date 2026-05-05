@@ -1,15 +1,10 @@
 """Docker-based isolated development environment.
 
-Two-tier model:
-
-- A single shared infra stack (db, redis, minio, tinybird, prometheus, grafana)
-  managed via `dev docker shared ...`. One copy per machine.
-- Per-instance app stacks (api, worker, web) managed via `dev docker ...`.
-  Each instance uses its own postgres database, Redis DB index, and S3 bucket
-  pair on the shared infra, so multiple instances coexist safely.
-
-Auto-magic: `dev docker up` brings up the shared infra automatically if it
-isn't already running, so day-to-day usage is unchanged.
+One shared infra stack (db, redis, minio, tinybird, optional prometheus/
+grafana) is brought up per machine; each worktree gets its own per-instance
+app stack (api, worker, web) using its own postgres DB, Redis DB index, and
+S3 bucket pair. Service-aware commands auto-route by service name to the
+right project. `dev docker up` starts shared (if needed) then this instance.
 """
 
 import hashlib
@@ -26,7 +21,6 @@ from shared import ROOT_DIR, SECRETS_FILE, SERVER_DIR, console, run_command
 DOCKER_DIR = ROOT_DIR / "dev" / "docker"
 COMPOSE_FILE = DOCKER_DIR / "docker-compose.dev.yml"
 SHARED_COMPOSE_FILE = DOCKER_DIR / "docker-compose.shared.yml"
-SHARED_HOST_PORTS_OVERLAY = DOCKER_DIR / "docker-compose.shared.host-ports.yml"
 ENV_TEMPLATE = DOCKER_DIR / ".env.docker.template"
 ENV_FILE = DOCKER_DIR / ".env.docker"
 SERVER_ENV_FILE = SERVER_DIR / ".env"
@@ -40,21 +34,46 @@ SHARED_NETWORK_NAME = "polar-shared"
 # Redis only has 16 DBs by default, so the index wraps; instance numbers stay
 # small in practice.
 REDIS_DB_COUNT = 16
-def app_project(instance: int) -> str: return f"polar-app-{instance}"
-def db_name(instance: int) -> str: return f"polar_dev_{instance}"
-def redis_db(instance: int) -> int: return instance % REDIS_DB_COUNT
-def s3_bucket(instance: int) -> str: return f"polar-s3-{instance}"
-def s3_public_bucket(instance: int) -> str: return f"polar-s3-public-{instance}"
+
+
+def app_project(instance: int) -> str:
+    return f"polar-app-{instance}"
+
+
+def db_name(instance: int) -> str:
+    return f"polar_dev_{instance}"
+
+
+def redis_db(instance: int) -> int:
+    return instance % REDIS_DB_COUNT
+
+
+def s3_bucket(instance: int) -> str:
+    return f"polar-s3-{instance}"
+
+
+def s3_public_bucket(instance: int) -> str:
+    return f"polar-s3-public-{instance}"
+
 
 APP_SERVICES = frozenset(("api", "worker", "web"))
-SHARED_SERVICES = frozenset((
-    "db", "redis", "minio", "minio-setup", "tinybird", "prometheus", "grafana",
-))
+SHARED_SERVICES = frozenset(
+    (
+        "db",
+        "redis",
+        "minio",
+        "minio-setup",
+        "tinybird",
+        "prometheus",
+        "grafana",
+    )
+)
 
 
 # --------------------------------------------------------------------------- #
 # Instance detection / persistence
 # --------------------------------------------------------------------------- #
+
 
 def _read_stored_instance() -> int | None:
     """Read POLAR_DOCKER_INSTANCE from .env.docker if set."""
@@ -135,6 +154,7 @@ def _detect_instance() -> tuple[int, str]:
 # Env files
 # --------------------------------------------------------------------------- #
 
+
 def _ensure_env_file() -> None:
     """Create .env.docker from template if it doesn't exist."""
     if not ENV_FILE.exists():
@@ -155,6 +175,7 @@ def _load_central_secrets() -> dict[str, str]:
     if not SECRETS_FILE.exists():
         return {}
     from dotenv import dotenv_values
+
     return {k: v for k, v in dotenv_values(SECRETS_FILE).items() if v}
 
 
@@ -201,28 +222,38 @@ def _ensure_server_env() -> None:
 # Shared network + shared compose helpers
 # --------------------------------------------------------------------------- #
 
+
 def _ensure_network() -> None:
     """Idempotently create the polar-shared docker network."""
     result = subprocess.run(
         ["docker", "network", "inspect", SHARED_NETWORK_NAME],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if result.returncode == 0:
         return
     create = subprocess.run(
         ["docker", "network", "create", SHARED_NETWORK_NAME],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if create.returncode != 0:
-        console.print(f"[red]Failed to create docker network {SHARED_NETWORK_NAME}: {create.stderr.strip()}[/red]")
+        console.print(
+            f"[red]Failed to create docker network {SHARED_NETWORK_NAME}: {create.stderr.strip()}[/red]"
+        )
         raise typer.Exit(1)
     console.print(f"[dim]Created docker network: {SHARED_NETWORK_NAME}[/dim]")
 
 
-def _shared_compose_cmd(monitoring: bool = False, expose: bool = False) -> list[str]:
-    cmd = ["docker", "compose", "-p", SHARED_PROJECT_NAME, "-f", str(SHARED_COMPOSE_FILE)]
-    if expose:
-        cmd.extend(["-f", str(SHARED_HOST_PORTS_OVERLAY)])
+def _shared_compose_cmd(monitoring: bool = False) -> list[str]:
+    cmd = [
+        "docker",
+        "compose",
+        "-p",
+        SHARED_PROJECT_NAME,
+        "-f",
+        str(SHARED_COMPOSE_FILE),
+    ]
     if monitoring:
         cmd.extend(["--profile", "monitoring"])
     return cmd
@@ -231,10 +262,20 @@ def _shared_compose_cmd(monitoring: bool = False, expose: bool = False) -> list[
 def _shared_is_running() -> bool:
     """Return True if any container in the shared project is running."""
     result = subprocess.run(
-        ["docker", "compose", "-p", SHARED_PROJECT_NAME,
-         "-f", str(SHARED_COMPOSE_FILE),
-         "ps", "-q", "--status", "running"],
-        capture_output=True, text=True,
+        [
+            "docker",
+            "compose",
+            "-p",
+            SHARED_PROJECT_NAME,
+            "-f",
+            str(SHARED_COMPOSE_FILE),
+            "ps",
+            "-q",
+            "--status",
+            "running",
+        ],
+        capture_output=True,
+        text=True,
     )
     return result.returncode == 0 and bool(result.stdout.strip())
 
@@ -255,6 +296,7 @@ def _ensure_shared_running() -> None:
 # --------------------------------------------------------------------------- #
 # Per-instance compose helpers
 # --------------------------------------------------------------------------- #
+
 
 def _build_compose_env(instance: int) -> dict[str, str]:
     """Build environment variables for the per-instance app stack.
@@ -277,10 +319,14 @@ def _build_compose_env(instance: int) -> dict[str, str]:
 
 def _build_compose_cmd(instance: int) -> list[str]:
     return [
-        "docker", "compose",
-        "-p", app_project(instance),
-        "-f", str(COMPOSE_FILE),
-        "--env-file", str(ENV_FILE),
+        "docker",
+        "compose",
+        "-p",
+        app_project(instance),
+        "-f",
+        str(COMPOSE_FILE),
+        "--env-file",
+        str(ENV_FILE),
     ]
 
 
@@ -307,7 +353,9 @@ def _print_access_info(ctx: typer.Context, instance: int) -> None:
     console.print(f"  API:           http://localhost:{8000 + offset}")
     console.print(f"  Web:           http://localhost:{3000 + offset}")
     console.print()
-    console.print("[bold]Shared infra:[/bold] (no host ports unless `dev docker up --expose`)")
+    console.print(
+        "[bold]Shared infra:[/bold] (no host ports — reach via `dev docker exec <service>`)"
+    )
     console.print(f"  Project: {SHARED_PROJECT_NAME}  Network: {SHARED_NETWORK_NAME}")
     console.print(f"  psql:    dev docker exec db psql -U polar -d {db_name(instance)}")
     console.print(f"  redis:   dev docker exec redis redis-cli -n {redis_db(instance)}")
@@ -324,6 +372,7 @@ def _print_access_info(ctx: typer.Context, instance: int) -> None:
 # Typer registration
 # --------------------------------------------------------------------------- #
 
+
 def register(app: typer.Typer, prompt_setup: callable) -> None:
     docker_app = typer.Typer(help="Isolated Docker development environment")
     app.add_typer(docker_app, name="docker")
@@ -332,7 +381,12 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_callback(
         ctx: typer.Context,
         instance: Annotated[
-            int | None, typer.Option("--instance", "-i", help="Instance number for port isolation (auto-detected if not set)")
+            int | None,
+            typer.Option(
+                "--instance",
+                "-i",
+                help="Instance number for port isolation (auto-detected if not set)",
+            ),
         ] = None,
     ) -> None:
         """Isolated Docker development environment.
@@ -346,7 +400,9 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         if instance is None:
             instance, source = _detect_instance()
             if source == "stored":
-                console.print(f"[dim]Using stored instance {instance} (from .env.docker)[/dim]")
+                console.print(
+                    f"[dim]Using stored instance {instance} (from .env.docker)[/dim]"
+                )
             else:
                 console.print(f"[dim]Auto-detected instance {instance}[/dim]")
         ctx.ensure_object(dict)
@@ -362,17 +418,28 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
           `polar-app-N` project
         """
         if service in SHARED_SERVICES:
-            return _shared_compose_cmd(monitoring=True, expose=True), {}
+            return _shared_compose_cmd(monitoring=True), {}
         return _build_compose_cmd(instance), _build_compose_env(instance)
 
     @docker_app.command("up")
     def docker_up(
         ctx: typer.Context,
-        detach: Annotated[bool, typer.Option("--detach", "-d", help="Run in background")] = True,
-        build: Annotated[bool, typer.Option("--build", "-b", help="Force rebuild images")] = False,
-        monitoring: Annotated[bool, typer.Option("--monitoring", help="Include Prometheus and Grafana in shared infra")] = False,
-        expose: Annotated[bool, typer.Option("--expose", help="Publish shared infra ports on the host (psql/TablePlus/etc.)")] = False,
-        services: Annotated[list[str] | None, typer.Argument(help="Services to start (default: all app services)")] = None,
+        detach: Annotated[
+            bool, typer.Option("--detach", "-d", help="Run in background")
+        ] = True,
+        build: Annotated[
+            bool, typer.Option("--build", "-b", help="Force rebuild images")
+        ] = False,
+        monitoring: Annotated[
+            bool,
+            typer.Option(
+                "--monitoring", help="Include Prometheus and Grafana in shared infra"
+            ),
+        ] = False,
+        services: Annotated[
+            list[str] | None,
+            typer.Argument(help="Services to start (default: all app services)"),
+        ] = None,
     ) -> None:
         """Start shared infra (if needed) + this instance's app stack."""
         instance = _get_instance(ctx)
@@ -382,20 +449,23 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         # Bring shared infra up first if it isn't already running.
         _ensure_network()
         if not _shared_is_running():
-            shared_cmd = _shared_compose_cmd(monitoring=monitoring, expose=expose) + ["up", "-d"]
+            shared_cmd = _shared_compose_cmd(monitoring=monitoring) + ["up", "-d"]
             console.print("[bold blue]Starting Polar shared infra[/bold blue]")
             result = run_command(shared_cmd)
             if not result or result.returncode != 0:
                 console.print("[red]Failed to start shared infra[/red]")
                 raise typer.Exit(1)
-        elif monitoring or expose:
-            console.print("[yellow]Shared infra is already running; --monitoring/--expose only take effect on first start.[/yellow]")
-            console.print("[dim]Bring it down with `dev docker down --all` to apply.[/dim]")
+        elif monitoring:
+            console.print(
+                "[yellow]Shared infra is already running; --monitoring only takes effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
+            )
 
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance)
 
-        console.print(f"\n[bold blue]Starting Polar app stack (instance {instance})[/bold blue]\n")
+        console.print(
+            f"\n[bold blue]Starting Polar app stack (instance {instance})[/bold blue]\n"
+        )
 
         if build:
             console.print("[dim]Building images...[/dim]")
@@ -424,8 +494,15 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @docker_app.command("down")
     def docker_down(
         ctx: typer.Context,
-        all_: Annotated[bool, typer.Option("--all", help="Also stop the shared infra (postgres/redis/etc.)")] = False,
-        services: Annotated[list[str] | None, typer.Argument(help="App services to stop (default: all)")] = None,
+        all_: Annotated[
+            bool,
+            typer.Option(
+                "--all", help="Also stop the shared infra (postgres/redis/etc.)"
+            ),
+        ] = False,
+        services: Annotated[
+            list[str] | None, typer.Argument(help="App services to stop (default: all)")
+        ] = None,
     ) -> None:
         """Stop this instance's app stack (use --all to also stop shared infra)."""
         instance = _get_instance(ctx)
@@ -441,20 +518,27 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         if all_:
             console.print("[dim]Stopping shared infra...[/dim]")
-            shared = _shared_compose_cmd(monitoring=True, expose=True) + ["down"]
+            shared = _shared_compose_cmd(monitoring=True) + ["down"]
             result = run_command(shared)
             if not result or result.returncode != 0:
                 console.print("[red]Failed to stop shared infra[/red]")
                 raise typer.Exit(1)
             console.print("[green]Shared infra stopped[/green]")
         else:
-            console.print("[dim]Shared infra still running — `dev docker down --all` to stop it.[/dim]")
+            console.print(
+                "[dim]Shared infra still running — `dev docker down --all` to stop it.[/dim]"
+            )
 
     @docker_app.command("logs")
     def docker_logs(
         ctx: typer.Context,
-        follow: Annotated[bool, typer.Option("--follow", "-f", help="Follow log output")] = True,
-        service: Annotated[str | None, typer.Argument(help="Service to tail (auto-routed to shared/app project)")] = None,
+        follow: Annotated[
+            bool, typer.Option("--follow", "-f", help="Follow log output")
+        ] = True,
+        service: Annotated[
+            str | None,
+            typer.Argument(help="Service to tail (auto-routed to shared/app project)"),
+        ] = None,
     ) -> None:
         """Tail logs for an app or shared service (auto-routes by service name)."""
         instance = _get_instance(ctx)
@@ -474,22 +558,31 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         instance = _get_instance(ctx)
         _ensure_env_file()
         console.print(f"[bold]Shared ({SHARED_PROJECT_NAME})[/bold]")
-        run_command(_shared_compose_cmd(monitoring=True, expose=True) + ["ps"])
+        run_command(_shared_compose_cmd(monitoring=True) + ["ps"])
         console.print(f"\n[bold]App ({app_project(instance)})[/bold]")
-        run_command(_build_compose_cmd(instance) + ["ps"], env=_build_compose_env(instance))
+        run_command(
+            _build_compose_cmd(instance) + ["ps"], env=_build_compose_env(instance)
+        )
 
     @docker_app.command("restart")
     def docker_restart(
         ctx: typer.Context,
-        services: Annotated[list[str] | None, typer.Argument(help="Services to restart — auto-routed by name")] = None,
+        services: Annotated[
+            list[str] | None,
+            typer.Argument(help="Services to restart — auto-routed by name"),
+        ] = None,
     ) -> None:
         """Restart services (auto-routes by name; mixing app + shared services is not supported)."""
         instance = _get_instance(ctx)
         _ensure_env_file()
         # Determine routing from the first service; require homogeneous targets.
         first = (services or [None])[0]
-        if services and not all((s in SHARED_SERVICES) == (first in SHARED_SERVICES) for s in services):
-            console.print("[red]Cannot restart shared and app services in one call. Run them separately.[/red]")
+        if services and not all(
+            (s in SHARED_SERVICES) == (first in SHARED_SERVICES) for s in services
+        ):
+            console.print(
+                "[red]Cannot restart shared and app services in one call. Run them separately.[/red]"
+            )
             raise typer.Exit(1)
         cmd, env = _route(first, instance)
         cmd = cmd + ["restart"] + (services or [])
@@ -504,7 +597,12 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @docker_app.command("build")
     def docker_build(
         ctx: typer.Context,
-        services: Annotated[list[str] | None, typer.Argument(help="Services to build (app services only — shared use upstream images)")] = None,
+        services: Annotated[
+            list[str] | None,
+            typer.Argument(
+                help="Services to build (app services only — shared use upstream images)"
+            ),
+        ] = None,
     ) -> None:
         """Build/rebuild this instance's app images."""
         instance = _get_instance(ctx)
@@ -522,7 +620,9 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @docker_app.command("shell")
     def docker_shell(
         ctx: typer.Context,
-        service: Annotated[str, typer.Argument(help="Service to shell into (app or shared)")],
+        service: Annotated[
+            str, typer.Argument(help="Service to shell into (app or shared)")
+        ],
     ) -> None:
         """Open a /bin/bash shell in any service's container (use `exec` for one-off commands)."""
         instance = _get_instance(ctx)
@@ -539,7 +639,12 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     )
     def docker_exec(
         ctx: typer.Context,
-        service: Annotated[str, typer.Argument(help="Service to exec in (auto-routed to shared/app project)")],
+        service: Annotated[
+            str,
+            typer.Argument(
+                help="Service to exec in (auto-routed to shared/app project)"
+            ),
+        ],
     ) -> None:
         """Run a command in any service's container.
 
@@ -559,20 +664,36 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @docker_app.command("cleanup")
     def docker_cleanup(
         ctx: typer.Context,
-        all_: Annotated[bool, typer.Option("--all", help="Also wipe shared infra volumes (DESTROYS data for ALL instances)")] = False,
-        force: Annotated[bool, typer.Option("--force", help="Skip confirmation")] = False,
+        all_: Annotated[
+            bool,
+            typer.Option(
+                "--all",
+                help="Also wipe shared infra volumes (DESTROYS data for ALL instances)",
+            ),
+        ] = False,
+        force: Annotated[
+            bool, typer.Option("--force", help="Skip confirmation")
+        ] = False,
     ) -> None:
         """Remove this instance's app containers and volumes (use --all to nuke shared infra too)."""
         instance = _get_instance(ctx)
         if not force:
             if all_:
-                console.print("[red bold]This destroys ALL postgres data, MinIO objects, Tinybird events, prometheus/grafana state.[/red bold]")
-                console.print("[red]Every instance on this machine will be wiped.[/red]")
+                console.print(
+                    "[red bold]This destroys ALL postgres data, MinIO objects, Tinybird events, prometheus/grafana state.[/red bold]"
+                )
+                console.print(
+                    "[red]Every instance on this machine will be wiped.[/red]"
+                )
                 if not typer.confirm("Are you absolutely sure?"):
                     raise typer.Abort()
             else:
-                console.print("[yellow]This will remove this instance's api/worker/web containers and their build/cache volumes.[/yellow]")
-                console.print("[dim]Shared infra (postgres, redis, minio, tinybird) is left untouched. Use --all to wipe that too.[/dim]")
+                console.print(
+                    "[yellow]This will remove this instance's api/worker/web containers and their build/cache volumes.[/yellow]"
+                )
+                console.print(
+                    "[dim]Shared infra (postgres, redis, minio, tinybird) is left untouched. Use --all to wipe that too.[/dim]"
+                )
                 if not typer.confirm("Continue?"):
                     raise typer.Abort()
 
@@ -588,7 +709,11 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         if all_:
             console.print("[dim]Wiping shared infra volumes...[/dim]")
-            shared = _shared_compose_cmd(monitoring=True, expose=True) + ["down", "-v", "--remove-orphans"]
+            shared = _shared_compose_cmd(monitoring=True) + [
+                "down",
+                "-v",
+                "--remove-orphans",
+            ]
             result = run_command(shared)
             if not result or result.returncode != 0:
                 console.print("[red]Shared cleanup failed[/red]")
@@ -597,7 +722,9 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
     @docker_app.command("set-instance")
     def docker_set_instance(
-        instance: Annotated[int, typer.Argument(help="Instance number to store (0 = default ports)")],
+        instance: Annotated[
+            int, typer.Argument(help="Instance number to store (0 = default ports)")
+        ],
     ) -> None:
         """Store a default instance number in .env.docker."""
         if instance < 0:
@@ -606,7 +733,9 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         _write_stored_instance(instance)
         offset = instance * 100
         console.print(f"[green]Stored instance {instance} in .env.docker[/green]")
-        console.print(f"[dim]Ports: API={8000 + offset}, Web={3000 + offset}, DB={db_name(instance)}[/dim]")
+        console.print(
+            f"[dim]Ports: API={8000 + offset}, Web={3000 + offset}, DB={db_name(instance)}[/dim]"
+        )
 
     @docker_app.command("clear-instance")
     def docker_clear_instance() -> None:

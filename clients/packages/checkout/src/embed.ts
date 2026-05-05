@@ -26,12 +26,38 @@ interface EmbedCheckoutMessageConfirmed {
 /**
  * Message sent to the parent window when the checkout is successfully completed.
  *
+ * Fires immediately once Stripe accepts the payment. At this point the order
+ * may not yet exist in Polar's database and the merchant's webhook may not
+ * have been delivered. For an end-to-end "order is processed" signal, listen
+ * for the `fulfilled` event instead.
+ *
  * If `redirect` is set to `true`, the parent window should redirect to the `successURL`.
  */
 interface EmbedCheckoutMessageSuccess {
   event: 'success'
   successURL: string
   redirect: boolean
+}
+
+/**
+ * Message sent to the parent window once the checkout is fully processed on
+ * Polar's side: the order has been created, the subscription (if any) has
+ * been created, and the merchant's `checkout.updated` webhook has been
+ * delivered (or skipped if no endpoints are configured).
+ *
+ * `status: 'completed'` means all four signals were observed within the SLA
+ * (15s by default). `status: 'timeout'` means the iframe gave up waiting —
+ * the order is still good, but client-side fulfillment confirmation isn't
+ * available; reconcile via webhook or the API using `checkoutId`.
+ *
+ * Note that benefit grants are provisioned by a separate async pipeline and
+ * may complete *after* this event fires.
+ */
+interface EmbedCheckoutMessageFulfilled {
+  event: 'fulfilled'
+  status: 'completed' | 'timeout'
+  checkoutId: string
+  customerId: string | null
 }
 
 /**
@@ -42,6 +68,7 @@ type EmbedCheckoutMessage =
   | EmbedCheckoutMessageClose
   | EmbedCheckoutMessageConfirmed
   | EmbedCheckoutMessageSuccess
+  | EmbedCheckoutMessageFulfilled
 
 const isEmbedCheckoutMessage = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,6 +100,7 @@ class EmbedCheckout {
     this.addEventListener('close', this.closeListener.bind(this))
     this.addEventListener('confirmed', this.confirmedListener.bind(this))
     this.addEventListener('success', this.successListener.bind(this))
+    this.addEventListener('fulfilled', this.fulfilledListener.bind(this))
   }
 
   /**
@@ -260,6 +288,11 @@ class EmbedCheckout {
     options?: AddEventListenerOptions | boolean,
   ): void
   public addEventListener(
+    type: 'fulfilled',
+    listener: (event: CustomEvent<EmbedCheckoutMessageFulfilled>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
     type: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     listener: any,
@@ -289,6 +322,10 @@ class EmbedCheckout {
   public removeEventListener(
     type: 'success',
     listener: (event: CustomEvent<EmbedCheckoutMessageSuccess>) => void,
+  ): void
+  public removeEventListener(
+    type: 'fulfilled',
+    listener: (event: CustomEvent<EmbedCheckoutMessageFulfilled>) => void,
   ): void
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public removeEventListener(type: string, listener: any): void {
@@ -373,6 +410,20 @@ class EmbedCheckout {
     this.closable = true
     if (event.detail.redirect) {
       window.location.href = event.detail.successURL
+    }
+  }
+
+  /**
+   * Default listener for the `fulfilled` event.
+   *
+   * No default behavior — merchants attach their own listener to react to
+   * fulfillment (e.g. close the overlay, show a thank-you UI, navigate).
+   */
+  private fulfilledListener(
+    event: CustomEvent<EmbedCheckoutMessageFulfilled>,
+  ): void {
+    if (event.defaultPrevented) {
+      return
     }
   }
 

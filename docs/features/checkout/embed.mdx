@@ -166,9 +166,63 @@ const openCheckoutWithEvents = async () => {
     // Otherwise, the user will be redirected to the success URL (unless prevented)
   });
 
+  // Listen for end-to-end fulfillment (order created + webhook delivered)
+  checkout.addEventListener("fulfilled", (event) => {
+    console.log("Order processed", event.detail);
+    // event.detail.status is "completed" or "timeout"
+    // event.detail.checkoutId / event.detail.customerId let you reconcile
+  });
+
   return checkout;
 };
 ```
+
+### Knowing when the order is actually processed
+
+The `success` event fires the moment the customer's payment is accepted by
+Stripe. At that point, Polar has not yet created the order on its side,
+delivered your webhook, or granted any benefits. If you provision access or
+send confirmation emails based on `success`, you may act on a payment that
+later fails to process.
+
+For a stronger guarantee, listen for the `fulfilled` event:
+
+```ts
+checkout.addEventListener("fulfilled", (event) => {
+  if (event.detail.status === "completed") {
+    // Order created, subscription created (if any), and your `checkout.updated`
+    // webhook has been delivered. Safe to provision benefits client-side.
+    provisionAccess(event.detail.checkoutId);
+  } else if (event.detail.status === "timeout") {
+    // We couldn't confirm fulfillment within 15 seconds. The order is still
+    // good — Stripe has the money and the order row exists — but the iframe
+    // gave up waiting. Reconcile via your `order.created` webhook or call the
+    // Polar API with event.detail.checkoutId.
+    showProcessingNotice();
+  }
+});
+```
+
+The payload is:
+
+```ts
+{
+  event: "fulfilled",
+  status: "completed" | "timeout",
+  checkoutId: string,
+  customerId: string | null,
+}
+```
+
+**Migration guidance.** If you currently use `success` to provision benefits
+or send confirmation emails, migrate that work to `fulfilled`. If you use
+`success` to redirect or close the overlay UI, no change needed.
+
+**Note on benefit grants.** The `fulfilled` event does not wait for benefits
+to be provisioned — that's a separate async pipeline. For benefit-gated flows
+(e.g. unlocking a Discord role), subscribe to the `order.created` or
+`benefit_grant.created` webhook server-side rather than gating UI on
+`fulfilled`.
 
 ### React Integration with event handling
 

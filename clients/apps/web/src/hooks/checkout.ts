@@ -73,6 +73,37 @@ export const useCheckoutConfirmedRedirect = (
         )
       }
 
+      // Fire-and-forget: once the iframe observes that the order has been
+      // created and the merchant's webhook delivered, post a `fulfilled`
+      // event so the merchant can provision benefits / send confirmation
+      // emails on a signal they can actually trust. `success` fires
+      // immediately above; `fulfilled` arrives 1-15s later (or with
+      // status='timeout' if the listener gives up).
+      //
+      // Only relevant for internal success URLs — external URLs already
+      // await `listenFulfillment` above before posting `success`, and the
+      // parent navigates away as soon as the success message arrives.
+      if (checkout.embed_origin && isInternalURL && listenFulfillment) {
+        const origin = checkout.embed_origin
+        const basePayload = {
+          event: 'fulfilled' as const,
+          checkoutId: checkout.id,
+          customerId: checkout.customer_id,
+        }
+        listenFulfillment().then(
+          () =>
+            PolarEmbedCheckout.postMessage(
+              { ...basePayload, status: 'completed' },
+              origin,
+            ),
+          () =>
+            PolarEmbedCheckout.postMessage(
+              { ...basePayload, status: 'timeout' },
+              origin,
+            ),
+        )
+      }
+
       // In embed mode, the parent window owns post-success navigation via the
       // `success` postMessage above. Navigating the iframe ourselves would
       // strand the customer inside the overlay (e.g. on the customer portal

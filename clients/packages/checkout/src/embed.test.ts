@@ -48,6 +48,33 @@ describe('PolarEmbedCheckout', () => {
 
       postMessageSpy.mockRestore()
     })
+
+    it('includes event data for fulfilled messages', () => {
+      const postMessageSpy = vi.spyOn(window.parent, 'postMessage')
+
+      PolarEmbedCheckout.postMessage(
+        {
+          event: 'fulfilled',
+          status: 'completed',
+          checkoutId: 'checkout_abc',
+          customerId: 'customer_123',
+        },
+        ALLOWED_ORIGIN,
+      )
+
+      expect(postMessageSpy).toHaveBeenCalledWith(
+        {
+          event: 'fulfilled',
+          status: 'completed',
+          checkoutId: 'checkout_abc',
+          customerId: 'customer_123',
+          type: 'POLAR_CHECKOUT',
+        },
+        ALLOWED_ORIGIN,
+      )
+
+      postMessageSpy.mockRestore()
+    })
   })
 
   describe('create', () => {
@@ -370,6 +397,129 @@ describe('PolarEmbedCheckout', () => {
       )
 
       expect(document.querySelector('iframe')).toBeNull()
+
+      checkout.close()
+    })
+  })
+
+  describe('fulfilled event', () => {
+    afterEach(() => {
+      document.querySelectorAll('iframe').forEach((el) => el.remove())
+      document.querySelectorAll('style').forEach((el) => el.remove())
+      document.querySelectorAll('div').forEach((el) => el.remove())
+      document.body.classList.remove('polar-no-scroll')
+    })
+
+    it('dispatches fulfilled event with completed status to listeners', async () => {
+      const listener = vi.fn()
+
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123',
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+      checkout.addEventListener('fulfilled', listener)
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: {
+            type: 'POLAR_CHECKOUT',
+            event: 'fulfilled',
+            status: 'completed',
+            checkoutId: 'checkout_abc',
+            customerId: 'customer_123',
+          },
+        }),
+      )
+
+      expect(listener).toHaveBeenCalledTimes(1)
+      const event = listener.mock.calls[0][0] as CustomEvent
+      expect(event.detail).toMatchObject({
+        event: 'fulfilled',
+        status: 'completed',
+        checkoutId: 'checkout_abc',
+        customerId: 'customer_123',
+      })
+
+      checkout.close()
+    })
+
+    it('dispatches fulfilled event with timeout status to listeners', async () => {
+      const listener = vi.fn()
+
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123',
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+      checkout.addEventListener('fulfilled', listener)
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: {
+            type: 'POLAR_CHECKOUT',
+            event: 'fulfilled',
+            status: 'timeout',
+            checkoutId: 'checkout_abc',
+            customerId: null,
+          },
+        }),
+      )
+
+      expect(listener).toHaveBeenCalledTimes(1)
+      expect((listener.mock.calls[0][0] as CustomEvent).detail).toMatchObject({
+        status: 'timeout',
+        customerId: null,
+      })
+
+      checkout.close()
+    })
+
+    it('does not throw and does not affect close behavior with no merchant listener', async () => {
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123',
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: {
+            type: 'POLAR_CHECKOUT',
+            event: 'fulfilled',
+            status: 'completed',
+            checkoutId: 'checkout_abc',
+            customerId: 'customer_123',
+          },
+        }),
+      )
+
+      // Iframe is still mounted — no default close behavior on `fulfilled`.
+      expect(document.querySelector('iframe')).not.toBeNull()
 
       checkout.close()
     })

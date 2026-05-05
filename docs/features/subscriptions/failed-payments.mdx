@@ -31,7 +31,7 @@ If any retry succeeds, the subscription returns to `active` and the cycle contin
 
 By default, benefits follow the subscription's status strictly: the moment the subscription leaves `active`, benefits are revoked. For many businesses that's harsh — a single expired card shouldn't instantly lock a paying customer out while they update their details.
 
-Polar has an organization-level **grace period** that holds off benefit revocation while a subscription is in `past_due`. You can set it under **Settings → Billing → Subscriptions → Grace period for benefit revocation**. The available values are:
+Polar has an organization-level **grace period** that holds off benefit revocation while a subscription is in `past_due`. You can set it under **Settings → Subscriptions → Grace period for benefit revocation**. The available values are:
 
 - **Immediately** (default) — revoke benefits as soon as the subscription leaves `active`.
 - **After 2 days**

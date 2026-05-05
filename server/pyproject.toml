@@ -60,7 +60,7 @@ dependencies = [
   "clickhouse-connect>=0.8.0",
   "playwright>=1.50.0",
   "trafilatura>=2.0.0",
-  "polar-sdk==0.31.3",
+  "polar-sdk==0.31.4",
   "anyio>=4.13.0",
   "markdown-it-py>=4.0.0",
   "tzdata>=2025.3",
@@ -177,4 +177,4 @@ exclude-newer = "1 week"
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }
-polar-sdk = { url = "https://files.pythonhosted.org/packages/ef/23/bd856ec12a8faef40bfb6b30e7add657952c7266f5f0ac7c156067fa30ea/polar_sdk-0.31.3-py3-none-any.whl" }
+polar-sdk = { url = "https://files.pythonhosted.org/packages/63/19/17e3b6e907390aa80f8bd12c0dfc4c8bd4b1b5fad2a6b927e63e00d20171/polar_sdk-0.31.4-py3-none-any.whl" }

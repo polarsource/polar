@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer = "2026-04-28T07:24:17.891916Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -2199,7 +2199,7 @@ requires-dist = [
     { name = "markdown-it-py", specifier = ">=4.0.0" },
     { name = "plain-client", specifier = ">=0.0.3" },
     { name = "playwright", specifier = ">=1.50.0" },
-    { name = "polar-sdk", url = "https://files.pythonhosted.org/packages/ef/23/bd856ec12a8faef40bfb6b30e7add657952c7266f5f0ac7c156067fa30ea/polar_sdk-0.31.3-py3-none-any.whl" },
+    { name = "polar-sdk", url = "https://files.pythonhosted.org/packages/63/19/17e3b6e907390aa80f8bd12c0dfc4c8bd4b1b5fad2a6b927e63e00d20171/polar_sdk-0.31.4-py3-none-any.whl" },
     { name = "posthog", specifier = ">=3.6.0" },
     { name = "prometheus-client", specifier = ">=0.21.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.5" },
@@ -2263,8 +2263,8 @@ dev = [
 
 [[package]]
 name = "polar-sdk"
-version = "0.31.3"
-source = { url = "https://files.pythonhosted.org/packages/ef/23/bd856ec12a8faef40bfb6b30e7add657952c7266f5f0ac7c156067fa30ea/polar_sdk-0.31.3-py3-none-any.whl" }
+version = "0.31.4"
+source = { url = "https://files.pythonhosted.org/packages/63/19/17e3b6e907390aa80f8bd12c0dfc4c8bd4b1b5fad2a6b927e63e00d20171/polar_sdk-0.31.4-py3-none-any.whl" }
 dependencies = [
     { name = "httpcore" },
     { name = "httpx" },
@@ -2273,7 +2273,7 @@ dependencies = [
     { name = "standardwebhooks" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/23/bd856ec12a8faef40bfb6b30e7add657952c7266f5f0ac7c156067fa30ea/polar_sdk-0.31.3-py3-none-any.whl", hash = "sha256:22fa1ae3fa2c79cf2279dd3b1ff633d193132197dcdd807ec7191fb14544ff80" },
+    { url = "https://files.pythonhosted.org/packages/63/19/17e3b6e907390aa80f8bd12c0dfc4c8bd4b1b5fad2a6b927e63e00d20171/polar_sdk-0.31.4-py3-none-any.whl", hash = "sha256:0b4e3c3c676f7d2cdefe51a1e0ee1eb86a0c9d09aaa5eb41b4920e8457bcc3b2" },
 ]
 
 [package.metadata]

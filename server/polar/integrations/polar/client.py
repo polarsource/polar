@@ -134,6 +134,7 @@ class PolarSelfClient:
     ) -> Member | None:
         return await self._sdk.members.get_member_by_external_id_async(
             external_id=external_id,
+            external_customer_id=external_customer_id,
         )
 
     async def add_member(
@@ -177,6 +178,7 @@ class PolarSelfClient:
             try:
                 await self._sdk.members.delete_member_by_external_id_async(
                     external_id=external_id,
+                    external_customer_id=external_customer_id,
                 )
             except PolarError as e:
                 if e.status_code == 404:

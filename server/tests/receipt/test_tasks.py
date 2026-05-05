@@ -45,9 +45,7 @@ class TestReceiptRender:
         account: Account,
         mocker: MockerFixture,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -85,9 +83,7 @@ class TestReceiptRender:
         account: Account,
         mocker: MockerFixture,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture,
             organization=organization,

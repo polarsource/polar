@@ -572,10 +572,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_member_model_enabled(self) -> bool:
         return self.feature_settings.get("member_model_enabled", False)
 
-    @property
-    def is_receipts_enabled(self) -> bool:
-        return self.feature_settings.get("receipts_enabled", False)
-
     #
     # Currency and tax settings
     #

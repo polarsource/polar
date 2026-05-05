@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.db.postgres import AsyncSession
 from polar.locker import Locker
-from polar.models import Account, Customer, Order, Organization
+from polar.models import Account, Customer, Order
 from polar.receipt.service import receipt as receipt_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -36,9 +36,7 @@ async def _allocated_order(
     billing_name: str | None,
     billing_address: Address | None,
 ) -> Order:
-    organization = await create_organization(
-        save_fixture, account, feature_settings={"receipts_enabled": True}
-    )
+    organization = await create_organization(save_fixture, account)
     customer = await create_customer(
         save_fixture,
         organization=organization,
@@ -66,29 +64,13 @@ def _mock_render(mocker: MockerFixture):  # type: ignore[no-untyped-def]
 
 @pytest.mark.asyncio
 class TestAllocate:
-    async def test_no_op_when_flag_off(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        order = await create_order(save_fixture, customer=customer)
-        await create_payment(save_fixture, organization, order=order)
-
-        result = await receipt_service.allocate(session, order)
-
-        assert result.receipt_number is None
-
     async def test_no_op_when_no_succeeded_payment(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=organization, email="rcpt@example.com"
         )
@@ -105,9 +87,7 @@ class TestAllocate:
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=organization, email="rcpt2@example.com"
         )
@@ -129,9 +109,7 @@ class TestAllocate:
         save_fixture: SaveFixture,
         account: Account,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=organization, email="rcpt3@example.com"
         )
@@ -160,9 +138,7 @@ class TestDoRender:
         account: Account,
         mocker: MockerFixture,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=organization, email="render@example.com"
         )
@@ -208,9 +184,7 @@ class TestDoRender:
         account: Account,
         mocker: MockerFixture,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=organization, email="ref@example.com"
         )
@@ -342,9 +316,7 @@ class TestGenerateOrderReceipt:
         locker: Locker,
         mocker: MockerFixture,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=organization, email="generate@example.com"
         )
@@ -381,9 +353,7 @@ class TestGenerateOrderReceipt:
         locker: Locker,
         mocker: MockerFixture,
     ) -> None:
-        organization = await create_organization(
-            save_fixture, account, feature_settings={"receipts_enabled": True}
-        )
+        organization = await create_organization(save_fixture, account)
         customer = await create_customer(
             save_fixture, organization=organization, email="event@example.com"
         )

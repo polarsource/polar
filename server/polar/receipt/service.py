@@ -34,9 +34,6 @@ class ReceiptService:
         Idempotent under concurrent calls: the row-level lock plus the
         post-lock null-check prevents double-allocation.
         """
-        if not order.organization.is_receipts_enabled:
-            return order
-
         if order.receipt_number is not None:
             return order
 

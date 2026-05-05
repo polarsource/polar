@@ -20,16 +20,6 @@ const variants = [
     desc: 'Supporting annotations — 12 px, subtle color, snug leading.',
   },
   {
-    variant: 'subtle' as const,
-    label: 'subtle',
-    desc: 'Secondary copy alongside primary content — 14 px, muted.',
-  },
-  {
-    variant: 'disabled' as const,
-    label: 'disabled',
-    desc: 'Placeholders and non-interactive states — 14 px, dimmed.',
-  },
-  {
     variant: 'mono' as const,
     label: 'mono',
     desc: 'Inline code, IDs, and technical values — monospace, 12 px.',

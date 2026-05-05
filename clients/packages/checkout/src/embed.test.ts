@@ -326,7 +326,7 @@ describe('PolarEmbedCheckout', () => {
       checkout.close()
     })
 
-    it('re-enables closing after success event', async () => {
+    it('closes the embed on success when redirect is false', async () => {
       const promise = PolarEmbedCheckout.create(
         'https://buy.polar.sh/polar_cl_123',
       )
@@ -340,7 +340,7 @@ describe('PolarEmbedCheckout', () => {
 
       const checkout = await promise
 
-      // Confirm to lock closing
+      // Confirm to lock closing — emulates a checkout that has been submitted.
       window.dispatchEvent(
         new MessageEvent('message', {
           origin: ALLOWED_ORIGIN,
@@ -348,7 +348,6 @@ describe('PolarEmbedCheckout', () => {
         }),
       )
 
-      // Success with redirect=false should re-enable closing
       window.dispatchEvent(
         new MessageEvent('message', {
           origin: ALLOWED_ORIGIN,
@@ -358,14 +357,6 @@ describe('PolarEmbedCheckout', () => {
             successURL: 'https://example.com/thanks',
             redirect: false,
           },
-        }),
-      )
-
-      // Now close should work again
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          origin: ALLOWED_ORIGIN,
-          data: { type: 'POLAR_CHECKOUT', event: 'close' },
         }),
       )
 

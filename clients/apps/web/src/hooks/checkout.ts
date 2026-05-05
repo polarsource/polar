@@ -73,6 +73,15 @@ export const useCheckoutConfirmedRedirect = (
         )
       }
 
+      // In embed mode, the parent window owns post-success navigation via the
+      // `success` postMessage above. Navigating the iframe ourselves would
+      // strand the customer inside the overlay (e.g. on the customer portal
+      // sign-in page) with no way back to the merchant's site short of a hard
+      // reload.
+      if (embed) {
+        return
+      }
+
       // If we don't have a customer session token, redirect to customer portal login
       // instead of internal success URL
       if (isInternalURL && !customerSessionToken) {
@@ -87,9 +96,7 @@ export const useCheckoutConfirmedRedirect = (
         return
       }
 
-      if (isInternalURL || !embed) {
-        router.push(parsedURL.toString())
-      }
+      router.push(parsedURL.toString())
     },
     [router, embed, theme, listenFulfillment],
   )

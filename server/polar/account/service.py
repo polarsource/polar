@@ -94,15 +94,15 @@ class AccountService:
         session: AsyncSession,
         account: Account,
         *,
-        take_rate: int | None,
-        flat_fee_in_cents: int | None,
+        fee_percent: int | None,
+        fee_fixed: int | None,
     ) -> Account:
         repository = AccountRepository.from_session(session)
         return await repository.update(
             account,
             update_dict={
-                "_platform_fee_percent": take_rate,
-                "_platform_fee_fixed": flat_fee_in_cents,
+                "_platform_fee_percent": fee_percent,
+                "_platform_fee_fixed": fee_fixed,
             },
         )
 

@@ -184,20 +184,17 @@ class PolarSelfService:
     def _extract_transaction_fee(
         self, metadata: dict[str, Any], benefit_id: str
     ) -> tuple[int, int]:
-        take_rate = metadata.get("take_rate")
-        flat_fee_in_cents = metadata.get("flat_fee_in_cents")
-        if not isinstance(take_rate, int) or isinstance(take_rate, bool):
+        fee_percent = metadata.get("fee_percent")
+        fee_fixed = metadata.get("fee_fixed")
+        if not isinstance(fee_percent, int) or isinstance(fee_percent, bool):
             raise TransactionFeeBenefitError(
-                f"Benefit {benefit_id} has invalid take_rate: {take_rate!r}"
+                f"Benefit {benefit_id} has invalid fee_percent: {fee_percent!r}"
             )
-        if not isinstance(flat_fee_in_cents, int) or isinstance(
-            flat_fee_in_cents, bool
-        ):
+        if not isinstance(fee_fixed, int) or isinstance(fee_fixed, bool):
             raise TransactionFeeBenefitError(
-                f"Benefit {benefit_id} has invalid "
-                f"flat_fee_in_cents: {flat_fee_in_cents!r}"
+                f"Benefit {benefit_id} has invalid fee_fixed: {fee_fixed!r}"
             )
-        return take_rate, flat_fee_in_cents
+        return fee_percent, fee_fixed
 
     async def _apply_transaction_fee(
         self,
@@ -211,9 +208,9 @@ class PolarSelfService:
             return
 
         if grant is None:
-            take_rate, flat_fee_in_cents = None, None
+            fee_percent, fee_fixed = None, None
         else:
-            take_rate, flat_fee_in_cents = self._extract_transaction_fee(
+            fee_percent, fee_fixed = self._extract_transaction_fee(
                 grant.benefit.metadata or {}, grant.benefit_id
             )
 
@@ -223,14 +220,14 @@ class PolarSelfService:
         with logfire.span(
             "polar_self.webhook.transaction_fee.applied",
             organization_id=str(organization_id),
-            take_rate=take_rate,
-            flat_fee_in_cents=flat_fee_in_cents,
+            fee_percent=fee_percent,
+            fee_fixed=fee_fixed,
         ):
             await account_service.set_platform_fee(
                 session,
                 account,
-                take_rate=take_rate,
-                flat_fee_in_cents=flat_fee_in_cents,
+                fee_percent=fee_percent,
+                fee_fixed=fee_fixed,
             )
 
     def _extract_support(

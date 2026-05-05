@@ -59,6 +59,7 @@ export const useGetNotificationRecipient = (
       return response.items?.[0] ?? null
     },
     enabled: !!expoPushToken && !!session,
+    throwOnError: false,
   })
 }
 

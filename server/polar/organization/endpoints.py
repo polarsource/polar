@@ -62,6 +62,8 @@ from .schemas import (
     OrganizationPayoutAccountSet,
     OrganizationReviewState,
     OrganizationReviewStatus,
+    OrganizationSlugAvailability,
+    OrganizationSlugCheck,
     OrganizationUpdate,
     OrganizationValidateWebsiteRequest,
     OrganizationValidateWebsiteResponse,
@@ -214,6 +216,21 @@ async def create(
 ) -> Organization:
     """Create an organization."""
     return await organization_service.create(session, organization_create, auth_subject)
+
+
+@router.post(
+    "/check-slug",
+    response_model=OrganizationSlugAvailability,
+    summary="Check Organization Slug Availability",
+    tags=[APITag.private],
+)
+async def check_slug(
+    body: OrganizationSlugCheck,
+    auth_subject: auth.OrganizationsCreate,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> OrganizationSlugAvailability:
+    """Check whether a slug is valid and available for a new organization."""
+    return await organization_service.check_slug_availability(session, body.slug)
 
 
 @router.patch(

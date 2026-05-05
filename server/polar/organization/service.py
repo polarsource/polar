@@ -69,6 +69,8 @@ from polar.transaction.service.transaction import transaction as transaction_ser
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
+from slugify import slugify
+
 from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
     OrganizationCreate,
@@ -81,7 +83,10 @@ from .schemas import (
     OrganizationReviewState,
     OrganizationReviewSubmissionBody,
     OrganizationReviewVerdict,
+    OrganizationSlugAvailability,
     OrganizationUpdate,
+    validate_blocked_words,
+    validate_reserved_keywords,
 )
 from .sorting import OrganizationSortProperty
 
@@ -212,6 +217,35 @@ class OrganizationService:
         )
 
         return await repository.get_one_or_none(statement)
+
+    async def check_slug_availability(
+        self, session: AsyncReadSession, slug: str
+    ) -> OrganizationSlugAvailability:
+        """Check whether a slug is valid and available for a new organization.
+
+        Mirrors the validation rules of the `SlugInput` type plus a
+        check against existing (and soft-deleted) organizations.
+        """
+        normalized = slug.lower()
+
+        if len(normalized) < 3 or slugify(normalized) != normalized:
+            return OrganizationSlugAvailability(available=False, reason="format")
+
+        try:
+            validate_reserved_keywords(normalized)
+        except ValueError:
+            return OrganizationSlugAvailability(available=False, reason="reserved")
+
+        try:
+            validate_blocked_words(normalized)
+        except ValueError:
+            return OrganizationSlugAvailability(available=False, reason="blocked")
+
+        repository = OrganizationRepository.from_session(session)
+        if await repository.slug_exists(normalized):
+            return OrganizationSlugAvailability(available=False, reason="taken")
+
+        return OrganizationSlugAvailability(available=True)
 
     async def create(
         self,

@@ -125,6 +125,10 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has checkout localization enabled",
     )
+    account_review_v2_enabled: bool = Field(
+        False,
+        description="If this organization sees the new account review checklist UI.",
+    )
     overview_metrics: list[str] | None = Field(
         None,
         description="Ordered list of metric slugs shown on the dashboard overview.",

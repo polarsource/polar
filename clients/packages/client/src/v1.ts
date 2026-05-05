@@ -23150,6 +23150,12 @@ export interface components {
        */
       checkout_localization_enabled: boolean
       /**
+       * Account Review V2 Enabled
+       * @description If this organization sees the new account review checklist UI.
+       * @default false
+       */
+      account_review_v2_enabled: boolean
+      /**
        * Overview Metrics
        * @description Ordered list of metric slugs shown on the dashboard overview.
        */

@@ -4,6 +4,7 @@ import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import { AccountPageApproved } from './AccountPageApproved'
 import { AccountPageDetailsRequired } from './AccountPageDetailsRequired'
+import { AccountPageDetailsRequiredV2 } from './AccountPageDetailsRequiredV2'
 import { AccountPageInReview } from './AccountPageInReview'
 
 interface Props {
@@ -40,6 +41,9 @@ export const AccountPageRouter = ({
       isActive
 
   if (requireDetails) {
+    if (organization.feature_settings?.account_review_v2_enabled) {
+      return <AccountPageDetailsRequiredV2 organization={organization} />
+    }
     return <AccountPageDetailsRequired organization={organization} />
   }
 

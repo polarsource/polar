@@ -1348,6 +1348,10 @@ class CheckoutService:
         )
         if checkout is None:
             raise ResourceNotFound()
+
+        if not checkout.organization.can_authenticate:
+            raise NotPermitted()
+
         if checkout.is_expired:
             raise ExpiredCheckoutError()
         return checkout

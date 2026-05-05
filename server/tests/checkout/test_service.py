@@ -44,7 +44,7 @@ from polar.enums import (
 )
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
-from polar.exceptions import PaymentNotReady, PolarRequestValidationError
+from polar.exceptions import NotPermitted, PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import AddressInput
 from polar.kit.currency import PresentmentCurrency
@@ -2555,6 +2555,48 @@ class TestCheckoutLinkCreate:
         assert checkout.currency == expected_currency
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}
+
+
+@pytest.mark.asyncio
+class TestGetByClientSecret:
+    async def test_returns_checkout_when_org_can_authenticate(
+        self,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        result = await checkout_service.get_by_client_secret(
+            session, checkout_one_time_fixed.client_secret
+        )
+
+        assert result.id == checkout_one_time_fixed.id
+
+    async def test_raises_not_permitted_for_blocked_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout_one_time_fixed.organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(checkout_one_time_fixed.organization)
+
+        with pytest.raises(NotPermitted):
+            await checkout_service.get_by_client_secret(
+                session, checkout_one_time_fixed.client_secret
+            )
+
+    async def test_raises_not_permitted_for_soft_deleted_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout_one_time_fixed.organization.deleted_at = utc_now()
+        await save_fixture(checkout_one_time_fixed.organization)
+
+        with pytest.raises(NotPermitted):
+            await checkout_service.get_by_client_secret(
+                session, checkout_one_time_fixed.client_secret
+            )
 
 
 @pytest.mark.asyncio

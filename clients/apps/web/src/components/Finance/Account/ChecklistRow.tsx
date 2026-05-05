@@ -7,31 +7,8 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { useContext, useState } from 'react'
-import { SECTION_RENDERERS } from './sections'
+import { COMMON_REASON_LABELS, STEP_CONFIG } from './sections'
 import { StatusIcon } from './StatusIcon'
-
-const STEP_LABELS: Partial<
-  Record<schemas['OrganizationReviewCheckKey'], string>
-> = {
-  'identity.email': 'Support email',
-  'identity.social_links': 'Social links',
-  'identity.stripe_identity_verification': 'Identity verification',
-  product_description: 'Product description',
-  payout_account: 'Setup a payout account',
-}
-
-const REASON_LABELS: Record<schemas['OrganizationReviewCheckReason'], string> =
-  {
-    not_started: 'Not started',
-    in_progress: 'In progress',
-    external_pending: 'Awaiting external verification',
-    'identity.rejected': 'Identity verification was rejected',
-    'identity.personal_email': 'Please use a business email',
-    'identity.domain_mismatch':
-      'Email domain does not match your organization website',
-    'payout_account.requirements_due': 'Additional information required',
-    'payout_account.payouts_disabled': 'Payouts are currently disabled',
-  }
 
 interface Props {
   step?: schemas['OrganizationReviewCheck']
@@ -54,10 +31,17 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
     )
   }
 
-  const renderSection = SECTION_RENDERERS[step.key]
-  const label = STEP_LABELS[step.key] ?? step.key
-  const reasonText = step.reasons?.map((r) => REASON_LABELS[r] ?? r).join(', ')
-  const isActionable = !!renderSection && step.status !== 'passed'
+  const stepConfig = STEP_CONFIG[step.key]
+  const label = stepConfig?.label ?? step.key
+  const reasonText = step.reasons
+    ?.map(
+      (reason) =>
+        stepConfig?.reasonLabels?.[reason] ??
+        COMMON_REASON_LABELS[reason] ??
+        reason,
+    )
+    .join(', ')
+  const isActionable = !!stepConfig?.render && step.status !== 'passed'
   const collapsedLabel = step.status === 'pending' ? 'Add' : 'Update'
 
   return (
@@ -83,10 +67,10 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
           </Box>
         )}
       </Box>
-      {isActionable && isExpanded && renderSection && (
+      {isActionable && isExpanded && stepConfig?.render && (
         <Box paddingTop="s">
           <div className="dark:border-polar-700 mb-3 border-t border-gray-200" />
-          {renderSection({ organization })}
+          {stepConfig.render({ organization })}
         </Box>
       )}
     </Box>

@@ -1,14 +1,14 @@
 ---
 title: "Payouts"
 sidebarTitle: "Payouts"
-description: "Easily withdraw money from your Polar account at any time"
+description: "Withdraw money from your Polar account"
 ---
 
-You can issue a withdrawal, i.e payout, at any time once your balance meets the minimum threshold for your account currency. We will then transfer the balance minus Stripe payout fees (see below) to your Stripe account & issue a payout on their side.
+You can issue a withdrawal — also called a payout — once your balance meets the minimum threshold for your account currency. Polar transfers the balance, minus Stripe payout fees (see below), to your Stripe account, and Stripe issues the payout from there.
 
 ## Minimum Payout Thresholds
 
-The minimum balance required to issue a payout varies based out the payout currency. Certain currencies having a higher limit due to Stripe requirements. These limits can change at a later point.
+The minimum balance required to issue a payout varies based on the payout currency. Certain currencies have a higher limit due to Stripe requirements, and these limits can change.
 
 
 | Currency | Minimum Balance (USD) |
@@ -53,51 +53,28 @@ A handful of countries also enforce a higher minimum:
 | El Salvador  | $30.00 |
 | Panama       | $50.00 |
 
+## Stripe Payout Fees
+
+Each payout to your Stripe account carries a fee:
+
+1. $2 per month in which you have at least one active payout
+2. 0.25% + $0.25 per payout
+3. Cross-border fees (currency conversion): 0.25% within the EU, up to 1% elsewhere
+
 ## Manual Withdrawal
 
-We require this to be done manually since:
-
-1. Users have requested control for easier accounting vs. frequent & small payouts
-2. Giving users control of Stripe payout fees
-
-## **Stripe Payout Fees**
-
-1. $2 per month of active payout(s)
-2. 0.25% + $0.25 per payout
-3. Cross border fees (currency conversion): 0.25% (EU) - 1% in other countries.
-
-Given the fixed costs, we want to default to manual payouts so you can control when you want to incur them and do it once vs. per each individual transaction in order to reduce the overall fees.
+Because of those fixed per-payout costs, withdrawals are initiated manually rather than on an automatic schedule. This way you decide when to incur the fees and can batch earnings into fewer, larger payouts instead of paying overhead on every transaction.
 
 ## Reverse invoices
 
-Since we're the Merchant of Record, your customers get an invoice from Polar. Thus, for your accounting, you need to issue an invoice to Polar for the amount we paid out to you. To ease this process, we can automatically generate a **reverse invoice** for you, detailing the sells we made on your behalf, minus our fees.
-
-You can generate them from the **Payouts** page under **Finance** in your Polar dashboard. Click on the ellipsis next to the payout you want to generate a reverse invoice for, and select **Download invoice**.
-
-<img
-  className="block dark:hidden"
-  src="/assets/features/finance/payouts/download.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/finance/payouts/download.dark.png"
-/>
+Polar invoices your customers directly as the Merchant of Record. For your own accounting, you'll need to invoice Polar in return for each payout. You can generate a **reverse invoice** — detailing the sales we made on your behalf, minus our fees — from the **Payouts** page under **Finance** in your dashboard. Click the ellipsis next to a payout and select **Download invoice**.
 
 A modal will open, allowing you to:
 
 - Set your billing name and address.
-- Add information shown below your billing address.
+- Add information shown below your billing address — a good place for your VAT number or any other details your local tax rules require on an invoice.
 - Add notes shown at the bottom of the invoice.
 - Customize the invoice number. By default, we generate one like `POLAR-0001`, but you can change it to your own format and sequence.
-
-<img
-  className="block dark:hidden"
-  src="/assets/features/finance/payouts/generate.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/finance/payouts/generate.dark.png"
-/>
 
 <Warning>
   Once the reverse invoice is generated, it cannot be changed. Make sure to
@@ -118,7 +95,7 @@ A modal will open, allowing you to:
 
 Polar will issue 1099-K forms via Stripe to eligible users in the US on an annual basis.
 
-For a given tax year, 1099-K forms are required for set of users who cross a given number of gross volume in USD and a given number of transactions via Polar.
+For a given tax year, 1099-K forms are required for users who cross a certain gross volume in USD and a certain number of transactions via Polar.
 
 **Why not a 1099-NEC or 1099-MISC?**
 

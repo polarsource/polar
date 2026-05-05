@@ -5,6 +5,7 @@ from typing import Any, assert_never, cast
 from urllib.parse import urlparse
 from uuid import UUID
 
+import email_validator
 import structlog
 from pydantic import BaseModel, Field
 from pydantic import ValidationError as PydanticValidationError
@@ -91,9 +92,8 @@ SNOOZE_GRACE_PERIOD = timedelta(hours=24)
 def _website_domain(website: str | None) -> str | None:
     if not website:
         return None
-    parsed = urlparse(website)
-    host = (parsed.netloc or parsed.path).split("/", 1)[0].split(":", 1)[0]
-    return host.lower().removeprefix("www.") or None
+    host = urlparse(website).hostname
+    return host.removeprefix("www.") if host else None
 
 
 def _append_internal_note(
@@ -1269,7 +1269,13 @@ class OrganizationService:
         if not organization.email:
             return self._not_started_check(key)
 
-        email_domain = organization.email.rsplit("@", 1)[-1].lower()
+        try:
+            email_domain = email_validator.validate_email(
+                organization.email, check_deliverability=False
+            ).domain
+        except email_validator.EmailNotValidError:
+            return self._passed_check(key)
+
         website_domain = _website_domain(organization.website)
         reasons: list[OrganizationReviewCheckReason] = []
 

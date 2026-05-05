@@ -83,7 +83,7 @@ class LicenseKeyValidate(Schema):
     activation_id: UUID4 | None = None
     benefit_id: BenefitID | None = None
     customer_id: UUID4 | None = None
-    increment_usage: int | None = None
+    increment_usage: int | None = Field(default=None, gt=0)
     conditions: ConditionsField
 
 

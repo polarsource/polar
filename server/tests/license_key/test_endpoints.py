@@ -580,6 +580,64 @@ class TestValidateLicenseKey:
 
         assert response.status_code == 404
 
+    @pytest.mark.auth
+    async def test_negative_increment_usage_rejected(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        license_key_organization_second: LicenseKey,
+    ) -> None:
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": license_key_organization_second.key,
+                "organization_id": str(license_key_organization_second.organization_id),
+                "increment_usage": -1000,
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_omitted_increment_usage(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                limit_usage=10,
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": lk.key,
+                "organization_id": str(lk.organization_id),
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["usage"] == 0
+
 
 @pytest.mark.asyncio
 class TestActivateLicenseKey:

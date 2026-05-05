@@ -1,25 +1,25 @@
-"use client";
+'use client'
 
-import { Hero } from "@/components/Landing/Hero/Hero";
-import { Testimonials } from "@/components/Landing/Testimonials";
-import Button from "@polar-sh/ui/components/atoms/Button";
-import Link from "next/link";
-import GetStartedButton from "../Auth/GetStartedButton";
-import { Pricing } from "./Pricing";
-import { Section } from "./Section";
-import { Upsell } from "./Upsell";
-import { Usage } from "./Usage";
-import { Vision } from "./Vision";
-import { Features } from "./Features";
-import { Logotypes } from "./Logotypes";
-import { UseCases } from "./UseCases";
+import { Hero } from '@/components/Landing/Hero/Hero'
+import { Testimonials } from '@/components/Landing/Testimonials'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Link from 'next/link'
+import GetStartedButton from '../Auth/GetStartedButton'
+import { Pricing } from './Pricing'
+import { Section } from './Section'
+import { Upsell } from './Upsell'
+import { Usage } from './Usage'
+import { Vision } from './Vision'
+import { Features } from './Features'
+import { Logotypes } from './Logotypes'
+import { UseCases } from './UseCases'
 
 export default function Page() {
   return (
     <div className="flex flex-col">
       <PageContent />
     </div>
-  );
+  )
 }
 
 const PageContent = () => {
@@ -58,5 +58,5 @@ const PageContent = () => {
         <Pricing />
       </Section>
     </>
-  );
-};
+  )
+}

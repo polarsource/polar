@@ -6,7 +6,9 @@ from dramatiq import Retry
 
 from polar.config import settings
 from polar.event.repository import EventRepository
+from polar.external_event.service import external_event as external_event_service
 from polar.kit.utils import utc_now
+from polar.models.external_event import ExternalEventSource
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -147,3 +149,30 @@ async def track_organization_review_usage(
         output_tokens=output_tokens,
         cost_usd=Decimal(cost_usd),
     )
+
+
+@actor(actor_name="polar_self.webhook.subscription.active", priority=TaskPriority.LOW)
+async def webhook_subscription_active(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ):
+            pass
+
+
+@actor(actor_name="polar_self.webhook.subscription.updated", priority=TaskPriority.LOW)
+async def webhook_subscription_updated(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ):
+            pass
+
+
+@actor(actor_name="polar_self.webhook.subscription.revoked", priority=TaskPriority.LOW)
+async def webhook_subscription_revoked(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ):
+            pass

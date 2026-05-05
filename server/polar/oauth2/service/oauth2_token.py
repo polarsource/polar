@@ -20,15 +20,15 @@ from polar.user_organization.service import (
 
 log: Logger = structlog.get_logger()
 
-# TEMPORARY: the iOS app does not refresh its access tokens and crashes on 401.
-# Until the app's auth flow is fixed, expired tokens issued to it are still
-# accepted but logged. Source of truth for these IDs:
-# clients/apps/app/hooks/oauth.ts.
-_IOS_APP_CLIENT_IDS: dict[Environment, str] = {
+# TEMPORARY: the Polar app (iOS/Android/web, @polar-sh/app) does not refresh
+# its access tokens and crashes on 401. Until the app's auth flow is fixed,
+# expired tokens issued to it are still accepted but logged. Source of truth
+# for these IDs: clients/apps/app/hooks/oauth.ts.
+_APP_CLIENT_IDS: dict[Environment, str] = {
     Environment.production: "polar_ci_yZLBGwoWZVsOdfN5CODRwVSTlJfwJhXqwg65e2CuNMZ",
     Environment.development: "polar_ci_hbFdMZZRghgdm2F4LMceQSrcQNunmjlh6ukGJ1dG0Vg",
 }
-IOS_APP_CLIENT_ID: str | None = _IOS_APP_CLIENT_IDS.get(settings.ENV)
+APP_CLIENT_ID: str | None = _APP_CLIENT_IDS.get(settings.ENV)
 
 
 class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
@@ -51,10 +51,10 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
             return None
 
         if cast(bool, token.is_expired()):
-            if token.client_id != IOS_APP_CLIENT_ID:
+            if token.client_id != APP_CLIENT_ID:
                 return None
             log.warning(
-                "Allowing expired access token from iOS app client",
+                "Allowing expired access token from Polar app client",
                 token_id=token.id,
                 client_id=token.client_id,
                 expires_at=token.expires_at,

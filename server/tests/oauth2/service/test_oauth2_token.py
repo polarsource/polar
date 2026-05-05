@@ -228,7 +228,7 @@ class TestGetByAccessToken:
         )
         assert result is None
 
-    async def test_expired_token_ios_app_client(
+    async def test_expired_token_app_client(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -237,7 +237,7 @@ class TestGetByAccessToken:
         mocker: MockerFixture,
     ) -> None:
         mocker.patch(
-            "polar.oauth2.service.oauth2_token.IOS_APP_CLIENT_ID",
+            "polar.oauth2.service.oauth2_token.APP_CLIENT_ID",
             oauth2_client.client_id,
         )
 

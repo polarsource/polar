@@ -13,8 +13,6 @@ import { OrderConfirmation } from './order_confirmation'
 import { OrganizationAccessTokenLeaked } from './organization_access_token_leaked'
 import { OrganizationAccountUnlink } from './organization_account_unlink'
 import { OrganizationInvite } from './organization_invite'
-import OrganizationReviewed from './organization_reviewed'
-import { OrganizationUnderReview } from './organization_under_review'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
 import { SeatInvitation } from './seat_invitation'
 import { SubscriptionCancellation } from './subscription_cancellation'
@@ -42,8 +40,6 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   organization_access_token_leaked: OrganizationAccessTokenLeaked,
   organization_account_unlink: OrganizationAccountUnlink,
   organization_invite: OrganizationInvite,
-  organization_under_review: OrganizationUnderReview,
-  organization_reviewed: OrganizationReviewed,
   personal_access_token_leaked: PersonalAccessTokenLeaked,
   seat_invitation: SeatInvitation,
   subscription_cancellation: SubscriptionCancellation,

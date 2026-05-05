@@ -29,8 +29,6 @@ class EmailTemplate(StrEnum):
     organization_access_token_leaked = "organization_access_token_leaked"
     organization_invite = "organization_invite"
     organization_account_unlink = "organization_account_unlink"
-    organization_under_review = "organization_under_review"
-    organization_reviewed = "organization_reviewed"
     personal_access_token_leaked = "personal_access_token_leaked"
     seat_invitation = "seat_invitation"
     subscription_cancellation = "subscription_cancellation"
@@ -193,28 +191,6 @@ class OrganizationInviteEmail(BaseModel):
         EmailTemplate.organization_invite
     )
     props: OrganizationInviteProps
-
-
-class OrganizationUnderReviewProps(EmailProps):
-    organization: Organization
-
-
-class OrganizationUnderReviewEmail(BaseModel):
-    template: Literal[EmailTemplate.organization_under_review] = (
-        EmailTemplate.organization_under_review
-    )
-    props: OrganizationUnderReviewProps
-
-
-class OrganizationReviewedProps(EmailProps):
-    organization: Organization
-
-
-class OrganizationReviewedEmail(BaseModel):
-    template: Literal[EmailTemplate.organization_reviewed] = (
-        EmailTemplate.organization_reviewed
-    )
-    props: OrganizationReviewedProps
 
 
 class PersonalAccessTokenLeakedProps(EmailProps):
@@ -432,8 +408,6 @@ Email = Annotated[
     | OrganizationAccessTokenLeakedEmail
     | OrganizationInviteEmail
     | OrganizationAccountUnlinkEmail
-    | OrganizationUnderReviewEmail
-    | OrganizationReviewedEmail
     | PersonalAccessTokenLeakedEmail
     | SeatInvitationEmail
     | SubscriptionCancellationEmail

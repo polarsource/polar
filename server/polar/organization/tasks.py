@@ -5,11 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
-from polar.email.schemas import (
-    OrganizationReviewedEmail,
-    OrganizationReviewedProps,
-)
-from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarTaskError
 from polar.integrations.plain.service import plain as plain_service
 from polar.member.repository import MemberRepository
@@ -81,36 +76,6 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             organization_id=organization_id,
             auto_approve_eligible=is_auto_approve_eligible,
         )
-
-
-@actor(actor_name="organization.reviewed", priority=TaskPriority.LOW)
-async def organization_reviewed(
-    organization_id: uuid.UUID,
-    initial_review: bool = False,
-    silent: bool = False,
-) -> None:
-    async with AsyncSessionMaker() as session:
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.get_by_id(
-            organization_id, options=(joinedload(Organization.account),)
-        )
-        if organization is None:
-            raise OrganizationDoesNotExist(organization_id)
-
-        # Send an email after the initial review
-        if initial_review and not silent:
-            admin_user = await repository.get_admin_user(organization)
-            if admin_user:
-                email = OrganizationReviewedEmail(
-                    props=OrganizationReviewedProps.model_validate(
-                        {"email": admin_user.email, "organization": organization}
-                    )
-                )
-                enqueue_email_template(
-                    email,
-                    to_email_addr=admin_user.email,
-                    subject="Your organization review is complete",
-                )
 
 
 @actor(actor_name="organization.deletion_requested", priority=TaskPriority.HIGH)

@@ -1938,22 +1938,6 @@ export interface components {
       /** New Subscription */
       new_subscription: boolean
     }
-    /** OrganizationReviewedEmail */
-    OrganizationReviewedEmail: {
-      /**
-       * Template
-       * @default organization_reviewed
-       * @constant
-       */
-      template: 'organization_reviewed'
-      props: components['schemas']['OrganizationReviewedProps']
-    }
-    /** OrganizationReviewedProps */
-    OrganizationReviewedProps: {
-      /** Email */
-      email: string
-      organization: components['schemas']['Organization']
-    }
     /** OrganizationSocialLink */
     OrganizationSocialLink: {
       /** @description The social platform of the URL */
@@ -2007,22 +1991,6 @@ export interface components {
       prevent_trial_abuse: boolean
       /** Allow Customer Updates */
       allow_customer_updates: boolean
-    }
-    /** OrganizationUnderReviewEmail */
-    OrganizationUnderReviewEmail: {
-      /**
-       * Template
-       * @default organization_under_review
-       * @constant
-       */
-      template: 'organization_under_review'
-      props: components['schemas']['OrganizationUnderReviewProps']
-    }
-    /** OrganizationUnderReviewProps */
-    OrganizationUnderReviewProps: {
-      /** Email */
-      email: string
-      organization: components['schemas']['Organization']
     }
     /** PersonalAccessTokenLeakedEmail */
     PersonalAccessTokenLeakedEmail: {

@@ -844,7 +844,6 @@ class OrganizationService:
         next_review_threshold: int | None = None,
         *,
         reason: str | None = None,
-        silent: bool = False,
     ) -> Organization:
         reactivation_notes = {
             OrganizationStatus.DENIED: "Organization reactivated from denied.",
@@ -901,19 +900,11 @@ class OrganizationService:
                 organization, reactivation_note + suffix, reason=reason
             )
 
-        initial_review = False
         if organization.initially_reviewed_at is None:
             organization.initially_reviewed_at = datetime.now(UTC)
-            initial_review = True
 
         session.add(organization)
 
-        enqueue_job(
-            "organization.reviewed",
-            organization_id=organization.id,
-            initial_review=initial_review,
-            silent=silent,
-        )
         return organization
 
     async def _is_activation_ready(
@@ -1020,7 +1011,6 @@ class OrganizationService:
             organization,
             next_review_threshold=next_review_threshold,
             reason=reason,
-            silent=True,
         )
         log.info(
             "organization.maybe_activate.activated",

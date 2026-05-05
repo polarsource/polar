@@ -14,7 +14,7 @@ from polar.exceptions import PolarError as InternalPolarError
 
 if TYPE_CHECKING:
     from polar_sdk import Polar as PolarSDK
-    from polar_sdk.models import Customer, Member
+    from polar_sdk.models import BenefitGrant, Customer, Member
 
 
 class PolarSelfClientError(InternalPolarError):
@@ -187,6 +187,38 @@ class PolarSelfClient:
                 _raise_error(span, e, "remove_member")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "remove_member")
+
+    async def list_customer_benefit_grants(
+        self, *, customer_id: str
+    ) -> list[BenefitGrant]:
+        from polar_sdk.models.polarerror import PolarError
+
+        with logfire.span(
+            "polar.list_customer_benefit_grants", customer_id=customer_id
+        ) as span:
+            grants: list[BenefitGrant] = []
+            page = 1
+            try:
+                while True:
+                    response = await self._sdk.benefit_grants.list_async(
+                        customer_id=customer_id,
+                        is_granted=True,
+                        page=page,
+                        limit=100,
+                    )
+                    if response is None:
+                        break
+                    grants.extend(response.result.items)
+                    if len(response.result.items) < 100:
+                        break
+                    page += 1
+            except PolarError as e:
+                _raise_error(span, e, "list_customer_benefit_grants")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "list_customer_benefit_grants")
+
+            span.set_attribute("grant_count", len(grants))
+            return grants
 
     async def delete_customer(self, *, external_id: str) -> None:
         from polar_sdk.models.polarerror import PolarError

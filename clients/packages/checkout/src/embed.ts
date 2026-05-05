@@ -69,10 +69,6 @@ class EmbedCheckout {
     this.eventTarget = new EventTarget()
     this.windowMessageListener = this.handleWindowMessage.bind(this)
     window.addEventListener('message', this.windowMessageListener)
-    this.addEventListener('loaded', this.loadedListener.bind(this))
-    this.addEventListener('close', this.closeListener.bind(this))
-    this.addEventListener('confirmed', this.confirmedListener.bind(this))
-    this.addEventListener('success', this.successListener.bind(this))
   }
 
   /**
@@ -319,12 +315,10 @@ class EmbedCheckout {
   }
 
   /**
-   * Default listener for the `loaded` event.
-   *
-   * This listener will remove the loader spinner when the embedded checkout is fully loaded.
+   * Default action for the `loaded` event: remove the loader spinner.
    */
-  private loadedListener(event: CustomEvent<EmbedCheckoutMessageLoaded>): void {
-    if (event.defaultPrevented || this.loaded) {
+  private handleLoaded(): void {
+    if (this.loaded) {
       return
     }
     document.body.removeChild(this.loader)
@@ -332,52 +326,39 @@ class EmbedCheckout {
   }
 
   /**
-   * Default listener for the `close` event.
-   *
-   * This listener will call the `close` method to remove the embedded checkout from the DOM.
+   * Default action for the `close` event: remove the embedded checkout from
+   * the DOM, unless closing has been locked by a prior `confirmed` event.
    */
-  private closeListener(event: CustomEvent<EmbedCheckoutMessageClose>): void {
-    if (event.defaultPrevented) {
-      return
-    }
+  private handleClose(): void {
     if (this.closable) {
       this.close()
     }
   }
 
   /**
-   * Default listener for the `confirmed` event.
-   *
-   * This listener will set a flag to prevent the parent window from closing the embedded checkout.
+   * Default action for the `confirmed` event: lock closing while the
+   * checkout is being processed.
    */
-  private confirmedListener(
-    event: CustomEvent<EmbedCheckoutMessageConfirmed>,
-  ): void {
-    if (event.defaultPrevented) {
-      return
-    }
+  private handleConfirmed(): void {
     this.closable = false
   }
 
   /**
-   * Default listener for the `success` event.
-   *
-   * This listener will redirect the parent window to the `successURL` if `redirect` is set to `true`.
+   * Default action for the `success` event: re-enable closing and, if
+   * requested, redirect the parent window to the `successURL`.
    */
-  private successListener(
-    event: CustomEvent<EmbedCheckoutMessageSuccess>,
-  ): void {
-    if (event.defaultPrevented) {
-      return
-    }
+  private handleSuccess(detail: EmbedCheckoutMessageSuccess): void {
     this.closable = true
-    if (event.detail.redirect) {
-      window.location.href = event.detail.successURL
+    if (detail.redirect) {
+      window.location.href = detail.successURL
     }
   }
 
   /**
    * Handle window message events from the embedded checkout iframe.
+   *
+   * Dispatches a cancelable `CustomEvent` to consumer listeners first, then
+   * runs the default action unless a listener called `event.preventDefault()`.
    */
   private handleWindowMessage({ data, origin }: MessageEvent): void {
     if (
@@ -392,9 +373,28 @@ class EmbedCheckout {
     if (!isEmbedCheckoutMessage(data)) {
       return
     }
-    this.eventTarget.dispatchEvent(
-      new CustomEvent(data.event, { detail: data, cancelable: true }),
-    )
+    const event = new CustomEvent(data.event, {
+      detail: data,
+      cancelable: true,
+    })
+    this.eventTarget.dispatchEvent(event)
+    if (event.defaultPrevented) {
+      return
+    }
+    switch (data.event) {
+      case 'loaded':
+        this.handleLoaded()
+        break
+      case 'close':
+        this.handleClose()
+        break
+      case 'confirmed':
+        this.handleConfirmed()
+        break
+      case 'success':
+        this.handleSuccess(data)
+        break
+    }
   }
 }
 

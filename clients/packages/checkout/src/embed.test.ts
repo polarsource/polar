@@ -326,6 +326,139 @@ describe('PolarEmbedCheckout', () => {
       checkout.close()
     })
 
+    it('skips the default loaded action when preventDefault is called', async () => {
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123',
+        { onLoaded: (event) => event.preventDefault() },
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+
+      // Loader spinner should still be in the DOM since the default action
+      // (removing the loader) was prevented.
+      expect(document.querySelector('.polar-loader-spinner')).not.toBeNull()
+
+      checkout.close()
+    })
+
+    it('skips the default close action when preventDefault is called', async () => {
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123',
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+      checkout.addEventListener('close', (event) => event.preventDefault())
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'close' },
+        }),
+      )
+
+      expect(document.querySelector('iframe')).not.toBeNull()
+
+      checkout.close()
+    })
+
+    it('skips the default confirmed action when preventDefault is called', async () => {
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123',
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+      checkout.addEventListener('confirmed', (event) => event.preventDefault())
+
+      // Confirm — but listener prevents default, so closable should stay true.
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'confirmed' },
+        }),
+      )
+
+      // Close should still work since closable was not flipped to false.
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'close' },
+        }),
+      )
+
+      expect(document.querySelector('iframe')).toBeNull()
+    })
+
+    it('skips the default success action when preventDefault is called', async () => {
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123',
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+
+      // Lock closing first, then dispatch success with a listener that
+      // prevents default — closing must remain locked because the default
+      // action (re-enabling closing) was skipped.
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'confirmed' },
+        }),
+      )
+
+      checkout.addEventListener('success', (event) => event.preventDefault())
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: {
+            type: 'POLAR_CHECKOUT',
+            event: 'success',
+            successURL: 'https://example.com/thanks',
+            redirect: false,
+          },
+        }),
+      )
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'close' },
+        }),
+      )
+
+      expect(document.querySelector('iframe')).not.toBeNull()
+
+      checkout.close()
+    })
+
     it('re-enables closing after success event', async () => {
       const promise = PolarEmbedCheckout.create(
         'https://buy.polar.sh/polar_cl_123',

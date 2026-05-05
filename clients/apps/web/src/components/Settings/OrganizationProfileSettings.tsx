@@ -6,19 +6,9 @@ import { useAutoSave } from '@/hooks/useAutoSave'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
 import { containsBlockedWord } from '@/utils/blocked-words'
-import AddOutlined from '@mui/icons-material/AddOutlined'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import Facebook from '@mui/icons-material/Facebook'
-import GitHub from '@mui/icons-material/GitHub'
-import Instagram from '@mui/icons-material/Instagram'
-import LinkedIn from '@mui/icons-material/LinkedIn'
-import Public from '@mui/icons-material/Public'
-import X from '@mui/icons-material/X'
-import YouTube from '@mui/icons-material/YouTube'
 import { enums, isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -48,6 +38,7 @@ import {
   useWatch,
 } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
+import { SocialLinksField } from '../Organization/forms/SocialLinksField'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
 import ConfirmationButton from '../ui/ConfirmationButton'
@@ -68,148 +59,6 @@ const SwitchingFromOptions = {
   gumroad: 'Gumroad',
   stripe: 'Stripe',
   other: 'Other',
-}
-
-const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
-  'x.com': 'x',
-  'twitter.com': 'x',
-  'instagram.com': 'instagram',
-  'facebook.com': 'facebook',
-  'fb.com': 'facebook',
-  'youtube.com': 'youtube',
-  'youtu.be': 'youtube',
-  'linkedin.com': 'linkedin',
-  'github.com': 'github',
-  'threads.net': 'threads',
-  'tiktok.com': 'tiktok',
-  'discord.gg': 'discord',
-  'discord.com': 'discord',
-}
-
-interface OrganizationSocialLinksProps {
-  required?: boolean
-}
-
-const OrganizationSocialLinks = ({
-  required,
-}: OrganizationSocialLinksProps) => {
-  const { control, formState } = useFormContext<schemas['OrganizationUpdate']>()
-
-  const getIcon = (platform: string, className: string) => {
-    switch (platform) {
-      case 'x':
-        return <X className={className} />
-      case 'instagram':
-        return <Instagram className={className} />
-      case 'facebook':
-        return <Facebook className={className} />
-      case 'github':
-        return <GitHub className={className} />
-      case 'youtube':
-        return <YouTube className={className} />
-      case 'linkedin':
-        return <LinkedIn className={className} />
-      default:
-        return <Public className={className} />
-    }
-  }
-
-  const handleChange = (
-    index: number,
-    value: string,
-    socials: schemas['OrganizationSocialLink'][],
-    updateField: (value: schemas['OrganizationSocialLink'][]) => void,
-  ) => {
-    if (value.startsWith('http://')) {
-      value = value.replace('http://', 'https://')
-    }
-    const hasProtocol = value.startsWith('https://')
-    const isTypingProtocol =
-      'https://'.startsWith(value) || 'http://'.startsWith(value)
-    if (!hasProtocol && !isTypingProtocol) {
-      value = 'https://' + value
-    }
-
-    // Infer the platform from the URL
-    let newPlatform: schemas['OrganizationSocialPlatforms'] = 'other'
-    try {
-      const url = new URL(value)
-      let hostname = url.hostname
-      if (hostname.startsWith('www.')) {
-        hostname = hostname.slice(4)
-      }
-      newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
-        'other') as schemas['OrganizationSocialPlatforms']
-      // eslint-disable-next-line no-empty
-    } catch {}
-
-    // Update the socials array
-    const updatedSocials = [...socials]
-    updatedSocials[index] = { platform: newPlatform, url: value }
-    updateField(updatedSocials)
-  }
-
-  return (
-    <FormField
-      control={control}
-      name="socials"
-      render={({ field }) => {
-        const socials = field.value || []
-        const hasValidSocial = socials.some(
-          (social) => social.url && social.url.trim() !== '',
-        )
-        const showError = required && formState.isSubmitted && !hasValidSocial
-
-        return (
-          <div className="space-y-3">
-            {socials.map((social, index) => (
-              <div key={index} className="flex items-center gap-3">
-                <div className="flex w-5 justify-center">
-                  {getIcon(social.platform, 'text-gray-400 h-4 w-4')}
-                </div>
-                <Input
-                  type="url"
-                  value={social.url || ''}
-                  onChange={(e) =>
-                    handleChange(index, e.target.value, socials, field.onChange)
-                  }
-                  placeholder="https://"
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    field.onChange(socials.filter((_, i) => i !== index))
-                  }}
-                  className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
-                >
-                  <CloseOutlined fontSize="small" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                field.onChange([...socials, { platform: 'other', url: '' }])
-              }}
-            >
-              <AddOutlined fontSize="small" className="mr-1" />
-              Add Social
-            </Button>
-            {showError && (
-              <p className="text-destructive text-sm font-medium">
-                At least one social media link is required
-              </p>
-            )}
-          </div>
-        )
-      }}
-    />
-  )
 }
 
 const CompactTextArea = ({
@@ -461,7 +310,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               verification. They will never be shown publicly.
             </p>
           </div>
-          <OrganizationSocialLinks required={inKYCMode} />
+          <SocialLinksField required={inKYCMode} />
         </div>
       </div>
 

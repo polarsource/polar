@@ -214,27 +214,25 @@ export default function TextPage() {
             <Text variant="caption">warning</Text>
             <Text variant="caption">success</Text>
           </div>
-          {(['body', 'label', 'caption', 'subtle', 'mono'] as const).map(
-            (v) => (
-              <div key={v} className="grid grid-cols-5 gap-4 px-4 py-3">
-                <Text as="code" variant="mono" className="col-span-1">
-                  {v}
-                </Text>
-                <Text variant={v} color="default">
-                  Sample
-                </Text>
-                <Text variant={v} color="error">
-                  Sample
-                </Text>
-                <Text variant={v} color="warning">
-                  Sample
-                </Text>
-                <Text variant={v} color="success">
-                  Sample
-                </Text>
-              </div>
-            ),
-          )}
+          {(['body', 'label', 'caption', 'mono'] as const).map((v) => (
+            <div key={v} className="grid grid-cols-5 gap-4 px-4 py-3">
+              <Text as="code" variant="mono" className="col-span-1">
+                {v}
+              </Text>
+              <Text variant={v} color="default">
+                Sample
+              </Text>
+              <Text variant={v} color="error">
+                Sample
+              </Text>
+              <Text variant={v} color="warning">
+                Sample
+              </Text>
+              <Text variant={v} color="success">
+                Sample
+              </Text>
+            </div>
+          ))}
         </div>
       </Stack>
 

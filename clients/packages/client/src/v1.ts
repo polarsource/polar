@@ -23153,6 +23153,12 @@ export interface components {
        * @default false
        */
       reset_proration_behavior_enabled: boolean
+      /**
+       * Billing Enabled
+       * @description If this organization has billing enabled
+       * @default false
+       */
+      billing_enabled: boolean
     }
     /** OrganizationIndividualLegalEntitySchema */
     OrganizationIndividualLegalEntitySchema: {

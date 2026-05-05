@@ -133,6 +133,9 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has access to reset proration behavior.",
     )
+    billing_enabled: bool = Field(
+        False, description="If this organization has billing enabled"
+    )
 
     @field_validator("overview_metrics", mode="before")
     @classmethod

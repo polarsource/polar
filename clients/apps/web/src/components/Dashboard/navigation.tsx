@@ -324,6 +324,7 @@ const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
       {
         title: 'Billing',
         link: `/dashboard/${org?.slug}/settings/billing`,
+        if: org?.feature_settings?.billing_enabled ?? false,
       },
       {
         title: 'Members',

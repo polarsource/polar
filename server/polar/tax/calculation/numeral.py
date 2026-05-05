@@ -10,7 +10,6 @@ from opentelemetry import trace
 from polar.config import settings
 from polar.enums import TaxBehavior
 from polar.kit.address import Address
-from polar.kit.math import polar_round
 from polar.logging import Logger
 
 from ..tax_id import TaxID
@@ -120,7 +119,9 @@ def _numeral_jurisdiction_to_breakdown_item(
     else:
         assert jurisdiction["tax_rate"] is not None
         rate = jurisdiction["tax_rate"]
-        item_amount = polar_round(subtotal_amount * rate)
+        # Numeral seems to round 0.5 down, which is the standard Python behavior, different from our usual rounding
+        # Temporary fix as newer version of Numeral API explicitly gives the tax amount per item
+        item_amount = round(subtotal_amount * rate)
 
     subdivision: str | None = None
     if "general state" not in jurisdiction["rate_type"]:

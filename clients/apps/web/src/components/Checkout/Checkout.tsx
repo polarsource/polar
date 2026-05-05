@@ -20,7 +20,6 @@ import {
   hasProductCheckout,
   type ProductCheckoutPublic,
 } from '@polar-sh/checkout/guards'
-import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import { ClientResponseError, type schemas } from '@polar-sh/client'
 import { AcceptedLocale } from '@polar-sh/i18n'
@@ -165,18 +164,11 @@ const Checkout = ({
     () => confirmLoading || fullLoading,
     [confirmLoading, fullLoading],
   )
-  const [listenFulfillment, fullfillmentLabel] = useCheckoutFulfillmentListener(
-    client,
-    checkout,
-  )
+  const [checkoutConfirmedRedirect, fulfillmentLabel] =
+    useCheckoutConfirmedRedirect(client, checkout, embed, theme)
   const label = useMemo(
-    () => fullfillmentLabel || loadingLabel,
-    [fullfillmentLabel, loadingLabel],
-  )
-  const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(
-    embed,
-    theme,
-    listenFulfillment,
+    () => fulfillmentLabel || loadingLabel,
+    [fulfillmentLabel, loadingLabel],
   )
 
   const update = useCallback(

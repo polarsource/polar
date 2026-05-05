@@ -1,32 +1,38 @@
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import type { schemas } from '@polar-sh/client'
+import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
+import type { Client, schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 import { CONFIG } from '@/utils/config'
 
 export const useCheckoutConfirmedRedirect = (
+  client: Client,
+  checkout: schemas['CheckoutPublic'],
   embed: boolean,
   theme?: 'light' | 'dark',
-  listenFulfillment?: () => Promise<void>,
 ) => {
   const router = useRouter()
-  return useCallback(
+  const [listenFulfillment, fulfillmentLabel] = useCheckoutFulfillmentListener(
+    client,
+    checkout,
+  )
+  const redirect = useCallback(
     async (
-      checkout: schemas['CheckoutPublic'],
+      confirmedCheckout: schemas['CheckoutPublic'],
       customerSessionToken: string | null | undefined,
     ) => {
-      if (checkout.embed_origin) {
+      if (confirmedCheckout.embed_origin) {
         PolarEmbedCheckout.postMessage(
           {
             event: 'confirmed',
           },
-          checkout.embed_origin,
+          confirmedCheckout.embed_origin,
         )
       }
 
-      const parsedURL = new URL(checkout.success_url)
-      const isInternalURL = checkout.success_url.startsWith(
+      const parsedURL = new URL(confirmedCheckout.success_url)
+      const isInternalURL = confirmedCheckout.success_url.startsWith(
         CONFIG.FRONTEND_BASE_URL,
       )
 
@@ -49,27 +55,27 @@ export const useCheckoutConfirmedRedirect = (
       // For external success URL, make sure the checkout is processed before redirecting
       // It ensures the user will have an up-to-date status when they are redirected,
       // especially if the external URL doesn't implement proper webhook handling
-      if (!isInternalURL && listenFulfillment) {
+      if (!isInternalURL) {
         try {
           await listenFulfillment()
         } catch {
           // The fullfillment listener timed out.
           // Redirect to confirm page where we'll be able to recover
           router.push(
-            `/checkout/${checkout.client_secret}/confirmation?${parsedURL.searchParams}`,
+            `/checkout/${confirmedCheckout.client_secret}/confirmation?${parsedURL.searchParams}`,
           )
           return
         }
       }
 
-      if (checkout.embed_origin) {
+      if (confirmedCheckout.embed_origin) {
         PolarEmbedCheckout.postMessage(
           {
             event: 'success',
             successURL: parsedURL.toString(),
             redirect: !isInternalURL,
           },
-          checkout.embed_origin,
+          confirmedCheckout.embed_origin,
         )
       }
 
@@ -83,12 +89,12 @@ export const useCheckoutConfirmedRedirect = (
       // Only relevant for internal success URLs — external URLs already
       // await `listenFulfillment` above before posting `success`, and the
       // parent navigates away as soon as the success message arrives.
-      if (checkout.embed_origin && isInternalURL && listenFulfillment) {
-        const origin = checkout.embed_origin
+      if (confirmedCheckout.embed_origin && isInternalURL) {
+        const origin = confirmedCheckout.embed_origin
         const basePayload = {
           event: 'fulfilled' as const,
-          checkoutId: checkout.id,
-          customerId: checkout.customer_id,
+          checkoutId: confirmedCheckout.id,
+          customerId: confirmedCheckout.customer_id,
         }
 
         listenFulfillment().then(
@@ -113,7 +119,7 @@ export const useCheckoutConfirmedRedirect = (
         const {
           organization: { slug },
           customer_email,
-        } = checkout
+        } = confirmedCheckout
         if (customer_email) {
           parsedURL.searchParams.set('email', customer_email)
         }
@@ -125,4 +131,5 @@ export const useCheckoutConfirmedRedirect = (
     },
     [router, embed, theme, listenFulfillment],
   )
+  return [redirect, fulfillmentLabel] as const
 }

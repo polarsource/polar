@@ -4,7 +4,6 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { createClient, unwrap, type schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
@@ -136,11 +135,11 @@ export const CheckoutConfirmation = ({
       // Silently ignore - will retry on next interval/event
     }
   }, [client, checkout])
-  const [listenFulfillment] = useCheckoutFulfillmentListener(client, checkout)
-  const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(
+  const [checkoutConfirmedRedirect] = useCheckoutConfirmedRedirect(
+    client,
+    checkout,
     embed,
     theme,
-    listenFulfillment,
   )
 
   const checkoutEvents = useCheckoutClientSSE(checkout.client_secret)

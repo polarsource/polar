@@ -1,0 +1,155 @@
+# Shared Polar dev infrastructure
+# One copy of postgres/redis/minio/tinybird (and optional prometheus/grafana)
+# is brought up per machine, regardless of how many app instances run on top.
+#
+# Managed via: dev docker shared up [--monitoring] [--expose]
+#
+# Per-instance app stacks (api/worker/web) live in docker-compose.dev.yml and
+# attach to the external `polar-shared` network created here, so they reach
+# infra by container name (db, redis, minio, tinybird).
+#
+# Host ports are NOT exposed by default. Pass `--expose` to also load
+# docker-compose.shared.host-ports.yml, which publishes db/redis/minio/
+# tinybird/prometheus/grafana on configurable host ports (so you can attach
+# TablePlus/psql/etc. from the host).
+
+services:
+  db:
+    image: postgres:15.1-bullseye
+    command: ["postgres", "-c", "max_locks_per_transaction=256"]
+    environment:
+      POSTGRES_USER: polar
+      POSTGRES_PASSWORD: polar
+      POSTGRES_DB: polar
+      POLAR_READ_USER: polar_read
+      POLAR_READ_PASSWORD: polar
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ../../server/init-readonly-user.sql:/docker-entrypoint-initdb.d/init-readonly-user.sql:ro
+    expose:
+      - "5432"
+    networks:
+      - polar-shared
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "polar", "-U", "polar"]
+      timeout: 40s
+      interval: 2s
+      retries: 20
+
+  redis:
+    image: redis:alpine
+    expose:
+      - "6379"
+    networks:
+      - polar-shared
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 10s
+      retries: 10
+
+  minio:
+    image: bitnamilegacy/minio:2024.5.28
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - minio_data:/minio
+    environment:
+      MINIO_ROOT_USER: polar-development
+      MINIO_ROOT_PASSWORD: polar123456789
+    networks:
+      - polar-shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  minio-setup:
+    image: bitnamilegacy/minio-client:2024.5.24
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ../../server/.minio:/tmp/config:ro
+    environment:
+      MINIO_HOST: minio
+      MINIO_ROOT_USER: polar-development
+      MINIO_ROOT_PASSWORD: polar123456789
+      BUCKET_NAME: polar-s3
+      PUBLIC_BUCKET_NAME: polar-s3-public
+      BUCKET_TESTING_NAME: testing-polar-s3
+      POLICY_FILE: /tmp/config/policy.json
+      ACCESS_KEY: polar-development
+      SECRET_ACCESS_KEY: polar123456789
+    networks:
+      - polar-shared
+    entrypoint:
+      ["bash", "-c", "bash /tmp/config/local.sh /tmp/config/configure.sh"]
+
+  tinybird:
+    image: tinybirdco/tinybird-local:latest
+    platform: linux/amd64
+    expose:
+      - "7181"
+      - "7182"
+    volumes:
+      - ../../server/tinybird:/tinybird:ro
+      - ./scripts/tinybird-setup.sh:/scripts/tinybird-setup.sh:ro
+    networks:
+      - polar-shared
+    command: ["bash", "/scripts/tinybird-setup.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7181/"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    expose:
+      - "9090"
+    volumes:
+      - ../../server/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - polar-shared
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=1d"
+      - "--web.enable-lifecycle"
+      - "--web.enable-remote-write-receiver"
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:12.3.0
+    expose:
+      - "3000"
+    volumes:
+      - ../../server/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../server/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=polar
+      - GF_SECURITY_ADMIN_PASSWORD=polar
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    networks:
+      - polar-shared
+    profiles:
+      - monitoring
+
+networks:
+  polar-shared:
+    external: true
+
+volumes:
+  postgres_data:
+  minio_data:
+    driver: local
+  prometheus_data:
+  grafana_data:

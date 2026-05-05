@@ -1,0 +1,30 @@
+# Overlay that publishes shared infra ports to the host.
+# Loaded by `dev docker shared up --expose` (or `dev docker shared expose`).
+# Override individual ports via env vars before invoking the command.
+
+services:
+  db:
+    ports:
+      - "${POLAR_SHARED_DB_HOST_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${POLAR_SHARED_REDIS_HOST_PORT:-6379}:6379"
+
+  minio:
+    ports:
+      - "${POLAR_SHARED_MINIO_API_HOST_PORT:-9000}:9000"
+      - "${POLAR_SHARED_MINIO_CONSOLE_HOST_PORT:-9001}:9001"
+
+  tinybird:
+    ports:
+      - "${POLAR_SHARED_TINYBIRD_HOST_PORT:-7181}:7181"
+      - "${POLAR_SHARED_TINYBIRD_ADMIN_HOST_PORT:-7182}:7182"
+
+  prometheus:
+    ports:
+      - "${POLAR_SHARED_PROMETHEUS_HOST_PORT:-9090}:9090"
+
+  grafana:
+    ports:
+      - "${POLAR_SHARED_GRAFANA_HOST_PORT:-3001}:3000"

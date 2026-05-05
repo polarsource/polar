@@ -1,15 +1,12 @@
-# Docker Compose for full-stack Polar development environment
-# Usage: dev docker up
+# Per-instance Polar app stack (api, worker, web).
+# Infra (postgres, redis, minio, tinybird, prometheus, grafana) lives in a
+# separate, machine-wide stack defined in docker-compose.shared.yml.
 #
-# Infrastructure services (db, redis, minio, tinybird, etc.) are defined in
-# server/docker-compose.yml and included here. This file only adds the
-# application services (api, worker, web) with development configuration.
+# Usage: dev docker up                # auto-starts shared infra if needed
+#        dev docker -i 2 up           # second isolated app stack
 #
-# For multiple isolated instances, use: dev docker up -i <instance_number>
-# Each instance uses different ports (offset by 100 * instance_number)
-
-include:
-  - path: ../../server/docker-compose.yml
+# Each instance gets its own DB name, Redis DB index, and S3 bucket names so
+# multiple instances can safely coexist on one shared infra stack.
 
 # Load environment variables from server/.env
 x-common-env-file: &common-env-file
@@ -21,39 +18,41 @@ x-common-backend-env: &common-backend-env
   POLAR_TESTING: "0"
   POLAR_SQLALCHEMY_DEBUG: "0"
   POLAR_POSTHOG_DEBUG: "1"
-  # Database - uses service name for container networking
+  # Database — connect to shared postgres on the polar-shared network.
+  # Each instance uses a separate logical DB (auto-created by startup.sh).
   POLAR_POSTGRES_USER: ${POLAR_POSTGRES_USER:-polar}
   POLAR_POSTGRES_PWD: ${POLAR_POSTGRES_PWD:-polar}
   POLAR_POSTGRES_HOST: db
   POLAR_POSTGRES_PORT: "5432"
-  POLAR_POSTGRES_DATABASE: ${POLAR_POSTGRES_DATABASE:-polar}
+  POLAR_POSTGRES_DATABASE: polar_dev_${POLAR_DOCKER_INSTANCE:-1}
   POLAR_POSTGRES_READ_USER: ${POLAR_POSTGRES_READ_USER:-polar_read}
   POLAR_POSTGRES_READ_PWD: ${POLAR_POSTGRES_READ_PWD:-polar}
   POLAR_POSTGRES_READ_HOST: db
   POLAR_POSTGRES_READ_PORT: "5432"
-  POLAR_POSTGRES_READ_DATABASE: ${POLAR_POSTGRES_DATABASE:-polar}
-  # Redis - uses service name for container networking
+  POLAR_POSTGRES_READ_DATABASE: polar_dev_${POLAR_DOCKER_INSTANCE:-1}
+  # Redis — shared instance; each app instance picks its own DB index.
   POLAR_REDIS_HOST: redis
   POLAR_REDIS_PORT: "6379"
-  POLAR_REDIS_DB: "0"
-  # S3/MinIO - uses service name for container networking
+  POLAR_REDIS_DB: ${POLAR_REDIS_DB:-0}
+  # S3/MinIO — shared instance; each app instance gets its own bucket pair.
   POLAR_S3_ENDPOINT_URL: http://minio:9000
   POLAR_AWS_ACCESS_KEY_ID: ${POLAR_AWS_ACCESS_KEY_ID:-polar-development}
   POLAR_AWS_SECRET_ACCESS_KEY: ${POLAR_AWS_SECRET_ACCESS_KEY:-polar123456789}
-  POLAR_S3_FILES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
-  POLAR_S3_FILES_PUBLIC_BUCKET_NAME: ${POLAR_S3_FILES_PUBLIC_BUCKET_NAME:-polar-s3-public}
-  POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
-  POLAR_S3_CUSTOMER_RECEIPTS_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
-  POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
-  # CORS and allowed hosts - configured for Docker networking
+  POLAR_S3_FILES_BUCKET_NAME: polar-s3-${POLAR_DOCKER_INSTANCE:-1}
+  POLAR_S3_FILES_PUBLIC_BUCKET_NAME: polar-s3-public-${POLAR_DOCKER_INSTANCE:-1}
+  POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME: polar-s3-${POLAR_DOCKER_INSTANCE:-1}
+  POLAR_S3_CUSTOMER_RECEIPTS_BUCKET_NAME: polar-s3-${POLAR_DOCKER_INSTANCE:-1}
+  POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME: polar-s3-${POLAR_DOCKER_INSTANCE:-1}
+  # CORS and allowed hosts — configured for Docker networking
   POLAR_CORS_ORIGINS: '["http://localhost:${WEB_PORT:-3000}", "http://127.0.0.1:${WEB_PORT:-3000}", "http://web:3000"]'
   POLAR_ALLOWED_HOSTS: '["localhost:${WEB_PORT:-3000}", "127.0.0.1:${WEB_PORT:-3000}"]'
   POLAR_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
   POLAR_CHECKOUT_BASE_URL: http://localhost:${API_PORT:-8000}/v1/checkout-links/{client_secret}/redirect
   POLAR_USER_SESSION_COOKIE_DOMAIN: localhost
-  # Tinybird - uses service name for container networking
-  # Note: env_prefix="polar_" in Settings, so these need the POLAR_ prefix
-  # Tokens are auto-discovered from the Tinybird container at startup (see startup.sh)
+  # Tinybird — shared instance. Queries filter by organization_id and each
+  # instance has its own postgres DB, so org UUIDs are globally disjoint and
+  # cross-instance leakage is impossible. Tokens are auto-discovered from the
+  # running container at startup (see startup.sh).
   POLAR_TINYBIRD_API_URL: http://tinybird:7181
   POLAR_TINYBIRD_CLICKHOUSE_URL: http://tinybird:7182
   # OAuth insecure transport for development
@@ -79,10 +78,6 @@ x-worker-volumes: &worker-volumes
   - pnpm_store:/root/.local/share/pnpm/store
 
 services:
-  # ============================================
-  # Application Services
-  # ============================================
-
   api:
     build:
       context: ../..
@@ -93,13 +88,12 @@ services:
     volumes: *api-volumes
     ports:
       - "${API_PORT:-8000}:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio-setup:
-        condition: service_completed_successfully
+    networks:
+      # `default` is a per-project bridge so web→api stays scoped to this
+      # instance (the `api` service name would otherwise collide with other
+      # instances' api containers also on polar-shared).
+      - default
+      - polar-shared
     command: ["api"]
 
   worker:
@@ -110,13 +104,10 @@ services:
     environment:
       <<: *common-backend-env
     volumes: *worker-volumes
+    networks:
+      - default
+      - polar-shared
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio-setup:
-        condition: service_completed_successfully
       api:
         condition: service_started
     command: ["worker"]
@@ -139,9 +130,11 @@ services:
       POLAR_API_URL: http://api:8000
       S3_PUBLIC_IMAGES_BUCKET_PROTOCOL: http
       S3_PUBLIC_IMAGES_BUCKET_HOSTNAME: localhost
-      S3_PUBLIC_IMAGES_BUCKET_PORT: "${MINIO_API_PORT:-9000}"
+      # Browser uploads need a host-reachable MinIO; if shared infra was
+      # brought up with `--expose`, this points at the standard host port.
+      S3_PUBLIC_IMAGES_BUCKET_PORT: "${POLAR_SHARED_MINIO_API_HOST_PORT:-9000}"
       S3_PUBLIC_IMAGES_BUCKET_PATHNAME: "**"
-      S3_UPLOAD_ORIGINS: http://localhost:${MINIO_API_PORT:-9000}
+      S3_UPLOAD_ORIGINS: http://localhost:${POLAR_SHARED_MINIO_API_HOST_PORT:-9000}
     volumes:
       - ../../clients:/app/clients:cached
       - ../../dev:/app/dev:cached
@@ -149,12 +142,23 @@ services:
       - web_next_cache:/app/clients/apps/web/.next
     ports:
       - "${WEB_PORT:-3000}:3000"
+    networks:
+      # web only needs to reach the same-project api (SSR proxy); browser
+      # talks to all infra via host ports. Keeping it off polar-shared means
+      # `http://api:8000` resolves unambiguously to THIS instance's api.
+      - default
     depends_on:
       - api
     deploy:
       resources:
         limits:
           memory: 6G
+
+networks:
+  default:
+    name: polar-app-${POLAR_DOCKER_INSTANCE:-1}-default
+  polar-shared:
+    external: true
 
 volumes:
   server_uv_cache:

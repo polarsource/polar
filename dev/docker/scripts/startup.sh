@@ -81,6 +81,67 @@ while ! pg_isready -h "$POLAR_POSTGRES_HOST" -p "$POLAR_POSTGRES_PORT" -U "$POLA
 done
 echo "Database is ready"
 
+# Bootstrap the per-instance database + MinIO buckets on the shared infra
+# (api only). Skipped when the marker file from a previous successful boot is
+# still present; the marker lives in the api_venv volume so `dev docker
+# cleanup` (which removes that volume) forces a re-bootstrap.
+BOOTSTRAP_MARKER="/app/server/.venv/.bootstrap-${POLAR_POSTGRES_DATABASE}.done"
+if [[ "${1:-api}" == "api" && ! -f "$BOOTSTRAP_MARKER" ]]; then
+    READ_USER="${POLAR_POSTGRES_READ_USER:-polar_read}"
+    echo "Bootstrapping per-instance DB '$POLAR_POSTGRES_DATABASE' and MinIO buckets..."
+    # createdb ignores existing DBs (returns nonzero, suppressed); GRANTs are
+    # idempotent. Read-only USER itself is created once by
+    # server/init-readonly-user.sql on first postgres init.
+    PGPASSWORD="$POLAR_POSTGRES_PWD" createdb -h "$POLAR_POSTGRES_HOST" \
+        -p "$POLAR_POSTGRES_PORT" -U "$POLAR_POSTGRES_USER" \
+        -O "$POLAR_POSTGRES_USER" "$POLAR_POSTGRES_DATABASE" 2>/dev/null || true
+    PGPASSWORD="$POLAR_POSTGRES_PWD" psql -h "$POLAR_POSTGRES_HOST" \
+        -p "$POLAR_POSTGRES_PORT" -U "$POLAR_POSTGRES_USER" \
+        -d "$POLAR_POSTGRES_DATABASE" -v ON_ERROR_STOP=1 <<SQL >/dev/null
+GRANT CONNECT ON DATABASE "$POLAR_POSTGRES_DATABASE" TO $READ_USER;
+GRANT USAGE ON SCHEMA public TO $READ_USER;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO $READ_USER;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO $READ_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO $READ_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO $READ_USER;
+SQL
+    # Buckets: create idempotently and apply the public-read policy on the
+    # public bucket (mirrors `mc anonymous set download` in the legacy setup).
+    uv run python <<'PY'
+import os
+import json
+import boto3
+from botocore.client import Config
+from botocore.exceptions import ClientError
+
+s3 = boto3.client(
+    "s3",
+    endpoint_url=os.environ["POLAR_S3_ENDPOINT_URL"],
+    aws_access_key_id=os.environ["POLAR_AWS_ACCESS_KEY_ID"],
+    aws_secret_access_key=os.environ["POLAR_AWS_SECRET_ACCESS_KEY"],
+    config=Config(signature_version="s3v4"),
+    region_name="us-east-1",
+)
+private = os.environ["POLAR_S3_FILES_BUCKET_NAME"]
+public = os.environ["POLAR_S3_FILES_PUBLIC_BUCKET_NAME"]
+for bucket in (private, public):
+    try:
+        s3.create_bucket(Bucket=bucket)
+    except ClientError as exc:
+        if exc.response["Error"]["Code"] not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
+            raise
+s3.put_bucket_policy(Bucket=public, Policy=json.dumps({
+    "Version": "2012-10-17",
+    "Statement": [
+        {"Effect": "Allow", "Principal": {"AWS": ["*"]}, "Action": ["s3:GetBucketLocation", "s3:ListBucket"], "Resource": [f"arn:aws:s3:::{public}"]},
+        {"Effect": "Allow", "Principal": {"AWS": ["*"]}, "Action": ["s3:GetObject"], "Resource": [f"arn:aws:s3:::{public}/*"]},
+    ],
+}))
+PY
+    touch "$BOOTSTRAP_MARKER"
+    echo "Bootstrap complete: $POLAR_POSTGRES_DATABASE, $POLAR_S3_FILES_BUCKET_NAME, $POLAR_S3_FILES_PUBLIC_BUCKET_NAME"
+fi
+
 # Run database migrations (only for API, not worker to avoid race conditions)
 if [[ "${1:-api}" == "api" ]]; then
     echo "Running database migrations..."

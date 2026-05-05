@@ -66,6 +66,39 @@ workflows, which toggle a GitHub ruleset. The `/emergency` PR command still
 works because its identity is on the ruleset's bypass list.
 
 
+## Docker dev environment
+
+Two-tier model behind one CLI:
+
+- **Shared infra** (one per machine): postgres, redis, minio, tinybird, plus optional prometheus/grafana. No host ports exposed by default — apps reach infra over the `polar-shared` Docker network.
+- **App stack** (one per worktree/instance): api, worker, web. Each instance gets its own postgres DB (`polar_dev_<N>`), Redis DB index, and S3 bucket pair on the shared infra, so multiple instances coexist safely.
+
+Service-aware commands (`logs`, `exec`, `shell`, `restart`) auto-route by service name — no need to know which project a service lives in.
+
+```bash
+# Per worktree (instance auto-detected from CONDUCTOR_PORT or workspace path)
+dev docker up                           # start shared infra (if needed) + this instance's app stack
+dev docker up --monitoring              # also start prometheus + grafana on the shared stack
+dev docker -i 2 up                      # explicit instance number
+dev docker logs api                     # follow this instance's api logs
+dev docker logs db                      # follow shared postgres logs (auto-routed)
+dev docker shell api                    # shell into the api container
+dev docker exec db psql -U polar -l     # reach shared postgres without host ports
+dev docker exec redis redis-cli -n 1 dbsize
+dev docker ps                           # show both shared + this instance's containers
+dev docker down                         # stop this instance's app stack (shared infra stays up)
+dev docker cleanup                      # remove this instance's app containers + caches
+
+# Wipe everything (destroys data for ALL instances on this machine)
+dev docker down --all                   # also stop shared infra
+dev docker cleanup --all                # also DELETE shared volumes (postgres data, MinIO, tinybird)
+
+# Advanced: publish shared infra ports on the host (TablePlus, host-side psql, etc.)
+# `--expose` only takes effect on the first start of shared infra; tweak the host
+# port via env vars (POLAR_SHARED_DB_HOST_PORT, POLAR_SHARED_REDIS_HOST_PORT, etc.).
+dev docker down --all && dev docker up --expose
+```
+
 ## Adding New Steps
 
 The `dev up` command runs steps from `up_steps/` in alphabetical order. Each step file needs:

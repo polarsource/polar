@@ -1,13 +1,12 @@
 import uuid
-from collections import defaultdict
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import logfire
 from polar_sdk.models import (
-    WebhookSubscriptionActivePayload,
-    WebhookSubscriptionRevokedPayload,
-    WebhookSubscriptionUpdatedPayload,
+    WebhookBenefitGrantCreatedPayload,
+    WebhookBenefitGrantRevokedPayload,
+    WebhookBenefitGrantUpdatedPayload,
 )
 
 from polar.account.repository import AccountRepository
@@ -19,13 +18,13 @@ from polar.worker import enqueue_job
 from .client import get_client
 
 if TYPE_CHECKING:
-    from polar_sdk.models import BenefitGrant, Subscription
+    from polar_sdk.models import BenefitGrant, Customer
 
 
-SubscriptionWebhookPayload = (
-    WebhookSubscriptionActivePayload
-    | WebhookSubscriptionUpdatedPayload
-    | WebhookSubscriptionRevokedPayload
+BenefitGrantWebhookPayload = (
+    WebhookBenefitGrantCreatedPayload
+    | WebhookBenefitGrantUpdatedPayload
+    | WebhookBenefitGrantRevokedPayload
 )
 
 
@@ -137,46 +136,44 @@ class PolarSelfService:
             cost_usd=str(cost_decimal),
         )
 
-    async def handle_subscription_event(
-        self, session: AsyncSession, payload: SubscriptionWebhookPayload
+    async def handle_benefit_grant_event(
+        self, session: AsyncSession, payload: BenefitGrantWebhookPayload
     ) -> None:
-        subscription = payload.data
-        grants = await get_client().list_customer_benefit_grants(
-            customer_id=subscription.customer_id
-        )
-        grouped = self._group_benefit_grants_by_metadata_type(grants)
+        grant = payload.data
+        metadata = grant.benefit.metadata or {}
+        benefit_type = metadata.get("type")
 
-        logfire.info(
-            "polar_self.webhook.subscription.benefits",
-            subscription_id=subscription.id,
-            customer_id=subscription.customer_id,
+        organization_id = self._resolve_organization_id(grant.customer)
+
+        with logfire.span(
+            "polar_self.webhook.benefit_grant",
             event_type=payload.TYPE,
-            types=sorted(t for t in grouped if t is not None),
-        )
+            benefit_id=grant.benefit_id,
+            benefit_type=benefit_type,
+            organization_id=str(organization_id),
+        ):
+            if not isinstance(benefit_type, str) or benefit_type not in (
+                "transaction_fee",
+                "support",
+            ):
+                return
 
-        organization_id = self._resolve_organization_id(subscription, grouped)
-        if organization_id is None:
-            return
+            active_grant = await self._fetch_active_grant(
+                grant.customer_id, benefit_type
+            )
 
-        await self._apply_transaction_fee(
-            session, organization_id, grouped.get("transaction_fee")
-        )
-        await self._apply_support(session, organization_id, grouped.get("support"))
+            match benefit_type:
+                case "transaction_fee":
+                    await self._apply_transaction_fee(
+                        session, organization_id, active_grant
+                    )
+                case "support":
+                    await self._apply_support(session, organization_id, active_grant)
 
-    def _resolve_organization_id(
-        self,
-        subscription: "Subscription",
-        grouped: "dict[str | None, BenefitGrant]",
-    ) -> uuid.UUID | None:
-        raw = subscription.customer.external_id
+    def _resolve_organization_id(self, customer: "Customer") -> uuid.UUID:
+        raw = customer.external_id
         if not isinstance(raw, str):
-            if grouped:
-                raise PolarSelfWebhookError(
-                    "Customer has no external_id but holds benefit grants: "
-                    f"{sorted(t for t in grouped if t is not None)}"
-                )
-            return None
-
+            raise PolarSelfWebhookError(f"Customer {customer.id} has no external_id")
         try:
             return uuid.UUID(raw)
         except ValueError as e:
@@ -184,44 +181,20 @@ class PolarSelfService:
                 f"Customer external_id is not a UUID: {raw!r}"
             ) from e
 
-    def _group_benefit_grants_by_metadata_type(
-        self,
-        grants: list["BenefitGrant"],
-    ) -> "dict[str | None, BenefitGrant]":
-        grouped: dict[str | None, list[BenefitGrant]] = defaultdict(list)
-        for grant in grants:
-            metadata = grant.benefit.metadata or {}
-            type_value = metadata.get("type")
-            key = type_value if isinstance(type_value, str) else None
-            grouped[key].append(grant)
-
-        single: dict[str | None, BenefitGrant] = {}
-        for key, type_grants in grouped.items():
-            if len(type_grants) > 1:
-                benefit_ids = [grant.benefit_id for grant in type_grants]
-                raise PolarSelfWebhookError(
-                    f"Customer holds {len(type_grants)} benefit grants of "
-                    f"type {key!r}, expected at most 1: {benefit_ids}"
-                )
-            single[key] = type_grants[0]
-        return single
-
     def _extract_transaction_fee(
-        self,
-        grant: "BenefitGrant",
+        self, metadata: dict[str, Any], benefit_id: str
     ) -> tuple[int, int]:
-        metadata = grant.benefit.metadata or {}
         take_rate = metadata.get("take_rate")
         flat_fee_in_cents = metadata.get("flat_fee_in_cents")
         if not isinstance(take_rate, int) or isinstance(take_rate, bool):
             raise TransactionFeeBenefitError(
-                f"Benefit {grant.benefit_id} has invalid take_rate: {take_rate!r}"
+                f"Benefit {benefit_id} has invalid take_rate: {take_rate!r}"
             )
         if not isinstance(flat_fee_in_cents, int) or isinstance(
             flat_fee_in_cents, bool
         ):
             raise TransactionFeeBenefitError(
-                f"Benefit {grant.benefit_id} has invalid "
+                f"Benefit {benefit_id} has invalid "
                 f"flat_fee_in_cents: {flat_fee_in_cents!r}"
             )
         return take_rate, flat_fee_in_cents
@@ -240,7 +213,9 @@ class PolarSelfService:
         if grant is None:
             take_rate, flat_fee_in_cents = None, None
         else:
-            take_rate, flat_fee_in_cents = self._extract_transaction_fee(grant)
+            take_rate, flat_fee_in_cents = self._extract_transaction_fee(
+                grant.benefit.metadata or {}, grant.benefit_id
+            )
 
         # Inline: account.service → user_organization.service → this module.
         from polar.account.service import account as account_service
@@ -259,24 +234,22 @@ class PolarSelfService:
             )
 
     def _extract_support(
-        self,
-        grant: "BenefitGrant",
+        self, metadata: dict[str, Any], benefit_id: str
     ) -> tuple[int, bool, bool]:
-        metadata = grant.benefit.metadata or {}
         level = metadata.get("level")
         slack = metadata.get("slack")
         prioritized = metadata.get("prioritized")
         if not isinstance(level, int) or isinstance(level, bool):
             raise SupportBenefitError(
-                f"Benefit {grant.benefit_id} has invalid level: {level!r}"
+                f"Benefit {benefit_id} has invalid level: {level!r}"
             )
         if not isinstance(slack, bool):
             raise SupportBenefitError(
-                f"Benefit {grant.benefit_id} has invalid slack: {slack!r}"
+                f"Benefit {benefit_id} has invalid slack: {slack!r}"
             )
         if not isinstance(prioritized, bool):
             raise SupportBenefitError(
-                f"Benefit {grant.benefit_id} has invalid prioritized: {prioritized!r}"
+                f"Benefit {benefit_id} has invalid prioritized: {prioritized!r}"
             )
         return level, slack, prioritized
 
@@ -287,9 +260,13 @@ class PolarSelfService:
         grant: "BenefitGrant | None",
     ) -> None:
         if grant is None:
-            level, slack, prioritized = None, None, None
+            level: int | None = None
+            slack: bool | None = None
+            prioritized: bool | None = None
         else:
-            level, slack, prioritized = self._extract_support(grant)
+            level, slack, prioritized = self._extract_support(
+                grant.benefit.metadata or {}, grant.benefit_id
+            )
 
         # TODO: persist once support tier fields exist on the org/account.
         logfire.info(
@@ -299,6 +276,25 @@ class PolarSelfService:
             slack=slack,
             prioritized=prioritized,
         )
+
+    async def _fetch_active_grant(
+        self, customer_id: str, benefit_type: str
+    ) -> "BenefitGrant | None":
+        grants = await get_client().list_customer_benefit_grants(
+            customer_id=customer_id
+        )
+        matching = [
+            grant
+            for grant in grants
+            if (grant.benefit.metadata or {}).get("type") == benefit_type
+        ]
+        if len(matching) > 1:
+            benefit_ids = [grant.benefit_id for grant in matching]
+            raise PolarSelfWebhookError(
+                f"Customer {customer_id} holds {len(matching)} active "
+                f"{benefit_type!r} benefit grants, expected at most 1: {benefit_ids}"
+            )
+        return matching[0] if matching else None
 
 
 polar_self = PolarSelfService()

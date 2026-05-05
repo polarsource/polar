@@ -17,9 +17,9 @@ router = APIRouter(
 )
 
 IMPLEMENTED_WEBHOOKS = {
-    "subscription.active",
-    "subscription.updated",
-    "subscription.revoked",
+    "benefit_grant.created",
+    "benefit_grant.updated",
+    "benefit_grant.revoked",
 }
 
 

@@ -4,9 +4,9 @@ from decimal import Decimal
 
 from dramatiq import Retry
 from polar_sdk.models import (
-    WebhookSubscriptionActivePayload,
-    WebhookSubscriptionRevokedPayload,
-    WebhookSubscriptionUpdatedPayload,
+    WebhookBenefitGrantCreatedPayload,
+    WebhookBenefitGrantRevokedPayload,
+    WebhookBenefitGrantUpdatedPayload,
 )
 
 from polar.config import settings
@@ -157,31 +157,31 @@ async def track_organization_review_usage(
     )
 
 
-@actor(actor_name="polar_self.webhook.subscription.active", priority=TaskPriority.LOW)
-async def webhook_subscription_active(event_id: uuid.UUID) -> None:
+@actor(actor_name="polar_self.webhook.benefit_grant.created", priority=TaskPriority.LOW)
+async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            payload = WebhookSubscriptionActivePayload.model_validate(event.data)
-            await polar_self.handle_subscription_event(session, payload)
+            payload = WebhookBenefitGrantCreatedPayload.model_validate(event.data)
+            await polar_self.handle_benefit_grant_event(session, payload)
 
 
-@actor(actor_name="polar_self.webhook.subscription.updated", priority=TaskPriority.LOW)
-async def webhook_subscription_updated(event_id: uuid.UUID) -> None:
+@actor(actor_name="polar_self.webhook.benefit_grant.updated", priority=TaskPriority.LOW)
+async def webhook_benefit_grant_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            payload = WebhookSubscriptionUpdatedPayload.model_validate(event.data)
-            await polar_self.handle_subscription_event(session, payload)
+            payload = WebhookBenefitGrantUpdatedPayload.model_validate(event.data)
+            await polar_self.handle_benefit_grant_event(session, payload)
 
 
-@actor(actor_name="polar_self.webhook.subscription.revoked", priority=TaskPriority.LOW)
-async def webhook_subscription_revoked(event_id: uuid.UUID) -> None:
+@actor(actor_name="polar_self.webhook.benefit_grant.revoked", priority=TaskPriority.LOW)
+async def webhook_benefit_grant_revoked(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            payload = WebhookSubscriptionRevokedPayload.model_validate(event.data)
-            await polar_self.handle_subscription_event(session, payload)
+            payload = WebhookBenefitGrantRevokedPayload.model_validate(event.data)
+            await polar_self.handle_benefit_grant_event(session, payload)

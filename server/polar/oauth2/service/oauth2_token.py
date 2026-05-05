@@ -5,7 +5,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.email.schemas import OAuth2LeakedTokenEmail, OAuth2LeakedTokenProps
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
@@ -19,6 +19,16 @@ from polar.user_organization.service import (
 )
 
 log: Logger = structlog.get_logger()
+
+# TEMPORARY: the iOS app does not refresh its access tokens and crashes on 401.
+# Until the app's auth flow is fixed, expired tokens issued to it are still
+# accepted but logged. Source of truth for these IDs:
+# clients/apps/app/hooks/oauth.ts.
+_IOS_APP_CLIENT_IDS: dict[Environment, str] = {
+    Environment.production: "polar_ci_yZLBGwoWZVsOdfN5CODRwVSTlJfwJhXqwg65e2CuNMZ",
+    Environment.development: "polar_ci_hbFdMZZRghgdm2F4LMceQSrcQNunmjlh6ukGJ1dG0Vg",
+}
+IOS_APP_CLIENT_ID: str | None = _IOS_APP_CLIENT_IDS.get(settings.ENV)
 
 
 class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
@@ -39,6 +49,17 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
 
         if cast(bool, token.is_revoked()):
             return None
+
+        if cast(bool, token.is_expired()):
+            if token.client_id != IOS_APP_CLIENT_ID:
+                return None
+            log.warning(
+                "Allowing expired access token from iOS app client",
+                token_id=token.id,
+                client_id=token.client_id,
+                expires_at=token.expires_at,
+                expired_seconds_ago=int(time.time()) - token.expires_at,
+            )
 
         if not token.sub.can_authenticate:
             return None

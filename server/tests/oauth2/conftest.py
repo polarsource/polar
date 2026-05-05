@@ -105,7 +105,15 @@ async def create_oauth2_token(
     organization: Organization | None = None,
     access_token_revoked_at: int | None = None,
     refresh_token_revoked_at: int | None = None,
+    issued_at: int | None = None,
+    expires_in: int | None = None,
 ) -> OAuth2Token:
+    extra: dict[str, int] = {}
+    if issued_at is not None:
+        extra["issued_at"] = issued_at
+    if expires_in is not None:
+        extra["expires_in"] = expires_in
+
     token = OAuth2Token(
         client_id=client.client_id,
         token_type="bearer",
@@ -114,6 +122,7 @@ async def create_oauth2_token(
         scope=" ".join(scopes),
         access_token_revoked_at=access_token_revoked_at,
         refresh_token_revoked_at=refresh_token_revoked_at,
+        **extra,
     )
     if user is not None:
         token.user_id = user.id

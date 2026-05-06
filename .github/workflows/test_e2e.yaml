@@ -119,7 +119,7 @@ jobs:
 
       - name: Configure AWS credentials
         if: steps.e2e.outcome == 'failure'
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: e2e-traces

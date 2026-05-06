@@ -48,6 +48,7 @@ from polar.models.organization import (
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
+from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
@@ -278,6 +279,7 @@ class OrganizationService:
             session,
             organization,
             auth_subject.subject,
+            role=OrganizationRole.owner,
             enqueue_polar_self_member=False,
         )
 
@@ -716,13 +718,14 @@ class OrganizationService:
         organization: Organization,
         user: User,
         *,
+        role: OrganizationRole = OrganizationRole.member,
         polar_self_member_delay: int | None = None,
         enqueue_polar_self_member: bool = True,
     ) -> None:
         nested = await session.begin_nested()
         try:
             relation = UserOrganization(
-                user_id=user.id, organization_id=organization.id
+                user_id=user.id, organization_id=organization.id, role=role
             )
             session.add(relation)
             await session.flush()
@@ -750,6 +753,7 @@ class OrganizationService:
                 )
                 .values(
                     deleted_at=None,  # un-delete user if exists
+                    role=role,
                 )
             )
             await session.execute(stmt)

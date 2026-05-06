@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 
+from sqlalchemy import update
 from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
@@ -12,9 +13,10 @@ from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
-from polar.models import Account, Organization, User
+from polar.models import Account, Organization, User, UserOrganization
 from polar.models.member import MemberRole
 from polar.models.user import IdentityVerificationStatus
+from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.user.repository import UserRepository
 
@@ -157,9 +159,17 @@ class AccountService:
         if account.admin_id == new_admin_id:
             raise CannotChangeAdminError("New admin is the same as current admin")
 
+        previous_admin_id = account.admin_id
+
         repository = AccountRepository.from_session(session)
         account = await repository.update(
             account, update_dict={"admin_id": new_admin_id}
+        )
+        await self._swap_organization_owner_role(
+            session,
+            organization_id=organization_id,
+            previous_admin_id=previous_admin_id,
+            new_admin_id=new_admin_id,
         )
         await self._sync_polar_self_customer_owner(
             session,
@@ -168,6 +178,38 @@ class AccountService:
         )
 
         return account
+
+    async def _swap_organization_owner_role(
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: uuid.UUID,
+        previous_admin_id: uuid.UUID,
+        new_admin_id: uuid.UUID,
+    ) -> None:
+        """
+        Keep `UserOrganization.role` aligned with `Account.admin_id` during a
+        change_admin flow. Demote the previous admin from `owner` to `admin`
+        only if they currently carry `owner` (pre-backfill rows may still be
+        `member`); promote the new admin to `owner` unconditionally.
+        """
+        await session.execute(
+            update(UserOrganization)
+            .where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.user_id == previous_admin_id,
+                UserOrganization.role == OrganizationRole.owner,
+            )
+            .values(role=OrganizationRole.admin)
+        )
+        await session.execute(
+            update(UserOrganization)
+            .where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.user_id == new_admin_id,
+            )
+            .values(role=OrganizationRole.owner)
+        )
 
     async def _get_unrestricted(
         self,

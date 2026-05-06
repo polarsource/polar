@@ -5,9 +5,12 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.user_organization import OrganizationRole
 from polar.user_organization.service import (
     CannotRemoveOrganizationAdmin,
+    InvalidOwnerRoleAssignment,
     OrganizationNotFound,
+    OwnerRoleCannotBeRemoved,
     UserNotMemberOfOrganization,
 )
 from polar.user_organization.service import (
@@ -246,3 +249,110 @@ class TestListByOrg:
 
         members = await user_organization_service.list_by_org(session, organization.id)
         assert len(members) == 0
+
+
+@pytest.mark.asyncio
+class TestSetRole:
+    async def test_promote_member_to_admin(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        account: Account,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        relation = UserOrganization(
+            user_id=user_second.id, organization_id=organization.id
+        )
+        await save_fixture(relation)
+
+        result = await user_organization_service.set_role(
+            session,
+            user_id=user_second.id,
+            organization_id=organization.id,
+            role=OrganizationRole.admin,
+        )
+
+        assert result.role == OrganizationRole.admin
+
+    async def test_owner_role_rejected_for_non_admin_user(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        account: Account,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        # `account` fixture sets `account.admin_id = user`, so user_second is
+        # not the Account.admin_id user — assigning `owner` to them must fail.
+        relation = UserOrganization(
+            user_id=user_second.id, organization_id=organization.id
+        )
+        await save_fixture(relation)
+
+        with pytest.raises(InvalidOwnerRoleAssignment):
+            await user_organization_service.set_role(
+                session,
+                user_id=user_second.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+
+    async def test_owner_role_allowed_for_admin_user(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        account: Account,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # `account.admin_id == user.id` from the fixture; assigning `owner`
+        # to the matching user is allowed.
+        relation = UserOrganization(user_id=user.id, organization_id=organization.id)
+        await save_fixture(relation)
+
+        result = await user_organization_service.set_role(
+            session,
+            user_id=user.id,
+            organization_id=organization.id,
+            role=OrganizationRole.owner,
+        )
+
+        assert result.role == OrganizationRole.owner
+
+    async def test_owner_cannot_be_demoted_directly(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        account: Account,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        relation = UserOrganization(
+            user_id=user.id,
+            organization_id=organization.id,
+            role=OrganizationRole.owner,
+        )
+        await save_fixture(relation)
+
+        with pytest.raises(OwnerRoleCannotBeRemoved):
+            await user_organization_service.set_role(
+                session,
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.admin,
+            )
+
+    async def test_user_not_member(
+        self,
+        session: Any,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        with pytest.raises(UserNotMemberOfOrganization):
+            await user_organization_service.set_role(
+                session,
+                user_id=user_second.id,
+                organization_id=organization.id,
+                role=OrganizationRole.member,
+            )

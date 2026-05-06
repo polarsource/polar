@@ -8,6 +8,7 @@ from polar.exceptions import PolarError
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.utils import utc_now
 from polar.models import UserOrganization
+from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 
 
@@ -37,6 +38,29 @@ class CannotRemoveOrganizationAdmin(UserOrganizationError):
         self.organization_id = organization_id
         message = f"Cannot remove user {user_id} - they are the admin of organization {organization_id}."
         super().__init__(message, 403)
+
+
+class InvalidOwnerRoleAssignment(UserOrganizationError):
+    def __init__(self, user_id: UUID, organization_id: UUID) -> None:
+        self.user_id = user_id
+        self.organization_id = organization_id
+        message = (
+            f"User {user_id} cannot be assigned the 'owner' role on "
+            f"organization {organization_id}."
+        )
+        super().__init__(message, 400)
+
+
+class OwnerRoleCannotBeRemoved(UserOrganizationError):
+    def __init__(self, user_id: UUID, organization_id: UUID) -> None:
+        self.user_id = user_id
+        self.organization_id = organization_id
+        message = (
+            f"User {user_id} carries the 'owner' role on organization "
+            f"{organization_id} and cannot be moved off it directly. "
+            f"Ownership must be transferred first."
+        )
+        super().__init__(message, 400)
 
 
 class UserOrganizationService:
@@ -108,6 +132,58 @@ class UserOrganizationService:
 
         res = await session.execute(stmt)
         return res.scalars().unique().one_or_none()
+
+    async def set_role(
+        self,
+        session: AsyncSession,
+        *,
+        user_id: UUID,
+        organization_id: UUID,
+        role: OrganizationRole,
+    ) -> UserOrganization:
+        """
+        Set a user's role on an organization, with validation.
+
+        - `role == owner` is only allowed when `user_id` matches the org's
+          `Account.admin_id`.
+        - A user that currently carries `owner` cannot be moved off it
+          directly; ownership transfer flows through `Account.admin_id`
+          mutations (today: backoffice `change_admin`).
+
+        Internal trusted flows that swap roles atomically with an
+        `Account.admin_id` change (`account_service.change_admin`) bypass
+        this method by design.
+        """
+        from polar.account.repository import AccountRepository
+
+        user_org = await self.get_by_user_and_org(session, user_id, organization_id)
+        if user_org is None:
+            raise UserNotMemberOfOrganization(user_id, organization_id)
+
+        account_repo = AccountRepository.from_session(session)
+        account = await account_repo.get_by_organization(organization_id)
+        if account is None:
+            raise OrganizationNotFound(organization_id)
+
+        if role == OrganizationRole.owner and user_id != account.admin_id:
+            raise InvalidOwnerRoleAssignment(user_id, organization_id)
+
+        if user_org.role == OrganizationRole.owner and role != OrganizationRole.owner:
+            raise OwnerRoleCannotBeRemoved(user_id, organization_id)
+
+        if user_org.role == role:
+            return user_org
+
+        await session.execute(
+            sql.update(UserOrganization)
+            .where(
+                UserOrganization.user_id == user_id,
+                UserOrganization.organization_id == organization_id,
+            )
+            .values(role=role)
+        )
+        user_org.role = role
+        return user_org
 
     async def remove_member(
         self,

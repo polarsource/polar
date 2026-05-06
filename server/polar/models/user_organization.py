@@ -1,11 +1,19 @@
+from enum import StrEnum
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.models.organization import Organization
 from polar.models.user import User
+
+
+class OrganizationRole(StrEnum):
+    owner = "owner"
+    admin = "admin"
+    member = "member"
 
 
 class UserOrganization(TimestampedModel):
@@ -23,6 +31,13 @@ class UserOrganization(TimestampedModel):
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,
         primary_key=True,
+    )
+
+    role: Mapped[OrganizationRole] = mapped_column(
+        StringEnum(OrganizationRole),
+        nullable=False,
+        default=OrganizationRole.member,
+        server_default=OrganizationRole.member.value,
     )
 
     @declared_attr

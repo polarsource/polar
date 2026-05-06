@@ -30,6 +30,7 @@ from polar.models.organization import (
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
+from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import (
     OrganizationCreate,
@@ -150,6 +151,7 @@ class TestCreate:
             session, auth_subject.subject.id, organization.id
         )
         assert user_organization is not None
+        assert user_organization.role == OrganizationRole.owner
 
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id

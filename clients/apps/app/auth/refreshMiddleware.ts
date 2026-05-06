@@ -6,7 +6,8 @@ import {
   refreshAccessToken,
 } from './refresher'
 
-const isOAuthEndpoint = (url: string): boolean => url.includes('/v1/oauth2/')
+const isOAuthEndpoint = (url: string): boolean =>
+  url.includes('/v1/oauth2/token') || url.includes('/v1/oauth2/revoke')
 
 export const refreshMiddleware: Middleware = {
   onRequest: async ({ request }) => {

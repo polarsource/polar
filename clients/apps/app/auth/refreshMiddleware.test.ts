@@ -155,7 +155,7 @@ describe('onRequest (proactive refresh)', () => {
     expect(mockRefreshAsync).not.toHaveBeenCalled()
   })
 
-  it('skips OAuth endpoints to avoid recursive refresh', async () => {
+  it('skips the token endpoint to avoid recursive refresh', async () => {
     configureStale()
     const request = buildRequest('http://127.0.0.1:8000/v1/oauth2/token', {
       authToken: 'AT_OLD',
@@ -163,6 +163,34 @@ describe('onRequest (proactive refresh)', () => {
     const result = await callOnRequest(request)
     expect(result).toBeUndefined()
     expect(mockRefreshAsync).not.toHaveBeenCalled()
+  })
+
+  it('skips the revoke endpoint to avoid recursive refresh', async () => {
+    configureStale()
+    const request = buildRequest('http://127.0.0.1:8000/v1/oauth2/revoke', {
+      authToken: 'AT_OLD',
+    })
+    const result = await callOnRequest(request)
+    expect(result).toBeUndefined()
+    expect(mockRefreshAsync).not.toHaveBeenCalled()
+  })
+
+  it('refreshes for /v1/oauth2/userinfo when stale (it is a normal bearer-protected endpoint)', async () => {
+    configureStale()
+    mockRefreshAsync.mockResolvedValueOnce(
+      buildTokenResponse({ accessToken: 'AT_NEW' }),
+    )
+
+    const request = buildRequest('http://127.0.0.1:8000/v1/oauth2/userinfo', {
+      authToken: 'AT_OLD',
+    })
+    const result = await callOnRequest(request)
+
+    expect(result).toBeInstanceOf(Request)
+    const next = result as Request
+    expect(next.headers.get('Authorization')).toBe('Bearer AT_NEW')
+    expect(next.url).toBe('http://127.0.0.1:8000/v1/oauth2/userinfo')
+    expect(mockRefreshAsync).toHaveBeenCalledTimes(1)
   })
 
   it('refreshes and returns a new Request with the new auth header when stale', async () => {
@@ -207,15 +235,38 @@ describe('onResponse (reactive refresh)', () => {
     expect(mockRefreshAsync).not.toHaveBeenCalled()
   })
 
-  it('returns undefined for 401 from OAuth endpoints', async () => {
+  it('returns undefined for 401 from the token endpoint (refresh itself failed)', async () => {
     configureFresh()
-    const request = buildRequest('http://127.0.0.1:8000/v1/oauth2/userinfo', {
+    const request = buildRequest('http://127.0.0.1:8000/v1/oauth2/token', {
       authToken: 'AT_OLD',
     })
     const response = new Response('{}', { status: 401 })
     const result = await callOnResponse(request, response)
     expect(result).toBeUndefined()
     expect(mockRefreshAsync).not.toHaveBeenCalled()
+  })
+
+  it('on 401 from /v1/oauth2/userinfo, refreshes and retries (it is a normal bearer-protected endpoint)', async () => {
+    configureFresh()
+    mockRefreshAsync.mockResolvedValueOnce(
+      buildTokenResponse({ accessToken: 'AT_NEW' }),
+    )
+    const retryResponse = new Response('{}', { status: 200 })
+    middlewareOptions.fetch.mockResolvedValueOnce(retryResponse)
+
+    const request = buildRequest('http://127.0.0.1:8000/v1/oauth2/userinfo', {
+      authToken: 'AT_OLD',
+    })
+    const response = new Response('{}', { status: 401 })
+
+    const result = await callOnResponse(request, response)
+
+    expect(mockRefreshAsync).toHaveBeenCalledTimes(1)
+    expect(middlewareOptions.fetch).toHaveBeenCalledTimes(1)
+    const retried = middlewareOptions.fetch.mock.calls[0][0] as Request
+    expect(retried.headers.get('Authorization')).toBe('Bearer AT_NEW')
+    expect(retried.url).toBe('http://127.0.0.1:8000/v1/oauth2/userinfo')
+    expect(result).toBe(retryResponse)
   })
 
   it('returns undefined for 401 when no refresh token is available', async () => {

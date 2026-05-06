@@ -1083,6 +1083,61 @@ class TestDenyOrganization:
 
 
 @pytest.mark.asyncio
+class TestMaybeActivate:
+    async def test_does_not_revert_admin_denied_org_with_pass_verdict(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Admin denial must stick even if the AI verdict was PASS and a
+        downstream trigger (e.g. Stripe webhook) calls maybe_activate."""
+        organization.status = OrganizationStatus.DENIED
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Clean",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+
+        result = await organization_service.maybe_activate(session, organization)
+
+        assert result is False
+        assert organization.status == OrganizationStatus.DENIED
+
+    async def test_reverts_to_created_on_approved_appeal_when_not_ready(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=80.0,
+            violated_sections=["tos"],
+            reason="Violation",
+            model_used="test",
+            appeal_submitted_at=datetime(2025, 2, 1, tzinfo=UTC),
+            appeal_reason="Please reconsider",
+            appeal_decision=OrganizationReview.AppealDecision.APPROVED,
+            appeal_reviewed_at=datetime(2025, 2, 2, tzinfo=UTC),
+        )
+        session.add(review)
+        await session.flush()
+
+        result = await organization_service.maybe_activate(session, organization)
+
+        assert result is False
+        assert organization.status == OrganizationStatus.CREATED
+
+
+@pytest.mark.asyncio
 class TestSetOrganizationUnderReview:
     async def test_set_organization_under_review(
         self,

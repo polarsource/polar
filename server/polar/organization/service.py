@@ -981,6 +981,15 @@ class OrganizationService:
         if review is None or not review.is_approved:
             return False
 
+        # An admin's manual deny/block must stick even if the AI verdict was PASS,
+        # so re-activation from these states requires an explicitly approved appeal.
+        if (
+            organization.status
+            in (OrganizationStatus.DENIED, OrganizationStatus.BLOCKED)
+            and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
+        ):
+            return False
+
         if not await self._is_activation_ready(session, organization):
             if organization.status in (
                 OrganizationStatus.DENIED,

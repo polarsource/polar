@@ -9,8 +9,8 @@ import { useInView } from '@/hooks/useInView'
  * the columns. Canvas 2D.
  */
 
-const COLS = 8
-const ROWS = 28
+const COLS = 1
+const ROWS = 6
 
 export const WaveBars = () => {
   const { ref: wrapperRef, inView } = useInView()
@@ -35,7 +35,7 @@ export const WaveBars = () => {
     const innerH = size - pad * 2
     const colW = innerW / COLS
     const rowH = innerH / ROWS
-    const barH = Math.max(1, rowH * 0.05)
+    const barH = Math.max(1, rowH * 0.03)
     const colGap = colW * 0.12
     const maxBarW = colW - colGap
 
@@ -53,7 +53,7 @@ export const WaveBars = () => {
         styles.getPropertyValue('--color-graphic-stroke').trim() ||
         'rgb(190, 190, 190)'
       // Max vertical displacement per bar
-      const maxDisp = rowH * 5.0
+      const maxDisp = rowH * 2
 
       for (let c = 0; c < COLS; c++) {
         const cx = pad + c * colW + colGap / 2

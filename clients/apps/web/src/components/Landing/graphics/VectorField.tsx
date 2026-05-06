@@ -28,8 +28,8 @@ interface VectorFieldProps {
 
 export const VectorField = ({
   field = uniformField,
-  cols = 8,
-  rows = 8,
+  cols = 4,
+  rows = 4,
 }: VectorFieldProps) => {
   const { ref: wrapperRef, inView } = useInView()
   const canvasRef = useRef<HTMLCanvasElement>(null)

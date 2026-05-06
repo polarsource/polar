@@ -83,8 +83,8 @@ Before contributing, set up your local development environment following the ins
 ### Frontend (TypeScript/Next.js/React)
 
 - **Package Manager**: Use `pnpm`
-- **Components**: Use shared UI components from `clients/packages/ui`
-- **Styling**: Use Tailwind CSS
+- **Components**: Use `<Box />` from `@polar-sh/orbit/Box` and other Orbit primitives for new code
+- **Styling**: Use Orbit design tokens via Box props (Tailwind is deprecated for new code)
 
 ## 🔍 Code Review Process
 

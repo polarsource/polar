@@ -56,7 +56,9 @@ polar/
 │   └── backoffice/         # Admin UI (see server/polar/backoffice/CLAUDE.md)
 ├── clients/                # Frontend (see clients/CLAUDE.md)
 │   ├── apps/web/           # Next.js dashboard
-│   └── packages/ui/        # Shared components
+│   └── packages/
+│       ├── orbit/          # Design system (Box, tokens, components)
+│       └── ui/             # Legacy components
 └── .claude/                # Claude Code configuration
     ├── settings.json       # Hooks configuration
     ├── hooks/              # Pattern enforcement

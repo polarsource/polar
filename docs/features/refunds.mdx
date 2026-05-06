@@ -14,38 +14,34 @@ Polar reserves the right to issue refunds within 60 days of purchase, at its own
 
 ## What's refundable
 
-The maximum refundable amount on an order is the **net amount** (excluding tax) minus anything that's already been refunded, with any [customer balance](/features/customer-management) applied to the order taken into account. The corresponding **tax** is refunded automatically alongside it — fully on a full refund, prorated on a partial one.
-
-Both values are exposed on the order as `refundable_amount` and `refundable_tax_amount`, so you can build your own UI on top.
+The maximum refundable amount on an order is the **net amount** (excluding tax) minus anything that's already been refunded, with any customer balance applied to the order taken into account. The corresponding **tax** is refunded automatically alongside it — fully on a full refund, prorated on a partial one.
 
 <Warning>
 **Payment fees are not refunded**
 
 Credit card networks and payment processors charge us for the underlying transaction regardless of whether it's later refunded (industry standard). We therefore can't return our fees, since the cost remains.
 
-Example: an order of $30 costs ~$1.6 in fees to Polar. You can still refund the customer $30, but the ~$1.6 fee stays deducted from your balance.
+Example: an order of $30 costs ~$1.60 in fees to Polar. You can still refund the customer $30, but the ~$1.60 fee stays deducted from your balance.
 </Warning>
 
 ## Issuing a refund
 
 1. Go to the order details page for the specific order you want to refund.
-2. Scroll down to the "Refund" section.
-3. Click "Refund".
+2. Scroll down to the "Refunds" section.
+3. Click "Refund order".
 
 ### Amount
 
-Specify the **net amount** to refund — i.e. the amount excluding tax. It defaults to the full refundable net amount, but you can lower it to issue a partial refund, or click **Refund fully** to reset it to the maximum.
+Specify the **net amount** to refund — i.e. the amount excluding tax. It defaults to the maximum refundable amount, but you can lower it to issue a partial refund.
 
-Polar **automatically calculates the corresponding tax** to refund based on the order's tax rate, and previews the total the customer will receive (net + tax) directly under the input. For partial refunds, tax is prorated against the refunded portion; for a full refund, the entire remaining tax is returned.
+Polar **automatically calculates the corresponding tax** to refund based on the order's tax rate. For partial refunds, tax is prorated against the refunded portion; for a full refund, the entire remaining tax is returned.
 
 ### Reason
 
 Select the reason for the refund — helpful for future reference.
 
-### Revoking benefits (one-time purchases)
+### Revoking benefits
 
-For one-time purchases, you can revoke the customer's access to product benefits — e.g. file downloads, license keys, or Discord/GitHub invites. This is selected by default, since we default to a full refund, but it can be disabled.
+**One-time purchases.** You can revoke the customer's access to product benefits — e.g. file downloads, license keys, or Discord/GitHub invites. This is selected by default, since we default to a full refund, but it can be disabled.
 
-### Revoking benefits (subscriptions)
-
-You can't revoke access by refunding an order tied to a subscription — refunding the order returns the money but does not end the relationship. To end access, [cancel the subscription](/features/subscriptions/manage) instead. Polar revokes the associated benefits automatically once the subscription itself is revoked.
+**Subscriptions.** You can't revoke access by refunding an order tied to a subscription — refunding the order returns the money but does not end the relationship. To end access, [cancel the subscription](/features/subscriptions/manage) instead. Polar revokes the associated benefits automatically once the subscription itself is revoked.

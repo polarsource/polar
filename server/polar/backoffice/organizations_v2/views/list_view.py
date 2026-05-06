@@ -30,9 +30,7 @@ from ...components import (
 )
 from ..priority import Signals
 
-FIRST_REVIEW_THRESHOLD_LABEL = formatters.currency(
-    FIRST_REVIEW_THRESHOLD_CENTS, "usd"
-)
+FIRST_REVIEW_THRESHOLD_LABEL = formatters.currency(FIRST_REVIEW_THRESHOLD_CENTS, "usd")
 
 DeletedFilter = Literal["exclude", "include", "only"]
 

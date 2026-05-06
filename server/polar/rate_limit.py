@@ -146,9 +146,7 @@ def _caller_identity(scope: ASGIScope) -> str | None:
             if value[:7].lower() == b"bearer ":
                 token = value[7:].strip()
                 if token:
-                    return "t:" + hashlib.blake2b(
-                        token, digest_size=16
-                    ).hexdigest()
+                    return "t:" + hashlib.blake2b(token, digest_size=16).hexdigest()
             break
     client = scope.get("client")
     if client and client[0]:
@@ -167,9 +165,7 @@ class RateLimitFastPathMiddleware:
         self.app = app
         self.redis = redis
 
-    async def __call__(
-        self, scope: ASGIScope, receive: Receive, send: Send
-    ) -> None:
+    async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or not scope["path"].startswith("/v1"):
             await self.app(scope, receive, send)
             return
@@ -192,9 +188,7 @@ class RateLimitFastPathMiddleware:
                     ],
                 }
             )
-            await send(
-                {"type": "http.response.body", "body": b"Too Many Requests"}
-            )
+            await send({"type": "http.response.body", "body": b"Too Many Requests"})
             return
 
         start_message: Message | None = None

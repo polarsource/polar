@@ -203,9 +203,7 @@ class TestRateLimitFastPathMiddlewareWriteOnTrip:
         keys = [k async for k in redis.scan_iter("rl:*")]
         assert keys == []
 
-    async def test_uses_retry_after_for_block_duration(
-        self, redis: Redis
-    ) -> None:
+    async def test_uses_retry_after_for_block_duration(self, redis: Redis) -> None:
         app = _RecordingApp(status=429, extra_headers=[(b"retry-after", b"42")])
         middleware = RateLimitFastPathMiddleware(app, redis)
         scope = _http_scope()
@@ -276,9 +274,7 @@ class TestRateLimitFastPathMiddlewareWriteOnTrip:
     ) -> None:
         # A negative ex on real Redis would raise after http.response.start
         # was already sent, corrupting the response. Clamp to the default.
-        app = _RecordingApp(
-            status=429, extra_headers=[(b"retry-after", b"-1")]
-        )
+        app = _RecordingApp(status=429, extra_headers=[(b"retry-after", b"-1")])
         middleware = RateLimitFastPathMiddleware(app, redis)
         scope = _http_scope()
         ident = _caller_identity(scope)
@@ -290,9 +286,7 @@ class TestRateLimitFastPathMiddlewareWriteOnTrip:
         assert block is not None
         assert block == str(_DEFAULT_BLOCK_SECONDS)
 
-    async def test_huge_retry_after_falls_back_to_default(
-        self, redis: Redis
-    ) -> None:
+    async def test_huge_retry_after_falls_back_to_default(self, redis: Redis) -> None:
         app = _RecordingApp(
             status=429,
             extra_headers=[(b"retry-after", str(_MAX_BLOCK_SECONDS + 1).encode())],
@@ -319,9 +313,7 @@ class TestRateLimitFastPathMiddlewareAuthGating:
     locking out the legitimate owner of any token they can observe.
     """
 
-    async def test_block_written_for_authenticated_bearer(
-        self, redis: Redis
-    ) -> None:
+    async def test_block_written_for_authenticated_bearer(self, redis: Redis) -> None:
         app = _RecordingApp(status=429, auth_subject_to_set=_AUTHED_SUBJECT)
         middleware = RateLimitFastPathMiddleware(app, redis)
         scope = _http_scope(headers=[_BEARER_HEADER])
@@ -348,9 +340,7 @@ class TestRateLimitFastPathMiddlewareAuthGating:
 
         assert await redis.get(_BLOCK_KEY_PREFIX + ident) is None
 
-    async def test_no_block_when_auth_subject_missing(
-        self, redis: Redis
-    ) -> None:
+    async def test_no_block_when_auth_subject_missing(self, redis: Redis) -> None:
         # Defensive: scope state may be empty if AuthSubjectMiddleware
         # didn't run (e.g. an earlier middleware short-circuited).
         app = _RecordingApp(status=429)  # does not set auth_subject

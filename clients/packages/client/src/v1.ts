@@ -27680,6 +27680,98 @@ export interface components {
       meter: components['schemas']['Meter']
     }
     /**
+     * SubscriptionPastDueEvent
+     * @description An event created by Polar when a subscription becomes past due.
+     */
+    SubscriptionPastDueEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.past_due'
+      metadata: components['schemas']['SubscriptionPastDueMetadata']
+    }
+    /** SubscriptionPastDueMetadata */
+    SubscriptionPastDueMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id?: string
+      /** Past Due At */
+      past_due_at: string
+      /** Amount */
+      amount?: number
+      /** Currency */
+      currency?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
+    }
+    /**
      * SubscriptionProductUpdatedEvent
      * @description An event created by Polar when a subscription changes the product.
      */
@@ -28418,6 +28510,7 @@ export interface components {
       | components['schemas']['SubscriptionCycledEvent']
       | components['schemas']['SubscriptionCanceledEvent']
       | components['schemas']['SubscriptionRevokedEvent']
+      | components['schemas']['SubscriptionPastDueEvent']
       | components['schemas']['SubscriptionUncanceledEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
@@ -54598,6 +54691,9 @@ export const subscriptionCreatedEventNameValues: ReadonlyArray<
 export const subscriptionCycledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionCycledEvent']['name']
 > = ['subscription.cycled']
+export const subscriptionPastDueEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionPastDueEvent']['name']
+> = ['subscription.past_due']
 export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionProductUpdatedEvent']['name']
 > = ['subscription.product_updated']

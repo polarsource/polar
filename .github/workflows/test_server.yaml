@@ -267,7 +267,7 @@ jobs:
           POLICY_FILE: policy.json
         run: bash github.sh
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v6.0.3
         with:
           package_json_file: server/emails/package.json
 

@@ -25,7 +25,7 @@ jobs:
             exit 1
           fi
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v6.0.3
         with:
           package_json_file: clients/package.json
 

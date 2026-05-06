@@ -28,7 +28,7 @@ jobs:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v6.0.3
         with:
           package_json_file: clients/package.json
 

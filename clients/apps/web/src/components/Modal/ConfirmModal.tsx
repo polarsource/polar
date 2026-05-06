@@ -97,7 +97,7 @@ export const ConfirmModal = ({
                     name="prompt"
                     rules={{
                       validate: (value) =>
-                        value === confirmPrompt ||
+                        (value ?? '').trim() === confirmPrompt.trim() ||
                         'Please enter the exact text to confirm',
                     }}
                     render={({ field }) => {
@@ -125,7 +125,11 @@ export const ConfirmModal = ({
                 <Button
                   type="submit"
                   variant={destructive ? 'destructive' : 'default'}
-                  disabled={confirmPrompt ? prompt !== confirmPrompt : false}
+                  disabled={
+                    confirmPrompt
+                      ? (prompt ?? '').trim() !== confirmPrompt.trim()
+                      : false
+                  }
                 >
                   {destructive ? destructiveText : 'Confirm'}
                 </Button>

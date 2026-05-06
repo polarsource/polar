@@ -179,7 +179,7 @@ module "production" {
   workers = {
     "scheduler" = {
       start_command      = "uv run python -m polar.worker.scheduler"
-      plan               = "starter"
+      plan               = "standard"
       image_url          = data.render_web_service.production_worker["scheduler"].runtime_source.image.image_url
       image_digest       = data.render_web_service.production_worker["scheduler"].runtime_source.image.digest
       dramatiq_prom_port = "10000"

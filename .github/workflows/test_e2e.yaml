@@ -174,7 +174,7 @@ jobs:
       - name: Notify Slack on failure
         id: slack-failure
         if: steps.e2e.outcome == 'failure' # TEMP: removed schedule-only condition to test Slack
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -212,7 +212,7 @@ jobs:
 
       - name: Notify Slack - starting investigation
         if: steps.e2e.outcome == 'failure'
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

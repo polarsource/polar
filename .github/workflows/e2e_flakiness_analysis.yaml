@@ -77,7 +77,7 @@ jobs:
           echo "slack_thread_ts=$(jq -r '.slack_thread_ts' "$CONTEXT")" >> $GITHUB_OUTPUT
 
       - name: Notify Slack - investigating
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -242,7 +242,7 @@ jobs:
 
       - name: Notify Slack - result
         if: always()
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -274,7 +274,7 @@ jobs:
 
       - name: Post suspicious PRs to Slack
         if: always() && steps.result.outputs.suspicious_prs
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

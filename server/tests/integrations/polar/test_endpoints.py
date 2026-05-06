@@ -46,6 +46,7 @@ _BENEFIT_GRANT: dict[str, Any] = {
         "description": "",
         "selectable": True,
         "deletable": True,
+        "is_deleted": False,
         "organization_id": "00000000-0000-0000-0000-000000000099",
         "metadata": {},
         "properties": {"note": None},

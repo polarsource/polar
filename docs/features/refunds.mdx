@@ -1,53 +1,51 @@
 ---
 title: "Manage Refunds"
 sidebarTitle: "Refunds"
-description: "You can easily refund orders on Polar - both in full or in parts."
+description: "You can easily refund orders on Polar — both in full or in parts."
 ---
 
-No matter what refund policy you offer to customers, Polar makes it easy to offer both full and partial refunds to easily deliver the customer experience and refund policy you want.
-
-However, even in case you have a “no refund” policy, Polar reserves the right to issue refunds within 60 days of purchase - at our own discretion. We reserve this right in an effort to automatically and proactively reduce costly chargebacks.
+No matter what refund policy you offer to customers, Polar makes it easy to issue both full and partial refunds, so you can deliver the customer experience and refund policy you want.
 
 <Note>
 **Polar can issue refunds on your behalf**
 
-Polar reserves the right to issue refunds within 60 days of purchase, at its own discretion, in order to prevent chargebacks. So if you choose to have a “no refunds” policy, be aware that Polar could still issue refunds in an effort to proactively prevent chargebacks.
+Polar reserves the right to issue refunds within 60 days of purchase, at its own discretion, in order to prevent chargebacks. So if you choose to have a "no refunds" policy, be aware that Polar may still issue refunds in an effort to proactively prevent chargebacks.
 </Note>
 
+## What's refundable
 
-Issuing a refund
------------------------
+The maximum refundable amount on an order is the **net amount** (excluding tax) minus anything that's already been refunded, with any [customer balance](/features/customer-management) applied to the order taken into account. The corresponding **tax** is refunded automatically alongside it — fully on a full refund, prorated on a partial one.
 
-1. Go to the order details page for the specific order you want to refund
-2. Scroll down to the “Refund” section
-3. Click “Refund”
+Both values are exposed on the order as `refundable_amount` and `refundable_tax_amount`, so you can build your own UI on top.
 
-**Amount**
+<Warning>
+**Payment fees are not refunded**
+
+Credit card networks and payment processors charge us for the underlying transaction regardless of whether it's later refunded (industry standard). We therefore can't return our fees, since the cost remains.
+
+Example: an order of $30 costs ~$1.6 in fees to Polar. You can still refund the customer $30, but the ~$1.6 fee stays deducted from your balance.
+</Warning>
+
+## Issuing a refund
+
+1. Go to the order details page for the specific order you want to refund.
+2. Scroll down to the "Refund" section.
+3. Click "Refund".
+
+### Amount
 
 Specify the **net amount** to refund — i.e. the amount excluding tax. It defaults to the full refundable net amount, but you can lower it to issue a partial refund, or click **Refund fully** to reset it to the maximum.
 
 Polar **automatically calculates the corresponding tax** to refund based on the order's tax rate, and previews the total the customer will receive (net + tax) directly under the input. For partial refunds, tax is prorated against the refunded portion; for a full refund, the entire remaining tax is returned.
 
+### Reason
 
-<Warning>
-**Payment fees are not refunded**
+Select the reason for the refund — helpful for future reference.
 
-Unfortunately, credit card networks and PSPs charge us for the underlying transactions regardless of whether it’s later refunded (industry standard). Therefore, we cannot offer a refund on our fees since the costs remain constant.
+### Revoking benefits (one-time purchases)
 
-Example: An order of $30 costs ~$1.6 in fees to Polar. You can still refund the customer $30, but the ~$1.6 fee remains and is deducted on your balance from other purchases.
-</Warning>
+For one-time purchases, you can revoke the customer's access to product benefits — e.g. file downloads, license keys, or Discord/GitHub invites. This is selected by default, since we default to a full refund, but it can be disabled.
 
+### Revoking benefits (subscriptions)
 
-
-**Reason**
-
-Select the reason for the refund - helpful for future reference.
-
-**Revoke Benefits (One-time purchases)**
-
-For one-time purchases, you can revoke the customers access to product benefits, e.g file downloads, license keys or Discord/GitHub invites. By default this is selected since we default to a full refund, but can be disabled.
-
-**Revoke Benefits (Subscriptions)**
-
-You cannot revoke access by refunding an order associated with a subscription. Instead the subscription is required to be canceled and Polar will then automatically revoke access once the subscription itself is revoked.
-
+You can't revoke access by refunding an order tied to a subscription — refunding the order returns the money but does not end the relationship. To end access, [cancel the subscription](/features/subscriptions/manage) instead. Polar revokes the associated benefits automatically once the subscription itself is revoked.

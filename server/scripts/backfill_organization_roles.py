@@ -1,118 +1,63 @@
-"""
-Backfill `UserOrganization.role` from `Account.admin_id`.
+import asyncio
+from functools import wraps
 
-For each Account, set `role = 'owner'` on the `UserOrganization` row of the
-account's admin user. Everyone else stays at the default `member`.
-
-Idempotent — safe to re-run. The script reports how many rows it updated and
-how many already carried the correct role.
-
-Run manually post-deploy:
-
-    uv run python -m scripts.backfill_organization_roles
-    uv run python -m scripts.backfill_organization_roles --dry-run
-
-The application's dual-write keeps `Account.admin_id` and the `owner` role
-aligned for any new orgs created or any `change_admin` flow that fires
-after the schema migration deploys; this script only fixes pre-existing
-rows.
-"""
-
+import sqlalchemy as sa
 import typer
 from sqlalchemy import select, update
 
-from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Account, Organization, UserOrganization
 from polar.models.user_organization import OrganizationRole
-from polar.postgres import AsyncSession, create_async_engine
-
-from .helper import configure_script_console_logging, typer_async
+from scripts.helper import (
+    configure_script_logging,
+    limit_bindparam,
+    run_batched_update,
+)
 
 cli = typer.Typer()
 
+configure_script_logging()
 
-async def run_backfill(
-    *,
-    session: AsyncSession,
-    dry_run: bool,
-) -> tuple[int, int, int]:
-    """
-    Returns (orgs_scanned, rows_updated, rows_already_correct).
-    """
-    statement = (
-        select(
-            Organization.id.label("organization_id"),
-            Account.admin_id.label("admin_id"),
-        )
-        .join(Account, Organization.account_id == Account.id)
-        .where(Organization.deleted_at.is_(None))
-    )
-    result = await session.execute(statement)
-    pairs = result.all()
 
-    rows_updated = 0
-    rows_already_correct = 0
+def typer_async(f):  # type: ignore
+    @wraps(f)
+    def wrapper(*args, **kwargs):  # type: ignore
+        return asyncio.run(f(*args, **kwargs))
 
-    for organization_id, admin_id in pairs:
-        existing = await session.execute(
-            select(UserOrganization.role).where(
-                UserOrganization.organization_id == organization_id,
-                UserOrganization.user_id == admin_id,
-            )
-        )
-        current_role = existing.scalar_one_or_none()
-        if current_role is None:
-            # Account.admin_id user has no UserOrganization row for this org —
-            # rare/legacy state. Skip rather than create one.
-            continue
-        if current_role == OrganizationRole.owner:
-            rows_already_correct += 1
-            continue
-
-        if not dry_run:
-            await session.execute(
-                update(UserOrganization)
-                .where(
-                    UserOrganization.organization_id == organization_id,
-                    UserOrganization.user_id == admin_id,
-                )
-                .values(role=OrganizationRole.owner)
-            )
-        rows_updated += 1
-
-    if not dry_run:
-        await session.commit()
-
-    return len(pairs), rows_updated, rows_already_correct
+    return wrapper
 
 
 @cli.command()
 @typer_async
-async def backfill(
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Print what would be updated without writing."
-    ),
+async def backfill_organization_roles(
+    batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
+    sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
-    """Backfill `UserOrganization.role = 'owner'` from `Account.admin_id`."""
-    configure_script_console_logging()
-
-    engine = create_async_engine("script")
-    sessionmaker = create_async_sessionmaker(engine)
-
-    try:
-        async with sessionmaker() as session:
-            scanned, updated, already_correct = await run_backfill(
-                session=session, dry_run=dry_run
-            )
-
-        verb = "would update" if dry_run else "updated"
-        typer.echo(
-            f"Scanned {scanned} organizations: "
-            f"{verb} {updated} owner role(s); "
-            f"{already_correct} already correct."
+    target_rows = (
+        select(UserOrganization.user_id, UserOrganization.organization_id)
+        .join(Organization, Organization.id == UserOrganization.organization_id)
+        .join(Account, Account.id == Organization.account_id)
+        .where(
+            UserOrganization.user_id == Account.admin_id,
+            UserOrganization.role != OrganizationRole.owner,
+            UserOrganization.deleted_at.is_(None),
+            Organization.deleted_at.is_(None),
         )
-    finally:
-        await engine.dispose()
+        .limit(limit_bindparam())
+    )
+
+    await run_batched_update(
+        (
+            update(UserOrganization)
+            .values(role=OrganizationRole.owner)
+            .where(
+                sa.tuple_(
+                    UserOrganization.user_id, UserOrganization.organization_id
+                ).in_(target_rows)
+            )
+        ),
+        batch_size=batch_size,
+        sleep_seconds=sleep_seconds,
+    )
 
 
 if __name__ == "__main__":

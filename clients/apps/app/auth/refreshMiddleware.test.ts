@@ -8,9 +8,8 @@ const mockRefreshAsync = jest.fn<
 >()
 
 jest.mock('expo-auth-session', () => {
-  const actual = jest.requireActual<typeof import('expo-auth-session')>(
-    'expo-auth-session',
-  )
+  const actual =
+    jest.requireActual<typeof import('expo-auth-session')>('expo-auth-session')
   return {
     ...actual,
     refreshAsync: mockRefreshAsync,

@@ -206,6 +206,12 @@ def create_app() -> FastAPI:
         app.add_middleware(AuthSubjectMiddleware)
         app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
         app.add_middleware(AsyncSessionMiddleware)
+        # Sits outside auth + DB so blocked callers cost one Redis GET, and
+        # writes the block whenever a downstream 429 is observed.
+        app.add_middleware(
+            rate_limit.RateLimitFastPathMiddleware,
+            redis=create_redis("rate-limit"),
+        )
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     app.add_middleware(LogCorrelationIdMiddleware)
     if not settings.is_testing():

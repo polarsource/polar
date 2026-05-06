@@ -90,7 +90,7 @@ export const ConfirmModal = ({
               {confirmPrompt && (
                 <>
                   <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
-                    Please enter &quot;{confirmPrompt}&quot; to confirm:
+                    Please enter &quot;{confirmPrompt.trim()}&quot; to confirm:
                   </p>
                   <FormField
                     control={control}
@@ -108,7 +108,7 @@ export const ConfirmModal = ({
                               <Input
                                 type="input"
                                 required
-                                placeholder={confirmPrompt}
+                                placeholder={confirmPrompt.trim()}
                                 autoComplete="off"
                                 {...field}
                               />

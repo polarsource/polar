@@ -19,6 +19,7 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
+    op.execute("SET LOCAL lock_timeout = '2s'")
     op.add_column(
         "user_organizations",
         sa.Column(

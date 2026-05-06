@@ -1086,16 +1086,21 @@ class TestDenyOrganization:
 class TestMaybeActivate:
     @pytest.mark.parametrize(
         "status",
-        [OrganizationStatus.DENIED, OrganizationStatus.BLOCKED],
+        [
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+        ],
     )
-    async def test_does_not_transition_from_denied_or_blocked(
+    async def test_only_transitions_from_created(
         self,
         session: AsyncSession,
         organization: Organization,
         status: OrganizationStatus,
     ) -> None:
-        """Re-activating a DENIED/BLOCKED org is a backoffice-only operation;
-        automated triggers (webhooks, etc.) must leave the status alone."""
+        """maybe_activate only handles CREATED → ACTIVE. REVIEW/SNOOZED go
+        through the review flow; DENIED/BLOCKED require backoffice_approve."""
         organization.status = status
 
         review = OrganizationReview(

@@ -952,10 +952,10 @@ class OrganizationService:
     async def maybe_activate(
         self, session: AsyncSession, organization: Organization
     ) -> bool:
-        """Transition CREATED/REVIEW/SNOOZED → ACTIVE when every gate passes.
+        """Transition CREATED → ACTIVE when every onboarding gate passes.
 
         Gates:
-          1. Status is CREATED, REVIEW, or SNOOZED.
+          1. Status is CREATED.
           2. Details submitted (details + details_submitted_at).
           3. Review is approved: verdict PASS, or verdict FAIL with an
              APPROVED appeal.
@@ -966,14 +966,12 @@ class OrganizationService:
         Stripe ``account.updated``, identity verification). Returns True iff
         the org was transitioned.
 
+        REVIEW/SNOOZED orgs are handled by the review flow
+        (:meth:`handle_ongoing_review_verdict` or backoffice approval).
         Re-activating a DENIED or BLOCKED organization is a manual,
         backoffice-only operation — see :meth:`backoffice_approve`.
         """
-        if organization.status not in (
-            OrganizationStatus.CREATED,
-            OrganizationStatus.REVIEW,
-            OrganizationStatus.SNOOZED,
-        ):
+        if organization.status != OrganizationStatus.CREATED:
             return False
 
         review_repository = OrganizationReviewRepository.from_session(session)

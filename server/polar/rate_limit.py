@@ -1,6 +1,8 @@
 import hashlib
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Sequence
+from functools import partial
 
+from fastapi.security.utils import get_authorization_scheme_param
 from ratelimit import RateLimitMiddleware, Rule
 from ratelimit.auths import EmptyInformation
 from ratelimit.auths.ip import client_ip
@@ -13,36 +15,37 @@ from polar.redis import Redis
 
 _IDENTITY_KEY_PREFIX = "rl:ident:"
 _IDENTITY_TTL_SECONDS = 300
+_ANONYMOUS_IDENTITY = "anonymous"
 
 _AUTHORIZATION_HEADER = b"authorization"
-_BEARER_PREFIX = b"bearer "
 
 
-def _bearer_token(scope: Scope) -> bytes | None:
+def _bearer_token(scope: Scope) -> str | None:
     if scope.get("type") != "http":
         return None
     for name, value in scope.get("headers", ()):
-        if (
-            name == _AUTHORIZATION_HEADER
-            and value[: len(_BEARER_PREFIX)].lower() == _BEARER_PREFIX
-        ):
-            token = value[len(_BEARER_PREFIX) :].strip()
-            return token or None
+        if name != _AUTHORIZATION_HEADER:
+            continue
+        try:
+            authorization = value.decode("ascii")
+        except UnicodeDecodeError:
+            return None
+        scheme, token = get_authorization_scheme_param(authorization)
+        if not scheme or scheme.lower() != "bearer" or not token:
+            return None
+        return token
     return None
 
 
-def _hash_token(token: bytes) -> str:
-    return hashlib.blake2b(token, digest_size=16).hexdigest()
-
-
-def identity_cache_key(token: bytes) -> str:
-    return f"{_IDENTITY_KEY_PREFIX}{_hash_token(token)}"
+def _identity_cache_key(token: str) -> str:
+    digest = hashlib.blake2b(token.encode("ascii"), digest_size=16).hexdigest()
+    return f"{_IDENTITY_KEY_PREFIX}{digest}"
 
 
 async def _read_cached_identity(
-    redis: Redis, token: bytes
+    redis: Redis, token: str
 ) -> tuple[str, RateLimitGroup] | None:
-    raw = await redis.get(identity_cache_key(token))
+    raw = await redis.get(_identity_cache_key(token))
     if raw is None:
         return None
     group_str, sep, user = raw.partition("|")
@@ -55,33 +58,31 @@ async def _read_cached_identity(
 
 
 async def write_cached_identity(
-    redis: Redis, token: bytes, key: tuple[str, RateLimitGroup]
+    redis: Redis, token: str, key: tuple[str, RateLimitGroup]
 ) -> None:
     user, group = key
     await redis.set(
-        identity_cache_key(token),
+        _identity_cache_key(token),
         f"{group.value}|{user}",
         ex=_IDENTITY_TTL_SECONDS,
     )
 
 
-def _make_authenticate(
-    redis: Redis,
-) -> Callable[[Scope], Awaitable[tuple[str, RateLimitGroup]]]:
-    async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
-        token = _bearer_token(scope)
-        if token is not None:
-            cached = await _read_cached_identity(redis, token)
-            if cached is not None:
-                return cached
+async def clear_cached_identity(redis: Redis, token: str) -> None:
+    await redis.delete(_identity_cache_key(token))
 
-        try:
-            ip, _ = await client_ip(scope)
-            return ip, RateLimitGroup.default
-        except (EmptyInformation, ValueError, TypeError):
-            return "anonymous", RateLimitGroup.default
 
-    return _authenticate
+async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGroup]:
+    token = _bearer_token(scope)
+    if token is not None:
+        cached = await _read_cached_identity(redis, token)
+        if cached is not None:
+            return cached
+    try:
+        ip, _ = await client_ip(scope)
+        return ip, RateLimitGroup.default
+    except (EmptyInformation, ValueError, TypeError):
+        return _ANONYMOUS_IDENTITY, RateLimitGroup.default
 
 
 _BASE_RULES: dict[str, Sequence[Rule]] = {
@@ -134,5 +135,12 @@ def get_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
         case _:
             rules = {}
     return RateLimitMiddleware(
-        app, _make_authenticate(redis), RedisBackend(redis), rules
+        app, partial(_authenticate, redis=redis), RedisBackend(redis), rules
     )
+
+
+__all__ = [
+    "clear_cached_identity",
+    "get_middleware",
+    "write_cached_identity",
+]

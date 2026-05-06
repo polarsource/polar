@@ -183,7 +183,18 @@ const DownloadInvoice = ({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <div className="flex flex-col gap-2 lg:flex-row">
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <Button
+            type="button"
+            onClick={onDownload}
+            loading={loading}
+            disabled={loading}
+            variant={variant}
+            size={size}
+            className={twMerge('w-full', className)}
+          >
+            Download Invoice
+          </Button>
           {order.is_invoice_generated && (
             <Button
               type="button"
@@ -197,17 +208,6 @@ const DownloadInvoice = ({
               Edit Invoice
             </Button>
           )}
-          <Button
-            type="button"
-            onClick={onDownload}
-            loading={loading}
-            disabled={loading}
-            variant={variant}
-            size={size}
-            className={twMerge('w-full', className)}
-          >
-            Download Invoice
-          </Button>
         </div>
       ),
     [dropdown, order, loading, size, className, variant, onDownload, show],

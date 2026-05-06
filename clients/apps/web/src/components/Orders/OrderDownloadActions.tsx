@@ -19,7 +19,7 @@ export const OrderDownloadActions = ({
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4">
         {hasReceipt && <DownloadReceiptPortal order={order} />}
         <DownloadInvoicePortal
           customerSessionToken={customerSessionToken}
@@ -32,7 +32,7 @@ export const OrderDownloadActions = ({
   }
 
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex flex-col gap-4">
       {hasReceipt ? (
         <>
           <DownloadReceiptPortal order={order} className="w-auto" />
@@ -40,7 +40,7 @@ export const OrderDownloadActions = ({
             customerSessionToken={customerSessionToken}
             order={order}
             onInvoiceGenerated={() => {}}
-            dropdown
+            variant="secondary"
           />
         </>
       ) : (

@@ -39,7 +39,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.organization import (
-    DEFAULT_NEXT_REVIEW_THRESHOLD_CENTS,
+    FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
@@ -981,7 +981,7 @@ class OrganizationService:
         then promotes them to ACTIVE).
         """
         if next_review_threshold is None:
-            next_review_threshold = DEFAULT_NEXT_REVIEW_THRESHOLD_CENTS
+            next_review_threshold = FIRST_REVIEW_THRESHOLD_CENTS
 
         is_ready = await self._is_activation_ready(session, organization)
         target_status = (

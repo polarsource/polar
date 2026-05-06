@@ -403,14 +403,11 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
 }
 
-# Upper bound (in cents) of `next_review_threshold` that qualifies an
-# organization as a "first review" alongside orgs still in their initial
-# review cycle (`initially_reviewed_at IS NULL`). Either condition is enough.
-FIRST_REVIEW_MAX_THRESHOLD_CENTS = 1000
-
-# Default `next_review_threshold` (in cents) used at organization creation
-# and as the fallback when reactivating from DENIED/BLOCKED.
-DEFAULT_NEXT_REVIEW_THRESHOLD_CENTS = 1000
+# Default `next_review_threshold` (in cents). Used at organization creation,
+# as the fallback when reactivating from DENIED/BLOCKED, and as the upper
+# bound that qualifies an org as still being in its "first review" cycle
+# (alongside `initially_reviewed_at IS NULL` — either condition is enough).
+FIRST_REVIEW_THRESHOLD_CENTS = 1000
 
 
 class Organization(RateLimitGroupMixin, RecordModel):
@@ -473,7 +470,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=OrganizationStatus.CREATED,
     )
     next_review_threshold: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=DEFAULT_NEXT_REVIEW_THRESHOLD_CENTS
+        Integer, nullable=False, default=FIRST_REVIEW_THRESHOLD_CENTS
     )
     status_updated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
@@ -691,7 +688,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_first_review(self) -> bool:
         return self.status == OrganizationStatus.REVIEW and (
             self.initially_reviewed_at is None
-            or self.next_review_threshold <= FIRST_REVIEW_MAX_THRESHOLD_CENTS
+            or self.next_review_threshold <= FIRST_REVIEW_THRESHOLD_CENTS
         )
 
     @is_first_review.inplace.expression
@@ -701,7 +698,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
             cls.status == OrganizationStatus.REVIEW,
             or_(
                 cls.initially_reviewed_at.is_(None),
-                cls.next_review_threshold <= FIRST_REVIEW_MAX_THRESHOLD_CENTS,
+                cls.next_review_threshold <= FIRST_REVIEW_THRESHOLD_CENTS,
             ),
         )
 

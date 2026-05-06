@@ -14,7 +14,7 @@ from tagflow import tag, text
 
 from polar.models import Organization, PayoutAccount
 from polar.models.organization import (
-    FIRST_REVIEW_MAX_THRESHOLD_CENTS,
+    FIRST_REVIEW_THRESHOLD_CENTS,
     OrganizationStatus,
 )
 from polar.postgres import AsyncSession
@@ -31,7 +31,7 @@ from ...components import (
 from ..priority import Signals
 
 FIRST_REVIEW_THRESHOLD_LABEL = formatters.currency(
-    FIRST_REVIEW_MAX_THRESHOLD_CENTS, "usd"
+    FIRST_REVIEW_THRESHOLD_CENTS, "usd"
 )
 
 DeletedFilter = Literal["exclude", "include", "only"]

@@ -583,7 +583,6 @@ async def get_organization_detail(
             UserOrganization.is_deleted.is_(False),
             User.is_deleted.is_(False),
         )
-        .limit(10)
     )
     members_result = await session.execute(members_stmt)
     members = list(members_result.scalars().unique().all())

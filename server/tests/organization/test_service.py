@@ -899,40 +899,17 @@ class TestConfirmOrganizationReviewed:
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
 
-    async def test_overrides_rejected_appeal(
+    async def test_rejects_non_review_status(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         organization.status = OrganizationStatus.DENIED
-        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
-        review = OrganizationReview(
-            organization_id=organization.id,
-            verdict=OrganizationReview.Verdict.FAIL,
-            risk_score=80.0,
-            violated_sections=["tos"],
-            reason="Violation",
-            model_used="test",
-            appeal_submitted_at=datetime(2025, 2, 1, tzinfo=UTC),
-            appeal_reason="Please reconsider",
-            appeal_decision=OrganizationReview.AppealDecision.REJECTED,
-            appeal_reviewed_at=datetime(2025, 2, 2, tzinfo=UTC),
-        )
-        session.add(review)
-        await session.flush()
-
-        mocker.patch("polar.organization.service.enqueue_job")
-
-        # When: operator manually approves the org with a reason
-        result = await organization_service.confirm_organization_reviewed(
-            session, organization, 15000, reason="Appeal re-examined"
-        )
-
-        assert result.status == OrganizationStatus.CREATED
-        assert review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
-        assert review.appeal_reviewed_at is not None
+        with pytest.raises(OrganizationError, match="REVIEW or SNOOZED"):
+            await organization_service.confirm_organization_reviewed(
+                session, organization, 15000
+            )
 
 
 @pytest.mark.asyncio
@@ -1117,28 +1094,17 @@ class TestMaybeActivate:
         assert result is False
         assert organization.status == status
 
-
-@pytest.mark.asyncio
-class TestBackofficeApprove:
-    async def test_noop_when_not_denied_or_blocked(
+    async def test_does_not_undo_admin_redeny_after_appeal_approval(
         self,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.REVIEW
+        """Edge case: appeal approved → admin re-denies → Stripe webhook fires.
 
-        result = await organization_service.backoffice_approve(session, organization)
-
-        assert result is False
-        assert organization.status == OrganizationStatus.REVIEW
-
-    async def test_reverts_to_created_when_not_activation_ready(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
+        The webhook must not undo the admin's deny, even though the appeal is
+        still marked APPROVED on the review record.
+        """
         organization.status = OrganizationStatus.DENIED
-
         review = OrganizationReview(
             organization_id=organization.id,
             verdict=OrganizationReview.Verdict.FAIL,
@@ -1154,10 +1120,71 @@ class TestBackofficeApprove:
         session.add(review)
         await session.flush()
 
-        result = await organization_service.backoffice_approve(session, organization)
+        result = await organization_service.maybe_activate(session, organization)
 
         assert result is False
+        assert organization.status == OrganizationStatus.DENIED
+
+
+@pytest.mark.asyncio
+class TestBackofficeApprove:
+    async def test_rejects_non_denied_or_blocked(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+
+        with pytest.raises(OrganizationError, match="DENIED or BLOCKED"):
+            await organization_service.backoffice_approve(
+                session, organization, reason="Test"
+            )
+
+    async def test_reverts_to_created_when_not_activation_ready(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+
+        await organization_service.backoffice_approve(
+            session, organization, reason="Support escalation"
+        )
+
         assert organization.status == OrganizationStatus.CREATED
+
+    async def test_overrides_rejected_appeal(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Support-contact escalation: AI rejected the appeal, admin overrides."""
+        organization.status = OrganizationStatus.DENIED
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=80.0,
+            violated_sections=["tos"],
+            reason="Violation",
+            model_used="test",
+            appeal_submitted_at=datetime(2025, 2, 1, tzinfo=UTC),
+            appeal_reason="Please reconsider",
+            appeal_decision=OrganizationReview.AppealDecision.REJECTED,
+            appeal_reviewed_at=datetime(2025, 2, 2, tzinfo=UTC),
+        )
+        session.add(review)
+        await session.flush()
+
+        await organization_service.backoffice_approve(
+            session, organization, 15000, reason="Appeal re-examined"
+        )
+
+        assert organization.status == OrganizationStatus.CREATED
+        assert review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
+        assert review.appeal_reviewed_at is not None
+        assert organization.next_review_threshold == 15000
 
 
 @pytest.mark.asyncio
@@ -2992,25 +3019,6 @@ class TestStatusTransitions:
             organization.set_status(OrganizationStatus.OFFBOARDING)
 
     @pytest.mark.parametrize(
-        "current",
-        [OrganizationStatus.DENIED, OrganizationStatus.BLOCKED],
-    )
-    async def test_reactivation_requires_reason(
-        self,
-        current: OrganizationStatus,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        organization.status = current
-        mocker.patch("polar.organization.service.enqueue_job")
-
-        with pytest.raises(OrganizationError):
-            await organization_service.confirm_organization_reviewed(
-                session, organization, 15000
-            )
-
-    @pytest.mark.parametrize(
         ("current", "expected_note_fragment"),
         [
             (OrganizationStatus.DENIED, "reactivated from denied"),
@@ -3029,7 +3037,7 @@ class TestStatusTransitions:
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
         mocker.patch("polar.organization.service.enqueue_job")
 
-        result = await organization_service.confirm_organization_reviewed(
+        result = await organization_service.backoffice_approve(
             session, organization, 15000, reason="Merchant provided additional docs"
         )
 
@@ -3065,7 +3073,7 @@ class TestStatusTransitions:
 
         mocker.patch("polar.organization.service.enqueue_job")
 
-        result = await organization_service.confirm_organization_reviewed(
+        result = await organization_service.backoffice_approve(
             session, organization, 15000, reason="Merchant provided additional docs"
         )
 

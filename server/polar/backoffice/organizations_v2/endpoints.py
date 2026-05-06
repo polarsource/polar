@@ -1217,7 +1217,7 @@ async def approve_denied_dialog(
             )
 
             # Approve the organization
-            await organization_service.confirm_organization_reviewed(
+            await organization_service.backoffice_approve(
                 session, organization, threshold, reason=override_reason
             )
 
@@ -1474,7 +1474,7 @@ async def unblock_approve_dialog(
             )
 
             # Approve the organization
-            await organization_service.confirm_organization_reviewed(
+            await organization_service.backoffice_approve(
                 session, organization, threshold, reason=override_reason
             )
 

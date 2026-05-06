@@ -34,18 +34,30 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4 text-sm">
             <h3 className="dark:text-polar-500 text-gray-500">Features</h3>
             <div className="flex flex-col gap-y-3">
-              <FooterLink href="/features/products">Products</FooterLink>
-              <FooterLink href="/features/analytics">Usage Billing</FooterLink>
-              <FooterLink href="/features/customers">Customers</FooterLink>
-              <FooterLink href="/features/analytics">Analytics</FooterLink>
-              <FooterLink href="/features/benefits">Benefits</FooterLink>
+              <FooterLink href="/features/usage-billing">
+                Usage Billing
+              </FooterLink>
+              <FooterLink href="/features/subscriptions">
+                Subscriptions
+              </FooterLink>
+              <FooterLink href="/features/seats">Seats</FooterLink>
+              <FooterLink href="/features/credits">Credits</FooterLink>
+              <FooterLink href="/features/trials">Trials</FooterLink>
+              <FooterLink href="/features/discounts">Discounts</FooterLink>
+              <FooterLink href="/features/cost-insights">
+                Cost Insights
+              </FooterLink>
               <FooterLink href="/features/finance">Finance</FooterLink>
+              <FooterLink href="/features/merchant-of-record">
+                Merchant of Record
+              </FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-4 text-sm">
             <h3 className="dark:text-polar-500 text-gray-500">Resources</h3>
             <div className="flex flex-col gap-y-3">
               <FooterLink href="/resources/why">Why Polar</FooterLink>
+              <FooterLink href="/resources/comparison">Comparison</FooterLink>
               <FooterLink href="/resources/merchant-of-record">
                 Merchant of Record
               </FooterLink>

@@ -1099,8 +1099,6 @@ class TestMaybeActivate:
         organization: Organization,
         status: OrganizationStatus,
     ) -> None:
-        """maybe_activate only handles CREATED → ACTIVE. REVIEW/SNOOZED go
-        through the review flow; DENIED/BLOCKED require backoffice_approve."""
         organization.status = status
 
         review = OrganizationReview(

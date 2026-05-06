@@ -1007,11 +1007,6 @@ class OrganizationService:
     ) -> bool:
         """Backoffice-only re-activation of a DENIED or BLOCKED organization.
 
-        Goes straight to ACTIVE if every onboarding gate passes; otherwise
-        moves the org to CREATED so the merchant can finish Stripe Identity
-        and Stripe Connect Express, after which a webhook-driven
-        :meth:`maybe_activate` promotes them to ACTIVE.
-
         Caller must have already verified the human authorization to
         re-activate (e.g. an approved appeal). Returns True iff the org was
         transitioned to ACTIVE.

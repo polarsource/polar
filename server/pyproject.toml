@@ -8,7 +8,7 @@ dependencies = [
   "uvicorn[standard]>=0.42.0",
   "asyncpg>=0.29.0",
   "alembic>=1.9.2",
-  "sqlalchemy[asyncio]>=2.0.34",
+  "sqlalchemy[asyncio]>=2.0.49",
   "greenlet>=3.1.1",
   "structlog>=24.4.0",
   "githubkit==0.15.4",

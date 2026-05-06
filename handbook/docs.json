@@ -21,13 +21,19 @@
     }
   },
   "contextual": {
-    "options": ["copy", "chatgpt", "claude"]
+    "options": [
+      "copy",
+      "chatgpt",
+      "claude"
+    ]
   },
   "navigation": {
     "groups": [
       {
         "group": "Company",
-        "pages": ["company/about-polar"]
+        "pages": [
+          "company/about-polar"
+        ]
       },
       {
         "group": "Working at Polar",
@@ -53,6 +59,13 @@
         "group": "Engineering",
         "pages": [
           "engineering/introduction",
+          {
+            "group": "Guides",
+            "pages": [
+              "engineering/guides",
+              "engineering/guides/release-checkout"
+            ]
+          },
           {
             "group": "Backend Development",
             "pages": [

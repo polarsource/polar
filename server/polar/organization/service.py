@@ -952,27 +952,27 @@ class OrganizationService:
     async def maybe_activate(
         self, session: AsyncSession, organization: Organization
     ) -> bool:
-        """Transition → ACTIVE only when every onboarding gate passes.
+        """Transition CREATED/REVIEW/SNOOZED → ACTIVE when every gate passes.
 
         Gates:
-          1. Status can currently transition to ACTIVE (not already ACTIVE,
-             not OFFBOARDING).
+          1. Status is CREATED, REVIEW, or SNOOZED.
           2. Details submitted (details + details_submitted_at).
           3. Review is approved: verdict PASS, or verdict FAIL with an
              APPROVED appeal.
           4. Payout account is ready (see ``PayoutAccount.is_payout_ready``).
           5. Payout account admin: identity verified.
 
-        Idempotent — safe to call from multiple triggers (AI review, Stripe
-        account.updated, identity verification, appeal approval). Returns True
-        iff the org was transitioned.
+        Idempotent — safe to call from multiple automated triggers (AI review,
+        Stripe ``account.updated``, identity verification). Returns True iff
+        the org was transitioned.
+
+        Re-activating a DENIED or BLOCKED organization is a manual,
+        backoffice-only operation — see :meth:`backoffice_approve`.
         """
         if organization.status not in (
             OrganizationStatus.CREATED,
             OrganizationStatus.REVIEW,
             OrganizationStatus.SNOOZED,
-            OrganizationStatus.DENIED,
-            OrganizationStatus.BLOCKED,
         ):
             return False
 
@@ -981,41 +981,8 @@ class OrganizationService:
         if review is None or not review.is_approved:
             return False
 
-        # An admin's manual deny/block must stick even if the AI verdict was PASS,
-        # so re-activation from these states requires an explicitly approved appeal.
-        if (
-            organization.status
-            in (OrganizationStatus.DENIED, OrganizationStatus.BLOCKED)
-            and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
-        ):
-            return False
-
         if not await self._is_activation_ready(session, organization):
-            if organization.status in (
-                OrganizationStatus.DENIED,
-                OrganizationStatus.BLOCKED,
-            ):
-                organization.set_status(OrganizationStatus.CREATED)
-                _append_internal_note(
-                    organization,
-                    "Appeal approved — reverted to created pending Stripe "
-                    "Identity and Stripe Connect Express completion.",
-                    reason=review.appeal_reason or "Appeal approved",
-                )
-                session.add(organization)
-                log.info(
-                    "organization.maybe_activate.reverted_to_created",
-                    organization_id=str(organization.id),
-                    slug=organization.slug,
-                )
             return False
-
-        reason: str | None = None
-        if organization.status in (
-            OrganizationStatus.DENIED,
-            OrganizationStatus.BLOCKED,
-        ):
-            reason = review.appeal_reason or "Appeal approved"
 
         # On first activation keep the small default threshold so the next
         # review fires quickly once the merchant starts taking payments.
@@ -1029,10 +996,68 @@ class OrganizationService:
             session,
             organization,
             next_review_threshold=next_review_threshold,
-            reason=reason,
         )
         log.info(
             "organization.maybe_activate.activated",
+            organization_id=str(organization.id),
+            slug=organization.slug,
+        )
+        return True
+
+    async def backoffice_approve(
+        self, session: AsyncSession, organization: Organization
+    ) -> bool:
+        """Backoffice-only re-activation of a DENIED or BLOCKED organization.
+
+        Goes straight to ACTIVE if every onboarding gate passes; otherwise
+        moves the org to CREATED so the merchant can finish Stripe Identity
+        and Stripe Connect Express, after which a webhook-driven
+        :meth:`maybe_activate` promotes them to ACTIVE.
+
+        Caller must have already verified the human authorization to
+        re-activate (e.g. an approved appeal). Returns True iff the org was
+        transitioned to ACTIVE.
+        """
+        if organization.status not in (
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+        ):
+            return False
+
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review is None or not review.is_approved:
+            return False
+
+        if not await self._is_activation_ready(session, organization):
+            organization.set_status(OrganizationStatus.CREATED)
+            _append_internal_note(
+                organization,
+                "Appeal approved — reverted to created pending Stripe "
+                "Identity and Stripe Connect Express completion.",
+                reason=review.appeal_reason or "Appeal approved",
+            )
+            session.add(organization)
+            log.info(
+                "organization.backoffice_approve.reverted_to_created",
+                organization_id=str(organization.id),
+                slug=organization.slug,
+            )
+            return False
+
+        reason = review.appeal_reason or "Appeal approved"
+        next_review_threshold: int | None = None
+        if organization.initially_reviewed_at is None:
+            next_review_threshold = organization.next_review_threshold
+
+        await self.confirm_organization_reviewed(
+            session,
+            organization,
+            next_review_threshold=next_review_threshold,
+            reason=reason,
+        )
+        log.info(
+            "organization.backoffice_approve.activated",
             organization_id=str(organization.id),
             slug=organization.slug,
         )
@@ -1432,11 +1457,11 @@ class OrganizationService:
         """Approve an organization's appeal.
 
         Recording the approval flips the review's ``appeal_decision`` and then
-        delegates to :meth:`maybe_activate` — which runs the remaining gates
-        (payout account ready, admin identity verified) before transitioning
-        DENIED → ACTIVE. If a gate is still missing the org is moved to
-        CREATED so the merchant can finish Stripe onboarding; a later
-        webhook-triggered ``maybe_activate`` then promotes it to ACTIVE.
+        delegates to :meth:`backoffice_approve` — which runs the remaining
+        gates (payout account ready, admin identity verified) before
+        transitioning DENIED → ACTIVE. If a gate is still missing the org is
+        moved to CREATED so the merchant can finish Stripe onboarding; a later
+        webhook-triggered :meth:`maybe_activate` then promotes it to ACTIVE.
         """
 
         repository = OrganizationReviewRepository.from_session(session)
@@ -1455,7 +1480,7 @@ class OrganizationService:
         review.appeal_reviewed_at = datetime.now(UTC)
         session.add(review)
 
-        await self.maybe_activate(session, organization)
+        await self.backoffice_approve(session, organization)
 
         return review
 

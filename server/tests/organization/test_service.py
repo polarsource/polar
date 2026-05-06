@@ -1084,14 +1084,19 @@ class TestDenyOrganization:
 
 @pytest.mark.asyncio
 class TestMaybeActivate:
-    async def test_does_not_revert_admin_denied_org_with_pass_verdict(
+    @pytest.mark.parametrize(
+        "status",
+        [OrganizationStatus.DENIED, OrganizationStatus.BLOCKED],
+    )
+    async def test_does_not_transition_from_denied_or_blocked(
         self,
         session: AsyncSession,
         organization: Organization,
+        status: OrganizationStatus,
     ) -> None:
-        """Admin denial must stick even if the AI verdict was PASS and a
-        downstream trigger (e.g. Stripe webhook) calls maybe_activate."""
-        organization.status = OrganizationStatus.DENIED
+        """Re-activating a DENIED/BLOCKED org is a backoffice-only operation;
+        automated triggers (webhooks, etc.) must leave the status alone."""
+        organization.status = status
 
         review = OrganizationReview(
             organization_id=organization.id,
@@ -1107,9 +1112,24 @@ class TestMaybeActivate:
         result = await organization_service.maybe_activate(session, organization)
 
         assert result is False
-        assert organization.status == OrganizationStatus.DENIED
+        assert organization.status == status
 
-    async def test_reverts_to_created_on_approved_appeal_when_not_ready(
+
+@pytest.mark.asyncio
+class TestBackofficeApprove:
+    async def test_noop_when_not_denied_or_blocked(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+
+        result = await organization_service.backoffice_approve(session, organization)
+
+        assert result is False
+        assert organization.status == OrganizationStatus.REVIEW
+
+    async def test_reverts_to_created_when_not_activation_ready(
         self,
         session: AsyncSession,
         organization: Organization,
@@ -1131,7 +1151,7 @@ class TestMaybeActivate:
         session.add(review)
         await session.flush()
 
-        result = await organization_service.maybe_activate(session, organization)
+        result = await organization_service.backoffice_approve(session, organization)
 
         assert result is False
         assert organization.status == OrganizationStatus.CREATED

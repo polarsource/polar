@@ -39,6 +39,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.organization import (
+    DEFAULT_NEXT_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
@@ -855,8 +856,8 @@ class OrganizationService:
     ) -> Organization:
         """Confirm a REVIEW or SNOOZED organization and transition it to ACTIVE.
 
-        For DENIED/BLOCKED reactivation, use :meth:`backoffice_approve`. For
-        post-appeal-approval transitions, use :meth:`approve_appeal`.
+        For DENIED/BLOCKED reactivation, use `backoffice_approve`. For
+        post-appeal-approval transitions, use `approve_appeal`.
         """
         if organization.status not in (
             OrganizationStatus.REVIEW,
@@ -888,7 +889,7 @@ class OrganizationService:
     ) -> bool:
         """Whether onboarding gates (details, payout account, KYC) are met.
 
-        Mirrors the non-review gates checked by :meth:`maybe_activate` so the
+        Mirrors the non-review gates checked by `maybe_activate` so the
         backoffice approval path can decide whether a reactivation should go
         straight to ACTIVE or revert to CREATED to finish onboarding.
         """
@@ -925,14 +926,14 @@ class OrganizationService:
           2. Review is approved: verdict PASS, or verdict FAIL with an
              APPROVED appeal.
           3. Details submitted, payout account ready, admin identity
-             verified (see :meth:`_is_activation_ready`).
+             verified (see `_is_activation_ready`).
 
         Idempotent — safe to call from automated triggers (AI review, Stripe
         ``account.updated``, identity verification). Returns True iff the org
         was transitioned.
 
         Re-activation from DENIED/BLOCKED is synchronous and explicit, via
-        :meth:`approve_appeal` (post-appeal-approval) or :meth:`backoffice_approve`
+        `approve_appeal` (post-appeal-approval) or `backoffice_approve`
         (admin override). Webhooks never transition out of DENIED — the org's
         current status is the sole source of truth for what's authorized.
         """
@@ -976,13 +977,11 @@ class OrganizationService:
         """Synchronously transition a DENIED/BLOCKED org to ACTIVE or CREATED.
 
         Goes to ACTIVE if every onboarding gate passes; otherwise to CREATED so
-        the merchant can finish Stripe onboarding (a later :meth:`maybe_activate`
+        the merchant can finish Stripe onboarding (a later `maybe_activate`
         then promotes them to ACTIVE).
         """
         if next_review_threshold is None:
-            next_review_threshold = max(
-                organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
-            )
+            next_review_threshold = DEFAULT_NEXT_REVIEW_THRESHOLD_CENTS
 
         is_ready = await self._is_activation_ready(session, organization)
         target_status = (
@@ -1458,7 +1457,7 @@ class OrganizationService:
         Sets ``review.appeal_decision = APPROVED`` and immediately moves the
         org out of DENIED — to ACTIVE if every onboarding gate passes,
         otherwise to CREATED so the merchant can finish Stripe onboarding. A
-        later :meth:`maybe_activate` then promotes a CREATED org to ACTIVE.
+        later `maybe_activate` then promotes a CREATED org to ACTIVE.
         """
 
         repository = OrganizationReviewRepository.from_session(session)

@@ -408,6 +408,10 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
 # review cycle (`initially_reviewed_at IS NULL`). Either condition is enough.
 FIRST_REVIEW_MAX_THRESHOLD_CENTS = 1000
 
+# Default `next_review_threshold` (in cents) used at organization creation
+# and as the fallback when reactivating from DENIED/BLOCKED.
+DEFAULT_NEXT_REVIEW_THRESHOLD_CENTS = 1000
+
 
 class Organization(RateLimitGroupMixin, RecordModel):
     __tablename__ = "organizations"
@@ -469,7 +473,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=OrganizationStatus.CREATED,
     )
     next_review_threshold: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=1000
+        Integer, nullable=False, default=DEFAULT_NEXT_REVIEW_THRESHOLD_CENTS
     )
     status_updated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True

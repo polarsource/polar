@@ -37,7 +37,6 @@ class UserOrganization(TimestampedModel):
         StringEnum(OrganizationRole),
         nullable=False,
         default=OrganizationRole.member,
-        server_default=OrganizationRole.member.value,
     )
 
     @declared_attr

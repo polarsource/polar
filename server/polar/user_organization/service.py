@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select, func
 from sqlalchemy.orm import joinedload
 
+from polar.account.repository import AccountRepository
 from polar.exceptions import PolarError
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.utils import utc_now
@@ -154,8 +155,6 @@ class UserOrganizationService:
         `Account.admin_id` change (`account_service.change_admin`) bypass
         this method by design.
         """
-        from polar.account.repository import AccountRepository
-
         user_org = await self.get_by_user_and_org(session, user_id, organization_id)
         if user_org is None:
             raise UserNotMemberOfOrganization(user_id, organization_id)

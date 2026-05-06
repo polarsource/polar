@@ -32,6 +32,15 @@ async def backfill_organization_roles(
     batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
+    # Deliberately include soft-deleted Organization and UserOrganization
+    # rows: the invariant "the user identified by Account.admin_id carries
+    # role 'owner' on their UserOrganization row" should hold for
+    # historical data integrity too. Soft-deleted records are still
+    # discoverable in backoffice, the dual-write paths
+    # (account_service.change_admin, organization_service.add_user) don't
+    # filter on deleted_at either, and add_user can un-delete a row via
+    # its IntegrityError-recovery path — having the role already correct
+    # is more robust than relying on the un-delete to also re-set it.
     target_rows = (
         select(UserOrganization.user_id, UserOrganization.organization_id)
         .join(Organization, Organization.id == UserOrganization.organization_id)
@@ -39,8 +48,6 @@ async def backfill_organization_roles(
         .where(
             UserOrganization.user_id == Account.admin_id,
             UserOrganization.role != OrganizationRole.owner,
-            UserOrganization.deleted_at.is_(None),
-            Organization.deleted_at.is_(None),
         )
         .limit(limit_bindparam())
     )

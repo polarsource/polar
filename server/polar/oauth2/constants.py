@@ -32,3 +32,7 @@ JWT_CONFIG = {
 
 def is_registration_token_prefix(value: str) -> bool:
     return value.startswith(CLIENT_REGISTRATION_TOKEN_PREFIX)
+
+
+def is_access_token_prefix(value: str) -> bool:
+    return any(value.startswith(p) for p in ACCESS_TOKEN_PREFIX.values())

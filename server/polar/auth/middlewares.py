@@ -23,12 +23,18 @@ from polar.models import (
     UserSession,
 )
 from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
-from polar.oauth2.constants import is_registration_token_prefix
+from polar.oauth2.constants import is_access_token_prefix, is_registration_token_prefix
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.oauth2.exceptions import InvalidTokenError
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.organization_access_token.service import (
+    TOKEN_PREFIX as ORGANIZATION_ACCESS_TOKEN_PREFIX,
+)
+from polar.organization_access_token.service import (
     organization_access_token as organization_access_token_service,
+)
+from polar.personal_access_token.service import (
+    TOKEN_PREFIX as PERSONAL_ACCESS_TOKEN_PREFIX,
 )
 from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
@@ -134,25 +140,33 @@ async def get_auth_subject(
                 )
             raise InvalidTokenError()
 
-        organization_access_token = await get_organization_access_token(session, token)
-        if organization_access_token:
-            return AuthSubject(
-                organization_access_token.organization,
-                organization_access_token.scopes,
-                organization_access_token,
+        if token.startswith(ORGANIZATION_ACCESS_TOKEN_PREFIX):
+            organization_access_token = await get_organization_access_token(
+                session, token
             )
+            if organization_access_token:
+                return AuthSubject(
+                    organization_access_token.organization,
+                    organization_access_token.scopes,
+                    organization_access_token,
+                )
+            raise InvalidTokenError()
 
-        oauth2_token = await get_oauth2_token(session, token)
-        if oauth2_token:
-            return AuthSubject(oauth2_token.sub, oauth2_token.scopes, oauth2_token)
+        if is_access_token_prefix(token):
+            oauth2_token = await get_oauth2_token(session, token)
+            if oauth2_token:
+                return AuthSubject(oauth2_token.sub, oauth2_token.scopes, oauth2_token)
+            raise InvalidTokenError()
 
-        personal_access_token = await get_personal_access_token(session, token)
-        if personal_access_token:
-            return AuthSubject(
-                personal_access_token.user,
-                personal_access_token.scopes,
-                personal_access_token,
-            )
+        if token.startswith(PERSONAL_ACCESS_TOKEN_PREFIX):
+            personal_access_token = await get_personal_access_token(session, token)
+            if personal_access_token:
+                return AuthSubject(
+                    personal_access_token.user,
+                    personal_access_token.scopes,
+                    personal_access_token,
+                )
+            raise InvalidTokenError()
 
         raise InvalidTokenError()
 

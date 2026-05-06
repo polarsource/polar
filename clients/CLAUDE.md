@@ -144,9 +144,16 @@ auto-resolves light vs dark.
 | `background-secondary` | Sectioned/raised surface      |
 | `background-card`      | Card / inset panel surface    |
 | `background-warning`   | Warning surface               |
+| `background-success`   | Success surface               |
+| `background-danger`    | Danger surface                |
+| `background-pending`   | Pending/neutral surface       |
 | `text-primary`         | Primary copy                  |
 | `text-secondary`       | De-emphasised copy            |
 | `text-tertiary`        | Hints, captions, placeholders |
+| `text-success`         | Success text                  |
+| `text-danger`          | Danger text                   |
+| `text-warning`         | Warning text                  |
+| `text-pending`         | Pending/neutral text          |
 | `border-primary`       | Default borders & dividers    |
 | `border-secondary`     | Subtle/secondary dividers     |
 | `border-warning`       | Warning borders               |

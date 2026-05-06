@@ -7,9 +7,15 @@ const mockRefreshAsync = jest.fn<
   Parameters<typeof refreshAsync>
 >()
 
-jest.mock('expo-auth-session', () => ({
-  refreshAsync: mockRefreshAsync,
-}))
+jest.mock('expo-auth-session', () => {
+  const actual = jest.requireActual<typeof import('expo-auth-session')>(
+    'expo-auth-session',
+  )
+  return {
+    ...actual,
+    refreshAsync: mockRefreshAsync,
+  }
+})
 
 let configureRefresher: (typeof RefresherModule)['configureRefresher']
 let refreshMiddleware: (typeof RefreshMiddlewareModule)['refreshMiddleware']
@@ -127,6 +133,26 @@ describe('onRequest (proactive refresh)', () => {
     })
     const result = await callOnRequest(request)
     expect(result).toBeUndefined()
+    expect(mockRefreshAsync).not.toHaveBeenCalled()
+  })
+
+  it('rewrites Authorization when fresh but the request still carries a stale bearer', async () => {
+    configureFresh()
+    configureRefresher({
+      accessToken: 'AT_CURRENT',
+      refreshToken: 'RT_OLD',
+      expiresAt: NOW + 60_000,
+      setSession: jest.fn(),
+    })
+
+    const request = buildRequest('http://127.0.0.1:8000/v1/orgs', {
+      authToken: 'AT_STALE',
+    })
+    const result = await callOnRequest(request)
+
+    expect(result).toBeInstanceOf(Request)
+    const next = result as Request
+    expect(next.headers.get('Authorization')).toBe('Bearer AT_CURRENT')
     expect(mockRefreshAsync).not.toHaveBeenCalled()
   })
 

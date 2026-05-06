@@ -1,4 +1,5 @@
 import type { refreshAsync } from 'expo-auth-session'
+import { TokenError } from 'expo-auth-session'
 import type * as RefresherModule from './refresher'
 
 const mockRefreshAsync = jest.fn<
@@ -6,9 +7,15 @@ const mockRefreshAsync = jest.fn<
   Parameters<typeof refreshAsync>
 >()
 
-jest.mock('expo-auth-session', () => ({
-  refreshAsync: mockRefreshAsync,
-}))
+jest.mock('expo-auth-session', () => {
+  const actual = jest.requireActual<typeof import('expo-auth-session')>(
+    'expo-auth-session',
+  )
+  return {
+    ...actual,
+    refreshAsync: mockRefreshAsync,
+  }
+})
 
 let configureRefresher: (typeof RefresherModule)['configureRefresher']
 let hasRefreshToken: (typeof RefresherModule)['hasRefreshToken']
@@ -164,8 +171,12 @@ describe('isAccessTokenStale', () => {
 
     it('does not record a lifetime when configured with an expired token (cold start path)', () => {
       configure({ expiresAt: NOW - 5_000 })
-
       configure({ expiresAt: NOW + 30_000 })
+
+      expect(isAccessTokenStale()).toBe(false)
+
+      jest.setSystemTime(NOW + 20_001)
+      expect(isAccessTokenStale()).toBe(true)
     })
   })
 })
@@ -242,23 +253,52 @@ describe('refreshAccessToken', () => {
   })
 
   it('updates state so subsequent isAccessTokenStale uses the new lifetime', async () => {
-    configure({ expiresAt: NOW + 60_000 })
+    configure({ expiresAt: NOW + 10_000 })
     mockRefreshAsync.mockResolvedValueOnce(
-      buildTokenResponse({ expiresIn: 60 }),
+      buildTokenResponse({ expiresIn: 3_600 }),
     )
     await refreshAccessToken()
+
+    jest.setSystemTime(NOW + 3_550_000)
+
+    expect(isAccessTokenStale()).toBe(true)
   })
 
-  it('on failure, clears session and returns null', async () => {
+  it('on transport failure, returns null without clearing the session', async () => {
     const { setSession } = configure()
     mockRefreshAsync.mockRejectedValueOnce(new Error('refresh denied'))
 
     const result = await refreshAccessToken()
 
     expect(result).toBeNull()
-    expect(setSession).toHaveBeenCalledWith(null)
+    expect(setSession).not.toHaveBeenCalledWith(null)
+    expect(hasRefreshToken()).toBe(true)
+  })
 
+  it('on invalid_grant TokenError, clears session and returns null', async () => {
+    const { setSession } = configure()
+    mockRefreshAsync.mockRejectedValueOnce(
+      new TokenError({ error: 'invalid_grant' }),
+    )
+
+    const result = await refreshAccessToken()
+
+    expect(result).toBeNull()
+    expect(setSession).toHaveBeenCalledWith(null)
     expect(hasRefreshToken()).toBe(false)
+  })
+
+  it('on invalid_request TokenError, returns null without clearing the session', async () => {
+    const { setSession } = configure()
+    mockRefreshAsync.mockRejectedValueOnce(
+      new TokenError({ error: 'invalid_request' }),
+    )
+
+    const result = await refreshAccessToken()
+
+    expect(result).toBeNull()
+    expect(setSession).not.toHaveBeenCalledWith(null)
+    expect(hasRefreshToken()).toBe(true)
   })
 
   describe('concurrency dedup', () => {
@@ -320,30 +360,32 @@ describe('refreshAccessToken', () => {
 })
 
 describe('configureRefresher lifetime estimation', () => {
-  it('estimates lifetime from expiresAt on the first configure call', async () => {
+  it('estimates lifetime from expiresAt on the first configure call', () => {
     configure({ expiresAt: NOW + 30_000 })
 
     jest.setSystemTime(NOW + 19_000)
+    expect(isAccessTokenStale()).toBe(false)
 
     jest.setSystemTime(NOW + 21_000)
+    expect(isAccessTokenStale()).toBe(true)
   })
 
   it('does not overwrite a known lifetime on subsequent configure calls', async () => {
-    configure()
+    configure({ expiresAt: NOW + 120_000 })
     mockRefreshAsync.mockResolvedValueOnce(
-      buildTokenResponse({ expiresIn: 60 }),
+      buildTokenResponse({ expiresIn: 3_600 }),
     )
     await refreshAccessToken()
 
-    jest.setSystemTime(NOW + 50_000)
+    configureRefresher({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      expiresAt: NOW + 120_000,
+      setSession: jest.fn(),
+    })
 
-    jest.setSystemTime(NOW + 50_001)
+    jest.setSystemTime(NOW + 61_100)
 
-    mockRefreshAsync.mockResolvedValueOnce(
-      buildTokenResponse({ expiresIn: 60 }),
-    )
-    await refreshAccessToken()
-
-    expect(isAccessTokenStale()).toBe(false)
+    expect(isAccessTokenStale()).toBe(true)
   })
 })

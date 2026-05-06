@@ -1,5 +1,6 @@
 import type { Middleware } from '@polar-sh/client'
 import {
+  getRefresherAccessToken,
   hasRefreshToken,
   isAccessTokenStale,
   refreshAccessToken,
@@ -10,15 +11,25 @@ const isOAuthEndpoint = (url: string): boolean => url.includes('/v1/oauth2/')
 export const refreshMiddleware: Middleware = {
   onRequest: async ({ request }) => {
     if (isOAuthEndpoint(request.url)) return
-    if (!hasRefreshToken()) return
-    if (!isAccessTokenStale()) return
 
-    const newAccessToken = await refreshAccessToken()
-    if (!newAccessToken) return
+    if (hasRefreshToken() && isAccessTokenStale()) {
+      const newAccessToken = await refreshAccessToken()
+      if (!newAccessToken) return
 
-    const next = new Request(request)
-    next.headers.set('Authorization', `Bearer ${newAccessToken}`)
-    return next
+      const next = new Request(request)
+      next.headers.set('Authorization', `Bearer ${newAccessToken}`)
+      return next
+    }
+
+    const latestToken = getRefresherAccessToken()
+    if (!latestToken) return
+
+    const expected = `Bearer ${latestToken}`
+    if (request.headers.get('Authorization') !== expected) {
+      const next = new Request(request)
+      next.headers.set('Authorization', expected)
+      return next
+    }
   },
 
   onResponse: async ({ request, response, options }) => {

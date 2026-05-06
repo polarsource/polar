@@ -54,6 +54,32 @@ export function hasRefreshToken(): boolean {
   return !!state.refreshToken
 }
 
+export function getRefresherAccessToken(): string | null {
+  return state.accessToken
+}
+
+function oauthTokenEndpointErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('params' in error)) {
+    return undefined
+  }
+  const params = (error as { params?: unknown }).params
+  if (typeof params !== 'object' || params === null || !('error' in params)) {
+    return undefined
+  }
+  const code = (params as { error?: unknown }).error
+  return typeof code === 'string' ? code : undefined
+}
+
+function shouldClearSessionAfterTokenRefreshFailure(error: unknown): boolean {
+  const code = oauthTokenEndpointErrorCode(error)
+  return (
+    code === 'invalid_grant' ||
+    code === 'invalid_client' ||
+    code === 'unauthorized_client' ||
+    code === 'unsupported_grant_type'
+  )
+}
+
 export function isAccessTokenStale(): boolean {
   if (!state.refreshToken) return false
   if (typeof state.expiresAt !== 'number') return false
@@ -101,7 +127,10 @@ export async function refreshAccessToken(): Promise<string | null> {
 
       state.setSession?.(next)
       return next.accessToken
-    } catch {
+    } catch (error) {
+      if (!shouldClearSessionAfterTokenRefreshFailure(error)) {
+        return null
+      }
       state.accessToken = null
       state.refreshToken = null
       state.expiresAt = null

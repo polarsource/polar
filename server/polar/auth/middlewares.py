@@ -40,6 +40,8 @@ from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
 )
 from polar.postgres import AsyncSession
+from polar.rate_limit import write_cached_identity
+from polar.redis import Redis
 from polar.sentry import set_sentry_user
 from polar.worker import enqueue_job
 
@@ -187,8 +189,9 @@ async def get_auth_subject(
 
 
 class AuthSubjectMiddleware:
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGIApp, redis: Redis) -> None:
         self.app = app
+        self.redis = redis
 
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -205,6 +208,13 @@ class AuthSubjectMiddleware:
             return await response(scope, receive, send)
 
         scope["state"]["auth_subject"] = auth_subject
+
+        if not isinstance(auth_subject.subject, Anonymous):
+            token = get_bearer_token(request)
+            if token is not None:
+                await write_cached_identity(
+                    self.redis, token.encode("ascii"), auth_subject.rate_limit_key
+                )
 
         with logfire.set_baggage(**auth_subject.log_context):
             log.info("Authenticated subject", **auth_subject.log_context)

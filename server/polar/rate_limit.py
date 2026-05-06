@@ -1,4 +1,5 @@
-from collections.abc import Sequence
+import hashlib
+from collections.abc import Awaitable, Callable, Sequence
 
 from ratelimit import RateLimitMiddleware, Rule
 from ratelimit.auths import EmptyInformation
@@ -6,23 +7,81 @@ from ratelimit.auths.ip import client_ip
 from ratelimit.backends.redis import RedisBackend
 from ratelimit.types import ASGIApp, Scope
 
-from polar.auth.models import AuthSubject, Subject, is_anonymous
 from polar.config import Environment, settings
 from polar.enums import RateLimitGroup
-from polar.redis import create_redis
+from polar.redis import Redis
+
+_IDENTITY_KEY_PREFIX = "rl:ident:"
+_IDENTITY_TTL_SECONDS = 300
+
+_AUTHORIZATION_HEADER = b"authorization"
+_BEARER_PREFIX = b"bearer "
 
 
-async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
-    auth_subject: AuthSubject[Subject] = scope["state"]["auth_subject"]
+def _bearer_token(scope: Scope) -> bytes | None:
+    if scope.get("type") != "http":
+        return None
+    for name, value in scope.get("headers", ()):
+        if (
+            name == _AUTHORIZATION_HEADER
+            and value[: len(_BEARER_PREFIX)].lower() == _BEARER_PREFIX
+        ):
+            token = value[len(_BEARER_PREFIX) :].strip()
+            return token or None
+    return None
 
-    if is_anonymous(auth_subject):
+
+def _hash_token(token: bytes) -> str:
+    return hashlib.blake2b(token, digest_size=16).hexdigest()
+
+
+def identity_cache_key(token: bytes) -> str:
+    return f"{_IDENTITY_KEY_PREFIX}{_hash_token(token)}"
+
+
+async def _read_cached_identity(
+    redis: Redis, token: bytes
+) -> tuple[str, RateLimitGroup] | None:
+    raw = await redis.get(identity_cache_key(token))
+    if raw is None:
+        return None
+    group_str, sep, user = raw.partition("|")
+    if not sep:
+        return None
+    try:
+        return user, RateLimitGroup(group_str)
+    except ValueError:
+        return None
+
+
+async def write_cached_identity(
+    redis: Redis, token: bytes, key: tuple[str, RateLimitGroup]
+) -> None:
+    user, group = key
+    await redis.set(
+        identity_cache_key(token),
+        f"{group.value}|{user}",
+        ex=_IDENTITY_TTL_SECONDS,
+    )
+
+
+def _make_authenticate(
+    redis: Redis,
+) -> Callable[[Scope], Awaitable[tuple[str, RateLimitGroup]]]:
+    async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
+        token = _bearer_token(scope)
+        if token is not None:
+            cached = await _read_cached_identity(redis, token)
+            if cached is not None:
+                return cached
+
         try:
             ip, _ = await client_ip(scope)
             return ip, RateLimitGroup.default
         except (EmptyInformation, ValueError, TypeError):
-            return auth_subject.rate_limit_key
+            return "anonymous", RateLimitGroup.default
 
-    return auth_subject.rate_limit_key
+    return _authenticate
 
 
 _BASE_RULES: dict[str, Sequence[Rule]] = {
@@ -66,7 +125,7 @@ _PRODUCTION_RULES: dict[str, Sequence[Rule]] = {
 }
 
 
-def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
+def get_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     match settings.ENV:
         case Environment.production:
             rules = _PRODUCTION_RULES
@@ -75,8 +134,5 @@ def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
         case _:
             rules = {}
     return RateLimitMiddleware(
-        app, _authenticate, RedisBackend(create_redis("rate-limit")), rules
+        app, _make_authenticate(redis), RedisBackend(redis), rules
     )
-
-
-__all__ = ["get_middleware"]

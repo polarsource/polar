@@ -197,21 +197,16 @@ class PolarSelfClient:
             "polar.list_customer_benefit_grants", customer_id=customer_id
         ) as span:
             grants: list[BenefitGrant] = []
-            page = 1
             try:
-                while True:
-                    response = await self._sdk.benefit_grants.list_async(
-                        customer_id=customer_id,
-                        is_granted=True,
-                        page=page,
-                        limit=100,
-                    )
-                    if response is None:
-                        break
+                response = await self._sdk.benefit_grants.list_async(
+                    customer_id=customer_id,
+                    is_granted=True,
+                    page=1,
+                    limit=100,
+                )
+                while response is not None:
                     grants.extend(response.result.items)
-                    if len(response.result.items) < 100:
-                        break
-                    page += 1
+                    response = response.next()
             except PolarError as e:
                 _raise_error(span, e, "list_customer_benefit_grants")
             except httpx.RequestError as e:

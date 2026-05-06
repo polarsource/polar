@@ -13,7 +13,7 @@ from polar.auth.models import AuthSubject, Subject, is_anonymous
 from polar.config import Environment, settings
 from polar.enums import RateLimitGroup
 from polar.logging import Logger
-from polar.redis import Redis, create_redis
+from polar.redis import Redis
 
 log: Logger = structlog.get_logger()
 
@@ -72,7 +72,7 @@ _PRODUCTION_RULES: dict[str, Sequence[Rule]] = {
 }
 
 
-def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
+def get_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     match settings.ENV:
         case Environment.production:
             rules = _PRODUCTION_RULES
@@ -80,9 +80,7 @@ def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
             rules = _SANDBOX_RULES
         case _:
             rules = {}
-    return RateLimitMiddleware(
-        app, _authenticate, RedisBackend(create_redis("rate-limit")), rules
-    )
+    return RateLimitMiddleware(app, _authenticate, RedisBackend(redis), rules)
 
 
 # --- Fast path ----------------------------------------------------------

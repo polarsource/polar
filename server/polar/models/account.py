@@ -2,7 +2,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Uuid
+from sqlalchemy import Boolean, ForeignKey, Integer, Interval, String, Text, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -34,6 +34,9 @@ class Account(RecordModel):
     )
     _platform_fee_fixed: Mapped[int | None] = mapped_column(
         Integer, name="platform_fee_fixed", nullable=True, default=None
+    )
+    payout_transaction_delay: Mapped[timedelta | None] = mapped_column(
+        Interval, nullable=True, default=timedelta(days=7)
     )
 
     campaign_id: Mapped[UUID | None] = mapped_column(

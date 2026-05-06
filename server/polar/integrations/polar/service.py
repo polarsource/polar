@@ -184,17 +184,25 @@ class PolarSelfService:
     def _extract_transaction_fee(
         self, metadata: dict[str, Any], benefit_id: str
     ) -> tuple[int, int]:
-        fee_percent = metadata.get("fee_percent")
-        fee_fixed = metadata.get("fee_fixed")
-        if not isinstance(fee_percent, int) or isinstance(fee_percent, bool):
+        return (
+            self._parse_int_metadata(metadata, "fee_percent", benefit_id),
+            self._parse_int_metadata(metadata, "fee_fixed", benefit_id),
+        )
+
+    def _parse_int_metadata(
+        self, metadata: dict[str, Any], field: str, benefit_id: str
+    ) -> int:
+        value = metadata.get(field)
+        if not isinstance(value, str):
             raise TransactionFeeBenefitError(
-                f"Benefit {benefit_id} has invalid fee_percent: {fee_percent!r}"
+                f"Benefit {benefit_id} has invalid {field}: {value!r}"
             )
-        if not isinstance(fee_fixed, int) or isinstance(fee_fixed, bool):
+        try:
+            return int(value)
+        except ValueError as e:
             raise TransactionFeeBenefitError(
-                f"Benefit {benefit_id} has invalid fee_fixed: {fee_fixed!r}"
-            )
-        return fee_percent, fee_fixed
+                f"Benefit {benefit_id} has invalid {field}: {value!r}"
+            ) from e
 
     async def _apply_transaction_fee(
         self,
@@ -233,22 +241,32 @@ class PolarSelfService:
     def _extract_support(
         self, metadata: dict[str, Any], benefit_id: str
     ) -> tuple[int, bool, bool]:
-        level = metadata.get("level")
-        slack = metadata.get("slack")
-        prioritized = metadata.get("prioritized")
-        if not isinstance(level, int) or isinstance(level, bool):
+        level_raw = metadata.get("level")
+        if not isinstance(level_raw, str):
             raise SupportBenefitError(
-                f"Benefit {benefit_id} has invalid level: {level!r}"
+                f"Benefit {benefit_id} has invalid level: {level_raw!r}"
             )
-        if not isinstance(slack, bool):
+        try:
+            level = int(level_raw)
+        except ValueError as e:
             raise SupportBenefitError(
-                f"Benefit {benefit_id} has invalid slack: {slack!r}"
-            )
-        if not isinstance(prioritized, bool):
-            raise SupportBenefitError(
-                f"Benefit {benefit_id} has invalid prioritized: {prioritized!r}"
-            )
+                f"Benefit {benefit_id} has invalid level: {level_raw!r}"
+            ) from e
+        slack = self._parse_bool_metadata(metadata, "slack", benefit_id)
+        prioritized = self._parse_bool_metadata(metadata, "prioritized", benefit_id)
         return level, slack, prioritized
+
+    def _parse_bool_metadata(
+        self, metadata: dict[str, Any], field: str, benefit_id: str
+    ) -> bool:
+        value = metadata.get(field)
+        if value == "true":
+            return True
+        if value == "false":
+            return False
+        raise SupportBenefitError(
+            f"Benefit {benefit_id} has invalid {field}: {value!r}"
+        )
 
     async def _apply_support(
         self,

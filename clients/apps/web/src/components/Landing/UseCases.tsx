@@ -1,4 +1,6 @@
 'use client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -75,8 +77,27 @@ export const UseCases = () => {
   const active = CASES.find((c) => c.id === activeId) ?? CASES[0]
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 py-32 md:gap-y-24">
-      <div className="flex flex-col gap-y-6 px-4 md:px-0">
+    <Box
+      marginHorizontal="auto"
+      display="flex"
+      width="100%"
+      maxWidth="1280px"
+      flexDirection="column"
+      rowGap={{
+        base: '3xl',
+        md: '5xl',
+      }}
+      className="py-32"
+    >
+      <Box
+        display="flex"
+        flexDirection="column"
+        rowGap="xl"
+        paddingHorizontal={{
+          base: 'l',
+          md: 'none',
+        }}
+      >
         <h1 className="font-display max-w-4xl text-4xl leading-snug md:text-7xl">
           Built for the shape of AI.
         </h1>
@@ -84,10 +105,27 @@ export const UseCases = () => {
           From token-metered APIs to autonomous agents and GPU workloads. Polar
           fits how modern AI products actually charge.
         </p>
-      </div>
-
-      <div className="dark:border-polar-700 dark:bg-polar-900 mx-4 flex flex-col overflow-hidden rounded-sm border border-gray-200 bg-gray-50 md:mx-0">
-        <div className="dark:border-polar-700 flex overflow-x-auto border-b border-gray-200 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      </Box>
+      <Box
+        backgroundColor="background-secondary"
+        borderColor="border-primary"
+        marginHorizontal={{
+          base: 'l',
+          md: 'none',
+        }}
+        display="flex"
+        flexDirection="column"
+        overflow="hidden"
+        borderRadius="none"
+        borderWidth={1}
+      >
+        <Box
+          borderColor="border-primary"
+          display="flex"
+          overflowX="auto"
+          borderBottomWidth={1}
+          className="[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {CASES.map((c) => {
             const isActive = c.id === activeId
             return (
@@ -106,39 +144,73 @@ export const UseCases = () => {
               </button>
             )
           })}
-        </div>
+        </Box>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          <div className="dark:border-polar-700 flex flex-col gap-y-6 border-b border-gray-200 p-8 md:border-r md:border-b-0">
-            <span className="font-display text-3xl text-gray-900 dark:text-white">
+        <Box
+          display="grid"
+          gridTemplateColumns={{
+            base: 'repeat(1, minmax(0, 1fr))',
+            md: 'repeat(2, minmax(0, 1fr))',
+          }}
+        >
+          <Box
+            borderColor="border-primary"
+            display="flex"
+            flexDirection="column"
+            rowGap="xl"
+            borderBottomWidth={{
+              base: 1,
+              md: 0,
+            }}
+            padding="2xl"
+            borderRightWidth={{
+              md: 1,
+            }}
+          >
+            <Box
+              as="span"
+              color="text-primary"
+              className="font-display text-3xl"
+            >
               {active.title}
-            </span>
-            <span className="dark:text-polar-300 max-w-md text-xl text-gray-500">
-              {active.desc}
-            </span>
-            <div className="mt-2">
+            </Box>
+            <Box maxWidth="448px">
+              <Text as="span" variant="heading-xxs" color="muted">
+                {active.desc}
+              </Text>
+            </Box>
+            <Box marginTop="s">
               <Link href={active.docsHref}>
                 <Button className="dark:hover:bg-polar-50 rounded-full border-none bg-black hover:bg-gray-900 dark:bg-white dark:text-black">
                   Read the docs
                 </Button>
               </Link>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="dark:bg-polar-950 bg-white">
+          <Box backgroundColor="background-primary">
             <pre className="overflow-x-auto p-6 font-mono text-xs leading-relaxed text-gray-900 dark:text-gray-200">
               {active.snippet.split('\n').map((line, i) => (
-                <div key={i} className="flex">
-                  <span className="dark:text-polar-700 w-8 shrink-0 pr-4 text-right text-gray-300 select-none">
-                    {i + 1}
-                  </span>
+                <Box display="flex" key={i}>
+                  <Box
+                    as="span"
+                    width={32}
+                    flexShrink={0}
+                    paddingRight="l"
+                    textAlign="right"
+                    userSelect="none"
+                  >
+                    <Text as="span" color="disabled">
+                      {i + 1}
+                    </Text>
+                  </Box>
                   <code>{line || ' '}</code>
-                </div>
+                </Box>
               ))}
             </pre>
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   )
 }

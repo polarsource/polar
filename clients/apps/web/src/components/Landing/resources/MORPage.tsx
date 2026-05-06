@@ -1,8 +1,8 @@
+import { Box } from '@polar-sh/orbit/Box'
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 import { ResourceLayout, ResourceSection } from './ResourceLayout'
 
 const Benefit = ({
@@ -10,19 +10,21 @@ const Benefit = ({
   positive = true,
 }: React.PropsWithChildren<{ positive?: boolean }>) => {
   return (
-    <li
-      className={twMerge(
-        'flex flex-row items-start gap-x-2',
-        positive ? '' : 'dark:text-polar-500 text-gray-400',
-      )}
+    <Box
+      as="li"
+      display="flex"
+      flexDirection="row"
+      alignItems="start"
+      columnGap="s"
+      color={positive ? undefined : 'text-tertiary'}
     >
       {positive ? (
         <CheckOutlined className="mt-1 mr-2" fontSize="inherit" />
       ) : (
         <CloseOutlined className="mt-1 mr-2" fontSize="inherit" />
       )}
-      <span>{children}</span>
-    </li>
+      <Box as="span">{children}</Box>
+    </Box>
   )
 }
 
@@ -47,19 +49,24 @@ export const MORPage = () => {
           us.
         </p>
       </ResourceSection>
-
       <ResourceSection id="mor" title="PSP vs. MoR" className="gap-y-8">
-        <div className="flex flex-col gap-y-6">
-          <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" rowGap="xl">
+          <Box display="flex" flexDirection="column" gap="l">
             <h3 className="text-lg">Payment Service Provider (PSPs)</h3>
             <p className="dark:text-polar-300 text-gray-500">
               Stripe and other Payment Service Providers (PSPs) offer an
               accessible and convenient abstraction to faciliate transactions on
               top of underlying credit card networks & banks.
             </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
+          </Box>
+          <Box display="flex" flexDirection="column" gap="s">
+            <Box
+              as="ul"
+              borderColor="border-primary"
+              borderTopWidth={1}
+              borderBottomWidth={1}
+              className="dark:divide-polar-700 divide-y divide-gray-200 [&>li]:py-2"
+            >
               <Benefit>
                 Powerful, flexibile & low-level APIs to facilitate transactions
               </Benefit>
@@ -75,21 +82,27 @@ export const MORPage = () => {
                 Low-level APIs require more development even for common use
                 cases
               </Benefit>
-            </ul>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
-        <div className="flex flex-col gap-y-6">
-          <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" rowGap="xl">
+          <Box display="flex" flexDirection="column" gap="l">
             <h3 className="text-lg">Merchant of Record</h3>
             <p className="dark:text-polar-300 text-gray-500">
               Merchants of Record offer yet another layer of convenient
               abstraction to facilitate digital orders on top of the underlying
               PSPs and transactions.
             </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
+          </Box>
+          <Box display="flex" flexDirection="column" gap="s">
+            <Box
+              as="ul"
+              borderColor="border-primary"
+              borderTopWidth={1}
+              borderBottomWidth={1}
+              className="dark:divide-polar-700 divide-y divide-gray-200 [&>li]:py-2"
+            >
               <Benefit>
                 Powerful, Higher-level Dashboard, APIs & SDKs to better
                 facilitate digital products, services & orders beyond the
@@ -104,16 +117,22 @@ export const MORPage = () => {
                 pricing models.
               </Benefit>
               <Benefit positive={false}>Higher fees per payment</Benefit>
-            </ul>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
-        <div className="flex flex-col gap-y-6">
-          <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" rowGap="xl">
+          <Box display="flex" flexDirection="column" gap="l">
             <h3 className="text-lg">Go with a PSP if...</h3>
-          </div>
-          <div className="flex flex-col gap-2">
-            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
+          </Box>
+          <Box display="flex" flexDirection="column" gap="s">
+            <Box
+              as="ul"
+              borderColor="border-primary"
+              borderTopWidth={1}
+              borderBottomWidth={1}
+              className="dark:divide-polar-700 divide-y divide-gray-200 [&>li]:py-2"
+            >
               <Benefit>
                 You&apos;re comfortable & prefer absolute control with low-level
                 APIs.
@@ -124,15 +143,21 @@ export const MORPage = () => {
               <Benefit>
                 You want to register & file for international taxes yourself.
               </Benefit>
-            </ul>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="flex flex-col gap-y-6">
-            <div className="flex flex-col gap-4">
+          <Box display="flex" flexDirection="column" rowGap="xl">
+            <Box display="flex" flexDirection="column" gap="l">
               <h3 className="text-lg">Go with Polar if...</h3>
-            </div>
-            <div className="flex flex-col gap-2">
-              <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
+            </Box>
+            <Box display="flex" flexDirection="column" gap="s">
+              <Box
+                as="ul"
+                borderColor="border-primary"
+                borderTopWidth={1}
+                borderBottomWidth={1}
+                className="dark:divide-polar-700 divide-y divide-gray-200 [&>li]:py-2"
+              >
                 <Benefit>
                   You want product-, customer-, order- and subscription
                   management via an intuitive and easy dashboard
@@ -149,18 +174,17 @@ export const MORPage = () => {
                 <Benefit>
                   You want us to handle international taxes for you
                 </Benefit>
-              </ul>
-            </div>
-          </div>
-        </div>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
       </ResourceSection>
-
       <ResourceSection
         id="sales-tax"
         title="International Sales Tax"
         className="gap-y-8"
       >
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" gap="s">
           <p className="dark:text-polar-300 text-gray-500">
             Most countries, states and jurisdictions globally impose sales taxes
             on digital goods and services (VAT, GST, US Sales Tax etc).
@@ -176,27 +200,34 @@ export const MORPage = () => {
             Merchants are responsible for capturing & remitting sales taxes to
             the local tax authorities. What does that mean in our example?
           </p>
-        </div>
+        </Box>
 
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>Capturing</h3>
           <p className="dark:text-polar-300 text-gray-500">
             Charging the Swedish consumer $12.5/month and saving $2.5/month for
             the Swedish tax authorities. Stripe Tax is an excellent service to
             automate this and the one Polar uses today.
           </p>
-        </div>
+        </Box>
 
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>Remitting</h3>
           <p className="dark:text-polar-300 text-gray-500">
             Filing & paying the captured sales taxes with the tax authorities on
             time. Stripe Tax does not do this, i.e the merchant is liable to
             register, file and pay taxes to local tax authorities.
           </p>
-        </div>
+        </Box>
 
-        <div className="dark:border-polar-700 flex flex-col gap-2 border-t border-gray-200 pt-4">
+        <Box
+          borderColor="border-primary"
+          display="flex"
+          flexDirection="column"
+          gap="s"
+          borderTopWidth={1}
+          paddingTop="l"
+        >
           <p className="dark:text-polar-300 text-gray-500">
             Many jurisdictions, however, don&apos;t require this until you reach
             a certain threshold in terms of sales volume. But others require
@@ -220,14 +251,20 @@ export const MORPage = () => {
             calculated risk, i.e focus on validating & growing their business
             with the risk of paying back taxes + penalities later.
           </p>
-        </div>
+        </Box>
 
-        <div className="flex flex-col gap-y-6">
-          <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" rowGap="xl">
+          <Box display="flex" flexDirection="column" gap="l">
             <h3 className="text-lg">PSP</h3>
-          </div>
-          <div className="flex flex-col gap-2">
-            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
+          </Box>
+          <Box display="flex" flexDirection="column" gap="s">
+            <Box
+              as="ul"
+              borderColor="border-primary"
+              borderTopWidth={1}
+              borderBottomWidth={1}
+              className="dark:divide-polar-700 divide-y divide-gray-200 [&>li]:py-2"
+            >
               <Benefit>
                 Your volume alone is what counts towards international
                 thresholds vs. the MoR platform, i.e customers might not need to
@@ -245,16 +282,22 @@ export const MORPage = () => {
                 Stripe Tax is great to monitor & automate capturing, but
                 registration and remittance is up to you.
               </Benefit>
-            </ul>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
-        <div className="flex flex-col gap-y-6">
-          <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" rowGap="xl">
+          <Box display="flex" flexDirection="column" gap="l">
             <h3 className="text-lg">Merchant of Record</h3>
-          </div>
-          <div className="flex flex-col gap-2">
-            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
+          </Box>
+          <Box display="flex" flexDirection="column" gap="s">
+            <Box
+              as="ul"
+              borderColor="border-primary"
+              borderTopWidth={1}
+              borderBottomWidth={1}
+              className="dark:divide-polar-700 divide-y divide-gray-200 [&>li]:py-2"
+            >
               <Benefit>
                 We are liable for all of the above as your reseller.
               </Benefit>
@@ -271,28 +314,43 @@ export const MORPage = () => {
                 You cannot leverage inbound VAT towards VAT expense deductions
                 yourself.
               </Benefit>
-            </ul>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
       </ResourceSection>
-
       {/* Call to Action */}
-      <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
-        <div className="flex flex-col items-center gap-8">
-          <div className="flex flex-col items-center gap-4">
+      <Box
+        borderColor="border-primary"
+        display="flex"
+        flexDirection="column"
+        borderTopWidth={1}
+        paddingTop="4xl"
+      >
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          gap="2xl"
+        >
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            gap="l"
+          >
             <h3 className="text-xl">Ready to make the switch?</h3>
             <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
               Join thousands of teams who have already transformed their payment
               infrastructure with Polar.
             </p>
-          </div>
+          </Box>
           <GetStartedButton
             size="lg"
             text="Get Started"
             className="dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
     </ResourceLayout>
   )
 }

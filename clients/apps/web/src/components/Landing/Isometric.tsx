@@ -1,4 +1,5 @@
 'use client'
+import { Box } from '@polar-sh/orbit/Box'
 
 import { CSSProperties, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -15,16 +16,16 @@ type IsometricProps = PropsWithChildren<{
  * Uses rotateX(60deg) rotateZ(45deg) to achieve a top-right isometric view.
  */
 export const Isometric = ({ children, className, style }: IsometricProps) => (
-  <div
-    className={twMerge('relative', className)}
+  <Box
     style={{
       transformStyle: 'preserve-3d',
       transform: 'rotateX(60deg) rotateZ(45deg)',
       ...style,
     }}
+    className={twMerge('relative', className)}
   >
     {children}
-  </div>
+  </Box>
 )
 
 // ── Box primitive ─────────────────────────────────────────────────────────────
@@ -70,8 +71,7 @@ export const IsometricBox = ({
   className,
   children,
 }: IsometricBoxProps) => (
-  <div
-    className={twMerge('absolute', className)}
+  <Box
     style={{
       left: x,
       top: y,
@@ -80,17 +80,17 @@ export const IsometricBox = ({
       transformStyle: 'preserve-3d',
       transform: `translateZ(${z}px)`,
     }}
+    className={twMerge('absolute', className)}
   >
     {/* Top face — XY plane at z = depth */}
-    <div
-      className={twMerge('absolute inset-0', topClassName)}
+    <Box
       style={{ transform: `translateZ(${depth}px)`, ...topStyle }}
+      className={twMerge('absolute inset-0', topClassName)}
     >
       {children}
-    </div>
+    </Box>
     {/* Front face — at y = height, rotated into the YZ plane */}
-    <div
-      className={twMerge('absolute', frontClassName)}
+    <Box
       style={{
         left: 0,
         top: height,
@@ -100,10 +100,10 @@ export const IsometricBox = ({
         transform: 'rotateX(90deg)',
         ...frontStyle,
       }}
+      className={twMerge('absolute', frontClassName)}
     />
     {/* Right face — at x = width, rotated into the XZ plane */}
-    <div
-      className={twMerge('absolute', rightClassName)}
+    <Box
       style={{
         left: width,
         top: 0,
@@ -113,6 +113,7 @@ export const IsometricBox = ({
         transform: 'rotateY(-90deg)',
         ...rightStyle,
       }}
+      className={twMerge('absolute', rightClassName)}
     />
-  </div>
+  </Box>
 )

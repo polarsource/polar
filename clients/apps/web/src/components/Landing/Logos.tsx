@@ -1,3 +1,4 @@
+import { Box } from '@polar-sh/orbit/Box'
 export const Midday = ({ size = 28 }: { size?: number }) => {
   return (
     <svg
@@ -199,8 +200,8 @@ export const Google = ({ size = 30 }) => (
 
 export const Speakeasy = () => {
   return (
-    <div className="flex scale-90 items-center">
-      <div className="relative size-8">
+    <Box display="flex" alignItems="center" className="scale-90">
+      <Box position="relative" width={32} height={32}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="30"
@@ -231,7 +232,7 @@ export const Speakeasy = () => {
             d="M29.095 3.902 8.456.971 0 8.305l20.639 2.934 8.456-7.337Z"
           />
         </svg>
-      </div>
+      </Box>
       <p className="sr-only">Speakeasy Logo</p>
       <svg
         width="106"
@@ -274,6 +275,6 @@ export const Speakeasy = () => {
           fill="currentColor"
         />
       </svg>
-    </div>
+    </Box>
   )
 }

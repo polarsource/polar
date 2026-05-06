@@ -1,4 +1,6 @@
 'use client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 import { RadialSpinner } from './graphics/RadialSpinner'
 import { GaugeSweep } from './graphics/GaugeSweep'
@@ -23,27 +25,44 @@ const LAYERS = [
 ]
 
 export const Usage = () => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+  <Box
+    display="grid"
+    gridTemplateColumns={{
+      base: 'repeat(1, minmax(0, 1fr))',
+      md: 'repeat(3, minmax(0, 1fr))',
+    }}
+    gap="l"
+  >
     {LAYERS.map((l, i) => (
-      <div key={l.id} className="dark:bg-polar-900 flex flex-col bg-gray-50">
+      <Box
+        backgroundColor="background-secondary"
+        display="flex"
+        flexDirection="column"
+        key={l.id}
+      >
         {/* Graphic */}
-        <div className="aspect-square">
+        <Box aspectRatio="1 / 1">
           {i === 0 && <RadialSpinner />}
           {i === 1 && <GaugeSweep />}
           {i === 2 && <OrbitingSpheres />}
-        </div>
+        </Box>
         {/* Label */}
-        <div className="flex flex-col px-8 py-8">
-          <div className="flex flex-col gap-4">
-            <span className="text-2xl text-gray-900 dark:text-white">
+        <Box
+          display="flex"
+          flexDirection="column"
+          paddingHorizontal="2xl"
+          paddingVertical="2xl"
+        >
+          <Box display="flex" flexDirection="column" gap="l">
+            <Box as="span" color="text-primary" className="text-2xl">
               {l.id} — {l.name}
-            </span>
-            <span className="dark:text-polar-300 text-xl text-gray-500">
+            </Box>
+            <Text as="span" variant="heading-xxs" color="muted">
               {l.desc}
-            </span>
-          </div>
-        </div>
-      </div>
+            </Text>
+          </Box>
+        </Box>
+      </Box>
     ))}
-  </div>
+  </Box>
 )

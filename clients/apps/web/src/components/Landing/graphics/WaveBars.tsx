@@ -1,4 +1,5 @@
 'use client'
+import { Box } from '@polar-sh/orbit/Box'
 
 import { useEffect, useRef } from 'react'
 import { useInView } from '@/hooks/useInView'
@@ -9,8 +10,8 @@ import { useInView } from '@/hooks/useInView'
  * the columns. Canvas 2D.
  */
 
-const COLS = 8
-const ROWS = 28
+const COLS = 6
+const ROWS = 12
 
 export const WaveBars = () => {
   const { ref: wrapperRef, inView } = useInView()
@@ -89,8 +90,8 @@ export const WaveBars = () => {
   }, [inView])
 
   return (
-    <div ref={wrapperRef}>
+    <Box ref={wrapperRef}>
       <canvas ref={canvasRef} className="h-full w-full" />
-    </div>
+    </Box>
   )
 }

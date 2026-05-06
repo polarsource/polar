@@ -1,4 +1,6 @@
 'use client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 import {
   Popover,
@@ -60,7 +62,7 @@ export const NavPopover = ({
         onMouseLeave={() => setIsOpen(false)}
       >
         {sections.map((section, idx) => (
-          <div
+          <Box
             key={idx}
             className={twMerge(
               'flex flex-col p-2',
@@ -68,11 +70,13 @@ export const NavPopover = ({
             )}
           >
             {section.title && (
-              <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
-                {section.title}
-              </h3>
+              <Box padding="l">
+                <Text as="h3" variant="label" color="muted">
+                  {section.title}
+                </Text>
+              </Box>
             )}
-            <div
+            <Box
               className={twMerge(
                 section.items.some((item) => item.subtitle)
                   ? 'grid grid-cols-2'
@@ -87,16 +91,18 @@ export const NavPopover = ({
                   target={target}
                   className="dark:hover:bg-polar-800 flex flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
                 >
-                  <span className="font-medium">{label}</span>
+                  <Text as="span" variant="label">
+                    {label}
+                  </Text>
                   {subtitle && (
-                    <span className="dark:text-polar-500 text-gray-500">
+                    <Text as="span" variant="label" color="muted">
                       {subtitle}
-                    </span>
+                    </Text>
                   )}
                 </Link>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
         ))}
       </PopoverContent>
     </Popover>

@@ -50,7 +50,6 @@ const Footer = () => {
                 Merchant of Record
               </FooterLink>
               <FooterLink href="/resources/pricing">Pricing</FooterLink>
-              <FooterLink href="/downloads">Downloads</FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-4 text-sm">

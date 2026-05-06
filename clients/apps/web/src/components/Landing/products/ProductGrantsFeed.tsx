@@ -1,4 +1,6 @@
 'use client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -77,17 +79,27 @@ function nextSubscription() {
 // ── Memoized flag row ─────────────────────────────────────────────────────────
 const FlagRow = memo(
   ({ label, isGranted }: { label: string; isGranted: boolean }) => (
-    <div className="flex items-center justify-between gap-x-4 rounded-lg px-3 py-2">
-      <div className="flex min-w-0 items-center gap-x-3">
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="between"
+      columnGap="l"
+      borderRadius="s"
+      paddingHorizontal="m"
+      paddingVertical="s"
+    >
+      <Box display="flex" minWidth={0} alignItems="center" columnGap="m">
         <motion.div
           animate={isGranted ? { scale: [1, 1.3, 1] } : {}}
           transition={{ duration: 0.2 }}
           className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-300 ${isGranted ? 'bg-emerald-500' : 'dark:bg-polar-600 bg-gray-200'}`}
         />
-        <span className="truncate font-mono text-xs">{label}</span>
-      </div>
+        <Box as="span" className="truncate font-mono text-xs">
+          {label}
+        </Box>
+      </Box>
       <Switch checked={isGranted} />
-    </div>
+    </Box>
   ),
 )
 FlagRow.displayName = 'FlagRow'
@@ -145,16 +157,40 @@ export const ProductGrantsFeed = () => {
       transition={{ duration: 1.2, delay: 0.2 }}
       viewport={{ once: true }}
     >
-      <div className="dark:border-polar-700 flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200">
+      <Box
+        borderColor="border-primary"
+        display="flex"
+        height="100%"
+        flexDirection="column"
+        overflow="hidden"
+        borderRadius="l"
+        borderWidth={1}
+      >
         {/* Header */}
-        <div className="dark:border-polar-800 flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <div className="flex items-center gap-x-4">
-            <span className="font-mono text-sm">Benefits Engine</span>
-          </div>
-        </div>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="between"
+          borderBottomWidth={1}
+          paddingHorizontal="l"
+          paddingVertical="m"
+          className="dark:border-polar-800 border-gray-100"
+        >
+          <Box display="flex" alignItems="center" columnGap="l">
+            <Box as="span" className="font-mono text-sm">
+              Benefits Engine
+            </Box>
+          </Box>
+        </Box>
 
         {/* Body */}
-        <div className="flex grow flex-col gap-y-5 p-5">
+        <Box
+          display="flex"
+          flexGrow={1}
+          flexDirection="column"
+          rowGap="xl"
+          padding="xl"
+        >
           {/* Subscription event */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -165,35 +201,61 @@ export const ProductGrantsFeed = () => {
               transition={{ duration: 0.3, ease: 'easeOut' }}
               className="flex items-center gap-x-3 rounded-xl py-2.5"
             >
-              <div className="dark:bg-polar-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-200">
-                <span className="font-mono text-[9px] text-gray-500 dark:text-gray-400">
+              <Box
+                display="flex"
+                height={40}
+                width={40}
+                flexShrink={0}
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="full"
+                className="dark:bg-polar-700 bg-gray-200"
+              >
+                <Text as="span" variant="mono" color="muted">
                   {sub.user.slice(-2)}
-                </span>
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
-                <span className="font-mono text-sm">{sub.user}</span>
-                <span className="dark:text-polar-500 font-mono text-sm text-gray-400">
+                </Text>
+              </Box>
+              <Box
+                display="flex"
+                minWidth={0}
+                flex={1}
+                flexDirection="column"
+                rowGap="xs"
+              >
+                <Box as="span" className="font-mono text-sm">
+                  {sub.user}
+                </Box>
+                <Box
+                  as="span"
+                  color="text-tertiary"
+                  className="font-mono text-sm"
+                >
                   Subscribed
-                </span>
-              </div>
-              <span
+                </Box>
+              </Box>
+              <Box
+                as="span"
                 className={`text-xxs shrink-0 rounded-md px-2 py-1 font-mono font-medium tracking-wider ${sub.plan.color} ${sub.plan.pill}`}
               >
                 {sub.plan.name.toUpperCase()}
-              </span>
+              </Box>
             </motion.div>
           </AnimatePresence>
 
           {/* Section label */}
-          <div className="flex items-center gap-x-2">
-            <span className="dark:text-polar-500 text-xxs font-mono tracking-widest text-gray-500 uppercase">
+          <Box display="flex" alignItems="center" columnGap="s">
+            <Text as="span" variant="mono" color="muted">
               Granted automatically
-            </span>
-            <div className="dark:bg-polar-700 h-px flex-1 bg-gray-100" />
-          </div>
+            </Text>
+            <Box
+              height={1}
+              flex={1}
+              className="dark:bg-polar-700 bg-gray-100"
+            />
+          </Box>
 
           {/* Feature flag list — no container re-key, each row animates independently */}
-          <div className="flex flex-col">
+          <Box display="flex" flexDirection="column">
             <AnimatePresence initial={false}>
               {ALL_FLAGS.filter((f) =>
                 (sub.plan.flagKeys as readonly string[]).includes(f.key),
@@ -213,9 +275,9 @@ export const ProductGrantsFeed = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
     </motion.div>
   )
 }

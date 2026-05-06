@@ -1,4 +1,5 @@
 'use client'
+import { Box } from '@polar-sh/orbit/Box'
 
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import Footer from '@/components/Organization/Footer'
@@ -25,19 +26,60 @@ import { NavPopover, NavPopoverSection } from './NavPopover'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="dark:bg-polar-950 relative flex flex-col overflow-x-clip bg-white px-0 md:w-full md:flex-1 md:items-center md:px-4">
-      <div className="flex flex-col gap-y-2 md:w-full">
+    <Box
+      backgroundColor="background-primary"
+      position="relative"
+      display="flex"
+      flexDirection="column"
+      paddingHorizontal={{
+        base: 'none',
+        md: 'l',
+      }}
+      width={{
+        md: '100%',
+      }}
+      flex={{
+        md: 1,
+      }}
+      alignItems={{
+        md: 'center',
+      }}
+      className="overflow-x-clip"
+    >
+      <Box
+        display="flex"
+        flexDirection="column"
+        rowGap="s"
+        width={{
+          md: '100%',
+        }}
+      >
         <LandingPageDesktopNavigation />
         <SidebarProvider className="absolute inset-0 flex flex-col items-start md:hidden">
           <LandingPageTopbar />
           <LandingPageMobileNavigation />
         </SidebarProvider>
-        <div className="dark:bg-polar-950 relative flex flex-col px-4 pt-32 md:w-full md:px-0 md:pt-0">
+        <Box
+          position="relative"
+          display="flex"
+          flexDirection="column"
+          paddingHorizontal={{
+            base: 'l',
+            md: 'none',
+          }}
+          width={{
+            md: '100%',
+          }}
+          paddingTop={{
+            md: 'none',
+          }}
+          className="dark:bg-polar-950 pt-32"
+        >
           {children}
-        </div>
+        </Box>
         <LandingPageFooter />
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }
 
@@ -133,7 +175,7 @@ const LandingPageMobileNavigation = () => {
           </Link>
         </SidebarHeader>
         <SidebarContent className="flex flex-col gap-y-6 px-6 py-2">
-          <div className="flex flex-col gap-y-1">
+          <Box display="flex" flexDirection="column" rowGap="xs">
             {mobileNavigationItems.map((item) => {
               return (
                 <NavLink
@@ -148,7 +190,7 @@ const LandingPageMobileNavigation = () => {
                 </NavLink>
               )
             })}
-          </div>
+          </Box>
           <NavLink
             href="#"
             onClick={onLoginClick}
@@ -304,32 +346,71 @@ const LandingPageDesktopNavigation = () => {
   ]
 
   return (
-    <div className="dark:text-polar-50 dark:bg-polar-950 sticky top-0 z-10 hidden w-full flex-col items-center gap-12 bg-white py-8 md:flex">
-      <div className="relative flex w-full flex-row items-center justify-between lg:max-w-7xl">
+    <Box
+      backgroundColor="background-primary"
+      position="sticky"
+      top={0}
+      zIndex={10}
+      display={{
+        base: 'none',
+        md: 'flex',
+      }}
+      width="100%"
+      flexDirection="column"
+      alignItems="center"
+      gap="3xl"
+      paddingVertical="2xl"
+      color="text-primary"
+    >
+      <Box
+        position="relative"
+        display="flex"
+        width="100%"
+        flexDirection="row"
+        alignItems="center"
+        justifyContent="between"
+        maxWidth={{
+          lg: '1280px',
+        }}
+      >
         <Link href="/">
           <PolarLogotype logoVariant="logotype" size={120} />
         </Link>
 
-        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
-          <li>
+        <Box
+          as="ul"
+          position="absolute"
+          left="50%"
+          marginHorizontal="auto"
+          display="flex"
+          flexDirection="row"
+          columnGap="2xl"
+          className="-translate-x-1/2 font-medium"
+        >
+          <Box as="li">
             <NavPopover
               trigger="Features"
               sections={featuresSections}
               isActive={pathname.startsWith('/features')}
             />
-          </li>
-          <li>
+          </Box>
+          <Box as="li">
             <NavPopover trigger="Docs" sections={docsSections} layout="flex" />
-          </li>
-          <li>
+          </Box>
+          <Box as="li">
             <NavLink href="/blog">Blog</NavLink>
-          </li>
-          <li>
+          </Box>
+          <Box as="li">
             <NavLink href="/company">Company</NavLink>
-          </li>
-        </ul>
+          </Box>
+        </Box>
 
-        <div className="flex flex-row items-center gap-x-4">
+        <Box
+          display="flex"
+          flexDirection="row"
+          alignItems="center"
+          columnGap="l"
+        >
           <Button
             onClick={onLoginClick}
             variant="ghost"
@@ -338,8 +419,8 @@ const LandingPageDesktopNavigation = () => {
             Sign in
           </Button>
           <GetStartedButton size="default" />
-        </div>
-      </div>
+        </Box>
+      </Box>
       <Modal
         title="Sign in"
         isShown={isModalShown}
@@ -347,20 +428,35 @@ const LandingPageDesktopNavigation = () => {
         modalContent={<AuthModal />}
         className="lg:w-full lg:max-w-[480px]"
       />
-    </div>
+    </Box>
   )
 }
 
 const LandingPageTopbar = () => {
   return (
-    <div className="z-30 flex w-full flex-row items-center justify-between px-6 py-6 md:hidden md:px-12">
+    <Box
+      zIndex={30}
+      display={{
+        base: 'flex',
+        md: 'none',
+      }}
+      width="100%"
+      flexDirection="row"
+      alignItems="center"
+      justifyContent="between"
+      paddingHorizontal={{
+        base: 'xl',
+        md: '3xl',
+      }}
+      paddingVertical="xl"
+    >
       <PolarLogotype
         className="mt-1 ml-2 md:hidden"
         logoVariant="logotype"
         size={100}
       />
       <SidebarTrigger className="md:hidden" />
-    </div>
+    </Box>
   )
 }
 

@@ -1,4 +1,5 @@
 'use client'
+import { Box } from '@polar-sh/orbit/Box'
 
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
@@ -50,17 +51,40 @@ export const Vision = () => {
   let wordIndex = 0
 
   return (
-    <div ref={wrapperRef} style={{ height: '300vh' }}>
-      <div className="sticky top-0 flex h-screen items-center justify-center">
-        <div className="flex flex-row gap-x-6 px-4 md:gap-x-24 md:px-0">
-          <div className="dark:bg-polar-700 w-px self-stretch bg-gray-200">
-            <div
+    <Box ref={wrapperRef} style={{ height: '300vh' }}>
+      <Box
+        position="sticky"
+        top={0}
+        display="flex"
+        height="100vh"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Box
+          display="flex"
+          flexDirection="row"
+          columnGap={{
+            base: 'xl',
+            md: '5xl',
+          }}
+          paddingHorizontal={{
+            base: 'l',
+            md: 'none',
+          }}
+        >
+          <Box
+            width={1}
+            alignSelf="stretch"
+            className="dark:bg-polar-700 bg-gray-200"
+          >
+            <Box
+              width="100%"
               ref={barRef}
-              className="w-full bg-black dark:bg-white"
               style={{ height: '0%' }}
+              className="bg-black dark:bg-white"
             />
-          </div>
-          <div className="flex flex-col">
+          </Box>
+          <Box display="flex" flexDirection="column">
             {PARAGRAPHS.map((paragraph, pi) => (
               <p
                 key={pi}
@@ -69,23 +93,25 @@ export const Vision = () => {
                 {paragraph.split(' ').map((word, wi) => {
                   const idx = wordIndex++
                   return (
-                    <span
+                    <Box
+                      as="span"
+                      display="inline-block"
                       key={`${pi}-${wi}`}
                       ref={(el) => {
                         if (el) wordsRef.current[idx] = el
                       }}
-                      className="dark:text-polar-700 inline-block text-gray-300 transition-colors duration-200"
+                      className="dark:text-polar-700 text-gray-300 transition-colors duration-200"
                     >
                       {word}
                       &nbsp;
-                    </span>
+                    </Box>
                   )
                 })}
               </p>
             ))}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   )
 }

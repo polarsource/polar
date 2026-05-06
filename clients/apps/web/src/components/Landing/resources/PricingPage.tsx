@@ -1,4 +1,6 @@
 'use client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Link from 'next/link'
@@ -19,58 +21,57 @@ export const PricingPage = () => {
   return (
     <ResourceLayout title="Pricing" toc={toc}>
       <ResourceSection id="introduction" title="Introduction">
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>Cheapest MoR on the market</h3>
           <p className="dark:text-polar-300 text-gray-500">
             Polar is priced 20% cheaper than other MoR alternatives. 4% and 40¢
             per transaction.
           </p>
-        </div>
+        </Box>
 
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>No Hidden Fees</h3>
           <p className="dark:text-polar-300 text-gray-500">
             While payouts may incur fees charged by the payout providers (such
             as Stripe), Polar does not add any extra fees or markup.
           </p>
-        </div>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="transaction-fees" title="Transaction Fees">
-        <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap="l">
           <h3 className="text-lg">4% + 40¢ per transaction</h3>
           <p className="dark:text-polar-300 text-gray-500">
             Polar is currently built on Stripe, and we cover their 2.9% + 30¢
             fee from ours. However, they impose a few additional fees for
             certain transactions that we need to pass on.
           </p>
-        </div>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="additional-fees" title="Additional Fees">
-        <ul className="space-y-2">
-          <li>
+        <Box as="ul" className="space-y-2">
+          <Box as="li">
             <strong>+1.5%</strong> for international cards (non-US)
-          </li>
-          <li>
+          </Box>
+          <Box as="li">
             <strong>+0.5%</strong> for subscription payments
-          </li>
-        </ul>
-        <div className="dark:text-polar-300 dark:bg-polar-800 bg-gray-50 p-4 text-sm text-gray-500">
-          We also reserve the right to pass on any other fees Stripe might
-          impose in the future
-        </div>
+          </Box>
+        </Box>
+        <Box padding="l" className="dark:bg-polar-800 bg-gray-50">
+          <Text variant="caption" color="muted">
+            We also reserve the right to pass on any other fees Stripe might
+            impose in the future
+          </Text>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="example" title="Example">
-        <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap="l">
           <p>
             Let&apos;s look at an example breakdown with all these additional
             fees applied. Below is a payment of a $30 subscription from Sweden
             (25% VAT).
           </p>
 
-          <div className="overflow-x-auto">
+          <Box overflowX="auto">
             <table className="min-w-full">
               <tbody>
                 <tr>
@@ -103,19 +104,18 @@ export const PricingPage = () => {
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
+          </Box>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="refunds" title="Refunds">
-        <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap="l">
           <p>
             You can issue both full or partial refunds on Polar to your
             customers. However, the initial transaction fees are not refunded to
             you since credit card networks and PSPs charge them regardless of a
             future refund.
           </p>
-          <div className="dark:bg-polar-800 bg-gray-50 p-4">
+          <Box padding="l" className="dark:bg-polar-800 bg-gray-50">
             <p className="dark:text-polar-300 text-sm text-gray-500">
               Polar reserves the right to issue refunds at our own discretion up
               to 60 days after the purchase as part of our efforts to
@@ -124,12 +124,11 @@ export const PricingPage = () => {
               purpose and in the interest of reducing chargebacks and fees for
               you.
             </p>
-          </div>
-        </div>
+          </Box>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="dispute-fees" title="Dispute/Chargeback Fees">
-        <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap="l">
           <p>
             Sometimes, customers can open a <strong>dispute/chargeback</strong>{' '}
             via their bank for a purchase.{' '}
@@ -149,18 +148,17 @@ export const PricingPage = () => {
             monitor and proactively prevent our rate coming close to these
             thresholds.
           </p>
-          <div className="dark:bg-polar-800 bg-gray-50 p-4">
+          <Box padding="l" className="dark:bg-polar-800 bg-gray-50">
             <p className="dark:text-polar-300 text-sm text-gray-500">
               Therefore, we might need to intervene and even suspend your
               account unless swift and proactive measures are taken to reduce
               chargebacks to an acceptable industry standard.
             </p>
-          </div>
-        </div>
+          </Box>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="payout-fees" title="Payout Fees">
-        <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap="l">
           <p>
             While payouts may incur fees charged by our payout providers
             (Stripe), Polar does not add any extra fees or markup. These are
@@ -170,34 +168,47 @@ export const PricingPage = () => {
             In addition, Polar offers manual withdrawals for developers. Keeping
             you in control of when to issue payouts.
           </p>
-          <div className="dark:bg-polar-800 bg-gray-50 p-4">
+          <Box padding="l" className="dark:bg-polar-800 bg-gray-50">
             <p className="dark:text-polar-300 text-sm text-gray-500">
               Unless you have a Polar balance that you haven&apos;t withdrawn
               for several months, at which point we&apos;ll eventually need to
               trigger a payout on your behalf.
             </p>
-          </div>
+          </Box>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
+          <Box
+            display="grid"
+            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+            gap="l"
+          >
+            <Box display="flex" flexDirection="column" gap="s">
               <h3 className="text-lg">Stripe</h3>
-              <div className="flex flex-col gap-2 text-sm">
+              <Box
+                display="flex"
+                flexDirection="column"
+                gap="s"
+                className="text-sm"
+              >
                 <p>$2 per month of active payout(s)</p>
                 <p>0.25% + $0.25 per payout</p>
-              </div>
-              <div className="flex flex-col gap-2 text-sm">
+              </Box>
+              <Box
+                display="flex"
+                flexDirection="column"
+                gap="s"
+                className="text-sm"
+              >
                 <h4 className="dark:text-polar-300 text-gray-500">
                   Cross border fees (currency conversion)
                 </h4>
                 <p>0.25% (EU) - 1% in other countries</p>
-              </div>
-            </div>
-          </div>
-        </div>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="volume-pricing" title="Volume Pricing">
-        <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap="l">
           <p>
             Large or fast-growing business? We can offer custom pricing to
             better fit your needs.
@@ -209,7 +220,7 @@ export const PricingPage = () => {
             Reach out to us
             <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
           </Link>
-        </div>
+        </Box>
       </ResourceSection>
     </ResourceLayout>
   )

@@ -1,4 +1,5 @@
 'use client'
+import { Box } from '@polar-sh/orbit/Box'
 
 import { Hero } from '@/components/Landing/Hero/Hero'
 import { Testimonials } from '@/components/Landing/Testimonials'
@@ -16,9 +17,9 @@ import { UseCases } from './UseCases'
 
 export default function Page() {
   return (
-    <div className="flex flex-col">
+    <Box display="flex" flexDirection="column">
       <PageContent />
-    </div>
+    </Box>
   )
 }
 

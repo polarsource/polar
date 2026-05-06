@@ -1,4 +1,5 @@
 'use client'
+import { Box } from '@polar-sh/orbit/Box'
 
 import { useEffect, useRef } from 'react'
 import { useInView } from '@/hooks/useInView'
@@ -84,8 +85,8 @@ export const CreditArc = () => {
   }, [inView])
 
   return (
-    <div ref={wrapperRef}>
+    <Box ref={wrapperRef}>
       <canvas ref={canvasRef} className="h-full w-full" />
-    </div>
+    </Box>
   )
 }

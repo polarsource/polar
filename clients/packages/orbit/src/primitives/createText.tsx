@@ -29,8 +29,8 @@ const textVariants = cva('', {
   variants: {
     variant: {
       body: 'text-base leading-relaxed',
-      label: 'text-xs font-medium',
-      caption: 'text-xs leading-snug',
+      label: 'text-sm font-medium',
+      caption: 'text-sm leading-snug',
       mono: 'font-mono text-xs',
       'heading-xl': `${HEADING_BASE} font-display text-5xl md:text-7xl`,
       'heading-l': `${HEADING_BASE} font-display text-4xl md:text-5xl`,

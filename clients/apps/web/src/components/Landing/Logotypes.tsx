@@ -1,3 +1,4 @@
+import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { JSX } from 'react'
@@ -60,8 +61,13 @@ export const Logotypes = () => {
       initial="hidden"
     >
       {/* Mobile: masked marquee */}
-      <div
-        className="w-full max-w-full overflow-hidden xl:hidden"
+      <Box
+        width="100%"
+        maxWidth="100%"
+        overflow="hidden"
+        display={{
+          xl: 'none',
+        }}
         style={{
           maskImage:
             'linear-gradient(to right, transparent, black 15%, black 85%, transparent)',
@@ -80,14 +86,20 @@ export const Logotypes = () => {
             />
           ))}
         </motion.div>
-      </div>
-
+      </Box>
       {/* Desktop: static row */}
-      <div className="hidden items-center gap-x-20 xl:flex">
+      <Box
+        display={{
+          base: 'none',
+          xl: 'flex',
+        }}
+        alignItems="center"
+        className="gap-x-20"
+      >
         {items.map((item) => (
           <Logotype key={item.link} icon={item.icon} link={item.link} />
         ))}
-      </div>
+      </Box>
     </motion.div>
   )
 }

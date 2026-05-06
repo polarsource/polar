@@ -1,4 +1,6 @@
 'use client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import AddOutlined from '@mui/icons-material/AddOutlined'
@@ -22,37 +24,64 @@ const FAQItem = ({
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <div className="dark:border-polar-700 hover:dark:bg-polar-800 border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+    <Box
+      borderColor="border-primary"
+      borderBottomWidth={1}
+      className="hover:dark:bg-polar-800 last:border-b-0 hover:bg-gray-50"
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="group flex w-full cursor-pointer items-center gap-6 p-4 text-left transition-opacity"
       >
-        <div className="dark:border-polar-700 dark:text-polar-400 hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gray-200 font-mono text-sm text-gray-600 transition-colors lg:flex">
-          {number}
-        </div>
-        <div className="flex-1">
+        <Box
+          borderColor="border-primary"
+          display={{
+            base: 'none',
+            lg: 'flex',
+          }}
+          height={44}
+          width={44}
+          flexShrink={0}
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="full"
+          borderWidth={1}
+          className="transition-colors"
+        >
+          <Text as="span" variant="mono" color="muted">
+            {number}
+          </Text>
+        </Box>
+        <Box flex={1}>
           <h3 className="text-lg lg:text-xl dark:text-white">{question}</h3>
-        </div>
-        <div className="shrink-0">
+        </Box>
+        <Box flexShrink={0}>
           {isOpen ? (
             <RemoveOutlined className="dark:text-white" />
           ) : (
             <AddOutlined className="dark:text-white" />
           )}
-        </div>
+        </Box>
       </button>
-      <div
+      <Box
         className={`overflow-hidden transition-all duration-150 ease-in-out ${
           isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="pr-12 pb-8 pl-4 lg:pl-[84px]">
+        <Box
+          paddingRight="3xl"
+          paddingBottom="2xl"
+          paddingLeft={{
+            base: 'l',
+            lg: '5xl',
+          }}
+        >
           <p className="dark:text-polar-400 leading-relaxed text-gray-700">
             {answer}
           </p>
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }
 
@@ -101,11 +130,11 @@ export const WhyPolarPage = () => {
             The speed at which Polar is executing on the financial
             infrastructure primitives the new world needs is very impressive
           </p>
-          <span className="dark:text-polar-500 text-sm text-gray-500">
+          <Text as="span" variant="caption" color="muted">
             — Guillermo Rauch, CEO & Founder of Vercel
-          </span>
+          </Text>
         </blockquote>
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" gap="s">
           <Link
             href="/resources/comparison/stripe"
             target="_blank"
@@ -130,11 +159,10 @@ export const WhyPolarPage = () => {
             Compare Polar vs. Lemon Squeezy
             <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
           </Link>
-        </div>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="mor" title="Merchant of Record">
-        <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap="l">
           <h3 className="text-lg">
             Leave billing infrastructure and international tax headaches to us.
           </h3>
@@ -143,35 +171,40 @@ export const WhyPolarPage = () => {
             you. So you can focus on growing your business instead of accounting
             bills.
           </p>
-        </div>
-        <div className="flex flex-col gap-2">
-          <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
-            <li>
+        </Box>
+        <Box display="flex" flexDirection="column" gap="s">
+          <Box
+            as="ul"
+            borderColor="border-primary"
+            borderTopWidth={1}
+            borderBottomWidth={1}
+            className="dark:divide-polar-700 divide-y divide-gray-200 [&>li]:py-2"
+          >
+            <Box as="li">
               <CheckOutlined className="mr-3" fontSize="inherit" />
               We handle VAT, GST, and sales tax in all jurisdictions
-            </li>
-            <li>
+            </Box>
+            <Box as="li">
               <CheckOutlined className="mr-3" fontSize="inherit" />
               EU VAT handling - Proper B2B reverse charge and B2C tax collection
-            </li>
-            <li>
+            </Box>
+            <Box as="li">
               <CheckOutlined className="mr-3" fontSize="inherit" />
               Automatic tax calculation - Real-time tax rates for every
               transaction
-            </li>
-          </ul>
-        </div>
+            </Box>
+          </Box>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="developer-experience" title="Developer Experience">
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>Developer Ergonomics</h3>
           <p className="dark:text-polar-300 text-gray-500">
             We design our APIs & SDKs with developer ergonomics in mind. We put
             the developer experience in the front seat.
           </p>
-        </div>
-        <div className="flex flex-col gap-2">
+        </Box>
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>Developer Tools</h3>
           <p className="dark:text-polar-300 text-gray-500">
             We build developer tools that make it easy to iterate quickly and
@@ -179,8 +212,8 @@ export const WhyPolarPage = () => {
             system, we&apos;re building a platform that enables you to build
             your business.
           </p>
-        </div>
-        <div className="flex flex-col gap-2">
+        </Box>
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>Open Source</h3>
           <p className="dark:text-polar-300 text-gray-500">
             Polar is open source, licensed under the Apache 2.0 license. We
@@ -195,31 +228,36 @@ export const WhyPolarPage = () => {
             Follow the development on GitHub
             <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
           </Link>
-        </div>
+        </Box>
       </ResourceSection>
-
       <ResourceSection id="pricing" title="Pricing">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
+        <Box
+          display="grid"
+          gridTemplateColumns={{
+            base: 'repeat(1, minmax(0, 1fr))',
+            md: 'repeat(2, minmax(0, 1fr))',
+          }}
+          gap="l"
+        >
+          <Box display="flex" flexDirection="column" gap="s">
             <h3>Cheapest MoR on the market</h3>
             <p className="dark:text-polar-300 text-gray-500">
               Polar is priced 20% cheaper than other MoR alternatives. 4% and
               40¢ per transaction.
             </p>
-          </div>
-          <div className="flex flex-col gap-2">
+          </Box>
+          <Box display="flex" flexDirection="column" gap="s">
             <h3>No Hidden Fees</h3>
             <p className="dark:text-polar-300 text-gray-500">
               While payouts may incur fees charged by the payout providers (such
               as Stripe), Polar does not add any extra fees or markup.
             </p>
-          </div>
-        </div>
+          </Box>
+        </Box>
       </ResourceSection>
-
       {/* Why Switch */}
       <ResourceSection id="why-switch" title="Why switch to Polar?">
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>Integrate with 6 lines of code</h3>
           <p className="dark:text-polar-300 text-gray-500">
             We&apos;ve gone the extra mile to build ergonomic adapters that
@@ -227,40 +265,54 @@ export const WhyPolarPage = () => {
             enough, our versatile SDKs allow you to integrate with Polar in any
             way you want.
           </p>
-        </div>
-        <div className="flex flex-col gap-2">
+        </Box>
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>Secure, robust & reliable payments</h3>
           <p className="dark:text-polar-300 text-gray-500">
             You can rest assured that your customers will be able to pay you
             securely and reliably. We&apos;ve built a payment system that works
             for you, not against you.
           </p>
-        </div>
-        <div className="flex flex-col gap-2">
+        </Box>
+        <Box display="flex" flexDirection="column" gap="s">
           <h3>We&apos;re deeply invested in your success</h3>
           <p className="dark:text-polar-300 text-gray-500">
             Polar is built by developers, for developers. We listen to your
             feedback, and we&apos;re always looking for ways to make it easier
             for you to succeed. We care.
           </p>
-        </div>
+        </Box>
       </ResourceSection>
-
       {/* Who Switches */}
       <ResourceSection id="who-switches" title="Who else is switching?">
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap="2xl">
+          <Box display="flex" flexDirection="column" gap="l">
             <h3 className="text-lg">Trusted by leading SaaS companies</h3>
             <p className="dark:text-polar-300 text-gray-700">
               Companies like{' '}
-              <span className="text-black dark:text-white">Tailwind Labs</span>,{' '}
-              <span className="text-black dark:text-white">Midday</span>,{' '}
-              <span className="text-black dark:text-white">Stilla AI</span> &
-              thousands of other SaaS companies have already made the switch to
-              Polar.
+              <Text as="span" color="default">
+                Tailwind Labs
+              </Text>
+              ,{' '}
+              <Text as="span" color="default">
+                Midday
+              </Text>
+              ,{' '}
+              <Text as="span" color="default">
+                Stilla AI
+              </Text>{' '}
+              & thousands of other SaaS companies have already made the switch
+              to Polar.
             </p>
-          </div>
-          <div className="dark:border-polar-700 dark:divide-polar-700 grid grid-cols-3 items-center divide-x divide-gray-200 border border-gray-200">
+          </Box>
+          <Box
+            borderColor="border-primary"
+            display="grid"
+            gridTemplateColumns="repeat(3, minmax(0, 1fr))"
+            alignItems="center"
+            borderWidth={1}
+            className="dark:divide-polar-700 divide-x divide-gray-200"
+          >
             {logos.map(({ logo, href }, index) => (
               <Link
                 key={index}
@@ -271,11 +323,16 @@ export const WhyPolarPage = () => {
                 {logo}
               </Link>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       </ResourceSection>
-
-      <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
+      <Box
+        borderColor="border-primary"
+        display="flex"
+        flexDirection="column"
+        borderTopWidth={1}
+        paddingTop="4xl"
+      >
         <FAQItem
           number="01"
           question="Do I still pay Stripe fees if I use Polar?"
@@ -307,25 +364,40 @@ export const WhyPolarPage = () => {
           question="What happens during account reviews or disputes?"
           answer="We run standard MoR/KYC reviews (typically within a week) and follow card-network norms: disputes cost $15 and gateway fees aren't refunded on refunds."
         />
-      </div>
-
+      </Box>
       {/* Call to Action */}
-      <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
-        <div className="flex flex-col items-center gap-8">
-          <div className="flex flex-col items-center gap-4">
+      <Box
+        borderColor="border-primary"
+        display="flex"
+        flexDirection="column"
+        borderTopWidth={1}
+        paddingTop="4xl"
+      >
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          gap="2xl"
+        >
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            gap="l"
+          >
             <h3 className="text-xl">Ready to make the switch?</h3>
             <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
               Join thousands of teams who have already transformed their payment
               infrastructure with Polar.
             </p>
-          </div>
+          </Box>
           <GetStartedButton
             size="lg"
             text="Get Started"
             className="dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
     </ResourceLayout>
   )
 }

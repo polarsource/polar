@@ -1,4 +1,5 @@
 'use client'
+import { Box } from '@polar-sh/orbit/Box'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -79,9 +80,9 @@ export const FeaturePageGraphic = ({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8, delay: 0.4 }}
     >
-      <div className="aspect-square h-full">
+      <Box aspectRatio="1 / 1" height="100%">
         <Graphic />
-      </div>
+      </Box>
     </motion.div>
   )
 }
@@ -145,7 +146,7 @@ export const FeatureSplit = ({
       viewport={{ once: true, margin: '-80px' }}
       variants={containerVariants}
     >
-      <div className="flex flex-col gap-y-6">
+      <Box display="flex" flexDirection="column" rowGap="xl">
         <motion.h2
           className="text-2xl leading-snug md:text-3xl"
           variants={itemVariants}
@@ -158,7 +159,7 @@ export const FeatureSplit = ({
         >
           {description}
         </motion.p>
-      </div>
+      </Box>
       <motion.ul
         className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200"
         variants={containerVariants}
@@ -169,12 +170,12 @@ export const FeatureSplit = ({
             className="flex flex-col gap-y-2 py-6 first:pt-0"
             variants={itemVariants}
           >
-            <span className="text-lg text-gray-900 dark:text-white">
+            <Box as="span" color="text-primary" className="text-lg">
               {b.title}
-            </span>
-            <span className="dark:text-polar-400 text-lg text-gray-500">
+            </Box>
+            <Box as="span" color="text-secondary" className="text-lg">
               {b.description}
-            </span>
+            </Box>
           </motion.li>
         ))}
       </motion.ul>
@@ -199,7 +200,7 @@ export const FeatureRichList = ({
       viewport={{ once: true, margin: '-80px' }}
       variants={containerVariants}
     >
-      <div className="flex flex-col gap-y-4">
+      <Box display="flex" flexDirection="column" rowGap="l">
         <motion.h2
           className="text-2xl leading-snug md:text-3xl"
           variants={itemVariants}
@@ -214,7 +215,7 @@ export const FeatureRichList = ({
             {description}
           </motion.p>
         ) : null}
-      </div>
+      </Box>
       <motion.ul
         className="dark:divide-polar-700 dark:border-polar-700 flex flex-col divide-y divide-gray-200 border-y border-gray-200"
         variants={containerVariants}
@@ -225,12 +226,16 @@ export const FeatureRichList = ({
             className="grid grid-cols-1 gap-2 py-6 md:grid-cols-[1fr_2fr] md:gap-10"
             variants={itemVariants}
           >
-            <span className="text-lg text-gray-900 dark:text-white">
+            <Box as="span" color="text-primary" className="text-lg">
               {it.title}
-            </span>
-            <span className="dark:text-polar-400 text-lg leading-relaxed text-gray-500">
+            </Box>
+            <Box
+              as="span"
+              color="text-secondary"
+              className="text-lg leading-relaxed"
+            >
               {it.description}
-            </span>
+            </Box>
           </motion.li>
         ))}
       </motion.ul>
@@ -259,13 +264,13 @@ export const FeatureCardGrid = ({ cards }: { cards: FeatureCard[] }) => {
           className="dark:border-polar-700 flex flex-col gap-y-6 border-gray-300"
           variants={itemVariants}
         >
-          <div className="dark:text-polar-100 text-gray-900">{c.icon}</div>
-          <div className="flex flex-col gap-y-2">
+          <Box color="text-primary">{c.icon}</Box>
+          <Box display="flex" flexDirection="column" rowGap="s">
             <h3 className="text-xl">{c.title}</h3>
             <p className="dark:text-polar-400 text-lg text-gray-500">
               {c.description}
             </p>
-          </div>
+          </Box>
         </motion.div>
       ))}
     </motion.div>
@@ -305,10 +310,10 @@ export const FeatureCTA = ({
 
 export const FeaturePageLayout = ({ children }: PropsWithChildren) => {
   return (
-    <div className="flex flex-col">
+    <Box display="flex" flexDirection="column">
       <Section className="flex max-w-3xl! flex-col gap-y-16 pt-12 md:gap-y-24 md:pt-24">
         {children}
       </Section>
-    </div>
+    </Box>
   )
 }

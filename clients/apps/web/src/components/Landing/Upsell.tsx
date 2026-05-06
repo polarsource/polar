@@ -1,7 +1,8 @@
+import { Box } from '@polar-sh/orbit/Box'
 import { TextRings } from './graphics/TextRings'
 
 export const Upsell = () => (
-  <div className="relative overflow-hidden p-2">
+  <Box position="relative" overflow="hidden" padding="s">
     <TextRings />
-  </div>
+  </Box>
 )

@@ -1,3 +1,4 @@
+import { Box } from '@polar-sh/orbit/Box'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -16,7 +17,7 @@ export const Section = ({
   border,
 }: SectionProps) => {
   return (
-    <div
+    <Box
       id={id}
       className={twMerge(
         'relative flex flex-col md:items-center',
@@ -24,14 +25,14 @@ export const Section = ({
         wrapperClassName,
       )}
     >
-      <div
+      <Box
         className={twMerge(
           'flex w-full flex-col py-12  md:px-0 md:py-16 gap-y-24 md:max-w-7xl',
           className,
         )}
       >
         {children}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

@@ -1,4 +1,5 @@
 'use client'
+import { Box } from '@polar-sh/orbit/Box'
 
 import ArrowDownwardOutlined from '@mui/icons-material/ArrowDownwardOutlined'
 import { PropsWithChildren, useCallback } from 'react'
@@ -21,22 +22,60 @@ export const ResourceLayout = ({
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <Box display="flex" minHeight="100vh" flexDirection="column">
       {/* Main Content */}
-      <main>
-        <div className="mx-auto flex w-full max-w-6xl flex-col px-2 md:px-0">
+      <Box as="main">
+        <Box
+          marginHorizontal="auto"
+          display="flex"
+          width="100%"
+          maxWidth="1024px"
+          flexDirection="column"
+          paddingHorizontal={{
+            base: 's',
+            md: 'none',
+          }}
+        >
           {/* Content Card */}
-          <div className="dark:md:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24 md:px-16">
+          <Box
+            backgroundColor={{
+              md: 'background-primary',
+            }}
+            borderColor="border-primary"
+            display="flex"
+            flexDirection="column"
+            rowGap={{
+              base: '2xl',
+              md: '3xl',
+            }}
+            borderRadius="s"
+            borderWidth={{
+              md: 1,
+            }}
+            padding={{
+              md: '5xl',
+            }}
+            paddingHorizontal={{
+              md: '4xl',
+            }}
+          >
             {/* Top Section */}
-            <div className="flex flex-col">
-              <div className="flex flex-col gap-y-8 lg:items-center">
+            <Box display="flex" flexDirection="column">
+              <Box
+                display="flex"
+                flexDirection="column"
+                rowGap="2xl"
+                alignItems={{
+                  lg: 'center',
+                }}
+              >
                 <h1 className="text-5xl leading-tight! text-balance md:text-6xl lg:w-2/3 lg:text-center">
                   {title}
                 </h1>
-              </div>
-            </div>
+              </Box>
+            </Box>
             {toc && (
-              <div className="dark:divide-polar-700 divide-y divide-gray-200">
+              <Box className="dark:divide-polar-700 divide-y divide-gray-200">
                 {toc.map((item) => (
                   <button
                     key={item.id}
@@ -44,16 +83,18 @@ export const ResourceLayout = ({
                     className="dark:hover:bg-polar-800 flex w-full cursor-pointer items-center gap-3 p-3 transition-colors duration-200 hover:bg-gray-100"
                   >
                     <ArrowDownwardOutlined fontSize="inherit" />
-                    <span>{item.title}</span>
+                    <Box as="span">{item.title}</Box>
                   </button>
                 ))}
-              </div>
+              </Box>
             )}
-            <div className="flex flex-col gap-y-12">{children}</div>
-          </div>
-        </div>
-      </main>
-    </div>
+            <Box display="flex" flexDirection="column" rowGap="3xl">
+              {children}
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   )
 }
 
@@ -68,18 +109,43 @@ export const ResourceSection = ({
   className?: string
 }>) => {
   return (
-    <section id={id} className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8">
-      <div className="dark:border-polar-700 sticky top-0 col-span-1 flex h-fit flex-col border-gray-200 pt-4 text-lg md:border-t md:text-base">
+    <Box
+      as="section"
+      display="grid"
+      gridTemplateColumns={{
+        base: 'repeat(1, minmax(0, 1fr))',
+        md: 'repeat(3, minmax(0, 1fr))',
+      }}
+      gap={{
+        base: 'l',
+        md: '2xl',
+      }}
+      id={id}
+    >
+      <Box
+        borderColor="border-primary"
+        position="sticky"
+        top={0}
+        gridColumn="span 1 / span 1"
+        display="flex"
+        height="fit-content"
+        flexDirection="column"
+        paddingTop="l"
+        borderTopWidth={{
+          md: 1,
+        }}
+        className="text-lg md:text-base"
+      >
         <h2>{title}</h2>
-      </div>
-      <div
+      </Box>
+      <Box
         className={twMerge(
           'dark:border-polar-700 col-span-2 flex flex-col gap-y-4 border-t border-gray-200 pt-4',
           className,
         )}
       >
         {children}
-      </div>
-    </section>
+      </Box>
+    </Box>
   )
 }

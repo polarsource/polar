@@ -1,3 +1,5 @@
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { CreditArc } from './graphics/CreditArc'
 import { CycleArrow } from './graphics/CycleArrow'
@@ -47,14 +49,31 @@ const TILES = [
 
 export const Features = () => {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 py-32 md:gap-y-24">
+    <Box
+      marginHorizontal="auto"
+      display="flex"
+      width="100%"
+      maxWidth="1280px"
+      flexDirection="column"
+      rowGap={{
+        base: '3xl',
+        md: '5xl',
+      }}
+      className="py-32"
+    >
       <h1 className="font-display px-4 text-4xl leading-snug md:px-0 md:text-7xl">
         All billing primitives you need.
         <br />
         In a single API.
       </h1>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <Box
+        display="grid"
+        gridTemplateColumns={{
+          base: 'repeat(1, minmax(0, 1fr))',
+          md: 'repeat(3, minmax(0, 1fr))',
+        }}
+        gap="l"
+      >
         {TILES.map((tile) => {
           const G = tile.Graphic
           return (
@@ -63,21 +82,30 @@ export const Features = () => {
               href={tile.href}
               className="dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-col bg-gray-50 transition-colors hover:bg-gray-100"
             >
-              <div className="flex flex-col gap-4 p-8">
-                <span className="font-display text-3xl text-gray-900 dark:text-white">
+              <Box display="flex" flexDirection="column" gap="l" padding="2xl">
+                <Box
+                  as="span"
+                  color="text-primary"
+                  className="font-display text-3xl"
+                >
                   {tile.title}
-                </span>
-                <span className="dark:text-polar-300 text-xl text-gray-500">
+                </Box>
+                <Text as="span" variant="heading-xxs" color="muted">
                   {tile.desc}
-                </span>
-              </div>
-              <div className="mt-auto aspect-square w-full px-8">
+                </Text>
+              </Box>
+              <Box
+                marginTop="auto"
+                aspectRatio="1 / 1"
+                width="100%"
+                paddingHorizontal="2xl"
+              >
                 <G />
-              </div>
+              </Box>
             </Link>
           )
         })}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

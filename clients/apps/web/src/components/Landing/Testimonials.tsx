@@ -1,3 +1,5 @@
+import { Avatar, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { StillaAI } from './Logos'
 
@@ -79,7 +81,14 @@ const userTestimonials = [
 ]
 
 export const Testimonials = () => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+  <Box
+    display="grid"
+    gridTemplateColumns={{
+      base: 'repeat(1, minmax(0, 1fr))',
+      md: 'repeat(3, minmax(0, 1fr))',
+    }}
+    gap="l"
+  >
     {userTestimonials.map((t, i) => (
       <Link
         key={t.name}
@@ -87,18 +96,22 @@ export const Testimonials = () => (
         target="_blank"
         className="dark:bg-polar-900 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-12 bg-gray-50 p-10 transition-colors hover:bg-gray-100"
       >
-        <span className="dark:text-polar-500 text-gray-500 tabular-nums">{`— 0${i + 1}`}</span>
-        <div className="flex h-full flex-col gap-y-6 text-xl leading-snug text-gray-900 dark:text-white">
-          {t.text}
-        </div>
-        <div className="dark:bg-polar-700 h-1 w-6 bg-gray-100" />
-        <div>
-          <div className="text-lg text-gray-900 dark:text-white">{t.name}</div>
-          <div className="dark:text-polar-400 text-lg text-gray-400">
+        <Avatar name={t.name} avatar_url={t.avatar} className="h-8 w-8" />
+        <Box display="flex" height="100%" flexDirection="column" rowGap="xl">
+          <Text as="p" variant="heading-xxs" color="default">
+            {t.text}
+          </Text>
+        </Box>
+        <Box height={4} width={24} className="dark:bg-polar-700 bg-gray-100" />
+        <Box display="flex" flexDirection="column">
+          <Text as="span" variant="body" color="default">
+            {t.name}
+          </Text>
+          <Text as="span" variant="body" color="muted">
             {t.company}
-          </div>
-        </div>
+          </Text>
+        </Box>
       </Link>
     ))}
-  </div>
+  </Box>
 )

@@ -86,6 +86,71 @@ function toKebab(str: string): string {
   return str.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
 }
 
+const DECLARATION_ORDER: readonly string[] = [
+  'padding',
+  'margin',
+  'gap',
+  'padding-inline',
+  'margin-inline',
+  'padding-block',
+  'margin-block',
+  'row-gap',
+  'column-gap',
+  'padding-top',
+  'padding-right',
+  'padding-bottom',
+  'padding-left',
+  'margin-top',
+  'margin-right',
+  'margin-bottom',
+  'margin-left',
+  'border-width',
+  'border-style',
+  'border-color',
+  'border-radius',
+  'border-top-left-radius',
+  'border-top-right-radius',
+  'border-bottom-left-radius',
+  'border-bottom-right-radius',
+  'border-top-width',
+  'border-right-width',
+  'border-bottom-width',
+  'border-left-width',
+  'overflow',
+  'overflow-x',
+  'overflow-y',
+  'flex',
+  'flex-direction',
+  'flex-wrap',
+  'flex-grow',
+  'flex-shrink',
+  'flex-basis',
+  'inset',
+  'top',
+  'right',
+  'bottom',
+  'left',
+]
+
+function normalizedCssKey(key: string): string {
+  return key.includes('-') ? key : toKebab(key)
+}
+
+function sortedDeclarationEntries(
+  record: Record<string, string | number>,
+): [string, string | number][] {
+  return Object.entries(record).sort(([a], [b]) => {
+    const ka = normalizedCssKey(a)
+    const kb = normalizedCssKey(b)
+    const ia = DECLARATION_ORDER.indexOf(ka)
+    const ib = DECLARATION_ORDER.indexOf(kb)
+    const pa = ia === -1 ? 10_000 : ia
+    const pb = ib === -1 ? 10_000 : ib
+    if (pa !== pb) return pa - pb
+    return ka.localeCompare(kb)
+  })
+}
+
 function px(v: number): string {
   return v === 0 ? '0' : `${v}px`
 }
@@ -539,8 +604,8 @@ export function resolveBoxStyles(
     const parts: string[] = []
 
     for (const bp of bpKeys) {
-      const entries = Object.entries(breakpointStyles[bp])
-        .map(([k, v]) => `${toKebab(k)}: ${v}`)
+      const entries = sortedDeclarationEntries(breakpointStyles[bp])
+        .map(([k, v]) => `${normalizedCssKey(k)}: ${v}`)
         .join('; ')
       // Breakpoint 0 = base styles for responsive arbitrary props (no media query).
       // Higher breakpoints are wrapped in @media so they cascade over the base.
@@ -552,8 +617,8 @@ export function resolveBoxStyles(
     }
 
     for (const pseudo of pseudoKeys) {
-      const entries = Object.entries(pseudoStyles[pseudo])
-        .map(([k, v]) => `${toKebab(k)}: ${v}`)
+      const entries = sortedDeclarationEntries(pseudoStyles[pseudo])
+        .map(([k, v]) => `${normalizedCssKey(k)}: ${v}`)
         .join('; ')
       parts.push(`${selector}${pseudo} { ${entries} }`)
     }

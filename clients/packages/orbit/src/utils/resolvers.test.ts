@@ -221,6 +221,26 @@ describe('addTokenProp — breakpoint variants', () => {
     expect(responsiveCSS).toContain('padding: 16px')
     expect(responsiveCSS).toContain('gap: 8px')
   })
+
+  it('padding-top wins over padding-block at the same breakpoint', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      {
+        paddingVertical: { md: 'l' },
+        paddingTop: { md: 'none' },
+      },
+      'scope',
+    )
+    expect(responsiveCSS).toContain('@media (min-width: 768px)')
+    const mdMatch = responsiveCSS!.match(
+      /@media \(min-width: 768px\) \{[^}]+\}/,
+    )
+    expect(mdMatch).toBeTruthy()
+    const block = mdMatch![0]
+    expect(block.indexOf('padding-block')).toBeLessThan(
+      block.indexOf('padding-top'),
+    )
+    expect(block).toContain('padding-top: 0')
+  })
 })
 
 describe('addTokenProp — token-CSS translations', () => {

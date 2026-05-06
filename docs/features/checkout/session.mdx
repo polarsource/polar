@@ -117,10 +117,9 @@ After a successful checkout, we'll create a Customer on Polar with the external 
 When you create a checkout session, Polar uses the IP address of the request to detect the customer's country. This drives features like:
 
 - **Currency auto-detection** for [products with multiple payment currencies](/features/products)
-- **Tax computation** based on the customer's location
-- **Pre-filling the billing country** on the checkout page
+- **Pre-filling the billing country** on the checkout page, which is also used to compute taxes
 
-If you create checkout sessions directly from the customer's browser, this works automatically. But if you create them from a **backend, proxy, or edge function** (e.g. your own API, a Cloudflare Worker, a Next.js route handler), Polar will see *your server's* IP — not the customer's — and the detection will be wrong.
+If you use [checkout links](/features/checkout/links), this works automatically. But if you create sessions through the API from a **backend, proxy, or edge function** (e.g. your own API, a Cloudflare Worker, a Next.js route handler), Polar will see *your server's* IP — not the customer's — and the detection will be wrong.
 
 In that case, forward the customer's IP address as `customer_ip_address` in the request body:
 

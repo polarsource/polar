@@ -22,6 +22,7 @@ Confirmation flag (optional):
 - Write for merchants and customers, not engineers. Say what the reader can now do and why it matters.
 - Use the `<Update label="YYYY-MM-DD">` block format. The date is today.
 - Reference images as `/assets/changelog/YYYY-MM-DD/<name>.png` with `<img class="border rounded" src="..." />`.
+- Run final copy through `handbook/design/voice-and-tone.mdx` before saving: short sentences, active voice, lead with the thing, no fintech voice, no throat-clearing.
 
 ## What to Include
 
@@ -107,6 +108,10 @@ If the DB is empty, seed it:
 docker exec polar-dev-<N>-api-1 bash -c "cd /app/server && uv run python -m scripts.seeds_load"
 ```
 
+`seeds_load` is **not idempotent** (fails with UniqueViolationError if users already exist) and creates **0 orders**. For order, refund, or receipt screenshots you must insert an Order row (plus a matching `order_items` row and a succeeded `payments` row) directly via SQL. Inspect schemas with `\d orders` and `\d payments` first.
+
+If migrations fail with `DuplicateTableError: relation "ix_..." already exists` from a prior partial run, drop the offending index (`DROP INDEX IF EXISTS ix_...`), restart the api container, and re-run `uv run task db_migrate`.
+
 ### 5. Capture screenshots (subagent, `general-purpose`)
 
 Launch a `general-purpose` subagent with the list of accepted MAJOR features. Tell it:
@@ -116,6 +121,8 @@ Launch a `general-purpose` subagent with the list of accepted MAJOR features. Te
 - **Prefer clicking through the UI or calling documented API endpoints to create the state you need.** That path exercises real validation and produces screenshots that will not drift when schemas change. Fall back to direct SQL only for states the product does not let you reach through normal flows (e.g. placing a subscription into a pre-scheduled update that is applied by a cron job), or for minor tidy-up so the UI reads clearly (e.g. removing placeholder rows that distract from what the screenshot is about).
 - Read the relevant frontend component first to understand what data the screenshot actually needs, then pick the shortest path to get there.
 - Use Playwright MCP (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_take_screenshot`) and save to `docs/assets/changelog/YYYY-MM-DD/<slug>.png`. Create the directory first.
+- **Hide the Next.js dev tools pill before screenshotting** (the red "N Issues" badge at the bottom-left). Inject CSS via `mcp__playwright__browser_evaluate`: ``document.head.appendChild(Object.assign(document.createElement('style'), { textContent: 'nextjs-portal { display: none !important; }' }))``. Verify the bottom-left is clean before saving.
+- Resize the viewport to 1440x900 for clean output.
 - Return the list of saved paths.
 
 ### 6. Write the entry (main session)

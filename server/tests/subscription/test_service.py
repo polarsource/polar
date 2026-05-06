@@ -1314,6 +1314,38 @@ class TestCycle:
 
         enqueue_email_mock.assert_not_called()
 
+    @freeze_time("2024-04-28 12:00:00")
+    async def test_trial_end_rebases_anchor_to_trial_end_day(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+            scheduler_locked_at=utc_now(),
+        )
+        assert subscription.anchor_day == 28
+        assert subscription.trial_start == datetime(2024, 4, 28, 12, 0, 0, tzinfo=UTC)
+        assert subscription.trial_end == datetime(2024, 5, 5, 12, 0, 0, tzinfo=UTC)
+        assert subscription.current_period_end == subscription.trial_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.anchor_day == 5
+        assert updated_subscription.current_period_start == subscription.trial_end
+        assert updated_subscription.current_period_end == datetime(
+            2024, 6, 5, 12, 0, 0, tzinfo=UTC
+        )
+
     async def test_trial_end_with_once_discount(
         self,
         session: AsyncSession,

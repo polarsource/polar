@@ -712,6 +712,8 @@ class SubscriptionService:
             if update_cycle_dates and not pending_update_changed_interval:
                 current_period_end = subscription.current_period_end
                 subscription.current_period_start = current_period_end
+                if previous_status == SubscriptionStatus.trialing:
+                    subscription.anchor_day = current_period_end.day
                 subscription.current_period_end = (
                     subscription.recurring_interval.get_next_period(
                         current_period_end,

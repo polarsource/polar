@@ -44,7 +44,6 @@ export default function Layout({ children }: PropsWithChildren) {
       alignItems={{
         md: 'center',
       }}
-      className="overflow-x-clip"
     >
       <Box
         display="flex"
@@ -70,10 +69,7 @@ export default function Layout({ children }: PropsWithChildren) {
           width={{
             md: '100%',
           }}
-          paddingTop={{
-            md: 'none',
-          }}
-          className="dark:bg-polar-950 pt-32"
+          paddingTop="3xl"
         >
           {children}
         </Box>
@@ -105,7 +101,7 @@ const NavLink = ({
       target={isExternal ? '_blank' : target}
       prefetch
       className={twMerge(
-        'dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black dark:hover:text-white',
+        'dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 font-medium transition-colors hover:text-black dark:hover:text-white',
         isActive && 'text-black dark:text-white',
         className,
       )}
@@ -385,7 +381,7 @@ const LandingPageDesktopNavigation = () => {
           display="flex"
           flexDirection="row"
           columnGap="2xl"
-          className="-translate-x-1/2 font-medium"
+          transform="translateX(-50%)"
         >
           <Box as="li">
             <NavPopover

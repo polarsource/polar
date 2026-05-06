@@ -98,7 +98,7 @@ export const Testimonials = () => (
       >
         <Avatar name={t.name} avatar_url={t.avatar} className="h-8 w-8" />
         <Box display="flex" height="100%" flexDirection="column" rowGap="xl">
-          <Text as="p" variant="heading-xxs" color="default">
+          <Text as="div" variant="heading-xxs" color="default">
             {t.text}
           </Text>
         </Box>

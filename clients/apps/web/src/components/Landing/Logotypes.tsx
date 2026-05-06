@@ -68,6 +68,7 @@ export const Logotypes = () => {
         display={{
           xl: 'none',
         }}
+        /* eslint-disable-next-line polar/no-style-box */
         style={{
           maskImage:
             'linear-gradient(to right, transparent, black 15%, black 85%, transparent)',
@@ -94,7 +95,7 @@ export const Logotypes = () => {
           xl: 'flex',
         }}
         alignItems="center"
-        className="gap-x-20"
+        columnGap="4xl"
       >
         {items.map((item) => (
           <Logotype key={item.link} icon={item.icon} link={item.link} />

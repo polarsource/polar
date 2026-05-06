@@ -56,6 +56,10 @@ export const colors = stylex.defineVars({
     default: 'oklch(0.96 0.005 264)',
     [DARK]: 'oklch(0.6 0.02 264 / 0.2)',
   },
+  'background-opaque': {
+    default: '#000000',
+    [DARK]: '#ffffff',
+  },
 
   // Text
   'text-primary': {

@@ -59,7 +59,7 @@ export const Features = () => {
         base: '3xl',
         md: '5xl',
       }}
-      className="py-32"
+      paddingVertical="2xl"
     >
       <h1 className="font-display px-4 text-4xl leading-snug md:px-0 md:text-7xl">
         All billing primitives you need.
@@ -83,13 +83,7 @@ export const Features = () => {
               className="dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-col bg-gray-50 transition-colors hover:bg-gray-100"
             >
               <Box display="flex" flexDirection="column" gap="l" padding="2xl">
-                <Box
-                  as="span"
-                  color="text-primary"
-                  className="font-display text-3xl"
-                >
-                  {tile.title}
-                </Box>
+                <Text variant="heading-s">{tile.title}</Text>
                 <Text as="span" variant="heading-xxs" color="muted">
                   {tile.desc}
                 </Text>

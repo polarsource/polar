@@ -64,10 +64,14 @@ export const NavPopover = ({
         {sections.map((section, idx) => (
           <Box
             key={idx}
-            className={twMerge(
-              'flex flex-col p-2',
-              section.items.some((item) => item.subtitle) ? 'col-span-2' : '',
-            )}
+            display="flex"
+            flexDirection="column"
+            padding="s"
+            gridColumn={
+              section.items.some((item) => item.subtitle)
+                ? 'span 2 / span 2'
+                : 'span 1 / span 1'
+            }
           >
             {section.title && (
               <Box padding="l">
@@ -77,11 +81,11 @@ export const NavPopover = ({
               </Box>
             )}
             <Box
-              className={twMerge(
-                section.items.some((item) => item.subtitle)
-                  ? 'grid grid-cols-2'
-                  : '',
-              )}
+              display={
+                section.items.some((item) => item.subtitle) ? 'grid' : 'flex'
+              }
+              flexDirection="column"
+              gridTemplateColumns="repeat(2, minmax(0, 1fr))"
             >
               {section.items.map(({ href, label, subtitle, target }) => (
                 <Link

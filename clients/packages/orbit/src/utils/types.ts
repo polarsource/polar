@@ -164,6 +164,7 @@ export interface VisualProps {
   visibility?: ResponsiveValue<'visible' | 'hidden'>
   userSelect?: ResponsiveValue<'none' | 'text' | 'all' | 'auto'>
   textAlign?: ResponsiveValue<'left' | 'center' | 'right' | 'justify'>
+  transform?: ResponsiveValue<string>
 }
 
 export type BoxStyleProps = SpacingProps &

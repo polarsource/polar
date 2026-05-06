@@ -72,16 +72,12 @@ export const Vision = () => {
             md: 'none',
           }}
         >
-          <Box
-            width={1}
-            alignSelf="stretch"
-            className="dark:bg-polar-700 bg-gray-200"
-          >
+          <Box width={1} alignSelf="stretch" backgroundColor="border-primary">
             <Box
               width="100%"
               ref={barRef}
               style={{ height: '0%' }}
-              className="bg-black dark:bg-white"
+              backgroundColor="background-opaque"
             />
           </Box>
           <Box display="flex" flexDirection="column">

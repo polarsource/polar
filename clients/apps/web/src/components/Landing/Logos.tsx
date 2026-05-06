@@ -200,7 +200,7 @@ export const Google = ({ size = 30 }) => (
 
 export const Speakeasy = () => {
   return (
-    <Box display="flex" alignItems="center" className="scale-90">
+    <Box display="flex" alignItems="center" transform="scale(0.9)">
       <Box position="relative" width={32} height={32}>
         <svg
           xmlns="http://www.w3.org/2000/svg"

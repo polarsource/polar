@@ -217,6 +217,7 @@ const BOX_STYLE_PROP_MAP: Record<keyof BoxStyleProps, true> = {
   visibility: true,
   userSelect: true,
   textAlign: true,
+  transform: true,
 }
 
 export const BOX_STYLE_PROP_KEYS = new Set<string>(
@@ -524,6 +525,7 @@ export function resolveBoxStyles(
   addTokenProp(visibilityStyles, 'visibility', props.visibility, (v) => v)
   addTokenProp(userSelectStyles, 'user-select', props.userSelect, (v) => v)
   addTokenProp(textAlignStyles, 'text-align', props.textAlign, (v) => v)
+  addArbitraryProp('transform', props.transform, (v) => v)
 
   // --- Build scoped CSS for breakpoint + pseudo-state values ---
   const bpKeys = Object.keys(breakpointStyles)

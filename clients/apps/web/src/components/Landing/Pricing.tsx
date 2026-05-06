@@ -1,4 +1,5 @@
 import { Box } from '@polar-sh/orbit/Box'
+import { Text } from '@polar-sh/orbit/Text'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
@@ -61,20 +62,10 @@ export const Pricing = () => {
         <Box display="flex" flexDirection="column" rowGap="2xl" padding="3xl">
           <Box display="flex" flexDirection="column" rowGap="l">
             <Box display="flex" alignItems="baseline" columnGap="m">
-              <Box as="span" className="text-5xl font-light tracking-tight">
-                4%
-              </Box>
-              <Box as="span" color="text-tertiary" className="text-2xl">
-                + 40¢
-              </Box>
+              <Text variant="heading-l">4%</Text>
+              <Text variant="heading-s">+ 40¢</Text>
             </Box>
-            <Box
-              as="span"
-              color="text-tertiary"
-              className="font-mono text-xs tracking-wide uppercase"
-            >
-              per transaction
-            </Box>
+            <Text variant="mono">per transaction</Text>
           </Box>
           <Box as="ul" display="flex" flexDirection="column" rowGap="s">
             {[
@@ -84,7 +75,10 @@ export const Pricing = () => {
               'No monthly or setup fees',
             ].map((item) => (
               <Box as="li" display="flex" columnGap="l" key={item}>
-                <CheckOutlined className="text-emerald-500" fontSize="small" />
+                <CheckOutlined
+                  className="text-black dark:text-white"
+                  fontSize="small"
+                />
                 <Box as="span">{item}</Box>
               </Box>
             ))}

@@ -4,15 +4,20 @@ import { useEffect, useRef } from 'react'
 import { useInView } from '@/hooks/useInView'
 
 /**
- * RadialSpinner — radial spokes that draw along their path. The
- * leading tip extends outward with a bezier ease, and the trailing
- * start follows a few ms behind (also bezier-eased), creating a
- * moving segment that travels from inner to outer radius. Spokes
- * fire sequentially at a constant (linear) interval around the
- * circle, then loop.
+ * RadialSpinner — radial spokes that alternate between two phases:
+ *
+ *   Round A (fill):  tail anchored at innerR, tip extends to outerR.
+ *                    Each spoke persists once filled, so the ring
+ *                    "fills in" one spoke at a time.
+ *   Round B (empty): tip anchored at outerR, tail retracts outward
+ *                    from innerR. Each spoke stays full until its
+ *                    turn, then disappears from the inside out.
+ *
+ * Rounds A and B alternate forever. Both use the same bezier ease
+ * and the same per-spoke stagger.
  */
 
-const SPOKE_COUNT = 18
+const SPOKE_COUNT = 14
 const INNER_R_FRAC = 0.1
 const OUTER_R_FRAC = 0.32
 
@@ -52,10 +57,9 @@ export const RadialSpinner = () => {
 
     // Timing — linear sequence, bezier per-spoke path
     const SPOKE_INTERVAL = 0.2 // constant delay between spokes (linear)
-    const PATH_DURATION = 0.8 // how long the tip takes to travel the path
-    const TAIL_DELAY = 0.16 // trailing start follows the tip
-    const FULL_CYCLE =
-      (SPOKE_COUNT - 1) * SPOKE_INTERVAL + PATH_DURATION + TAIL_DELAY
+    const PATH_DURATION = 0.8 // how long the tip/tail takes to travel
+    const ROUND_DURATION = (SPOKE_COUNT - 1) * SPOKE_INTERVAL + PATH_DURATION
+    const FULL_CYCLE = ROUND_DURATION * 2
 
     let lastTime: number | null = null
     let time = 0
@@ -79,26 +83,35 @@ export const RadialSpinner = () => {
       }
 
       const cycleTime = time % FULL_CYCLE
+      const isFillRound = cycleTime < ROUND_DURATION
+      const roundTime = isFillRound ? cycleTime : cycleTime - ROUND_DURATION
+
+      ctx.strokeStyle = strokeColor
+      ctx.lineWidth = 2
 
       for (let i = 0; i < SPOKE_COUNT; i++) {
         const angle = (i / SPOKE_COUNT) * Math.PI * 2 - Math.PI / 2
 
         // Linear stagger — each spoke fires at a constant interval
         const spokeStart = i * SPOKE_INTERVAL
+        const localT = (roundTime - spokeStart) / PATH_DURATION
+        const clamped = Math.max(0, Math.min(1, localT))
+        const progress = easeOut(clamped)
 
-        // Leading tip: bezier-eased from 0→1 along the path
-        const tipT = (cycleTime - spokeStart) / PATH_DURATION
-        const tipProgress = easeOut(Math.max(0, Math.min(1, tipT)))
+        let r1: number
+        let r2: number
 
-        // Trailing start: same bezier, delayed
-        const tailT = (cycleTime - spokeStart - TAIL_DELAY) / PATH_DURATION
-        const tailProgress = easeOut(Math.max(0, Math.min(1, tailT)))
-
-        if (tipProgress <= 0) continue
-        if (tailProgress >= 1) continue
-
-        const r1 = innerR + spokeLen * tailProgress
-        const r2 = innerR + spokeLen * tipProgress
+        if (isFillRound) {
+          // Hasn't fired yet this round — invisible until its stagger hits
+          if (localT <= 0) continue
+          r1 = innerR
+          r2 = innerR + spokeLen * progress
+        } else {
+          // Already finished emptying — invisible for the rest of the round
+          if (localT >= 1) continue
+          r1 = innerR + spokeLen * progress
+          r2 = outerR
+        }
 
         if (r2 - r1 < 0.5) continue
 
@@ -107,8 +120,6 @@ export const RadialSpinner = () => {
         const x2 = cx + Math.cos(angle) * r2
         const y2 = cy + Math.sin(angle) * r2
 
-        ctx.strokeStyle = strokeColor
-        ctx.lineWidth = 2
         ctx.beginPath()
         ctx.moveTo(x1, y1)
         ctx.lineTo(x2, y2)

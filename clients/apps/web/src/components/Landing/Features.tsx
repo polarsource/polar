@@ -63,11 +63,12 @@ export const Features = () => {
               href={tile.href}
               className="dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-col bg-gray-50 transition-colors hover:bg-gray-100"
             >
-              <div className="flex flex-col gap-4 p-8">
+              <div className="flex flex-col gap-8 p-8">
                 <span className="font-display text-3xl text-gray-900 dark:text-white">
                   {tile.title}
                 </span>
-                <span className="dark:text-polar-300 text-xl text-gray-500">
+                <div className="indigo-500 h-[2px] w-10 dark:bg-indigo-500" />
+                <span className="dark:text-polar-500 text-xl text-gray-500">
                   {tile.desc}
                 </span>
               </div>

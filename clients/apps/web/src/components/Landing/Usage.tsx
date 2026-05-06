@@ -18,7 +18,7 @@ const LAYERS = [
   {
     id: '03',
     name: 'Charge',
-    desc: 'Generate invoices and collect payment automatically.',
+    desc: 'Generate charges & collect payments automatically.',
   },
 ]
 
@@ -34,11 +34,12 @@ export const Usage = () => (
         </div>
         {/* Label */}
         <div className="flex flex-col px-8 py-8">
-          <div className="flex flex-col gap-4">
-            <span className="text-2xl text-gray-900 dark:text-white">
+          <div className="flex flex-col gap-8">
+            <span className="font-display text-2xl text-gray-900 dark:text-white">
               {l.id} — {l.name}
             </span>
-            <span className="dark:text-polar-300 text-xl text-gray-500">
+            <div className="h-[2px] w-10 bg-indigo-500 dark:bg-indigo-500" />
+            <span className="dark:text-polar-500 text-xl text-gray-500">
               {l.desc}
             </span>
           </div>

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { StillaAI } from './Logos'
+import { Avatar } from '@polar-sh/orbit'
 
 export const companyTestimonials = [
   {
@@ -87,7 +88,7 @@ export const Testimonials = () => (
         target="_blank"
         className="dark:bg-polar-900 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-12 bg-gray-50 p-10 transition-colors hover:bg-gray-100"
       >
-        <span className="dark:text-polar-500 text-gray-500 tabular-nums">{`— 0${i + 1}`}</span>
+        <Avatar avatar_url={t.avatar} name={t.name} className="size-8" />
         <div className="flex h-full flex-col gap-y-6 text-xl leading-snug text-gray-900 dark:text-white">
           {t.text}
         </div>

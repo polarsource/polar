@@ -18,8 +18,9 @@ Polar is a payment infrastructure platform with a monorepo structure.
     - **Database**: It uses **PostgreSQL** as its database, with **SQLAlchemy** as the ORM. Database models are located in `server/polar/models`.
     - **Background Jobs**: Asynchronous tasks are handled by **Dramatiq** workers.
     - **API**: The core API logic is in `server/polar/`, with routes organized into modules.
-- **`clients/`**: The frontend is a **Next.js** application managed with **Turborepo** and **pnpm**.
-    - **`clients/apps/web/`**: This is the main web dashboard application.
+- **`clients/`**: The frontend applications are managed with **Turborepo** and **pnpm**.
+    - **`clients/apps/web/`**: The main web dashboard application built with **Next.js**.
+    - **`clients/apps/app/`**: iOS and Android app built with **Expo** and **React Native**.
     - **`clients/packages/ui/`**: A shared library of React components built with Radix UI and Tailwind CSS.
     - **`clients/packages/client/`**: The generated API client and data-fetching hooks.
 - **`dev/`**: Contains scripts and tools for development.

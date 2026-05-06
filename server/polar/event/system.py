@@ -25,6 +25,7 @@ class SystemEvent(StrEnum):
     subscription_cycled = "subscription.cycled"
     subscription_revoked = "subscription.revoked"
     subscription_past_due = "subscription.past_due"
+    subscription_reactivated = "subscription.reactivated"
     subscription_uncanceled = "subscription.uncanceled"
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
@@ -56,6 +57,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.cycled": "Subscription Cycled",
     "subscription.revoked": "Subscription Revoked",
     "subscription.past_due": "Subscription Past Due",
+    "subscription.reactivated": "Subscription Reactivated",
     "subscription.uncanceled": "Subscription Uncanceled",
     "subscription.product_updated": "Subscription Product Updated",
     "order.paid": "Order Paid",
@@ -317,6 +319,22 @@ class SubscriptionPastDueEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_past_due]]
         user_metadata: Mapped[SubscriptionPastDueMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionReactivatedMetadata(TypedDict):
+    subscription_id: str
+    product_id: NotRequired[str]
+    amount: NotRequired[int]
+    currency: NotRequired[str]
+    recurring_interval: NotRequired[str]
+    recurring_interval_count: NotRequired[int]
+
+
+class SubscriptionReactivatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_reactivated]]
+        user_metadata: Mapped[SubscriptionReactivatedMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionUncanceledMetadata(TypedDict):
@@ -693,6 +711,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionPastDueMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_reactivated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionReactivatedMetadata,
 ) -> Event: ...
 
 

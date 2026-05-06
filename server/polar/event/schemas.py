@@ -36,6 +36,7 @@ from polar.event.system import (
     SubscriptionCycledMetadata,
     SubscriptionPastDueMetadata,
     SubscriptionProductUpdatedMetadata,
+    SubscriptionReactivatedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionSeatsUpdatedMetadata,
     SubscriptionUncanceledMetadata,
@@ -402,6 +403,17 @@ class SubscriptionPastDueEvent(SystemEventBase):
     )
 
 
+class SubscriptionReactivatedEvent(SystemEventBase):
+    """An event created by Polar when a past due subscription is recovered."""
+
+    name: Literal[SystemEventEnum.subscription_reactivated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionReactivatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class SubscriptionProductUpdatedEvent(SystemEventBase):
     """An event created by Polar when a subscription changes the product."""
 
@@ -592,6 +604,7 @@ SystemEvent = Annotated[
     | SubscriptionCanceledEvent
     | SubscriptionRevokedEvent
     | SubscriptionPastDueEvent
+    | SubscriptionReactivatedEvent
     | SubscriptionUncanceledEvent
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent

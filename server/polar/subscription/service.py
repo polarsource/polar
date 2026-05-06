@@ -38,6 +38,7 @@ from polar.event.system import (
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionPastDueMetadata,
+    SubscriptionReactivatedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionUncanceledMetadata,
     SystemEvent,
@@ -1972,6 +1973,24 @@ class SubscriptionService:
         # not a past due that has been reactivated.
         if not reactivated:
             await self._send_new_subscription_notification(session, subscription)
+
+        if reactivated:
+            await event_service.create_event(
+                session,
+                build_system_event(
+                    SystemEvent.subscription_reactivated,
+                    customer=subscription.customer,
+                    organization=subscription.organization,
+                    metadata=SubscriptionReactivatedMetadata(
+                        subscription_id=str(subscription.id),
+                        product_id=str(subscription.product_id),
+                        amount=subscription.amount,
+                        currency=subscription.currency,
+                        recurring_interval=subscription.recurring_interval.value,
+                        recurring_interval_count=subscription.recurring_interval_count,
+                    ),
+                ),
+            )
 
     async def _on_subscription_past_due(
         self, session: AsyncSession, subscription: Subscription

@@ -81,7 +81,7 @@ const userTestimonials = [
 
 export const Testimonials = () => (
   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-    {userTestimonials.map((t, i) => (
+    {userTestimonials.map((t) => (
       <Link
         key={t.name}
         href={t.link}

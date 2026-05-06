@@ -307,11 +307,23 @@ class TestExtractTransactionFee:
             {"fee_percent": "380", "fee_fixed": "35"}, _BENEFIT_ID
         ) == (380, 35)
 
+    def test_native_int_values(self) -> None:
+        assert polar_self._extract_transaction_fee(
+            {"fee_percent": 380, "fee_fixed": 35}, _BENEFIT_ID
+        ) == (380, 35)
+
+    def test_whole_float_values(self) -> None:
+        assert polar_self._extract_transaction_fee(
+            {"fee_percent": 380.0, "fee_fixed": 35.0}, _BENEFIT_ID
+        ) == (380, 35)
+
     @pytest.mark.parametrize(
         "metadata",
         [
             {"fee_fixed": "35"},
             {"fee_percent": "abc", "fee_fixed": "35"},
+            {"fee_percent": True, "fee_fixed": "35"},
+            {"fee_percent": 3.5, "fee_fixed": "35"},
         ],
     )
     def test_invalid_fee_percent_raises(self, metadata: dict[str, Any]) -> None:
@@ -323,6 +335,8 @@ class TestExtractTransactionFee:
         [
             {"fee_percent": "380"},
             {"fee_percent": "380", "fee_fixed": "abc"},
+            {"fee_percent": "380", "fee_fixed": False},
+            {"fee_percent": "380", "fee_fixed": 1.25},
         ],
     )
     def test_invalid_fee_fixed_raises(self, metadata: dict[str, Any]) -> None:
@@ -336,15 +350,29 @@ class TestExtractSupport:
             {"level": "2", "slack": "true", "prioritized": "false"}, _BENEFIT_ID
         ) == (2, True, False)
 
+    def test_native_typed_values(self) -> None:
+        assert polar_self._extract_support(
+            {"level": 2, "slack": True, "prioritized": False}, _BENEFIT_ID
+        ) == (2, True, False)
+
+    def test_whole_float_level(self) -> None:
+        assert polar_self._extract_support(
+            {"level": 2.0, "slack": True, "prioritized": False}, _BENEFIT_ID
+        ) == (2, True, False)
+
     @pytest.mark.parametrize(
         ("metadata", "match"),
         [
             ({"slack": "true", "prioritized": "true"}, "level"),
             ({"level": "abc", "slack": "true", "prioritized": "true"}, "level"),
+            ({"level": True, "slack": "true", "prioritized": "true"}, "level"),
+            ({"level": 1.5, "slack": "true", "prioritized": "true"}, "level"),
             ({"level": "1", "prioritized": "true"}, "slack"),
             ({"level": "1", "slack": "yes", "prioritized": "true"}, "slack"),
+            ({"level": "1", "slack": 1, "prioritized": "true"}, "slack"),
             ({"level": "1", "slack": "true"}, "prioritized"),
             ({"level": "1", "slack": "true", "prioritized": "yes"}, "prioritized"),
+            ({"level": "1", "slack": "true", "prioritized": 0}, "prioritized"),
         ],
     )
     def test_invalid_field_raises(self, metadata: dict[str, Any], match: str) -> None:

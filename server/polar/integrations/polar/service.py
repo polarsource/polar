@@ -193,16 +193,24 @@ class PolarSelfService:
         self, metadata: dict[str, Any], field: str, benefit_id: str
     ) -> int:
         value = metadata.get(field)
-        if not isinstance(value, str):
+        if isinstance(value, bool):
             raise TransactionFeeBenefitError(
                 f"Benefit {benefit_id} has invalid {field}: {value!r}"
             )
-        try:
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float) and value.is_integer():
             return int(value)
-        except ValueError as e:
-            raise TransactionFeeBenefitError(
-                f"Benefit {benefit_id} has invalid {field}: {value!r}"
-            ) from e
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except ValueError as e:
+                raise TransactionFeeBenefitError(
+                    f"Benefit {benefit_id} has invalid {field}: {value!r}"
+                ) from e
+        raise TransactionFeeBenefitError(
+            f"Benefit {benefit_id} has invalid {field}: {value!r}"
+        )
 
     async def _apply_transaction_fee(
         self,
@@ -241,25 +249,36 @@ class PolarSelfService:
     def _extract_support(
         self, metadata: dict[str, Any], benefit_id: str
     ) -> tuple[int, bool, bool]:
-        level_raw = metadata.get("level")
-        if not isinstance(level_raw, str):
-            raise SupportBenefitError(
-                f"Benefit {benefit_id} has invalid level: {level_raw!r}"
-            )
-        try:
-            level = int(level_raw)
-        except ValueError as e:
-            raise SupportBenefitError(
-                f"Benefit {benefit_id} has invalid level: {level_raw!r}"
-            ) from e
+        level = self._parse_support_level(metadata, benefit_id)
         slack = self._parse_bool_metadata(metadata, "slack", benefit_id)
         prioritized = self._parse_bool_metadata(metadata, "prioritized", benefit_id)
         return level, slack, prioritized
+
+    def _parse_support_level(self, metadata: dict[str, Any], benefit_id: str) -> int:
+        value = metadata.get("level")
+        if isinstance(value, bool):
+            raise SupportBenefitError(
+                f"Benefit {benefit_id} has invalid level: {value!r}"
+            )
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float) and value.is_integer():
+            return int(value)
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except ValueError as e:
+                raise SupportBenefitError(
+                    f"Benefit {benefit_id} has invalid level: {value!r}"
+                ) from e
+        raise SupportBenefitError(f"Benefit {benefit_id} has invalid level: {value!r}")
 
     def _parse_bool_metadata(
         self, metadata: dict[str, Any], field: str, benefit_id: str
     ) -> bool:
         value = metadata.get(field)
+        if isinstance(value, bool):
+            return value
         if value == "true":
             return True
         if value == "false":

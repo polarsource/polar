@@ -397,7 +397,7 @@ resource "cloudflare_dns_record" "api" {
   name    = "api.polar.sh"
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
-  proxied = false
+  proxied = true
   ttl     = 1
 }
 
@@ -415,7 +415,7 @@ resource "cloudflare_dns_record" "buy" {
   name    = "buy.polar.sh"
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
-  proxied = false
+  proxied = true
   ttl     = 1
 }
 
@@ -424,7 +424,7 @@ resource "cloudflare_dns_record" "backoffice" {
   name    = "backoffice.polar.sh"
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
-  proxied = false
+  proxied = true
   ttl     = 1
 }
 

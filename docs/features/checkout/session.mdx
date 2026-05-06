@@ -112,6 +112,49 @@ Quite often, you'll have your own users management system in your application, w
 
 After a successful checkout, we'll create a Customer on Polar with the external ID you provided. It'll be provided through the `customer.external_id` property in webhooks you may have configured.
 
+## Customer IP address
+
+When you create a checkout session, Polar uses the IP address of the request to detect the customer's country. This drives features like:
+
+- **Currency auto-detection** for [products with multiple payment currencies](/features/products)
+- **Tax computation** based on the customer's location
+- **Pre-filling the billing country** on the checkout page
+
+If you create checkout sessions directly from the customer's browser, this works automatically. But if you create them from a **backend, proxy, or edge function** (e.g. your own API, a Cloudflare Worker, a Next.js route handler), Polar will see *your server's* IP — not the customer's — and the detection will be wrong.
+
+In that case, forward the customer's IP address as `customer_ip_address` in the request body:
+
+<CodeGroup>
+```ts TypeScript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+const checkout = await polar.checkouts.create({
+  products: ["productId"],
+  customerIpAddress: request.headers.get("CF-Connecting-IP") ?? undefined,
+});
+```
+
+```py Python
+from polar_sdk import Polar
+
+with Polar(access_token="<YOUR_BEARER_TOKEN_HERE>") as polar:
+    checkout = polar.checkouts.create(request={
+        "products": ["<product_id>"],
+        "customer_ip_address": request.client.host,
+    })
+```
+</CodeGroup>
+
+The exact way to read the connecting IP depends on your runtime — for example, `CF-Connecting-IP` on Cloudflare Workers, `x-forwarded-for` behind most proxies, or `request.client.host` in FastAPI.
+
+<Note>
+  When `customer_ip_address` is provided, you don't need to set `customer_billing_address.country` yourself — Polar will derive both the country and the currency from the IP.
+</Note>
+
 ## SDK examples
 
 Using our SDK, creating a checkout session is quite straightforward.

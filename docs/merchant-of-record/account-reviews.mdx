@@ -26,61 +26,42 @@ In a continuous review, we look at two things: that your use case is still withi
 
 ## Operational Guidelines
 
-To maintain platform integrity and ensure smooth operations, we have established clear guidelines for merchants using Polar.
+### Customer Support
 
-#### Expected Responsiveness
+You're responsible for supporting your own customers. The volume of support requests we receive about your account, and how you handle them when we loop you in, both factor into our reviews.
 
-We expect merchants to maintain high standards of customer support and responsiveness to their customers:
+When we include you in a customer support thread, we expect a response within **48 hours**. If we don't hear back, we may refund the affected customers and issue a warning. Repeated unresponsiveness leads to offboarding.
 
-- **Support Ticket Management**: Maintain a low rate of support tickets from customers
-- **Merchant Communication**: When we include you in customer support communications, we require a response within 48 hours
-  - If no response is received within 48 hours, we may issue refunds to affected customers and a warning to merchants
-  - In case of repeated issues, we'll have to offboard unresponsive merchants
-- **Customer Service Quality**: We evaluate your customer service history and approach when determining appropriate actions
+### Test Transactions
 
-#### Test Transactions
+Don't run test purchases with real card details. Payment processors flag this as "card testing" and can block the card or your account, and it triggers our own account reviews.
 
-To maintain platform security and prevent abuse:
+Use our sandbox environment instead. If you need to verify something in production, set up a free product or a 100% discount code so no real money changes hands.
 
-- **Use Sandbox Environment or 100% Discounts**: All  testing must be conducted using our sandbox environment. Want to test in production? Use a Free Product or a 100% Discount code to avoid using real money.
-- **No Real Money Testing**: Test transactions using real card details are prohibited. It's against the terms of payment service providers, triggers our account reviews and can potentially lead to the card or account getting blocked since it can be flagged as "card testing".
+### Chargeback Management
 
-#### Chargeback Management
+We hold accounts to a **0.4% chargeback rate** — well below the 0.7% threshold the card networks themselves treat as excessive. Customers can file chargebacks up to 120 days after a transaction, so we monitor these continuously.
 
-We monitor chargeback rates closely to protect both merchants and customers:
+If your rate climbs toward our threshold, we'll reach out first to collaborate on bringing it down. If that doesn't work, we may take the following actions, in order of severity:
 
-- **Acceptable Threshold**: We maintain a chargeback rate threshold of 0.4% for merchants
-- **Timeframe**: Chargebacks can be filed up to 120 days from the original transaction date
-- **Consequences of High Chargeback Rates**:
+1. Refund individual transactions as needed.
+2. Pause payouts pending review, until the 120-day chargeback window for those transactions has closed.
+3. Pause future payments.
+4. Block the account and refund customers.
 
-  We work proactively to maintain a low chargeback rate throughout the platform and strive to collaborate with merchants at risk of exceeding our thresholds to reverse the trend. However, we reserve the right to (in order of severity):
-  - Refund transactions as needed
-  - Pause payouts pending review – up until the timeframe for chargebacks have been surpassed
-  - Pause future payments
-  - Block accounts and refund customers
+We don't take any of these actions lightly and always try to resolve issues with you first.
 
-  We don't take this responsibility or actions lightly, and always strive to mitigate and avoid them, but have to take appropriate and proactive actions in case of issues.
+<Note>
+  We integrate with credit card networks to receive early chargeback signals before they're officially filed. Below a certain transaction value, we automatically refund and cancel any related subscription to reduce chargebacks proactively.
+</Note>
 
-  <Note>
-    We also have integrations with credit card networks to receive early chargeback signals before they're officially filed. We automatically refund such transactions under a certain value and cancel any subscriptions associated with the customer to reduce chargebacks proactively.
-  </Note>
+### Policy Violations
 
-#### Policy Violations
+When an account violates our [Acceptable Use Policy](/merchant-of-record/acceptable-use) — separately from chargeback issues — we offboard the merchant. Payment processing is blocked and payouts are paused pending review.
 
-For merchants who violate our [acceptable use policies](/merchant-of-record/acceptable-use) (and don't have high chargeback rates):
+If we suspect fraud or intentional abuse, we block the account immediately. Otherwise, we reach out and give you 48 hours to respond; failure to respond may result in refunds to affected customers. We may also run test transactions ourselves to verify account status.
 
-- **Immediate Action**: We will offboard merchants who violate our policies
-- **Payment Processing**: All payment processing will be blocked
-- **Payout Management**: Payouts will be paused pending review
-- **Resolution Process**:
-  - We may conduct test transactions to verify account status
-  - In case of strong suspicion of fraud or intentional abuse, we block the account immediately
-  - We reach out merchants about the issue and give them 48 hours to respond
-    - Failure to respond may result in refunds to affected customers
-  - We pause future payments in the meantime if deemed necessary
-  - We pause payouts during the resolution process
-  - We strive to collaborate with merchants on the best possible path forward. Clear fraud or abuse, however, is immediately blocked.
-  - We have to cancel subscriptions and refund payments made in violation of our acceptable use policies for compliance and risk, and strive to do so in collaboration with the merchant.
+We aim to work with you on the best path forward, but for compliance and risk reasons we have to cancel subscriptions and refund payments made in violation of the policy.
 
 ## FAQ
 

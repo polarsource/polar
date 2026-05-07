@@ -97,7 +97,6 @@ SQL >
         toInt64(
             countIf(
                 lc.customer_cancellation_reason = 'other'
-                OR lc.customer_cancellation_reason IS NULL
                 OR lc.customer_cancellation_reason = ''
             )
         ) AS canceled_subscriptions_other

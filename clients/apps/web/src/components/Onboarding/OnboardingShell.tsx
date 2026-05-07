@@ -116,8 +116,8 @@ export function OnboardingShell({
                           borderRadius="full"
                           backgroundColor={
                             i <= currentIndex
-                              ? 'text-primary'
-                              : 'border-primary'
+                              ? 'background-inverse'
+                              : 'background-card'
                           }
                         />
                       </Box>

@@ -39,6 +39,10 @@ export const backgroundColors = stylex.defineVars({
     default: 'oklch(96.7% 0.003 264.54)',
     [DARK]: 'hsl(233, 4%, 9.5%)',
   },
+  'background-inverse': {
+    default: 'oklch(0.21 0.034 264.665)',
+    [DARK]: 'oklch(1.000 0.000 263.3)',
+  },
   'background-warning': {
     default: 'oklch(0.97 0.026 102.5)',
     [DARK]: 'oklch(0.445 0.1 82.5 / 0.2)',

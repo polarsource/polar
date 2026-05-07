@@ -5,7 +5,6 @@ import type {
   BorderColorToken,
   BorderRadiusToken,
   BreakpointKey,
-  ColorToken,
   ShadowToken,
   SpacingToken,
   TextColorToken,
@@ -173,14 +172,14 @@ function marginCss(token: SpacingToken | 'auto'): string {
   if (token === 'auto') return 'auto'
   return spacing[token] as string
 }
-function colorCss(token: ColorToken): string {
-  if (token in backgroundColors) {
-    return backgroundColors[token as BackgroundColorToken] as string
-  }
-  if (token in textColors) {
-    return textColors[token as TextColorToken] as string
-  }
-  return borderColors[token as BorderColorToken] as string
+function backgroundColorCss(token: BackgroundColorToken): string {
+  return backgroundColors[token] as string
+}
+function textColorCss(token: TextColorToken): string {
+  return textColors[token] as string
+}
+function borderColorCss(token: BorderColorToken): string {
+  return borderColors[token] as string
 }
 function radiusCss(token: BorderRadiusToken): string {
   return borderRadii[token] as string
@@ -471,10 +470,15 @@ export function resolveBoxStyles(
     backgroundColorStyles,
     'background-color',
     props.backgroundColor,
-    colorCss,
+    backgroundColorCss,
   )
-  addTokenProp(colorStyles, 'color', props.color, colorCss)
-  addTokenProp(borderColorStyles, 'border-color', props.borderColor, colorCss)
+  addTokenProp(colorStyles, 'color', props.color, textColorCss)
+  addTokenProp(
+    borderColorStyles,
+    'border-color',
+    props.borderColor,
+    borderColorCss,
+  )
 
   // --- Border radius (token-based) ---
   addTokenProp(

@@ -400,7 +400,7 @@ const FrameworkCard = ({
         borderWidth={1}
         borderStyle="solid"
         borderColor={active ? 'border-secondary' : 'border-primary'}
-        backgroundColor={active ? 'text-primary' : 'background-secondary'}
+        backgroundColor={active ? 'background-card' : 'background-secondary'}
         padding="l"
       >
         {icon ?? (
@@ -408,7 +408,7 @@ const FrameworkCard = ({
             height={32}
             width={32}
             borderRadius="full"
-            backgroundColor="border-primary"
+            backgroundColor="background-secondary"
           />
         )}
         <h2 className="text-lg">{name}</h2>

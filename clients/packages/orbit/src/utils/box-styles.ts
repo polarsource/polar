@@ -254,6 +254,9 @@ export const backgroundColorStyles = stylex.create({
     backgroundColor: backgroundColors['background-secondary'],
   },
   'background-card': { backgroundColor: backgroundColors['background-card'] },
+  'background-inverse': {
+    backgroundColor: backgroundColors['background-inverse'],
+  },
   'background-warning': {
     backgroundColor: backgroundColors['background-warning'],
   },
@@ -266,26 +269,9 @@ export const backgroundColorStyles = stylex.create({
   'background-pending': {
     backgroundColor: backgroundColors['background-pending'],
   },
-  'text-primary': { backgroundColor: textColors['text-primary'] },
-  'text-secondary': { backgroundColor: textColors['text-secondary'] },
-  'text-tertiary': { backgroundColor: textColors['text-tertiary'] },
-  'text-success': { backgroundColor: textColors['text-success'] },
-  'text-danger': { backgroundColor: textColors['text-danger'] },
-  'text-warning': { backgroundColor: textColors['text-warning'] },
-  'text-pending': { backgroundColor: textColors['text-pending'] },
-  'border-primary': { backgroundColor: borderColors['border-primary'] },
-  'border-secondary': { backgroundColor: borderColors['border-secondary'] },
-  'border-warning': { backgroundColor: borderColors['border-warning'] },
 })
 
 export const colorStyles = stylex.create({
-  'background-primary': { color: backgroundColors['background-primary'] },
-  'background-secondary': { color: backgroundColors['background-secondary'] },
-  'background-card': { color: backgroundColors['background-card'] },
-  'background-warning': { color: backgroundColors['background-warning'] },
-  'background-success': { color: backgroundColors['background-success'] },
-  'background-danger': { color: backgroundColors['background-danger'] },
-  'background-pending': { color: backgroundColors['background-pending'] },
   'text-primary': { color: textColors['text-primary'] },
   'text-secondary': { color: textColors['text-secondary'] },
   'text-tertiary': { color: textColors['text-tertiary'] },
@@ -293,28 +279,9 @@ export const colorStyles = stylex.create({
   'text-danger': { color: textColors['text-danger'] },
   'text-warning': { color: textColors['text-warning'] },
   'text-pending': { color: textColors['text-pending'] },
-  'border-primary': { color: borderColors['border-primary'] },
-  'border-secondary': { color: borderColors['border-secondary'] },
-  'border-warning': { color: borderColors['border-warning'] },
 })
 
 export const borderColorStyles = stylex.create({
-  'background-primary': { borderColor: backgroundColors['background-primary'] },
-  'background-secondary': {
-    borderColor: backgroundColors['background-secondary'],
-  },
-  'background-card': { borderColor: backgroundColors['background-card'] },
-  'background-warning': { borderColor: backgroundColors['background-warning'] },
-  'background-success': { borderColor: backgroundColors['background-success'] },
-  'background-danger': { borderColor: backgroundColors['background-danger'] },
-  'background-pending': { borderColor: backgroundColors['background-pending'] },
-  'text-primary': { borderColor: textColors['text-primary'] },
-  'text-secondary': { borderColor: textColors['text-secondary'] },
-  'text-tertiary': { borderColor: textColors['text-tertiary'] },
-  'text-success': { borderColor: textColors['text-success'] },
-  'text-danger': { borderColor: textColors['text-danger'] },
-  'text-warning': { borderColor: textColors['text-warning'] },
-  'text-pending': { borderColor: textColors['text-pending'] },
   'border-primary': { borderColor: borderColors['border-primary'] },
   'border-secondary': { borderColor: borderColors['border-secondary'] },
   'border-warning': { borderColor: borderColors['border-warning'] },

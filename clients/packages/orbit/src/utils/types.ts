@@ -1,9 +1,11 @@
 import type {
+  BackgroundColorToken,
+  BorderColorToken,
   BorderRadiusToken,
   BreakpointKey,
-  ColorToken,
   ShadowToken,
   SpacingToken,
+  TextColorToken,
 } from '../tokens/tokens.stylex'
 
 export type PseudoState =
@@ -55,9 +57,9 @@ export interface SpacingProps {
 }
 
 export interface ColorProps {
-  backgroundColor?: ResponsiveValue<ColorToken>
-  color?: ResponsiveValue<ColorToken>
-  borderColor?: ResponsiveValue<ColorToken>
+  backgroundColor?: ResponsiveValue<BackgroundColorToken>
+  color?: ResponsiveValue<TextColorToken>
+  borderColor?: ResponsiveValue<BorderColorToken>
 }
 
 export interface BorderProps {

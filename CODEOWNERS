@@ -2,7 +2,7 @@
 * @polarsource/engineering
 
 # Backend
-server/** @frankie567
+server/** @frankie567 @polarsource/engineering
 server/polar/metrics/** @Yopi @pieterbeulque
 server/tests/metrics/** @Yopi @pieterbeulque
 server/polar/organization_review/** @psincraian

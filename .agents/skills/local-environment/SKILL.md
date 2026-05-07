@@ -52,21 +52,21 @@ You can override with `-i N` if needed, but auto-detection handles Conductor wor
 | api | 8000 | FastAPI backend |
 | worker | - | Background job processor |
 | web | 3000 | Next.js frontend |
-| db | 5432 | PostgreSQL database |
-| redis | 6379 | Redis cache |
-| minio | 9000/9001 | S3-compatible storage |
-| prometheus | 9090 | Metrics (optional) |
-| grafana | 3001 | Dashboards (optional) |
+| db | - (shared) | PostgreSQL database |
+| redis | - (shared) | Redis cache |
+| minio | - (shared) | S3-compatible storage |
+| prometheus | - (shared) | Metrics (optional) |
+| grafana | - (shared) | Dashboards (optional) |
 
 ## Instance Port Mapping
 
-For manually started instances: `Port = Base Port + (Instance × 100)`
+Port = Base Port + (Instance × 100). Only app services (API, Web) expose host ports. Shared infrastructure is accessed via `dev docker exec <service>`.
 
-| Instance | API | Web | DB | Redis | MinIO |
-|----------|-----|-----|-----|-------|-------|
-| 0 | 8000 | 3000 | 5432 | 6379 | 9000 |
-| 1 | 8100 | 3100 | 5532 | 6479 | 9100 |
-| 2 | 8200 | 3200 | 5632 | 6579 | 9200 |
+| Instance | API | Web |
+|----------|-----|-----|
+| 0 | 8000 | 3000 |
+| 1 | 8100 | 3100 |
+| 2 | 8200 | 3200 |
 
 Shared infra (db/redis/minio/tinybird) runs under the `polar-shared` project
 without host port mappings — reach it via `dev docker exec <service>` or

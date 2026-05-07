@@ -256,7 +256,6 @@ This single command will:
 | ------------- | --------------------- |
 | Web Frontend  | http://localhost:3000 |
 | API Server    | http://localhost:8000 |
-| MinIO Console | http://localhost:9001 |
 
 ### Common Commands
 
@@ -301,20 +300,18 @@ dev docker up -i 2 -d
 Each instance has its own:
 
 - Docker containers and networks
-- PostgreSQL database
-- Redis instance
-- MinIO storage
+- PostgreSQL database (on shared PostgreSQL server)
+- Redis DB index (on shared Redis server)
+- S3 bucket pair (on shared MinIO server)
 
 ### Port Mapping
+
+Only API and Web services expose host ports. Shared infrastructure (PostgreSQL, Redis, MinIO) is accessed via `dev docker exec <service>` commands.
 
 | Service       | Instance 0 | Instance 1 | Instance 2 |
 | ------------- | ---------- | ---------- | ---------- |
 | API           | 8000       | 8100       | 8200       |
 | Web           | 3000       | 3100       | 3200       |
-| PostgreSQL    | 5432       | 5532       | 5632       |
-| Redis         | 6379       | 6479       | 6579       |
-| MinIO API     | 9000       | 9100       | 9200       |
-| MinIO Console | 9001       | 9101       | 9201       |
 
 ### Hot-Reloading
 

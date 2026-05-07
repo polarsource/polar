@@ -107,15 +107,15 @@ Wait for the web port to be reachable (`dev docker ps` shows the instance-specif
 If the DB is empty, seed it:
 
 ```bash
-docker exec polar-dev-<N>-api-1 bash -c "cd /app/server && uv run python -m scripts.seeds_load"
+docker exec polar-app-<N>-api-1 bash -c "cd /app/server && uv run python -m scripts.seeds_load"
 ```
 
 ### 5. Capture screenshots (subagent, `general-purpose`)
 
 Launch a `general-purpose` subagent with the list of accepted MAJOR features. Tell it:
 
-- Log in at `http://localhost:<web-port>/auth` as `admin@polar.sh`. The email domain must be real (polar.sh works) or login validation rejects it. Grab the login code with `docker logs polar-dev-<N>-api-1 --since 30s 2>&1 | grep -oE 'LOGIN CODE: [A-Z0-9]+' | tail -1`.
-- If a feature lives in an org that `admin@polar.sh` is not a member of, rename the seeded owner's email to a real `@polar.sh` domain (e.g. `UPDATE users SET email='merchant@polar.sh' WHERE email='support@meltedsql.com'`) and restart the web container so Next.js re-fetches the user's org list: `docker restart polar-dev-<N>-web-1`.
+- Log in at `http://localhost:<web-port>/login` as `admin@polar.sh`. The email domain must be real (polar.sh works) or login validation rejects it. Grab the login code with `docker logs polar-app-<N>-api-1 --since 30s 2>&1 | grep -oE 'LOGIN CODE: [A-Z0-9]+' | tail -1`.
+- If a feature lives in an org that `admin@polar.sh` is not a member of, rename the seeded owner's email to a real `@polar.sh` domain (e.g. `UPDATE users SET email='merchant@polar.sh' WHERE email='support@meltedsql.com'`) and restart the web container so Next.js re-fetches the user's org list: `docker restart polar-app-<N>-web-1`.
 - **Prefer clicking through the UI or calling documented API endpoints to create the state you need.** That path exercises real validation and produces screenshots that will not drift when schemas change. Fall back to direct SQL only for states the product does not let you reach through normal flows (e.g. placing a subscription into a pre-scheduled update that is applied by a cron job), or for minor tidy-up so the UI reads clearly (e.g. removing placeholder rows that distract from what the screenshot is about).
 - Read the relevant frontend component first to understand what data the screenshot actually needs, then pick the shortest path to get there.
 - Use Playwright MCP (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_take_screenshot`) and save to `docs/assets/changelog/YYYY-MM-DD/<slug>.png`. Create the directory first.

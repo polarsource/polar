@@ -8,7 +8,7 @@ import { useDeleteBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,11 +121,10 @@ export const BenefitRow = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox
+          <Switch
             checked={selected}
-            onCheckedChange={(checked) => onToggle(benefit, checked === true)}
+            onCheckedChange={(checked) => onToggle(benefit, checked)}
             disabled={!benefit.selectable}
-            className="cursor-pointer"
           />
           <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none" asChild>

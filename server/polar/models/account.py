@@ -35,8 +35,8 @@ class Account(RecordModel):
     _platform_fee_fixed: Mapped[int | None] = mapped_column(
         Integer, name="platform_fee_fixed", nullable=True, default=None
     )
-    payout_transaction_delay: Mapped[timedelta | None] = mapped_column(
-        Interval, nullable=True, default=timedelta(days=7)
+    payout_transaction_delay: Mapped[timedelta] = mapped_column(
+        Interval, nullable=False, default=timedelta(days=7)
     )
 
     campaign_id: Mapped[UUID | None] = mapped_column(

@@ -707,11 +707,15 @@ class OrganizationService:
         payout_account: PayoutAccount,
     ) -> Organization:
         organization_repository = OrganizationRepository.from_session(session)
-        return await organization_repository.update(
+        await organization_repository.update(
             organization,
             update_dict={"payout_account_id": payout_account.id},
             flush=True,
         )
+        # Reusing an already-ready payout account doesn't fire a Stripe
+        # `account.updated` webhook, so attempt activation here too.
+        await self.maybe_activate(session, organization)
+        return organization
 
     async def add_user(
         self,

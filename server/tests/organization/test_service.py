@@ -2967,6 +2967,49 @@ class TestSetPayoutAccount:
 
         assert updated_org.payout_account_id == payout_account.id
 
+    @pytest.mark.auth
+    async def test_activates_when_all_gates_pass(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime(2026, 5, 4, 12, 0, tzinfo=UTC)
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams."
+        }
+        await save_fixture(organization)
+
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Clean",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        updated_org = await organization_service.set_payout_account(
+            session, organization, payout_account
+        )
+
+        assert updated_org.payout_account_id == payout_account.id
+        assert updated_org.status == OrganizationStatus.ACTIVE
+
 
 @pytest.mark.asyncio
 class TestStatusTransitions:

@@ -108,6 +108,24 @@ to prohibited content (adult sites, gambling, etc.). Any cross-domain redirect f
 checkout URL is a strong red flag and should be treated as HIGH risk unless the final \
 destination is a known service domain.
 
+**Pricing setup**: How the organization has configured its prices is part of how it's \
+set up to sell. Custom and ad-hoc pricing should be judged differently:
+
+- **Pay-what-you-want (custom amount_type)** — contextual. Not a red flag on its own.
+  - Legitimate fit: open-source sponsorship, creator/community support, donations to a \
+project, tipping. PWYW is the EXPECTED model here.
+  - Suspicious fit: SaaS subscriptions, software licenses, human services (web design, \
+consulting), or any product with a defined deliverable and market price. A SaaS that \
+charges "whatever the customer enters" doesn't make sense as a business model — flag here.
+
+- **Ad-hoc prices (catalog price overridden via API at checkout)** — edgy. The public \
+catalog price is not what's actually being charged: each checkout gets a one-off price. \
+A $1 catalog product paired with ad-hoc prices is the classic abuse pattern. If the \
+ad-hoc count is non-zero, default to DENY so a human reviews it — UNLESS the prior \
+human-approval rule applies (a previous human reviewer already approved this org with \
+the same ad-hoc pricing pattern in view). Don't re-raise a concern a human has already \
+resolved.
+
 ## Verdict Guidelines
 
 - **APPROVE**: All dimensions are LOW risk, no policy violations, \
@@ -234,6 +252,24 @@ is expected — the user is supporting the project, not buying a product. Do not
 with prohibited "donations" (which refers to charity/non-profit fundraising, not open source support).
 **Lesson**: Open source project support is always acceptable. Low volume with no benefits is \
 normal for this category — do not flag it.
+
+### Example 9b: SaaS with $1 Catalog Product + Ad-hoc Prices → DENY (human review)
+**Business**: Self-described SaaS in private beta. Catalog has a $1 fixed-price product \
+and a separate product for "human services (web development)". Many ad-hoc prices have been \
+created at checkout, billing amounts well above $1.
+**Agent concern**: Ad-hoc pricing exists on the account.
+**Correct verdict**: DENY. Ad-hoc prices alone are enough to route this to a human reviewer, \
+and the rest of the picture reinforces that decision: the $1 catalog listing is a façade \
+(the real prices are set per-checkout, hidden from the public catalog), the stated business \
+is a SaaS where defined tiers are expected, and the separate "human services" product is \
+itself unsupported (Polar does not handle pure human services). A human reviewer can confirm \
+or override; the agent should not auto-approve.
+**Lesson**: Ad-hoc prices are edgy on their own — default to DENY so a human looks at it. \
+Pay-what-you-want is contextual (fine for OSS support, suspicious for SaaS), but ad-hoc \
+prices override the catalog itself and are a structural mismatch with how a public catalog \
+is supposed to work. When in doubt, DENY and let a human approve. Exception: if a prior \
+human reviewer already approved this org while the same ad-hoc pricing was in place, \
+trust that approval and do not re-raise.
 
 ### Example 10: Small-Volume Org with High Refund Rate → APPROVE (Threshold)
 **Business**: Legitimate SaaS with 3 succeeded payments and 1 refund (33% refund rate). \
@@ -404,7 +440,8 @@ overrides agent-level concerns. Specifically:
 - Do NOT re-raise the SAME concerns that were raised in prior agent reviews and resolved \
 by a human approval. This includes: setup/integration concerns, website concerns, \
 cross-domain redirects, missing webhooks, missing checkout link benefits, domain \
-mismatches, and policy concerns the human already considered.
+mismatches, ad-hoc / pay-what-you-want pricing concerns, and policy concerns the human \
+already considered.
 - The ONLY reasons to deny an org with prior human approval are:
   1. NEW evidence of a clearly prohibited business (e.g., the org pivoted to selling \
 prohibited content like adult/gambling/financial trading).
@@ -694,6 +731,17 @@ class ReviewAnalyzer:
                         else:
                             price_strs.append(str(pr.get("amount_type", "unknown")))
                     parts.append(f"  Prices: {', '.join(price_strs)}")
+
+            if products.custom_pricing_products_count > 0:
+                parts.append(
+                    f"Pay-what-you-want products (customer enters the amount): "
+                    f"{products.custom_pricing_products_count} of {products.total_count}"
+                )
+            if products.adhoc_prices_count > 0:
+                parts.append(
+                    f"Ad-hoc prices created at checkout via the API "
+                    f"(overriding the catalog price): {products.adhoc_prices_count}"
+                )
 
         # Setup & Integration Signals (only for threshold/manual reviews)
         setup = snapshot.setup

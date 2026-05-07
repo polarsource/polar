@@ -123,7 +123,8 @@ async def _collect_products(
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         products = await repo.get_products_with_prices(organization_id)
-        return collect_products_data(products)
+        adhoc_prices_count = await repo.get_adhoc_price_count(organization_id)
+        return collect_products_data(products, adhoc_prices_count=adhoc_prices_count)
 
 
 async def _collect_setup(organization_id: UUID, context: ReviewContext) -> SetupData:

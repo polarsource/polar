@@ -1,10 +1,14 @@
 from polar.models.product import Product
+from polar.models.product_price import ProductPriceAmountType
 
 from ..schemas import ProductData, ProductsData
 
 
-def collect_products_data(products: list[Product]) -> ProductsData:
+def collect_products_data(
+    products: list[Product], adhoc_prices_count: int = 0
+) -> ProductsData:
     product_data_list = []
+    custom_pricing_products_count = 0
     for product in products:
         prices = []
         for price in product.prices:
@@ -16,6 +20,9 @@ def collect_products_data(products: list[Product]) -> ProductsData:
             if hasattr(price, "price_currency"):
                 price_info["currency"] = price.price_currency
             prices.append(price_info)
+
+        if any(p.amount_type == ProductPriceAmountType.custom for p in product.prices):
+            custom_pricing_products_count += 1
 
         product_data_list.append(
             ProductData(
@@ -33,4 +40,6 @@ def collect_products_data(products: list[Product]) -> ProductsData:
     return ProductsData(
         products=product_data_list,
         total_count=len(product_data_list),
+        adhoc_prices_count=adhoc_prices_count,
+        custom_pricing_products_count=custom_pricing_products_count,
     )

@@ -1,7 +1,7 @@
 """add organization snoozed_until + snooze_type columns
 
 Revision ID: 9b1f3a4c2d8e
-Revises: 376207345f0f
+Revises: 01607ddf3d7f
 Create Date: 2026-05-07 10:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9b1f3a4c2d8e"
-down_revision = "376207345f0f"
+down_revision = "01607ddf3d7f"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

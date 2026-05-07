@@ -457,6 +457,62 @@ class TestLicenseKeyEndpoints:
         )
 
 
+@pytest.mark.asyncio
+class TestCustomerUpdateGrant:
+    @pytest.mark.parametrize(
+        "preserved_status",
+        [LicenseKeyStatus.disabled, LicenseKeyStatus.revoked],
+    )
+    async def test_preserves_status_on_benefit_update(
+        self,
+        preserved_status: LicenseKeyStatus,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                activations=BenefitLicenseKeyActivationCreateProperties(
+                    limit=1, enable_customer_admin=True
+                ),
+            ),
+        )
+
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+        lk.status = preserved_status
+        session.add(lk)
+        await session.flush()
+
+        benefit.properties = {
+            **benefit.properties,
+            "activations": {"limit": 5, "enable_customer_admin": True},
+        }
+        await save_fixture(benefit)
+
+        await license_key_service.customer_grant(
+            session,
+            customer=customer,
+            benefit=benefit,
+            license_key_id=lk.id,
+        )
+
+        await session.refresh(lk)
+        assert lk.status == preserved_status
+        assert lk.limit_activations == 5
+
+
 @pytest_asyncio.fixture
 async def license_key_organization_second(
     session: AsyncSession,

@@ -341,7 +341,7 @@ dev docker up -b -d
 
 **worker (Background Jobs)**
 
-- Dramatiq with 3 queues: high/medium/low priority
+- Dramatiq with 5 queues: high/medium/low priority, tinybird, invoices_and_receipts
 - No exposed port
 - Hot-reload enabled
 - Depends on: db, redis, minio, api

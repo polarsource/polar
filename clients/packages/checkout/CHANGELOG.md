@@ -17,7 +17,7 @@
   The theme should now be passed in an object when calling `PolarEmbedCheckout.create`:
 
   ```ts
-  PolarEmbedCheckout.create("__CHECKOUT_LINK__", { theme: "dark" });
+  PolarEmbedCheckout.create('__CHECKOUT_LINK__', { theme: 'dark' })
   ```
 
 ## 0.1.15

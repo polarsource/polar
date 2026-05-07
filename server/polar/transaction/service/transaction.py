@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import aliased, joinedload, subqueryload
 
@@ -146,28 +146,69 @@ class TransactionService(BaseTransactionService):
     async def get_summary(
         self, session: AsyncReadSession, account: Account
     ) -> TransactionsSummary:
-        statement = select(
-            cast(type[int], func.coalesce(func.sum(Transaction.amount), 0)),
-            cast(type[int], func.coalesce(func.sum(Transaction.account_amount), 0)),
-            cast(
-                type[int],
-                func.coalesce(
-                    func.sum(Transaction.amount).filter(
-                        Transaction.type == TransactionType.payout
+        statement = (
+            select(
+                # Total balance (all transactions)
+                cast(type[int], func.coalesce(func.sum(Transaction.amount), 0)),
+                cast(type[int], func.coalesce(func.sum(Transaction.account_amount), 0)),
+                # Payout balance
+                cast(
+                    type[int],
+                    func.coalesce(
+                        func.sum(Transaction.amount).filter(
+                            Transaction.type == TransactionType.payout
+                        ),
+                        0,
                     ),
-                    0,
                 ),
-            ),
-            cast(
-                type[int],
-                func.coalesce(
-                    func.sum(Transaction.account_amount).filter(
-                        Transaction.type == TransactionType.payout
+                cast(
+                    type[int],
+                    func.coalesce(
+                        func.sum(Transaction.account_amount).filter(
+                            Transaction.type == TransactionType.payout
+                        ),
+                        0,
                     ),
-                    0,
                 ),
-            ),
-        ).where(Transaction.account_id == account.id)
+                # Available balance (payouts + aged non-payouts)
+                cast(
+                    type[int],
+                    func.coalesce(
+                        func.sum(Transaction.amount).filter(
+                            or_(
+                                Transaction.type == TransactionType.payout,
+                                and_(
+                                    Transaction.type != TransactionType.payout,
+                                    Transaction.created_at
+                                    + Account.payout_transaction_delay
+                                    <= func.now(),
+                                ),
+                            )
+                        ),
+                        0,
+                    ),
+                ),
+                cast(
+                    type[int],
+                    func.coalesce(
+                        func.sum(Transaction.account_amount).filter(
+                            or_(
+                                Transaction.type == TransactionType.payout,
+                                and_(
+                                    Transaction.type != TransactionType.payout,
+                                    Transaction.created_at
+                                    + Account.payout_transaction_delay
+                                    <= func.now(),
+                                ),
+                            )
+                        ),
+                        0,
+                    ),
+                ),
+            )
+            .where(Transaction.account_id == account.id)
+            .join(Account, Account.id == Transaction.account_id)
+        )
 
         result = await session.execute(statement)
 
@@ -181,12 +222,16 @@ class TransactionService(BaseTransactionService):
                 account_amount,
                 payout_amount,
                 account_payout_amount,
+                available_amount,
+                available_account_amount,
             ) = result.one()._tuple()
         except NoResultFound:
             amount = 0
             account_amount = 0
             payout_amount = 0
             account_payout_amount = 0
+            available_amount = 0
+            available_account_amount = 0
 
         return TransactionsSummary(
             balance=TransactionsBalance(
@@ -194,6 +239,12 @@ class TransactionService(BaseTransactionService):
                 amount=amount,
                 account_currency=account_currency,
                 account_amount=account_amount,
+            ),
+            available_balance=TransactionsBalance(
+                currency=currency,
+                amount=available_amount,
+                account_currency=account_currency,
+                account_amount=available_account_amount,
             ),
             payout=TransactionsBalance(
                 currency=currency,

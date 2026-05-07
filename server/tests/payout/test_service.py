@@ -1,4 +1,5 @@
 import datetime
+from datetime import timedelta
 from functools import partial
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -59,9 +60,16 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-create_payment_transaction = partial(ro.create_payment_transaction, amount=10000)
-create_refund_transaction = partial(ro.create_refund_transaction, amount=-10000)
-create_balance_transaction = partial(ro.create_balance_transaction, amount=10000)
+ten_days_ago = utc_now() - timedelta(days=10)
+create_payment_transaction = partial(
+    ro.create_payment_transaction, amount=10000, created_at=ten_days_ago
+)
+create_refund_transaction = partial(
+    ro.create_refund_transaction, amount=-10000, created_at=ten_days_ago
+)
+create_balance_transaction = partial(
+    ro.create_balance_transaction, amount=10000, created_at=ten_days_ago
+)
 
 
 @pytest.mark.asyncio
@@ -206,6 +214,56 @@ class TestCreate:
         assert payout.fees_amount > 0
         assert payout.account_currency == "usd"
         assert payout.account_amount > 0
+
+        payout_transaction_service_mock.create.assert_called_once()
+
+    async def test_available_balance_with_delay(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        user: User,
+        account: Account,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+
+        now = utc_now()
+
+        # Create an old balance transaction (8 days ago - should be available)
+        payment_transaction_old = await create_payment_transaction(
+            save_fixture, created_at=now - timedelta(days=8)
+        )
+        balance_transaction_old = await create_balance_transaction(
+            save_fixture,
+            account=account,
+            payment_transaction=payment_transaction_old,
+            created_at=now - timedelta(days=8),
+        )
+
+        # Create a recent balance transaction (2 days ago - should NOT be available)
+        payment_transaction_recent = await create_payment_transaction(
+            save_fixture, created_at=now - timedelta(days=2)
+        )
+        balance_transaction_recent = await create_balance_transaction(
+            save_fixture,
+            account=account,
+            payment_transaction=payment_transaction_recent,
+            created_at=now - timedelta(days=2),
+        )
+
+        payout_transaction_service_mock.create.return_value = Transaction()
+
+        payout = await payout_service.create(session, locker, organization)
+
+        assert payout.account == account
+        assert payout.payout_account == payout_account
+        # The payout amount should only include the old balance (10000) that's available
+        # The recent balance (10000) is excluded because it's only 2 days old (< 7 days)
+        # So we expect payout amount to be based on available_balance = 10000 (from old balance only)
+        assert payout.amount == 10000 - payout.fees_amount
+        assert payout.account_amount == 10000 - payout.fees_amount
 
         payout_transaction_service_mock.create.assert_called_once()
 

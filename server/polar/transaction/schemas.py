@@ -86,4 +86,5 @@ class TransactionsBalance(Schema):
 
 class TransactionsSummary(Schema):
     balance: TransactionsBalance
+    available_balance: TransactionsBalance
     payout: TransactionsBalance

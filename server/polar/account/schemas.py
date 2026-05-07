@@ -16,6 +16,9 @@ class Account(TimestampedSchema, IDSchema):
     payout_interval: int = Field(
         description="Minimum delay, in seconds, between two payout requests.",
     )
+    payout_transaction_delay: timedelta = Field(
+        description="Delay after which a transaction becomes available for payout."
+    )
 
     @field_validator("payout_interval", mode="before")
     @classmethod

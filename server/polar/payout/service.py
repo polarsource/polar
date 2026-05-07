@@ -269,9 +269,8 @@ class PayoutService:
         account = organization.account
         payout_account = organization.get_ready_payout_account()
 
-        balance_amount = await transaction_service.get_transactions_sum(
-            session, account.id
-        )
+        summary = await transaction_service.get_summary(session, account)
+        balance_amount = summary.available_balance.amount
         minimum_amount = settings.get_minimum_payout(
             payout_account.currency, payout_account.country
         )
@@ -335,9 +334,8 @@ class PayoutService:
 
             payout_account = organization.get_ready_payout_account()
 
-            balance_amount = await transaction_service.get_transactions_sum(
-                session, account.id
-            )
+            summary = await transaction_service.get_summary(session, account)
+            balance_amount = summary.available_balance.amount
             minimum_amount = settings.get_minimum_payout(
                 payout_account.currency, payout_account.country
             )

@@ -1884,6 +1884,7 @@ async def create_payment_transaction(
     pledge: Pledge | None = None,
     order: Order | None = None,
     issue_reward: IssueReward | None = None,
+    created_at: datetime | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.payment,
@@ -1900,6 +1901,7 @@ async def create_payment_transaction(
         issue_reward=issue_reward,
         presentment_currency="usd",
         presentment_amount=amount,
+        created_at=created_at,
     )
     await save_fixture(transaction)
     return transaction
@@ -1915,6 +1917,7 @@ async def create_refund_transaction(
     pledge: Pledge | None = None,
     order: Order | None = None,
     issue_reward: IssueReward | None = None,
+    created_at: datetime | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.refund,
@@ -1932,6 +1935,7 @@ async def create_refund_transaction(
         issue_reward=issue_reward,
         presentment_currency="usd",
         presentment_amount=amount,
+        created_at=created_at,
     )
     await save_fixture(transaction)
     return transaction
@@ -1979,6 +1983,7 @@ async def create_balance_transaction(
     payment_transaction: Transaction | None = None,
     balance_reversal_transaction: Transaction | None = None,
     payout_transaction: Transaction | None = None,
+    created_at: datetime | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=TransactionType.balance,
@@ -1992,6 +1997,7 @@ async def create_balance_transaction(
         payment_transaction=payment_transaction,
         balance_reversal_transaction=balance_reversal_transaction,
         payout_transaction=payout_transaction,
+        created_at=created_at,
     )
     await save_fixture(transaction)
     return transaction

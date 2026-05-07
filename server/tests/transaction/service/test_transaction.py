@@ -1,13 +1,17 @@
 import uuid
+from datetime import timedelta
 
 import pytest
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams
+from polar.kit.utils import utc_now
 from polar.models import Account, Organization, Transaction, User, UserOrganization
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
+from tests.fixtures.database import SaveFixture
+from tests.transaction.conftest import create_transaction
 
 
 @pytest.mark.asyncio
@@ -160,11 +164,7 @@ class TestSearch:
 @pytest.mark.asyncio
 class TestGetSummary:
     async def test_no_transaction(
-        self,
-        session: AsyncSession,
-        account: Account,
-        user: User,
-        user_organization: UserOrganization,
+        self, session: AsyncSession, account: Account
     ) -> None:
         summary = await transaction_service.get_summary(session, account)
 
@@ -179,32 +179,59 @@ class TestGetSummary:
         assert summary.payout.account_amount == 0
 
     async def test_valid(
-        self,
-        session: AsyncSession,
-        account: Account,
-        user: User,
-        user_organization: UserOrganization,
-        account_transactions: list[Transaction],
+        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
     ) -> None:
+        now = utc_now()
+
+        # Create an old balance transaction (8 days ago - should be available)
+        # Using account_currency="usd" so account_amount = amount
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.balance,
+            account=account,
+            amount=1000,
+            currency="usd",
+            account_currency="usd",
+            created_at=now - timedelta(days=8),
+        )
+
+        # Create a recent balance transaction (2 days ago - should NOT be available)
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.balance,
+            account=account,
+            amount=500,
+            currency="usd",
+            account_currency="usd",
+            created_at=now - timedelta(days=2),
+        )
+
+        # Create a payout transaction (2 days ago - should ALWAYS be available)
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.payout,
+            account=account,
+            amount=-2000,
+            currency="usd",
+            account_currency="usd",
+            created_at=now - timedelta(days=2),
+        )
+
         summary = await transaction_service.get_summary(session, account)
 
-        assert summary.balance.currency == "usd"
-        assert summary.balance.account_currency == "usd"
-        assert summary.balance.amount == sum(t.amount for t in account_transactions)
-        assert summary.balance.account_amount == sum(
-            t.account_amount for t in account_transactions
-        )
+        # Total balance should include all transactions
+        assert summary.balance.amount == 1000 + 500 - 2000
+        assert summary.balance.account_amount == 1000 + 500 - 2000
 
-        assert summary.payout.currency == "usd"
-        assert summary.payout.account_currency == "usd"
-        assert summary.payout.amount == sum(
-            t.amount for t in account_transactions if t.type == TransactionType.payout
-        )
-        assert summary.payout.account_amount == sum(
-            t.account_amount
-            for t in account_transactions
-            if t.type == TransactionType.payout
-        )
+        # Available balance should exclude recent non-payout transactions
+        # old_balance (1000) + payout (-2000) = -1000
+        # recent_balance (500) is excluded because it's only 2 days old (< 7 days)
+        assert summary.available_balance.amount == 1000 - 2000
+        assert summary.available_balance.account_amount == 1000 - 2000
+
+        # Payout balance should include all payouts
+        assert summary.payout.amount == -2000
+        assert summary.payout.account_amount == -2000
 
 
 @pytest.mark.asyncio

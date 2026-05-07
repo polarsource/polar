@@ -137,6 +137,10 @@ const Checkout = ({
 
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
   const shouldBlockCheckout = !isPaymentReady
+  const disableCheckout =
+    shouldBlockCheckout &&
+    (paymentStatus?.organization_status === 'denied' ||
+      checkout.is_payment_required)
 
   // Track payment not ready state
   useEffect(() => {
@@ -265,7 +269,7 @@ const Checkout = ({
           loadingLabel={label}
           theme={theme}
           themePreset={themePreset}
-          disabled={shouldBlockCheckout}
+          disabled={disableCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
           beforeSubmit={
@@ -456,7 +460,7 @@ const Checkout = ({
             loadingLabel={label}
             theme={theme}
             themePreset={themePreset}
-            disabled={shouldBlockCheckout}
+            disabled={disableCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}
           />

@@ -39,6 +39,7 @@ DEFAULT_IGNORED_ACTORS: frozenset[str] = frozenset(
         "order.balance",
         # Uploads invoice PDF to S3/MinIO
         "order.invoice",
+        "order.invoice.v2",
         # Loops.so CRM integration
         "loops.update_last_order_at",
         "loops.update_contact",
@@ -57,6 +58,7 @@ QUEUE_NAMES = (
     "low_priority",
     "webhooks",
     "tinybird",
+    "invoices_and_receipts",
 )
 MAX_DRAIN_ITERATIONS = 200
 MAX_UNWRAP_DEPTH = 10

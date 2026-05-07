@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, update
+from sqlalchemy import Select, func, or_, update
 from sqlalchemy.orm import selectinload
 
 from polar.kit.repository import (
@@ -10,8 +10,8 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Order, Payment, Transaction
-from polar.models.transaction import TransactionType
+from polar.models import Account, Order, Payment, Transaction
+from polar.models.transaction import PlatformFeeType, TransactionType
 
 
 class TransactionRepository(
@@ -71,10 +71,18 @@ class BalanceTransactionRepository(TransactionRepository):
     async def get_all_unpaid_by_account(self, account: UUID) -> Sequence[Transaction]:
         statement = (
             self.get_base_statement()
+            .join(Account, Account.id == Transaction.account_id)
             .where(
                 Transaction.type == TransactionType.balance,
                 Transaction.account_id == account,
                 Transaction.payout_transaction_id.is_(None),
+                or_(
+                    Transaction.created_at + Account.payout_transaction_delay
+                    <= func.now(),
+                    Transaction.platform_fee_type.in_(
+                        PlatformFeeType.payout_fee_types()
+                    ),
+                ),
             )
             .options(
                 selectinload(Transaction.balance_reversal_transaction),

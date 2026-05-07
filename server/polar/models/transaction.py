@@ -187,6 +187,10 @@ class PlatformFeeType(StrEnum):
     **Deprecated: we no longer have a generic platform fee. They're always associated with a specific reason.**
     """
 
+    @classmethod
+    def payout_fee_types(cls) -> set["PlatformFeeType"]:
+        return {cls.cross_border_transfer, cls.payout, cls.account}
+
 
 class Transaction(RecordModel):
     """

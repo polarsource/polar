@@ -18,7 +18,7 @@ from polar.models import (
     User,
 )
 from polar.models.organization import Organization
-from polar.models.transaction import TransactionType
+from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -177,12 +177,12 @@ class TransactionService(BaseTransactionService):
                         func.sum(Transaction.amount).filter(
                             or_(
                                 Transaction.type == TransactionType.payout,
-                                and_(
-                                    Transaction.type != TransactionType.payout,
-                                    Transaction.created_at
-                                    + Account.payout_transaction_delay
-                                    <= func.now(),
+                                Transaction.platform_fee_type.in_(
+                                    PlatformFeeType.payout_fee_types()
                                 ),
+                                Transaction.created_at
+                                + Account.payout_transaction_delay
+                                <= func.now(),
                             )
                         ),
                         0,
@@ -206,8 +206,8 @@ class TransactionService(BaseTransactionService):
                     ),
                 ),
             )
-            .where(Transaction.account_id == account.id)
             .join(Account, Account.id == Transaction.account_id)
+            .where(Transaction.account_id == account.id)
         )
 
         result = await session.execute(statement)

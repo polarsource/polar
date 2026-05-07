@@ -1,8 +1,10 @@
+from datetime import timedelta
 from functools import partial
 
 import pytest
 
 from polar.enums import PayoutAccountType
+from polar.kit.utils import utc_now
 from polar.models import (
     Account,
     Organization,
@@ -25,9 +27,16 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account, create_payout_account
 from tests.fixtures.random_objects import create_payout as _create_payout
 
-create_payment_transaction = partial(ro.create_payment_transaction, amount=10000)
-create_refund_transaction = partial(ro.create_refund_transaction, amount=-10000)
-create_balance_transaction = partial(ro.create_balance_transaction, amount=10000)
+ten_days_ago = utc_now() - timedelta(days=10)
+create_payment_transaction = partial(
+    ro.create_payment_transaction, amount=10000, created_at=ten_days_ago
+)
+create_refund_transaction = partial(
+    ro.create_refund_transaction, amount=-10000, created_at=ten_days_ago
+)
+create_balance_transaction = partial(
+    ro.create_balance_transaction, amount=10000, created_at=ten_days_ago
+)
 
 
 async def create_payout(
@@ -75,6 +84,7 @@ class TestCreate:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
 
+        # Transactions available for payouts
         payment_transaction_1 = await create_payment_transaction(save_fixture)
         balance_transaction_1 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
@@ -83,6 +93,17 @@ class TestCreate:
         payment_transaction_2 = await create_payment_transaction(save_fixture)
         balance_transaction_2 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_2
+        )
+
+        # Transactions not available for payouts
+        payment_transaction_3 = await create_payment_transaction(
+            save_fixture, created_at=utc_now()
+        )
+        balance_transaction_3 = await create_balance_transaction(
+            save_fixture,
+            account=account,
+            payment_transaction=payment_transaction_3,
+            created_at=utc_now(),
         )
 
         payout, fees = await create_payout(

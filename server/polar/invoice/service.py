@@ -70,11 +70,9 @@ class InvoiceService:
         for transaction in payout_transactions:
             if transaction.platform_fee_type is None:
                 gross_amount += transaction.amount
-            elif transaction.platform_fee_type not in {
-                PlatformFeeType.account,
-                PlatformFeeType.payout,
-                PlatformFeeType.cross_border_transfer,
-            }:
+            elif (
+                transaction.platform_fee_type not in PlatformFeeType.payout_fee_types()
+            ):
                 payment_fees_amount += transaction.amount
             else:
                 payout_fees_amount += transaction.amount

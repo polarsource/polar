@@ -29,8 +29,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-12" title={null}>
       <IOSAppBanner />
       {!CONFIG.IS_SANDBOX &&
-        !paymentStatus?.payment_ready &&
-        paymentStatus?.organization_status !== 'denied' &&
+        paymentStatus?.organization_status === 'created' &&
         !isLoading && (
           <div className="dark:bg-polar-800 flex flex-col justify-between gap-4 rounded-2xl bg-gray-100 p-4 md:flex-row md:p-6">
             <div className="flex flex-col gap-y-2 text-sm">

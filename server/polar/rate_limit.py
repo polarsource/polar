@@ -18,6 +18,7 @@ _IDENTITY_TTL_SECONDS = 300
 _ANONYMOUS_IDENTITY = "anonymous"
 
 _AUTHORIZATION_HEADER = b"authorization"
+_COOKIE_HEADER = b"cookie"
 
 
 def _bearer_token(scope: Scope) -> str | None:
@@ -34,6 +35,28 @@ def _bearer_token(scope: Scope) -> str | None:
         if not scheme or scheme.lower() != "bearer" or not token:
             return None
         return token
+    return None
+
+
+def _session_cookie(scope: Scope) -> str | None:
+    if scope.get("type") != "http":
+        return None
+    name_bytes = settings.USER_SESSION_COOKIE_KEY.encode("ascii")
+    for header_name, header_value in scope.get("headers", ()):
+        if header_name != _COOKIE_HEADER:
+            continue
+        for part in header_value.split(b";"):
+            part = part.strip()
+            equal = part.find(b"=")
+            if equal == -1:
+                continue
+            if part[:equal] != name_bytes:
+                continue
+            try:
+                value = part[equal + 1 :].decode("ascii")
+            except UnicodeDecodeError:
+                return None
+            return value or None
     return None
 
 
@@ -76,6 +99,11 @@ async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGr
     token = _bearer_token(scope)
     if token is not None:
         cached = await _read_cached_identity(redis, token)
+        if cached is not None:
+            return cached
+    cookie = _session_cookie(scope)
+    if cookie is not None:
+        cached = await _read_cached_identity(redis, cookie)
         if cached is not None:
             return cached
     try:

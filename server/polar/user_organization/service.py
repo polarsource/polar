@@ -33,11 +33,21 @@ class UserNotMemberOfOrganization(UserOrganizationError):
         super().__init__(message, 404)
 
 
-class CannotRemoveOrganizationAdmin(UserOrganizationError):
+class CannotRemoveOrganizationOwner(UserOrganizationError):
     def __init__(self, user_id: UUID, organization_id: UUID) -> None:
         self.user_id = user_id
         self.organization_id = organization_id
-        message = f"Cannot remove user {user_id} - they are the admin of organization {organization_id}."
+        message = f"Cannot remove user {user_id} - they are the owner of organization {organization_id}."
+        super().__init__(message, 403)
+
+
+class OrganizationWouldHaveNoAdmins(UserOrganizationError):
+    def __init__(self, organization_id: UUID) -> None:
+        self.organization_id = organization_id
+        message = (
+            f"Operation rejected: organization {organization_id} would be left "
+            f"with no users holding admin or owner role."
+        )
         super().__init__(message, 403)
 
 
@@ -191,6 +201,10 @@ class UserOrganizationService:
         user_id: UUID,
         organization_id: UUID,
     ) -> None:
+        await self._assert_admin_capability_after_removal(
+            session, user_id=user_id, organization_id=organization_id
+        )
+
         stmt = (
             sql.update(UserOrganization)
             .where(
@@ -209,6 +223,48 @@ class UserOrganizationService:
                 external_id=str(user_id),
             )
 
+    async def _assert_admin_capability_after_removal(
+        self,
+        session: AsyncSession,
+        *,
+        user_id: UUID,
+        organization_id: UUID,
+    ) -> None:
+        """
+        Defense-in-depth guard for the admin-capability invariant: an
+        organization always has at least one user in `role ∈ {owner, admin}`.
+
+        The owner-non-removable invariant in `remove_member_safe` already
+        covers the common case (every org has an owner who counts as
+        admin-capable), but raw `remove_member` callers bypass that check
+        — so we re-assert here. Rejects only when the removal would
+        actually reduce admin-capable count to zero; non-admin-capable
+        removals from a degraded organization are still allowed (they
+        don't make the state worse).
+        """
+        target_role = await session.scalar(
+            sql.select(UserOrganization.role).where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.user_id == user_id,
+                UserOrganization.is_deleted.is_(False),
+            )
+        )
+        if target_role not in {OrganizationRole.owner, OrganizationRole.admin}:
+            return
+
+        other_admin_capable = await session.scalar(
+            sql.select(func.count(UserOrganization.user_id)).where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.user_id != user_id,
+                UserOrganization.role.in_(
+                    [OrganizationRole.owner, OrganizationRole.admin]
+                ),
+                UserOrganization.is_deleted.is_(False),
+            )
+        )
+        if (other_admin_capable or 0) == 0:
+            raise OrganizationWouldHaveNoAdmins(organization_id)
+
     async def remove_member_safe(
         self,
         session: AsyncSession,
@@ -222,7 +278,7 @@ class UserOrganizationService:
         Raises:
             OrganizationNotFound: If the organization doesn't exist
             UserNotMemberOfOrganization: If the user is not a member of the organization
-            CannotRemoveOrganizationAdmin: If the user is the organization admin
+            CannotRemoveOrganizationOwner: If the user holds the `owner` role
         """
         from polar.organization.repository import OrganizationRepository
 
@@ -232,16 +288,13 @@ class UserOrganizationService:
         if not organization:
             raise OrganizationNotFound(organization_id)
 
-        # Check if user is actually a member
         user_org = await self.get_by_user_and_org(session, user_id, organization_id)
         if not user_org:
             raise UserNotMemberOfOrganization(user_id, organization_id)
 
-        admin_user = await org_repo.get_admin_user(organization)
-        if admin_user and admin_user.id == user_id:
-            raise CannotRemoveOrganizationAdmin(user_id, organization_id)
+        if user_org.role == OrganizationRole.owner:
+            raise CannotRemoveOrganizationOwner(user_id, organization_id)
 
-        # Remove the member
         await self.remove_member(
             session,
             user_id=user_id,

@@ -49,7 +49,7 @@ from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
 from polar.user_organization.service import (
-    CannotRemoveOrganizationAdmin,
+    CannotRemoveOrganizationOwner,
     UserNotMemberOfOrganization,
 )
 from polar.user_organization.service import (
@@ -857,10 +857,10 @@ async def remove_member(
             status_code=400, detail="User is not a member of this organization"
         )
 
-    except CannotRemoveOrganizationAdmin:
+    except CannotRemoveOrganizationOwner:
         raise HTTPException(
             status_code=403,
-            detail=f"Cannot remove {user_email} - they are the organization admin",
+            detail=f"Cannot remove {user_email} - they are the organization owner",
         )
 
     except Exception:

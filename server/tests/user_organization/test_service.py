@@ -7,9 +7,10 @@ from pytest_mock import MockerFixture
 from polar.models import Account, Organization, User, UserOrganization
 from polar.models.user_organization import OrganizationRole
 from polar.user_organization.service import (
-    CannotRemoveOrganizationAdmin,
+    CannotRemoveOrganizationOwner,
     InvalidOwnerRoleAssignment,
     OrganizationNotFound,
+    OrganizationWouldHaveNoAdmins,
     OwnerRoleCannotBeRemoved,
     UserNotMemberOfOrganization,
 )
@@ -82,7 +83,7 @@ class TestRemoveMemberSafe:
         assert exc_info.value.user_id == user.id
         assert exc_info.value.organization_id == organization.id
 
-    async def test_remove_member_cannot_remove_admin(
+    async def test_remove_member_cannot_remove_owner(
         self,
         session: Any,
         account: Account,
@@ -90,20 +91,18 @@ class TestRemoveMemberSafe:
         user: User,
         save_fixture: Any,
     ) -> None:
-        # Create user organization relationship for admin
         from polar.kit.utils import utc_now
         from polar.models import UserOrganization
 
-        # The user fixture becomes the admin through organization_account fixture
-        admin_user_org = UserOrganization(
+        owner_user_org = UserOrganization(
             user_id=user.id,
             organization_id=organization.id,
+            role=OrganizationRole.owner,
             created_at=utc_now(),
         )
-        await save_fixture(admin_user_org)
+        await save_fixture(owner_user_org)
 
-        # Test trying to remove organization admin
-        with pytest.raises(CannotRemoveOrganizationAdmin) as exc_info:
+        with pytest.raises(CannotRemoveOrganizationOwner) as exc_info:
             await user_organization_service.remove_member_safe(
                 session,
                 user_id=user.id,
@@ -154,28 +153,29 @@ class TestRemoveMember:
         self,
         session: Any,
         organization: Organization,
-        user: User,
+        user_second: User,
         user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
     ) -> None:
-        # Test that remove_member performs soft delete
+        # Use a regular member (user_second / user_organization_second
+        # default to role=member). The owner from `user_organization`
+        # remains, satisfying the admin-capability invariant.
         await user_organization_service.remove_member(
             session,
-            user_id=user.id,
+            user_id=user_second.id,
             organization_id=organization.id,
         )
 
-        # Verify the member was soft deleted (not returned by get_by_user_and_org)
         user_org = await user_organization_service.get_by_user_and_org(
-            session, user.id, organization.id
+            session, user_second.id, organization.id
         )
         assert user_org is None
 
-        # But the record still exists in DB with deleted_at set
         from polar.postgres import sql
 
         result = await session.execute(
             sql.select(UserOrganization).where(
-                UserOrganization.user_id == user.id,
+                UserOrganization.user_id == user_second.id,
                 UserOrganization.organization_id == organization.id,
             )
         )
@@ -188,8 +188,9 @@ class TestRemoveMember:
         mocker: MockerFixture,
         session: Any,
         organization: Organization,
-        user: User,
+        user_second: User,
         user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
     ) -> None:
         enqueue_remove_member_mock = mocker.patch(
             "polar.user_organization.service.polar_self_service.enqueue_remove_member"
@@ -197,13 +198,13 @@ class TestRemoveMember:
 
         await user_organization_service.remove_member(
             session,
-            user_id=user.id,
+            user_id=user_second.id,
             organization_id=organization.id,
         )
 
         enqueue_remove_member_mock.assert_called_once_with(
             external_customer_id=str(organization.id),
-            external_id=str(user.id),
+            external_id=str(user_second.id),
         )
 
     async def test_does_not_enqueue_when_member_not_found(
@@ -225,6 +226,48 @@ class TestRemoveMember:
 
         enqueue_remove_member_mock.assert_not_called()
 
+    async def test_admin_capability_invariant_rejects_last_admin_removal(
+        self,
+        session: Any,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        # The fixture's `user_organization` is the only admin-capable user
+        # in the org (role=owner). Raw `remove_member` bypasses the
+        # owner-non-removable guard in `remove_member_safe`, so the
+        # admin-capability invariant must catch it directly.
+        with pytest.raises(OrganizationWouldHaveNoAdmins) as exc_info:
+            await user_organization_service.remove_member(
+                session,
+                user_id=user.id,
+                organization_id=organization.id,
+            )
+
+        assert exc_info.value.organization_id == organization.id
+
+    async def test_admin_capability_invariant_allows_member_removal(
+        self,
+        session: Any,
+        organization: Organization,
+        user_second: User,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
+    ) -> None:
+        # Removing a non-admin-capable user (member) doesn't reduce the
+        # admin-capable count — should be allowed even via raw
+        # `remove_member`.
+        await user_organization_service.remove_member(
+            session,
+            user_id=user_second.id,
+            organization_id=organization.id,
+        )
+
+        user_org = await user_organization_service.get_by_user_and_org(
+            session, user_second.id, organization.id
+        )
+        assert user_org is None
+
 
 @pytest.mark.asyncio
 class TestListByOrg:
@@ -233,22 +276,25 @@ class TestListByOrg:
         session: Any,
         organization: Organization,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
     ) -> None:
-        # Initially should return the member
+        # Initially should return both members (owner + member).
         members = await user_organization_service.list_by_org(session, organization.id)
-        assert len(members) == 1
-        assert members[0].user_id == user.id
+        assert len(members) == 2
 
-        # After soft delete, should not return the member
+        # Soft-delete the regular member; the owner stays so the
+        # admin-capability invariant is satisfied.
         await user_organization_service.remove_member(
             session,
-            user_id=user.id,
+            user_id=user_second.id,
             organization_id=organization.id,
         )
 
         members = await user_organization_service.list_by_org(session, organization.id)
-        assert len(members) == 0
+        assert len(members) == 1
+        assert members[0].user_id == user.id
 
 
 @pytest.mark.asyncio

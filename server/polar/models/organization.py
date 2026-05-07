@@ -226,6 +226,17 @@ class OrganizationStatus(StrEnum):
         return {cls.REVIEW, cls.SNOOZED}  # pyright: ignore
 
 
+class SnoozeType(StrEnum):
+    TIME_BASED = "time_based"
+    NEXT_SALE = "next_sale"
+
+    def get_display_name(self) -> str:
+        return {
+            SnoozeType.TIME_BASED: "Auto re-review after X days",
+            SnoozeType.NEXT_SALE: "Re-review on next sale after X days",
+        }[self]
+
+
 class OrganizationCapabilities(TypedDict):
     checkout_payments: bool
     subscription_renewals: bool
@@ -481,6 +492,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     snooze_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"
+    )
+    snoozed_until: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    snooze_type: Mapped[SnoozeType | None] = mapped_column(
+        StringEnum(SnoozeType), nullable=True, default=None
     )
 
     total_balance: Mapped[int | None] = mapped_column(

@@ -10,8 +10,7 @@ from fastapi import Request
 from tagflow import tag, text
 
 from polar.models import Organization, User
-from polar.models.organization import OrganizationStatus
-from polar.organization.service import SNOOZE_GRACE_PERIOD
+from polar.models.organization import OrganizationStatus, SnoozeType
 from polar.organization_review.schemas import ReviewVerdict
 
 from ...components import (
@@ -505,29 +504,35 @@ class OrganizationDetailView:
                         self._render_create_review_ticket_button(request)
 
                     elif self.org.status == OrganizationStatus.SNOOZED:
-                        if self.org.status_updated_at:
-                            grace_end = self.org.status_updated_at + SNOOZE_GRACE_PERIOD
+                        deadline = self.org.snoozed_until
+                        snooze_type = self.org.snooze_type or SnoozeType.NEXT_SALE
+                        if deadline is not None:
                             now = datetime.now(UTC)
                             with tag.div(
                                 classes="bg-warning/10 border border-warning/20 p-3 rounded-lg text-xs mb-2"
                             ):
                                 with tag.p(classes="font-semibold"):
                                     text(f"Snoozed {self.org.snooze_count} time(s)")
-                                if now < grace_end:
-                                    remaining = grace_end - now
-                                    hours = int(remaining.total_seconds() // 3600)
-                                    minutes = int(
-                                        (remaining.total_seconds() % 3600) // 60
-                                    )
+                                with tag.p(classes="text-base-content/70"):
+                                    text(snooze_type.get_display_name())
+                                if now < deadline:
+                                    remaining = deadline - now
+                                    hours, seconds = divmod(remaining.seconds, 3600)
+                                    minutes = seconds // 60
+                                    if remaining.days > 0:
+                                        countdown = f"{remaining.days}d {hours}h"
+                                    else:
+                                        countdown = f"{hours}h {minutes}m"
+                                    with tag.p():
+                                        text(f"Time remaining: {countdown}")
+                                elif snooze_type == SnoozeType.NEXT_SALE:
                                     with tag.p():
                                         text(
-                                            f"Grace period: {hours}h {minutes}m remaining"
+                                            "Deadline passed — next sale triggers re-review"
                                         )
                                 else:
                                     with tag.p():
-                                        text(
-                                            "Grace period ended — next sale triggers re-review"
-                                        )
+                                        text("Deadline passed — auto re-review pending")
 
                         with tag.div(classes="w-full"):
                             with button(

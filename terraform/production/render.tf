@@ -185,7 +185,7 @@ module "production" {
       dramatiq_prom_port = "10000"
     }
     "worker" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority"
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority invoices_and_receipts"
       image_url          = data.render_web_service.production_worker["worker"].runtime_source.image.image_url
       image_digest       = data.render_web_service.production_worker["worker"].runtime_source.image.digest
       custom_domains     = [{ name = "worker.polar.sh" }]

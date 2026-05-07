@@ -128,7 +128,7 @@ module "sandbox" {
 
   workers = {
     worker-sandbox = {
-      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start --queues high_priority medium_priority low_priority"
+      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start --queues high_priority medium_priority low_priority invoices_and_receipts"
       image_url          = data.render_web_service.sandbox_worker["worker-sandbox"].runtime_source.image.image_url
       image_digest       = data.render_web_service.sandbox_worker["worker-sandbox"].runtime_source.image.digest
       dramatiq_prom_port = "10000"

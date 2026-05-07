@@ -5,9 +5,10 @@ import { useBenefits } from '@/hooks/queries'
 import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Loader2, Search } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BenefitRow } from './components/BenefitRow'
 import { Pagination } from './components/Pagination'
 import { SortableBenefitRow } from './components/SortableBenefitRow'
@@ -31,58 +32,45 @@ export const BenefitSearchComplex = ({
 }: Props) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [enabledPage, setEnabledPage] = useState(1)
   const [availablePage, setAvailablePage] = useState(1)
   const pageSize = 5
-  const searchContainerRef = useRef<HTMLDivElement>(null)
+  const trimmedQuery = debouncedQuery.trim()
+  const hasQuery = trimmedQuery.length > 0
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery)
+      setAvailablePage(1)
     }, 300)
     return () => clearTimeout(timer)
   }, [searchQuery])
-
-  useEffect(() => {
-    setIsDropdownOpen(debouncedQuery.trim().length > 0)
-  }, [debouncedQuery])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   const selectedBenefitIds = useMemo(
     () => selectedBenefits.map((b) => b.id),
     [selectedBenefits],
   )
 
-  const enabledBenefitsQuery = useBenefits(organization.id, {
-    limit: pageSize,
-    page: enabledPage,
-    id: selectedBenefitIds.length > 0 ? selectedBenefitIds : undefined,
-    sorting: ['user_order'],
-  })
+  // Gate the orgId to disable the query when nothing is selected: passing
+  // `id: []` would make the backend return *all* benefits, which then flashes
+  // through `keepPreviousData` on the first toggle.
+  const enabledBenefitsQuery = useBenefits(
+    selectedBenefitIds.length > 0 ? organization.id : undefined,
+    {
+      limit: pageSize,
+      page: enabledPage,
+      id: selectedBenefitIds,
+      query: hasQuery ? trimmedQuery : undefined,
+      sorting: ['user_order'],
+    },
+  )
 
   const availableBenefitsQuery = useBenefits(organization.id, {
     limit: pageSize,
     page: availablePage,
     exclude_id: selectedBenefitIds.length > 0 ? selectedBenefitIds : undefined,
+    query: hasQuery ? trimmedQuery : undefined,
     sorting: ['-created_at'],
-  })
-
-  const searchResultsQuery = useBenefits(organization.id, {
-    query: debouncedQuery,
-    limit: 10,
   })
 
   const handleToggle = useCallback(
@@ -101,7 +89,6 @@ export const BenefitSearchComplex = ({
 
   const availableBenefits = availableBenefitsQuery.data?.items ?? []
   const availablePagination = availableBenefitsQuery.data?.pagination
-  const searchResults = searchResultsQuery.data?.items ?? []
 
   useEffect(() => {
     if (
@@ -109,6 +96,7 @@ export const BenefitSearchComplex = ({
       enabledPagination.max_page > 0 &&
       enabledPage > enabledPagination.max_page
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEnabledPage(enabledPagination.max_page)
     }
   }, [enabledPagination, enabledPage])
@@ -119,6 +107,7 @@ export const BenefitSearchComplex = ({
       availablePagination.max_page > 0 &&
       availablePage > availablePagination.max_page
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAvailablePage(availablePagination.max_page)
     }
   }, [availablePagination, availablePage])
@@ -177,50 +166,26 @@ export const BenefitSearchComplex = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div ref={searchContainerRef} className="relative">
+      <div className="flex flex-row items-center gap-2">
         <Input
           preSlot={<Search className="h-4 w-4" />}
           placeholder="Search benefits..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={() => {
-            if (debouncedQuery.trim().length > 0) {
-              setIsDropdownOpen(true)
-            }
-          }}
         />
-
-        {isDropdownOpen && (
-          <div className="dark:border-polar-700 dark:bg-polar-900 absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
-            {searchResultsQuery.isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
-              </div>
-            ) : searchResults.length === 0 ? (
-              <div className="dark:text-polar-500 py-8 text-center text-sm text-gray-500">
-                No benefits found for &quot;{debouncedQuery}&quot;
-              </div>
-            ) : (
-              <div className="dark:divide-polar-700 flex flex-col divide-y divide-gray-100">
-                {searchResults.map((benefit) => (
-                  <BenefitRow
-                    key={benefit.id}
-                    organization={organization}
-                    benefit={benefit}
-                    selected={selectedBenefits.some((s) => s.id === benefit.id)}
-                    onToggle={handleToggle}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        {searchQuery.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
+            Clear
+          </Button>
         )}
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
+        <div className="flex h-5.5 items-center justify-between">
           <h4 className="dark:text-polar-400 text-xs font-medium tracking-wide text-gray-500 uppercase">
-            Available
+            {hasQuery
+              ? `Available benefits matching "${trimmedQuery}"`
+              : 'Available'}
             {availablePagination && ` (${availablePagination.total_count})`}
           </h4>
           {availablePagination && availablePagination.max_page > 1 && (
@@ -231,75 +196,75 @@ export const BenefitSearchComplex = ({
             />
           )}
         </div>
-        <div className="relative">
-          {availableBenefits.length === 0 &&
-          !availableBenefitsQuery.isFetching ? (
-            <div className="dark:border-polar-700 dark:text-polar-500 rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-500">
-              No benefits available
-            </div>
-          ) : (
-            <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 overflow-clip rounded-xl border border-gray-200">
-              {availableBenefits.map((benefit) => (
-                <BenefitRow
-                  key={benefit.id}
-                  organization={organization}
-                  benefit={benefit}
-                  selected={false}
-                  onToggle={handleToggle}
-                />
-              ))}
-            </div>
-          )}
-          {availableBenefitsQuery.isFetching && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/50 dark:bg-black/50">
-              <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
-            </div>
-          )}
-        </div>
+        {availableBenefitsQuery.isPending ? (
+          <div className="dark:border-polar-700 flex h-15.5 items-center justify-center rounded-xl border border-gray-200">
+            <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
+          </div>
+        ) : availableBenefits.length === 0 ? (
+          <div className="dark:border-polar-700 dark:text-polar-500 flex h-[62px] items-center justify-center rounded-xl border border-gray-200 px-4 text-center text-sm text-gray-500">
+            {hasQuery
+              ? `No benefits found for "${trimmedQuery}"`
+              : 'No benefits available'}
+          </div>
+        ) : (
+          <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 overflow-clip rounded-xl border border-gray-200">
+            {availableBenefits.map((benefit) => (
+              <BenefitRow
+                key={benefit.id}
+                organization={organization}
+                benefit={benefit}
+                selected={false}
+                onToggle={handleToggle}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {selectedBenefitIds.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <h4 className="dark:text-polar-400 text-xs font-medium tracking-wide text-gray-500 uppercase">
-              Enabled
-              {enabledPagination && ` (${enabledPagination.total_count})`}
-            </h4>
-            {enabledPagination && enabledPagination.max_page > 1 && (
+      <div className="flex flex-col gap-2">
+        <div className="flex h-5.5 items-center justify-between">
+          <h4 className="dark:text-polar-400 text-xs font-medium tracking-wide text-gray-500 uppercase">
+            {hasQuery
+              ? `Enabled benefits matching "${trimmedQuery}"`
+              : 'Enabled'}
+            {` (${enabledPagination?.total_count ?? selectedBenefits.length})`}
+          </h4>
+          {selectedBenefitIds.length > 0 &&
+            enabledPagination &&
+            enabledPagination.max_page > 1 && (
               <Pagination
                 page={enabledPage}
                 totalPages={enabledPagination.max_page}
                 onPageChange={setEnabledPage}
               />
             )}
-          </div>
-          <div className="relative">
-            {enabledBenefits.length === 0 &&
-            !enabledBenefitsQuery.isFetching ? (
-              <div className="dark:border-polar-700 dark:text-polar-500 rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-500">
-                No enabled benefits
-              </div>
-            ) : (
-              <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 overflow-clip rounded-xl border border-gray-200">
-                {enabledBenefits.map((benefit) => (
-                  <BenefitRow
-                    key={benefit.id}
-                    organization={organization}
-                    benefit={benefit}
-                    selected={true}
-                    onToggle={handleToggle}
-                  />
-                ))}
-              </div>
-            )}
-            {enabledBenefitsQuery.isFetching && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/50 dark:bg-black/50">
-                <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
-              </div>
-            )}
-          </div>
         </div>
-      )}
+        {selectedBenefitIds.length === 0 ? (
+          <div className="dark:border-polar-700 dark:text-polar-500 flex h-15.5 items-center justify-center rounded-xl border border-dashed border-gray-200 px-4 text-center text-sm text-gray-500">
+            Toggle a benefit above to enable it for this product
+          </div>
+        ) : enabledBenefitsQuery.isPending ? (
+          <div className="dark:border-polar-700 flex h-15.5 items-center justify-center rounded-xl border border-gray-200">
+            <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
+          </div>
+        ) : enabledBenefits.length === 0 ? (
+          <div className="dark:border-polar-700 dark:text-polar-500 flex h-15.5 items-center justify-center rounded-xl border border-gray-200 px-4 text-center text-sm text-gray-500">
+            {`No enabled benefits match "${trimmedQuery}"`}
+          </div>
+        ) : (
+          <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 overflow-clip rounded-xl border border-gray-200">
+            {enabledBenefits.map((benefit) => (
+              <BenefitRow
+                key={benefit.id}
+                organization={organization}
+                benefit={benefit}
+                selected={true}
+                onToggle={handleToggle}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

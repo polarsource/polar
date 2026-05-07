@@ -9,21 +9,20 @@ tags: instances, parallel, isolation
 ## What Are Instances?
 
 Instances allow running multiple isolated development environments simultaneously. Each instance:
-- Uses different ports (offset by instance × 100)
-- Has its own database
-- Has its own file storage
+- Uses different ports for app services (offset by instance × 100)
+- Has its own database on shared PostgreSQL server
+- Has its own Redis DB index on shared Redis server
+- Has its own S3 bucket pair on shared MinIO server
 - Runs independently
 
 ## Port Mapping
+
+Only app services (API, Web) expose host ports. Shared infrastructure (PostgreSQL, Redis, MinIO) is accessed via `dev docker exec <service>`.
 
 | Service | Instance 0 | Instance 1 | Instance 2 |
 |---------|------------|------------|------------|
 | Web | 3000 | 3100 | 3200 |
 | API | 8000 | 8100 | 8200 |
-| DB | 5432 | 5532 | 5632 |
-| Redis | 6379 | 6479 | 6579 |
-| MinIO API | 9000 | 9100 | 9200 |
-| MinIO Console | 9001 | 9101 | 9201 |
 
 **Formula:** Port = Base + (Instance × 100)
 

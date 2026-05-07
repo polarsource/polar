@@ -60,7 +60,7 @@ dev docker up -d api web       # API and web in background
 dev docker up --monitoring -d
 ```
 
-Includes Prometheus (port 9090) and Grafana (port 3001, login: admin/polar).
+Includes Prometheus and Grafana in shared infrastructure (access via `dev docker exec` commands).
 
 ### Force Rebuild Images
 
@@ -154,12 +154,14 @@ dev docker ps -i 1
 
 Instances allow running multiple isolated development environments simultaneously. Each instance:
 
-- Uses different ports (offset by instance × 100)
-- Has its own database and storage
+- Uses different ports for app services (offset by instance × 100)
+- Has its own database, Redis DB index, and S3 buckets on shared infrastructure
 - Runs in separate Docker containers
-- Uses project name `polar-dev-{instance}`
+- Uses project name `polar-app-{instance}` for app services, with shared infrastructure in `polar-shared`
 
 ### Port Mapping Formula
+
+Only API and Web services expose host ports. Shared infrastructure (PostgreSQL, Redis, MinIO, Tinybird, Prometheus, Grafana) is accessed via `dev docker exec <service>` commands.
 
 ```
 Port = Base Port + (Instance Number × 100)
@@ -169,12 +171,6 @@ Port = Base Port + (Instance Number × 100)
 | ------------- | ---- | ---------- | ---------- | ---------- |
 | API           | 8000 | 8000       | 8100       | 8200       |
 | Web           | 3000 | 3000       | 3100       | 3200       |
-| DB            | 5432 | 5432       | 5532       | 5632       |
-| Redis         | 6379 | 6379       | 6479       | 6579       |
-| MinIO API     | 9000 | 9000       | 9100       | 9200       |
-| MinIO Console | 9001 | 9001       | 9101       | 9201       |
-| Prometheus    | 9090 | 9090       | 9190       | 9290       |
-| Grafana       | 3001 | 3001       | 3101       | 3201       |
 
 ### Start Instance
 
@@ -307,26 +303,27 @@ dev docker up -b -d
 
 **db (PostgreSQL 15.1)**
 
-- Primary database
-- Port: 5432 (default)
+- Primary database (shared infrastructure)
+- No host port (access via `dev docker exec db`)
 - Credentials: polar/polar
 - Data persisted in `postgres_data` volume
 - Health check: `pg_isready`
+- Each instance gets its own database: `polar_dev_<N>`
 
 **redis (Redis Alpine)**
 
-- Cache and job queue backend
-- Port: 6379 (default)
+- Cache and job queue backend (shared infrastructure)
+- No host port (access via `dev docker exec redis`)
 - Health check: `redis-cli ping`
+- Each instance uses its own DB index
 
 **minio (S3-Compatible Storage)**
 
-- File storage (images, downloads, etc.)
-- API Port: 9000
-- Console Port: 9001
-- Credentials: polar/polarpolar
+- File storage (shared infrastructure)
+- No host ports (access via `dev docker exec minio`)
+- Credentials: polar-development/polar123456789
 - Data persisted in `minio_data` volume
-- Buckets: `polar-s3`, `polar-s3-public`
+- Each instance gets its own bucket pair: `polar-s3-<N>`, `polar-s3-public-<N>`
 
 ### Application Services
 
@@ -359,16 +356,18 @@ dev docker up -b -d
 
 **prometheus (Metrics)**
 
-- Port: 9090
+- Shared infrastructure (no host port)
 - 1-day retention
 - Enable with: `--monitoring`
+- Access via: `dev docker exec prometheus`
 
 **grafana (Dashboards)**
 
-- Port: 3001
+- Shared infrastructure (no host port)
 - Credentials: polar/polar
 - Pre-configured dashboards
 - Enable with: `--monitoring`
+- Access via: `dev docker exec grafana`
 
 ---
 
@@ -498,11 +497,13 @@ Services use Docker network hostnames:
     dev docker logs minio-setup
     ```
 
-2. Access MinIO console: http://localhost:9001
-    - Username: polar
-    - Password: polarpolar
+2. Access MinIO console via `dev docker exec minio`:
+    ```bash
+    dev docker exec minio mc alias set local http://localhost:9000 polar-development polar123456789
+    dev docker exec minio mc ls local
+    ```
 
-3. Verify buckets exist in console
+3. Verify buckets exist
 
 ### Frontend Build Errors
 
@@ -650,8 +651,5 @@ dev docker restart api
 | Web Frontend  | http://localhost:3000      |
 | API           | http://localhost:8000      |
 | API Docs      | http://localhost:8000/docs |
-| MinIO Console | http://localhost:9001      |
-| Prometheus    | http://localhost:9090      |
-| Grafana       | http://localhost:3001      |
 
-For instance N, add N×100 to each port.
+For instance N, add N×100 to each port. Shared infrastructure (PostgreSQL, Redis, MinIO, Tinybird, Prometheus, Grafana) is accessed via `dev docker exec <service>` commands, not host ports.

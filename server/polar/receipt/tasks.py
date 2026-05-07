@@ -10,6 +10,7 @@ from polar.worker import (
     AsyncSessionMaker,
     RedisMiddleware,
     TaskPriority,
+    TaskQueue,
     actor,
     enqueue_job,
 )
@@ -33,6 +34,7 @@ class ReceiptOrderDoesNotExist(ReceiptTaskError):
 @actor(
     actor_name="receipt.render",
     priority=TaskPriority.LOW,
+    queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
     time_limit=180_000,  # 3 min: 120s lock TTL + 60s render budget + headroom
 )
 async def receipt_render(order_id: uuid.UUID) -> None:

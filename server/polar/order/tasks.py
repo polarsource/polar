@@ -19,6 +19,7 @@ from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
     TaskPriority,
+    TaskQueue,
     actor,
     can_retry,
     enqueue_job,
@@ -212,7 +213,11 @@ async def order_confirmation_email(order_id: uuid.UUID) -> None:
         await order_service.send_confirmation_email(session, order)
 
 
-@actor(actor_name="order.invoice", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.invoice",
+    priority=TaskPriority.LOW,
+    queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
+)
 async def order_invoice(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)

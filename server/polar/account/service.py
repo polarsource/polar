@@ -91,6 +91,23 @@ class AccountService:
             account, update_dict=account_update.model_dump(exclude_unset=True)
         )
 
+    async def set_platform_fee(
+        self,
+        session: AsyncSession,
+        account: Account,
+        *,
+        fee_percent: int | None,
+        fee_fixed: int | None,
+    ) -> Account:
+        repository = AccountRepository.from_session(session)
+        return await repository.update(
+            account,
+            update_dict={
+                "_platform_fee_percent": fee_percent,
+                "_platform_fee_fixed": fee_fixed,
+            },
+        )
+
     async def _sync_polar_self_customer_owner(
         self,
         session: AsyncSession,

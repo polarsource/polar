@@ -146,7 +146,8 @@ export const Benefits = ({
             defaultValues={
               createBenefitType ? { type: createBenefitType } : undefined
             }
-            onSelectBenefit={() => {
+            onSelectBenefit={(benefit) => {
+              onSelectBenefit(benefit)
               setCreateModalOpen(false)
             }}
           />

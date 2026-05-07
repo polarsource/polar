@@ -1,0 +1,147 @@
+# Delta proration behavior
+
+Status: Draft
+Owner: TBD
+Related: [Prorations](./prorations.mdx)
+
+# Summary
+
+Add a new `SubscriptionProrationBehavior` value, `delta`, that always charges (or credits) the **flat price difference** between the old and new product/quantity when a subscription is updated mid‑cycle — independent of how much time is left in the cycle. The next billing cycle then renews at the new price as usual.
+
+> **Example.** Customer is on P1 at $100/month. Mid‑cycle they switch to P2 at $200/month.
+>
+> - Today (any existing behavior): credit/debit are time‑prorated.
+> - With `delta`: we charge **$100** immediately, regardless of whether the upgrade happens on day 1 or day 29. At the next renewal, we charge $200 as usual.
+
+# Motivation
+
+Customers and merchants frequently report that time‑prorated upgrade math is confusing and the charge amount is unpredictable ("I upgraded for one day and got charged $X — why?"). A flat‑delta behavior gives merchants a simple, predictable upgrade story:
+
+> "Pay the difference now, then keep paying the new price every cycle."
+
+It also matches what several mature SaaS billing pages communicate to end users ("Upgrade now for $100 more"), without having to expose any proration concepts in the UI.
+
+# Decided behavior
+
+When `proration_behavior == delta` and a subscription is updated mid‑cycle:
+
+- The **billing cycle is not reset.** `current_period_start` / `current_period_end` are preserved.
+- A single immediate invoice is generated for `max(0, new_period_amount − old_period_amount)`.
+- The next renewal at `current_period_end` bills `new_period_amount` normally.
+- Discounts that apply to the current cycle are applied to **both** sides before computing the delta (see [Discounts](#discounts)).
+- Tax is calculated on the delta amount, consistent with the existing single‑tax‑code assumption in [Prorations](./prorations.mdx).
+
+The defining property of `delta`: **the immediate charge depends only on the prices, not on when in the cycle the change happens.**
+
+## Comparison with existing modes
+
+| Mode          | Immediate charge?   | Time‑prorated?         | Cycle reset?          |
+| ------------- | ------------------- | ---------------------- | --------------------- |
+| `invoice`     | Yes                 | Yes (credit + debit)   | No                    |
+| `prorate`     | No (next invoice)   | Yes (credit + debit)   | No                    |
+| `next_period` | No                  | No                     | No                    |
+| `reset`       | Yes (full new plan) | No                     | Yes                   |
+| **`delta`**   | **Yes (price diff)**| **No**                 | **No**                |
+
+# Scope
+
+In scope:
+
+- Product changes (P1 → P2) where both products use the same `recurring_interval`.
+- Seat quantity changes on a seat‑based subscription (delta = `seat_price * (new_seats − old_seats)`).
+
+Out of scope (initial release):
+
+- **Interval changes** (monthly ↔ yearly). Cycle changes already force `reset`‑like behavior in `_generate_product_subscription_update` (see `server/polar/subscription/update.py:153`); for `delta` we will fall back to today's reset path and document this. We can revisit if there's demand.
+- Metered prices — unaffected, as in existing prorations.
+- Free prices — unaffected.
+
+# Detailed behavior
+
+## Upgrade (delta > 0)
+
+- One immediate `BillingEntry` per fixed/seat price on the new product, of `direction=debit`, with `amount = (new_price_amount − old_price_amount)` after discounts (see below).
+- `start_timestamp = applies_at`, `end_timestamp = current_period_end` (informational only — amount is not time‑weighted).
+- `BillingEntryType` — proposing a new value `proration_delta` to make these distinguishable in invoices, reporting, and webhooks. (Open question — see below.)
+
+## Downgrade (delta < 0)
+
+Two options, decision required:
+
+- **A. Charge $0, no credit.** Keep the customer on the more expensive plan they already paid for; new (lower) price simply takes effect at next renewal. This matches the "predictable" framing — no surprise refunds, no balance to track.
+- **B. Credit the customer for the difference**, applied to invoice balance like other downgrades. Symmetric with upgrades.
+
+Recommendation: **(A) for v1.** It's the simpler mental model that merchants asking for `delta` actually want; (B) brings back the "where did this credit come from?" confusion that `delta` is supposed to remove. We can add a separate setting later if needed.
+
+## Same price (delta == 0)
+
+No `BillingEntry` is created and no invoice is generated. Subscription record is updated; new product takes effect now. Next renewal bills as normal.
+
+## Seats
+
+- `delta = seat_price.calculate_amount(new_seats) − seat_price.calculate_amount(old_seats)`
+- Same upgrade/downgrade rules as above.
+- No `proration_factor` is applied (contrast with the existing seat path at `server/polar/subscription/update.py:226`).
+
+## Discounts
+
+- Apply the active subscription discount to both `old_period_amount` and `new_period_amount` before subtracting, so the customer pays the difference at their **discounted** rate.
+- For percentage discounts this gives the natural answer (`delta * (1 − pct)`).
+- For fixed‑amount discounts, both legs receive the same fixed reduction → cancels out → customer pays the raw price diff. This matches the intuition that a fixed coupon reduces what you pay each cycle, not the upgrade fee. Worth confirming with finance.
+- If the discount only applies to one of the two products (per‑product discounts), only that side is reduced. This may produce surprising deltas; document it.
+
+## Tax
+
+- Tax is calculated on the delta amount, consistent with the existing "tax on order total" rule in [Prorations](./prorations.mdx#tax).
+- Cross‑tax‑code product changes remain out of scope as long as we use one tax code per country.
+
+## Pending updates / `next_period` interaction
+
+`delta` is always immediate. If a merchant wants "delta at next period" we should treat that as an explicit feature request — for v1, `delta` does not stack with `next_period`.
+
+## Cycle anchor
+
+Unchanged. `current_period_start` and `current_period_end` are preserved. This is the key difference from `reset`.
+
+# Implementation outline
+
+All changes are additive; no migrations beyond a new enum value.
+
+1. **Enum** — `server/polar/enums.py:87` — add `delta = "delta"` to `SubscriptionProrationBehavior`. Add to `PublicSubscriptionProrationBehavior`. `is_immediate()` returns `True`.
+2. **Update logic** — `server/polar/subscription/update.py`
+   - Add a new branch `SubscriptionProrationBehavior.delta` to the `match` in `generate_subscription_update` (line 294). `applies_at = utc_now()`.
+   - In `_generate_product_subscription_update` (line 138): if behavior is `delta` and `is_interval_changed()` is `False`, route through new helper `_generate_product_delta_billing_entries` instead of the credit/debit pair. Preserve cycle dates.
+   - In `_generate_seats_subscription_update` (line 195): add `delta` branch — `proration_factor = Decimal(1)`, `base_amount_delta = new_base_amount − old_base_amount`, do **not** reset cycle, skip emission if delta == 0.
+   - For interval changes, fall back to `reset` semantics and log/emit a metric so we can see how often this happens.
+3. **BillingEntry** — add `BillingEntryType.proration_delta` (or reuse `proration` with a flag — open question) so invoice rendering can use a clearer description ("Upgrade fee", not "Remaining time on…").
+4. **Invoice rendering** — add a single line item description like *"Upgrade from {old_product} to {new_product}"* for product deltas and *"Additional N seats"* for seat deltas.
+5. **API** — no schema change; the new value flows through existing `proration_behavior` fields on org settings, `SubscriptionUpdateProduct`, and the customer portal seat update schema.
+6. **Frontend** — `clients/apps/web/src/components/Settings/ProrationBehavior.tsx` — add an option *"Charge price difference"* with helper text *"Charge the flat difference between the old and new price, regardless of when the change happens in the cycle."*
+7. **Feature gate** — gate behind an org‑level flag (`delta_proration_behavior_enabled`) for the initial rollout, mirroring the existing `reset_proration_behavior_enabled` flag.
+8. **Docs** — update the [Prorations design doc](./prorations.mdx) with a cross‑reference and add a public docs page under `docs/features/subscriptions/`.
+
+# Edge cases & things to test
+
+- Upgrade on day 1 of cycle and day 29 of cycle produce **the same charge**.
+- Downgrade produces a $0 invoice (per recommendation A) and does **not** create a `BillingEntry` or order.
+- Same‑price product swap is a no‑op invoice‑wise.
+- Seat increase from N→N+1 on a per‑seat plan charges exactly one seat price.
+- Seat decrease charges $0 (recommendation A).
+- Interval change (monthly→yearly) with `delta` requested falls back to reset behavior; document and emit a warning.
+- Discounted subscription: percentage discount → delta is discounted; fixed discount → delta is the raw difference; per‑product discount → asymmetric reduction.
+- Multiple fixed prices on a product: delta is summed across prices.
+- Stripe minimum charge ($0.50) — applies to delta amounts too. Reuse whatever handling the existing `invoice` mode adopts (today flagged as **FIXME** in [Prorations § Caveats](./prorations.mdx#caveats)).
+
+# Open questions
+
+1. **Downgrade behavior** — recommendation A (no credit) vs B (credit). Decision needed before implementation.
+2. **`BillingEntryType`** — new `proration_delta` type vs reuse `proration` with a discriminator. New type is clearer for reporting; reuse is less churn.
+3. **Per‑product discounts** — accept the asymmetric delta, or refuse to use `delta` mode when a per‑product discount is active?
+4. **Interval changes** — silently fall back to `reset`, or reject the update with a 400 so merchants explicitly choose? Falling back is friendlier; rejecting is more honest.
+5. **Naming in UI** — "Charge price difference" vs "Charge upgrade fee" vs "Flat delta". Pick one before launch.
+
+# Non‑goals
+
+- Changing how `invoice` / `prorate` / `next_period` / `reset` work today.
+- Replacing time‑based proration as the default — `delta` is opt‑in per org / per update.
+- Multi‑tax‑code support (still out of scope across the board).

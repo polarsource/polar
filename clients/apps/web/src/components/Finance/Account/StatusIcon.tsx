@@ -1,6 +1,9 @@
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import type { ColorToken } from '@polar-sh/orbit/theme'
+import type {
+  BackgroundColorToken,
+  TextColorToken,
+} from '@polar-sh/orbit/theme'
 import {
   CheckIcon,
   ClockIcon,
@@ -20,8 +23,8 @@ const STATUS_ICONS: Record<
 }
 
 type ReviewCheckStatusAppearance = {
-  backgroundColor: ColorToken
-  color: ColorToken
+  backgroundColor: BackgroundColorToken
+  color: TextColorToken
 }
 
 const STATUS_APPEARANCE: Record<

@@ -1,18 +1,23 @@
 import * as stylex from '@stylexjs/stylex'
 import type React from 'react'
 import type {
+  BackgroundColorToken,
+  BorderColorToken,
   BorderRadiusToken,
   BreakpointKey,
   ColorToken,
   ShadowToken,
   SpacingToken,
+  TextColorToken,
 } from '../tokens/tokens.stylex'
 import {
+  backgroundColors,
+  borderColors,
   borderRadii,
   breakpoints,
-  colors,
   shadows,
   spacing,
+  textColors,
 } from '../tokens/tokens.stylex'
 import {
   alignContentStyles,
@@ -169,7 +174,13 @@ function marginCss(token: SpacingToken | 'auto'): string {
   return spacing[token] as string
 }
 function colorCss(token: ColorToken): string {
-  return colors[token] as string
+  if (token in backgroundColors) {
+    return backgroundColors[token as BackgroundColorToken] as string
+  }
+  if (token in textColors) {
+    return textColors[token as TextColorToken] as string
+  }
+  return borderColors[token as BorderColorToken] as string
 }
 function radiusCss(token: BorderRadiusToken): string {
   return borderRadii[token] as string

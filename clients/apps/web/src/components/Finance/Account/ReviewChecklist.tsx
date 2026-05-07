@@ -14,7 +14,7 @@ export const ReviewChecklist = ({ steps, isLoading }: Props) => {
   const { resolvedTheme: theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const items = isLoading ? Array.from({ length: 5 }, () => null) : steps
+  const items = isLoading ? Array.from({ length: 6 }, () => null) : steps
 
   return (
     <Box display="flex" flexDirection="column" rowGap="s">

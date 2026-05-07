@@ -4,6 +4,7 @@ import { useUpdateOrganization } from '@/hooks/queries'
 import { getQueryClient } from '@/utils/api/query'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
@@ -54,29 +55,31 @@ export const EmailSection = ({ organization }: Props) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-3">
-        <FormField
-          control={control}
-          name="email"
-          rules={{ required: 'Support email is required' }}
-          render={({ field }) => (
-            <div>
-              <Input type="email" {...field} placeholder="support@acme.com" />
-              <FormMessage />
-            </div>
-          )}
-        />
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            size="sm"
-            loading={updateOrganization.isPending}
-            disabled={!formState.isDirty || updateOrganization.isPending}
-          >
-            Save
-          </Button>
-        </div>
-      </form>
+      <Box display="flex" flexDirection="column" rowGap="m">
+        <form onSubmit={handleSubmit(onSubmit)} className="contents">
+          <FormField
+            control={control}
+            name="email"
+            rules={{ required: 'Support email is required' }}
+            render={({ field }) => (
+              <Box>
+                <Input type="email" {...field} placeholder="support@acme.com" />
+                <FormMessage />
+              </Box>
+            )}
+          />
+          <Box display="flex" justifyContent="end">
+            <Button
+              type="submit"
+              size="sm"
+              loading={updateOrganization.isPending}
+              disabled={!formState.isDirty || updateOrganization.isPending}
+            >
+              Save
+            </Button>
+          </Box>
+        </form>
+      </Box>
     </Form>
   )
 }

@@ -104,7 +104,7 @@ export const BenefitSearchSimple = ({
   }
 
   return (
-    <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 rounded-xl border border-gray-200">
+    <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 overflow-clip rounded-xl border border-gray-200">
       {benefits.map((benefit) => (
         <BenefitRow
           key={benefit.id}

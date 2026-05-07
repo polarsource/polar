@@ -104,9 +104,24 @@ export const BenefitSearchComplex = ({
   const searchResults = searchResultsQuery.data?.items ?? []
 
   useEffect(() => {
-    setEnabledPage(1)
-    setAvailablePage(1)
-  }, [selectedBenefitIds.length])
+    if (
+      enabledPagination &&
+      enabledPagination.max_page > 0 &&
+      enabledPage > enabledPagination.max_page
+    ) {
+      setEnabledPage(enabledPagination.max_page)
+    }
+  }, [enabledPagination, enabledPage])
+
+  useEffect(() => {
+    if (
+      availablePagination &&
+      availablePagination.max_page > 0 &&
+      availablePage > availablePagination.max_page
+    ) {
+      setAvailablePage(availablePagination.max_page)
+    }
+  }, [availablePagination, availablePage])
 
   const {
     sensors,
@@ -202,6 +217,47 @@ export const BenefitSearchComplex = ({
         )}
       </div>
 
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <h4 className="dark:text-polar-400 text-xs font-medium tracking-wide text-gray-500 uppercase">
+            Available
+            {availablePagination && ` (${availablePagination.total_count})`}
+          </h4>
+          {availablePagination && availablePagination.max_page > 1 && (
+            <Pagination
+              page={availablePage}
+              totalPages={availablePagination.max_page}
+              onPageChange={setAvailablePage}
+            />
+          )}
+        </div>
+        <div className="relative">
+          {availableBenefits.length === 0 &&
+          !availableBenefitsQuery.isFetching ? (
+            <div className="dark:border-polar-700 dark:text-polar-500 rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-500">
+              No benefits available
+            </div>
+          ) : (
+            <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 overflow-clip rounded-xl border border-gray-200">
+              {availableBenefits.map((benefit) => (
+                <BenefitRow
+                  key={benefit.id}
+                  organization={organization}
+                  benefit={benefit}
+                  selected={false}
+                  onToggle={handleToggle}
+                />
+              ))}
+            </div>
+          )}
+          {availableBenefitsQuery.isFetching && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/50 dark:bg-black/50">
+              <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
+            </div>
+          )}
+        </div>
+      </div>
+
       {selectedBenefitIds.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -224,7 +280,7 @@ export const BenefitSearchComplex = ({
                 No enabled benefits
               </div>
             ) : (
-              <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 rounded-xl border border-gray-200">
+              <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 overflow-clip rounded-xl border border-gray-200">
                 {enabledBenefits.map((benefit) => (
                   <BenefitRow
                     key={benefit.id}
@@ -244,47 +300,6 @@ export const BenefitSearchComplex = ({
           </div>
         </div>
       )}
-
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <h4 className="dark:text-polar-400 text-xs font-medium tracking-wide text-gray-500 uppercase">
-            Available
-            {availablePagination && ` (${availablePagination.total_count})`}
-          </h4>
-          {availablePagination && availablePagination.max_page > 1 && (
-            <Pagination
-              page={availablePage}
-              totalPages={availablePagination.max_page}
-              onPageChange={setAvailablePage}
-            />
-          )}
-        </div>
-        <div className="relative">
-          {availableBenefits.length === 0 &&
-          !availableBenefitsQuery.isFetching ? (
-            <div className="dark:border-polar-700 dark:text-polar-500 rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-500">
-              No benefits available
-            </div>
-          ) : (
-            <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 rounded-xl border border-gray-200">
-              {availableBenefits.map((benefit) => (
-                <BenefitRow
-                  key={benefit.id}
-                  organization={organization}
-                  benefit={benefit}
-                  selected={false}
-                  onToggle={handleToggle}
-                />
-              ))}
-            </div>
-          )}
-          {availableBenefitsQuery.isFetching && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/50 dark:bg-black/50">
-              <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

@@ -5589,6 +5589,12 @@ export interface components {
        * @description Minimum delay, in seconds, between two payout requests.
        */
       payout_interval: number
+      /**
+       * Payout Transaction Delay
+       * Format: duration
+       * @description Delay after which a transaction becomes available for payout.
+       */
+      payout_transaction_delay: string
     }
     /** AccountCredit */
     AccountCredit: {
@@ -29237,6 +29243,7 @@ export interface components {
     /** TransactionsSummary */
     TransactionsSummary: {
       balance: components['schemas']['TransactionsBalance']
+      available_balance: components['schemas']['TransactionsBalance']
       payout: components['schemas']['TransactionsBalance']
     }
     /** TrialAlreadyRedeemed */

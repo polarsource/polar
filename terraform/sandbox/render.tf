@@ -146,6 +146,13 @@ module "sandbox" {
       image_digest       = data.render_web_service.sandbox_worker["worker-sandbox-tinybird"].runtime_source.image.digest
       dramatiq_prom_port = "10002"
     }
+    worker-sandbox-invoices-receipts = {
+      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 4 --queues invoices_and_receipts"
+      plan               = "standard"
+      image_url          = data.render_web_service.sandbox_worker["worker-sandbox"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.sandbox_worker["worker-sandbox"].runtime_source.image.digest
+      dramatiq_prom_port = "10003"
+    }
   }
 
   google_secrets = {

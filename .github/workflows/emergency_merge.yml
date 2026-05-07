@@ -114,13 +114,13 @@ jobs:
           payload: |
             {
               "channel": "C093CJXJXPT",
-              "text": "Emergency merge by ${{ github.event.comment.user.login }}",
+              "text": ${{ toJSON(format('Emergency merge by {0}', github.event.comment.user.login)) }},
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":rotating_light: *Emergency merge* by *${{ github.event.comment.user.login }}*\n<${{ github.event.issue.pull_request.html_url }}|#${{ github.event.issue.number }}: ${{ github.event.issue.title }}>"
+                    "text": ${{ toJSON(format(':rotating_light: *Emergency merge* by *{0}*\n<{1}|#{2}: {3}>', github.event.comment.user.login, github.event.issue.pull_request.html_url, github.event.issue.number, github.event.issue.title)) }}
                   }
                 }
               ]

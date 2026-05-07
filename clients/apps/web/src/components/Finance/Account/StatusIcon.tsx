@@ -1,4 +1,9 @@
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
+import type {
+  BackgroundColorToken,
+  TextColorToken,
+} from '@polar-sh/orbit/theme'
 import {
   CheckIcon,
   ClockIcon,
@@ -17,16 +22,19 @@ const STATUS_ICONS: Record<
   pending: ClockIcon,
 }
 
-const ICON_COLOR_CLASS: Record<
+type ReviewCheckStatusAppearance = {
+  backgroundColor: BackgroundColorToken
+  color: TextColorToken
+}
+
+const STATUS_APPEARANCE: Record<
   schemas['OrganizationReviewCheckStatus'],
-  string
+  ReviewCheckStatusAppearance
 > = {
-  passed:
-    'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  failed: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  warning:
-    'bg-yellow-100 text-yellow-500 dark:bg-yellow-900/30 dark:text-yellow-300',
-  pending: 'bg-gray-100 text-gray-500 dark:bg-polar-800 dark:text-polar-400',
+  passed: { backgroundColor: 'background-success', color: 'text-success' },
+  failed: { backgroundColor: 'background-danger', color: 'text-danger' },
+  warning: { backgroundColor: 'background-warning', color: 'text-warning' },
+  pending: { backgroundColor: 'background-pending', color: 'text-pending' },
 }
 
 interface Props {
@@ -35,12 +43,21 @@ interface Props {
 
 export const StatusIcon = ({ status }: Props) => {
   const Icon = STATUS_ICONS[status]
+  const appearance = STATUS_APPEARANCE[status]
 
   return (
-    <div
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${ICON_COLOR_CLASS[status]}`}
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      width={24}
+      height={24}
+      flexShrink={0}
+      borderRadius="full"
+      backgroundColor={appearance.backgroundColor}
+      color={appearance.color}
     >
       <Icon className="h-3.5 w-3.5" />
-    </div>
+    </Box>
   )
 }

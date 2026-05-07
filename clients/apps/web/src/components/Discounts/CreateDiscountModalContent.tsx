@@ -52,10 +52,8 @@ const CreateDiscountModalContent = ({
       if (error) {
         if (error.detail) {
           setValidationErrors(error.detail, setError, 1, [
-            'fixed.once_forever',
-            'fixed.repeat',
-            'percentage.once_forever',
-            'percentage.repeat',
+            'fixed',
+            'percentage',
           ])
         }
         return

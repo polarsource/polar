@@ -13,6 +13,7 @@ class TaskQueue(StrEnum):
     LOW_PRIORITY = "low_priority"
     WEBHOOKS = "webhooks"
     TINYBIRD = "tinybird"
+    INVOICES_AND_RECEIPTS = "invoices_and_receipts"
 
 
 __all__ = [

@@ -116,7 +116,7 @@ class ReceiptService:
 
     async def get_pdf_url_or_status(self, order: Order) -> tuple[str, datetime] | None:
         if order.receipt_path is None:
-            enqueue_job("receipt.render", order_id=order.id)
+            enqueue_job("receipt.render.v2", order_id=order.id)
             return None
 
         s3 = S3Service(settings.S3_CUSTOMER_RECEIPTS_BUCKET_NAME)

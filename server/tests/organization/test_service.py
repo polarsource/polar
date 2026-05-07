@@ -1032,27 +1032,23 @@ class TestHandleOngoingReviewVerdict:
         assert organization.status == OrganizationStatus.ACTIVE
         assert organization.next_review_threshold == 10_000
 
-    async def test_not_eligible_no_initial_review(
+    async def test_auto_approve_without_initial_review(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is REVIEW without initially_reviewed_at
+        # Given: org is REVIEW without initially_reviewed_at (first-pass review)
         organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 50_000
 
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-
-        # When: verdict is APPROVE but org hasn't been initially reviewed
+        # When: verdict is APPROVE
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.APPROVE
         )
 
-        # Then: not eligible for auto-approval, stays under review for backoffice handling
-        assert result is False
-        assert organization.status == OrganizationStatus.REVIEW
-        enqueue_job_mock.assert_not_called()
+        # Then: auto-approved on first pass
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
 
     async def test_not_eligible_wrong_status(
         self,
@@ -3131,6 +3127,49 @@ class TestSetPayoutAccount:
         )
 
         assert updated_org.payout_account_id == payout_account.id
+
+    @pytest.mark.auth
+    async def test_activates_when_all_gates_pass(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime(2026, 5, 4, 12, 0, tzinfo=UTC)
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams."
+        }
+        await save_fixture(organization)
+
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Clean",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        organization.payout_account = None
+        await save_fixture(organization)
+
+        updated_org = await organization_service.set_payout_account(
+            session, organization, payout_account
+        )
+
+        assert updated_org.payout_account_id == payout_account.id
+        assert updated_org.status == OrganizationStatus.ACTIVE
 
 
 @pytest.mark.asyncio

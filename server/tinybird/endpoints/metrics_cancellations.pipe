@@ -95,11 +95,7 @@ SQL >
         ) AS canceled_subscriptions_too_expensive,
         toInt64(countIf(lc.customer_cancellation_reason = 'unused')) AS canceled_subscriptions_unused,
         toInt64(
-            countIf(
-                lc.customer_cancellation_reason = 'other'
-                OR lc.customer_cancellation_reason IS NULL
-                OR lc.customer_cancellation_reason = ''
-            )
+            countIf(lc.customer_cancellation_reason = 'other' OR lc.customer_cancellation_reason = '')
         ) AS canceled_subscriptions_other
     FROM canceled_by_subscription AS lc
     GROUP BY bucket

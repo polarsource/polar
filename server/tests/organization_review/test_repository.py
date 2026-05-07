@@ -2,9 +2,11 @@ from datetime import UTC, datetime
 
 import pytest
 
+from polar.models.account import Account
 from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import Product
+from polar.models.product_price import ProductPriceSource
 from polar.models.user import User
 from polar.organization_review.report import (
     AgentReportV2,
@@ -36,7 +38,10 @@ from tests.fixtures.random_objects import (
     create_checkout_link,
     create_customer,
     create_order,
+    create_organization,
     create_payment,
+    create_product,
+    create_product_price_fixed,
     create_refund,
 )
 
@@ -1072,3 +1077,99 @@ class TestGetCheckoutLinksWithBenefits:
         repo = OrganizationReviewRepository.from_session(session)
         links = await repo.get_checkout_links_with_benefits(organization.id)
         assert links == []
+
+
+@pytest.mark.asyncio
+class TestGetAdhocPriceCount:
+    async def test_zero_when_no_prices(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_adhoc_price_count(organization.id) == 0
+
+    async def test_excludes_catalog_prices(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(1000, "usd")],
+        )
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_adhoc_price_count(organization.id) == 0
+
+    async def test_counts_adhoc_prices(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(100, "usd")],  # $1 catalog product
+        )
+        # Two ad-hoc overrides created at checkout
+        for amount in (5000, 25000):
+            adhoc = await create_product_price_fixed(
+                save_fixture, product=product, amount=amount, currency="usd"
+            )
+            adhoc.source = ProductPriceSource.ad_hoc
+            await save_fixture(adhoc)
+
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_adhoc_price_count(organization.id) == 2
+
+    async def test_excludes_archived_adhoc_prices(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(100, "usd")],
+        )
+        adhoc = await create_product_price_fixed(
+            save_fixture, product=product, amount=5000, currency="usd"
+        )
+        adhoc.source = ProductPriceSource.ad_hoc
+        adhoc.is_archived = True
+        await save_fixture(adhoc)
+
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_adhoc_price_count(organization.id) == 0
+
+    async def test_scoped_to_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        account_second: Account,
+    ) -> None:
+        # Ad-hoc price on a product from a DIFFERENT org should not be counted.
+        other_org = await create_organization(save_fixture, account_second)
+        other_product = await create_product(
+            save_fixture,
+            organization=other_org,
+            recurring_interval=None,
+            prices=[(100, "usd")],
+        )
+        adhoc = await create_product_price_fixed(
+            save_fixture, product=other_product, amount=5000, currency="usd"
+        )
+        adhoc.source = ProductPriceSource.ad_hoc
+        await save_fixture(adhoc)
+
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_adhoc_price_count(organization.id) == 0
+        assert await repo.get_adhoc_price_count(other_org.id) == 1

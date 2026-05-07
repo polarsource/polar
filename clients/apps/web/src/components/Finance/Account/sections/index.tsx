@@ -3,6 +3,7 @@ import { EmailSection } from './EmailSection'
 import { IdentityVerificationSection } from './IdentityVerificationSection'
 import { PayoutAccountSection } from './PayoutAccountSection'
 import { ProductDescriptionSection } from './ProductDescriptionSection'
+import { ProductUrlSection } from './ProductUrlSection'
 import { SocialLinksSection } from './SocialLinksSection'
 
 interface SectionProps {
@@ -54,6 +55,15 @@ export const STEP_CONFIG: Partial<
     label: 'Product description',
     render: ({ organization }) => (
       <ProductDescriptionSection organization={organization} />
+    ),
+  },
+  product_url: {
+    label: 'Product website',
+    reasonLabels: {
+      'product_url.unreachable': 'We could not reach this URL',
+    },
+    render: ({ organization }) => (
+      <ProductUrlSection organization={organization} />
     ),
   },
   payout_account: {

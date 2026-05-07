@@ -5,6 +5,7 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
+from polar.config import settings
 from polar.customer_session.service import (
     CUSTOMER_SESSION_TOKEN_PREFIX,
 )
@@ -40,6 +41,8 @@ from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
 )
 from polar.postgres import AsyncSession
+from polar.rate_limit import clear_cached_identity, write_cached_identity
+from polar.redis import Redis
 from polar.sentry import set_sentry_user
 from polar.worker import enqueue_job
 
@@ -187,8 +190,9 @@ async def get_auth_subject(
 
 
 class AuthSubjectMiddleware:
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGIApp, redis: Redis) -> None:
         self.app = app
+        self.redis = redis
 
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -201,10 +205,27 @@ class AuthSubjectMiddleware:
         try:
             auth_subject = await get_auth_subject(request, session)
         except OAuth2Error as e:
+            token = get_bearer_token(request)
+            if token is not None:
+                await clear_cached_identity(self.redis, token)
             response = await oauth2_error_exception_handler(request, e)
             return await response(scope, receive, send)
 
         scope["state"]["auth_subject"] = auth_subject
+
+        cookie = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+        if not isinstance(auth_subject.subject, Anonymous):
+            token = get_bearer_token(request)
+            if token is not None:
+                await write_cached_identity(
+                    self.redis, token, auth_subject.rate_limit_key
+                )
+            if cookie is not None:
+                await write_cached_identity(
+                    self.redis, cookie, auth_subject.rate_limit_key
+                )
+        elif cookie is not None:
+            await clear_cached_identity(self.redis, cookie)
 
         with logfire.set_baggage(**auth_subject.log_context):
             log.info("Authenticated subject", **auth_subject.log_context)

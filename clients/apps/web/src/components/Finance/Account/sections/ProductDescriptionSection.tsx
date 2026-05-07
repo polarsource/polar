@@ -6,6 +6,7 @@ import { useOrganizationKYC } from '@/hooks/queries/org'
 import { getQueryClient } from '@/utils/api/query'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
@@ -82,62 +83,74 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
 
   if (isKYCLoading) {
     return (
-      <div className="flex items-center justify-center py-6">
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        paddingVertical="xl"
+      >
         <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-      </div>
+      </Box>
     )
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-3">
-        <p className="dark:text-polar-400 text-xs text-gray-600">
-          Describe what your product is and does, who it&rsquo;s for, and your
-          pricing model.
-        </p>
-        <FormField
-          control={control}
-          name="product_description"
-          rules={{
-            required: 'Please describe what you sell',
-            minLength: {
-              value: MIN_LENGTH,
-              message: `Please provide at least ${MIN_LENGTH} characters`,
-            },
-            maxLength: {
-              value: MAX_LENGTH,
-              message: `Please keep under ${MAX_LENGTH} characters`,
-            },
-          }}
-          render={({ field }) => (
-            <div>
-              <TextArea
-                {...field}
-                rows={4}
-                placeholder="SaaS project management tool for distributed teams. Subscription pricing at $29/month per user."
-                className="resize-none"
-              />
-              <div className="mt-1 flex items-center justify-between">
-                <FormMessage />
-                <span className="text-xs text-gray-500">
-                  {productDescription?.length ?? 0}/{MAX_LENGTH} characters (min{' '}
-                  {MIN_LENGTH})
-                </span>
-              </div>
-            </div>
-          )}
-        />
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            size="sm"
-            loading={updateOrganization.isPending}
-            disabled={!formState.isDirty || updateOrganization.isPending}
-          >
-            Save
-          </Button>
-        </div>
-      </form>
+      <Box display="flex" flexDirection="column" rowGap="m">
+        <form onSubmit={handleSubmit(onSubmit)} className="contents">
+          <p className="dark:text-polar-400 text-xs text-gray-600">
+            Describe what your product is and does, who it&rsquo;s for, and your
+            pricing model.
+          </p>
+          <FormField
+            control={control}
+            name="product_description"
+            rules={{
+              required: 'Please describe what you sell',
+              minLength: {
+                value: MIN_LENGTH,
+                message: `Please provide at least ${MIN_LENGTH} characters`,
+              },
+              maxLength: {
+                value: MAX_LENGTH,
+                message: `Please keep under ${MAX_LENGTH} characters`,
+              },
+            }}
+            render={({ field }) => (
+              <Box>
+                <TextArea
+                  {...field}
+                  rows={4}
+                  placeholder="SaaS project management tool for distributed teams. Subscription pricing at $29/month per user."
+                  className="resize-none"
+                />
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="between"
+                  marginTop="xs"
+                >
+                  <FormMessage />
+                  <span className="text-xs text-gray-500">
+                    {productDescription?.length ?? 0}/{MAX_LENGTH} characters
+                    (min {MIN_LENGTH})
+                  </span>
+                </Box>
+              </Box>
+            )}
+          />
+          <Box display="flex" justifyContent="end">
+            <Button
+              type="submit"
+              size="sm"
+              loading={updateOrganization.isPending}
+              disabled={!formState.isDirty || updateOrganization.isPending}
+            >
+              Save
+            </Button>
+          </Box>
+        </form>
+      </Box>
     </Form>
   )
 }

@@ -709,11 +709,15 @@ class OrganizationService:
         payout_account: PayoutAccount,
     ) -> Organization:
         organization_repository = OrganizationRepository.from_session(session)
-        return await organization_repository.update(
+        await organization_repository.update(
             organization,
             update_dict={"payout_account_id": payout_account.id},
             flush=True,
         )
+        # Reusing an already-ready payout account doesn't fire a Stripe
+        # `account.updated` webhook, so attempt activation here too.
+        await self.maybe_activate(session, organization)
+        return organization
 
     async def add_user(
         self,
@@ -1077,11 +1081,10 @@ class OrganizationService:
 
         Returns True if auto-approved, False if the org must be handled by a
         human operator in the backoffice.
-        Only auto-approves when: verdict is APPROVE and org has been initially reviewed.
+        Only auto-approves when: status is REVIEW and verdict is APPROVE.
         """
         is_eligible = (
             organization.status == OrganizationStatus.REVIEW
-            and organization.initially_reviewed_at is not None
             and verdict == ReviewVerdict.APPROVE
         )
 

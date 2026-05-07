@@ -40,7 +40,7 @@ const anthropic = createAnthropic({
   baseURL: 'https://gateway-us.pydantic.dev/proxy/anthropic/v1/',
 })
 
-const sharedSystemPrompt = `
+const getSharedSystemPrompt = (seatBasedPricingEnabled: boolean) => `
 You are a helpful assistant that helps users create products on Polar.
 You'll guide them through collecting the necessary information about what they're going to sell,
 and once all required information is collected, you'll configure their products using some tools provided to you.
@@ -132,7 +132,11 @@ and it's highly likely that a description won't be needed except when explicitly
 ### Product Pricing
 
 Pricing is either a one-time purchase or a recurring subscription on a monthly or yearly cycle.
-Pricing can be either fixed price, a custom (pay-what-you-want) price, or a free product.
+Pricing can be ${
+  seatBasedPricingEnabled
+    ? 'a fixed price, a custom (pay-what-you-want) price, a free product, or a seat-based price'
+    : 'either fixed price, a custom (pay-what-you-want) price, or a free product'
+}.
 
 Note: if you want both monthly and yearly pricing, you should create two products. Upon checkout, you can then choose
 to include both products in the checkout. Polar does not have the concept of "product variants" that may be common in
@@ -140,13 +144,30 @@ other platforms.
 
 Next to this pricing, an extra pricing component can be added to the product to charge for usage.
 This is done by adding a metered price to the product, specifying the meter to use and the amount per unit.
+${
+  seatBasedPricingEnabled
+    ? `
+### Seat-based pricing
 
+For products billed per user/seat (e.g. team plans where each member is a paid seat), use a seat-based price.
+A seat-based price is configured with one or more tiers, each defining a seat range (min_seats, max_seats) and a
+price_per_seat. There are three tiering models:
+
+ - Fixed price per seat: a single tier with one price_per_seat that applies to every seat.
+ - Volume discounts: multiple tiers, where the seat count selects a single tier and every seat is charged at that tier's price_per_seat.
+ - Graduated: multiple tiers, where seats are filled across tiers and each seat is charged at the price_per_seat of the tier it falls into.
+
+Seat-based pricing is typically used for recurring subscriptions. If the user mentions per-user, per-seat, or per-member pricing,
+default to a seat-based price with a fixed price per seat unless they explicitly describe volume or graduated tiers.
+`
+    : ''
+}
 ### Product Trials
 
 Trials can be granted to any product for a number of days/weeks/months/years.`
 
-const routerSystemPrompt = `
-${sharedSystemPrompt}
+const getRouterSystemPrompt = (seatBasedPricingEnabled: boolean) => `
+${getSharedSystemPrompt(seatBasedPricingEnabled)}
 
 # Your task
 Your task is to determine whether the user request requires manual setup, follow-up questions, and if the subsequent LLM call
@@ -163,11 +184,14 @@ Always respond in JSON format with the JSON object ONLY and do not include any e
 Do not return Markdown formatting or code fences.
 `
 
-const getConversationalSystemPrompt = (currency: string) => {
+const getConversationalSystemPrompt = (
+  currency: string,
+  seatBasedPricingEnabled: boolean,
+) => {
   const currencyCode = currency.toUpperCase()
 
   return `
-${sharedSystemPrompt}
+${getSharedSystemPrompt(seatBasedPricingEnabled)}
 
 # Product Configuration
 
@@ -327,6 +351,8 @@ export async function POST(req: Request) {
   }
 
   const defaultCurrency = organization.default_presentment_currency || 'usd'
+  const seatBasedPricingEnabled =
+    organization.feature_settings?.seat_based_pricing_enabled ?? false
 
   let tools = {}
 
@@ -396,7 +422,7 @@ export async function POST(req: Request) {
           'Whether there is enough information to act on the user request or if we need further clarification',
         ),
     }),
-    system: routerSystemPrompt,
+    system: getRouterSystemPrompt(seatBasedPricingEnabled),
     prompt: userMessage,
   })
 
@@ -454,8 +480,10 @@ based on the conversation history whether you're done.
 
   let streamStarted = false
 
-  const conversationalSystemPrompt =
-    getConversationalSystemPrompt(defaultCurrency)
+  const conversationalSystemPrompt = getConversationalSystemPrompt(
+    defaultCurrency,
+    seatBasedPricingEnabled,
+  )
 
   const result = streamText({
     model: shouldSetupTools ? sonnet : gemini,

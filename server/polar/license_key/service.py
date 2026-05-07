@@ -377,7 +377,6 @@ class LicenseKeyService:
             key.member_id = member_id
 
         update_attrs = [
-            "status",
             "expires_at",
             "limit_activations",
             "limit_usage",

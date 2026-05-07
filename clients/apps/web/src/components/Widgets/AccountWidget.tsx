@@ -1,6 +1,7 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { ClientResponseError } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
@@ -15,12 +16,19 @@ export interface AccountWidgetProps {
 export const AccountWidget = ({ className }: AccountWidgetProps) => {
   const { organization: org } = useContext(OrganizationContext)
 
-  const { data: account } = useOrganizationAccount(org.id)
+  const { data: account, error: accountError } = useOrganizationAccount(org.id)
   const { data: summary } = useTransactionsSummary(account?.id ?? '')
   const { data: payouts } = usePayouts(account?.id, {
     limit: 10,
     sorting: ['-created_at'],
   })
+
+  if (
+    accountError instanceof ClientResponseError &&
+    accountError.response.status === 403
+  ) {
+    return null
+  }
 
   const allPayouts = payouts?.items ?? []
 

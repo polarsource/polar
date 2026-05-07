@@ -86,36 +86,37 @@ Valid values are `invoice`, `prorate`, and `next_period`.
 
 ## How the prorated amount is calculated
 
-Polar prorates on a **per-day** basis. If the customer has used `N` days out of a `D`-day billing period:
+Polar prorates on a **per-second** basis. If `S` seconds remain out of `T` total seconds in the current billing period:
 
-- Unused credit on the old plan: `old_plan_price * (D - N) / D`
-- Charge on the new plan for the remainder: `new_plan_price * (D - N) / D`
+- Unused credit on the old plan: `old_plan_price * S / T`
+- Charge on the new plan for the remainder: `new_plan_price * S / T`
 - Prorated difference: the new-plan remainder minus the old-plan unused credit
 
 For an upgrade the difference is positive, so the customer is charged; for a downgrade it's negative, so the customer is credited.
 
 ### Upgrade
 
-A customer subscribed to a $5/month plan on a 30-day month. On day 1 they upgrade to a $20/month plan.
+A customer subscribed to a $5/month plan on a 30-day month (2,592,000 seconds total). After 1 day (86,400 seconds elapsed, 2,505,600 seconds remaining) they upgrade to a $20/month plan.
 
-- Unused credit on the $5 plan: `$5 * 29 / 30 = $4.83`
-- New charge for 29 days on the $20 plan: `$20 * 29 / 30 = $19.33`
+- Unused credit on the $5 plan: `$5 * 2,505,600 / 2,592,000 = $4.83`
+- New charge for the remaining 2,505,600 seconds on the $20 plan: `$20 * 2,505,600 / 2,592,000 = $19.33`
 - **Prorated difference: $14.50**
 
 With `invoice`, that $14.50 is charged immediately. With `prorate`, it's added to the next monthly invoice (which is also the new $20 charge for the next cycle).
 
 ### Downgrade
 
-A customer subscribed to a $20/month plan on a 30-day month. On day 1 they downgrade to a $5/month plan.
+A customer subscribed to a $20/month plan on a 30-day month (2,592,000 seconds total). After 1 day (2,505,600 seconds remaining) they downgrade to a $5/month plan.
 
-- Unused credit on the $20 plan: `$20 * 29 / 30 = $19.33`
-- New charge for 29 days on the $5 plan: `$5 * 29 / 30 = $4.83`
+- Unused credit on the $20 plan: `$20 * 2,505,600 / 2,592,000 = $19.33`
+- New charge for the remaining 2,505,600 seconds on the $5 plan: `$5 * 2,505,600 / 2,592,000 = $4.83`
 - **Prorated difference: -$14.50** (credit to the customer)
 
 With `invoice`, a credit invoice for $14.50 is issued immediately. With `prorate`, the credit is applied on the next invoice.
 
 <Note>
-  Examples assume a 30-day cycle. For months with 31 days the denominator is
-  31; for February it's 28 or 29. Polar always uses the real length of the
-  current billing period.
+  Because proration is computed from the exact number of seconds remaining,
+  the change time-of-day matters: upgrading at noon credits a different amount
+  than upgrading at midnight. Polar always uses the real length of the current
+  billing period (so 28-, 29-, 30-, and 31-day months are all handled exactly).
 </Note>

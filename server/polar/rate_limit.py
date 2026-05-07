@@ -1,28 +1,116 @@
+import hashlib
 from collections.abc import Sequence
+from functools import partial
 
+from fastapi.security.utils import get_authorization_scheme_param
 from ratelimit import RateLimitMiddleware, Rule
 from ratelimit.auths import EmptyInformation
 from ratelimit.auths.ip import client_ip
 from ratelimit.backends.redis import RedisBackend
 from ratelimit.types import ASGIApp, Scope
 
-from polar.auth.models import AuthSubject, Subject, is_anonymous
 from polar.config import Environment, settings
 from polar.enums import RateLimitGroup
-from polar.redis import create_redis
+from polar.redis import Redis
+
+_IDENTITY_KEY_PREFIX = "rl:ident:"
+_IDENTITY_TTL_SECONDS = 300
+_ANONYMOUS_IDENTITY = "anonymous"
+
+_AUTHORIZATION_HEADER = b"authorization"
+_COOKIE_HEADER = b"cookie"
 
 
-async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
-    auth_subject: AuthSubject[Subject] = scope["state"]["auth_subject"]
-
-    if is_anonymous(auth_subject):
+def _bearer_token(scope: Scope) -> str | None:
+    if scope.get("type") != "http":
+        return None
+    for name, value in scope.get("headers", ()):
+        if name != _AUTHORIZATION_HEADER:
+            continue
         try:
-            ip, _ = await client_ip(scope)
-            return ip, RateLimitGroup.default
-        except (EmptyInformation, ValueError, TypeError):
-            return auth_subject.rate_limit_key
+            authorization = value.decode("ascii")
+        except UnicodeDecodeError:
+            return None
+        scheme, token = get_authorization_scheme_param(authorization)
+        if not scheme or scheme.lower() != "bearer" or not token:
+            return None
+        return token
+    return None
 
-    return auth_subject.rate_limit_key
+
+def _session_cookie(scope: Scope) -> str | None:
+    if scope.get("type") != "http":
+        return None
+    name_bytes = settings.USER_SESSION_COOKIE_KEY.encode("ascii")
+    for header_name, header_value in scope.get("headers", ()):
+        if header_name != _COOKIE_HEADER:
+            continue
+        for part in header_value.split(b";"):
+            part = part.strip()
+            equal = part.find(b"=")
+            if equal == -1:
+                continue
+            if part[:equal] != name_bytes:
+                continue
+            try:
+                value = part[equal + 1 :].decode("ascii")
+            except UnicodeDecodeError:
+                return None
+            return value or None
+    return None
+
+
+def _identity_cache_key(token: str) -> str:
+    digest = hashlib.blake2b(token.encode("ascii"), digest_size=16).hexdigest()
+    return f"{_IDENTITY_KEY_PREFIX}{digest}"
+
+
+async def _read_cached_identity(
+    redis: Redis, token: str
+) -> tuple[str, RateLimitGroup] | None:
+    raw = await redis.get(_identity_cache_key(token))
+    if raw is None:
+        return None
+    group_str, sep, user = raw.partition("|")
+    if not sep:
+        return None
+    try:
+        return user, RateLimitGroup(group_str)
+    except ValueError:
+        return None
+
+
+async def write_cached_identity(
+    redis: Redis, token: str, key: tuple[str, RateLimitGroup]
+) -> None:
+    user, group = key
+    await redis.set(
+        _identity_cache_key(token),
+        f"{group.value}|{user}",
+        ex=_IDENTITY_TTL_SECONDS,
+    )
+
+
+async def clear_cached_identity(redis: Redis, token: str) -> None:
+    await redis.delete(_identity_cache_key(token))
+
+
+async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGroup]:
+    token = _bearer_token(scope)
+    if token is not None:
+        cached = await _read_cached_identity(redis, token)
+        if cached is not None:
+            return cached
+    cookie = _session_cookie(scope)
+    if cookie is not None:
+        cached = await _read_cached_identity(redis, cookie)
+        if cached is not None:
+            return cached
+    try:
+        ip, _ = await client_ip(scope)
+        return ip, RateLimitGroup.default
+    except (EmptyInformation, ValueError, TypeError):
+        return _ANONYMOUS_IDENTITY, RateLimitGroup.default
 
 
 _BASE_RULES: dict[str, Sequence[Rule]] = {
@@ -66,7 +154,7 @@ _PRODUCTION_RULES: dict[str, Sequence[Rule]] = {
 }
 
 
-def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
+def get_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     match settings.ENV:
         case Environment.production:
             rules = _PRODUCTION_RULES
@@ -75,8 +163,12 @@ def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
         case _:
             rules = {}
     return RateLimitMiddleware(
-        app, _authenticate, RedisBackend(create_redis("rate-limit")), rules
+        app, partial(_authenticate, redis=redis), RedisBackend(redis), rules
     )
 
 
-__all__ = ["get_middleware"]
+__all__ = [
+    "clear_cached_identity",
+    "get_middleware",
+    "write_cached_identity",
+]

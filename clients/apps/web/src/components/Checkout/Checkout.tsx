@@ -52,25 +52,25 @@ const PaymentNotReadyBanner = ({
   organizationStatus: string | undefined
   organizationName: string
 }) => {
-  const isDenied = organizationStatus === 'denied'
+  const isTestMode = organizationStatus === 'created'
 
   return (
-    <Alert color={isDenied ? 'red' : 'gray'}>
+    <Alert color={isTestMode ? 'gray' : 'red'}>
       <div className="flex flex-col gap-y-1 p-2">
         <div
           className={twMerge(
             'text-sm font-medium',
-            isDenied ? '' : 'text-black dark:text-white',
+            isTestMode ? 'text-black dark:text-white' : '',
           )}
         >
-          {isDenied
-            ? 'Payments are currently unavailable'
-            : `${organizationName} is in test mode`}
+          {isTestMode
+            ? `${organizationName} is in test mode`
+            : 'Payments are currently unavailable'}
         </div>
         <div className="text-sm">
-          {isDenied
-            ? `${organizationName} doesn't allow payments.`
-            : `You can test checkout with free products or 100% discount orders.`}
+          {isTestMode
+            ? `You can test checkout with free products or 100% discount orders.`
+            : `${organizationName} doesn't allow payments.`}
         </div>
       </div>
     </Alert>
@@ -136,11 +136,11 @@ const Checkout = ({
   )
 
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
-  const isPaymentRequired = checkout.is_payment_required
-  const shouldBlockCheckout =
-    // Always show when organization is denied, regardless of payment required or not
-    paymentStatus?.organization_status === 'denied' ||
-    (isPaymentRequired && !isPaymentReady)
+  const shouldBlockCheckout = !isPaymentReady
+  const disableCheckout =
+    shouldBlockCheckout &&
+    (paymentStatus?.organization_status === 'denied' ||
+      checkout.is_payment_required)
 
   // Track payment not ready state
   useEffect(() => {
@@ -269,7 +269,7 @@ const Checkout = ({
           loadingLabel={label}
           theme={theme}
           themePreset={themePreset}
-          disabled={shouldBlockCheckout}
+          disabled={disableCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
           beforeSubmit={
@@ -460,7 +460,7 @@ const Checkout = ({
             loadingLabel={label}
             theme={theme}
             themePreset={themePreset}
-            disabled={shouldBlockCheckout}
+            disabled={disableCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}
           />

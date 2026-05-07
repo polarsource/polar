@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.2.1
+
+### Patch Changes
+
+- 08dd235: `event.preventDefault()` stopped working on the checkout events (like `success`). This is now fixed.
+
 ## 0.2.0
 
 ### Minor Changes

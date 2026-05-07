@@ -67,9 +67,24 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
           </Box>
         )}
       </Box>
+      {step.value ? (
+        <a
+          href={step.value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="truncate pl-9 text-xs text-blue-600 hover:underline dark:text-blue-400"
+        >
+          {step.value}
+        </a>
+      ) : null}
       {isActionable && isExpanded && stepConfig?.render && (
         <Box paddingTop="s">
-          <div className="dark:border-polar-700 mb-3 border-t border-gray-200" />
+          <Box
+            marginBottom="m"
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          />
           {stepConfig.render({ organization })}
         </Box>
       )}

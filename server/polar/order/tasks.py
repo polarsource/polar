@@ -19,6 +19,7 @@ from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
     TaskPriority,
+    TaskQueue,
     actor,
     can_retry,
     enqueue_job,
@@ -212,8 +213,7 @@ async def order_confirmation_email(order_id: uuid.UUID) -> None:
         await order_service.send_confirmation_email(session, order)
 
 
-@actor(actor_name="order.invoice", priority=TaskPriority.LOW)
-async def order_invoice(order_id: uuid.UUID) -> None:
+async def _run_order_invoice(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -223,6 +223,22 @@ async def order_invoice(order_id: uuid.UUID) -> None:
             raise OrderDoesNotExist(order_id)
 
         await order_service.generate_invoice(session, order)
+
+
+# Kept temporarily to drain in-flight messages enqueued before the v2 cutover.
+# Remove once the queue is empty and rename `order.invoice.v2` back to `order.invoice`.
+@actor(actor_name="order.invoice", priority=TaskPriority.LOW)
+async def order_invoice(order_id: uuid.UUID) -> None:
+    await _run_order_invoice(order_id)
+
+
+@actor(
+    actor_name="order.invoice.v2",
+    priority=TaskPriority.LOW,
+    queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
+)
+async def order_invoice_v2(order_id: uuid.UUID) -> None:
+    await _run_order_invoice(order_id)
 
 
 @actor(

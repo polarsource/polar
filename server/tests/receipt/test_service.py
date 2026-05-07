@@ -409,7 +409,7 @@ class TestGetPdfUrlOrStatus:
         result = await receipt_service.get_pdf_url_or_status(order)
 
         assert result is None
-        enqueue_mock.assert_called_once_with("receipt.render", order_id=order.id)
+        enqueue_mock.assert_called_once_with("receipt.render.v2", order_id=order.id)
 
     async def test_returns_url_when_path_set(
         self,

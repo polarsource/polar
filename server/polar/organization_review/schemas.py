@@ -107,6 +107,20 @@ class ProductData(Schema):
 class ProductsData(Schema):
     products: list[ProductData] = Field(default_factory=list)
     total_count: int = 0
+    adhoc_prices_count: int = Field(
+        default=0,
+        description=(
+            "Number of prices created on-demand at checkout via the API, overriding "
+            "the catalog price for that checkout."
+        ),
+    )
+    custom_pricing_products_count: int = Field(
+        default=0,
+        description=(
+            "Number of active products with pay-what-you-want pricing (the customer "
+            "enters the amount at checkout)."
+        ),
+    )
 
 
 class IdentityData(Schema):

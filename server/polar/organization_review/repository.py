@@ -22,6 +22,7 @@ from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.models.payment import Payment, PaymentStatus
 from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
+from polar.models.product_price import ProductPrice, ProductPriceSource
 from polar.models.refund import Refund, RefundStatus
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
@@ -131,6 +132,20 @@ class OrganizationReviewRepository(
         )
         result = await self.session.execute(statement)
         return list(result.scalars().unique().all())
+
+    async def get_adhoc_price_count(self, organization_id: UUID) -> int:
+        """Count prices created on-demand at checkout (overriding the catalog price)."""
+        statement = (
+            select(func.count(ProductPrice.id))
+            .join(Product, Product.id == ProductPrice.product_id)
+            .where(
+                Product.organization_id == organization_id,
+                ProductPrice.source == ProductPriceSource.ad_hoc,
+                ProductPrice.is_archived.is_(False),
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalar() or 0
 
     async def get_payment_stats(self, organization_id: UUID) -> tuple[int, int, int]:
         """Returns (total_payments, succeeded_payments, total_amount_cents)."""

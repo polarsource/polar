@@ -26,8 +26,7 @@ export const spacing = stylex.defineVars({
 
 const DARK = '@media (prefers-color-scheme: dark)'
 
-export const colors = stylex.defineVars({
-  // Backgrounds
+export const backgroundColors = stylex.defineVars({
   'background-primary': {
     default: '#ffffff',
     [DARK]: 'hsl(233, 4%, 3.5%)',
@@ -56,8 +55,9 @@ export const colors = stylex.defineVars({
     default: 'oklch(0.96 0.005 264)',
     [DARK]: 'oklch(0.6 0.02 264 / 0.2)',
   },
+})
 
-  // Text
+export const textColors = stylex.defineVars({
   'text-primary': {
     default: 'oklch(0.21 0.034 264.665)',
     [DARK]: 'oklch(1.000 0.000 263.3)',
@@ -86,8 +86,9 @@ export const colors = stylex.defineVars({
     default: 'oklch(0.65 0.02 264)',
     [DARK]: 'oklch(0.7 0.02 264)',
   },
+})
 
-  // Borders
+export const borderColors = stylex.defineVars({
   'border-primary': {
     default: 'oklch(0.928 0.006 264.531)',
     [DARK]: 'hsl(233, 4%, 12%)',
@@ -140,7 +141,13 @@ type StyleXTokenKeys<T> = Exclude<
 >
 
 export type SpacingToken = StyleXTokenKeys<typeof spacing>
-export type ColorToken = StyleXTokenKeys<typeof colors>
+export type BackgroundColorToken = StyleXTokenKeys<typeof backgroundColors>
+export type TextColorToken = StyleXTokenKeys<typeof textColors>
+export type BorderColorToken = StyleXTokenKeys<typeof borderColors>
+export type ColorToken =
+  | BackgroundColorToken
+  | TextColorToken
+  | BorderColorToken
 export type BorderRadiusToken = StyleXTokenKeys<typeof borderRadii>
 export type ShadowToken = StyleXTokenKeys<typeof shadows>
 export type BreakpointKey = keyof typeof breakpoints

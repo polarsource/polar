@@ -536,7 +536,7 @@ class RefundService:
             )
 
             if order.receipt_number is not None:
-                enqueue_job("receipt.render", order.id)
+                enqueue_job("receipt.render.v2", order.id)
 
     async def _on_updated(self, session: AsyncSession, refund: Refund) -> None:
         if refund.organization is not None:

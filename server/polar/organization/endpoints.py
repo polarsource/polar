@@ -9,6 +9,7 @@ from polar.account.service import account as account_service
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
+    AuthorizeMembersSetRole,
     AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
     AuthorizeOrgAccessWrite,
@@ -37,7 +38,7 @@ from polar.integrations.polar.service import (
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
-from polar.models import Account, Organization
+from polar.models import Account, Organization, UserOrganization
 from polar.models.user_organization import OrganizationRole
 from polar.openapi import APITag
 from polar.organization.repository import (
@@ -55,9 +56,12 @@ from polar.user.service import user as user_service
 from polar.user_organization.schemas import (
     OrganizationMember,
     OrganizationMemberInvite,
+    OrganizationMemberRoleUpdate,
 )
 from polar.user_organization.service import (
     CannotRemoveOrganizationOwner,
+    InvalidOwnerRoleAssignment,
+    OwnerRoleCannotBeRemoved,
     UserNotMemberOfOrganization,
 )
 from polar.user_organization.service import (
@@ -529,6 +533,53 @@ async def remove_member(
         raise ResourceNotFound()
     except CannotRemoveOrganizationOwner:
         raise NotPermitted("Cannot remove the organization owner.")
+
+
+@router.patch(
+    "/{id}/members/{user_id}",
+    response_model=OrganizationMember,
+    summary="Set Member Role",
+    tags=[APITag.private],
+    responses={
+        200: {"description": "Role updated."},
+        403: {
+            "description": "Not authorized to change member roles, or the role "
+            "transition is not allowed.",
+            "model": NotPermitted.schema(),
+        },
+        404: OrganizationNotFound,
+    },
+)
+async def set_member_role(
+    authz: AuthorizeMembersSetRole,
+    user_id: UUID,
+    body: OrganizationMemberRoleUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> UserOrganization:
+    """Change a member's role on an organization.
+
+    Only `admin` and `member` are accepted; ownership transfers go through
+    a separate flow (`Account.admin_id` mutation, today the backoffice
+    `change_admin` endpoint).
+    """
+    try:
+        return await user_organization_service.set_role(
+            session,
+            user_id=user_id,
+            organization_id=authz.organization.id,
+            role=body.role,
+        )
+    except UserNotMemberOfOrganization:
+        raise ResourceNotFound()
+    except OwnerRoleCannotBeRemoved:
+        raise NotPermitted(
+            "The organization owner cannot be moved to another role; "
+            "transfer ownership first."
+        )
+    except InvalidOwnerRoleAssignment:
+        # Should be unreachable given the schema rejects `owner`, but kept
+        # as defence-in-depth in case the schema constraint is ever relaxed.
+        raise NotPermitted("Cannot assign the owner role via this endpoint.")
 
 
 @router.post(

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import AliasPath, Field, computed_field
@@ -36,3 +37,12 @@ class OrganizationMember(Schema):
 
 class OrganizationMemberInvite(Schema):
     email: EmailStrDNS = Field(description="Email address of the user to invite")
+
+
+class OrganizationMemberRoleUpdate(Schema):
+    role: Literal[OrganizationRole.admin, OrganizationRole.member] = Field(
+        description=(
+            "The role to assign. `owner` is rejected — ownership transfers "
+            "go through a separate flow."
+        ),
+    )

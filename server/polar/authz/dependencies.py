@@ -152,6 +152,16 @@ AuthorizeMembersManage = Annotated[
         )
     ),
 ]
+AuthorizeMembersSetRole = Annotated[
+    AuthzContext[User],
+    Depends(
+        OrgPolicyGuard(
+            members.can_set_role,
+            allowed_subjects={User},
+            required_scopes={Scope.members_write},
+        )
+    ),
+]
 AuthorizeOrgDelete = Annotated[
     AuthzContext[User],
     Depends(

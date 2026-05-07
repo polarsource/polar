@@ -66,10 +66,7 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        is_auto_approve_eligible = (
-            organization.status == OrganizationStatus.REVIEW
-            and organization.initially_reviewed_at is not None
-        )
+        is_auto_approve_eligible = organization.status == OrganizationStatus.REVIEW
 
         enqueue_job(
             "organization_review.run_agent",

@@ -1075,11 +1075,10 @@ class OrganizationService:
 
         Returns True if auto-approved, False if the org must be handled by a
         human operator in the backoffice.
-        Only auto-approves when: verdict is APPROVE and org has been initially reviewed.
+        Only auto-approves when: status is REVIEW and verdict is APPROVE.
         """
         is_eligible = (
             organization.status == OrganizationStatus.REVIEW
-            and organization.initially_reviewed_at is not None
             and verdict == ReviewVerdict.APPROVE
         )
 

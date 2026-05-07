@@ -999,27 +999,23 @@ class TestHandleOngoingReviewVerdict:
         assert organization.status == OrganizationStatus.ACTIVE
         assert organization.next_review_threshold == 10_000
 
-    async def test_not_eligible_no_initial_review(
+    async def test_auto_approve_without_initial_review(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is REVIEW without initially_reviewed_at
+        # Given: org is REVIEW without initially_reviewed_at (first-pass review)
         organization.status = OrganizationStatus.REVIEW
         organization.next_review_threshold = 50_000
 
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-
-        # When: verdict is APPROVE but org hasn't been initially reviewed
+        # When: verdict is APPROVE
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.APPROVE
         )
 
-        # Then: not eligible for auto-approval, stays under review for backoffice handling
-        assert result is False
-        assert organization.status == OrganizationStatus.REVIEW
-        enqueue_job_mock.assert_not_called()
+        # Then: auto-approved on first pass
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
 
     async def test_not_eligible_wrong_status(
         self,

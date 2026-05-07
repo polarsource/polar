@@ -2,6 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
 import ChangePlanPage from './ChangePlanPage'
+import { notFound } from 'next/navigation'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -18,6 +19,10 @@ export default async function Page(props: {
     api,
     params.organization,
   )
+
+  if (!organization.feature_settings?.billing_enabled) {
+    notFound()
+  }
 
   return <ChangePlanPage organization={organization} />
 }

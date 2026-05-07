@@ -3,17 +3,10 @@ from datetime import timedelta
 from decimal import Decimal
 
 from dramatiq import Retry
-from polar_sdk.models import (
-    WebhookBenefitGrantCreatedPayload,
-    WebhookBenefitGrantRevokedPayload,
-    WebhookBenefitGrantUpdatedPayload,
-)
 
 from polar.config import settings
 from polar.event.repository import EventRepository
-from polar.external_event.service import external_event as external_event_service
 from polar.kit.utils import utc_now
-from polar.models.external_event import ExternalEventSource
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -23,7 +16,6 @@ from polar.worker import (
 )
 
 from .client import get_client
-from .service import polar_self
 
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
@@ -155,33 +147,3 @@ async def track_organization_review_usage(
         output_tokens=output_tokens,
         cost_usd=Decimal(cost_usd),
     )
-
-
-@actor(actor_name="polar_self.webhook.benefit_grant.created", priority=TaskPriority.LOW)
-async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle(
-            session, ExternalEventSource.polar, event_id
-        ) as event:
-            payload = WebhookBenefitGrantCreatedPayload.model_validate(event.data)
-            await polar_self.handle_benefit_grant_event(session, payload)
-
-
-@actor(actor_name="polar_self.webhook.benefit_grant.updated", priority=TaskPriority.LOW)
-async def webhook_benefit_grant_updated(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle(
-            session, ExternalEventSource.polar, event_id
-        ) as event:
-            payload = WebhookBenefitGrantUpdatedPayload.model_validate(event.data)
-            await polar_self.handle_benefit_grant_event(session, payload)
-
-
-@actor(actor_name="polar_self.webhook.benefit_grant.revoked", priority=TaskPriority.LOW)
-async def webhook_benefit_grant_revoked(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle(
-            session, ExternalEventSource.polar, event_id
-        ) as event:
-            payload = WebhookBenefitGrantRevokedPayload.model_validate(event.data)
-            await polar_self.handle_benefit_grant_event(session, payload)

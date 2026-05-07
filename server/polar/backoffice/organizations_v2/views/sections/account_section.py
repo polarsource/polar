@@ -4,6 +4,7 @@ import contextlib
 from collections.abc import Generator, Sequence
 from datetime import UTC, datetime
 
+from babel.dates import format_timedelta
 from fastapi import Request
 from tagflow import tag, text
 
@@ -85,9 +86,6 @@ class AccountSection:
 
                     # Fees row
                     with tag.div(classes="pt-4 border-t border-base-300"):
-                        with tag.div(classes="text-sm font-semibold mb-3"):
-                            text("Platform Fees")
-
                         with tag.div(classes="grid grid-cols-2 gap-4"):
                             with tag.div():
                                 with tag.div(
@@ -109,6 +107,19 @@ class AccountSection:
                                 with tag.div(classes="font-semibold"):
                                     text(
                                         f"{basis_points / 100:.2f}% + {_format_cents(fixed_cents)}"
+                                    )
+
+                            # Payout Transaction Delay - span both columns
+                            with tag.div(classes="col-span-2"):
+                                with tag.div(
+                                    classes="text-sm text-base-content/60 mb-1"
+                                ):
+                                    text("Payout Transaction Delay")
+                                with tag.div(classes="font-semibold"):
+                                    text(
+                                        format_timedelta(
+                                            account.payout_transaction_delay
+                                        )
                                     )
 
             # Fee Credits section (only if account exists)

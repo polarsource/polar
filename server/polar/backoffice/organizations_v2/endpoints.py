@@ -17,12 +17,13 @@ import stripe as stripe_lib
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
-from pydantic_core import PydanticCustomError
+from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
 from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
 
+from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.service import account_credit_service
@@ -98,6 +99,7 @@ from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from . import priority as review_priority
+from .forms import UpdateAccountSettingsForm
 from .priority import Signals
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import (
@@ -2766,6 +2768,81 @@ async def edit_checkout_settings(
                     type="submit",
                     variant="primary",
                 ):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/edit-account-settings",
+    name="organizations:edit_account_settings",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_account_settings(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization account settings (e.g., payout_transaction_delay)."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(
+        organization_id,
+        include_blocked=True,
+        options=(joinedload(Organization.account),),
+    )
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateAccountSettingsForm.model_validate_form(data)
+            account_repository = AccountRepository.from_session(session)
+            await account_repository.update(
+                organization.account,
+                update_dict={"payout_transaction_delay": form.payout_transaction_delay},
+            )
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=settings",
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    timedelta_serializer = SchemaSerializer(core_schema.timedelta_schema())
+    prefill_data = {
+        "payout_transaction_delay": timedelta_serializer.to_python(
+            organization.account.payout_transaction_delay, mode="json"
+        )
+    }
+
+    with modal("Edit Account Settings", open=True):
+        with UpdateAccountSettingsForm.render(
+            data=prefill_data,
+            hx_post=str(
+                request.url_for(
+                    "organizations:edit_account_settings",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            validation_error=validation_error,
+            classes="flex flex-col",
+        ):
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
                     text("Save Changes")
 
     return None

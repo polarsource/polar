@@ -155,7 +155,7 @@ class InputField(FormField):
             if errors:
                 classes("input-error")
         if description:
-            with tag.div(classes="label"):
+            with tag.div(classes="label text-wrap"):
                 text(description)
         for error in errors:
             with tag.div(classes="label text-error"):

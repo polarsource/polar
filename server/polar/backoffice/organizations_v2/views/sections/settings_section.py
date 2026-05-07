@@ -3,6 +3,7 @@
 import contextlib
 from collections.abc import Generator
 
+from babel.dates import format_timedelta
 from fastapi import Request
 from tagflow import tag, text
 
@@ -152,6 +153,36 @@ class SettingsSection:
                             text("Group")
                         with tag.div(classes="text-sm"):
                             text(self.org.rate_limit_group.value.title())
+
+            # Account settings card
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Account Settings")
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        ghost=True,
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:edit_account_settings",
+                                organization_id=self.org.id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+
+                with tag.div(classes="space-y-4"):
+                    with tag.div():
+                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
+                            text("Payout Transaction Delay")
+                        with tag.div(classes="font-semibold"):
+                            text(
+                                format_timedelta(
+                                    self.org.account.payout_transaction_delay
+                                )
+                            )
 
             # Feature flags card
             with card(bordered=True):

@@ -9,7 +9,7 @@ from polar.models import Product, User
 from polar.models.account import Account
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.subscription import SubscriptionStatus
-from polar.models.user_organization import UserOrganization
+from polar.models.user_organization import OrganizationRole, UserOrganization
 from polar.payout_account.service import PayoutAccountServiceError
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -644,9 +644,8 @@ class TestSetPayoutAccount:
         user: User,
     ) -> None:
         """A regular org member (not admin) cannot set the payout account."""
-        other_user = await create_user(save_fixture)
-        organization.account = await create_account(save_fixture, user=other_user)
-        await save_fixture(organization)
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
 
         payout_account = await create_payout_account(save_fixture, organization, user)
         organization.payout_account = None
@@ -916,20 +915,17 @@ class TestDeleteOrganization:
         user: User,
         mocker: MockerFixture,
     ) -> None:
-        # Create an account with a different admin (not the current user)
-        other_user = User(
-            email="other@example.com",
-        )
-        await save_fixture(other_user)
-
-        organization.account = await create_account(save_fixture, user=other_user)
-        await save_fixture(organization)
+        # User is a regular member, not an admin.
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
 
         response = await client.delete(f"/v1/organizations/{organization.id}")
 
         assert response.status_code == 403
         json = response.json()
-        assert json["detail"] == "Only the account admin can delete the organization"
+        assert (
+            json["detail"] == "Only an organization admin can delete the organization"
+        )
 
 
 @pytest.mark.asyncio

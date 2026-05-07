@@ -122,6 +122,7 @@ from polar.models.product_price import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
+from polar.models.user_organization import OrganizationRole
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
@@ -320,7 +321,14 @@ async def user_organization(
     organization: Organization,
     user: User,
 ) -> UserOrganization:
-    user_organization = UserOrganization(user=user, organization=organization)
+    # `user` is `account.admin_id` by virtue of the fixture chain (the
+    # `account` fixture creates an Account with `user` as admin), so the
+    # owner-validity invariant says they carry `owner` on the membership.
+    # Tests that need a non-admin user should either downgrade the role
+    # explicitly or use `user_second` / `user_organization_second`.
+    user_organization = UserOrganization(
+        user=user, organization=organization, role=OrganizationRole.owner
+    )
     await save_fixture(user_organization)
     return user_organization
 

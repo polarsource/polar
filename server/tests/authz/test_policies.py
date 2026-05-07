@@ -5,15 +5,23 @@ from polar.authz.policies import finance, members
 from polar.authz.policies import organization as org_policy
 from polar.authz.policies import payout_account as pa_policy
 from polar.models import Organization, User
-from polar.models.user_organization import UserOrganization
+from polar.models.user_organization import OrganizationRole, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_account,
     create_payout_account,
     create_user,
 )
+
+
+async def _set_role(
+    save_fixture: SaveFixture,
+    user_organization: UserOrganization,
+    role: OrganizationRole,
+) -> None:
+    user_organization.role = role
+    await save_fixture(user_organization)
 
 
 @pytest.mark.asyncio
@@ -24,18 +32,16 @@ class TestFinanceCanRead:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
-        user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.account = await create_account(save_fixture, user=user)
-        await save_fixture(organization)
+        await _set_role(save_fixture, user_organization, OrganizationRole.admin)
 
         result = await finance.can_read(session, auth_subject, organization)
         assert result is True
 
     @pytest.mark.auth
-    async def test_non_admin_denied_with_message(
+    async def test_owner_allowed(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -43,27 +49,25 @@ class TestFinanceCanRead:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        other_user = User(email="admin@example.com")
-        await save_fixture(other_user)
-        organization.account = await create_account(save_fixture, user=other_user)
-        await save_fixture(organization)
+        await _set_role(save_fixture, user_organization, OrganizationRole.owner)
+
+        result = await finance.can_read(session, auth_subject, organization)
+        assert result is True
+
+    @pytest.mark.auth
+    async def test_member_denied(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _set_role(save_fixture, user_organization, OrganizationRole.member)
 
         result = await finance.can_read(session, auth_subject, organization)
         assert isinstance(result, str)
         assert "admin" in result.lower()
-
-    @pytest.mark.auth
-    async def test_no_account_denied(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        object.__setattr__(organization, "account_id", None)
-
-        result = await finance.can_read(session, auth_subject, organization)
-        assert isinstance(result, str)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_subject_allowed(
@@ -85,18 +89,16 @@ class TestOrgCanDelete:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
-        user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.account = await create_account(save_fixture, user=user)
-        await save_fixture(organization)
+        await _set_role(save_fixture, user_organization, OrganizationRole.admin)
 
         result = await org_policy.can_delete(session, auth_subject, organization)
         assert result is True
 
     @pytest.mark.auth
-    async def test_non_admin_denied_with_specific_message(
+    async def test_member_denied_with_specific_message(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -104,14 +106,10 @@ class TestOrgCanDelete:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        other_user = User(email="admin@example.com")
-        await save_fixture(other_user)
-        organization.account = await create_account(save_fixture, user=other_user)
-        await save_fixture(organization)
+        await _set_role(save_fixture, user_organization, OrganizationRole.member)
 
         result = await org_policy.can_delete(session, auth_subject, organization)
-        assert isinstance(result, str)
-        assert result == "Only the account admin can delete the organization"
+        assert result == "Only an organization admin can delete the organization"
 
 
 @pytest.mark.asyncio
@@ -122,18 +120,16 @@ class TestMembersCanManage:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
-        user: User,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.account = await create_account(save_fixture, user=user)
-        await save_fixture(organization)
+        await _set_role(save_fixture, user_organization, OrganizationRole.admin)
 
         result = await members.can_manage(session, auth_subject, organization)
         assert result is True
 
     @pytest.mark.auth
-    async def test_non_admin_denied_with_specific_message(
+    async def test_member_denied_with_specific_message(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -141,14 +137,10 @@ class TestMembersCanManage:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        other_user = User(email="admin@example.com")
-        await save_fixture(other_user)
-        organization.account = await create_account(save_fixture, user=other_user)
-        await save_fixture(organization)
+        await _set_role(save_fixture, user_organization, OrganizationRole.member)
 
         result = await members.can_manage(session, auth_subject, organization)
-        assert isinstance(result, str)
-        assert result == "Only the account admin can manage members"
+        assert result == "Only an organization admin can manage members"
 
 
 @pytest.mark.asyncio

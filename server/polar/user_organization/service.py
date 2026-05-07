@@ -114,7 +114,7 @@ class UserOrganizationService:
 
     async def get_by_user_and_org(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         user_id: UUID,
         organization_id: UUID,
     ) -> UserOrganization | None:

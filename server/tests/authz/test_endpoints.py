@@ -5,7 +5,7 @@ from httpx import AsyncClient
 
 from polar.models import Organization, User
 from polar.models.organization import OrganizationStatus
-from polar.models.user_organization import UserOrganization
+from polar.models.user_organization import OrganizationRole, UserOrganization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account
 
@@ -43,10 +43,8 @@ class TestPolicyGuardGetAccount:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        other_user = User(email="admin@example.com")
-        await save_fixture(other_user)
-        organization.account = await create_account(save_fixture, user=other_user)
-        await save_fixture(organization)
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
 
         response = await client.get(f"/v1/organizations/{organization.id}/account")
         assert response.status_code == 403
@@ -109,16 +107,14 @@ class TestPolicyGuardDeleteOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        other_user = User(email="admin@example.com")
-        await save_fixture(other_user)
-        organization.account = await create_account(save_fixture, user=other_user)
-        await save_fixture(organization)
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
 
         response = await client.delete(f"/v1/organizations/{organization.id}")
         assert response.status_code == 403
         assert (
             response.json()["detail"]
-            == "Only the account admin can delete the organization"
+            == "Only an organization admin can delete the organization"
         )
 
 
@@ -153,17 +149,17 @@ class TestPolicyGuardInviteMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        other_user = User(email="admin@example.com")
-        await save_fixture(other_user)
-        organization.account = await create_account(save_fixture, user=other_user)
-        await save_fixture(organization)
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
 
         response = await client.post(
             f"/v1/organizations/{organization.id}/members/invite",
             json={"email": "newmember@example.com"},
         )
         assert response.status_code == 403
-        assert response.json()["detail"] == "Only the account admin can manage members"
+        assert (
+            response.json()["detail"] == "Only an organization admin can manage members"
+        )
 
 
 @pytest.mark.asyncio

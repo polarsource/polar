@@ -108,14 +108,7 @@ const Login = ({
       case 'google':
         return <GoogleLoginButton {...loginProps} variant={variant} />
       case 'github':
-        return (
-          <GithubLoginButton
-            size="large"
-            fullWidth
-            {...loginProps}
-            variant={variant}
-          />
-        )
+        return <GithubLoginButton {...loginProps} variant={variant} />
       case 'apple':
         return <AppleLoginButton {...loginProps} variant={variant} />
     }

@@ -13,26 +13,23 @@ export const AuthModal = ({
   signup,
 }: AuthModalProps) => {
   const isSignup = signup !== undefined
-  const title = isSignup ? 'Sign Up' : 'Sign in'
 
   const lastLoginMethod =
     typeof document !== 'undefined'
       ? (document.cookie.match(/polar_last_login_method=(\w+)/)?.[1] ?? null)
       : null
 
-  const copy = isSignup ? (
-    <p className="dark:text-polar-500 text-xl text-gray-500">
-      Join thousands of startups running their billing on&nbsp;Polar.
-    </p>
-  ) : null
-
   return (
     <div className="overflow-y-auto p-12">
-      <div className="flex flex-col justify-between gap-y-16">
-        <div className="flex flex-col gap-y-4">
-          <h1 className="text-3xl">{title}</h1>
-          {copy}
-        </div>
+      <div className="flex flex-col justify-between gap-y-12">
+        {isSignup && (
+          <div className="flex flex-col gap-y-1">
+            <h1 className="text-xl font-medium">Welcome to Polar</h1>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              The billing platform built for AI companies.
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-y-12">
           <Login

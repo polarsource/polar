@@ -39,12 +39,13 @@ const AppleLoginButton = ({
     >
       <Button
         variant={variant}
-        wrapperClassNames="space-x-3 p-2.5 px-5"
-        className="text-md p-5"
+        wrapperClassNames="space-x-2 p-2.5 px-5"
         fullWidth
       >
         <Apple />
-        <div>{signup ? 'Sign up with Apple' : 'Sign in with Apple'}</div>
+        <div className="w-32 text-left">
+          {signup ? 'Sign up with Apple' : 'Sign in with Apple'}
+        </div>
       </Button>
     </Link>
   )

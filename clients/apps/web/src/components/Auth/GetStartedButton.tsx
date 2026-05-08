@@ -61,7 +61,7 @@ const GetStartedButton = ({
 
   const modalTitles = {
     choose: 'Get started',
-    signup: 'Sign up',
+    signup: 'Get started',
     login: 'Sign in',
   } as const
   const modalTitle = modalTitles[view]

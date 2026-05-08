@@ -501,7 +501,7 @@ class TestGetOrderReceipt:
         response = await client.get(f"/v1/customer-portal/orders/{order.id}/receipt")
 
         assert response.status_code == 202
-        enqueue_mock.assert_called_once_with("receipt.render.v2", order_id=order.id)
+        enqueue_mock.assert_called_once_with("receipt.render", order_id=order.id)
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_200_when_receipt_ready(

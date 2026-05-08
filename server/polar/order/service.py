@@ -468,7 +468,7 @@ class OrderService:
         if order.billing_name is None or order.billing_address is None:
             raise MissingInvoiceBillingDetails(order)
 
-        enqueue_job("order.invoice.v2", order_id=order.id)
+        enqueue_job("order.invoice", order_id=order.id)
 
     async def generate_invoice(self, session: AsyncSession, order: Order) -> Order:
         invoice_path = await invoice_service.create_order_invoice(order)

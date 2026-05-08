@@ -225,13 +225,17 @@ async def _run_order_invoice(order_id: uuid.UUID) -> None:
         await order_service.generate_invoice(session, order)
 
 
-# Kept temporarily to drain in-flight messages enqueued before the v2 cutover.
-# Remove once the queue is empty and rename `order.invoice.v2` back to `order.invoice`.
-@actor(actor_name="order.invoice", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.invoice",
+    priority=TaskPriority.LOW,
+    queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
+)
 async def order_invoice(order_id: uuid.UUID) -> None:
     await _run_order_invoice(order_id)
 
 
+# Kept temporarily to drain in-flight `order.invoice.v2` messages still in the
+# `invoices_and_receipts` queue from before the rename. Remove once drained.
 @actor(
     actor_name="order.invoice.v2",
     priority=TaskPriority.LOW,

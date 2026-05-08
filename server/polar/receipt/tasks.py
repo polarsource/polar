@@ -51,20 +51,21 @@ async def _run_receipt_render(order_id: uuid.UUID) -> None:
                 "receipt render: lock contention, re-enqueueing",
                 order_id=str(order_id),
             )
-            enqueue_job("receipt.render.v2", order_id, delay=RENDER_RETRY_DELAY_MS)
+            enqueue_job("receipt.render", order_id, delay=RENDER_RETRY_DELAY_MS)
 
 
-# Kept temporarily to drain in-flight messages enqueued before the v2 cutover.
-# Remove once the queue is empty and rename `receipt.render.v2` back to `receipt.render`.
 @actor(
     actor_name="receipt.render",
     priority=TaskPriority.LOW,
+    queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
     time_limit=180_000,  # 3 min: 120s lock TTL + 60s render budget + headroom
 )
 async def receipt_render(order_id: uuid.UUID) -> None:
     await _run_receipt_render(order_id)
 
 
+# Kept temporarily to drain in-flight `receipt.render.v2` messages still in the
+# `invoices_and_receipts` queue from before the rename. Remove once drained.
 @actor(
     actor_name="receipt.render.v2",
     priority=TaskPriority.LOW,

@@ -73,7 +73,7 @@ class TestReceiptRender:
         await receipt_render(order.id)
 
         enqueue_job_mock.assert_called_once_with(
-            "receipt.render.v2", order.id, delay=5_000
+            "receipt.render", order.id, delay=5_000
         )
 
     async def test_delegates_to_service(

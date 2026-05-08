@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
+import { nanoid } from 'nanoid'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -80,6 +81,7 @@ export function ProductDetailsStep() {
   const [aupHistory, setAupHistory] = useState<
     Array<{ product_description: string; verdict: string; message?: string }>
   >([])
+  const [conversationId] = useState(() => nanoid())
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -220,6 +222,7 @@ export function ProductDetailsStep() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          conversation_id: conversationId,
           product_description: formData.productDescription,
           selling_categories: formData.sellingCategories,
           pricing_models: formData.pricingModel,

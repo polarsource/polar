@@ -1,10 +1,11 @@
-import { CONFIG } from '@/utils/config'
+import { getAuthenticatedUser } from '@/utils/user'
 import { createOpenAI } from '@ai-sdk/openai'
+import { withTracing } from '@posthog/ai'
 import { generateText, Output } from 'ai'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { PostHog } from 'posthog-node'
 import { z } from 'zod'
 import * as Sentry from '@sentry/nextjs'
 
@@ -18,6 +19,12 @@ const openai = createOpenAI({
   baseURL: 'https://gateway-us.pydantic.dev/proxy/chat/',
 })
 
+const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
+  ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
+      host: 'https://us.i.posthog.com',
+    })
+  : null
+
 // Loaded from the local copy of the canonical MDX file.
 // The file is created by `scripts/copy-aup.mjs` (run via `prebuild`).
 const aupContent = readFileSync(
@@ -29,6 +36,7 @@ const aupContent = readFileSync(
 )
 
 const requestSchema = z.object({
+  conversation_id: z.string().min(1).max(64),
   product_description: z.string().max(MAX_DESCRIPTION_LENGTH),
   selling_categories: z
     .array(z.string().max(MAX_CATEGORY_LENGTH))
@@ -49,8 +57,8 @@ const requestSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  const cookieStore = await cookies()
-  if (!cookieStore.has(CONFIG.AUTH_COOKIE_KEY)) {
+  const user = await getAuthenticatedUser()
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -70,12 +78,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
-  const { product_description, selling_categories, pricing_models, history } =
-    parsed.data
+  const {
+    conversation_id,
+    product_description,
+    selling_categories,
+    pricing_models,
+    history,
+  } = parsed.data
+
+  const model = phClient
+    ? withTracing(openai('gpt-5.4-mini'), phClient, {
+        posthogDistinctId: user.id,
+        posthogTraceId: conversation_id,
+      })
+    : openai('gpt-5.4-mini')
 
   try {
     const { output } = await generateText({
-      model: openai('gpt-5.4-mini'),
+      model,
       maxOutputTokens: 256,
       output: Output.object({
         schema: z.object({
@@ -174,6 +194,10 @@ Current submission:
 Pricing models: ${pricing_models.join(', ') || 'Not specified'}
 Product description: <user_input>${product_description}</user_input>`,
     })
+
+    if (phClient) {
+      await phClient.flush()
+    }
 
     return NextResponse.json(output)
   } catch (error) {

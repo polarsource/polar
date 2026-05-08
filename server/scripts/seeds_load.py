@@ -3,6 +3,7 @@ import random
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 from uuid import UUID
 
@@ -37,7 +38,7 @@ from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent as SystemEventEnum
 from polar.event_type.repository import EventTypeRepository
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
-from polar.kit.crypto import generate_token_hash_pair
+from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import generate_uuid, utc_now
@@ -68,6 +69,12 @@ from polar.models.product_price import (
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.models.user import IdentityVerificationStatus, User
+from polar.models.webhook_endpoint import (
+    WebhookEndpoint,
+    WebhookEventType,
+    WebhookFormat,
+)
+from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, create_async_engine
@@ -1922,6 +1929,41 @@ TOKEN_SCOPES = " ".join(
     ]
 )
 
+WEBHOOK_NAME = "Polar self-integration (dev seed)"
+WEBHOOK_URL = "http://127.0.0.1:8000/v1/integrations/polar/webhook"
+WEBHOOK_EVENTS: list[WebhookEventType] = [
+    WebhookEventType.benefit_grant_created,
+    WebhookEventType.benefit_grant_updated,
+    WebhookEventType.benefit_grant_revoked,
+]
+SERVER_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+WEBHOOK_SECRET_ENV_KEY = "POLAR_POLAR_WEBHOOK_SECRET"
+
+
+def _write_webhook_secret_to_env(secret: str) -> None:
+    if not SERVER_ENV_PATH.exists():
+        print(
+            f"# warn: {SERVER_ENV_PATH} not found; "
+            f"skipping {WEBHOOK_SECRET_ENV_KEY} write"
+        )
+        return
+
+    lines = SERVER_ENV_PATH.read_text().splitlines(keepends=True)
+    new_line = f'{WEBHOOK_SECRET_ENV_KEY}="{secret}"\n'
+    replaced = False
+    for i, line in enumerate(lines):
+        if line.startswith(f"{WEBHOOK_SECRET_ENV_KEY}="):
+            lines[i] = new_line
+            replaced = True
+            break
+
+    if not replaced:
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        lines.append(new_line)
+
+    SERVER_ENV_PATH.write_text("".join(lines))
+
 
 async def create_single_org_seed(
     session: AsyncSession, redis: Redis, slug: str
@@ -2163,11 +2205,42 @@ def polar_self_env() -> None:
                 comment=TOKEN_COMMENT,
             )
             session.add(oat)
+
+            existing_webhooks = (
+                (
+                    await session.execute(
+                        select(WebhookEndpoint).where(
+                            WebhookEndpoint.organization_id == org.id,
+                            WebhookEndpoint.name == WEBHOOK_NAME,
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            for w in existing_webhooks:
+                await session.delete(w)
+
+            webhook_secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+            webhook = WebhookEndpoint(
+                organization_id=org.id,
+                url=WEBHOOK_URL,
+                name=WEBHOOK_NAME,
+                format=WebhookFormat.raw,
+                secret=webhook_secret,
+                events=WEBHOOK_EVENTS,
+                enabled=True,
+            )
+            session.add(webhook)
+
             await session.commit()
+
+            _write_webhook_secret_to_env(webhook_secret)
 
             print(f"POLAR_POLAR_ORGANIZATION_ID={org.id}")
             print(f"POLAR_POLAR_FREE_PRODUCT_ID={product.id}")
             print(f"POLAR_POLAR_ACCESS_TOKEN={token}")
+            print(f"{WEBHOOK_SECRET_ENV_KEY}={webhook_secret}")
             print("POLAR_POLAR_API_URL=http://127.0.0.1:8000")
 
         await engine.dispose()

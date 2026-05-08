@@ -1,179 +1,140 @@
 ---
 title: "Products"
-description: "Create digital products on Polar in minutes"
+description: "Start selling digital products on Polar in minutes."
 ---
 
 <Info>
 **Everything is a product**
 
-Subscriptions or pay once products are both considered a product in Polar (API & data model). Just with different pricing & billing logic. So both are shown & managed under Products with the ability to filter based on pricing model.
-
+Subscriptions and one-time purchases are both products in Polar — same API, same data model, just different pricing and billing logic. They live together in the Products dashboard, filterable by pricing model.
 </Info>
-
-<img
-  className="block dark:hidden"
-  src="/assets/features/products/create.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/products/create.dark.png"
-/>
 
 ## Create a product
 
-### Name
+Give your product a name and you're halfway there. The rest of the form is about deciding how customers pay and what they get.
 
-The title of your product.
+### Billing cycle
+
+A product is either a **one-time purchase** or **recurring**. One-time products charge the customer once and grant access forever. Recurring products bill on an interval — daily, weekly, monthly, or yearly — and you can extend any of those with an interval count to express things like "every 2 weeks" or "every 3 months".
+
+The billing cycle and recurring interval are locked in at creation. If you need to change them later, create a new product instead.
 
 ### Pricing
 
-Determine how you want to charge your customers for this product.
+Polar supports several pricing models, and you pick one per product:
 
-<Steps>
-  <Step title="Billing cycle">
-    * **One-time purchase** Customer is charged once and gets access to the product forever.
-    * **Recurring** Customer is charged on a recurring basis with flexible intervals:
-      - Daily, Weekly, Monthly, Yearly (basic intervals)
-      - Custom intervals like "Every 2 weeks", "Every 3 months", etc.
-  </Step>
-  <Step title="Pricing type">
-    * **Fixed price** Set a fixed price for the product.
-    * **Pay what you want** Let customers decide how much they want to pay.
-    * **Free** No charge for the product.
-  </Step>
-  <Step title="Price">
-    For fixed price products, set the amount you want to charge.
+- **Fixed price.** Set an amount and that's what customers pay.
+- **Pay what you want.** Customers choose the amount. You can set a minimum and a default that's pre-filled at checkout.
+- **Free.** No charge. Useful for lead magnets, free tiers, or gating benefits behind a sign-up.
+- **Metered pricing.** Charge based on usage — bill per API call, per token, per anything you can count. See the [usage-based billing guide](/features/usage-based-billing/introduction) for the full setup.
+- **Seat-based pricing.** Sell a number of seats with optional volume tiers, and let the buyer assign them to teammates. See the [seat-based pricing guide](/features/seat-based-pricing).
 
-    For pay what you want products, you can set a minimum amount and a default amount that will be preset on checkout.
+Pricing type is locked in at creation, but for fixed-price products you can change the amount at any time. Existing subscribers stay on the price they signed up at.
 
-  </Step>
-  <Step title="Multiple payment currencies">
+#### Multiple payment currencies
 
-    Products can now be created in several currencies, allowing customers to purchase in their local currency:
+Products can be priced in several currencies at once so customers pay in their local currency. Your organization has a default payment currency that acts as the fallback, and you can add more on top. The price structure (price type, metered prices, etc.) must match across every currency you enable.
 
-    - **Default Payment Currency**: Your organization has a default payment currency that serves as the fallback.
-    - **Additional Currencies**: You can add more currencies from the available options.
-    - **Consistent Price Structure**: The price structure (price type, metered prices) must be exactly the same across all currencies.
+Polar picks the currency based on the customer's geolocation at checkout. If their currency isn't enabled on the product, it falls back to your organization's default.
 
-    When enabled, customers will see prices in their preferred currency during checkout. Polar automatically determines the best currency for each customer based on their geographical location. If the detected currency is available for the product, it will be used. Otherwise, the system falls back to your organization's default payment currency.
+<Warning>
+**Creating checkout sessions from a backend or proxy?** Polar reads the customer's geolocation from the IP address of the request that creates the session. If you create sessions server-side (an API, a Cloudflare Worker, etc.), Polar sees *your server's* IP and may pick the wrong currency.
 
-    <Warning>
-      **Creating checkout sessions from a backend or proxy?** Polar detects the customer's geolocation from the IP address of the request that creates the checkout session. If you create sessions server-side (e.g. from your API, a Cloudflare Worker, or any backend), Polar will see *your server's* IP — not the customer's — and may pick the wrong currency.
+Forward the customer's IP as [`customer_ip_address`](/features/checkout/session#customer-ip-address) when creating the session.
+</Warning>
 
-      To fix this, forward the customer's IP address as [`customer_ip_address`](/features/checkout/session#customer-ip-address) when creating the checkout session.
-    </Warning>
+<Accordion title="Supported currencies">
+Polar supports 130+ currencies for product pricing:
 
-    <Accordion title="Available Payment Currencies">
+`AED`, `ALL`, `AMD`, `AOA`, `ARS`, `AUD`, `AWG`, `AZN`, `BAM`, `BBD`, `BDT`, `BIF`, `BMD`, `BND`, `BOB`, `BRL`, `BSD`, `BWP`, `BZD`, `CAD`, `CDF`, `CHF`, `CLP`, `CNY`, `COP`, `CRC`, `CVE`, `CZK`, `DJF`, `DKK`, `DOP`, `DZD`, `EGP`, `ETB`, `EUR`, `FJD`, `FKP`, `GBP`, `GEL`, `GIP`, `GMD`, `GNF`, `GTQ`, `GYD`, `HKD`, `HNL`, `HTG`, `HUF`, `IDR`, `ILS`, `INR`, `ISK`, `JMD`, `JPY`, `KES`, `KGS`, `KHR`, `KMF`, `KRW`, `KYD`, `KZT`, `LAK`, `LKR`, `LRD`, `LSL`, `MAD`, `MDL`, `MGA`, `MKD`, `MNT`, `MOP`, `MUR`, `MVR`, `MWK`, `MXN`, `MYR`, `MZN`, `NAD`, `NGN`, `NIO`, `NOK`, `NPR`, `NZD`, `PAB`, `PEN`, `PGK`, `PHP`, `PKR`, `PLN`, `PYG`, `QAR`, `RON`, `RSD`, `RWF`, `SAR`, `SBD`, `SCR`, `SEK`, `SGD`, `SHP`, `SOS`, `SRD`, `SZL`, `THB`, `TJS`, `TOP`, `TRY`, `TTD`, `TWD`, `TZS`, `UAH`, `UGX`, `USD`, `UYU`, `UZS`, `VND`, `VUV`, `WST`, `XAF`, `XCD`, `XCG`, `XOF`, `XPF`, `YER`, `ZAR`, `ZMW`.
+</Accordion>
 
-    The following currencies are currently supported for multiple payment currencies:
+### Trial period
 
-    | Currency Code | Currency Name |
-    |---------------|---------------|
-    | USD | US Dollar |
-    | EUR | Euro |
-    | GBP | British Pound |
-    | CAD | Canadian Dollar |
-    | AUD | Australian Dollar |
-    | JPY | Japanese Yen |
-    | CHF | Swiss Franc |
-    | SEK | Swedish Krona |
-    | INR | Indian Rupee |
-    | BRL | Brazilian Real |
+For recurring products, toggle **Enable trial period** to give customers a window where they aren't charged. Pick a number and a unit (days, weeks, months, or years) and Polar handles the rest.
 
-    </Accordion>
+Read more in the [trials guide](/features/subscriptions/trials).
 
-  </Step>
-</Steps>
+### Metadata
 
-<Info>
-  Billing cycle, pricing type, and recurring interval cannot be changed after
-  the product is created.
-</Info>
+You can attach arbitrary key–value metadata to a product. It's not shown to customers, but it travels along on every order, subscription, and webhook tied to the product, which makes it useful for keeping track of internal IDs or categories that live outside Polar.
 
-<Info>
-  **What if I want both a monthly and yearly pricing?**
+## Automated Benefits
 
-Polar has a unique approach to what the industry typically calls **variants**. Each product has a single pricing model, but you can create multiple products with different pricing models, and showcase them both at checkout.
+Benefits are what your customers actually get when they buy. You can attach existing benefits to a product or create new ones inline — license keys, Discord roles, GitHub repository access, file downloads, feature flags, or a custom benefit you wire up yourself.
 
-</Info>
+Polar grants and revokes benefits automatically as customers purchase, renew, or cancel. The full list of built-in benefit types and how to configure them lives in the [benefits guide](/features/benefits/introduction).
 
-### Trial Period
+## Checkout Page
 
-For recurring products, you can set a trial period during which the customer won't be charged. Toggle **Enable trial period** to enable it. Then, you'll be able to set the duration of the trial period, given a number and a unit (days, weeks, months or years).
-
-You can read more about how trials work [here](/features/subscriptions/trials).
+How your product is represented during checkout.
 
 ### Description
 
-Optional text that appears on the checkout page so you can describe your product and how it is presented during checkout. Content supports **Markdown** formatting.
+Optional copy that appears on the checkout page. Use it to pitch the product, list what's included, or anything else that helps the customer commit. Markdown is supported.
 
-### Product Media
+### Product media
 
-- You can upload public product images to be displayed on product pages
-- They can be up to 10MB each
-- You can remove and re-arrange images
+Upload images to display on the checkout and product pages. Images can be up to 10MB each, and you can re-arrange or remove them at any time.
 
-### Checkout Fields
+### Checkout fields
 
-You can collect additional information from your customers at checkout. This can be useful for things like phone number, terms of service agreement or specific data you need to collect.
+Collect extra information from customers at checkout — phone numbers, terms-of-service agreements, custom data you need for fulfillment, anything you want.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/products/checkout_fields.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/products/checkout_fields.dark.png"
-/>
-
-Fields are managed from your organization settings, and you can choose which fields to show on a per-product basis, and set if they are required or not. We support the following field types:
-
-- Text
-- Number
-- Date
-- Checkbox
-- Select
+Fields are defined once at the organization level and then enabled per product, where you also choose whether each one is required. Supported field types: text, number, date, checkbox, and select.
 
 <Info>
-  If you make a checkbox **required**, the customer will need to check it before
-  confirming their purchase. Very handy for legal terms!
+A required checkbox blocks confirmation until the customer ticks it. Handy for legal terms.
 </Info>
 
-The data collected will be available in the order and subscription details.
-
-### Automated Entitlements
-
-Finally, you can enable or create new entitlements (what we call Benefits) that you tie to the product.
-
-Read more in our [product benefits guide](/features/benefits/introduction) on how they work and how to customize the built-in ones we offer:
-
-- License Keys
-- Discord Server Role
-- GitHub Repository Access
-- File Downloads
-- Feature Flags
-- Custom Benefit
-
-## Variants
-
-Polar has a unique approach regarding what the industry typically calls **variants**.
-
-We believe having a single product with multiple pricing models and benefits adds unnecessary complexity to the user and to the API. Instead, we chose to treat everything as a product, giving you maximum flexibility about the pricing and benefits you want to offer.
-
-You can showcase several products at checkout, allowing the customer to switch between them. Typically, you can offer a monthly and a yearly product, with specific pricing and benefits for each. Read more about how to do so using [Checkout Links](/features/checkout/links) or the [Checkout Session API](/features/checkout/session).
+The collected values show up on the resulting order or subscription.
 
 ## Update a product
 
-You can edit any product details, except the **billing cycle** and **pricing type**.
+Most things on a product can be edited after the fact — name, description, media, checkout fields, benefits, metadata, trial period, and the price (for fixed-price products). The two exceptions are billing cycle and pricing type, which are immutable. To change those, create a new product.
 
-For fixed price products, you can change the price. Existing subscribers will remain on their current pricing.
+A few things to know:
 
-If you add benefits, existing subscribers will get them automatically. If you remove benefits, existing subscribers will lose access to them.
+- **Existing subscribers stay on their original price.** Changing a fixed price only affects new purchases.
+- **Benefit changes propagate.** Add a benefit and existing customers get it automatically. Remove one and they lose access.
+- **Need a similar product?** Use **Duplicate Product** from the product menu to clone an existing one as a starting point — handy for spinning up a yearly variant of a monthly plan, or for A/B testing pricing.
 
 ## Archive a product
 
-Products on Polar can't be deleted, but they can be **archived**. You can do so by clicking the **Archive** button on the bottom right of the product page.
+Products can be archived but not permanently deleted. Click **Archive** from the product menu and the product disappears from new checkouts.
 
-Existing customers will keep their access to the product, and subscriptions will continue to renew. However, the product will no longer be available for new purchases.
+Existing customers keep their access, and active subscriptions keep renewing. You can unarchive at any time from the same menu to make the product available again.
 
-It's possible to unarchive a product using the [Products Update API](/api-reference/products/update#body-is-archived).
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="What about variants? Can I sell a monthly and a yearly version of the same product?">
+    Polar takes a different approach to what the industry typically calls **variants**. Each product has a single pricing model, and instead of bolting variants onto one product, you create one product per pricing model and showcase them together at checkout.
+
+    So a "monthly" and "yearly" plan are two products, each with their own pricing and benefits, presented side-by-side via [Checkout Links](/features/checkout/links) or the [Checkout Session API](/features/checkout/session). It keeps the API and the data model clean, and gives you full freedom over what each option includes.
+  </Accordion>
+
+  <Accordion title="Can I change the price of a product after publishing it?">
+    Yes, for fixed-price products. Existing subscribers keep paying their original price; only new purchases see the updated amount. Billing cycle and pricing type can't change, though.
+  </Accordion>
+
+  <Accordion title="Can I sell physical goods on Polar?">
+    No. Polar is built for digital products and services — software, subscriptions, license keys, downloads, courses, API usage, and the like.
+  </Accordion>
+
+  <Accordion title="Can I sell usage-based or metered products?">
+    Yes. Set the price type to **Metered** and link it to a meter that tracks the events you care about. Full walkthrough in the [usage-based billing guide](/features/usage-based-billing/introduction).
+  </Accordion>
+
+  <Accordion title="Can I sell team or per-seat plans?">
+    Yes, via [seat-based pricing](/features/seat-based-pricing). The buyer purchases a number of seats and assigns them to teammates, who each get the product's benefits.
+  </Accordion>
+
+  <Accordion title="Will customers see prices in their local currency?">
+    If you've enabled additional payment currencies on the product, yes — Polar matches the customer's geolocation to one of the enabled currencies. If there's no match, it falls back to your organization's default. See [Multiple payment currencies](#multiple-payment-currencies) above.
+  </Accordion>
+
+  <Accordion title="Can I duplicate a product?">
+    Yes. From the product list or the product menu, pick **Duplicate Product** to clone all the settings into a new draft you can tweak before saving.
+  </Accordion>
+</AccordionGroup>

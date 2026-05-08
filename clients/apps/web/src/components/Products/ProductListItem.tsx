@@ -221,7 +221,7 @@ export const ProductListItem = ({
         isShown={isConfirmModalShown}
         hide={hideModal}
         title={`Archive "${product.name}"`}
-        description="Are you sure you want to archive this product? This action cannot be undone."
+        description="Are you sure you want to archive this product?"
         onConfirm={onArchiveProduct}
         destructive
         destructiveText="Yes, archive"

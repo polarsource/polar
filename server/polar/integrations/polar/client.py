@@ -14,7 +14,15 @@ from polar.exceptions import PolarError as InternalPolarError
 
 if TYPE_CHECKING:
     from polar_sdk import Polar as PolarSDK
-    from polar_sdk.models import BenefitGrant, Customer, Member
+    from polar_sdk.models import (
+        BenefitGrant,
+        Checkout,
+        Customer,
+        Member,
+        Product,
+        Subscription,
+        SubscriptionProrationBehavior,
+    )
 
 
 class PolarSelfClientError(InternalPolarError):
@@ -128,6 +136,119 @@ class PolarSelfClient:
 
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
         return await self._sdk.customers.get_external_async(external_id=external_id)
+
+    async def list_recurring_products(self, *, organization_id: str) -> list[Product]:
+        from polar_sdk.models import ProductVisibility
+        from polar_sdk.models.polarerror import PolarError
+
+        with logfire.span(
+            "polar.list_recurring_products", organization_id=organization_id
+        ) as span:
+            products: list[Product] = []
+            try:
+                response = await self._sdk.products.list_async(
+                    organization_id=organization_id,
+                    is_recurring=True,
+                    is_archived=False,
+                    visibility=[ProductVisibility.PUBLIC],
+                    page=1,
+                    limit=100,
+                )
+                while response is not None:
+                    products.extend(response.result.items)
+                    response = response.next()
+            except PolarError as e:
+                _raise_error(span, e, "list_recurring_products")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "list_recurring_products")
+
+            span.set_attribute("product_count", len(products))
+            return products
+
+    async def get_active_subscription(
+        self, *, external_customer_id: str
+    ) -> Subscription | None:
+        from polar_sdk.models.polarerror import PolarError
+
+        with logfire.span(
+            "polar.get_active_subscription",
+            external_customer_id=external_customer_id,
+        ) as span:
+            try:
+                response = await self._sdk.subscriptions.list_async(
+                    external_customer_id=external_customer_id,
+                    active=True,
+                    page=1,
+                    limit=1,
+                )
+            except PolarError as e:
+                _raise_error(span, e, "get_active_subscription")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "get_active_subscription")
+
+            items = response.result.items if response is not None else []
+            span.set_attribute("found", bool(items))
+            return items[0] if items else None
+
+    async def create_checkout(
+        self,
+        *,
+        product_id: str,
+        external_customer_id: str,
+        customer_ip_address: str | None = None,
+        success_url: str | None = None,
+        embed_origin: str | None = None,
+    ) -> Checkout:
+        from polar_sdk.models import CheckoutCreate
+        from polar_sdk.models.polarerror import PolarError
+
+        with logfire.span(
+            "polar.create_checkout",
+            product_id=product_id,
+            external_customer_id=external_customer_id,
+        ) as span:
+            try:
+                return await self._sdk.checkouts.create_async(
+                    request=CheckoutCreate(
+                        products=[product_id],
+                        external_customer_id=external_customer_id,
+                        customer_ip_address=customer_ip_address,
+                        success_url=success_url,
+                        embed_origin=embed_origin,
+                    )
+                )
+            except PolarError as e:
+                _raise_error(span, e, "create_checkout")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "create_checkout")
+
+    async def update_subscription_product(
+        self,
+        *,
+        subscription_id: str,
+        product_id: str,
+        proration_behavior: SubscriptionProrationBehavior | None = None,
+    ) -> Subscription:
+        from polar_sdk.models import SubscriptionUpdateProduct
+        from polar_sdk.models.polarerror import PolarError
+
+        with logfire.span(
+            "polar.update_subscription_product",
+            subscription_id=subscription_id,
+            product_id=product_id,
+        ) as span:
+            try:
+                return await self._sdk.subscriptions.update_async(
+                    id=subscription_id,
+                    subscription_update=SubscriptionUpdateProduct(
+                        product_id=product_id,
+                        proration_behavior=proration_behavior,
+                    ),
+                )
+            except PolarError as e:
+                _raise_error(span, e, "update_subscription_product")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "update_subscription_product")
 
     async def get_member_by_external_id(
         self, *, external_customer_id: str, external_id: str

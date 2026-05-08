@@ -135,14 +135,16 @@ not raw values.
 | `4xl`  | 64px  |
 | `5xl`  | 96px  |
 
-**Colors** (`ColorToken`) — used for `backgroundColor`, `color`, `borderColor`. Each token
-auto-resolves light vs dark.
+**Colors** — Each token auto-resolves light vs dark. `backgroundColor` accepts
+`BackgroundColorToken`, `color` accepts `TextColorToken`, and `borderColor` accepts
+`BorderColorToken`.
 
 | Token                  | Use                           |
 | ---------------------- | ----------------------------- |
 | `background-primary`   | Page background               |
 | `background-secondary` | Sectioned/raised surface      |
 | `background-card`      | Card / inset panel surface    |
+| `background-inverse`   | Inverted background surface   |
 | `background-warning`   | Warning surface               |
 | `background-success`   | Success surface               |
 | `background-danger`    | Danger surface                |

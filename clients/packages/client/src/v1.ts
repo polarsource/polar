@@ -937,6 +937,54 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/plans': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Available Plans
+     * @description List the plans this organization can subscribe to.
+     */
+    get: operations['organizations:list_plans']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/subscription': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization Subscription
+     * @description Get the current Polar subscription for this organization.
+     */
+    get: operations['organizations:get_subscription']
+    put?: never
+    /**
+     * Start Subscription Checkout
+     * @description Create a Polar checkout session for an initial paid subscription.
+     */
+    post: operations['organizations:start_subscription_checkout']
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Change Organization Plan
+     * @description Change the plan for an organization's existing subscription.
+     */
+    patch: operations['organizations:change_subscription_plan']
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -22678,6 +22726,30 @@ export interface components {
        */
       dashboard_access: boolean
     }
+    /** OrganizationCheckoutRequest */
+    OrganizationCheckoutRequest: {
+      /**
+       * Product Id
+       * @description Polar product ID to subscribe to.
+       */
+      product_id: string
+      /** Success Url */
+      success_url?: string | null
+      /** Embed Origin */
+      embed_origin?: string | null
+    }
+    /** OrganizationCheckoutResponse */
+    OrganizationCheckoutResponse: {
+      /** Checkout Id */
+      checkout_id: string
+      /** Url */
+      url: string
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string
+    }
     /** OrganizationCompanyLegalEntitySchema */
     OrganizationCompanyLegalEntitySchema: {
       /**
@@ -23595,6 +23667,46 @@ export interface components {
        */
       payout_account_id: string
     }
+    /** OrganizationPlan */
+    OrganizationPlan: {
+      /** Product Id */
+      product_id: string
+      /** Name */
+      name: string
+      /** Description */
+      description?: string | null
+      /** Recurring Interval */
+      recurring_interval?: string | null
+      price?: components['schemas']['OrganizationPlanPrice'] | null
+      transaction_fee?: components['schemas']['OrganizationPlanFee'] | null
+      /**
+       * Highlight
+       * @default false
+       */
+      highlight: boolean
+      /** Features */
+      features?: string[]
+    }
+    /** OrganizationPlanFee */
+    OrganizationPlanFee: {
+      /**
+       * Percent
+       * @description Percent fee in basis points (e.g. 380 = 3.80%).
+       */
+      percent: number
+      /**
+       * Fixed
+       * @description Fixed fee in cents.
+       */
+      fixed: number
+    }
+    /** OrganizationPlanPrice */
+    OrganizationPlanPrice: {
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+    }
     /** OrganizationReviewAppeal */
     OrganizationReviewAppeal: {
       /**
@@ -23758,6 +23870,55 @@ export interface components {
       | 'active'
       | 'blocked'
       | 'offboarding'
+    /** OrganizationSubscription */
+    OrganizationSubscription: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Status */
+      status: string
+      /** Product Id */
+      product_id: string
+      plan: components['schemas']['OrganizationPlan']
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Recurring Interval */
+      recurring_interval: string
+      /** Recurring Interval Count */
+      recurring_interval_count: number
+      /**
+       * Current Period Start
+       * Format: date-time
+       */
+      current_period_start: string
+      /**
+       * Current Period End
+       * Format: date-time
+       */
+      current_period_end: string
+      /** Cancel At Period End */
+      cancel_at_period_end: boolean
+      /** Canceled At */
+      canceled_at?: string | null
+      /** Started At */
+      started_at?: string | null
+      /** Ends At */
+      ends_at?: string | null
+      pending_change?:
+        | components['schemas']['OrganizationSubscriptionPendingChange']
+        | null
+    }
+    /** OrganizationSubscriptionPendingChange */
+    OrganizationSubscriptionPendingChange: {
+      /** Product Id */
+      product_id: string
+      /**
+       * Applies At
+       * Format: date-time
+       */
+      applies_at: string
+    }
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
@@ -23773,6 +23934,14 @@ export interface components {
       prevent_trial_abuse: boolean
       /** Allow Customer Updates */
       allow_customer_updates: boolean
+    }
+    /** OrganizationSubscriptionUpdate */
+    OrganizationSubscriptionUpdate: {
+      /**
+       * Product Id
+       * @description Polar product ID to switch the plan to.
+       */
+      product_id: string
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {
@@ -32671,6 +32840,174 @@ export interface operations {
         }
       }
       /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:list_plans': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationPlan'][]
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_subscription': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSubscription']
+        }
+      }
+      /** @description No active subscription or organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:start_subscription_checkout': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationCheckoutRequest']
+      }
+    }
+    responses: {
+      /** @description Checkout session created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationCheckoutResponse']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:change_subscription_plan': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationSubscriptionUpdate']
+      }
+    }
+    responses: {
+      /** @description Plan changed. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSubscription']
+        }
+      }
+      /** @description Organization or subscription not found. */
       404: {
         headers: {
           [name: string]: unknown

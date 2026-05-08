@@ -1,6 +1,7 @@
+from collections.abc import Sequence
 from uuid import UUID
 
-from fastapi import Depends, Query, Response, status
+from fastapi import Depends, Query, Request, Response, status
 from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
@@ -23,6 +24,17 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceNotFound,
 )
+from polar.integrations.polar.schemas import (
+    OrganizationCheckoutRequest,
+    OrganizationCheckoutResponse,
+    OrganizationPlan,
+    OrganizationSubscription,
+    OrganizationSubscriptionUpdate,
+)
+from polar.integrations.polar.service import (
+    PolarSelfNoActiveSubscription,
+)
+from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
@@ -674,3 +686,93 @@ async def validate_website(
         status=result.status,
         error=result.error,
     )
+
+
+@router.get(
+    "/{id}/plans",
+    response_model=Sequence[OrganizationPlan],
+    summary="List Available Plans",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def list_plans(
+    authz: AuthorizeOrgAccess,
+) -> Sequence[OrganizationPlan]:
+    """List the plans this organization can subscribe to."""
+    products = await polar_self_service.list_plans()
+    return [OrganizationPlan.from_sdk(product) for product in products]
+
+
+@router.get(
+    "/{id}/subscription",
+    response_model=OrganizationSubscription,
+    summary="Get Organization Subscription",
+    responses={
+        404: {
+            "description": "No active subscription or organization not found.",
+            "model": ResourceNotFound.schema(),
+        }
+    },
+    tags=[APITag.private],
+)
+async def get_subscription(
+    authz: AuthorizeOrgAccess,
+) -> OrganizationSubscription:
+    """Get the current Polar subscription for this organization."""
+    subscription = await polar_self_service.get_subscription(authz.organization.id)
+    if subscription is None:
+        raise PolarSelfNoActiveSubscription(authz.organization.id)
+    return OrganizationSubscription.from_sdk(subscription)
+
+
+@router.post(
+    "/{id}/subscription",
+    response_model=OrganizationCheckoutResponse,
+    status_code=201,
+    summary="Start Subscription Checkout",
+    responses={
+        201: {"description": "Checkout session created."},
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def start_subscription_checkout(
+    request: Request,
+    authz: AuthorizeOrgAccessWrite,
+    body: OrganizationCheckoutRequest,
+) -> OrganizationCheckoutResponse:
+    """Create a Polar checkout session for an initial paid subscription."""
+    customer_ip_address = request.client.host if request.client else None
+    checkout = await polar_self_service.start_checkout(
+        organization_id=authz.organization.id,
+        product_id=body.product_id,
+        customer_ip_address=customer_ip_address,
+        success_url=body.success_url,
+        embed_origin=body.embed_origin,
+    )
+    return OrganizationCheckoutResponse.from_sdk(checkout)
+
+
+@router.patch(
+    "/{id}/subscription",
+    response_model=OrganizationSubscription,
+    summary="Change Organization Plan",
+    responses={
+        200: {"description": "Plan changed."},
+        404: {
+            "description": "Organization or subscription not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def change_subscription_plan(
+    authz: AuthorizeOrgAccessWrite,
+    body: OrganizationSubscriptionUpdate,
+) -> OrganizationSubscription:
+    """Change the plan for an organization's existing subscription."""
+    subscription = await polar_self_service.change_plan(
+        organization_id=authz.organization.id,
+        product_id=body.product_id,
+    )
+    return OrganizationSubscription.from_sdk(subscription)

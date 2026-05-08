@@ -22,8 +22,10 @@ Polar supports several pricing models, and you pick one per product:
 - **Fixed price.** Set an amount and that's what customers pay.
 - **Pay what you want.** Customers choose the amount. You can set a minimum and a default that's pre-filled at checkout.
 - **Free.** No charge. Useful for lead magnets, free tiers, or gating benefits behind a sign-up.
-- **Metered pricing.** Charge based on usage — bill per API call, per token, per anything you can count. See the [usage-based billing guide](/features/usage-based-billing/introduction) for the full setup.
-- **Seat-based pricing.** Sell a number of seats with optional volume tiers, and let the buyer assign them to teammates. See the [seat-based pricing guide](/features/seat-based-pricing).
+- **Metered pricing.** Charge based on usage — bill per API call, per token, per anything you can count. [Learn more about usage-based billing](/features/usage-based-billing/introduction).
+- **Seat-based pricing.** Sell a number of seats with optional volume tiers, and let the buyer assign them to teammates. [Learn more about seat-based billing](/features/seat-based-pricing).
+
+Metered prices stack on top of the others. You can pair one with a fixed base fee for a classic "base + usage" plan, and you can attach multiple metered prices to the same product if you want to bill on more than one dimension at once — say, per API call *and* per GB of storage.
 
 Pricing type is locked in at creation, but for fixed-price products you can change the amount at any time. Existing subscribers are **grandfathered** onto the price they signed up at, so a price change only affects new purchases. If you do want to migrate someone onto the new price, you can do it [per subscription](/features/subscriptions/manage) from the dashboard or the API.
 

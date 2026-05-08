@@ -1,8 +1,8 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
+import { useAupValidation } from '@/hooks/useAupValidation'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -17,33 +17,14 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
-import { nanoid } from 'nanoid'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { ChipSelect } from '@/components/Form/ChipSelect'
+import { PRICING_MODELS, SELLING_CATEGORIES } from '@/utils/productCategories'
 import { AUPBlocker } from './AUPBlocker'
-import { ChipSelect } from './ChipSelect'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
-
-const SELLING_CATEGORIES = [
-  { name: 'Software / SaaS', prohibited: false },
-  { name: 'Digital downloads', prohibited: false },
-  { name: 'E-books or courses', prohibited: false },
-  { name: 'Physical products', prohibited: true },
-  { name: 'Services', prohibited: true },
-  { name: 'Financial Trading', prohibited: true },
-  { name: 'Advertising', prohibited: true },
-  { name: 'Marketplace', prohibited: true },
-  { name: 'Other', prohibited: false },
-] as const
-
-const PRICING_MODELS = [
-  'Subscription',
-  'Seat-based subscription',
-  'One-time purchase',
-  'Usage-based',
-] as const
 
 const SELLING_PLATFORMS: [
   NonNullable<schemas['OrganizationDetails']['switching_from']>,
@@ -73,15 +54,10 @@ export function ProductDetailsStep() {
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
   const createOrganization = useCreateOrganization()
   const [loading, setLoading] = useState<
-    'validating' | 'submitting' | 'submitting-anyway' | null
+    'submitting' | 'submitting-anyway' | null
   >(null)
   trackStepViewed('product')
-  const [aupVerdict, setAupVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
-  const [aupMessage, setAupMessage] = useState<string | null>(null)
-  const [aupHistory, setAupHistory] = useState<
-    Array<{ product_description: string; verdict: string; message?: string }>
-  >([])
-  const [conversationId] = useState(() => nanoid())
+  const aup = useAupValidation()
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -214,63 +190,21 @@ export function ProductDetailsStep() {
   }
 
   const onSubmit = async (formData: FormSchema) => {
-    setLoading('validating')
+    const result = await aup.validate({
+      product_description: formData.productDescription,
+      selling_categories: formData.sellingCategories,
+      pricing_models: formData.pricingModel,
+    })
 
-    let res: Response
-    try {
-      res = await fetch('/onboarding/validate-description', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversation_id: conversationId,
-          product_description: formData.productDescription,
-          selling_categories: formData.sellingCategories,
-          pricing_models: formData.pricingModel,
-          history: aupHistory,
-        }),
-      })
-    } catch (error) {
-      Sentry.captureException(error)
+    if (!result.ok) {
       form.setError('root', {
         message: 'Something went wrong, please try again.',
       })
-      setLoading(null)
       return
     }
 
-    if (!res.ok) {
-      Sentry.captureException(
-        new Error(`Validation failed with status ${res.status}`),
-      )
-      form.setError('root', {
-        message: 'Something went wrong, please try again.',
-      })
-      setLoading(null)
-      return
-    }
-    const validation: {
-      verdict: 'APPROVE' | 'DENY' | 'CLARIFY'
-      confidence: number
-      message?: string
-    } = await res.json()
+    if (result.verdict === 'DENY' || result.verdict === 'CLARIFY') return
 
-    if (validation.verdict === 'DENY' || validation.verdict === 'CLARIFY') {
-      setAupHistory((prev) => [
-        ...prev,
-        {
-          product_description: formData.productDescription,
-          verdict: validation.verdict,
-          message: validation.message,
-        },
-      ])
-      setAupVerdict(validation.verdict)
-      setAupMessage(validation.message ?? null)
-      setLoading(null)
-      return
-    }
-
-    setAupVerdict(null)
-    setAupMessage(null)
     setLoading('submitting')
     const success = await submitOrg(formData)
     if (!success) {
@@ -335,7 +269,7 @@ export function ProductDetailsStep() {
             )}
           />
 
-          {aupVerdict && (
+          {aup.verdict && (
             <Box
               display="flex"
               flexDirection="column"
@@ -348,12 +282,12 @@ export function ProductDetailsStep() {
               padding="l"
             >
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                {aupVerdict === 'CLARIFY'
+                {aup.verdict === 'CLARIFY'
                   ? 'Please clarify your use case'
                   : 'Use case not supported'}
               </p>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                {aupMessage}
+                {aup.message}
               </p>
             </Box>
           )}
@@ -440,7 +374,7 @@ export function ProductDetailsStep() {
             <Button
               type="submit"
               onClick={() => form.clearErrors()}
-              loading={loading === 'validating' || loading === 'submitting'}
+              loading={aup.isValidating || loading === 'submitting'}
               disabled={
                 loading === 'submitting-anyway' ||
                 blockedSelected.length > 0 ||
@@ -450,13 +384,13 @@ export function ProductDetailsStep() {
               }
               fullWidth
             >
-              {aupVerdict ? 'Review again' : 'Launch Dashboard'}
+              {aup.verdict ? 'Review again' : 'Launch Dashboard'}
             </Button>
 
-            {aupVerdict === 'CLARIFY' &&
-              aupHistory.length >= 3 &&
+            {aup.verdict === 'CLARIFY' &&
+              aup.history.length >= 3 &&
               productDescription.trim().length > 30 &&
-              loading !== 'validating' && (
+              !aup.isValidating && (
                 <Button
                   variant="ghost"
                   type="button"

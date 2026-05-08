@@ -16,7 +16,7 @@ from typing import Any, cast
 import stripe as stripe_lib
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import UUID4, BaseModel, ValidationError, field_validator
+from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
 from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
@@ -67,6 +67,7 @@ from polar.models.organization import (
     CAPABILITY_NAMES,
     CapabilityName,
     OrganizationStatus,
+    SnoozeType,
 )
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
@@ -75,6 +76,7 @@ from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
+from polar.organization.service import SNOOZE_MAX_DAYS, SNOOZE_MIN_DAYS
 from polar.organization.service import organization as organization_service
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
@@ -147,6 +149,16 @@ class SetCapabilityForm(BaseModel):
 
     @classmethod
     def model_validate_form(cls, data: Any) -> "SetCapabilityForm":
+        return cls.model_validate(dict(data))
+
+
+class SnoozeForm(BaseModel):
+    snooze_type: SnoozeType
+    days: int = Field(ge=SNOOZE_MIN_DAYS, le=SNOOZE_MAX_DAYS)
+    reason: str | None = None
+
+    @classmethod
+    def model_validate_form(cls, data: Any) -> "SnoozeForm":
         return cls.model_validate(dict(data))
 
 
@@ -1722,7 +1734,13 @@ async def snooze_dialog(
 
     if request.method == "POST":
         form_data = await request.form()
-        reason = str(form_data.get("reason", "")).strip() or None
+        try:
+            form = SnoozeForm.model_validate_form(form_data)
+        except ValidationError as e:
+            detail = [{"loc": err["loc"], "msg": err["msg"]} for err in e.errors()]
+            raise HTTPException(status_code=400, detail=detail) from e
+
+        reason = (form.reason or "").strip() or None
 
         review_repo = OrganizationReviewRepository(session)
         await review_repo.record_human_decision(
@@ -1733,7 +1751,11 @@ async def snooze_dialog(
         )
 
         await organization_service.snooze_organization(
-            session, organization, reason=reason
+            session,
+            organization,
+            days=form.days,
+            snooze_type=form.snooze_type,
+            reason=reason,
         )
 
         return HXRedirectResponse(
@@ -1778,8 +1800,59 @@ async def snooze_dialog(
                         text("Payouts remain blocked")
                     with tag.li():
                         text(
-                            "Org returns to Review automatically when a sale occurs 24h+ after snoozing"
+                            "Org returns to Review based on the trigger you "
+                            "select below"
                         )
+
+            snooze_options = [
+                (
+                    SnoozeType.NEXT_SALE,
+                    "On next sale after X days",
+                    "Stays snoozed past the deadline until the next sale arrives.",
+                ),
+                (
+                    SnoozeType.TIME_BASED,
+                    "Auto re-review after X days",
+                    "Pops back into the queue automatically once the deadline passes.",
+                ),
+            ]
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text font-semibold"):
+                        text("Re-review trigger")
+                with tag.div(classes="flex flex-col gap-2"):
+                    for option_type, option_label, option_desc in snooze_options:
+                        with tag.label(classes="flex items-start gap-2 cursor-pointer"):
+                            input_attrs: dict[str, Any] = {
+                                "type": "radio",
+                                "name": "snooze_type",
+                                "value": option_type.value,
+                                "classes": "radio radio-sm mt-0.5",
+                            }
+                            if option_type == SnoozeType.NEXT_SALE:
+                                input_attrs["checked"] = "checked"
+                            with tag.input(**input_attrs):
+                                pass
+                            with tag.div(classes="flex flex-col"):
+                                with tag.span(classes="text-sm font-medium"):
+                                    text(option_label)
+                                with tag.span(classes="text-xs text-base-content/70"):
+                                    text(option_desc)
+
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text font-semibold"):
+                        text(f"Days ({SNOOZE_MIN_DAYS}–{SNOOZE_MAX_DAYS})")
+                with tag.input(
+                    type="number",
+                    name="days",
+                    value=str(SNOOZE_MIN_DAYS),
+                    min=str(SNOOZE_MIN_DAYS),
+                    max=str(SNOOZE_MAX_DAYS),
+                    required="required",
+                    classes="input input-bordered w-full",
+                ):
+                    pass
 
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):

@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, func, select, update
@@ -29,11 +30,15 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import OrganizationStatus, SnoozeType
 from polar.models.organization_review import OrganizationReview
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrganizationSortProperty
+
+# Maximum orgs the unsnooze cron processes per run. Bounds worst-case
+# transaction size when many time-based snoozes expire in the same window.
+UNSNOOZE_EXPIRED_BATCH_SIZE = 500
 
 
 class OrganizationRepository(
@@ -153,6 +158,23 @@ class OrganizationRepository(
                 Organization.status != OrganizationStatus.BLOCKED,
             )
             .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def get_expired_time_based_snoozes(
+        self, now: datetime, *, limit: int = UNSNOOZE_EXPIRED_BATCH_SIZE
+    ) -> Sequence[Organization]:
+        """Snoozed orgs whose TIME_BASED deadline has passed."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                Organization.status == OrganizationStatus.SNOOZED,
+                Organization.snooze_type == SnoozeType.TIME_BASED,
+                Organization.snoozed_until.is_not(None),
+                Organization.snoozed_until <= now,
+            )
+            .order_by(Organization.snoozed_until.asc())
+            .limit(limit)
         )
         return await self.get_all(statement)
 

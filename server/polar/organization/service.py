@@ -45,6 +45,7 @@ from polar.models.organization import (
     OrganizationCapabilities,
     OrganizationDetails,
     OrganizationStatus,
+    SnoozeType,
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
@@ -88,7 +89,8 @@ from .sorting import OrganizationSortProperty
 log = structlog.get_logger()
 
 _MIN_REVIEW_THRESHOLD = 10_000
-SNOOZE_GRACE_PERIOD = timedelta(hours=24)
+SNOOZE_MIN_DAYS = 1
+SNOOZE_MAX_DAYS = 7
 
 
 def _website_domain(website: str | None) -> str | None:
@@ -820,16 +822,16 @@ class OrganizationService:
         if settings.is_sandbox():
             return organization
 
-        # If snoozed and grace period has passed, a sale triggers re-review
+        # Time-based snoozes are handled exclusively by
+        # ``organization.unsnooze_expired``; only next-sale snoozes
+        # transition here when their deadline has passed.
         if (
             organization.status == OrganizationStatus.SNOOZED
-            and organization.status_updated_at is not None
-            and datetime.now(UTC) - organization.status_updated_at
-            >= SNOOZE_GRACE_PERIOD
+            and organization.snooze_type == SnoozeType.NEXT_SALE
+            and organization.snoozed_until is not None
+            and datetime.now(UTC) >= organization.snoozed_until
         ):
-            organization.set_status(OrganizationStatus.REVIEW)
-            session.add(organization)
-            enqueue_job("organization.under_review", organization_id=organization.id)
+            await self._exit_snooze_to_review(session, organization)
             return organization
 
         if organization.status != OrganizationStatus.ACTIVE:
@@ -1113,23 +1115,47 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
         *,
+        days: int,
+        snooze_type: SnoozeType,
         reason: str | None = None,
     ) -> Organization:
-        """Snooze an organization under review.
+        """Snooze an organization under review for ``days`` days.
 
-        The org stays snoozed until a sale occurs 24h+ after being snoozed,
-        which triggers a transition back to REVIEW via check_review_threshold().
+        Two modes are supported via ``snooze_type``:
+
+        * ``TIME_BASED``: the org returns to REVIEW automatically once the
+          deadline passes (handled by the ``organization.unsnooze_expired``
+          periodic task).
+        * ``NEXT_SALE``: the org stays snoozed past the deadline until the
+          next sale arrives, which triggers re-review via
+          ``check_review_threshold``.
         """
         if organization.status != OrganizationStatus.REVIEW:
             raise OrganizationError(
                 "Only organizations under review can be snoozed.", 403
             )
 
+        if not SNOOZE_MIN_DAYS <= days <= SNOOZE_MAX_DAYS:
+            raise OrganizationError(
+                f"Snooze duration must be between {SNOOZE_MIN_DAYS} and "
+                f"{SNOOZE_MAX_DAYS} days.",
+                400,
+            )
+
         organization.set_status(OrganizationStatus.SNOOZED)
         organization.snooze_count += 1
+        organization.snoozed_until = datetime.now(UTC) + timedelta(days=days)
+        organization.snooze_type = snooze_type
+
+        trigger = (
+            "auto re-review afterwards"
+            if snooze_type == SnoozeType.TIME_BASED
+            else "re-review on next sale afterwards"
+        )
         _append_internal_note(
             organization,
-            f"Organization snoozed (#{organization.snooze_count}).",
+            f"Organization snoozed (#{organization.snooze_count}) "
+            f"for {days} day(s) — {trigger}.",
             reason=reason,
         )
         session.add(organization)
@@ -1144,10 +1170,41 @@ class OrganizationService:
         if organization.status != OrganizationStatus.SNOOZED:
             raise OrganizationError("Only snoozed organizations can be unsnoozed.", 403)
 
+        await self._exit_snooze_to_review(session, organization)
+        return organization
+
+    async def unsnooze_expired_organizations(
+        self, session: AsyncSession
+    ) -> Sequence[Organization]:
+        """Auto-unsnooze TIME_BASED snoozes whose deadline has passed.
+
+        Run periodically by a worker. Returns the orgs transitioned.
+        """
+        repository = OrganizationRepository.from_session(session)
+        candidates = await repository.get_expired_time_based_snoozes(datetime.now(UTC))
+        transitioned: list[Organization] = []
+        for organization in candidates:
+            # Skip if a concurrent admin action already moved the org out of
+            # SNOOZED — set_status would raise InvalidStatusTransitionError
+            # and abort the whole batch otherwise.
+            if organization.status != OrganizationStatus.SNOOZED:
+                continue
+            _append_internal_note(
+                organization,
+                "Auto-unsnoozed: time-based snooze deadline reached.",
+            )
+            await self._exit_snooze_to_review(session, organization)
+            transitioned.append(organization)
+        return transitioned
+
+    async def _exit_snooze_to_review(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
         organization.set_status(OrganizationStatus.REVIEW)
+        organization.snoozed_until = None
+        organization.snooze_type = None
         session.add(organization)
         enqueue_job("organization.under_review", organization_id=organization.id)
-        return organization
 
     async def set_organization_under_review(
         self,

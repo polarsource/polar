@@ -16,9 +16,16 @@ from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    TaskPriority,
+    actor,
+    enqueue_job,
+)
 
 from .repository import OrganizationRepository
+from .service import organization as organization_service
 
 log = structlog.get_logger()
 
@@ -56,6 +63,18 @@ async def organization_created(organization_id: uuid.UUID) -> None:
         organization = await repository.get_by_id(organization_id)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
+
+
+@actor(
+    actor_name="organization.unsnooze_expired",
+    cron_trigger=CronTrigger.from_crontab("0 * * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def organization_unsnooze_expired() -> None:
+    """Auto-unsnooze TIME_BASED snoozed orgs whose deadline has passed."""
+    async with AsyncSessionMaker() as session:
+        await organization_service.unsnooze_expired_organizations(session)
 
 
 @actor(actor_name="organization.under_review", priority=TaskPriority.LOW)

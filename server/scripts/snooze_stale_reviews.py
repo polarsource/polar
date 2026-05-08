@@ -136,6 +136,8 @@ async def _run_snooze(
         SET status = :snoozed_status,
             status_updated_at = now(),
             snooze_count = snooze_count + 1,
+            snoozed_until = now() + INTERVAL '24 hours',
+            snooze_type = 'next_sale',
             internal_notes = CASE
                 WHEN internal_notes IS NULL OR internal_notes = ''
                 THEN :note

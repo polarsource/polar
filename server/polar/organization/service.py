@@ -1189,10 +1189,6 @@ class OrganizationService:
             # and abort the whole batch otherwise.
             if organization.status != OrganizationStatus.SNOOZED:
                 continue
-            _append_internal_note(
-                organization,
-                "Auto-unsnoozed: time-based snooze deadline reached.",
-            )
             await self._exit_snooze_to_review(session, organization)
             transitioned.append(organization)
         return transitioned

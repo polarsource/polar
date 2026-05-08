@@ -6,6 +6,7 @@ import { defaultRetry } from './retry'
 
 export * from './accounts'
 export * from './benefits'
+export * from './billing'
 export * from './checkout_links'
 export * from './customers'
 export * from './customFields'

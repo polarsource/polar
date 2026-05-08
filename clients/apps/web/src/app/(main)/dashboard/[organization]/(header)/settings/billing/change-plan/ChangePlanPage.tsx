@@ -3,25 +3,22 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
-import {
-  BILLING_PLANS,
-  BillingPlan,
-  BillingPlanId,
-} from '@/components/Settings/Billing/mockData'
-import {
-  applyPlanChange,
-  schedulePlanChange,
-  useBillingSubscription,
-} from '@/components/Settings/Billing/useBillingStore'
+import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
+import {
+  useChangeSubscriptionPlan,
+  useOrganizationPlans,
+  useOrganizationSubscription,
+  useStartSubscriptionCheckout,
+} from '@/hooks/queries/billing'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
-import { formatCurrency } from '@polar-sh/currency'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -29,17 +26,22 @@ import { twMerge } from 'tailwind-merge'
 
 const formatPrice = formatCurrency('standard', 'en-US')
 
+const formatFee = (fee: schemas['OrganizationPlanFee']) =>
+  `${(fee.percent / 100).toFixed(2)}% + $${(fee.fixed / 100).toFixed(2)}`
+
 const PlanCard = ({
   plan,
   isCurrent,
   isSelected,
   onSelect,
 }: {
-  plan: BillingPlan
+  plan: schemas['OrganizationPlan']
   isCurrent: boolean
   isSelected: boolean
   onSelect: () => void
 }) => {
+  const amount = plan.price?.amount ?? 0
+  const currency = plan.price?.currency ?? 'usd'
   return (
     <button
       type="button"
@@ -62,61 +64,55 @@ const PlanCard = ({
           {isCurrent && <Pill color="gray">Current</Pill>}
           {plan.highlight && !isCurrent && <Pill color="blue">Popular</Pill>}
         </Box>
-        <Text color="muted">{plan.description}</Text>
+        {plan.description && <Text color="muted">{plan.description}</Text>}
       </Box>
 
       <Box display="flex" flexDirection="column" rowGap="s">
         <Box display="flex" alignItems="baseline" columnGap="m">
           <Text variant="heading-s" as="span">
-            {plan.contactSales
-              ? 'Custom'
-              : plan.amount === 0
-                ? 'Free'
-                : formatPrice(plan.amount, plan.currency)}
+            {amount === 0 ? 'Free' : formatPrice(amount, currency)}
           </Text>
-          {!plan.contactSales && plan.amount > 0 && (
+          {amount > 0 && plan.recurring_interval && (
             <Text color="muted" as="span">
-              / {plan.interval}
+              / {plan.recurring_interval}
             </Text>
           )}
         </Box>
-        {plan.fees.length > 0 && (
-          <Box as="ul" display="flex" flexDirection="column">
-            {plan.fees.map((fee) => (
-              <Box as="li" key={fee}>
-                <Text color="muted">{fee} per transaction</Text>
-              </Box>
-            ))}
-          </Box>
+        {plan.transaction_fee && (
+          <Text color="muted">
+            {formatFee(plan.transaction_fee)} per transaction
+          </Text>
         )}
       </Box>
 
-      <Box
-        as="ul"
-        display="flex"
-        flexDirection="column"
-        rowGap="s"
-        borderTopWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        paddingTop="2xl"
-      >
-        {plan.features.map((feature) => (
-          <Box
-            as="li"
-            key={feature}
-            display="flex"
-            alignItems="start"
-            columnGap="s"
-          >
-            <CheckOutlined
-              className="mt-0.5 text-blue-500"
-              fontSize="inherit"
-            />
-            <Text as="span">{feature}</Text>
-          </Box>
-        ))}
-      </Box>
+      {(plan.features?.length ?? 0) > 0 && (
+        <Box
+          as="ul"
+          display="flex"
+          flexDirection="column"
+          rowGap="s"
+          borderTopWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          paddingTop="2xl"
+        >
+          {plan.features?.map((feature) => (
+            <Box
+              as="li"
+              key={feature}
+              display="flex"
+              alignItems="start"
+              columnGap="s"
+            >
+              <CheckOutlined
+                className="mt-0.5 text-blue-500"
+                fontSize="inherit"
+              />
+              <Text as="span">{feature}</Text>
+            </Box>
+          ))}
+        </Box>
+      )}
     </button>
   )
 }
@@ -127,11 +123,12 @@ export default function ChangePlanPage({
   organization: schemas['Organization']
 }) {
   const router = useRouter()
-  const subscription = useBillingSubscription()
-  const [selectedPlanId, setSelectedPlanId] = useState<BillingPlanId | null>(
-    null,
-  )
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const subscriptionQuery = useOrganizationSubscription(organization.id)
+  const plansQuery = useOrganizationPlans(organization.id)
+  const changePlan = useChangeSubscriptionPlan(organization.id)
+  const startCheckout = useStartSubscriptionCheckout(organization.id)
+
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const {
     isShown: isConfirmShown,
     show: showConfirm,
@@ -139,76 +136,79 @@ export default function ChangePlanPage({
   } = useModal()
 
   const billingHref = `/dashboard/${organization.slug}/settings/billing`
-
-  const selectablePlans = useMemo(
-    () => BILLING_PLANS.filter((p) => !p.contactSales),
-    [],
-  )
-  const enterprisePlan = useMemo(
-    () => BILLING_PLANS.find((p) => p.contactSales),
-    [],
-  )
-
-  const currentPlan = useMemo(
-    () => BILLING_PLANS.find((p) => p.id === subscription.planId),
-    [subscription.planId],
-  )
+  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data])
+  const subscription = subscriptionQuery.data
+  const isCurrentPlanFree = subscription?.amount === 0
 
   const selectedPlan = useMemo(
-    () => BILLING_PLANS.find((p) => p.id === selectedPlanId) ?? null,
-    [selectedPlanId],
+    () => plans.find((p) => p.product_id === selectedPlanId) ?? null,
+    [plans, selectedPlanId],
   )
 
   const changeKind: 'upgrade' | 'downgrade' | null = useMemo(() => {
-    if (!selectedPlan || !currentPlan) return null
-    if (selectedPlan.amount > currentPlan.amount) return 'upgrade'
-    if (selectedPlan.amount < currentPlan.amount) return 'downgrade'
+    if (!selectedPlan || !subscription) return null
+    const targetAmount = selectedPlan.price?.amount ?? 0
+    if (targetAmount > subscription.amount) return 'upgrade'
+    if (targetAmount < subscription.amount) return 'downgrade'
     return null
-  }, [selectedPlan, currentPlan])
+  }, [selectedPlan, subscription])
+
+  const requiresCheckout =
+    isCurrentPlanFree && (selectedPlan?.price?.amount ?? 0) > 0
+
+  const isSubmitting = changePlan.isPending || startCheckout.isPending
 
   const confirmDescription = useMemo(() => {
-    if (!selectedPlan || !currentPlan || !changeKind) return ''
-    if (changeKind === 'upgrade') {
-      return `You'll be charged a prorated amount for the rest of the current period and ${formatPrice(
-        selectedPlan.amount,
-        selectedPlan.currency,
-      )} per ${selectedPlan.interval} thereafter.`
+    if (!selectedPlan) return ''
+    if (requiresCheckout) {
+      return `You'll be redirected to checkout to add a payment method and complete the upgrade to ${selectedPlan.name}.`
     }
-    return `Your ${currentPlan.name} plan will remain active until the end of the current period, then switch to ${selectedPlan.name}.`
-  }, [selectedPlan, currentPlan, changeKind])
+    if (changeKind === 'upgrade') {
+      return `You'll be charged a prorated amount for the rest of the current period and switched to ${selectedPlan.name}.`
+    }
+    return `Your plan will switch to ${selectedPlan.name} at the end of the current period.`
+  }, [selectedPlan, changeKind, requiresCheckout])
 
   const performPlanChange = async () => {
-    if (!selectedPlanId || !selectedPlan || !changeKind) return
-    setIsSubmitting(true)
-    // Simulate API latency for the mocked flow.
-    await new Promise((resolve) => setTimeout(resolve, 600))
-    if (changeKind === 'upgrade') {
-      applyPlanChange(selectedPlanId)
-      toast({
-        title: 'Plan upgraded',
-        description: `You're now on the ${selectedPlan.name} plan.`,
+    if (!selectedPlan) return
+
+    if (requiresCheckout) {
+      const result = await startCheckout.mutateAsync({
+        product_id: selectedPlan.product_id,
+        success_url: `${window.location.origin}${billingHref}`,
       })
-    } else {
-      schedulePlanChange(selectedPlanId, subscription.currentPeriodEnd)
-      toast({
-        title: 'Downgrade scheduled',
-        description: `You'll move to ${selectedPlan.name} at the end of the current period.`,
-      })
+      if (result.error || !result.data) {
+        toast({
+          title: 'Could not start checkout',
+          description: 'Please try again.',
+        })
+        return
+      }
+      window.location.href = result.data.url
+      return
     }
-    setIsSubmitting(false)
+
+    const result = await changePlan.mutateAsync({
+      product_id: selectedPlan.product_id,
+    })
+    if (result.error) {
+      toast({
+        title: 'Could not change plan',
+        description: 'Please try again.',
+      })
+      return
+    }
+    toast({
+      title:
+        changeKind === 'downgrade' ? 'Plan change scheduled' : 'Plan changed',
+      description: `You're now on the ${selectedPlan.name} plan.`,
+    })
     router.push(billingHref)
   }
 
-  const onContactSales = () => {
-    toast({
-      title: 'Request received',
-      description:
-        'Our sales team will be in touch shortly to discuss Enterprise pricing.',
-    })
-  }
-
-  const ctaLabel =
-    changeKind === 'upgrade'
+  const ctaLabel = requiresCheckout
+    ? 'Continue to checkout'
+    : changeKind === 'upgrade'
       ? 'Upgrade plan'
       : changeKind === 'downgrade'
         ? 'Downgrade plan'
@@ -236,57 +236,34 @@ export default function ChangePlanPage({
           </Box>
         </Box>
 
-        {enterprisePlan && (
+        {plansQuery.isLoading || subscriptionQuery.isLoading ? (
+          <LoadingBox height={320} borderRadius="m" />
+        ) : (
           <Box
-            display="flex"
-            flexDirection={{ base: 'column', md: 'row' }}
-            alignItems={{ base: 'start', md: 'center' }}
-            justifyContent="between"
-            rowGap="l"
-            columnGap="l"
-            borderRadius="l"
-            backgroundColor="background-card"
-            padding="xl"
+            display="grid"
+            gridTemplateColumns={{
+              base: '1fr',
+              md: 'repeat(2, 1fr)',
+              xl: 'repeat(4, 1fr)',
+            }}
+            gap="l"
           >
-            <Box display="flex" flexDirection="column" rowGap="xs">
-              <Text variant="heading-xxs" as="h3">
-                Need something custom?
-              </Text>
-              <Text color="muted">
-                Talk to our team about Enterprise pricing, volume discounts, and
-                tailored contracts.
-              </Text>
-            </Box>
-            <Button variant="secondary" onClick={onContactSales}>
-              Contact sales
-            </Button>
+            {plans.map((plan) => (
+              <PlanCard
+                key={plan.product_id}
+                plan={plan}
+                isCurrent={plan.product_id === subscription?.product_id}
+                isSelected={plan.product_id === selectedPlanId}
+                onSelect={() => setSelectedPlanId(plan.product_id)}
+              />
+            ))}
           </Box>
         )}
-
-        <Box
-          display="grid"
-          gridTemplateColumns={{
-            base: '1fr',
-            md: 'repeat(2, 1fr)',
-            xl: 'repeat(4, 1fr)',
-          }}
-          gap="l"
-        >
-          {selectablePlans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              isCurrent={plan.id === subscription.planId}
-              isSelected={plan.id === selectedPlanId}
-              onSelect={() => setSelectedPlanId(plan.id)}
-            />
-          ))}
-        </Box>
 
         <Box display="flex" flexDirection="row" columnGap="s">
           <Button
             onClick={showConfirm}
-            disabled={!changeKind || isSubmitting}
+            disabled={!selectedPlan || isSubmitting}
             loading={isSubmitting}
             size="lg"
           >

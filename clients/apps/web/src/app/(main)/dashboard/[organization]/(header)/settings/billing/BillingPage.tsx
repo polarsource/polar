@@ -3,14 +3,16 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
+import { MOCK_ORDERS } from '@/components/Settings/Billing/mockData'
 import {
-  MOCK_ORDERS,
-  getPlanById,
-} from '@/components/Settings/Billing/mockData'
-import { useBillingSubscription } from '@/components/Settings/Billing/useBillingStore'
+  useOrganizationPlans,
+  useOrganizationSubscription,
+} from '@/hooks/queries/billing'
 import { Section, SectionDescription } from '@/components/Settings/Section'
+import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
+import { Text } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
 
 export default function BillingPage({
@@ -19,8 +21,8 @@ export default function BillingPage({
   organization: schemas['Organization']
 }) {
   const router = useRouter()
-  const subscription = useBillingSubscription()
-  const plan = getPlanById(subscription.planId)
+  const subscriptionQuery = useOrganizationSubscription(organization.id)
+  const plansQuery = useOrganizationPlans(organization.id)
 
   const onChangePlan = () => {
     router.push(`/dashboard/${organization.slug}/settings/billing/change-plan`)
@@ -30,11 +32,26 @@ export default function BillingPage({
     <DashboardBody wrapperClassName="max-w-(--breakpoint-md)!" title="Billing">
       <Box display="flex" flexDirection="column" rowGap="3xl">
         <Section id="subscription">
-          <BillingSubscriptionCard
-            subscription={subscription}
-            plan={plan}
-            onChangePlan={onChangePlan}
-          />
+          {subscriptionQuery.isLoading ? (
+            <LoadingBox height={240} borderRadius="l" />
+          ) : subscriptionQuery.data ? (
+            <BillingSubscriptionCard
+              subscription={subscriptionQuery.data}
+              plans={plansQuery.data ?? []}
+              onChangePlan={onChangePlan}
+            />
+          ) : (
+            <Box
+              borderRadius="m"
+              backgroundColor="background-warning"
+              borderWidth={1}
+              borderStyle="solid"
+              borderColor="border-warning"
+              padding="l"
+            >
+              <Text>No active subscription found.</Text>
+            </Box>
+          )}
         </Section>
 
         <Section id="orders">

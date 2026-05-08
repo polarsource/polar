@@ -1,32 +1,33 @@
 'use client'
 
+import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
-import { formatCurrency } from '@polar-sh/currency'
-import { toast } from '@/components/Toast/use-toast'
-import { BILLING_PLANS, BillingPlan, BillingSubscription } from './mockData'
-import { cancelScheduledPlanChange } from './useBillingStore'
 
 const formatPrice = formatCurrency('standard', 'en-US')
 
-const STATUS_LABEL: Record<BillingSubscription['status'], string> = {
+const STATUS_LABEL: Record<string, string> = {
   active: 'Active',
   past_due: 'Past due',
   canceled: 'Canceled',
   trialing: 'Trial',
+  unpaid: 'Unpaid',
+  incomplete: 'Incomplete',
+  incomplete_expired: 'Expired',
 }
 
-const STATUS_COLOR: Record<
-  BillingSubscription['status'],
-  'green' | 'yellow' | 'red' | 'blue'
-> = {
+const STATUS_COLOR: Record<string, 'green' | 'yellow' | 'red' | 'blue'> = {
   active: 'green',
   past_due: 'yellow',
   canceled: 'red',
   trialing: 'blue',
+  unpaid: 'red',
+  incomplete: 'yellow',
+  incomplete_expired: 'red',
 }
 
 const Detail = ({
@@ -42,29 +43,28 @@ const Detail = ({
   </Box>
 )
 
+const formatFee = (fee: schemas['OrganizationPlanFee']) => {
+  const percent = (fee.percent / 100).toFixed(2)
+  const fixed = (fee.fixed / 100).toFixed(2)
+  return `${percent}% + $${fixed}`
+}
+
 export const BillingSubscriptionCard = ({
   subscription,
-  plan,
+  plans,
   onChangePlan,
 }: {
-  subscription: BillingSubscription
-  plan: BillingPlan
+  subscription: schemas['OrganizationSubscription']
+  plans: schemas['OrganizationPlan'][]
   onChangePlan: () => void
 }) => {
-  const intervalLabel = plan.interval === 'month' ? 'month' : 'year'
-  const scheduledPlan = subscription.scheduledPlanChange
-    ? BILLING_PLANS.find(
-        (p) => p.id === subscription.scheduledPlanChange?.planId,
-      )
+  const { plan, pending_change: pendingChange } = subscription
+  const scheduledPlan = pendingChange
+    ? plans.find((p) => p.product_id === pendingChange.product_id)
     : null
 
-  const onCancelScheduledChange = () => {
-    cancelScheduledPlanChange()
-    toast({
-      title: 'Scheduled change canceled',
-      description: `You'll stay on the ${plan.name} plan.`,
-    })
-  }
+  const intervalLabel = subscription.recurring_interval ?? 'period'
+  const status = subscription.status
 
   return (
     <Box
@@ -89,17 +89,17 @@ export const BillingSubscriptionCard = ({
             <Text variant="heading-xxs" as="h3">
               {plan.name}
             </Text>
-            <Pill color={STATUS_COLOR[subscription.status]}>
-              {STATUS_LABEL[subscription.status]}
+            <Pill color={STATUS_COLOR[status] ?? 'blue'}>
+              {STATUS_LABEL[status] ?? status}
             </Pill>
             {scheduledPlan && (
               <Pill color="yellow">Switches to {scheduledPlan.name}</Pill>
             )}
-            {subscription.cancelAtPeriodEnd && (
+            {subscription.cancel_at_period_end && (
               <Pill color="yellow">Cancels at period end</Pill>
             )}
           </Box>
-          <Text color="muted">{plan.description}</Text>
+          {plan.description && <Text color="muted">{plan.description}</Text>}
         </Box>
         <Box
           display="flex"
@@ -109,21 +109,19 @@ export const BillingSubscriptionCard = ({
         >
           <Box display="flex" alignItems="baseline" columnGap="xs">
             <Text variant="heading-xs" as="span">
-              {plan.contactSales
-                ? 'Custom'
-                : plan.amount === 0
-                  ? 'Free'
-                  : formatPrice(plan.amount, plan.currency)}
+              {subscription.amount === 0
+                ? 'Free'
+                : formatPrice(subscription.amount, subscription.currency)}
             </Text>
-            {!plan.contactSales && plan.amount > 0 && (
+            {subscription.amount > 0 && (
               <Text color="muted" as="span">
                 / {intervalLabel}
               </Text>
             )}
           </Box>
-          {plan.fees.length > 0 && (
+          {plan.transaction_fee && (
             <Text color="muted" align="right">
-              {plan.fees.join(' · ')}
+              {formatFee(plan.transaction_fee)} per transaction
             </Text>
           )}
         </Box>
@@ -131,28 +129,26 @@ export const BillingSubscriptionCard = ({
 
       <Box
         display="grid"
-        gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+        gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
         gap="xl"
         borderTopWidth={1}
         borderStyle="solid"
         borderColor="border-primary"
         paddingTop="xl"
       >
-        <Detail label="Started">
-          <FormattedDateTime datetime={subscription.startedAt} />
-        </Detail>
+        {subscription.started_at && (
+          <Detail label="Started">
+            <FormattedDateTime datetime={subscription.started_at} />
+          </Detail>
+        )}
         <Detail
-          label={subscription.cancelAtPeriodEnd ? 'Ends on' : 'Renews on'}
+          label={subscription.cancel_at_period_end ? 'Ends on' : 'Renews on'}
         >
-          <FormattedDateTime datetime={subscription.currentPeriodEnd} />
-        </Detail>
-        <Detail label="Payment method">
-          {subscription.paymentMethod.brand} ending in{' '}
-          {subscription.paymentMethod.last4}
+          <FormattedDateTime datetime={subscription.current_period_end} />
         </Detail>
       </Box>
 
-      {scheduledPlan && subscription.scheduledPlanChange && (
+      {scheduledPlan && pendingChange && (
         <Box
           display="flex"
           flexDirection="column"
@@ -165,23 +161,13 @@ export const BillingSubscriptionCard = ({
         >
           <Box display="flex" flexDirection="column" columnGap="s">
             <Text variant="body" as="h3">
-              Downgrade scheduled
+              Plan change scheduled
             </Text>
             <Text color="muted">
               Your plan will switch from {plan.name} to {scheduledPlan.name} on{' '}
-              <FormattedDateTime
-                datetime={subscription.scheduledPlanChange.effectiveAt}
-              />
-              . You&apos;ll keep {plan.name} access until then.
+              <FormattedDateTime datetime={pendingChange.applies_at} />.
             </Text>
           </Box>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onCancelScheduledChange}
-          >
-            Cancel change
-          </Button>
         </Box>
       )}
 
@@ -193,9 +179,6 @@ export const BillingSubscriptionCard = ({
         rowGap="m"
       >
         <Button onClick={onChangePlan}>Change plan</Button>
-        <Button variant="ghost" disabled>
-          Update payment method
-        </Button>
       </Box>
     </Box>
   )

@@ -195,6 +195,7 @@ class PolarSelfClient:
         *,
         product_id: str,
         external_customer_id: str,
+        subscription_id: str | None = None,
         customer_ip_address: str | None = None,
         success_url: str | None = None,
         embed_origin: str | None = None,
@@ -206,12 +207,14 @@ class PolarSelfClient:
             "polar.create_checkout",
             product_id=product_id,
             external_customer_id=external_customer_id,
+            subscription_id=subscription_id,
         ) as span:
             try:
                 return await self._sdk.checkouts.create_async(
                     request=CheckoutCreate(
                         products=[product_id],
                         external_customer_id=external_customer_id,
+                        subscription_id=subscription_id,
                         customer_ip_address=customer_ip_address,
                         success_url=success_url,
                         embed_origin=embed_origin,

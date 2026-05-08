@@ -189,9 +189,14 @@ class PolarSelfService:
         if not self.is_configured:
             raise PolarSelfNotConfigured()
         await self._ensure_plan(product_id)
-        return await get_client().create_checkout(
+        client = get_client()
+        existing = await client.get_active_subscription(
+            external_customer_id=str(organization_id)
+        )
+        return await client.create_checkout(
             product_id=product_id,
             external_customer_id=str(organization_id),
+            subscription_id=existing.id if existing is not None else None,
             customer_ip_address=customer_ip_address,
             success_url=success_url,
             embed_origin=embed_origin,

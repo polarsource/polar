@@ -11,7 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 
 import { collectClientContext } from './clientContext'
 import { useSubmitFeedback } from './useSubmitFeedback'
@@ -26,20 +26,23 @@ const MAX_MESSAGE_LENGTH = 5000
 export const FeedbackForm = ({
   organization,
   onSuccess,
+  onAskQuestion,
   onCancel,
 }: {
   organization: schemas['Organization']
   onSuccess: (type: schemas['FeedbackType']) => void
+  onAskQuestion: (message: string) => void
   onCancel: () => void
 }) => {
   const form = useForm<FormSchema>({
     defaultValues: {
-      type: 'feedback',
+      type: 'question',
       message: '',
     },
   })
 
   const { control, handleSubmit } = form
+  const selectedType = useWatch({ control, name: 'type' })
 
   const submitFeedback = useSubmitFeedback()
   const apiError = submitFeedback.data?.error
@@ -47,6 +50,11 @@ export const FeedbackForm = ({
     : null
 
   const onSubmit = async (formData: FormSchema) => {
+    if (formData.type === 'question') {
+      onAskQuestion(formData.message)
+      return
+    }
+
     const { error } = await submitFeedback.mutateAsync({
       type: formData.type,
       message: formData.message,
@@ -70,6 +78,12 @@ export const FeedbackForm = ({
               <FormControl>
                 <Tabs value={field.value} onValueChange={field.onChange}>
                   <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
+                    <TabsTrigger
+                      value="question"
+                      className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
+                    >
+                      Question
+                    </TabsTrigger>
                     <TabsTrigger
                       value="feedback"
                       className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
@@ -136,7 +150,11 @@ export const FeedbackForm = ({
             loading={submitFeedback.isPending}
             disabled={submitFeedback.isPending}
           >
-            {submitFeedback.isPending ? 'Sending…' : 'Send'}
+            {submitFeedback.isPending
+              ? 'Sending…'
+              : selectedType === 'question'
+                ? 'Ask'
+                : 'Send'}
           </Button>
         </div>
       </form>

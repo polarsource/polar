@@ -1,8 +1,11 @@
 import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
 import { schemas } from '@polar-sh/client'
 import { useState } from 'react'
+import { collectClientContext } from './clientContext'
 import { FeedbackForm } from './FeedbackForm'
+import { QuestionFlow } from './QuestionFlow'
 import { ThanksPanel } from './ThanksPanel'
+import { useSubmitFeedback } from './useSubmitFeedback'
 
 export const FeedbackModal = ({
   isShown,
@@ -16,10 +19,52 @@ export const FeedbackModal = ({
   const [submittedType, setSubmittedType] = useState<
     schemas['FeedbackType'] | null
   >(null)
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null)
+
+  const submitFeedback = useSubmitFeedback()
 
   const handleHide = () => {
     hide()
     setSubmittedType(null)
+    setPendingQuestion(null)
+    submitFeedback.reset()
+  }
+
+  const handleForwardToSupport = async () => {
+    if (!pendingQuestion) return
+    const { error } = await submitFeedback.mutateAsync({
+      type: 'question',
+      message: pendingQuestion,
+      organization_id: organization.id,
+      client_context: collectClientContext(),
+    })
+    if (error) return
+    setPendingQuestion(null)
+    setSubmittedType('question')
+  }
+
+  const renderContent = () => {
+    if (submittedType !== null) {
+      return <ThanksPanel type={submittedType} />
+    }
+    if (pendingQuestion !== null) {
+      return (
+        <QuestionFlow
+          question={pendingQuestion}
+          onForwardToSupport={handleForwardToSupport}
+          onCancel={handleHide}
+          isForwarding={submitFeedback.isPending}
+        />
+      )
+    }
+    return (
+      <FeedbackForm
+        organization={organization}
+        onSuccess={setSubmittedType}
+        onAskQuestion={setPendingQuestion}
+        onCancel={handleHide}
+      />
+    )
   }
 
   return (
@@ -31,17 +76,7 @@ export const FeedbackModal = ({
           <InlineModalHeader hide={handleHide}>
             <h2 className="text-xl">Share feedback</h2>
           </InlineModalHeader>
-          <div className="flex flex-col gap-y-8 p-8">
-            {submittedType === null ? (
-              <FeedbackForm
-                organization={organization}
-                onSuccess={setSubmittedType}
-                onCancel={handleHide}
-              />
-            ) : (
-              <ThanksPanel type={submittedType} />
-            )}
-          </div>
+          <div className="flex flex-col gap-y-8 p-8">{renderContent()}</div>
         </>
       }
     />

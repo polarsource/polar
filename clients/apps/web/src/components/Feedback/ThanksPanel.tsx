@@ -5,7 +5,6 @@ const messages: Record<schemas['FeedbackType'], string> = {
   feedback:
     'Thanks for sharing this with us. Notes like this are how we decide what to build next.',
   bug: "Thanks for flagging. We'll investigate and reach out if we need more detail.",
-  // `question` is hidden for now
   question: 'Thanks for reaching out. We will get back to you shortly.',
 }
 

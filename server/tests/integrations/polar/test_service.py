@@ -7,12 +7,17 @@ import pytest
 from polar_sdk.models import (
     BenefitGrant,
     CustomerIndividual,
+    Product,
+    Subscription,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
 )
 from pytest_mock import MockerFixture
 
 from polar.integrations.polar.service import (
+    PolarSelfNoActiveSubscription,
+    PolarSelfNotConfigured,
+    PolarSelfPlanNotFound,
     PolarSelfWebhookError,
     SupportBenefitError,
     TransactionFeeBenefitError,
@@ -576,3 +581,250 @@ class TestHandleBenefitGrantEvent:
 
         list_grants_mock.assert_not_awaited()
         set_platform_fee_mock.assert_not_awaited()
+
+
+def _make_product(
+    *,
+    id: str = "prod_1",
+    name: str = "Pro",
+    metadata: dict[str, Any] | None = None,
+) -> Product:
+    return Product.model_validate(
+        {
+            "id": id,
+            "created_at": "2026-01-01T00:00:00Z",
+            "modified_at": None,
+            "trial_interval": None,
+            "trial_interval_count": None,
+            "name": name,
+            "description": None,
+            "visibility": "public",
+            "recurring_interval": "month",
+            "recurring_interval_count": 1,
+            "is_recurring": True,
+            "is_archived": False,
+            "organization_id": str(SELF_ORG_ID),
+            "metadata": metadata or {},
+            "prices": [],
+            "benefits": [],
+            "medias": [],
+            "attached_custom_fields": [],
+        }
+    )
+
+
+def _make_subscription(
+    *, id: str = "sub_1", product_id: str = "prod_1"
+) -> Subscription:
+    return Subscription.model_validate(
+        {
+            "created_at": "2026-01-01T00:00:00Z",
+            "modified_at": None,
+            "id": id,
+            "amount": 0,
+            "currency": "usd",
+            "recurring_interval": "month",
+            "recurring_interval_count": 1,
+            "status": "active",
+            "current_period_start": "2026-01-01T00:00:00Z",
+            "current_period_end": "2026-02-01T00:00:00Z",
+            "trial_start": None,
+            "trial_end": None,
+            "cancel_at_period_end": False,
+            "canceled_at": None,
+            "started_at": "2026-01-01T00:00:00Z",
+            "ends_at": None,
+            "ended_at": None,
+            "customer_id": _CUSTOMER_DICT["id"],
+            "product_id": product_id,
+            "discount_id": None,
+            "checkout_id": None,
+            "customer_cancellation_reason": None,
+            "customer_cancellation_comment": None,
+            "metadata": {},
+            "customer": _CUSTOMER_DICT,
+            "product": _make_product(id=product_id).model_dump(mode="json"),
+            "discount": None,
+            "prices": [],
+            "meters": [],
+            "pending_update": None,
+        }
+    )
+
+
+@pytest.fixture
+def client_mock(mocker: MockerFixture) -> MagicMock:
+    client = MagicMock()
+    client.list_recurring_products = AsyncMock(return_value=[])
+    client.get_active_subscription = AsyncMock(return_value=None)
+    client.create_checkout = AsyncMock(return_value=MagicMock(name="checkout"))
+    client.update_subscription_product = AsyncMock(
+        return_value=_make_subscription(id="sub_2", product_id="prod_2")
+    )
+    mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
+    return client
+
+
+@pytest.mark.asyncio
+class TestListPlans:
+    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+
+        with pytest.raises(PolarSelfNotConfigured):
+            await polar_self.list_plans()
+
+    async def test_sorts_by_metadata_order(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="p3", metadata={"order": 3}),
+            _make_product(id="p1", metadata={"order": 1}),
+            _make_product(id="p2", metadata={"order": 2}),
+        ]
+
+        plans = await polar_self.list_plans()
+
+        assert [p.id for p in plans] == ["p1", "p2", "p3"]
+
+    async def test_excludes_custom_plans(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="self_serve", metadata={"order": 1}),
+            _make_product(id="custom_only", metadata={"custom": True}),
+        ]
+
+        plans = await polar_self.list_plans()
+
+        assert [p.id for p in plans] == ["self_serve"]
+
+    async def test_missing_order_sorts_last(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="no_order", metadata={}),
+            _make_product(id="ordered", metadata={"order": 1}),
+        ]
+
+        plans = await polar_self.list_plans()
+
+        assert [p.id for p in plans] == ["ordered", "no_order"]
+
+
+@pytest.mark.asyncio
+class TestGetSubscription:
+    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+
+        with pytest.raises(PolarSelfNotConfigured):
+            await polar_self.get_subscription(ORG_A)
+
+    async def test_returns_none_when_no_active_sub(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.get_active_subscription.return_value = None
+
+        result = await polar_self.get_subscription(ORG_A)
+
+        assert result is None
+        client_mock.get_active_subscription.assert_awaited_once_with(
+            external_customer_id=str(ORG_A)
+        )
+
+    async def test_returns_subscription_when_active(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        sub = _make_subscription()
+        client_mock.get_active_subscription.return_value = sub
+
+        result = await polar_self.get_subscription(ORG_A)
+
+        assert result is sub
+
+
+@pytest.mark.asyncio
+class TestStartCheckout:
+    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+
+        with pytest.raises(PolarSelfNotConfigured):
+            await polar_self.start_checkout(organization_id=ORG_A, product_id="prod_1")
+
+    async def test_unknown_plan_raises(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="known", metadata={"order": 1}),
+        ]
+
+        with pytest.raises(PolarSelfPlanNotFound):
+            await polar_self.start_checkout(organization_id=ORG_A, product_id="unknown")
+
+        client_mock.create_checkout.assert_not_awaited()
+
+    async def test_custom_plan_rejected(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="custom_only", metadata={"custom": True}),
+        ]
+
+        with pytest.raises(PolarSelfPlanNotFound):
+            await polar_self.start_checkout(
+                organization_id=ORG_A, product_id="custom_only"
+            )
+
+
+@pytest.mark.asyncio
+class TestChangePlan:
+    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+
+        with pytest.raises(PolarSelfNotConfigured):
+            await polar_self.change_plan(organization_id=ORG_A, product_id="p")
+
+    async def test_unknown_plan_raises(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="known", metadata={"order": 1}),
+        ]
+
+        with pytest.raises(PolarSelfPlanNotFound):
+            await polar_self.change_plan(organization_id=ORG_A, product_id="unknown")
+
+        client_mock.update_subscription_product.assert_not_awaited()
+
+    async def test_no_active_subscription_raises(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_2", metadata={"order": 2}),
+        ]
+        client_mock.get_active_subscription.return_value = None
+
+        with pytest.raises(PolarSelfNoActiveSubscription):
+            await polar_self.change_plan(organization_id=ORG_A, product_id="prod_2")
+
+        client_mock.update_subscription_product.assert_not_awaited()
+
+    async def test_updates_existing_subscription(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_2", metadata={"order": 2}),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing", product_id="prod_1"
+        )
+
+        await polar_self.change_plan(organization_id=ORG_A, product_id="prod_2")
+
+        client_mock.update_subscription_product.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            product_id="prod_2",
+        )

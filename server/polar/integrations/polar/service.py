@@ -18,7 +18,7 @@ from polar.worker import enqueue_job
 from .client import get_client
 
 if TYPE_CHECKING:
-    from polar_sdk.models import BenefitGrant, Customer
+    from polar_sdk.models import BenefitGrant, Checkout, Customer, Product, Subscription
 
 
 BenefitGrantWebhookPayload = (
@@ -35,6 +35,26 @@ class TransactionFeeBenefitError(PolarSelfWebhookError): ...
 
 
 class SupportBenefitError(PolarSelfWebhookError): ...
+
+
+class PolarSelfNotConfigured(PolarError):
+    def __init__(self) -> None:
+        super().__init__("Polar self-billing is not configured.", status_code=404)
+
+
+class PolarSelfPlanNotFound(PolarError):
+    def __init__(self, product_id: str) -> None:
+        super().__init__(f"Plan {product_id!r} is not available.", status_code=404)
+        self.product_id = product_id
+
+
+class PolarSelfNoActiveSubscription(PolarError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        super().__init__(
+            f"Organization {organization_id} has no active subscription.",
+            status_code=404,
+        )
+        self.organization_id = organization_id
 
 
 class PolarSelfService:
@@ -136,6 +156,66 @@ class PolarSelfService:
             cost_usd=str(cost_decimal),
         )
 
+    async def list_plans(self) -> list["Product"]:
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+        products = await get_client().list_recurring_products(
+            organization_id=settings.POLAR_ORGANIZATION_ID
+        )
+        self_serve = [p for p in products if not (p.metadata or {}).get("custom")]
+        return sorted(
+            self_serve,
+            key=lambda p: (p.metadata or {}).get("order", float("inf")),
+        )
+
+    async def get_subscription(
+        self, organization_id: uuid.UUID
+    ) -> "Subscription | None":
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+        return await get_client().get_active_subscription(
+            external_customer_id=str(organization_id)
+        )
+
+    async def start_checkout(
+        self,
+        *,
+        organization_id: uuid.UUID,
+        product_id: str,
+        customer_ip_address: str | None = None,
+        success_url: str | None = None,
+        embed_origin: str | None = None,
+    ) -> "Checkout":
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+        await self._ensure_plan(product_id)
+        return await get_client().create_checkout(
+            product_id=product_id,
+            external_customer_id=str(organization_id),
+            customer_ip_address=customer_ip_address,
+            success_url=success_url,
+            embed_origin=embed_origin,
+        )
+
+    async def change_plan(
+        self,
+        *,
+        organization_id: uuid.UUID,
+        product_id: str,
+    ) -> "Subscription":
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+        await self._ensure_plan(product_id)
+        subscription = await get_client().get_active_subscription(
+            external_customer_id=str(organization_id)
+        )
+        if subscription is None:
+            raise PolarSelfNoActiveSubscription(organization_id)
+        return await get_client().update_subscription_product(
+            subscription_id=subscription.id,
+            product_id=product_id,
+        )
+
     async def handle_benefit_grant_event(
         self, session: AsyncSession, payload: BenefitGrantWebhookPayload
     ) -> None:
@@ -169,6 +249,11 @@ class PolarSelfService:
                     )
                 case "support":
                     await self._apply_support(session, organization_id, active_grant)
+
+    async def _ensure_plan(self, product_id: str) -> None:
+        plans = await self.list_plans()
+        if not any(plan.id == product_id for plan in plans):
+            raise PolarSelfPlanNotFound(product_id)
 
     def _resolve_organization_id(self, customer: "Customer") -> uuid.UUID:
         raw = customer.external_id

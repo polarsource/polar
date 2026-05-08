@@ -11,6 +11,7 @@ from polar.rate_limit import (
     _bearer_token,
     _identity_cache_key,
     _session_cookie,
+    _token_hash,
     clear_cached_identity,
     write_cached_identity,
 )
@@ -129,7 +130,9 @@ class TestIdentityCacheRoundTrip:
 
 @pytest.mark.asyncio
 class TestAuthenticate:
-    async def test_cache_miss_falls_back_to_client_ip(self, redis: Redis) -> None:
+    async def test_cache_miss_uses_token_hash_pending_auth(
+        self, redis: Redis
+    ) -> None:
         identity = await _authenticate(
             _http_scope(
                 headers=[(b"authorization", b"Bearer polar_pat_unknown")],
@@ -137,7 +140,10 @@ class TestAuthenticate:
             ),
             redis=redis,
         )
-        assert identity == ("8.8.8.8", RateLimitGroup.default)
+        assert identity == (
+            f"token:{_token_hash('polar_pat_unknown')}",
+            RateLimitGroup.pending_auth,
+        )
 
     async def test_no_token_uses_client_ip(self, redis: Redis) -> None:
         identity = await _authenticate(_http_scope(client=("1.1.1.1", 80)), redis=redis)
@@ -158,7 +164,7 @@ class TestAuthenticate:
 
         assert identity == ("user:web", RateLimitGroup.web)
 
-    async def test_cookie_cache_miss_falls_back_to_client_ip(
+    async def test_cookie_cache_miss_uses_cookie_hash_pending_auth(
         self, redis: Redis
     ) -> None:
         header = f"{settings.USER_SESSION_COOKIE_KEY}=polar_us_unknown".encode("ascii")
@@ -166,7 +172,10 @@ class TestAuthenticate:
             _http_scope(headers=[(b"cookie", header)], client=("9.9.9.9", 1234)),
             redis=redis,
         )
-        assert identity == ("9.9.9.9", RateLimitGroup.default)
+        assert identity == (
+            f"cookie:{_token_hash('polar_us_unknown')}",
+            RateLimitGroup.pending_auth,
+        )
 
     async def test_bearer_token_preferred_over_cookie(self, redis: Redis) -> None:
         await write_cached_identity(

@@ -60,6 +60,10 @@ def _session_cookie(scope: Scope) -> str | None:
     return None
 
 
+def _token_hash(token: str) -> str:
+    return hashlib.blake2b(token.encode(), digest_size=16).hexdigest()
+
+
 def _identity_cache_key(token: str) -> str:
     digest = hashlib.blake2b(token.encode("ascii"), digest_size=16).hexdigest()
     return f"{_IDENTITY_KEY_PREFIX}{digest}"
@@ -101,11 +105,15 @@ async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGr
         cached = await _read_cached_identity(redis, token)
         if cached is not None:
             return cached
+        return f"token:{_token_hash(token)}", RateLimitGroup.pending_auth
+
     cookie = _session_cookie(scope)
     if cookie is not None:
         cached = await _read_cached_identity(redis, cookie)
         if cached is not None:
             return cached
+        return f"cookie:{_token_hash(cookie)}", RateLimitGroup.pending_auth
+
     try:
         ip, _ = await client_ip(scope)
         return ip, RateLimitGroup.default
@@ -140,6 +148,7 @@ _SANDBOX_RULES: dict[str, Sequence[Rule]] = {
         Rule(group=RateLimitGroup.default, minute=100, zone="api"),
         Rule(group=RateLimitGroup.web, second=50, zone="api"),
         Rule(group=RateLimitGroup.elevated, second=50, zone="api"),
+        Rule(group=RateLimitGroup.pending_auth, minute=10, zone="api"),
     ],
 }
 
@@ -150,6 +159,7 @@ _PRODUCTION_RULES: dict[str, Sequence[Rule]] = {
         Rule(group=RateLimitGroup.default, minute=500, zone="api"),
         Rule(group=RateLimitGroup.web, second=100, zone="api"),
         Rule(group=RateLimitGroup.elevated, second=100, zone="api"),
+        Rule(group=RateLimitGroup.pending_auth, minute=10, zone="api"),
     ],
 }
 

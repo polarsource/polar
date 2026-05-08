@@ -130,9 +130,7 @@ class TestIdentityCacheRoundTrip:
 
 @pytest.mark.asyncio
 class TestAuthenticate:
-    async def test_cache_miss_uses_token_hash_pending_auth(
-        self, redis: Redis
-    ) -> None:
+    async def test_cache_miss_uses_token_hash_pending_auth(self, redis: Redis) -> None:
         identity = await _authenticate(
             _http_scope(
                 headers=[(b"authorization", b"Bearer polar_pat_unknown")],

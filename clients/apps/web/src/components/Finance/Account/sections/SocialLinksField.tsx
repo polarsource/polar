@@ -2,13 +2,6 @@
 
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import Facebook from '@mui/icons-material/Facebook'
-import GitHub from '@mui/icons-material/GitHub'
-import Instagram from '@mui/icons-material/Instagram'
-import LinkedIn from '@mui/icons-material/LinkedIn'
-import Public from '@mui/icons-material/Public'
-import X from '@mui/icons-material/X'
-import YouTube from '@mui/icons-material/YouTube'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -29,25 +22,6 @@ const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
   'tiktok.com': 'tiktok',
   'discord.gg': 'discord',
   'discord.com': 'discord',
-}
-
-const getIcon = (platform: string, className: string) => {
-  switch (platform) {
-    case 'x':
-      return <X className={className} />
-    case 'instagram':
-      return <Instagram className={className} />
-    case 'facebook':
-      return <Facebook className={className} />
-    case 'github':
-      return <GitHub className={className} />
-    case 'youtube':
-      return <YouTube className={className} />
-    case 'linkedin':
-      return <LinkedIn className={className} />
-    default:
-      return <Public className={className} />
-  }
 }
 
 const inferPlatformFromUrl = (
@@ -105,6 +79,8 @@ export const SocialLinksField = ({ required }: Props) => {
       name="socials"
       render={({ field }) => {
         const socials = field.value || []
+        const renderRows: schemas['OrganizationSocialLink'][] =
+          socials.length === 0 ? [{ platform: 'other', url: '' }] : socials
         const hasValidSocial = socials.some(
           (social) => social.url && social.url.trim() !== '',
         )
@@ -112,33 +88,45 @@ export const SocialLinksField = ({ required }: Props) => {
 
         return (
           <div className="space-y-3">
-            {socials.map((social, index) => (
-              <div key={index} className="flex items-center gap-3">
-                <div className="flex w-5 justify-center">
-                  {getIcon(social.platform, 'text-gray-400 h-4 w-4')}
+            {renderRows.map((social, index) => {
+              const url = social.url ?? ''
+              const trimmed = url.trim()
+              const hasUrl = trimmed !== '' && trimmed !== 'https://'
+              const isOnlyRow = renderRows.length === 1
+              const showRemove = hasUrl || !isOnlyRow
+
+              return (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    type="url"
+                    value={url}
+                    onChange={(e) =>
+                      handleChange(
+                        index,
+                        e.target.value,
+                        socials,
+                        field.onChange,
+                      )
+                    }
+                    placeholder="https://x.com/yourhandle"
+                    className="flex-1"
+                  />
+                  {showRemove && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        field.onChange(socials.filter((_, i) => i !== index))
+                      }}
+                      className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
+                    >
+                      <CloseOutlined fontSize="small" />
+                    </Button>
+                  )}
                 </div>
-                <Input
-                  type="url"
-                  value={social.url || ''}
-                  onChange={(e) =>
-                    handleChange(index, e.target.value, socials, field.onChange)
-                  }
-                  placeholder="https://"
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    field.onChange(socials.filter((_, i) => i !== index))
-                  }}
-                  className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
-                >
-                  <CloseOutlined fontSize="small" />
-                </Button>
-              </div>
-            ))}
+              )
+            })}
             <Button
               type="button"
               size="sm"

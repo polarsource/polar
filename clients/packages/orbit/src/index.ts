@@ -43,7 +43,7 @@ export type {
   StatusVariant,
 } from './components/Status'
 export { Text } from './components/Text'
-export type { TextStyleProps, TextVariant } from './components/Text'
+export type { TextColor, TextStyleProps, TextVariant } from './components/Text'
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 export { createText } from './primitives/createText'

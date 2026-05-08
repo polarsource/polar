@@ -3,15 +3,17 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useURLValidation } from '@/hooks/useURLValidation'
-import { getQueryClient } from '@/utils/api/query'
 import { setValidationErrors } from '@/utils/api/errors'
+import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
 import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
+import { SectionLayout } from './SectionLayout'
 
 interface Props {
   organization: schemas['Organization']
@@ -61,12 +63,20 @@ export const ProductUrlSection = ({ organization }: Props) => {
 
   return (
     <Form {...form}>
-      <Box display="flex" flexDirection="column" rowGap="m">
-        <form onSubmit={handleSubmit(onSubmit)} className="contents">
-          <p className="dark:text-polar-400 text-xs text-gray-600">
-            Add the public URL where customers can learn about your product or
-            buy it. We will verify that the page loads.
-          </p>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <SectionLayout
+          description="Add the public URL where customers can learn about your product or buy it. We will verify that the page loads."
+          footerEnd={
+            <Button
+              type="submit"
+              size="sm"
+              loading={updateOrganization.isPending}
+              disabled={!formState.isDirty || updateOrganization.isPending}
+            >
+              Save
+            </Button>
+          }
+        >
           <FormField
             control={control}
             name="website"
@@ -122,25 +132,17 @@ export const ProductUrlSection = ({ organization }: Props) => {
                 />
                 <FormMessage />
                 {urlStatus === 'invalid' && (
-                  <p className="mt-1 text-xs text-amber-600">
-                    Website appears to be unreachable
-                  </p>
+                  <Box marginTop="xs">
+                    <Text variant="caption" color="warning">
+                      Website appears to be unreachable
+                    </Text>
+                  </Box>
                 )}
               </Box>
             )}
           />
-          <Box display="flex" justifyContent="end">
-            <Button
-              type="submit"
-              size="sm"
-              loading={updateOrganization.isPending}
-              disabled={!formState.isDirty || updateOrganization.isPending}
-            >
-              Save
-            </Button>
-          </Box>
-        </form>
-      </Box>
+        </SectionLayout>
+      </form>
     </Form>
   )
 }

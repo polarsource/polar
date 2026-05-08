@@ -1,9 +1,12 @@
+'use client'
+
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import type {
   BackgroundColorToken,
   TextColorToken,
 } from '@polar-sh/orbit/theme'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
   CheckIcon,
   ClockIcon,
@@ -57,7 +60,18 @@ export const StatusIcon = ({ status }: Props) => {
       backgroundColor={appearance.backgroundColor}
       color={appearance.color}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={status}
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 24 }}
+          className="flex items-center justify-center"
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </motion.span>
+      </AnimatePresence>
     </Box>
   )
 }

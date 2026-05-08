@@ -1,15 +1,16 @@
 'use client'
 
+import { toast } from '@/components/Toast/use-toast'
 import { useUpdateOrganization } from '@/hooks/queries'
-import { getQueryClient } from '@/utils/api/query'
 import { setValidationErrors } from '@/utils/api/errors'
+import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
-import { toast } from '@/components/Toast/use-toast'
+import { SectionLayout } from './SectionLayout'
 
 interface Props {
   organization: schemas['Organization']
@@ -55,8 +56,20 @@ export const EmailSection = ({ organization }: Props) => {
 
   return (
     <Form {...form}>
-      <Box display="flex" flexDirection="column" rowGap="m">
-        <form onSubmit={handleSubmit(onSubmit)} className="contents">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <SectionLayout
+          description="The email customers and Polar can use to reach you. Use a business email tied to your organization domain."
+          footerEnd={
+            <Button
+              type="submit"
+              size="sm"
+              loading={updateOrganization.isPending}
+              disabled={!formState.isDirty || updateOrganization.isPending}
+            >
+              Save
+            </Button>
+          }
+        >
           <FormField
             control={control}
             name="email"
@@ -68,18 +81,8 @@ export const EmailSection = ({ organization }: Props) => {
               </Box>
             )}
           />
-          <Box display="flex" justifyContent="end">
-            <Button
-              type="submit"
-              size="sm"
-              loading={updateOrganization.isPending}
-              disabled={!formState.isDirty || updateOrganization.isPending}
-            >
-              Save
-            </Button>
-          </Box>
-        </form>
-      </Box>
+        </SectionLayout>
+      </form>
     </Form>
   )
 }

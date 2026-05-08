@@ -1,15 +1,15 @@
 'use client'
 
-import { SocialLinksField } from '@/components/Organization/forms/SocialLinksField'
+import { SocialLinksField } from './SocialLinksField'
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateOrganization } from '@/hooks/queries'
-import { getQueryClient } from '@/utils/api/query'
 import { setValidationErrors } from '@/utils/api/errors'
+import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
+import { SectionLayout } from './SectionLayout'
 
 interface Props {
   organization: schemas['Organization']
@@ -57,10 +57,10 @@ export const SocialLinksSection = ({ organization }: Props) => {
 
   return (
     <Form {...form}>
-      <Box display="flex" flexDirection="column" rowGap="m">
-        <form onSubmit={handleSubmit(onSubmit)} className="contents">
-          <SocialLinksField required />
-          <Box display="flex" justifyContent="end">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <SectionLayout
+          description="Link your public profiles. We use them to verify your organization."
+          footerEnd={
             <Button
               type="submit"
               size="sm"
@@ -69,9 +69,11 @@ export const SocialLinksSection = ({ organization }: Props) => {
             >
               Save
             </Button>
-          </Box>
-        </form>
-      </Box>
+          }
+        >
+          <SocialLinksField required />
+        </SectionLayout>
+      </form>
     </Form>
   )
 }

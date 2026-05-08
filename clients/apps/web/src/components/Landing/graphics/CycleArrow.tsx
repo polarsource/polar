@@ -64,18 +64,34 @@ export const CycleArrow = () => {
     }
 
     const arcLen = Math.PI * r
-    // (cols - 1) full verticals of length 2*halfH plus the lengthened
-    // last vertical (2*halfH + r).
-    const totalLen = cols * 2 * halfH + r + (cols - 1) * arcLen
-    const snakeLen = colGap * 2.6
-    const cycleLen = totalLen + snakeLen
-    const cycleMs = 4500
-
+    // (cols - 1) full verticals plus the lengthened last vertical.
+    const meanderLen = cols * 2 * halfH + r + (cols - 1) * arcLen
     const headLen = colGap * 0.8
     const headAngle = Math.PI / 4
+    // The animation fills the meander first, then continues into the
+    // V flanks of the arrowhead (both sides in parallel).
+    const totalLen = meanderLen + headLen
+    const cycleMs = 10000
+
     const lastGoingUp = (cols - 1) % 2 === 0
     const rx = startX + (cols - 1) * colGap
     const ry = lastGoingUp ? cy - halfH - r : cy + halfH + r
+    const flankYDir = lastGoingUp ? 1 : -1
+
+    // Pre-build small Path2D objects for each flank so we can stroke
+    // them independently with their own dash window.
+    const leftFlank = new Path2D()
+    leftFlank.moveTo(rx, ry)
+    leftFlank.lineTo(
+      rx - Math.sin(headAngle) * headLen,
+      ry + flankYDir * Math.cos(headAngle) * headLen,
+    )
+    const rightFlank = new Path2D()
+    rightFlank.moveTo(rx, ry)
+    rightFlank.lineTo(
+      rx + Math.sin(headAngle) * headLen,
+      ry + flankYDir * Math.cos(headAngle) * headLen,
+    )
 
     const railWidth = 2
     const bodyWidth = 2.5
@@ -86,7 +102,25 @@ export const CycleArrow = () => {
     const draw = (now: number) => {
       if (!start) start = now
       const t = ((now - start) / cycleMs) % 1
-      const offset = -t * cycleLen
+
+      // Fill (first half) → leading edge advances from 0 to totalLen.
+      // Drain (second half) → trailing edge follows along to empty
+      // the path. This produces a continuous "fill in, then clear"
+      // loop with no jarring reset.
+      let dashStart: number
+      let dashEnd: number
+      // Cubic-bezier ease-in-out applied to each half separately so
+      // the leading edge accelerates into the path then settles, and
+      // the trailing edge does the same on the way out.
+      const ease = (x: number): number =>
+        x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
+      if (t < 0.5) {
+        dashStart = 0
+        dashEnd = ease(t / 0.5) * totalLen
+      } else {
+        dashStart = ease((t - 0.5) / 0.5) * totalLen
+        dashEnd = totalLen
+      }
 
       ctx.clearRect(0, 0, size, size)
 
@@ -96,27 +130,42 @@ export const CycleArrow = () => {
       ctx.setLineDash([])
       ctx.stroke(path)
 
-      // Arrowhead — part of the resting body, drawn at the same
-      // dim color so it matches the rest of the static path. The
-      // snake passes through it and pops the tip briefly.
-      ctx.beginPath()
-      ctx.moveTo(
-        rx - Math.sin(headAngle) * headLen,
-        ry + Math.cos(headAngle) * headLen,
-      )
-      ctx.lineTo(rx, ry)
-      ctx.lineTo(
-        rx + Math.sin(headAngle) * headLen,
-        ry + Math.cos(headAngle) * headLen,
-      )
-      ctx.stroke()
+      // Arrowhead V at the right end, drawn at the same dim color
+      // so it reads as part of the static body. The bright trail
+      // overlays it on top once it spills past the meander.
+      ctx.stroke(leftFlank)
+      ctx.stroke(rightFlank)
 
-      // Snake travelling along the rail, in the bright stroke color.
+      // Bright trail filling the path from start toward the leading
+      // edge. `source-atop` masks against the already-painted rail
+      // + arrowhead so the trail can't spill past the static line.
+      ctx.globalCompositeOperation = 'source-atop'
       ctx.strokeStyle = strokeColor
       ctx.lineWidth = bodyWidth
-      ctx.setLineDash([snakeLen, totalLen])
-      ctx.lineDashOffset = offset
-      ctx.stroke(path)
+
+      // Portion that falls on the meander itself.
+      const meanderStart = Math.min(dashStart, meanderLen)
+      const meanderEnd = Math.min(dashEnd, meanderLen)
+      const meanderVisible = meanderEnd - meanderStart
+      if (meanderVisible > 0.5) {
+        ctx.setLineDash([meanderVisible, meanderLen + 1])
+        ctx.lineDashOffset = -meanderStart
+        ctx.stroke(path)
+      }
+
+      // Portion that has spilled past the apex into the V flanks.
+      // Both flanks fill in parallel from the apex outward.
+      const flankStart = Math.max(0, dashStart - meanderLen)
+      const flankEnd = Math.max(0, dashEnd - meanderLen)
+      const flankVisible = flankEnd - flankStart
+      if (flankVisible > 0.5) {
+        ctx.setLineDash([flankVisible, headLen + 1])
+        ctx.lineDashOffset = -flankStart
+        ctx.stroke(leftFlank)
+        ctx.stroke(rightFlank)
+      }
+
+      ctx.globalCompositeOperation = 'source-over'
 
       raf = requestAnimationFrame(draw)
     }

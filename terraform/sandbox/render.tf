@@ -68,10 +68,11 @@ locals {
 
 locals {
   sandbox_service_ids = {
-    api                     = "srv-crkocgbtq21c73ddsdbg"
-    worker-sandbox          = "srv-d089jj7diees73934kgg"
-    worker-sandbox-webhook  = "srv-d62q7vh4tr6s73fk44ng"
-    worker-sandbox-tinybird = "srv-d733cp15pdvs73f6vqng"
+    api                              = "srv-crkocgbtq21c73ddsdbg"
+    worker-sandbox                   = "srv-d089jj7diees73934kgg"
+    worker-sandbox-webhook           = "srv-d62q7vh4tr6s73fk44ng"
+    worker-sandbox-tinybird          = "srv-d733cp15pdvs73f6vqng"
+    worker-sandbox-invoices-receipts = "srv-d7unnjhj2pic73c2vr60"
   }
 }
 
@@ -149,8 +150,8 @@ module "sandbox" {
     worker-sandbox-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 4 --queues invoices_and_receipts"
       plan               = "standard"
-      image_url          = data.render_web_service.sandbox_worker["worker-sandbox"].runtime_source.image.image_url
-      image_digest       = data.render_web_service.sandbox_worker["worker-sandbox"].runtime_source.image.digest
+      image_url          = data.render_web_service.sandbox_worker["worker-sandbox-invoices-receipts"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.sandbox_worker["worker-sandbox-invoices-receipts"].runtime_source.image.digest
       dramatiq_prom_port = "10003"
     }
   }

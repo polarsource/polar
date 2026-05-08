@@ -63,7 +63,8 @@
             "group": "Guides",
             "pages": [
               "engineering/guides",
-              "engineering/guides/release-checkout"
+              "engineering/guides/release-checkout",
+              "engineering/guides/cycle-admin"
             ]
           },
           {

@@ -1,0 +1,129 @@
+---
+title: "Polar Cycle"
+description: "How to configure Polar Cycle, the Slack bot that announces PRs and rotates the primary reviewer"
+---
+
+Polar Cycle is the small Slack bot that posts PR threads in `#engineering` and picks a primary reviewer whenever a team is requested for review. It runs on Vercel at [polar-cycle.vercel.app](https://polar-cycle.vercel.app), with a tiny admin UI for the bits we need to tweak day to day.
+
+This guide covers what the admin panel does and the most common tasks you will run from it. The implementation lives in [`polarsource/cycle`](https://github.com/polarsource/cycle).
+
+## What Cycle does
+
+When you open a PR in a repo Cycle is watching:
+
+- It posts a thread in the configured Slack channel announcing the PR.
+- If you request a **team** as reviewer, Cycle picks one human from that team as the _primary reviewer_ and @-mentions them in the parent message. The pick is fair: it prefers whoever has been picked the fewest times today, breaking ties at random.
+- It posts replies in the thread for new commits, approvals, change requests, additional reviewer requests, merges, and closes.
+- The PR author is always excluded from being picked, and so is anyone on the temporary exclusion list (see below).
+
+### The 60-second first-post grace period
+
+Cycle does **not** post to Slack the instant a PR opens. It waits **60 seconds** and then publishes the parent message. Anything that happens during that window — title edits, additional reviewer or team requests, even closing the PR — is folded into the announcement rather than producing a separate reply:
+
+- Reviewer / team additions show up in the initial message instead of as `:eyes:` replies.
+- The displayed title and primary reviewer reflect the latest state at flush time.
+- If the PR is **closed or merged inside the window**, the announcement is dropped entirely and no thread is ever posted.
+
+A Vercel cron runs every minute and flushes any PRs whose grace period has elapsed. This is the main reason a PR can take up to ~60s to appear in Slack; it is intentional, not a bug.
+
+Cycle stores its state in Upstash Redis. There is no Postgres, no migrations — everything you can configure lives behind the admin panel.
+
+## Signing in
+
+<Steps>
+
+### Open the admin
+
+Go to [polar-cycle.vercel.app/admin](https://polar-cycle.vercel.app/admin).
+
+### Sign in with GitHub
+
+Click **Sign in with GitHub**. You must be a member of `@polarsource` — Cycle calls the GitHub API with your token to verify org membership before issuing a session. Anyone in the org can sign in and edit configuration; there are no further role checks.
+
+Sessions are signed cookies that last 7 days. Use **Sign out** in the top right to clear yours.
+
+</Steps>
+
+## What you can configure
+
+The admin panel has four sections, all on a single page.
+
+### Slack channel
+
+The Slack channel ID where Cycle posts PR threads (e.g. `C0123ABC456`). Use the **channel ID**, not the channel name — find it via Slack → channel name → **View channel details** → bottom of the **About** tab.
+
+There is exactly one channel for the whole bot. Changing it affects every repo Cycle is listening to.
+
+### Repositories
+
+A newline-separated list of `owner/repo` slugs that Cycle should listen to (e.g. `polarsource/polar`). Cycle ignores webhooks for any repo not in this list, so adding a new repo here is the switch that turns Cycle on for it.
+
+<Note>
+  Webhooks are configured at the GitHub App level (separately from this panel). If you add a
+  brand-new repo and Cycle is not posting anything, double-check that the **Polar Cycle** GitHub App
+  is installed on it. The repo list here is a filter, not a subscription.
+</Note>
+
+### GitHub → Slack mapping
+
+Maps a GitHub login to a Slack member ID so Cycle can @-mention people instead of writing their plain GitHub handle.
+
+- **GitHub** is the user's GitHub login (e.g. `frankie567`).
+- **Slack** is the Slack member ID, which starts with `U` (e.g. `U0123ABC456`). Find it via the user's Slack profile → **More** (`⋯`) → **Copy member ID**. Do not paste the `@username` form — the bot needs the stable ID.
+
+If a user has no mapping, Cycle falls back to writing their GitHub login. They will still be picked as primary reviewer; they just will not get a Slack notification.
+
+When you onboard a new engineer, adding their mapping here is what makes them show up as a clickable @-mention in PR threads.
+
+### Temporary exclusions
+
+Use this to take someone out of the rotation while they are on vacation, parental leave, or otherwise unavailable.
+
+- **GitHub** is the user's GitHub login.
+- **Until** is the last day they should remain excluded (inclusive). After that day, the entry is automatically ignored — you do not have to come back and remove it. Cleaning up expired entries is a nice-to-have, not required.
+
+While excluded, the user will not be picked as primary reviewer for any PR. They can still be requested explicitly on a PR; the exclusion only affects automatic primary picking.
+
+## Common tasks
+
+### Onboarding a new engineer
+
+1. Ask them for their Slack member ID.
+2. Open the admin panel and add a row under **GitHub → Slack mapping** with their GitHub login and Slack ID.
+3. That's it — they will start receiving primary reviewer pings the next time their team is requested.
+
+### Putting someone on vacation
+
+1. Open the admin panel and scroll to **Temporary exclusions**.
+2. Enter their GitHub login and the **last** day they will be away (inclusive).
+3. Submit. The exclusion takes effect within a minute (there is a short in-memory cache).
+
+### Adding a new repo to the rotation
+
+1. Make sure the **Polar Cycle** GitHub App is installed on the repo (org admins can do this).
+2. Open the admin panel and add `owner/repo` on a new line under **Repositories**.
+3. Save. The next opened PR in that repo should produce a Slack thread.
+
+### Changing the announcement channel
+
+1. Find the new channel's ID in Slack (channel details → **About** tab).
+2. Make sure the Cycle Slack app is invited to the channel (`/invite @cycle` from inside it).
+3. Paste the channel ID into **Slack channel** and save. New PR threads will now go there; existing threads stay where they were posted.
+
+## Troubleshooting
+
+**A PR opened and nothing showed up in Slack.**
+First, has it been more than 60 seconds? Cycle holds the first message back for a one-minute grace window (see above). After that, check, in order: (1) is the repo listed under **Repositories**? (2) is the Cycle GitHub App installed on the repo? (3) is the configured Slack channel still valid and is the bot a member? (4) is the PR a draft? Cycle waits to post until the PR is opened in a non-draft state. (5) was the PR closed or merged within the grace window? If so, the announcement is dropped on purpose.
+
+**Someone got picked as primary even though they are out.**
+Confirm their **Until** date has not already passed. The exclusion is inclusive of the date, but only honored if `until >= today` (UTC). If it looks correct, the in-memory cache may briefly serve a stale view; it expires within a minute.
+
+**A user shows up as plain text instead of an @-mention.**
+They are missing from the **GitHub → Slack mapping** table, or the mapped Slack ID is wrong. Member IDs always start with `U` — anything else (including `@username`) will not work.
+
+## Reference
+
+- Source: [`polarsource/cycle`](https://github.com/polarsource/cycle)
+- Admin URL: https://polar-cycle.vercel.app/admin
+- Storage: Upstash Redis (configured via Vercel env vars)
+- Auth: GitHub OAuth, restricted to `@polarsource` org members, signed-cookie sessions (7-day TTL)

@@ -3,7 +3,11 @@
 import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import { usePayoutAccount } from '@/hooks/queries/payout_accounts'
+import ManagePayoutAccountModal from '@/components/Payouts/ManagePayoutAccountModal'
+import {
+  usePayoutAccount,
+  usePayoutAccounts,
+} from '@/hooks/queries/payout_accounts'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -19,17 +23,30 @@ export const PayoutAccountSection = ({ organization }: Props) => {
   const { data: payoutAccount } = usePayoutAccount(
     organization.payout_account_id || undefined,
   )
+  const { data: payoutAccountsList } = usePayoutAccounts()
+  const hasReusableAccounts = (payoutAccountsList?.items?.length ?? 0) > 0
   const isAccountSetupComplete = payoutAccount && payoutAccount.is_payout_ready
+
   const {
-    isShown: isShownSetupModal,
-    show: showSetupModal,
-    hide: hideSetupModal,
+    isShown: isShownCreateModal,
+    show: showCreateModal,
+    hide: hideCreateModal,
   } = useModal()
+  const {
+    isShown: isShownManageModal,
+    show: showManageModal,
+    hide: hideManageModal,
+  } = useModal()
+
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false)
 
   const handleStartAccountSetup = useCallback(async () => {
     if (!payoutAccount) {
-      showSetupModal()
+      if (hasReusableAccounts) {
+        showManageModal()
+      } else {
+        showCreateModal()
+      }
       return
     }
     const link = await unwrap(
@@ -43,7 +60,18 @@ export const PayoutAccountSection = ({ organization }: Props) => {
       }),
     )
     window.location.href = link.url
-  }, [organization.slug, payoutAccount, showSetupModal])
+  }, [
+    organization.slug,
+    payoutAccount,
+    hasReusableAccounts,
+    showCreateModal,
+    showManageModal,
+  ])
+
+  const handleCreateFromManage = useCallback(() => {
+    hideManageModal()
+    showCreateModal()
+  }, [hideManageModal, showCreateModal])
 
   const handleOpenStripeDashboard = useCallback(async () => {
     if (!payoutAccount) return
@@ -107,20 +135,42 @@ export const PayoutAccountSection = ({ organization }: Props) => {
       <StatusBlock
         tone="neutral"
         icon={BanknoteIcon}
-        title="Connect payout account"
-        description="Connect or create a Stripe account to receive payments from your customers."
+        title={
+          hasReusableAccounts
+            ? 'Choose a payout account'
+            : 'Connect payout account'
+        }
+        description={
+          hasReusableAccounts
+            ? 'Reuse a Stripe account from one of your other organizations, or connect a new one.'
+            : 'Connect or create a Stripe account to receive payments from your customers.'
+        }
         action={
           <Button onClick={handleStartAccountSetup}>
-            Continue with account setup
+            {hasReusableAccounts
+              ? 'Manage payout accounts'
+              : 'Continue with account setup'}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         }
       />
       <Modal
+        title="Manage Payout Accounts"
+        isShown={isShownManageModal}
+        className="min-w-[480px]"
+        hide={hideManageModal}
+        modalContent={
+          <ManagePayoutAccountModal
+            organization={organization}
+            onCreateNew={handleCreateFromManage}
+          />
+        }
+      />
+      <Modal
         title="Create Payout Account"
-        isShown={isShownSetupModal}
+        isShown={isShownCreateModal}
         className="min-w-100"
-        hide={hideSetupModal}
+        hide={hideCreateModal}
         modalContent={
           <AccountCreateModal
             forOrganizationId={organization.id}

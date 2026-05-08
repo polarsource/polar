@@ -71,16 +71,6 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
             </Box>
           )}
         </Box>
-        {step.value ? (
-          <a
-            href={step.value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="truncate pl-9 text-xs text-blue-600 hover:underline dark:text-blue-400"
-          >
-            {step.value}
-          </a>
-        ) : null}
       </Box>
       {renderSection && (
         <AnimatePresence initial={false}>

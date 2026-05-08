@@ -4,10 +4,12 @@ import { ReviewChecklist } from '@/components/Finance/Account/ReviewChecklist'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { toast } from '@/components/Toast/use-toast'
 import {
+  useOrganizationKYC,
   useOrganizationReviewState,
   useSubmitOrganizationReview,
 } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 
@@ -19,6 +21,10 @@ export const AccountPageDetailsRequiredV2 = ({ organization }: Props) => {
   const { data: reviewState, isLoading } = useOrganizationReviewState(
     organization.id,
   )
+
+  // Warm the KYC query cache so expanding the Product Description section
+  // doesn't show its loading state mid-accordion-animation.
+  useOrganizationKYC(organization.id)
 
   const submitReview = useSubmitOrganizationReview(organization.id)
 
@@ -47,7 +53,14 @@ export const AccountPageDetailsRequiredV2 = ({ organization }: Props) => {
         </Button>
       }
     >
-      <Box display="flex" flexDirection="column" rowGap="m">
+      <Box display="flex" flexDirection="column" rowGap="xl">
+        <Box display="flex" flexDirection="column" rowGap="s">
+          <Text variant="body" color="muted">
+            Verify your business so customers can buy from you. After you
+            submit, our team will review your details and get back to you
+            shortly.
+          </Text>
+        </Box>
         <ReviewChecklist
           isLoading={isLoading}
           steps={reviewState?.preliminary_steps ?? []}

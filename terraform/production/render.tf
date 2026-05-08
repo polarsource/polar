@@ -120,13 +120,14 @@ resource "render_redis" "redis" {
 
 locals {
   production_service_ids = {
-    api                    = "srv-ci4r87h8g3ne0dmvvl60"
-    scheduler              = "srv-d4uto5ili9vc73dd37tg"
-    worker                 = "srv-d4k6otfgi27c73cicnpg"
-    worker-medium-priority = "srv-d4k62svpm1nc73af5e3g"
-    worker-high-priority   = "srv-d3hrh1j3fgac73a1t4r0"
-    worker-webhook         = "srv-d5l0oekhg0os73clofm0"
-    worker-tinybird        = "srv-d733djuuk2gs73e98h1g"
+    api                      = "srv-ci4r87h8g3ne0dmvvl60"
+    scheduler                = "srv-d4uto5ili9vc73dd37tg"
+    worker                   = "srv-d4k6otfgi27c73cicnpg"
+    worker-medium-priority   = "srv-d4k62svpm1nc73af5e3g"
+    worker-high-priority     = "srv-d3hrh1j3fgac73a1t4r0"
+    worker-webhook           = "srv-d5l0oekhg0os73clofm0"
+    worker-tinybird          = "srv-d733djuuk2gs73e98h1g"
+    worker-invoices-receipts = "srv-d7us9je7r5hc73be5ieg"
   }
 }
 
@@ -219,8 +220,8 @@ module "production" {
     "worker-invoices-receipts" = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
-      image_url          = data.render_web_service.production_worker["worker-tinybird"].runtime_source.image.image_url
-      image_digest       = data.render_web_service.production_worker["worker-tinybird"].runtime_source.image.digest
+      image_url          = data.render_web_service.production_worker["worker-invoices-receipts"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker-invoices-receipts"].runtime_source.image.digest
       dramatiq_prom_port = "10003"
     }
   }

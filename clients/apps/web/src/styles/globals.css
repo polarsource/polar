@@ -289,7 +289,7 @@
 
   .dark {
     --color-graphic-stroke: #fff;
-    --color-graphic-dim: rgb(40, 40, 40);
+    --color-graphic-dim: rgb(60, 60, 60);
   }
 }
 

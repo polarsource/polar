@@ -1015,9 +1015,7 @@ class TestCheckSlugAvailability:
         assert response.json() == {"available": True, "reason": None}
 
     @pytest.mark.auth
-    async def test_taken(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
+    async def test_taken(self, client: AsyncClient, organization: Organization) -> None:
         response = await client.post(
             "/v1/organizations/check-slug", json={"slug": organization.slug}
         )

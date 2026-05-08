@@ -86,9 +86,7 @@ class OrganizationSlugCheck(Schema):
     slug: str = Field(description="The slug to check availability for.")
 
 
-OrganizationSlugUnavailableReason = Literal[
-    "format", "reserved", "blocked", "taken"
-]
+OrganizationSlugUnavailableReason = Literal["format", "reserved", "blocked", "taken"]
 
 
 class OrganizationSlugAvailability(Schema):

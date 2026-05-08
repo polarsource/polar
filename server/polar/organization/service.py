@@ -9,6 +9,7 @@ import email_validator
 import structlog
 from pydantic import BaseModel, Field
 from pydantic import ValidationError as PydanticValidationError
+from slugify import slugify
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -68,8 +69,6 @@ from polar.product.repository import ProductRepository
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
-
-from slugify import slugify
 
 from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (

@@ -228,21 +228,17 @@ class OrganizationService:
         normalized = slug.lower()
 
         if len(normalized) < 3 or slugify(normalized) != normalized:
-            return OrganizationSlugAvailability(available=False, reason="format")
+            return OrganizationSlugAvailability(available=False)
 
         try:
             validate_reserved_keywords(normalized)
-        except ValueError:
-            return OrganizationSlugAvailability(available=False, reason="reserved")
-
-        try:
             validate_blocked_words(normalized)
         except ValueError:
-            return OrganizationSlugAvailability(available=False, reason="blocked")
+            return OrganizationSlugAvailability(available=False)
 
         repository = OrganizationRepository.from_session(session)
         if await repository.slug_exists(normalized):
-            return OrganizationSlugAvailability(available=False, reason="taken")
+            return OrganizationSlugAvailability(available=False)
 
         return OrganizationSlugAvailability(available=True)
 

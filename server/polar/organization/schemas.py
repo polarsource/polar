@@ -86,22 +86,9 @@ class OrganizationSlugCheck(Schema):
     slug: str = Field(description="The slug to check availability for.")
 
 
-OrganizationSlugUnavailableReason = Literal["format", "reserved", "blocked", "taken"]
-
-
 class OrganizationSlugAvailability(Schema):
     available: bool = Field(
         description="Whether the slug is available for a new organization."
-    )
-    reason: OrganizationSlugUnavailableReason | None = Field(
-        None,
-        description=(
-            "If unavailable, the reason why. "
-            "`format` if the slug doesn't match the required format, "
-            "`reserved` if it's a reserved keyword, "
-            "`blocked` if it contains a disallowed word, "
-            "`taken` if another organization already uses it."
-        ),
     )
 
 

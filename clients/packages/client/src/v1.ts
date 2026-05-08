@@ -23734,11 +23734,6 @@ export interface components {
        * @description Whether the slug is available for a new organization.
        */
       available: boolean
-      /**
-       * Reason
-       * @description If unavailable, the reason why. `format` if the slug doesn't match the required format, `reserved` if it's a reserved keyword, `blocked` if it contains a disallowed word, `taken` if another organization already uses it.
-       */
-      reason?: ('format' | 'reserved' | 'blocked' | 'taken') | null
     }
     /** OrganizationSlugCheck */
     OrganizationSlugCheck: {
@@ -54065,9 +54060,6 @@ export const organizationReviewStateVerdictAnyOf0Values: ReadonlyArray<
 export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']
-export const organizationSlugAvailabilityReasonAnyOf0Values: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['OrganizationSlugAvailability']['reason']
-> = ['format', 'reserved', 'blocked', 'taken']
 export const organizationSocialPlatformsValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSocialPlatforms']
 > = [

@@ -1012,7 +1012,7 @@ class TestCheckSlugAvailability:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"available": True, "reason": None}
+        assert response.json() == {"available": True}
 
     @pytest.mark.auth
     async def test_taken(self, client: AsyncClient, organization: Organization) -> None:
@@ -1021,7 +1021,7 @@ class TestCheckSlugAvailability:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"available": False, "reason": "taken"}
+        assert response.json() == {"available": False}
 
     @pytest.mark.auth
     async def test_too_short(self, client: AsyncClient) -> None:
@@ -1030,7 +1030,7 @@ class TestCheckSlugAvailability:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"available": False, "reason": "format"}
+        assert response.json() == {"available": False}
 
     @pytest.mark.auth
     async def test_invalid_format(self, client: AsyncClient) -> None:
@@ -1039,7 +1039,7 @@ class TestCheckSlugAvailability:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"available": False, "reason": "format"}
+        assert response.json() == {"available": False}
 
     @pytest.mark.auth
     async def test_reserved(self, client: AsyncClient) -> None:
@@ -1048,7 +1048,7 @@ class TestCheckSlugAvailability:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"available": False, "reason": "reserved"}
+        assert response.json() == {"available": False}
 
     @pytest.mark.auth
     async def test_blocked_word(self, client: AsyncClient) -> None:
@@ -1057,4 +1057,4 @@ class TestCheckSlugAvailability:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"available": False, "reason": "blocked"}
+        assert response.json() == {"available": False}

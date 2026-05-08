@@ -26,22 +26,6 @@ import { CurrencySelector } from '../CurrencySelector'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
-function slugUnavailableMessage(
-  reason: schemas['OrganizationSlugAvailability']['reason'],
-): string {
-  switch (reason) {
-    case 'taken':
-      return 'This slug is already taken.'
-    case 'reserved':
-      return 'This slug is reserved.'
-    case 'blocked':
-      return 'This slug is not allowed.'
-    case 'format':
-    default:
-      return 'This slug is invalid.'
-  }
-}
-
 interface FormSchema {
   organizationType: 'individual' | 'company'
   name: string
@@ -375,7 +359,7 @@ export function BusinessDetailsStep() {
                     return 'Could not validate slug. Please try again.'
                   }
                   if (!result.available) {
-                    return slugUnavailableMessage(result.reason)
+                    return 'This slug is not available.'
                   }
                   return true
                 },

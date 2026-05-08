@@ -30,11 +30,10 @@ export const FeedbackModal = ({
     submitFeedback.reset()
   }
 
-  const handleForwardToSupport = async () => {
-    if (!pendingQuestion) return
+  const handleEscalate = async (message: string) => {
     const { error } = await submitFeedback.mutateAsync({
       type: 'question',
-      message: pendingQuestion,
+      message,
       organization_id: organization.id,
       client_context: collectClientContext(),
     })
@@ -45,15 +44,19 @@ export const FeedbackModal = ({
 
   const renderContent = () => {
     if (submittedType !== null) {
-      return <ThanksPanel type={submittedType} />
+      return (
+        <div className="pb-8">
+          <ThanksPanel type={submittedType} />
+        </div>
+      )
     }
     if (pendingQuestion !== null) {
       return (
         <QuestionFlow
           question={pendingQuestion}
-          onForwardToSupport={handleForwardToSupport}
+          onEscalate={handleEscalate}
           onCancel={handleHide}
-          isForwarding={submitFeedback.isPending}
+          isEscalating={submitFeedback.isPending}
         />
       )
     }
@@ -76,7 +79,9 @@ export const FeedbackModal = ({
           <InlineModalHeader hide={handleHide}>
             <h2 className="text-xl">Share feedback</h2>
           </InlineModalHeader>
-          <div className="flex flex-col gap-y-8 p-8">{renderContent()}</div>
+          <div className="flex min-h-0 flex-1 flex-col px-8">
+            {renderContent()}
+          </div>
         </>
       }
     />

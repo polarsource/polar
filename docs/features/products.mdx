@@ -9,17 +9,13 @@ description: "Start selling digital products on Polar in minutes."
 Subscriptions and one-time purchases are both products in Polar — same API, same data model, just different pricing and billing logic. They live together in the Products dashboard, filterable by pricing model.
 </Info>
 
-## Create a product
-
-Give your product a name and you're halfway there. The rest of the form is about deciding how customers pay and what they get.
-
-### Billing cycle
+## Billing cycle
 
 A product is either a **one-time purchase** or **recurring**. One-time products charge the customer once and grant access forever. Recurring products bill on an interval — daily, weekly, monthly, or yearly — and you can extend any of those with an interval count to express things like "every 2 weeks" or "every 3 months".
 
 The billing cycle and recurring interval are locked in at creation. If you need to change them later, create a new product instead.
 
-### Pricing
+## Pricing
 
 Polar supports several pricing models, and you pick one per product:
 
@@ -33,7 +29,7 @@ Pricing type is locked in at creation, but for fixed-price products you can chan
 
 Whether the amount you enter includes tax or has tax added on top depends on your tax behavior setting. By default, Polar picks the convention that matches the customer's country (inclusive in most of the world, exclusive in the US, Canada, and India), but you can override it per organization or per price. See [Tax Inclusive Pricing](/features/tax-inclusive-pricing) for how the amount you set translates to what customers actually pay.
 
-#### Multiple payment currencies
+### Multiple payment currencies
 
 Products can be priced in several currencies at once so customers pay in their local currency. Your organization has a default payment currency that acts as the fallback, and you can add more on top. The price structure (price type, metered prices, etc.) must match across every currency you enable.
 
@@ -178,13 +174,13 @@ Polar supports 130+ currencies for product pricing:
 | `ZMW` | Zambian Kwacha |
 </Accordion>
 
-### Trial period
+## Trial period
 
 For recurring products, toggle **Enable trial period** to give customers a window where they aren't charged. Pick a number and a unit (days, weeks, months, or years) and Polar handles the rest.
 
 [Learn more about trials](/features/subscriptions/trials).
 
-### Metadata
+## Metadata
 
 You can attach arbitrary key–value metadata to a product. It's not shown to customers, but it travels along on every order, subscription, and webhook tied to the product, which makes it useful for keeping track of internal IDs or categories that live outside Polar.
 

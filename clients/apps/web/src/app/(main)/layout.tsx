@@ -10,13 +10,12 @@ export async function generateMetadata(): Promise<Metadata> {
       template: '%s | Polar',
       default: 'Polar',
     },
-    description:
-      'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
+    description: 'A billing platform for the intelligence era',
     openGraph: {
       images: 'https://polar.sh/assets/brand/polar_og.jpg',
       type: 'website',
       siteName: 'Polar',
-      title: 'Polar | Monetize your software with ease',
+      title: 'Polar | A billing platform for the intelligence era',
       description:
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
       locale: 'en_US',
@@ -24,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       images: 'https://polar.sh/assets/brand/polar_og.jpg',
       card: 'summary_large_image',
-      title: 'Polar | Monetize your software with ease',
+      title: 'Polar | A billing platform for the intelligence era',
       description:
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
     },

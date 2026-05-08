@@ -13,7 +13,7 @@ const LAYERS = [
   {
     id: '02',
     name: 'Aggregate',
-    desc: 'Transform raw signals into billable usage.',
+    desc: 'Transform raw signals into aggregated units.',
   },
   {
     id: '03',
@@ -38,7 +38,7 @@ export const Usage = () => (
             <span className="font-display text-2xl text-gray-900 dark:text-white">
               {l.id} — {l.name}
             </span>
-            <div className="h-[2px] w-10 bg-indigo-500 dark:bg-indigo-500" />
+            <div className="dark:bg-polar-600 h-[2px] w-10 bg-gray-200" />
             <span className="dark:text-polar-500 text-xl text-gray-500">
               {l.desc}
             </span>

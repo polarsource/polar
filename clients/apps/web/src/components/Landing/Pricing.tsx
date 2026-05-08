@@ -49,8 +49,8 @@ export const Pricing = () => {
               'Volume discounts for high-growth teams',
               'No monthly or setup fees',
             ].map((item) => (
-              <li key={item} className="flex gap-x-4">
-                <CheckOutlined className="text-emerald-500" fontSize="small" />
+              <li key={item} className="flex gap-x-6">
+                <CheckOutlined fontSize="small" />
                 <span>{item}</span>
               </li>
             ))}

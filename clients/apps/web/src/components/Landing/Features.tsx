@@ -48,10 +48,10 @@ const TILES = [
 export const Features = () => {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 py-32 md:gap-y-24">
-      <h1 className="font-display px-4 text-4xl leading-snug md:px-0 md:text-7xl">
-        All billing primitives you need.
+      <h1 className="font-display px-4 text-4xl leading-snug! md:px-0 md:text-7xl">
+        Any pricing model.
         <br />
-        In a single API.
+        Ships in an afternoon.
       </h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -67,7 +67,7 @@ export const Features = () => {
                 <span className="font-display text-3xl text-gray-900 dark:text-white">
                   {tile.title}
                 </span>
-                <div className="indigo-500 h-[2px] w-10 dark:bg-indigo-500" />
+                <div className="dark:bg-polar-600 h-[2px] w-10 bg-gray-200" />
                 <span className="dark:text-polar-500 text-xl text-gray-500">
                   {tile.desc}
                 </span>

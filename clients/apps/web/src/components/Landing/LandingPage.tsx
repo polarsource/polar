@@ -28,7 +28,7 @@ const PageContent = () => {
       <Section className="flex flex-col pt-0 md:pt-0">
         <Hero
           title="Turn Usage Into Revenue"
-          description="A billing platform built for AI companies"
+          description="A billing platform for the intelligence era"
           size="large"
         >
           <GetStartedButton size="lg" text="Get Started" />

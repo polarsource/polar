@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 import LandingPage from '../../../../components/Landing/LandingPage'
 export const metadata: Metadata = {
-  title: 'Polar — Monetize your software with ease',
-  description: 'Monetize your software with ease',
+  title: 'Polar — A billing platform for the intelligence era',
+  description: 'A billing platform for the intelligence era',
   keywords:
     'monetization, merchant of record, saas, digital products, platform, developer, open source, funding, open source, economy',
   openGraph: {

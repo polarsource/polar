@@ -26,7 +26,7 @@ export const AuthModal = ({
           <div className="flex flex-col gap-y-1">
             <h1 className="text-xl font-medium">Welcome to Polar</h1>
             <p className="dark:text-polar-500 text-sm text-gray-500">
-              The billing platform built for AI companies.
+              A billing platform for the intelligence era.
             </p>
           </div>
         )}

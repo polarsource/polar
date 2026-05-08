@@ -92,7 +92,7 @@ export const Testimonials = () => (
         <div className="flex h-full flex-col gap-y-6 text-xl leading-snug text-gray-900 dark:text-white">
           {t.text}
         </div>
-        <div className="dark:bg-polar-700 h-1 w-6 bg-gray-100" />
+        <div className="dark:bg-polar-600 h-1 w-6 bg-gray-200" />
         <div>
           <div className="text-lg text-gray-900 dark:text-white">{t.name}</div>
           <div className="dark:text-polar-400 text-lg text-gray-400">

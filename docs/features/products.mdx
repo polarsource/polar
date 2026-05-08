@@ -25,7 +25,7 @@ Polar supports several pricing models, and you pick one per product:
 - **Metered pricing.** Charge based on usage — bill per API call, per token, per anything you can count. See the [usage-based billing guide](/features/usage-based-billing/introduction) for the full setup.
 - **Seat-based pricing.** Sell a number of seats with optional volume tiers, and let the buyer assign them to teammates. See the [seat-based pricing guide](/features/seat-based-pricing).
 
-Pricing type is locked in at creation, but for fixed-price products you can change the amount at any time. Existing subscribers stay on the price they signed up at.
+Pricing type is locked in at creation, but for fixed-price products you can change the amount at any time. Existing subscribers are **grandfathered** onto the price they signed up at, so a price change only affects new purchases. If you do want to migrate someone onto the new price, you can do it [per subscription](/features/subscriptions/manage) from the dashboard or the API.
 
 Whether the amount you enter includes tax or has tax added on top depends on your tax behavior setting. By default, Polar picks the convention that matches the customer's country (inclusive in most of the world, exclusive in the US, Canada, and India), but you can override it per organization or per price. See [Tax Inclusive Pricing](/features/tax-inclusive-pricing) for how the amount you set translates to what customers actually pay.
 
@@ -240,7 +240,7 @@ Existing customers keep their access, and active subscriptions keep renewing. Yo
   </Accordion>
 
   <Accordion title="Can I change the price of a product after publishing it?">
-    Yes, for fixed-price products. Existing subscribers keep paying their original price; only new purchases see the updated amount. Billing cycle and pricing type can't change, though.
+    Yes, for fixed-price products. Existing subscribers are grandfathered onto their original price and only new purchases see the updated amount — but you can move individual subscribers onto the new price [per subscription](/features/subscriptions/manage) if you want. Billing cycle and pricing type can't change.
   </Accordion>
 
   <Accordion title="Can I sell usage-based or metered products?">

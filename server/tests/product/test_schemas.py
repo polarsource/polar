@@ -11,6 +11,7 @@ from polar.product.schemas import (
     ProductCreate,
     ProductCreateOneTime,
     ProductCreateRecurring,
+    ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
 )
@@ -277,6 +278,35 @@ class TestProductPriceFixedCurrencyMinimums:
         # PydanticCustomError produces clean messages without "Value error, " prefix
         assert errors[0]["type"] == "minimum_price"
         assert not errors[0]["msg"].startswith("Value error")
+
+
+class TestProductPriceCustomCurrency:
+    """Test currency-specific validation on ProductPriceCustomCreate (PWYW)."""
+
+    def test_inr_maximum_amount_above_old_usd_ceiling(self) -> None:
+        """Regression: INR maximum_amount above the old hardcoded $10K ceiling
+        (1_000_000 paise = ₹10,000) must be accepted."""
+        price = ProductPriceCustomCreate(
+            amount_type=ProductPriceAmountType.custom,
+            price_currency=PresentmentCurrency.inr,
+            minimum_amount=6000,
+            preset_amount=50000,
+            maximum_amount=5_000_000,
+        )
+        assert price.maximum_amount == 5_000_000
+
+    def test_maximum_amount_below_currency_minimum_rejected(self) -> None:
+        with pytest.raises(ValidationError) as exc_info:
+            ProductPriceCustomCreate(
+                amount_type=ProductPriceAmountType.custom,
+                price_currency=PresentmentCurrency.inr,
+                maximum_amount=400,
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("maximum_amount",)
+        assert errors[0]["type"] == "minimum_price"
 
 
 class TestProductCreateDiscriminator:

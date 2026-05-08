@@ -99,10 +99,6 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 
               return true
             },
-            max: {
-              value: 1_000_000,
-              message: 'Price cannot be greater than 10,000',
-            },
           }}
           render={({ field }) => {
             return (

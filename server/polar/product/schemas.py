@@ -194,7 +194,6 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
     )
     maximum_amount: PriceAmount | None = Field(
         default=None,
-        le=1_000_000,  # $10K
         description="The maximum amount the customer can pay.",
     )
     preset_amount: PriceAmount | None = Field(
@@ -208,7 +207,7 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
         ),
     )
 
-    @field_validator("minimum_amount", "preset_amount")
+    @field_validator("minimum_amount", "preset_amount", "maximum_amount")
     @classmethod
     def validate_amount_not_in_minimum_gap(
         cls, v: int | None, info: ValidationInfo

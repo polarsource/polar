@@ -34,7 +34,7 @@ export function OrganizationAccessTokenLeaked({
           your account and get in touch with us if you have any doubt.
         </Text>
       </Section>
-      <InfoBox title="Leak details" variant="warning">
+      <InfoBox title="Leak details" variant="info">
         <ul className="list-disc space-y-1 pl-6">
           <li>Notifier: {notifier}</li>
           <li>URL: {url}</li>

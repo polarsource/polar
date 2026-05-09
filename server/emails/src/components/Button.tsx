@@ -8,7 +8,7 @@ interface ButtonProps {
 
 export function Button({ href, children, variant = 'primary' }: ButtonProps) {
   const variantClasses = {
-    primary: 'bg-brand hover:bg-brand',
+    primary: 'bg-black hover:bg-gray-900',
     green: 'bg-green-600 hover:bg-green-700',
     red: 'bg-red-600 hover:bg-red-700',
   }
@@ -16,7 +16,7 @@ export function Button({ href, children, variant = 'primary' }: ButtonProps) {
   return (
     <ReactEmailButton
       href={href}
-      className={`block rounded-lg px-[18px] py-[10px] text-center text-base font-medium text-white no-underline ${variantClasses[variant]}`}
+      className={`block rounded-full px-[18px] py-[10px] text-center text-base font-medium text-white no-underline ${variantClasses[variant]}`}
     >
       {children}
     </ReactEmailButton>

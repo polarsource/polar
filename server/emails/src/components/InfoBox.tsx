@@ -9,7 +9,7 @@ interface InfoBoxProps {
 export function InfoBox({ title, children, variant = 'info' }: InfoBoxProps) {
   const bgColor = {
     info: 'bg-gray-100',
-    warning: 'bg-yellow-100',
+    warning: 'bg-yellow-50',
     error: 'bg-red-100',
   }[variant]
 

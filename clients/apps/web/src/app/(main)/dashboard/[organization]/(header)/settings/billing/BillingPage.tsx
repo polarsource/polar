@@ -12,8 +12,9 @@ import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Text } from '@polar-sh/orbit'
+import AllInclusive from '@mui/icons-material/AllInclusive'
 import { useRouter } from 'next/navigation'
+import { EmptyState } from '@/components/CustomerPortal/EmptyState'
 
 export default function BillingPage({
   organization,
@@ -41,16 +42,17 @@ export default function BillingPage({
               onChangePlan={onChangePlan}
             />
           ) : (
-            <Box
-              borderRadius="m"
-              backgroundColor="background-warning"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-warning"
-              padding="l"
-            >
-              <Text>No active subscription found.</Text>
-            </Box>
+            <EmptyState
+              icon={<AllInclusive fontSize="medium" />}
+              title="No active subscription"
+              description="This organization doesn't have an active subscription"
+              actions={[
+                {
+                  children: 'Select Plan',
+                  onClick: onChangePlan,
+                },
+              ]}
+            />
           )}
         </Section>
 

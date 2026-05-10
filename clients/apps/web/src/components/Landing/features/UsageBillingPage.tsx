@@ -4,7 +4,7 @@ import ElectricMeterOutlined from '@mui/icons-material/ElectricMeterOutlined'
 import InsightsOutlined from '@mui/icons-material/InsightsOutlined'
 import KeyboardDoubleArrowRightOutlined from '@mui/icons-material/KeyboardDoubleArrowRightOutlined'
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
-import { Dumbbell } from '../graphics/Dumbbell'
+import { VennCluster } from '../graphics/VennCluster'
 import {
   FeatureCardGrid,
   FeatureCTA,
@@ -26,7 +26,7 @@ export const UsageBillingPage = () => {
         docsHref="/docs/features/usage-based-billing/introduction"
       />
 
-      <FeaturePageGraphic graphic={Dumbbell} />
+      <FeaturePageGraphic graphic={VennCluster} />
 
       <FeaturePageIntro>
         Send events from your application. Polar aggregates them into meters and

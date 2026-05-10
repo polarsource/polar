@@ -2,6 +2,7 @@
 
 import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { toast } from '@/components/Toast/use-toast'
+import { useSafeCopy } from '@/hooks/clipboard'
 import {
   useListWebhooksDeliveries,
   useRedeliverWebhookEvent,
@@ -295,6 +296,15 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
     : null
 
   const redeliver = useRedeliverWebhookEvent()
+  const safeCopy = useSafeCopy(toast)
+
+  const handleCopyPayload = useCallback(async () => {
+    if (!payload) return
+    await safeCopy(payload)
+    toast({
+      title: 'Payload copied to clipboard',
+    })
+  }, [payload, safeCopy])
 
   const handleRedeliver = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -348,7 +358,14 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
         )}
       </div>
       <hr />
-      <div className="font-medium">Payload</div>
+      <div className="flex items-center justify-between">
+        <div className="font-medium">Payload</div>
+        {payload && (
+          <Button variant="secondary" size="sm" onClick={handleCopyPayload}>
+            Copy payload
+          </Button>
+        )}
+      </div>
       {payload ? (
         <pre className="text-xs whitespace-pre-wrap">{payload}</pre>
       ) : (

@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { CreditArc } from './graphics/CreditArc'
 import { CycleArrow } from './graphics/CycleArrow'
-import { Dumbbell } from './graphics/Dumbbell'
 import { LinkedRings } from './graphics/LinkedRings'
 import { VectorField } from './graphics/VectorField'
+import { VennCluster } from './graphics/VennCluster'
 import { WaveBars } from './graphics/WaveBars'
 
 const TILES = [
@@ -11,7 +11,7 @@ const TILES = [
     title: 'Usage Billing',
     desc: 'Meter tokens, API calls, compute, storage. Bill with precision down to the event.',
     href: '/features/usage-billing',
-    Graphic: Dumbbell,
+    Graphic: VennCluster,
   },
   {
     title: 'Subscriptions',

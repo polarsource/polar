@@ -19,7 +19,9 @@ const ease = (t: number) =>
 const RING_COUNT = 14
 const MIN_R_FRAC = 0.06
 const RING_STEP_FRAC = 0.028
-const MIN_FONT = 12
+// Minimum pixel gap between adjacent rings' text. At small canvas sizes
+// the font shrinks to keep this gap visible.
+const MIN_GAP_PX = 2
 
 export const TextRings = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -46,9 +48,10 @@ export const TextRings = () => {
       'sans-serif'
 
     // Precompute ring data — each ring gets exactly one copy of the word
+    const ringStep = size * RING_STEP_FRAC
+    const fontSize = Math.max(4, Math.min(size * 0.018, ringStep - MIN_GAP_PX))
     const rings = Array.from({ length: RING_COUNT }, (_, i) => {
       const radius = size * (MIN_R_FRAC + i * RING_STEP_FRAC)
-      const fontSize = Math.max(MIN_FONT, size * 0.024)
 
       return {
         radius,
@@ -133,7 +136,7 @@ export const TextRings = () => {
   }, [inView])
 
   return (
-    <div ref={wrapperRef}>
+    <div ref={wrapperRef} className="aspect-square w-full">
       <canvas ref={canvasRef} className="h-full w-full" />
     </div>
   )

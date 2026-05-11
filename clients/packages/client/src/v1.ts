@@ -804,8 +804,7 @@ export interface paths {
      * Leave Organization
      * @description Leave an organization.
      *
-     *     Users can only leave an organization if they are not the admin
-     *     and there is at least one other member.
+     *     The organization owner cannot leave; ownership must be transferred first.
      */
     delete: operations['organizations:leave_organization']
     options?: never
@@ -833,7 +832,15 @@ export interface paths {
     delete: operations['organizations:remove_member']
     options?: never
     head?: never
-    patch?: never
+    /**
+     * Set Member Role
+     * @description Change a member's role on an organization.
+     *
+     *     Only `admin` and `member` are accepted; ownership transfers go through
+     *     a separate flow (`Account.admin_id` mutation, today the backoffice
+     *     `change_admin` endpoint).
+     */
+    patch: operations['organizations:set_member_role']
     trace?: never
   }
   '/v1/organizations/{id}/ai-validation': {
@@ -23647,12 +23654,13 @@ export interface components {
       email: string
       /** Avatar Url */
       avatar_url: string | null
+      /** @description The user's role on the organization. */
+      role: components['schemas']['OrganizationRole']
       /**
        * Is Admin
-       * @description Whether the user is an admin of the organization.
-       * @default false
+       * @description Whether the user has admin capability on the organization. Derived from `role`: true for `owner` or `admin`. Kept as a transitional alias; prefer reading `role` directly.
        */
-      is_admin: boolean
+      readonly is_admin: boolean
     }
     /** OrganizationMemberInvite */
     OrganizationMemberInvite: {
@@ -23662,6 +23670,15 @@ export interface components {
        * @description Email address of the user to invite
        */
       email: string
+    }
+    /** OrganizationMemberRoleUpdate */
+    OrganizationMemberRoleUpdate: {
+      /**
+       * Role
+       * @description The role to assign. `owner` is rejected — ownership transfers go through a separate flow.
+       * @enum {string}
+       */
+      role: 'admin' | 'member'
     }
     /** OrganizationNotificationSettings */
     OrganizationNotificationSettings: {
@@ -23839,6 +23856,11 @@ export interface components {
        */
       appeal_reviewed_at?: string | null
     }
+    /**
+     * OrganizationRole
+     * @enum {string}
+     */
+    OrganizationRole: 'owner' | 'admin' | 'member'
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
       /**
@@ -32647,6 +32669,60 @@ export interface operations {
         content?: never
       }
       /** @description Not authorized to remove members. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:set_member_role': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationMemberRoleUpdate']
+      }
+    }
+    responses: {
+      /** @description Role updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationMember']
+        }
+      }
+      /** @description Not authorized to change member roles, or the role transition is not allowed. */
       403: {
         headers: {
           [name: string]: unknown
@@ -54365,6 +54441,9 @@ export const organizationKYCCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const organizationMemberRoleUpdateRoleValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationMemberRoleUpdate']['role']
+> = ['admin', 'member']
 export const organizationReviewCheckKeyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckKey']
 > = [
@@ -54397,6 +54476,9 @@ export const organizationReviewStateVerdictAnyOf0Values: ReadonlyArray<
 export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']
+export const organizationRoleValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationRole']
+> = ['owner', 'admin', 'member']
 export const organizationSocialPlatformsValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSocialPlatforms']
 > = [

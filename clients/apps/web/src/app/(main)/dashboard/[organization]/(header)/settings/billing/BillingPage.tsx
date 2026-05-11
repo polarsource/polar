@@ -1,20 +1,28 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { EmptyState } from '@/components/CustomerPortal/EmptyState'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
+import { AddBillingPaymentMethodModal } from '@/components/Settings/Billing/AddBillingPaymentMethodModal'
+import { BillingAddressModal } from '@/components/Settings/Billing/BillingAddressModal'
+import { BillingAddressSection } from '@/components/Settings/Billing/BillingAddressSection'
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
+import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaymentMethods'
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
 import { MOCK_ORDERS } from '@/components/Settings/Billing/mockData'
+import { Section, SectionDescription } from '@/components/Settings/Section'
+import { LoadingBox } from '@/components/Shared/LoadingBox'
 import {
   useOrganizationPlans,
   useOrganizationSubscription,
 } from '@/hooks/queries/billing'
-import { Section, SectionDescription } from '@/components/Settings/Section'
-import { LoadingBox } from '@/components/Shared/LoadingBox'
+import AllInclusive from '@mui/icons-material/AllInclusive'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import AllInclusive from '@mui/icons-material/AllInclusive'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
-import { EmptyState } from '@/components/CustomerPortal/EmptyState'
 
 export default function BillingPage({
   organization,
@@ -22,8 +30,23 @@ export default function BillingPage({
   organization: schemas['Organization']
 }) {
   const router = useRouter()
+  const theme = useTheme()
+  const themePreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
+
   const subscriptionQuery = useOrganizationSubscription(organization.id)
   const plansQuery = useOrganizationPlans(organization.id)
+
+  const {
+    isShown: isAddPaymentMethodOpen,
+    show: showAddPaymentMethod,
+    hide: hideAddPaymentMethod,
+  } = useModal()
+
+  const {
+    isShown: isBillingAddressOpen,
+    show: showBillingAddress,
+    hide: hideBillingAddress,
+  } = useModal()
 
   const onChangePlan = () => {
     router.push(`/dashboard/${organization.slug}/settings/billing/change-plan`)
@@ -56,6 +79,20 @@ export default function BillingPage({
           )}
         </Section>
 
+        <Section id="payment-methods">
+          <BillingPaymentMethods
+            organizationId={organization.id}
+            onAddPaymentMethod={showAddPaymentMethod}
+          />
+        </Section>
+
+        <Section id="billing-address">
+          <BillingAddressSection
+            organizationId={organization.id}
+            onEdit={showBillingAddress}
+          />
+        </Section>
+
         <Section id="orders">
           <SectionDescription
             title="Order history"
@@ -64,6 +101,32 @@ export default function BillingPage({
           <BillingOrdersTable orders={MOCK_ORDERS} />
         </Section>
       </Box>
+
+      <Modal
+        title="Add payment method"
+        isShown={isAddPaymentMethodOpen}
+        hide={hideAddPaymentMethod}
+        modalContent={
+          <AddBillingPaymentMethodModal
+            organizationId={organization.id}
+            onPaymentMethodAdded={hideAddPaymentMethod}
+            hide={hideAddPaymentMethod}
+            themePreset={themePreset}
+          />
+        }
+      />
+
+      <Modal
+        title="Billing address"
+        isShown={isBillingAddressOpen}
+        hide={hideBillingAddress}
+        modalContent={
+          <BillingAddressModal
+            organizationId={organization.id}
+            hide={hideBillingAddress}
+          />
+        }
+      />
     </DashboardBody>
   )
 }

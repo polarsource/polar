@@ -57,7 +57,6 @@ const Footer = () => {
             <h3 className="dark:text-polar-500 text-gray-500">Resources</h3>
             <div className="flex flex-col gap-y-3">
               <FooterLink href="/resources/why">Why Polar</FooterLink>
-              <FooterLink href="/resources/comparison">Comparison</FooterLink>
               <FooterLink href="/resources/merchant-of-record">
                 Merchant of Record
               </FooterLink>

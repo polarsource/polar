@@ -23,6 +23,7 @@ from plain_client import (
     ComponentTextColor,
     ComponentTextInput,
     ComponentTextSize,
+    CreateNoteInput,
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
@@ -45,6 +46,8 @@ from polar.kit.currency import format_currency
 from polar.kit.db.postgres import AsyncReadSessionMaker
 from polar.models import (
     Customer,
+    Feedback,
+    FeedbackType,
     OAuthAccount,
     Order,
     Organization,
@@ -88,6 +91,15 @@ class PlainCustomerError(PlainServiceError):
         self.user_id = user_id
         self.message = message
         super().__init__(f"Error with Plain customer for user ID {user_id}: {message}")
+
+
+class FeedbackThreadCreationError(PlainServiceError):
+    def __init__(self, feedback_id: uuid.UUID, message: str) -> None:
+        self.feedback_id = feedback_id
+        self.message = message
+        super().__init__(
+            f"Error creating Plain thread for feedback {feedback_id}: {message}"
+        )
 
 
 _card_getter_semaphore = asyncio.Semaphore(3)
@@ -1226,6 +1238,101 @@ class PlainService:
             raise PlainCustomerError(user.id, customer_result.error.message)
 
         return self._get_customer_identifier(customer_result, user.email)
+
+    async def _upsert_customer_id_for_user(self, plain: Plain, user: User) -> str:
+        """
+        Resolve the Plain customer ID for a Polar user, creating the customer
+        if it doesn't exist yet.
+
+        Mirrors `_get_or_create_customer` but returns the concrete Plain
+        `customer.id` string, which is required by APIs like `create_note`
+        that don't accept the polymorphic `CustomerIdentifierInput`.
+        """
+        existing = await plain.customer_by_email(email=user.email)
+        if existing is not None:
+            return existing.id
+
+        customer_result = await plain.upsert_customer(
+            UpsertCustomerInput(
+                identifier=UpsertCustomerIdentifierInput(external_id=str(user.id)),
+                on_create=UpsertCustomerOnCreateInput(
+                    external_id=str(user.id),
+                    full_name=user.email,
+                    email=EmailAddressInput(
+                        email=user.email, is_verified=user.email_verified
+                    ),
+                ),
+                on_update=UpsertCustomerOnUpdateInput(
+                    email=EmailAddressInput(
+                        email=user.email, is_verified=user.email_verified
+                    ),
+                ),
+            )
+        )
+        if customer_result.error is not None:
+            raise PlainCustomerError(user.id, customer_result.error.message)
+        if customer_result.customer is None:
+            raise PlainCustomerError(user.id, "No customer returned by upsert")
+        return customer_result.customer.id
+
+    async def create_feedback_thread(self, feedback: Feedback) -> str:
+        """
+        Open a Plain thread for a feedback record and attach the original
+        feedback message as an internal note. Returns the URL of the new
+        thread.
+
+        Requires `feedback.user` to be loaded (e.g. via `joinedload`).
+        """
+        if not self.enabled:
+            raise FeedbackThreadCreationError(
+                feedback.id, "Plain integration is disabled"
+            )
+
+        noun_by_type = {
+            FeedbackType.bug: "bug report",
+            FeedbackType.feedback: "feedback",
+            FeedbackType.question: "question",
+        }
+        title = f"Re: your recent {noun_by_type[feedback.type]}"
+
+        async with self._get_plain_client() as plain:
+            try:
+                customer_id = await self._upsert_customer_id_for_user(
+                    plain, feedback.user
+                )
+            except PlainCustomerError as e:
+                raise FeedbackThreadCreationError(feedback.id, e.message) from e
+
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        customer_id=customer_id
+                    ),
+                    title=title,
+                )
+            )
+            if thread_result.error is not None:
+                raise FeedbackThreadCreationError(
+                    feedback.id, thread_result.error.message
+                )
+            if thread_result.thread is None:
+                raise FeedbackThreadCreationError(
+                    feedback.id, "No thread returned by create_thread"
+                )
+
+            note_result = await plain.create_note(
+                CreateNoteInput(
+                    customer_id=customer_id,
+                    thread_id=thread_result.thread.id,
+                    text=feedback.message,
+                )
+            )
+            if note_result.error is not None:
+                raise FeedbackThreadCreationError(
+                    feedback.id, note_result.error.message
+                )
+
+            return plain_thread_url(thread_result.thread.id)
 
     async def check_thread_exists(
         self, customer_email: str, thread_title: str, fuzzy: bool = False

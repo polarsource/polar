@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from tagflow import attr, document, tag, text
 
 from polar.feedback.repository import FeedbackRepository
+from polar.integrations.plain.service import PlainServiceError, plain
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Feedback
 from polar.models.feedback import FeedbackStatus, FeedbackType
@@ -33,6 +34,17 @@ class UpdateFeedbackNoteForm(forms.BaseForm):
             ),
         ),
         Field(default="", title="Internal note"),
+    ]
+
+
+class UpdateSupportThreadURLForm(forms.BaseForm):
+    support_thread_url: Annotated[
+        str,
+        forms.InputField(
+            type="url",
+            placeholder="https://app.plain.com/workspace/.../thread/...",
+        ),
+        Field(default="", title="Support thread URL"),
     ]
 
 
@@ -309,45 +321,99 @@ async def get(
                             with tag.p(classes="text-gray-500"):
                                 text("No client context captured.")
 
-                # Internal note
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.div(classes="flex items-center justify-between gap-2"):
+                # Support thread + Internal note (stacked in the same column)
+                with tag.div(classes="flex flex-col gap-4"):
+                    # Support thread
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
                             with tag.h2(classes="card-title"):
-                                text("Internal note")
-                            if feedback.internal_note and feedback.modified_at:
-                                with tag.span(classes="text-xs text-gray-500"):
-                                    text(
-                                        "Updated "
-                                        + feedback.modified_at.strftime(
-                                            "%Y-%m-%d %H:%M UTC"
-                                        )
+                                text("Support thread")
+                            with UpdateSupportThreadURLForm.render(
+                                data={
+                                    "support_thread_url": feedback.support_thread_url
+                                    or ""
+                                },
+                                hx_post=str(
+                                    request.url_for(
+                                        "feedbacks:update_support_thread_url",
+                                        id=feedback.id,
                                     )
-                        with UpdateFeedbackNoteForm.render(
-                            data={"internal_note": feedback.internal_note or ""},
-                            hx_post=str(
-                                request.url_for("feedbacks:update_note", id=feedback.id)
-                            ),
-                            classes="flex flex-col gap-2",
-                        ):
-                            with tag.div(classes="flex justify-end gap-2"):
-                                with button(
-                                    type="submit",
-                                    name="action",
-                                    value="save",
-                                    size="sm",
-                                    ghost=True,
+                                ),
+                                classes="flex flex-col gap-2",
+                            ):
+                                with tag.div(
+                                    classes="flex flex-wrap justify-end gap-2"
                                 ):
-                                    text("Save note")
-                                if feedback.status == FeedbackStatus.new:
+                                    with button(
+                                        type="submit",
+                                        size="sm",
+                                        ghost=True,
+                                    ):
+                                        text("Save URL")
+                                    if feedback.support_thread_url:
+                                        with tag.a(
+                                            href=feedback.support_thread_url,
+                                            target="_blank",
+                                            rel="noopener noreferrer",
+                                            classes="btn btn-sm btn-primary",
+                                        ):
+                                            text("Open thread ↗")
+                                    else:
+                                        with button(
+                                            hx_post=str(
+                                                request.url_for(
+                                                    "feedbacks:reply_in_plain",
+                                                    id=feedback.id,
+                                                )
+                                            ),
+                                            variant="primary",
+                                            size="sm",
+                                        ):
+                                            text("Reply in Plain")
+
+                    # Internal note
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
+                            with tag.div(
+                                classes="flex items-center justify-between gap-2"
+                            ):
+                                with tag.h2(classes="card-title"):
+                                    text("Internal note")
+                                if feedback.internal_note and feedback.modified_at:
+                                    with tag.span(classes="text-xs text-gray-500"):
+                                        text(
+                                            "Updated "
+                                            + feedback.modified_at.strftime(
+                                                "%Y-%m-%d %H:%M UTC"
+                                            )
+                                        )
+                            with UpdateFeedbackNoteForm.render(
+                                data={"internal_note": feedback.internal_note or ""},
+                                hx_post=str(
+                                    request.url_for(
+                                        "feedbacks:update_note", id=feedback.id
+                                    )
+                                ),
+                                classes="flex flex-col gap-2",
+                            ):
+                                with tag.div(classes="flex justify-end gap-2"):
                                     with button(
                                         type="submit",
                                         name="action",
-                                        value="save_and_triage",
-                                        variant="primary",
+                                        value="save",
                                         size="sm",
+                                        ghost=True,
                                     ):
-                                        text("Save & Mark as triaged")
+                                        text("Save note")
+                                    if feedback.status == FeedbackStatus.new:
+                                        with button(
+                                            type="submit",
+                                            name="action",
+                                            value="save_and_triage",
+                                            variant="primary",
+                                            size="sm",
+                                        ):
+                                            text("Save & Mark as triaged")
 
 
 def _format_context_value(value: Any) -> str:
@@ -412,6 +478,72 @@ async def update_note(
         "Note saved and feedback marked as triaged." if triage else "Note saved.",
         "success",
     )
+    return HXRedirectResponse(
+        request, str(request.url_for("feedbacks:get", id=feedback.id))
+    )
+
+
+@router.post("/{id}/support-thread-url", name="feedbacks:update_support_thread_url")
+async def update_support_thread_url(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = FeedbackRepository.from_session(session)
+    feedback = await repository.get_by_id(id)
+    if feedback is None:
+        raise HTTPException(status_code=404)
+
+    form_data = await request.form()
+    try:
+        form = UpdateSupportThreadURLForm.model_validate_form(form_data)
+    except ValidationError:
+        await add_toast(request, "Please enter a valid URL.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("feedbacks:get", id=feedback.id))
+        )
+
+    url = form.support_thread_url.strip() or None
+    await repository.update(feedback, update_dict={"support_thread_url": url})
+    await add_toast(
+        request,
+        "Support thread URL updated." if url else "Support thread URL cleared.",
+        "success",
+    )
+    return HXRedirectResponse(
+        request, str(request.url_for("feedbacks:get", id=feedback.id))
+    )
+
+
+@router.post("/{id}/reply-in-plain", name="feedbacks:reply_in_plain")
+async def reply_in_plain(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    feedback = await _get_or_404(session, id)
+
+    if feedback.support_thread_url:
+        await add_toast(
+            request,
+            "A support thread is already linked. Clear the URL to create a new one.",
+            "warning",
+        )
+        return HXRedirectResponse(
+            request, str(request.url_for("feedbacks:get", id=feedback.id))
+        )
+
+    try:
+        thread_url = await plain.create_feedback_thread(feedback)
+    except PlainServiceError as e:
+        await add_toast(request, f"Plain error: {e}", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("feedbacks:get", id=feedback.id))
+        )
+
+    repository = FeedbackRepository.from_session(session)
+    await repository.update(feedback, update_dict={"support_thread_url": thread_url})
+    await add_toast(request, "Support thread created in Plain.", "success")
     return HXRedirectResponse(
         request, str(request.url_for("feedbacks:get", id=feedback.id))
     )

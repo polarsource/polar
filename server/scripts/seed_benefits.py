@@ -160,7 +160,7 @@ PRODUCTS: list[dict[str, object]] = [
     {
         "name": "Polar Free",
         "price_amount": None,
-        "metadata": {"custom": True},
+        "metadata": {"custom": False, "hidden": True},
         "benefits": ["Transaction Fee (Grandfather)"],
     },
 ]

@@ -15,8 +15,8 @@ export const ProductConfigurationSection = ({ organization }: Props) => {
     <StatusBlock
       tone="neutral"
       icon={PackageIcon}
-      title="Set up your products"
-      description="Reviewers need to see what you're selling. Create at least one product to continue."
+      title="Add a product"
+      description="Create at least one product so customers have something to buy."
       action={
         <Link href={`/dashboard/${organization.slug}/products/new`}>
           <Button>

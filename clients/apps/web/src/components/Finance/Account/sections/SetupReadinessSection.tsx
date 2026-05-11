@@ -63,7 +63,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
         tone="warning"
         icon={WebhookIcon}
         title="Add a webhook endpoint"
-        description="We recommend setting up webhooks to keep your system in sync with Polar. Without them, we can't see how fulfillment is automated, which can raise questions during review."
+        description="Webhooks let us see how you fulfill orders and keep your system in sync with Polar. We recommend adding one before submitting."
         action={
           <Link
             href={`/dashboard/${organization.slug}/settings/webhooks/endpoints`}
@@ -83,13 +83,13 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
       <StatusBlock
         tone="neutral"
         icon={PlugIcon}
-        title="Show us your setup is ready"
-        description="Pick whichever path matches how you fulfill orders. You only need one."
+        title="Connect your fulfillment"
+        description="Set up one of these paths so we can see how orders are delivered."
       />
       <Box display="flex" flexDirection="column" rowGap="s">
         <PathCard
           title="Sell via a checkout link"
-          description="Attach a product with at least one benefit (license key, GitHub, Discord, custom, or downloadables) to a checkout link."
+          description="Attach a license key, GitHub, Discord, downloadables, or custom benefit to a product, then create a checkout link for it."
           links={[
             {
               label: 'Checkout links',
@@ -103,7 +103,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
         />
         <PathCard
           title="Integrate via the API"
-          description="Create an organization access token and a webhook endpoint so we can see your integration is wired up."
+          description="Create an organization access token and a webhook endpoint so we can verify your integration."
           links={[
             {
               label: 'Access tokens',

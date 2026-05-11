@@ -88,6 +88,12 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def stripe(
         listen: bool = typer.Option(False, "--listen", help="Start webhook forwarding after setup"),
+        port: int = typer.Option(
+            8000,
+            "--port",
+            "-p",
+            help="API port to forward webhooks to (use the port shown by `dev docker up`)",
+        ),
     ) -> None:
         """Set up Stripe integration for local development."""
         console.print("\n[bold blue]Stripe Setup[/bold blue]\n")
@@ -120,7 +126,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         if _is_stripe_configured():
             step_status(True, "Stripe API keys", "configured")
-            _start_webhook_listener()
+            _start_webhook_listener(port)
             return
 
         console.print("\n[bold]Fetching API keys from Stripe CLI...[/bold]")
@@ -155,23 +161,24 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         console.print("\n[bold green]Stripe setup complete![/bold green]\n")
 
         if listen or typer.confirm("Start webhook forwarding now?", default=True):
-            _start_webhook_listener()
+            _start_webhook_listener(port)
         else:
             console.print("[bold]To start webhook forwarding later:[/bold]")
             console.print("  [bold]dev stripe --listen[/bold]\n")
 
 
-def _start_webhook_listener() -> None:
+def _start_webhook_listener(port: int = 8000) -> None:
     """Start Stripe webhook forwarding."""
+    base = f"http://127.0.0.1:{port}"
     console.print("\n[bold]Starting Stripe webhook forwarding...[/bold]")
-    console.print("[dim]Forwarding to:         http://127.0.0.1:8000/v1/integrations/stripe/webhook[/dim]")
-    console.print("[dim]Connect forwarding to: http://127.0.0.1:8000/v1/integrations/stripe/webhook-connect[/dim]")
+    console.print(f"[dim]Forwarding to:         {base}/v1/integrations/stripe/webhook[/dim]")
+    console.print(f"[dim]Connect forwarding to: {base}/v1/integrations/stripe/webhook-connect[/dim]")
     console.print("[dim]Press Ctrl+C to stop[/dim]\n")
     run_command(
         [
             "stripe", "listen",
-            "--forward-to", "http://127.0.0.1:8000/v1/integrations/stripe/webhook",
-            "--forward-connect-to", "http://127.0.0.1:8000/v1/integrations/stripe/webhook-connect",
+            "--forward-to", f"{base}/v1/integrations/stripe/webhook",
+            "--forward-connect-to", f"{base}/v1/integrations/stripe/webhook-connect",
         ],
         capture=False,
     )

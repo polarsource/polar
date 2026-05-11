@@ -12,26 +12,11 @@ async def can_manage(
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> PolicyResult:
-    """Can the subject invite or remove members?"""
+    """Can the subject invite, remove, or change the role of members?"""
     return await _require_permission(
         session,
         auth_subject,
         organization,
         permission=OrganizationPermission.members_manage,
         denied_msg="Only an organization admin can manage members",
-    )
-
-
-async def can_set_role(
-    session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
-    organization: OrganizationModel,
-) -> PolicyResult:
-    """Can the subject change another member's role?"""
-    return await _require_permission(
-        session,
-        auth_subject,
-        organization,
-        permission=OrganizationPermission.members_set_role,
-        denied_msg="Only an organization admin can change member roles",
     )

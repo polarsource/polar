@@ -157,7 +157,7 @@ AuthorizeMembersSetRole = Annotated[
     AuthzContext[User],
     Depends(
         OrgPolicyGuard(
-            members.can_set_role,
+            members.can_manage,
             allowed_subjects={User},
             required_scopes={Scope.members_write},
         )

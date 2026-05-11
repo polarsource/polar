@@ -50,3 +50,14 @@ Learn more about our [Ingestion Strategies](/features/usage-based-billing/ingest
 ### Events are immutable
 
 Once an event is ingested, it cannot be changed, nor can it be deleted.
+
+### Backdated events
+
+You can set the `timestamp` field on an event to any point in the past — useful for batched ingestion or replaying from your own queue. The timestamp does not need to be part of the current billing cycle.
+
+Polar attributes events to billing periods based on **when they were received by Polar**, not the supplied `timestamp`. An event ingested today with a `timestamp` from a previous billing period is included on the **current cycle** — it is not added to the already-closed invoice for the period it logically belongs to. Polar never issues retroactive invoices or credits for late events.
+
+The supplied `timestamp` is still used to:
+
+- Place events on the time series shown in the dashboard and the Customer Portal.
+- Set the date range displayed on the metered line item of the next invoice.

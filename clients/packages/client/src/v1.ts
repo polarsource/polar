@@ -23770,6 +23770,8 @@ export interface components {
       | 'product_description'
       | 'product_url'
       | 'payout_account'
+      | 'product_configuration'
+      | 'setup_readiness'
     /**
      * OrganizationReviewCheckReason
      * @description Reasons explaining a check's status. Scoped reasons are namespaced
@@ -23786,6 +23788,7 @@ export interface components {
       | 'product_url.unreachable'
       | 'payout_account.requirements_due'
       | 'payout_account.payouts_disabled'
+      | 'setup_readiness.webhook_missing'
     /**
      * OrganizationReviewCheckStatus
      * @enum {string}
@@ -54374,6 +54377,8 @@ export const organizationReviewCheckKeyValues: ReadonlyArray<
   'product_description',
   'product_url',
   'payout_account',
+  'product_configuration',
+  'setup_readiness',
 ]
 export const organizationReviewCheckReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckReason']
@@ -54387,6 +54392,7 @@ export const organizationReviewCheckReasonValues: ReadonlyArray<
   'product_url.unreachable',
   'payout_account.requirements_due',
   'payout_account.payouts_disabled',
+  'setup_readiness.webhook_missing',
 ]
 export const organizationReviewCheckStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckStatus']

@@ -8,6 +8,8 @@ const MAX_MESSAGE_LENGTH = 5000
 
 const requestSchema = z.object({
   message: z.string().min(1).max(MAX_MESSAGE_LENGTH),
+  conversationId: z.string().min(1).max(64).optional(),
+  organizationId: z.string().min(1).max(64).optional(),
 })
 
 export async function POST(req: Request) {
@@ -33,7 +35,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const status = await validateFeedbackQuestion(parsed.data.message.trim())
+    const status = await validateFeedbackQuestion(parsed.data.message.trim(), {
+      userId: user.id,
+      conversationId: parsed.data.conversationId,
+      organizationId: parsed.data.organizationId,
+    })
     return Response.json({ status })
   } catch (error) {
     console.error('[feedback/question/validate] threw:', error)

@@ -36,11 +36,13 @@ const MAX_MESSAGE_LENGTH = 5000
 
 export const FeedbackForm = ({
   organization,
+  conversationId,
   onSuccess,
   onAskQuestion,
   onCancel,
 }: {
   organization: schemas['Organization']
+  conversationId: string
   onSuccess: (type: schemas['FeedbackType']) => void
   onAskQuestion: (message: string) => void
   onCancel: () => void
@@ -73,7 +75,11 @@ export const FeedbackForm = ({
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: formData.message }),
+          body: JSON.stringify({
+            message: formData.message,
+            conversationId,
+            organizationId: organization.id,
+          }),
         })
         if (!response.ok) {
           // Fall through to the assistant on validation outage so the user
@@ -183,14 +189,21 @@ export const FeedbackForm = ({
                 <TextArea
                   {...field}
                   placeholder="Tell us what's on your mind..."
+                  readOnly={validationOutcome?.kind === 'info'}
                   onChange={(event) => {
                     field.onChange(event)
-                    if (validationOutcome) setValidationOutcome(null)
+                    if (validationOutcome?.kind === 'rejection') {
+                      setValidationOutcome(null)
+                    }
                   }}
                   onKeyDown={(event) => {
                     if (
-                      (event.metaKey || event.ctrlKey) &&
-                      event.key === 'Enter'
+                      event.key === 'Enter' &&
+                      !event.shiftKey &&
+                      !event.metaKey &&
+                      !event.ctrlKey &&
+                      !event.altKey &&
+                      !event.nativeEvent.isComposing
                     ) {
                       event.preventDefault()
                       handleSubmit(onSubmit)()

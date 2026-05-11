@@ -5,7 +5,7 @@ import type { UIMessage } from 'ai'
 
 const POLAR_DOCS_BASE = 'https://polar.sh/docs/'
 
-const prefixDocsLinks = (text: string): string =>
+const normalizeAssistantLinks = (text: string): string =>
   text.replace(
     /\]\(([^)\s]+)(\s+"[^"]*")?\)/g,
     (match, url: string, title: string = '') => {
@@ -16,8 +16,15 @@ const prefixDocsLinks = (text: string): string =>
       ) {
         return match
       }
-      const path = url.replace(/^\/+/, '')
-      return `](${POLAR_DOCS_BASE}${path}${title})`
+      const trimmed = url.replace(/^\/+/, '')
+      // Dashboard deep-links stay relative so they resolve against the
+      // current origin (dev, staging, prod, sandbox).
+      if (trimmed === 'to' || trimmed.startsWith('to/')) {
+        return `](/${trimmed}${title})`
+      }
+      // Everything else is assumed to be a docs path — make it absolute
+      // since docs always live at polar.sh/docs regardless of environment.
+      return `](${POLAR_DOCS_BASE}${trimmed}${title})`
     },
   )
 
@@ -45,7 +52,7 @@ export const ChatMessageBubble = ({ message }: { message: UIMessage }) => {
 
   return (
     <div className="prose prose-sm dark:prose-invert dark:text-white">
-      <MemoizedMarkdown content={prefixDocsLinks(text)} />
+      <MemoizedMarkdown content={normalizeAssistantLinks(text)} />
     </div>
   )
 }

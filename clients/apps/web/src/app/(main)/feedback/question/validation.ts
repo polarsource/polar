@@ -3,6 +3,8 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 
+import { flushPostHog, type TracingContext, wrapWithTracing } from './posthog'
+
 export const validationSchema = z.object({
   status: z
     .enum(['answerable', 'unclear', 'off_topic', 'account_review'])
@@ -36,12 +38,21 @@ const google = createGoogleGenerativeAI({
 
 export const validateFeedbackQuestion = async (
   question: string,
+  tracing: TracingContext,
 ): Promise<ValidationStatus> => {
-  const result = await generateObject({
-    model: google('gemini-3.1-flash-lite-preview'),
-    schema: validationSchema,
-    system: VALIDATION_SYSTEM_PROMPT,
-    prompt: question,
-  })
-  return result.object.status
+  const model = wrapWithTracing(
+    google('gemini-3.1-flash-lite-preview'),
+    tracing,
+  )
+  try {
+    const result = await generateObject({
+      model,
+      schema: validationSchema,
+      system: VALIDATION_SYSTEM_PROMPT,
+      prompt: question,
+    })
+    return result.object.status
+  } finally {
+    flushPostHog()
+  }
 }

@@ -1,4 +1,4 @@
-import { FeedbackButton } from '@/components/Feedback/FeedbackButton'
+import { SupportButton } from '@/components/Feedback/SupportButton'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
 import { CONFIG } from '@/utils/config'
@@ -6,7 +6,6 @@ import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import Search from '@mui/icons-material/Search'
-import SupportIcon from '@mui/icons-material/Support'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -152,19 +151,8 @@ export const DashboardSidebar = ({
       </SidebarContent>
       <SidebarFooter>
         {type === 'organization' && organization && (
-          <FeedbackButton organization={organization} />
+          <SupportButton organization={organization} />
         )}
-        <Link
-          href="mailto:support@polar.sh"
-          className={twMerge(
-            'flex cursor-pointer flex-row items-center rounded-lg border border-transparent px-2 text-sm transition-colors dark:border-transparent',
-            'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
-            isCollapsed && '!dark:text-polar-600',
-          )}
-        >
-          <SupportIcon fontSize="inherit" />
-          {!isCollapsed && <span className="ml-4 font-medium">Support</span>}
-        </Link>
         <Link
           className={twMerge(
             'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',

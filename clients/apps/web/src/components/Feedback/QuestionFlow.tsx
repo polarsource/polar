@@ -1,6 +1,7 @@
 'use client'
 
 import { useChat } from '@ai-sdk/react'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport, type UIMessage } from 'ai'
@@ -11,9 +12,15 @@ import { EscalationCard } from './EscalationCard'
 
 interface QuestionFlowProps {
   question: string
-  onEscalate: (message: string) => void
+  conversationId: string
+  organizationId: string
+  onEscalate: (message: string, type: schemas['FeedbackType']) => void
   onCancel: () => void
   isEscalating: boolean
+}
+
+type Escalation = {
+  type: schemas['FeedbackType']
 }
 
 const extractText = (message: UIMessage): string =>
@@ -56,13 +63,19 @@ const getStreamingStatus = (messages: UIMessage[]): string => {
   return 'Thinking…'
 }
 
-const findEscalationSummary = (messages: UIMessage[]): string | null => {
+const isFeedbackType = (value: unknown): value is schemas['FeedbackType'] =>
+  value === 'question' || value === 'feedback' || value === 'bug'
+
+const findEscalation = (messages: UIMessage[]): Escalation | null => {
   for (const message of messages) {
     if (message.role !== 'assistant') continue
     for (const part of message.parts) {
       if (part.type !== 'tool-escalateToHuman') continue
-      const input = (part as { input?: { summary?: string } }).input
-      if (input?.summary) return input.summary
+      const input = (part as { input?: { type?: unknown } }).input
+      const type: schemas['FeedbackType'] = isFeedbackType(input?.type)
+        ? input.type
+        : 'question'
+      return { type }
     }
   }
   return null
@@ -70,6 +83,8 @@ const findEscalationSummary = (messages: UIMessage[]): string | null => {
 
 export const QuestionFlow = ({
   question,
+  conversationId,
+  organizationId,
   onEscalate,
   onCancel,
   isEscalating,
@@ -78,11 +93,18 @@ export const QuestionFlow = ({
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState('')
 
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: '/feedback/question',
+        credentials: 'include',
+        body: { conversationId, organizationId },
+      }),
+    [conversationId, organizationId],
+  )
+
   const { messages, sendMessage, setMessages, status, error } = useChat({
-    transport: new DefaultChatTransport({
-      api: '/feedback/question',
-      credentials: 'include',
-    }),
+    transport,
   })
 
   useEffect(() => {
@@ -97,10 +119,7 @@ export const QuestionFlow = ({
     scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
-  const escalationSummary = useMemo(
-    () => findEscalationSummary(messages),
-    [messages],
-  )
+  const escalation = useMemo(() => findEscalation(messages), [messages])
   const isStreaming = status === 'submitted' || status === 'streaming'
   const streamingStatus = useMemo(
     () => getStreamingStatus(messages),
@@ -109,10 +128,10 @@ export const QuestionFlow = ({
 
   const handleSend = useCallback(() => {
     const text = draft.trim()
-    if (!text || isStreaming || escalationSummary !== null) return
+    if (!text || isStreaming || escalation !== null) return
     sendMessage({ text })
     setDraft('')
-  }, [draft, isStreaming, escalationSummary, sendMessage])
+  }, [draft, isStreaming, escalation, sendMessage])
 
   const handleReset = useCallback(() => {
     setMessages([])
@@ -120,10 +139,13 @@ export const QuestionFlow = ({
   }, [setMessages])
 
   const handleEscalateSubmit = useCallback(
-    (editedSummary: string) => {
+    (note: string, type: schemas['FeedbackType']) => {
       const transcript = buildTranscript(messages)
-      const message = `${editedSummary.trim()}\n\n---\nConversation transcript:\n\n${transcript}`
-      onEscalate(message)
+      const trimmed = note.trim()
+      const message = trimmed
+        ? `${trimmed}\n\n---\nConversation transcript:\n\n${transcript}`
+        : `Conversation transcript:\n\n${transcript}`
+      onEscalate(message, type)
     },
     [messages, onEscalate],
   )
@@ -151,9 +173,9 @@ export const QuestionFlow = ({
         )}
       </div>
 
-      {escalationSummary !== null ? (
+      {escalation !== null ? (
         <EscalationCard
-          initialSummary={escalationSummary}
+          initialType={escalation.type}
           onSubmit={handleEscalateSubmit}
           onCancel={onCancel}
           isSubmitting={isEscalating}
@@ -166,7 +188,14 @@ export const QuestionFlow = ({
             placeholder="Ask a follow-up…"
             disabled={isStreaming}
             onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+              if (
+                event.key === 'Enter' &&
+                !event.shiftKey &&
+                !event.metaKey &&
+                !event.ctrlKey &&
+                !event.altKey &&
+                !event.nativeEvent.isComposing
+              ) {
                 event.preventDefault()
                 handleSend()
               }

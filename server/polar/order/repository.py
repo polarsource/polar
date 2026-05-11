@@ -14,6 +14,7 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
+from polar.auth.permission import OrganizationPermission, roles_with_permission
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
@@ -221,6 +222,9 @@ class OrderRepository(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.is_deleted.is_(False),
+                        UserOrganization.role.in_(
+                            roles_with_permission(OrganizationPermission.sales_read)
+                        ),
                     )
                 )
             )

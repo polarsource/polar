@@ -30,12 +30,12 @@ class OrganizationPermission(StrEnum):
     members_read = "members:read"
     members_manage = "members:manage"
 
+    # Sales — granted to all roles.
+    sales_read = "sales:read"
+
     # Finance — admin-only.
     account_read = "account:read"
     account_write = "account:write"
-    payouts_read = "payouts:read"
-    payouts_write = "payouts:write"
-    disputes_read = "disputes:read"
 
 
 _ADMIN_ONLY: set[OrganizationPermission] = {
@@ -45,13 +45,11 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
     OrganizationPermission.members_manage,
     OrganizationPermission.account_read,
     OrganizationPermission.account_write,
-    OrganizationPermission.payouts_read,
-    OrganizationPermission.payouts_write,
-    OrganizationPermission.disputes_read,
 }
 
 _MEMBER_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.members_read,
+    OrganizationPermission.sales_read,
 }
 
 ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {
@@ -65,3 +63,10 @@ def role_has_permission(
     role: OrganizationRole, permission: OrganizationPermission
 ) -> bool:
     return permission in ROLE_PERMISSIONS[role]
+
+
+def roles_with_permission(
+    permission: OrganizationPermission,
+) -> set[OrganizationRole]:
+    """Return the set of roles that grant the given permission."""
+    return {role for role, perms in ROLE_PERMISSIONS.items() if permission in perms}

@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 
 from polar.auth.models import AuthSubject, User, is_organization, is_user
+from polar.auth.permission import OrganizationPermission, roles_with_permission
 from polar.models import Organization, UserOrganization
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncReadSession
@@ -20,6 +21,27 @@ class AuthzRepository:
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.is_deleted.is_(False),
+                Organization.is_deleted.is_(False),
+                Organization.can_authenticate,
+            )
+        )
+        result = await self.session.scalars(stmt)
+        return set(result.all())
+
+    async def get_user_org_ids_with_permission(
+        self, user_id: UUID, permission: OrganizationPermission
+    ) -> set[UUID]:
+        """Get organization IDs where the user's role grants ``permission``."""
+        roles = roles_with_permission(permission)
+        if not roles:
+            return set()
+        stmt = (
+            select(UserOrganization.organization_id)
+            .join(Organization, UserOrganization.organization_id == Organization.id)
+            .where(
+                UserOrganization.user_id == user_id,
+                UserOrganization.is_deleted.is_(False),
+                UserOrganization.role.in_(roles),
                 Organization.is_deleted.is_(False),
                 Organization.can_authenticate,
             )

@@ -22,6 +22,7 @@ from polar.auth.models import (
 from polar.auth.models import (
     Customer as AuthCustomer,
 )
+from polar.auth.permission import OrganizationPermission, roles_with_permission
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.repository import (
     Options,
@@ -158,6 +159,9 @@ class SubscriptionRepository(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.is_deleted.is_(False),
+                        UserOrganization.role.in_(
+                            roles_with_permission(OrganizationPermission.sales_read)
+                        ),
                     )
                 )
             )

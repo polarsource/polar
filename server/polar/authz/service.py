@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.permission import OrganizationPermission
 from polar.models.organization import Organization as OrganizationModel
 from polar.postgres import AsyncReadSession
 
@@ -18,6 +19,27 @@ async def get_accessible_org_ids(
     if is_user(auth_subject):
         repository = AuthzRepository(session)
         raw_ids = await repository.get_user_org_ids(auth_subject.subject.id)
+        return {AccessibleOrganizationID(uid) for uid in raw_ids}
+    return set()
+
+
+async def get_accessible_org_ids_with_permission(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization],
+    permission: OrganizationPermission,
+) -> set[AccessibleOrganizationID]:
+    """Resolve organization IDs the subject can access AND has ``permission`` for.
+
+    Organization-token subjects always pass (the token represents the org
+    itself). User subjects are filtered by their `UserOrganization.role`.
+    """
+    if is_organization(auth_subject):
+        return {AccessibleOrganizationID(auth_subject.subject.id)}
+    if is_user(auth_subject):
+        repository = AuthzRepository(session)
+        raw_ids = await repository.get_user_org_ids_with_permission(
+            auth_subject.subject.id, permission
+        )
         return {AccessibleOrganizationID(uid) for uid in raw_ids}
     return set()
 

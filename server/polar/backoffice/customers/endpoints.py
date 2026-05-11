@@ -1,5 +1,6 @@
 import uuid
 from typing import Annotated, Any
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
@@ -14,12 +15,14 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.schemas.customer import CustomerUpdate
 from polar.customer.service import customer as customer_service
-from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParamsQuery
+from polar.member.repository import MemberRepository
+from polar.member_session.service import member_session as member_session_service
 from polar.models import (
     BenefitGrant,
     Customer,
+    Member,
     Order,
     Organization,
     Product,
@@ -170,6 +173,10 @@ async def get(
         customer.id, options=(joinedload(BenefitGrant.benefit),)
     )
 
+    # Get members
+    member_repository = MemberRepository.from_session(session)
+    members = await member_repository.list_by_customer(customer.id)
+
     with layout(
         request,
         [
@@ -179,19 +186,8 @@ async def get(
         "customers:get",
     ):
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex justify-between items-center"):
-                with tag.h1(classes="text-4xl"):
-                    text(customer.display_name)
-                with button(
-                    hx_get=str(
-                        request.url_for(
-                            "customers:generate_portal_link_modal", id=customer.id
-                        )
-                    ),
-                    hx_target="#modal",
-                    variant="primary",
-                ):
-                    text("Generate Portal Link")
+            with tag.h1(classes="text-4xl"):
+                text(customer.display_name)
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Customer Details
@@ -337,6 +333,35 @@ async def get(
                             with tag.span(classes=balance_classes):
                                 text(currency(credit_balance, "usd"))
 
+            # Members Section
+            with tag.div(classes="mt-8"):
+                with tag.div(classes="flex items-center gap-4 mb-4"):
+                    with tag.h2(classes="text-2xl font-bold"):
+                        text(f"Members ({len(members)})")
+
+                with datatable.Datatable[Member, Any](
+                    datatable.DatatableAttrColumn("email", "Email", clipboard=True),
+                    datatable.DatatableAttrColumn("name", "Name"),
+                    datatable.DatatableAttrColumn("role", "Role"),
+                    datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                    datatable.DatatableActionsColumn[Member](
+                        "",
+                        datatable.DatatableActionHTMX[Member](
+                            "Generate Portal Link",
+                            lambda r, i: str(
+                                r.url_for(
+                                    "customers:generate_member_portal_link_modal",
+                                    id=customer.id,
+                                    member_id=i.id,
+                                )
+                            ),
+                            target="#modal",
+                        ),
+                    ),
+                    empty_message="No members found",
+                ).render(request, members):
+                    pass
+
             # Subscriptions Section
             with tag.div(classes="mt-8"):
                 with tag.div(classes="flex items-center gap-4 mb-4"):
@@ -414,11 +439,13 @@ async def get(
 
 
 @router.get(
-    "/{id}/generate_portal_link_modal", name="customers:generate_portal_link_modal"
+    "/{id}/members/{member_id}/generate_portal_link_modal",
+    name="customers:generate_member_portal_link_modal",
 )
-async def generate_portal_link_modal(
+async def generate_member_portal_link_modal(
     request: Request,
     id: UUID4,
+    member_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     customer_repository = CustomerRepository.from_session(session)
@@ -434,19 +461,19 @@ async def generate_portal_link_modal(
             status_code=500, detail="Customer organization not properly loaded"
         )
 
-    # Generate customer session token
-    token, customer_session = await customer_session_service.create_customer_session(
-        session, customer
-    )
+    member_repository = MemberRepository.from_session(session)
+    member = await member_repository.get_by_id_and_customer_id(member_id, customer.id)
 
-    # Construct portal URL with organization slug
+    if member is None:
+        raise HTTPException(status_code=404)
+
+    token, _ = await member_session_service.create_member_session(session, member)
+
     frontend_base_url = str(settings.FRONTEND_BASE_URL).rstrip("/")
     org_slug = customer.organization.slug
-    portal_url = (
-        f"{frontend_base_url}/{org_slug}/portal/overview?customer_session_token={token}"
-    )
+    query_string = urlencode({"member_session_token": token, "email": member.email})
+    portal_url = f"{frontend_base_url}/{org_slug}/portal?{query_string}"
 
-    # Calculate actual expiration time from settings
     expires_in_hours = int(settings.CUSTOMER_SESSION_TTL.total_seconds() / 3600)
     if expires_in_hours < 1:
         expires_in_minutes = int(settings.CUSTOMER_SESSION_TTL.total_seconds() / 60)
@@ -458,13 +485,14 @@ async def generate_portal_link_modal(
 
     with document() as doc:
         with tag.div(id="modal"):
-            with modal("Customer Portal Link Generated", open=True):
+            with modal("Member Portal Link Generated", open=True):
                 with tag.div(classes="alert alert-info mb-4"):
                     with tag.div():
                         with tag.p(classes="text-sm"):
                             text(
                                 f"This link will expire in {expiration_message}. "
-                                "The customer can use this link to access their portal."
+                                f"{member.email} can use this link to access the "
+                                "customer portal."
                             )
 
                 with tag.div(classes="form-control w-full mb-4"):

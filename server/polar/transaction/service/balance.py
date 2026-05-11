@@ -9,9 +9,8 @@ from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.models import Account, IssueReward, Order, Pledge, Transaction
 from polar.models.transaction import PlatformFeeType, TransactionType
-from polar.organization.repository import OrganizationRepository
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from .base import BaseTransactionService, BaseTransactionServiceError
 
@@ -84,13 +83,9 @@ class BalanceTransactionService(BaseTransactionService):
         await session.flush()
 
         if destination_account is not None:
-            # Check organization review threshold instead of account
-            organization_repository = OrganizationRepository.from_session(session)
-            organizations = await organization_repository.get_all_by_account(
-                destination_account.id
+            enqueue_job(
+                "organization.check_threshold", account_id=destination_account.id
             )
-            for organization in organizations:
-                await organization_service.check_review_threshold(session, organization)
 
         return (outgoing_transaction, incoming_transaction)
 
@@ -214,10 +209,7 @@ class BalanceTransactionService(BaseTransactionService):
 
         # Keep cached organization.total_balance in sync after refunds and
         # chargebacks reduce the account balance.
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_account(source_account.id)
-        if organization is not None:
-            await organization_service.check_review_threshold(session, organization)
+        enqueue_job("organization.check_threshold", account_id=source_account.id)
 
         return (outgoing_reversal, incoming_reversal)
 

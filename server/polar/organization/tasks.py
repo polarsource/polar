@@ -77,6 +77,23 @@ async def organization_unsnooze_expired() -> None:
         await organization_service.unsnooze_expired_organizations(session)
 
 
+@actor(actor_name="organization.check_threshold", priority=TaskPriority.LOW)
+async def organization_check_threshold(account_id: uuid.UUID) -> None:
+    """Refresh the cached ``total_balance`` for the organization owning
+    ``account_id`` and re-evaluate the review threshold.
+
+    Enqueued by the transaction layer after balance / reversal-balance rows
+    are written, so the transaction service does not need to call into
+    organization service logic synchronously.
+    """
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_account(account_id)
+        if organization is None:
+            return
+        await organization_service.check_review_threshold(session, organization)
+
+
 @actor(actor_name="organization.under_review", priority=TaskPriority.LOW)
 async def organization_under_review(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:

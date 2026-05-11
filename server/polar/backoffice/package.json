@@ -22,6 +22,9 @@
     "onlyBuiltDependencies": [
       "@parcel/watcher",
       "esbuild"
+    ],
+    "ignoredBuiltDependencies": [
+      "esbuild"
     ]
   }
 }

@@ -212,6 +212,13 @@ class BalanceTransactionService(BaseTransactionService):
         session.add(incoming_reversal)
         await session.flush()
 
+        # Keep cached organization.total_balance in sync after refunds and
+        # chargebacks reduce the account balance.
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_account(source_account.id)
+        if organization is not None:
+            await organization_service.check_review_threshold(session, organization)
+
         return (outgoing_reversal, incoming_reversal)
 
 

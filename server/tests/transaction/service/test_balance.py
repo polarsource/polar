@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.integrations.stripe.service import StripeService
-from polar.models import Account, Transaction, User
+from polar.models import Account, Organization, Transaction, User
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -240,3 +240,27 @@ class TestCreateReversalBalance:
         assert incoming.amount == 1000
 
         assert outgoing.balance_correlation_key == incoming.balance_correlation_key
+
+    async def test_recomputes_organization_total_balance(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        account: Account,
+        organization: Organization,
+    ) -> None:
+        organization.total_balance = 1000
+        await save_fixture(organization)
+
+        balance_transactions = await create_balance_transactions(
+            save_fixture, destination_account=account, amount=1000
+        )
+        balance_transactions = await load_balance_transactions(
+            session, balance_transactions
+        )
+
+        await balance_transaction_service.create_reversal_balance(
+            session, balance_transactions=balance_transactions, amount=400
+        )
+
+        assert organization.total_balance == 600

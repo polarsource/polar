@@ -166,7 +166,6 @@ _ZERO_DECIMAL_CURRENCIES: set[str] = {
     "mga",
     "pyg",
     "rwf",
-    "ugx",
     "vnd",
     "vuv",
     "xaf",
@@ -333,7 +332,7 @@ MINIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
     "twd": 2000,  # 20.00 TWD > 0.50 USD
     "tzs": 200000,  # 2000.00 TZS > 0.50 USD
     "uah": 3000,  # 30.00 UAH > 0.50 USD
-    "ugx": 2000,  # 2000 UGX > 0.50 USD
+    "ugx": 200000,  # 2000.00 UGX > 0.50 USD (Stripe requires UGX in two-decimal format)
     "uyu": 2000,  # 20.00 UYU > 0.50 USD
     "uzs": 700000,  # 7000.00 UZS > 0.50 USD
     "vnd": 20000,  # 20000 VND > 0.50 USD

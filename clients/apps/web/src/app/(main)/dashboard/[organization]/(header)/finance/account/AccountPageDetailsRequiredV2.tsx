@@ -3,6 +3,7 @@
 import { ReviewChecklist } from '@/components/Finance/Account/ReviewChecklist'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { toast } from '@/components/Toast/use-toast'
+import { usePostHog } from '@/hooks/posthog'
 import {
   useOrganizationKYC,
   useOrganizationReviewState,
@@ -27,8 +28,13 @@ export const AccountPageDetailsRequiredV2 = ({ organization }: Props) => {
   useOrganizationKYC(organization.id)
 
   const submitReview = useSubmitOrganizationReview(organization.id)
+  const posthog = usePostHog()
 
   const handleSubmit = async () => {
+    posthog.capture('dashboard:organizations:account_review:submit', {
+      organization_id: organization.id,
+      section: 'cta',
+    })
     const { error } = await submitReview.mutateAsync()
     if (error) {
       toast({

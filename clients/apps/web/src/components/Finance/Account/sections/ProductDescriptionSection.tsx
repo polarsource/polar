@@ -3,6 +3,7 @@
 import { ChipSelect } from '@/components/Form/ChipSelect'
 import { AUPBlocker } from '@/components/Onboarding/AUPBlocker'
 import { toast } from '@/components/Toast/use-toast'
+import { usePostHog } from '@/hooks/posthog'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useAupValidation } from '@/hooks/useAupValidation'
@@ -37,6 +38,7 @@ interface FormValues {
 
 export const ProductDescriptionSection = ({ organization }: Props) => {
   const updateOrganization = useUpdateOrganization()
+  const posthog = usePostHog()
   const { data: kycData, isLoading: isKYCLoading } = useOrganizationKYC(
     organization.id,
   )
@@ -115,6 +117,10 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
   }
 
   const onSubmit = async (values: FormValues) => {
+    posthog.capture('dashboard:organizations:account_review_section:submit', {
+      organization_id: organization.id,
+      section: 'product_description',
+    })
     const result = await aup.validate({
       product_description: values.product_description,
       selling_categories: values.selling_categories,

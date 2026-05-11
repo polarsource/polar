@@ -851,7 +851,7 @@ class OrderService:
                     order,
                     payment_method,
                     payment_mode=payment_mode,
-                    payment_trigger=PaymentTrigger.purchase,
+                    payment_trigger=PaymentTrigger.subscription_cycle,
                 )
             # Async mode, allow payment to fail and be retried later
             else:
@@ -865,7 +865,7 @@ class OrderService:
                         "order.trigger_payment",
                         order_id=order.id,
                         payment_method_id=payment_method_id,
-                        payment_trigger=PaymentTrigger.purchase,
+                        payment_trigger=PaymentTrigger.subscription_cycle,
                     )
 
             await self._on_order_created(session, order)

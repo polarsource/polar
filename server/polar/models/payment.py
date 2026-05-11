@@ -51,6 +51,7 @@ if TYPE_CHECKING:
 
 class PaymentTrigger(StrEnum):
     purchase = "purchase"
+    subscription_cycle = "subscription_cycle"
     retry_dunning = "retry_dunning"
     retry_customer = "retry_customer"
     retry_payment_method_update = "retry_payment_method_update"
@@ -69,6 +70,7 @@ class PaymentTrigger(StrEnum):
 # attempts use up the customer's automated retry budget.
 DUNNING_COUNTING_TRIGGERS: set[PaymentTrigger] = {
     PaymentTrigger.purchase,
+    PaymentTrigger.subscription_cycle,
     PaymentTrigger.retry_dunning,
 }
 

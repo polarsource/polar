@@ -1008,7 +1008,7 @@ class TestCreateSubscriptionOrder:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=subscription.payment_method_id,
-            payment_trigger="purchase",
+            payment_trigger="subscription_cycle",
         )
 
     async def test_cycle_discount(
@@ -1326,7 +1326,7 @@ class TestCreateSubscriptionOrder:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=subscription.payment_method_id,
-            payment_trigger="purchase",
+            payment_trigger="subscription_cycle",
         )
 
     @pytest.mark.parametrize(
@@ -1594,7 +1594,7 @@ class TestCreateSubscriptionOrder:
                 "order.trigger_payment",
                 order_id=order.id,
                 payment_method_id=subscription.payment_method_id,
-                payment_trigger="purchase",
+                payment_trigger="subscription_cycle",
             )
             assert customer_balance == 0
         else:
@@ -3602,6 +3602,49 @@ class TestTriggerPayment:
         await order_service.trigger_payment(session, order, payment_method)
 
         stripe_service_mock.create_payment_intent.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("trigger", "expected_payment_attempted"),
+        [
+            (PaymentTrigger.subscription_cycle, True),
+            (PaymentTrigger.purchase, False),
+        ],
+    )
+    async def test_capability_gate_distinguishes_renewals_from_checkouts(
+        self,
+        trigger: PaymentTrigger,
+        expected_payment_attempted: bool,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """An org with checkout_payments off but subscription_renewals on must
+        process renewals while still blocking new checkouts."""
+        organization.capabilities = {
+            **organization.capabilities,
+            "checkout_payments": False,
+            "subscription_renewals": True,
+        }
+        await save_fixture(organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        await order_service.trigger_payment(
+            session, order, payment_method, payment_trigger=trigger
+        )
+
+        if expected_payment_attempted:
+            stripe_service_mock.create_payment_intent.assert_called_once()
+        else:
+            stripe_service_mock.create_payment_intent.assert_not_called()
 
     async def test_already_locked(
         self,

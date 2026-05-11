@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy import select
 
 from polar.customer.schemas.customer import CustomerUpdate
@@ -33,6 +34,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
     create_customer,
+    create_member,
     create_organization,
 )
 
@@ -535,6 +537,55 @@ class TestRequestMemberEnabledOrgGracefulFallback:
             await customer_session_service.request(
                 session, "nobody@example.com", organization.id
             )
+
+
+@pytest.mark.asyncio
+class TestSend:
+    @pytest.mark.parametrize(
+        "customer_email",
+        [
+            pytest.param(None, id="team_customer_no_email"),
+            pytest.param("billing@example.com", id="customer_email_differs"),
+        ],
+    )
+    async def test_sends_to_member_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer_email: str | None,
+    ) -> None:
+        # Regression: code must reach the address typed at login (member.email),
+        # not customer.email — which is absent for team customers and may hold
+        # an unrelated billing address otherwise.
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(save_fixture, organization=organization)
+        customer.email = customer_email
+        await save_fixture(customer)
+        await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="member@example.com",
+        )
+
+        enqueue_mock = mocker.patch(
+            "polar.customer_portal.service.customer_session.enqueue_email_template"
+        )
+
+        customer_session_code, code = await customer_session_service.request(
+            session, "member@example.com", organization.id
+        )
+        await session.flush()
+        await customer_session_service.send(session, customer_session_code, code)
+
+        enqueue_mock.assert_called_once()
+        _, kwargs = enqueue_mock.call_args
+        assert kwargs["to_email_addr"] == "member@example.com"
 
 
 @pytest.mark.asyncio

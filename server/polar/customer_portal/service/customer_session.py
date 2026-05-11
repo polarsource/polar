@@ -195,7 +195,6 @@ class CustomerSessionService:
         customer_session_code: CustomerSessionCode,
         code: str,
     ) -> None:
-        customer = customer_session_code.customer
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
             customer_session_code.customer.organization_id
@@ -206,14 +205,14 @@ class CustomerSessionService:
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
         domain = settings.frontend_hostname
-        if customer.email is None:
-            raise CustomerSessionCodeInvalidOrExpired()
 
+        # Recipient is the login email (member.email in the member flow); the
+        # customer record may have no email (team customer) or a billing one.
         enqueue_email_template(
             CustomerSessionCodeEmail(
                 props=CustomerSessionCodeProps.model_validate(
                     {
-                        "email": customer.email,
+                        "email": customer_session_code.email,
                         "organization": organization,
                         "code": code,
                         "code_lifetime_minutes": code_lifetime_minutes,
@@ -225,7 +224,7 @@ class CustomerSessionService:
                 )
             ),
             **organization.email_from_reply,
-            to_email_addr=customer.email,
+            to_email_addr=customer_session_code.email,
             subject=f"Access your {organization.name} purchases",
         )
 

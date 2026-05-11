@@ -2,6 +2,7 @@
   "name": "backoffice",
   "private": true,
   "version": "1.0.0",
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
     "build:css": "tailwindcss -i ./styles.css -o ./static/styles.css && cp $(pnpm root)/lucide-static/font/lucide.* static/",
     "build:js": "esbuild scripts.mjs --bundle --minify --outfile=./static/scripts.js",
@@ -21,9 +22,6 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "@parcel/watcher"
-    ],
-    "ignoredBuiltDependencies": [
-      "esbuild"
     ]
   }
 }

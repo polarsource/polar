@@ -44,9 +44,12 @@ dev docker logs db
 
 **Verify database is healthy:**
 ```bash
-dev docker shell db
-psql -U polar -d polar -c "SELECT 1"
+# Each instance has its own database: polar_dev_<instance-number>
+dev docker exec db psql -U polar -d polar_dev_<N> -c "SELECT 1"
 ```
+
+Shared infra (db/redis/minio) is on the `polar-shared` Docker network with no
+host port — reach it through `dev docker exec` or `docker exec polar-shared-<svc>-1`.
 
 ## Hot-Reload Not Working
 
@@ -81,6 +84,29 @@ dev docker down -i 2
 ```bash
 docker system prune
 ```
+
+### `ERR_PNPM_ENOMEM` on first `dev docker up`
+
+On a fresh worktree the api container (building the email renderer) and the
+web container (installing frontend deps) can both run `pnpm install` at the
+same time and OOM. Symptom in `docker logs polar-app-<N>-api-1`:
+
+```
+ERR_PNPM_ENOMEM  ENOMEM: not enough memory, copyfile ...
+```
+
+`docker ps` then shows api/web with `Exited (1)` while worker is still `Up`.
+
+**Fix — restart the failed containers, pnpm resumes from its cache:**
+
+```bash
+docker start polar-app-<N>-api-1 polar-app-<N>-web-1
+```
+
+Wait for `/healthz` on the API port (printed by `dev docker up`) to come up
+before continuing. Bumping Docker Desktop's memory above 8 GB or starting
+services one at a time (`dev docker up -d api`, then `web`) also avoids the
+clash.
 
 ## MinIO/S3 Issues
 
@@ -131,6 +157,36 @@ uv run alembic upgrade head
 ```bash
 uv run alembic downgrade -1
 ```
+
+## Stale Connections After Shared DB Recycle
+
+If `polar-shared-db-1` was recreated (e.g. you ran `dev docker down` on the
+shared stack, or it was replaced by an unrelated `docker compose` run), the
+running api/worker still hold connections to the old container and surface
+errors like:
+
+```
+asyncpg.exceptions._base.InterfaceError: connection is closed
+sqlalchemy.dialects.postgresql.asyncpg.InterfaceError
+```
+
+**Fix — restart api and worker so the pool reconnects:**
+
+```bash
+docker restart polar-app-<N>-api-1 polar-app-<N>-worker-1
+```
+
+## Don't Mix `dev docker` and Bare `docker compose`
+
+`dev docker` runs the shared infra under the project name `polar-shared` on
+the `polar-shared` network. Running `cd server && docker compose up` from the
+same checkout creates a parallel stack on `server_default` with `server-`
+prefixed containers. They don't conflict by name, but: they double the
+memory footprint, `docker ps` shows two of everything, and a later
+`docker compose down` on one stack will leave the other half running with
+broken cross-network references.
+
+Pick one. For everything in this skill, prefer `dev docker`.
 
 ## Complete Reset
 

@@ -60,7 +60,7 @@ You can override with `-i N` if needed, but auto-detection handles Conductor wor
 
 ## Instance Port Mapping
 
-Port = Base Port + (Instance × 100)
+For manually started instances: `Port = Base Port + (Instance × 100)`
 
 | Instance | API | Web | DB | Redis | MinIO |
 |----------|-----|-----|-----|-------|-------|
@@ -68,8 +68,19 @@ Port = Base Port + (Instance × 100)
 | 1 | 8100 | 3100 | 5532 | 6479 | 9100 |
 | 2 | 8200 | 3200 | 5632 | 6579 | 9200 |
 
+Shared infra (db/redis/minio/tinybird) runs under the `polar-shared` project
+without host port mappings — reach it via `dev docker exec <service>` or
+`docker exec polar-shared-<service>-1`. The per-instance database is named
+`polar_dev_<N>`, not `polar`.
+
 ## Rules Index
 
 | Rule | Category | Description |
 |------|----------|-------------|
 | [service-architecture](rules/service-architecture.md) | Reference | Service details |
+| [start-environment](rules/start-environment.md) | Operations | Starting the stack |
+| [stop-environment](rules/stop-environment.md) | Operations | Stopping the stack |
+| [manage-instances](rules/manage-instances.md) | Operations | Running parallel instances |
+| [view-logs](rules/view-logs.md) | Debugging | Viewing service logs |
+| [troubleshooting](rules/troubleshooting.md) | Debugging | Common errors and fixes |
+| [payment-testing](rules/payment-testing.md) | Operations | Login codes, Stripe webhooks, dramatiq actors, backoffice |

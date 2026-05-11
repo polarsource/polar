@@ -9,7 +9,6 @@ const ZERO_DECIMAL_CURRENCIES = new Set<string>([
   'mga',
   'pyg',
   'rwf',
-  'ugx',
   'vnd',
   'vuv',
   'xaf',

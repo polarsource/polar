@@ -22,7 +22,6 @@ const ZERO_DECIMAL_CURRENCIES = new Set([
   'MGA',
   'PYG',
   'RWF',
-  'UGX',
   'VND',
   'VUV',
   'XAF',

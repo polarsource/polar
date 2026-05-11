@@ -28,15 +28,19 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
   const canWithdraw =
     payoutAccount &&
     payoutAccount.is_payout_ready &&
-    summary?.balance?.amount &&
-    summary.balance.amount >= 1000
+    summary?.available_balance?.amount &&
+    summary.available_balance.amount >= 1000
+  const availableBalance = formatCurrency('compact')(
+    summary?.available_balance.amount ?? 0,
+    summary?.available_balance.currency ?? 'usd',
+  )
 
   return (
     <Tile href="/finance">
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
           <Text variant="body" color="subtext">
-            Account Balance
+            Available balance
           </Text>
           <Text
             variant="headline"
@@ -44,10 +48,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
             loading={loading}
             placeholderText="$1,234"
           >
-            {formatCurrency('compact')(
-              summary?.balance.amount ?? 0,
-              summary?.balance.currency ?? 'usd',
-            )}
+            {availableBalance}
           </Text>
         </Box>
         <Box flexDirection="row" justifyContent="flex-start">

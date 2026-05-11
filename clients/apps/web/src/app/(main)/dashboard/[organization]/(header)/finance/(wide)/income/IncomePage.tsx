@@ -10,6 +10,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
+import { ISODuration } from '@/utils/duration'
 import { ClientResponseError, schemas } from '@polar-sh/client'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -60,6 +61,9 @@ export default function ClientPage({
     isLoading: accountIsLoading,
     error: accountError,
   } = useOrganizationAccount(organization.id)
+  const payoutTransactionDelay = account?.payout_transaction_delay
+    ? new ISODuration(account.payout_transaction_delay)
+    : null
 
   const isNotAdmin =
     accountError &&
@@ -103,6 +107,7 @@ export default function ClientPage({
         sorting={sorting}
         onSortingChange={setSorting}
         isLoading={accountIsLoading || balancesHook.isLoading}
+        payoutTransactionDelay={payoutTransactionDelay}
       />
     </div>
   )

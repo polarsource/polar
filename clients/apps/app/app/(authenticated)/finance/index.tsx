@@ -26,11 +26,9 @@ export default function Finance() {
     refetch: refetchAccount,
     isRefetching: isRefetchingAccount,
   } = useOrganizationAccount(organization?.id)
-  const {
-    data: payoutAccount,
-    refetch: refetchPayoutAccount,
-    isRefetching: isRefetchingPayoutAccount,
-  } = usePayoutAccount(organization?.payout_account_id || undefined)
+  const { data: payoutAccount } = usePayoutAccount(
+    organization?.payout_account_id || undefined,
+  )
 
   const {
     data: summary,
@@ -54,8 +52,12 @@ export default function Finance() {
   const canWithdraw =
     payoutAccount &&
     payoutAccount.is_payout_ready &&
-    summary?.balance?.amount &&
-    summary.balance.amount >= 1000
+    summary?.available_balance?.amount &&
+    summary.available_balance.amount >= 1000
+  const availableBalance = formatCurrency('accounting')(
+    summary?.available_balance.amount ?? 0,
+    summary?.available_balance.currency ?? 'usd',
+  )
 
   if (!account) {
     return (
@@ -125,13 +127,8 @@ export default function Finance() {
         padding="spacing-16"
         backgroundColor="card"
       >
-        <Text color="subtext">Account Balance</Text>
-        <Text variant="headlineLarge">
-          {formatCurrency('accounting')(
-            summary?.balance.amount ?? 0,
-            summary.balance.currency,
-          )}
-        </Text>
+        <Text color="subtext">Available balance</Text>
+        <Text variant="headlineLarge">{availableBalance}</Text>
       </Box>
       <Box flexDirection="column" alignItems="center" gap="spacing-16">
         <Box width="100%">

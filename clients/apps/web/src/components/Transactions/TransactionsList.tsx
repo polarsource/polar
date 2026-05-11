@@ -4,6 +4,7 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { isTransaction, platformFeesDisplayNames } from '@/utils/transaction'
+import { ISODuration } from '@/utils/duration'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
@@ -19,6 +20,7 @@ import {
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
 import TransactionMeta from './TransactionMeta'
+import { TransactionAvailabilityStatus } from './TransactionAvailabilityStatus'
 
 interface TransactionsListProps {
   transactions: schemas['Transaction'][]
@@ -28,10 +30,8 @@ interface TransactionsListProps {
   onPaginationChange?: DataTableOnChangeFn<DataTablePaginationState>
   sorting: DataTableSortingState
   onSortingChange?: DataTableOnChangeFn<DataTableSortingState>
-  extraColumns?: DataTableColumnDef<
-    schemas['Transaction'] | schemas['TransactionEmbedded']
-  >[]
   isLoading: boolean | ReactQueryLoading
+  payoutTransactionDelay: ISODuration | null
 }
 
 const TransactionsList = ({
@@ -42,8 +42,8 @@ const TransactionsList = ({
   onPaginationChange,
   sorting,
   onSortingChange,
-  extraColumns,
   isLoading,
+  payoutTransactionDelay,
 }: TransactionsListProps) => {
   const columns: DataTableColumnDef<
     schemas['Transaction'] | schemas['TransactionEmbedded']
@@ -56,7 +56,11 @@ const TransactionsList = ({
       ),
       cell: (props) => {
         const datetime = props.getValue() as string
-        return <FormattedDateTime datetime={datetime} resolution="time" />
+        return (
+          <div className="whitespace-nowrap">
+            <FormattedDateTime datetime={datetime} resolution="time" />
+          </div>
+        )
       },
     },
     {
@@ -275,7 +279,28 @@ const TransactionsList = ({
         )
       },
     },
-    ...(extraColumns || []),
+    {
+      id: 'status',
+      enableSorting: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Status"
+          className="flex justify-end"
+        />
+      ),
+      cell: (props) => {
+        const transaction = props.row.original
+        return (
+          <div className="flex justify-end">
+            <TransactionAvailabilityStatus
+              transaction={transaction}
+              delay={payoutTransactionDelay}
+            />
+          </div>
+        )
+      },
+    },
   ]
 
   return (

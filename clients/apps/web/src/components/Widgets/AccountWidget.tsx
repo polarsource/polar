@@ -31,18 +31,15 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
   }
 
   const allPayouts = payouts?.items ?? []
+  const availableBalance = formatCurrency('compact')(
+    summary?.available_balance.amount ?? 0,
+    summary?.available_balance.currency ?? 'usd',
+  )
 
   return (
     <WidgetContainer
-      title="Balance"
-      action={
-        <h2 className="text-lg">
-          {formatCurrency('compact')(
-            summary?.balance.amount ?? 0,
-            summary?.balance.currency ?? 'usd',
-          )}
-        </h2>
-      }
+      title="Available balance"
+      action={<h2 className="text-lg">{availableBalance}</h2>}
       className={className}
     >
       {allPayouts.length > 0 ? (

@@ -1,4 +1,3 @@
-import { Upload } from '@/components/FileUpload/Upload'
 import { useToast } from '@/components/Toast/use-toast'
 import {
   useBenefits,
@@ -21,32 +20,9 @@ import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
+import { duplicateProductMedia } from './duplicateMedia'
 import ProductForm from './ProductForm/ProductForm'
 import { Wand2Icon } from 'lucide-react'
-
-const reuploadMedia = async (
-  media: schemas['ProductMediaFileRead'],
-  organization: schemas['Organization'],
-): Promise<schemas['ProductMediaFileRead']> => {
-  const response = await fetch(media.public_url)
-  const blob = await response.blob()
-  const file = new File([blob], media.name, { type: media.mime_type })
-
-  return new Promise((resolve, reject) => {
-    const upload = new Upload({
-      organization,
-      service: 'product_media',
-      file,
-      onFileProcessing: () => {},
-      onFileCreate: () => {},
-      onFileUploadProgress: () => {},
-      onFileUploaded: (response) =>
-        resolve(response as schemas['ProductMediaFileRead']),
-      onFileUploadError: (_fileId, error) => reject(error),
-    })
-    upload.run().catch(reject)
-  })
-}
 
 export interface CreateProductPageProps {
   organization: schemas['Organization']
@@ -126,13 +102,22 @@ export const CreateProductPage = ({
       try {
         const { full_medias, metadata, ...productCreateRest } = productCreate
 
-        // When duplicating, re-upload medias to create new files
         let mediaIds = full_medias.map((media) => media.id)
         if (sourceProduct && full_medias.length > 0) {
-          const reuploadedMedias = await Promise.all(
-            full_medias.map((media) => reuploadMedia(media, organization)),
+          const results = await Promise.allSettled(
+            full_medias.map((media) =>
+              duplicateProductMedia(media, organization),
+            ),
           )
-          mediaIds = reuploadedMedias.map((media) => media.id)
+          mediaIds = results.flatMap((r) =>
+            r.status === 'fulfilled' ? [r.value.id] : [],
+          )
+          if (mediaIds.length < full_medias.length) {
+            toast({
+              title: 'Error',
+              description: 'Some images could not be copied',
+            })
+          }
         }
 
         const { data: product, error } = await createProduct.mutateAsync({

@@ -17,5 +17,11 @@
     "hyperscript.org": "^0.9.14",
     "lucide-static": "^0.552.0",
     "tailwindcss": "^4.1.17"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild"
+    ]
   }
 }

@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from polar.invoice.generator import InvoiceItem
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
@@ -154,6 +156,77 @@ class TestReceiptGenerator:
         output = generator.output()
 
         assert bytes(output).startswith(b"%PDF-")
+
+
+class TestReceiptFromOrder:
+    def _build_order(
+        self,
+        *,
+        billing_name: str | None,
+        customer_name: str | None,
+        customer_email: str | None,
+    ) -> SimpleNamespace:
+        # Mirror Customer.display_name fallback semantics.
+        display_name = customer_name or customer_email or "Team Customer"
+        customer = SimpleNamespace(
+            name=customer_name,
+            email=customer_email,
+            locale=None,
+            display_name=display_name,
+        )
+        return SimpleNamespace(
+            receipt_number="RCPT-AB1-0001",
+            invoice_number=None,
+            created_at=utc_now(),
+            billing_name=billing_name,
+            billing_address=None,
+            tax_id=None,
+            customer=customer,
+            subtotal_amount=10000,
+            applied_balance_amount=None,
+            discount_amount=0,
+            tax_amount=0,
+            tax_breakdown=None,
+            net_amount=10000,
+            currency="usd",
+            items=[SimpleNamespace(label="Test Product", amount=10000)],
+        )
+
+    def test_falls_back_to_team_customer_when_all_identifiers_missing(self) -> None:
+        order = self._build_order(
+            billing_name=None, customer_name=None, customer_email=None
+        )
+        receipt = Receipt.from_order(order, payments=[], refunds=[])  # type: ignore[arg-type]
+        assert receipt.customer_name == "Team Customer"
+        assert receipt.customer_additional_info is None
+
+    def test_prefers_billing_name(self) -> None:
+        order = self._build_order(
+            billing_name="Billing Co",
+            customer_name="Customer Inc",
+            customer_email="buyer@example.com",
+        )
+        receipt = Receipt.from_order(order, payments=[], refunds=[])  # type: ignore[arg-type]
+        assert receipt.customer_name == "Billing Co"
+        assert receipt.customer_additional_info == "buyer@example.com"
+
+    def test_falls_back_to_customer_name(self) -> None:
+        order = self._build_order(
+            billing_name=None,
+            customer_name="Customer Inc",
+            customer_email="buyer@example.com",
+        )
+        receipt = Receipt.from_order(order, payments=[], refunds=[])  # type: ignore[arg-type]
+        assert receipt.customer_name == "Customer Inc"
+        assert receipt.customer_additional_info == "buyer@example.com"
+
+    def test_falls_back_to_email_without_duplicating_in_additional_info(self) -> None:
+        order = self._build_order(
+            billing_name=None, customer_name=None, customer_email="buyer@example.com"
+        )
+        receipt = Receipt.from_order(order, payments=[], refunds=[])  # type: ignore[arg-type]
+        assert receipt.customer_name == "buyer@example.com"
+        assert receipt.customer_additional_info is None
 
 
 class TestReceiptPayment:

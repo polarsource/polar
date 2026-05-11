@@ -103,10 +103,7 @@ class Receipt(Invoice):
     ) -> Self:
         assert order.receipt_number is not None
 
-        customer_name = (
-            order.billing_name or order.customer.name or order.customer.email
-        )
-        assert customer_name is not None
+        customer_name = order.billing_name or order.customer.display_name
 
         sorted_payments = sorted(payments, key=lambda p: p.created_at)
         paid_at = sorted_payments[0].created_at if sorted_payments else None

@@ -10,11 +10,7 @@ The dashboards on the **Analytics** page each focus on a different part of the b
 
 ## How metrics are bucketed
 
-When you pick a date range, Polar slices it into equal-width **buckets** — one hour, one day, one week, one month, or one year each — and aggregates every metric inside each bucket. Each bucket becomes one point on the chart and one row in the API response.
-
-The interval is chosen automatically from the length of the selected range: hourly for a single day, daily for up to a month, weekly for up to a few months, monthly for up to a few years, and yearly beyond that. The Metrics API lets you override the interval explicitly.
-
-Throughout this page, "in the bucket" means "inside that single time slice" — e.g. for a daily interval, it's the events that happened on that specific day.
+When you pick a date range, Polar splits it into equal-width **intervals** — one hour, one day, one week, one month, or one year each — and aggregates every metric inside each interval. Each interval (sometimes called a "bucket") is one point on the chart and one row in the API response.
 
 **Missing any metrics?** [Let us know so we can add it.](https://github.com/orgs/polarsource/discussions/categories/feature-requests)
 
@@ -24,20 +20,20 @@ Throughout this page, "in the bucket" means "inside that single time slice" — 
 - **Committed MRR** — MRR restricted to subscriptions still inside a committed billing period. Subscriptions that have been canceled but are running out the clock until period end are excluded.
 - **Trial MRR Including Canceled Trials** — Monthly-normalized amount of every subscription currently in a trial, including trials that have already been canceled.
 - **Trial Committed MRR** — Trial MRR for trials still inside their committed billing period (i.e. canceled trials are excluded).
-- **Active Subscriptions** — Count of subscriptions in the `active` state at the end of each bucket. Subscriptions stay active until the end of the period they paid for, even after cancellation.
-- **New Subscriptions** — Subscriptions whose first paid order falls inside the bucket. Each subscription is counted once, at creation.
-- **Committed Subscriptions** — Active subscriptions that have not been canceled, or whose cancellation date is after the bucket. These are the subscriptions you can reasonably expect to renew.
-- **Renewed Subscriptions** — Number of orders with billing reason `subscription_cycle` in the bucket — i.e. renewals on existing subscriptions.
-- **Average Revenue Per User (ARPU)** — MRR divided by the count of distinct paying subscribers in the bucket (trials excluded). Returns 0 when there are no paying subscribers.
+- **Active Subscriptions** — Count of subscriptions in the `active` state at the end of each interval. Subscriptions stay active until the end of the period they paid for, even after cancellation.
+- **New Subscriptions** — Subscriptions whose first paid order falls inside the interval. Each subscription is counted once, at creation.
+- **Committed Subscriptions** — Active subscriptions that have not been canceled, or whose cancellation date is after the interval. These are the subscriptions you can reasonably expect to renew.
+- **Renewed Subscriptions** — Number of orders with billing reason `subscription_cycle` in the interval — i.e. renewals on existing subscriptions.
+- **Average Revenue Per User (ARPU)** — MRR divided by the count of distinct paying subscribers in the interval (trials excluded). Returns 0 when there are no paying subscribers.
 - **Lifetime Value (LTV)** — Estimated revenue per customer over their lifetime: `(ARPU - cost per user) / churn rate`. Returns 0 when churn rate is 0.
-- **New Subscriptions Revenue** — Gross revenue from the first paid order on every new subscription created in the bucket.
-- **Renewed Subscriptions Revenue** — Gross revenue from subscription renewal orders in the bucket.
+- **New Subscriptions Revenue** — Gross revenue from the first paid order on every new subscription created in the interval.
+- **Renewed Subscriptions Revenue** — Gross revenue from subscription renewal orders in the interval.
 
 ## Cancellations
 
-- **Canceled Subscriptions** — Subscriptions where the customer triggered a cancellation in the bucket. The subscription itself may still be active until the end of the paid period.
-- **Churned Subscriptions** — Subscriptions whose paid period actually ended inside the bucket. This is "real" churn — the moment access stops.
-- **Churn Rate** — Churned subscriptions in the bucket divided by the active subscription base at the start of the bucket, expressed as a percentage.
+- **Canceled Subscriptions** — Subscriptions where the customer triggered a cancellation in the interval. The subscription itself may still be active until the end of the paid period.
+- **Churned Subscriptions** — Subscriptions whose paid period actually ended inside the interval. This is "real" churn — the moment access stops.
+- **Churn Rate** — Churned subscriptions in the interval divided by the active subscription base at the start of the interval, expressed as a percentage.
 - **Active Subscriptions** — Same definition as in the [Subscriptions](#subscriptions) dashboard. Shown here to contextualise churn against the underlying base.
 - **Committed Subscriptions** — Same definition as in the [Subscriptions](#subscriptions) dashboard.
 - **Canceled — Too Expensive** — Cancellations where the customer selected "too expensive" as the reason.
@@ -47,31 +43,31 @@ Throughout this page, "in the bucket" means "inside that single time slice" — 
 - **Canceled — Customer Service** — Cancellations where the customer cited support or service issues.
 - **Canceled — Low Quality** — Cancellations where the customer cited perceived low quality.
 - **Canceled — Too Complex** — Cancellations where the customer found the product too difficult to use.
-- **Canceled — Other** — Cancellations with a free-form reason that doesn't fit the buckets above, or with no reason given.
+- **Canceled — Other** — Cancellations with a free-form reason that doesn't fit the categories above, or with no reason given.
 
 ## One-Time Products
 
-- **One-Time Products** — Number of completed orders for non-recurring products in the bucket. Subscription orders are not included.
+- **One-Time Products** — Number of completed orders for non-recurring products in the interval. Subscription orders are not included.
 - **One-Time Products Revenue** — Gross revenue (subtotal before fees) from those one-time product orders.
 
 ## Orders
 
-- **Revenue** — Gross revenue from every completed order in the bucket: one-time purchases, new subscription orders, and renewal orders. Computed on the order subtotal, before Polar fees and tax.
-- **Orders** — Total number of completed orders in the bucket, regardless of billing reason.
+- **Revenue** — Gross revenue from every completed order in the interval: one-time purchases, new subscription orders, and renewal orders. Computed on the order subtotal, before Polar fees and tax.
+- **Orders** — Total number of completed orders in the interval, regardless of billing reason.
 - **Average Order Value (AOV)** — Revenue divided by the number of orders. Returns 0 when there are no orders.
-- **Cumulative Revenue** — Running total of revenue from the start of the selected range up to and including the current bucket.
+- **Cumulative Revenue** — Running total of revenue from the start of the selected range up to and including the current interval.
 
 ## Checkouts
 
 - **Checkouts Conversion** — Succeeded checkouts divided by total checkouts created, as a percentage. Returns 0 when no checkouts were created.
-- **Checkouts** — Every checkout session created in the bucket, regardless of outcome (succeeded, expired, or abandoned).
+- **Checkouts** — Every checkout session created in the interval, regardless of outcome (succeeded, expired, or abandoned).
 - **Succeeded Checkouts** — Checkouts that reached the `succeeded` status, meaning they resulted in an order.
 
 ## Net Revenue
 
 - **Net Revenue** — Revenue after deducting Polar's platform fee and the payment processor's fee on each order. This is the amount actually paid out to you.
-- **Net Average Order Value** — Net revenue divided by the number of orders in the bucket.
-- **Net Cumulative Revenue** — Running total of net revenue from the start of the selected range up to the current bucket.
+- **Net Average Order Value** — Net revenue divided by the number of orders in the interval.
+- **Net Cumulative Revenue** — Running total of net revenue from the start of the selected range up to the current interval.
 - **New Subscriptions Net Revenue** — Net revenue from the first paid order on every new subscription. Shown when your organization sells recurring products.
 - **Renewed Subscriptions Net Revenue** — Net revenue from subscription renewal orders. Shown when your organization sells recurring products.
 - **One-Time Products Net Revenue** — Net revenue from one-time product orders. Shown when your organization sells one-time products.
@@ -80,8 +76,8 @@ Throughout this page, "in the bucket" means "inside that single time slice" — 
 
 The Costs dashboard is powered by [Cost Insights](/features/cost-insights/introduction) — you'll only see data here once you start sending events with a `_cost` annotation.
 
-- **Costs** — Total operating costs ingested via Cost Insights in the bucket. Stored at sub-cent precision so per-event costs (e.g. token-level inference costs) aren't rounded away.
+- **Costs** — Total operating costs ingested via Cost Insights in the interval. Stored at sub-cent precision so per-event costs (e.g. token-level inference costs) aren't rounded away.
 - **Cost Per User** — Cumulative costs in the selected range divided by the count of active subscribers. Returns 0 when there are no active subscribers.
 - **Gross Margin** — Cumulative revenue minus cumulative costs over the selected range.
 - **Gross Margin %** — Gross margin expressed as a percentage of cumulative revenue. Returns 0 when cumulative revenue is 0.
-- **Cashflow** — Revenue minus costs for the bucket itself (not cumulative). Useful for spotting periods where costs outpaced revenue.
+- **Cashflow** — Revenue minus costs for the interval itself (not cumulative). Useful for spotting periods where costs outpaced revenue.

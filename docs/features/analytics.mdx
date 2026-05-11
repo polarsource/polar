@@ -4,9 +4,17 @@ sidebarTitle: "Analytics"
 description: "Understand how every metric in your dashboard is calculated."
 ---
 
-Polar ships with a built-in analytics dashboard so you can stay focused on growing the business rather than wiring up reporting. Metrics are bucketed over a time interval (hourly, daily, weekly, monthly, or yearly) and rendered both as a time series and as a cumulative total for the selected range.
+Polar ships with a built-in analytics dashboard so you can stay focused on growing the business rather than wiring up reporting.
 
 The dashboards on the **Analytics** page each focus on a different part of the business. The sections below match those dashboards one-for-one and describe how each metric is computed.
+
+## How metrics are bucketed
+
+When you pick a date range, Polar slices it into equal-width **buckets** — one hour, one day, one week, one month, or one year each — and aggregates every metric inside each bucket. Each bucket becomes one point on the chart and one row in the API response.
+
+The interval is chosen automatically from the length of the selected range: hourly for a single day, daily for up to a month, weekly for up to a few months, monthly for up to a few years, and yearly beyond that. The Metrics API lets you override the interval explicitly.
+
+Throughout this page, "in the bucket" means "inside that single time slice" — e.g. for a daily interval, it's the events that happened on that specific day.
 
 **Missing any metrics?** [Let us know so we can add it.](https://github.com/orgs/polarsource/discussions/categories/feature-requests)
 

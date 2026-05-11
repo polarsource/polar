@@ -574,6 +574,8 @@ class OrganizationReviewCheckKey(StrEnum):
     PRODUCT_DESCRIPTION = "product_description"
     PRODUCT_URL = "product_url"
     PAYOUT_ACCOUNT = "payout_account"
+    PRODUCT_CONFIGURATION = "product_configuration"
+    SETUP_READINESS = "setup_readiness"
 
 
 class OrganizationReviewCheckStatus(StrEnum):
@@ -603,6 +605,9 @@ class OrganizationReviewCheckReason(StrEnum):
     # Payout account
     PAYOUT_ACCOUNT_REQUIREMENTS_DUE = "payout_account.requirements_due"
     PAYOUT_ACCOUNT_PAYOUTS_DISABLED = "payout_account.payouts_disabled"
+
+    # Setup readiness
+    SETUP_READINESS_WEBHOOK_MISSING = "setup_readiness.webhook_missing"
 
 
 class OrganizationReviewCheck(Schema):

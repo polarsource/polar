@@ -18,6 +18,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.http import UrlReachability
 from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.account import Account
+from polar.models.benefit import BenefitType
 from polar.models.organization import (
     STATUS_CAPABILITIES,
     InvalidStatusTransitionError,
@@ -29,6 +30,7 @@ from polar.models.organization import (
 from polar.models.organization import (
     OrganizationDetails as OrganizationDetailsDict,
 )
+from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
@@ -55,8 +57,13 @@ from polar.user_organization.service import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
+    create_checkout_link,
     create_order,
     create_payout_account,
+    create_product,
+    create_webhook_endpoint,
+    set_product_benefits,
 )
 
 
@@ -1325,6 +1332,17 @@ async def _setup_passing_org(
     await save_fixture(user)
     await create_payout_account(save_fixture, organization, user)
 
+    # Product configuration + setup readiness: a product with a license-key
+    # benefit reachable through a checkout link satisfies both new checks.
+    product = await create_product(
+        save_fixture, organization=organization, recurring_interval=None
+    )
+    benefit = await create_benefit(
+        save_fixture, organization=organization, type=BenefitType.license_keys
+    )
+    await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+    await create_checkout_link(save_fixture, products=[product])
+
 
 def _step(
     state: OrganizationReviewState, key: OrganizationReviewCheckKey
@@ -1693,6 +1711,147 @@ class TestGetReviewState:
             OrganizationReviewCheckReason.PAYOUT_ACCOUNT_REQUIREMENTS_DUE
             in step.reasons
         )
+
+    async def test_product_configuration_missing_is_not_started(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_CONFIGURATION)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
+    async def test_product_configuration_with_product_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_CONFIGURATION)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    async def test_setup_readiness_missing_is_not_started(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
+    async def test_setup_readiness_checkout_link_with_eligible_benefit_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+        await create_checkout_link(save_fixture, products=[product])
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    async def test_setup_readiness_ineligible_benefit_does_not_count(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Feature flag benefits can't be fulfilled through a checkout link
+        # alone, so this should not satisfy the checkout-link path.
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+        await create_checkout_link(save_fixture, products=[product])
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
+    async def test_setup_readiness_access_token_and_webhook_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+        await create_webhook_endpoint(save_fixture, organization=organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    async def test_setup_readiness_access_token_without_webhook_warns(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.WARNING
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING
+            in step.reasons
+        )
+        # Warnings do not block submission, even when this check is in WARNING.
+        non_setup_failing = [
+            s
+            for s in state.preliminary_steps
+            if s.key != OrganizationReviewCheckKey.SETUP_READINESS
+            and s.status
+            in (
+                OrganizationReviewCheckStatus.FAILED,
+                OrganizationReviewCheckStatus.PENDING,
+            )
+        ]
+        assert non_setup_failing  # other checks block, not this warning
 
     async def test_all_checks_pass_can_submit(
         self,

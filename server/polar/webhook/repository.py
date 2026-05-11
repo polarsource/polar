@@ -175,6 +175,17 @@ class WebhookEndpointRepository(
             WebhookEndpoint.organization_id.in_(org_ids)
         )
 
+    async def has_by_organization_id(self, organization_id: UUID) -> bool:
+        """Whether the organization has any active webhook endpoint."""
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(WebhookEndpoint.id)
+            .where(WebhookEndpoint.organization_id == organization_id)
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None
+
     async def get_accessible_ids(
         self,
         org_ids: set[AccessibleOrganizationID],

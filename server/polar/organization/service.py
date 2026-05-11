@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
@@ -16,6 +17,7 @@ from sqlalchemy.orm import joinedload
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
+from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
@@ -39,6 +41,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.organization import (
     FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
@@ -53,6 +56,9 @@ from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization_access_token.repository import (
+    OrganizationAccessTokenRepository,
+)
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
@@ -68,6 +74,7 @@ from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -95,6 +102,15 @@ log = structlog.get_logger()
 _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_MIN_DAYS = 1
 SNOOZE_MAX_DAYS = 7
+
+# Benefit types that can be fulfilled by a checkout link alone. Feature flags
+# and meter credits require API plumbing, so they don't count toward the
+# checkout-link path of the setup-readiness check.
+_CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = frozenset(
+    t
+    for t in BenefitType
+    if t not in (BenefitType.feature_flag, BenefitType.meter_credit)
+)
 
 
 def _website_domain(website: str | None) -> str | None:
@@ -1316,12 +1332,26 @@ class OrganizationService:
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
 
+        # Run the HTTP-bound product-URL check concurrently with the DB-bound
+        # builders so the outbound fetch overlaps with the rest of the work.
+        product_url_task = asyncio.create_task(
+            self._build_product_url_check(organization)
+        )
+        product_configuration_check = await self._build_product_configuration_check(
+            session, organization
+        )
+        setup_readiness_check = await self._build_setup_readiness_check(
+            session, organization
+        )
+
         preliminary_steps = [
+            product_configuration_check,
+            setup_readiness_check,
             self._build_email_check(organization),
             self._build_socials_check(organization),
             self._build_identity_verification_check(admin_user),
             self._build_product_description_check(organization),
-            await self._build_product_url_check(organization),
+            await product_url_task,
             self._build_payout_account_check(payout_account),
         ]
 
@@ -1505,6 +1535,53 @@ class OrganizationService:
             key=key,
             status=OrganizationReviewCheckStatus.FAILED,
             reasons=[reason],
+        )
+
+    async def _build_product_configuration_check(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> OrganizationReviewCheck:
+        key = OrganizationReviewCheckKey.PRODUCT_CONFIGURATION
+        product_repository = ProductRepository.from_session(session)
+        product_count = await product_repository.count_by_organization_id(
+            organization.id, is_archived=False
+        )
+        if product_count == 0:
+            return self._not_started_check(key)
+        return self._passed_check(key)
+
+    async def _build_setup_readiness_check(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> OrganizationReviewCheck:
+        """Setup readiness is satisfied by either of:
+        - a checkout link that points at a product with at least one benefit
+          fulfillable through checkout alone, or
+        - an organization access token plus a webhook endpoint.
+
+        If only an organization access token exists (no webhook), we surface
+        a warning so the merchant knows fulfillment automation isn't visible
+        to us, but we don't block submission.
+        """
+        key = OrganizationReviewCheckKey.SETUP_READINESS
+
+        checkout_link_repository = CheckoutLinkRepository.from_session(session)
+        if await checkout_link_repository.has_with_benefit_types(
+            organization.id, _CHECKOUT_FULFILLABLE_BENEFITS
+        ):
+            return self._passed_check(key)
+
+        access_token_repository = OrganizationAccessTokenRepository.from_session(
+            session
+        )
+        if not await access_token_repository.has_by_organization_id(organization.id):
+            return self._not_started_check(key)
+
+        webhook_repository = WebhookEndpointRepository.from_session(session)
+        if await webhook_repository.has_by_organization_id(organization.id):
+            return self._passed_check(key)
+        return OrganizationReviewCheck(
+            key=key,
+            status=OrganizationReviewCheckStatus.WARNING,
+            reasons=[OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING],
         )
 
     async def submit_appeal(

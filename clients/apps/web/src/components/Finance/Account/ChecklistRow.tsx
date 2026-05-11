@@ -109,7 +109,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               transition={{ duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
               style={{ overflow: 'hidden' }}
             >
-              <Box paddingTop="m">{renderSection({ organization })}</Box>
+              <Box paddingTop="m">{renderSection({ organization, step })}</Box>
             </motion.div>
           )}
         </AnimatePresence>

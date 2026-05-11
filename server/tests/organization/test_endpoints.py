@@ -966,6 +966,8 @@ class TestGetReview:
         json = response.json()
 
         assert [step["key"] for step in json["preliminary_steps"]] == [
+            "product_configuration",
+            "setup_readiness",
             "identity.email",
             "identity.social_links",
             "identity.stripe_identity_verification",

@@ -70,3 +70,16 @@ class OrganizationAccessTokenRepository(
             )
         )
         return count or 0
+
+    async def has_by_organization_id(self, organization_id: UUID) -> bool:
+        """Whether the organization has any active access token."""
+        statement = (
+            sql.select(OrganizationAccessToken.id)
+            .where(
+                OrganizationAccessToken.organization_id == organization_id,
+                OrganizationAccessToken.is_deleted.is_(False),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None

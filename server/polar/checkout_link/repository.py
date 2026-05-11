@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -11,7 +12,15 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import CheckoutLink, CheckoutLinkProduct, Organization, Product
+from polar.models import (
+    Benefit,
+    CheckoutLink,
+    CheckoutLinkProduct,
+    Organization,
+    Product,
+    ProductBenefit,
+)
+from polar.models.benefit import BenefitType
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
@@ -73,6 +82,35 @@ class CheckoutLinkRepository(
             CheckoutLink.organization_id == organization_id
         )
         return await self.count(statement)
+
+    async def has_with_benefit_types(
+        self, organization_id: UUID, benefit_types: Iterable[BenefitType]
+    ) -> bool:
+        """Whether the organization has any live checkout link pointing at a
+        live product that grants at least one benefit of the given types."""
+        statement = (
+            select(CheckoutLink.id)
+            .join(
+                CheckoutLinkProduct,
+                CheckoutLinkProduct.checkout_link_id == CheckoutLink.id,
+            )
+            .join(Product, Product.id == CheckoutLinkProduct.product_id)
+            .join(
+                ProductBenefit,
+                ProductBenefit.product_id == CheckoutLinkProduct.product_id,
+            )
+            .join(Benefit, Benefit.id == ProductBenefit.benefit_id)
+            .where(
+                CheckoutLink.organization_id == organization_id,
+                CheckoutLink.deleted_at.is_(None),
+                Product.deleted_at.is_(None),
+                Benefit.deleted_at.is_(None),
+                Benefit.type.in_(list(benefit_types)),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None
 
     async def archive_product(self, product_id: UUID) -> None:
         statement = (

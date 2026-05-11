@@ -66,7 +66,7 @@ export const LicenseKeyBenefitGrant = ({
 
   if (isLoading) {
     // TODO: Style me
-    return <div translate="no">{t('checkout.benefits.licenseKey.loading')}</div>
+    return <div>{t('checkout.benefits.licenseKey.loading')}</div>
   }
 
   if (!licenseKey) {
@@ -74,7 +74,7 @@ export const LicenseKeyBenefitGrant = ({
   }
 
   return (
-    <div translate="no" className="flex w-full flex-col gap-y-6">
+    <div className="flex w-full flex-col gap-y-6">
       <LicenseKey api={api} licenseKey={licenseKey} locale={locale} />
     </div>
   )

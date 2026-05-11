@@ -10,7 +10,7 @@ export default async function CheckoutLayout({
   children: React.ReactNode
 }) {
   return (
-    <>
+    <div translate="no">
       <link
         rel="preload"
         href="https://js.stripe.com/basil/stripe.js"
@@ -38,6 +38,6 @@ export default async function CheckoutLayout({
         crossOrigin=""
       />
       {children}
-    </>
+    </div>
   )
 }

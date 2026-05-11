@@ -178,10 +178,7 @@ export const CheckoutConfirmation = ({
   }, [checkout.status, maxWaitingTimeMs, updateCheckout])
 
   return (
-    <div
-      translate="no"
-      className="flex min-h-screen items-center justify-center p-4"
-    >
+    <div className="flex min-h-screen items-center justify-center p-4">
       <ShadowBox className="flex w-full max-w-xl flex-col items-center justify-between gap-y-12 p-8 md:p-16">
         <div className="flex w-full max-w-md flex-col items-center gap-y-8 text-center">
           <Avatar

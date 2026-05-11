@@ -50,8 +50,17 @@ const findEscalationType = (
     if (message.role !== 'assistant') continue
     for (const part of message.parts) {
       if (part.type !== 'tool-escalateToHuman') continue
-      const input = (part as { input?: { type?: unknown } }).input
-      return isFeedbackType(input?.type) ? input.type : 'question'
+      const typedPart = part as {
+        state?: unknown
+        input?: { type?: unknown }
+      }
+      // Wait for the tool input to finish streaming — a partial `input.type`
+      // would mount EscalationCard with the 'question' fallback, which
+      // useState then locks in even after the real type arrives.
+      if (typedPart.state === 'input-streaming') continue
+      return isFeedbackType(typedPart.input?.type)
+        ? typedPart.input.type
+        : 'question'
     }
   }
   return null

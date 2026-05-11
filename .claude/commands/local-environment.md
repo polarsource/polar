@@ -62,14 +62,13 @@ dev docker logs web
 
 ### Service URLs
 
-The CLI prints service URLs on startup. Ports are offset by instance × 100.
+The CLI prints service URLs on startup. Ports are offset by instance × 100 for app services. Shared infrastructure (PostgreSQL, Redis, MinIO) is accessed via `dev docker exec <service>` commands.
 
 | Service | Instance 0 | Instance 1 | Instance 2 |
 |---------|------------|------------|------------|
 | Web | http://localhost:3000 | http://localhost:3100 | http://localhost:3200 |
 | API | http://localhost:8000 | http://localhost:8100 | http://localhost:8200 |
 | API Docs | http://localhost:8000/docs | http://localhost:8100/docs | http://localhost:8200/docs |
-| MinIO Console | http://localhost:9001 | http://localhost:9101 | http://localhost:9201 |
 
 ### Shell Access
 

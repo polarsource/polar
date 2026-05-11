@@ -10,25 +10,27 @@ tags: architecture, services, infrastructure
 
 ### db (PostgreSQL 15.1)
 
-- **Purpose:** Primary database
-- **Port:** 5432
+- **Purpose:** Primary database (shared infrastructure)
+- **Port:** No host port (access via `dev docker exec db`)
 - **Credentials:** polar/polar
 - **Volume:** postgres_data
 - **Health check:** pg_isready (2s interval)
+- **Per-instance:** Each instance gets its own database `polar_dev_<N>`
 
 ### redis (Redis Alpine)
 
-- **Purpose:** Cache and job queue backend
-- **Port:** 6379
+- **Purpose:** Cache and job queue backend (shared infrastructure)
+- **Port:** No host port (access via `dev docker exec redis`)
 - **Health check:** redis-cli ping
+- **Per-instance:** Each instance uses its own DB index
 
 ### minio (S3-Compatible Storage)
 
-- **Purpose:** File storage
-- **Ports:** 9000 (API), 9001 (Console)
-- **Credentials:** polar/polarpolar
+- **Purpose:** File storage (shared infrastructure)
+- **Ports:** No host ports (access via `dev docker exec minio`)
+- **Credentials:** polar-development/polar123456789
 - **Volume:** minio_data
-- **Buckets:** polar-s3, polar-s3-public
+- **Per-instance:** Each instance gets its own bucket pair `polar-s3-<N>`, `polar-s3-public-<N>`
 
 ## Application Services
 
@@ -64,15 +66,15 @@ tags: architecture, services, infrastructure
 
 ### prometheus
 
-- **Purpose:** Metrics collection
-- **Port:** 9090
+- **Purpose:** Metrics collection (shared infrastructure)
+- **Port:** No host port (access via `dev docker exec prometheus`)
 - **Retention:** 1 day
 - **Enable:** --monitoring flag
 
 ### grafana
 
-- **Purpose:** Dashboards
-- **Port:** 3001
+- **Purpose:** Dashboards (shared infrastructure)
+- **Port:** No host port (access via `dev docker exec grafana`)
 - **Credentials:** polar/polar
 - **Enable:** --monitoring flag
 

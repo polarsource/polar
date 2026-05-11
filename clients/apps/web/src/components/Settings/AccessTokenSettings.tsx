@@ -2,7 +2,6 @@
 
 import {
   useDeletePersonalAccessToken,
-  useListOrganizations,
   usePersonalAccessTokens,
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -21,7 +20,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@polar-sh/ui/components/ui/alert-dialog'
-import Link from 'next/link'
 import { useCallback } from 'react'
 import { toast } from '../Toast/use-toast'
 
@@ -120,26 +118,22 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
 
 const AccessTokensSettings = () => {
   const tokens = usePersonalAccessTokens()
-  const { data: organizations } = useListOrganizations({})
+
   return (
     <div className="flex w-full flex-col gap-4">
       <div className="dark:bg-polar-800 dark:text-polar-500 flex flex-col gap-2 rounded-2xl bg-gray-100 p-6 text-sm text-gray-500">
-        <h3 className="text-lg text-black dark:text-white">
+        <h3 className="text-base font-medium text-black dark:text-white">
           Access tokens have moved
         </h3>
         <p>
-          We no longer recommend to use Personal Access Tokens, but rather{' '}
-          <strong>Organization Access Tokens</strong>. They work the same, but
-          only have access to one organization, which allows you to omit{' '}
-          <code className="">organization_id</code> in API calls.
+          Personal access tokens can no longer be created. Going forward, use{' '}
+          <strong className="text-gray-700 dark:text-white">
+            Organization access tokens
+          </strong>
+          . They work the same, but are scoped to a single organization, so{' '}
+          <code className="text-[13px]">organization_id</code> can be omitted in
+          API calls.
         </p>
-        <Link
-          href={`/dashboard/${organizations?.items[0].slug}/settings#developers`}
-        >
-          <Button variant="link" className="p-0">
-            Create Token
-          </Button>
-        </Link>
       </div>
       <ListGroup>
         {tokens.data?.items && tokens.data.items.length > 0 ? (

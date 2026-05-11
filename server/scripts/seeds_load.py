@@ -17,6 +17,10 @@ from polar.auth.scope import Scope
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.strategies.custom.schemas import BenefitCustomCreate
 from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesCreate
+from polar.benefit.strategies.feature_flag.schemas import (
+    BenefitFeatureFlagCreate,
+    BenefitFeatureFlagCreateProperties,
+)
 
 # Import tasks to register all dramatiq actors
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
@@ -83,6 +87,7 @@ from polar.product.schemas import (
     ProductCreateOneTime,
     ProductCreateRecurring,
     ProductPriceFixedCreate,
+    ProductPriceFreeCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceSeatTier,
@@ -93,6 +98,12 @@ from polar.redis import Redis, create_redis
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
+from scripts.seed_benefits import (
+    BENEFITS as POLAR_SELF_BENEFITS,
+)
+from scripts.seed_benefits import (
+    PRODUCTS as POLAR_SELF_PRODUCTS,
+)
 
 cli = typer.Typer(invoke_without_command=True)
 
@@ -882,6 +893,84 @@ def _build_user_cost_span_events(
     return events
 
 
+async def _seed_polar_self_billing_catalog(
+    session: AsyncSession,
+    redis: Redis,
+    organization: Organization,
+    auth_subject: AuthSubject[User],
+) -> None:
+    """Materialize the Polar self-billing benefits and tier products in the DB.
+
+    Mirrors ``scripts.seed_benefits`` but writes directly via the service layer
+    instead of going through the public HTTP API.
+    """
+    benefits_by_description: dict[str, Any] = {}
+    for benefit_data in POLAR_SELF_BENEFITS:
+        description = benefit_data["description"]
+        metadata = benefit_data["metadata"]
+        assert isinstance(description, str)
+        assert isinstance(metadata, dict)
+        benefit = await benefit_service.user_create(
+            session=session,
+            redis=redis,
+            create_schema=BenefitFeatureFlagCreate(
+                type=BenefitType.feature_flag,
+                description=description,
+                organization_id=organization.id,
+                metadata=metadata,
+                properties=BenefitFeatureFlagCreateProperties(),
+            ),
+            auth_subject=auth_subject,
+        )
+        benefits_by_description[description] = benefit
+
+    for product_data in POLAR_SELF_PRODUCTS:
+        name = product_data["name"]
+        metadata = product_data["metadata"]
+        price_amount = product_data["price_amount"]
+        benefit_descriptions = product_data["benefits"]
+        assert isinstance(name, str)
+        assert isinstance(metadata, dict)
+        assert isinstance(benefit_descriptions, list)
+        assert price_amount is None or isinstance(price_amount, int)
+
+        price_create: ProductPriceFixedCreate | ProductPriceFreeCreate
+        if price_amount is None:
+            price_create = ProductPriceFreeCreate(
+                amount_type=ProductPriceAmountType.free,
+            )
+        else:
+            price_create = ProductPriceFixedCreate(
+                amount_type=ProductPriceAmountType.fixed,
+                tax_behavior=TaxBehaviorOption.exclusive,
+                price_amount=price_amount,
+                price_currency=PresentmentCurrency.usd,
+            )
+
+        product = await product_service.create(
+            session=session,
+            create_schema=ProductCreateRecurring(
+                name=name,
+                organization_id=organization.id,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[price_create],
+                metadata=metadata,
+            ),
+            auth_subject=auth_subject,
+        )
+
+        benefit_ids = [
+            benefits_by_description[desc].id for desc in benefit_descriptions
+        ]
+        if benefit_ids:
+            await product_service.update_benefits(
+                session=session,
+                product=product,
+                benefits=benefit_ids,
+                auth_subject=auth_subject,
+            )
+
+
 async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     """Create sample data for development and testing."""
 
@@ -1480,6 +1569,13 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             await meter_service.create(
                 session=session,
                 meter_create=meter_create,
+                auth_subject=auth_subject,
+            )
+
+            await _seed_polar_self_billing_catalog(
+                session=session,
+                redis=redis,
+                organization=organization,
                 auth_subject=auth_subject,
             )
 

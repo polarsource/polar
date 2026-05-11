@@ -15,6 +15,10 @@ Usage:
     POLAR_ACCESS_TOKEN=... uv run python -m scripts.seed_benefits --env prod
 
 If you use a user (not organization) access token, pass --organization-id.
+
+The ``BENEFITS`` and ``PRODUCTS`` lists below are the source of truth for the
+Polar self-billing plan catalog and are also imported by the dev seed loader
+(``scripts.seeds_load``) to materialize the same catalog directly in the DB.
 """
 
 import asyncio

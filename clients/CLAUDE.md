@@ -62,7 +62,7 @@ arbitrary values for things the design system already defines.
 - Never use raw color hex/oklch, raw px spacing, or `dark:` variants — use the tokens.
 - Never reach for `className` on Box for properties that have a typed Box prop (padding,
   background, radius, etc.). The typed prop wins.
-- Use `<Text />` from `@polar-sh/orbit` for typography rather than tailwind text classes. Use variant "dashboard" for non-body text when adding <Text /> to Dashboard in Polar Web app.
+- Use `<Text />` from `@polar-sh/orbit` for typography rather than tailwind text classes.
 - Tailwind is only acceptable for: third-party component overrides where a className is the
   only API, one-off animations not yet expressible via Orbit, or temporary glue while
   migrating a legacy file.

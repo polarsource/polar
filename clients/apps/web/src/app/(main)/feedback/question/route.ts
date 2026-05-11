@@ -1,4 +1,5 @@
-import { getAuthenticatedUser } from '@/utils/user'
+import { getServerSideAPI } from '@/utils/client/serverside'
+import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import * as Sentry from '@sentry/nextjs'
 import {
@@ -10,6 +11,7 @@ import {
   tool,
   type UIMessage,
 } from 'ai'
+import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { ALLOWED_DASHBOARD_PATHS } from './dashboardPaths'
@@ -22,6 +24,14 @@ import {
 import { flushPostHog, wrapWithTracing } from './posthog'
 
 const MAX_STEPS = 10
+const MAX_BODY_BYTES = 256 * 1024
+const MAX_MESSAGES = 10
+
+const requestSchema = z.object({
+  messages: z.array(z.unknown()).min(1).max(MAX_MESSAGES),
+  conversationId: z.string().min(1).max(64).optional(),
+  organizationId: z.string().min(1).max(64).optional(),
+})
 
 const anthropic = createAnthropic({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
@@ -83,43 +93,52 @@ ${formattedDashboardPaths}`
 export async function POST(req: Request) {
   const user = await getAuthenticatedUser()
   if (!user) {
-    return new Response('Unauthorized', { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const mintlifyApiKey = process.env.MINTLIFY_ASSISTANT_API_KEY
-  if (!mintlifyApiKey) {
-    return new Response('Mintlify assistant not configured', { status: 503 })
+  if (!mintlifyApiKey || !process.env.PYDANTIC_AI_GATEWAY_API_KEY) {
+    return NextResponse.json(
+      { error: 'Assistant not configured' },
+      { status: 503 },
+    )
   }
 
-  if (!process.env.PYDANTIC_AI_GATEWAY_API_KEY) {
-    return new Response('AI gateway not configured', { status: 503 })
+  const raw = await req.text()
+  if (raw.length > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: 'Request too large' }, { status: 413 })
   }
 
-  let messages: UIMessage[]
-  let conversationId: string | undefined
-  let organizationId: string | undefined
+  let body: unknown
   try {
-    const body = (await req.json()) as {
-      messages: UIMessage[]
-      conversationId?: string
-      organizationId?: string
-    }
-    if (!Array.isArray(body?.messages) || body.messages.length === 0) {
-      return new Response('Invalid request', { status: 400 })
-    }
-    messages = body.messages
-    conversationId =
-      typeof body.conversationId === 'string' ? body.conversationId : undefined
-    organizationId =
-      typeof body.organizationId === 'string' ? body.organizationId : undefined
+    body = JSON.parse(raw)
   } catch {
-    return new Response('Invalid JSON', { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  const parsed = requestSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+
+  const { conversationId, organizationId } = parsed.data
+  const messages = parsed.data.messages as UIMessage[]
+
+  // Only forward `organizationId` to PostHog grouping if the caller is
+  // actually a member — otherwise users can pollute other orgs' analytics.
+  let trustedOrganizationId: string | undefined
+  if (organizationId) {
+    const api = await getServerSideAPI()
+    const userOrganizations = await getUserOrganizations(api)
+    if (userOrganizations.some((org) => org.id === organizationId)) {
+      trustedOrganizationId = organizationId
+    }
   }
 
   const sonnet = wrapWithTracing(anthropic('claude-sonnet-4-6'), {
     userId: user.id,
     conversationId,
-    organizationId,
+    organizationId: trustedOrganizationId,
   })
 
   try {
@@ -137,7 +156,6 @@ export async function POST(req: Request) {
         const results = dedupeByPath(
           await searchMintlify(mintlifyApiKey, MINTLIFY_DOMAIN, query),
         )
-        console.log('[feedback/question] search:', { query, results })
         return { query, results }
       },
     })
@@ -165,10 +183,6 @@ export async function POST(req: Request) {
             error: `Could not fetch page content for "${path}".`,
           }
         }
-        console.log('[feedback/question] fetchPageContent:', {
-          path: page.path,
-          contentPreview: page.content.slice(0, 200),
-        })
         return { ok: true as const, path: page.path, content: page.content }
       },
     })
@@ -183,13 +197,13 @@ export async function POST(req: Request) {
             'The category that best fits the user\'s message. Use "bug" when the user is reporting something broken, an error, or behavior that doesn\'t match what they expected. Use "feedback" when the user is suggesting a feature, an improvement, or sharing an opinion about the product. Use "question" for everything else, including account-specific issues (refunds, payouts, billing disputes, access) and general support questions.',
           ),
       }),
-      execute: async ({ type }) => {
-        console.log('[feedback/question] escalateToHuman:', { type })
-        return { type }
-      },
+      execute: async ({ type }) => ({ type }),
     })
 
     const modelMessages = await convertToModelMessages(messages)
+    // On the last allowed turn, restrict the toolset to `escalateToHuman` and
+    // force it — the model writes a brief handoff message before the call.
+    const forceEscalation = messages.length >= MAX_MESSAGES - 1
 
     const result = streamText({
       model: sonnet,
@@ -205,7 +219,12 @@ export async function POST(req: Request) {
         },
         ...modelMessages,
       ],
-      tools: { search, fetchPageContent, escalateToHuman },
+      tools: forceEscalation
+        ? { escalateToHuman }
+        : { search, fetchPageContent, escalateToHuman },
+      toolChoice: forceEscalation
+        ? { type: 'tool', toolName: 'escalateToHuman' }
+        : 'auto',
       stopWhen: [stepCountIs(MAX_STEPS), hasToolCall('escalateToHuman')],
       experimental_transform: smoothStream(),
       onFinish: () => flushPostHog(),
@@ -213,11 +232,7 @@ export async function POST(req: Request) {
 
     return result.toUIMessageStreamResponse()
   } catch (error) {
-    console.error('[feedback/question] handler threw:', error)
     Sentry.captureException(error)
-    return new Response(
-      `Feedback question handler failed: ${(error as Error).message}`,
-      { status: 502 },
-    )
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 502 })
   }
 }

@@ -1,6 +1,7 @@
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
@@ -14,6 +15,8 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+
+import type { ValidationStatus } from '@/app/(main)/feedback/question/validation'
 
 import { collectClientContext } from './clientContext'
 import {
@@ -55,7 +58,6 @@ export const FeedbackForm = ({
   })
 
   const { control, handleSubmit, reset } = form
-  const selectedType = useWatch({ control, name: 'type' })
 
   const submitFeedback = useSubmitFeedback()
   const apiError = submitFeedback.data?.error
@@ -88,30 +90,31 @@ export const FeedbackForm = ({
           return
         }
         const { status } = (await response.json()) as {
-          status: 'answerable' | 'unclear' | 'off_topic' | 'account_review'
+          status: ValidationStatus
         }
-        if (status === 'unclear') {
-          setValidationOutcome({
-            kind: 'rejection',
-            text: REJECTION_UNCLEAR_TEXT,
-          })
-          return
+        switch (status) {
+          case 'unclear':
+            setValidationOutcome({
+              kind: 'rejection',
+              text: REJECTION_UNCLEAR_TEXT,
+            })
+            return
+          case 'off_topic':
+            setValidationOutcome({
+              kind: 'rejection',
+              text: REJECTION_OFF_TOPIC_TEXT,
+            })
+            return
+          case 'account_review':
+            setValidationOutcome({
+              kind: 'info',
+              markdown: ACCOUNT_REVIEW_REPLY,
+            })
+            return
+          case 'answerable':
+            onAskQuestion(formData.message)
+            return
         }
-        if (status === 'off_topic') {
-          setValidationOutcome({
-            kind: 'rejection',
-            text: REJECTION_OFF_TOPIC_TEXT,
-          })
-          return
-        }
-        if (status === 'account_review') {
-          setValidationOutcome({
-            kind: 'info',
-            markdown: ACCOUNT_REVIEW_REPLY,
-          })
-          return
-        }
-        onAskQuestion(formData.message)
       } finally {
         setIsValidating(false)
       }
@@ -217,21 +220,38 @@ export const FeedbackForm = ({
         />
 
         {validationOutcome?.kind === 'rejection' && (
-          <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+          <Box
+            borderRadius="l"
+            backgroundColor="background-warning"
+            color="text-warning"
+            padding="l"
+          >
             {validationOutcome.text}
-          </div>
+          </Box>
         )}
 
         {validationOutcome?.kind === 'info' && (
-          <div className="prose prose-sm dark:prose-invert rounded-xl bg-blue-50 p-4 text-sm text-blue-900 dark:bg-blue-900/20 dark:text-blue-200 dark:text-white">
-            <MemoizedMarkdown content={validationOutcome.markdown} />
-          </div>
+          <Box
+            borderRadius="l"
+            backgroundColor="background-pending"
+            color="text-pending"
+            padding="l"
+          >
+            <div className="prose prose-sm dark:prose-invert">
+              <MemoizedMarkdown content={validationOutcome.markdown} />
+            </div>
+          </Box>
         )}
 
         {apiError && (
-          <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+          <Box
+            borderRadius="l"
+            backgroundColor="background-danger"
+            color="text-danger"
+            padding="l"
+          >
             {apiError}
-          </div>
+          </Box>
         )}
 
         <div className="flex justify-end gap-2">
@@ -260,13 +280,7 @@ export const FeedbackForm = ({
                 loading={submitFeedback.isPending || isValidating}
                 disabled={submitFeedback.isPending || isValidating}
               >
-                {submitFeedback.isPending
-                  ? 'Sending…'
-                  : isValidating
-                    ? 'Checking…'
-                    : selectedType === 'question'
-                      ? 'Ask'
-                      : 'Send'}
+                {submitFeedback.isPending ? 'Sending…' : 'Send'}
               </Button>
             </>
           )}

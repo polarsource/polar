@@ -1,6 +1,8 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -13,9 +15,8 @@ import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { useState } from 'react'
 
 interface EscalationCardProps {
-  initialSummary: string
   initialType: schemas['FeedbackType']
-  onSubmit: (summary: string, type: schemas['FeedbackType']) => void
+  onSubmit: (note: string, type: schemas['FeedbackType']) => void
   onCancel: () => void
   isSubmitting: boolean
 }
@@ -27,30 +28,45 @@ const TYPE_OPTIONS: { value: schemas['FeedbackType']; label: string }[] = [
 ]
 
 export const EscalationCard = ({
-  initialSummary,
   initialType,
   onSubmit,
   onCancel,
   isSubmitting,
 }: EscalationCardProps) => {
-  const [summary, setSummary] = useState(initialSummary)
   const [type, setType] = useState<schemas['FeedbackType']>(initialType)
+  const [note, setNote] = useState('')
 
   return (
-    <div className="dark:border-polar-700 flex flex-col gap-3 rounded-xl border border-gray-200 p-4">
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium">Send to the Polar team</p>
-        <p className="dark:text-polar-400 text-xs text-gray-500">
-          The full transcript is included automatically.
+    <Box
+      display="flex"
+      flexDirection="column"
+      rowGap="m"
+      padding="l"
+      borderRadius="l"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+    >
+      <Box display="flex" flexDirection="column" rowGap="xs">
+        <h3 className="text-sm font-medium">Send to the Polar team</h3>
+        <p className="dark:text-polar-500 text-sm text-gray-500">
+          The full transcript is included automatically. Add anything else
+          you&apos;d like to share below.
         </p>
-      </div>
+      </Box>
       <TextArea
-        value={summary}
-        onChange={(event) => setSummary(event.target.value)}
-        rows={5}
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
+        placeholder="Anything else you want to add?"
+        rows={4}
         disabled={isSubmitting}
       />
-      <div className="flex items-center justify-between gap-2">
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="between"
+        columnGap="s"
+      >
         <Select
           value={type}
           onValueChange={(value) => setType(value as schemas['FeedbackType'])}
@@ -67,7 +83,7 @@ export const EscalationCard = ({
             ))}
           </SelectContent>
         </Select>
-        <div className="flex gap-2">
+        <Box display="flex" columnGap="s">
           <Button
             type="button"
             variant="ghost"
@@ -78,14 +94,14 @@ export const EscalationCard = ({
           </Button>
           <Button
             type="button"
-            onClick={() => onSubmit(summary, type)}
+            onClick={() => onSubmit(note, type)}
             loading={isSubmitting}
-            disabled={isSubmitting || !summary.trim()}
+            disabled={isSubmitting}
           >
             Send
           </Button>
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

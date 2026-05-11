@@ -2,6 +2,7 @@
 
 import { useChat } from '@ai-sdk/react'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport, type UIMessage } from 'ai'
@@ -9,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { ChatMessageBubble } from './ChatMessageBubble'
 import { EscalationCard } from './EscalationCard'
+import { buildTranscript } from './messages'
 
 interface QuestionFlowProps {
   question: string
@@ -18,31 +20,6 @@ interface QuestionFlowProps {
   onCancel: () => void
   isEscalating: boolean
 }
-
-type Escalation = {
-  type: schemas['FeedbackType']
-}
-
-const extractText = (message: UIMessage): string =>
-  message.parts
-    .filter(
-      (part): part is { type: 'text'; text: string } =>
-        part.type === 'text' &&
-        typeof (part as { text?: unknown }).text === 'string',
-    )
-    .map((part) => part.text)
-    .join('')
-
-const buildTranscript = (messages: UIMessage[]): string =>
-  messages
-    .map((message) => {
-      const text = extractText(message).trim()
-      if (!text) return null
-      const speaker = message.role === 'user' ? 'User' : 'Assistant'
-      return `${speaker}: ${text}`
-    })
-    .filter((line): line is string => line !== null)
-    .join('\n\n')
 
 const isPendingToolState = (state: unknown): boolean =>
   state === 'input-streaming' || state === 'input-available'
@@ -66,16 +43,15 @@ const getStreamingStatus = (messages: UIMessage[]): string => {
 const isFeedbackType = (value: unknown): value is schemas['FeedbackType'] =>
   value === 'question' || value === 'feedback' || value === 'bug'
 
-const findEscalation = (messages: UIMessage[]): Escalation | null => {
+const findEscalationType = (
+  messages: UIMessage[],
+): schemas['FeedbackType'] | null => {
   for (const message of messages) {
     if (message.role !== 'assistant') continue
     for (const part of message.parts) {
       if (part.type !== 'tool-escalateToHuman') continue
       const input = (part as { input?: { type?: unknown } }).input
-      const type: schemas['FeedbackType'] = isFeedbackType(input?.type)
-        ? input.type
-        : 'question'
-      return { type }
+      return isFeedbackType(input?.type) ? input.type : 'question'
     }
   }
   return null
@@ -119,7 +95,7 @@ export const QuestionFlow = ({
     scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
-  const escalation = useMemo(() => findEscalation(messages), [messages])
+  const escalationType = useMemo(() => findEscalationType(messages), [messages])
   const isStreaming = status === 'submitted' || status === 'streaming'
   const streamingStatus = useMemo(
     () => getStreamingStatus(messages),
@@ -128,10 +104,10 @@ export const QuestionFlow = ({
 
   const handleSend = useCallback(() => {
     const text = draft.trim()
-    if (!text || isStreaming || escalation !== null) return
+    if (!text || isStreaming || escalationType !== null) return
     sendMessage({ text })
     setDraft('')
-  }, [draft, isStreaming, escalation, sendMessage])
+  }, [draft, isStreaming, escalationType, sendMessage])
 
   const handleReset = useCallback(() => {
     setMessages([])
@@ -151,37 +127,64 @@ export const QuestionFlow = ({
   )
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 pb-8">
-      <div
+    <Box
+      display="flex"
+      flexDirection="column"
+      rowGap="l"
+      flex={1}
+      minHeight={0}
+      paddingBottom="2xl"
+    >
+      <Box
         ref={scrollerRef}
-        className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto"
+        display="flex"
+        flexDirection="column"
+        rowGap="l"
+        overflowY="auto"
+        flex={1}
+        minHeight={0}
       >
         {messages.map((message) => (
           <ChatMessageBubble key={message.id} message={message} />
         ))}
         {isStreaming && (
-          <div className="dark:text-polar-400 flex items-center gap-2 text-sm text-gray-400">
+          <Box
+            display="flex"
+            alignItems="center"
+            columnGap="s"
+            color="text-tertiary"
+          >
             <span className="dark:bg-polar-400 h-2 w-2 animate-pulse rounded-full bg-gray-400" />
-            {streamingStatus}
-          </div>
+            <span className="text-sm">{streamingStatus}</span>
+          </Box>
         )}
         {error && (
-          <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            We could not load an answer right now. Try again or close this
-            window.
-          </div>
+          <Box
+            borderRadius="l"
+            backgroundColor="background-warning"
+            borderWidth={1}
+            borderStyle="solid"
+            borderColor="border-warning"
+            padding="l"
+            color="text-warning"
+          >
+            <p className="text-sm">
+              We could not load an answer right now. Try again or close this
+              window.
+            </p>
+          </Box>
         )}
-      </div>
+      </Box>
 
-      {escalation !== null ? (
+      {escalationType !== null ? (
         <EscalationCard
-          initialType={escalation.type}
+          initialType={escalationType}
           onSubmit={handleEscalateSubmit}
           onCancel={onCancel}
           isSubmitting={isEscalating}
         />
       ) : (
-        <div className="flex flex-col gap-2">
+        <Box display="flex" flexDirection="column" rowGap="s">
           <TextArea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -201,7 +204,7 @@ export const QuestionFlow = ({
               }
             }}
           />
-          <div className="flex justify-end gap-2">
+          <Box display="flex" justifyContent="end" columnGap="s">
             <Button
               type="button"
               variant="ghost"
@@ -217,9 +220,9 @@ export const QuestionFlow = ({
             >
               Send
             </Button>
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   )
 }

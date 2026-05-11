@@ -1,5 +1,7 @@
-import { getAuthenticatedUser } from '@/utils/user'
+import { getServerSideAPI } from '@/utils/client/serverside'
+import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import * as Sentry from '@sentry/nextjs'
+import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { validateFeedbackQuestion } from '../validation'
@@ -15,35 +17,48 @@ const requestSchema = z.object({
 export async function POST(req: Request) {
   const user = await getAuthenticatedUser()
   if (!user) {
-    return new Response('Unauthorized', { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (!process.env.PYDANTIC_AI_GATEWAY_API_KEY) {
-    return new Response('AI gateway not configured', { status: 503 })
+    return NextResponse.json(
+      { error: 'Assistant not configured' },
+      { status: 503 },
+    )
   }
 
   let body: unknown
   try {
     body = await req.json()
   } catch {
-    return new Response('Invalid JSON', { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   const parsed = requestSchema.safeParse(body)
   if (!parsed.success) {
-    return new Response('Invalid request', { status: 400 })
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+
+  let trustedOrganizationId: string | undefined
+  if (parsed.data.organizationId) {
+    const api = await getServerSideAPI()
+    const userOrganizations = await getUserOrganizations(api)
+    if (
+      userOrganizations.some((org) => org.id === parsed.data.organizationId)
+    ) {
+      trustedOrganizationId = parsed.data.organizationId
+    }
   }
 
   try {
     const status = await validateFeedbackQuestion(parsed.data.message.trim(), {
       userId: user.id,
       conversationId: parsed.data.conversationId,
-      organizationId: parsed.data.organizationId,
+      organizationId: trustedOrganizationId,
     })
-    return Response.json({ status })
+    return NextResponse.json({ status })
   } catch (error) {
-    console.error('[feedback/question/validate] threw:', error)
     Sentry.captureException(error)
-    return new Response('Validation failed', { status: 502 })
+    return NextResponse.json({ error: 'Validation failed' }, { status: 502 })
   }
 }

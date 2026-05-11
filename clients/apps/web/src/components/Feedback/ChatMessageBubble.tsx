@@ -1,7 +1,10 @@
 'use client'
 
 import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
+import { Box } from '@polar-sh/orbit/Box'
 import type { UIMessage } from 'ai'
+
+import { extractText } from './messages'
 
 const POLAR_DOCS_BASE = 'https://polar.sh/docs/'
 
@@ -28,30 +31,26 @@ const normalizeAssistantLinks = (text: string): string =>
     },
   )
 
-const extractText = (message: UIMessage): string =>
-  message.parts
-    .filter(
-      (part): part is { type: 'text'; text: string } =>
-        part.type === 'text' &&
-        typeof (part as { text?: unknown }).text === 'string',
-    )
-    .map((part) => part.text)
-    .join('')
-
 export const ChatMessageBubble = ({ message }: { message: UIMessage }) => {
   const text = extractText(message)
   if (!text) return null
 
   if (message.role === 'user') {
     return (
-      <div className="dark:bg-polar-800 self-end rounded-2xl bg-gray-100 px-4 py-2 text-sm">
-        {text}
-      </div>
+      <Box
+        alignSelf="end"
+        backgroundColor="background-card"
+        borderRadius="l"
+        paddingHorizontal="l"
+        paddingVertical="s"
+      >
+        <p className="text-sm">{text}</p>
+      </Box>
     )
   }
 
   return (
-    <div className="prose prose-sm dark:prose-invert dark:text-white">
+    <div className="prose prose-sm dark:prose-invert">
       <MemoizedMarkdown content={normalizeAssistantLinks(text)} />
     </div>
   )

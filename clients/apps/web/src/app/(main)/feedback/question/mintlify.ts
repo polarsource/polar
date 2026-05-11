@@ -35,40 +35,49 @@ export const dedupeByPath = (results: MintlifySearchResult[]) => {
   return out
 }
 
-export const searchMintlify = async (
+const mintlifyPost = async <T>(
   apiKey: string,
   domain: string,
-  query: string,
-): Promise<MintlifySearchResult[]> => {
+  endpoint: 'search' | 'page',
+  body: Record<string, unknown>,
+): Promise<T | null> => {
   try {
     const response = await fetch(
-      `https://api.mintlify.com/discovery/v1/search/${domain}`,
+      `https://api.mintlify.com/discovery/v1/${endpoint}/${domain}`,
       {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          query,
-          scoreThreshold: SCORE_THRESHOLD,
-          pageSize: SEARCH_PAGE_SIZE,
-        }),
+        body: JSON.stringify(body),
       },
     )
     if (!response.ok) {
-      const text = await response.text().catch(() => '')
       console.error(
-        `[feedback/question] Mintlify search ${response.status} for "${query}": ${text.slice(0, 300)}`,
+        `[feedback/question] Mintlify ${endpoint} ${response.status}`,
       )
-      return []
+      return null
     }
-    const data = (await response.json()) as MintlifySearchResult[]
-    return Array.isArray(data) ? data : []
+    return (await response.json()) as T
   } catch (error) {
-    console.error('[feedback/question] Mintlify search threw:', error)
-    return []
+    console.error(`[feedback/question] Mintlify ${endpoint} threw:`, error)
+    return null
   }
+}
+
+export const searchMintlify = async (
+  apiKey: string,
+  domain: string,
+  query: string,
+): Promise<MintlifySearchResult[]> => {
+  const data = await mintlifyPost<MintlifySearchResult[]>(
+    apiKey,
+    domain,
+    'search',
+    { query, scoreThreshold: SCORE_THRESHOLD, pageSize: SEARCH_PAGE_SIZE },
+  )
+  return Array.isArray(data) ? data : []
 }
 
 export const fetchMintlifyPageContent = async (
@@ -76,30 +85,9 @@ export const fetchMintlifyPageContent = async (
   domain: string,
   path: string,
 ): Promise<MintlifyPageContent | null> => {
-  try {
-    const response = await fetch(
-      `https://api.mintlify.com/discovery/v1/page/${domain}`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ path }),
-      },
-    )
-    if (!response.ok) {
-      const text = await response.text().catch(() => '')
-      console.error(
-        `[feedback/question] Mintlify page ${response.status} for "${path}": ${text.slice(0, 300)}`,
-      )
-      return null
-    }
-    const data = (await response.json()) as MintlifyPageContent
-    if (!data?.content || !data?.path) return null
-    return data
-  } catch (error) {
-    console.error('[feedback/question] Mintlify page fetch threw:', error)
-    return null
-  }
+  const data = await mintlifyPost<MintlifyPageContent>(apiKey, domain, 'page', {
+    path,
+  })
+  if (!data?.content || !data?.path) return null
+  return data
 }

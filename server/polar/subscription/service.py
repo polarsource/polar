@@ -2233,11 +2233,13 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         *,
+        product: Product | None = None,
         delay: int | None = None,
     ) -> None:
-        product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(subscription.product_id)
-        assert product is not None
+        if product is None:
+            product_repository = ProductRepository.from_session(session)
+            product = await product_repository.get_by_id(subscription.product_id)
+            assert product is not None
 
         if subscription.is_incomplete():
             return
@@ -2303,6 +2305,7 @@ class SubscriptionService:
             await self.enqueue_benefits_grants(
                 session,
                 subscription,
+                product=product,
                 delay=calculate_delay(index),
             )
             index += 1

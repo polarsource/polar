@@ -207,13 +207,30 @@ def _generate_seats_subscription_update(
     old_base_amount = seat_price.calculate_amount(old_seats)
     new_base_amount = seat_price.calculate_amount(new_seats)
 
+    # Apply the discount to the old and new effective amounts, not to the delta.
+    # Computing the discount on the delta double-counts fixed discounts: a $10
+    # fixed discount applies once to the subscription total, not again to every
+    # seat change.
+    old_discount_amount = 0
+    new_discount_amount = 0
+    if subscription.discount and subscription.discount.is_applicable(
+        subscription.product, subscription.currency
+    ):
+        old_discount_amount = subscription.discount.get_discount_amount(
+            old_base_amount, subscription.currency
+        )
+        new_discount_amount = subscription.discount.get_discount_amount(
+            new_base_amount, subscription.currency
+        )
+
     start_timestamp = subscription_update.applies_at
     end_timestamp = subscription.current_period_end
 
     if subscription_update.proration_behavior == SubscriptionProrationBehavior.reset:
         # In reset mode, we don't prorate the amount, we just charge the full amount of the new seats immediately.
         proration_factor = Decimal(1)
-        base_amount_delta = new_base_amount
+        amount_delta = new_base_amount - new_discount_amount
+        entry_discount_amount = new_discount_amount
 
         # Resets the cycle
         new_cycle_start = subscription_update.applies_at
@@ -228,24 +245,12 @@ def _generate_seats_subscription_update(
             subscription.current_period_end,
             subscription_update.applies_at,
         )
-        base_amount_delta = new_base_amount - old_base_amount
-
-    # Calculate discount on the delta amount
-    discount_amount = 0
-    if subscription.discount and subscription.discount.is_applicable(
-        subscription.product, subscription.currency
-    ):
-        discount_amount = subscription.discount.get_discount_amount(
-            abs(base_amount_delta), subscription.currency
-        )
-
-    # Calculate the net amount delta after discount
-    if base_amount_delta > 0:
-        # Increase: reduce the charge by discount
-        amount_delta = base_amount_delta - discount_amount
-    else:
-        # Decrease: reduce the credit by discount
-        amount_delta = base_amount_delta + discount_amount
+        old_effective = old_base_amount - old_discount_amount
+        new_effective = new_base_amount - new_discount_amount
+        amount_delta = new_effective - old_effective
+        # The portion of the delta attributable to the discount is how much the
+        # discount itself changed between the old and new effective amounts.
+        entry_discount_amount = abs(new_discount_amount - old_discount_amount)
 
     prorated_amount = int(Decimal(amount_delta) * proration_factor)
 
@@ -262,8 +267,10 @@ def _generate_seats_subscription_update(
 
     # Calculate prorated discount amount
     prorated_discount_amount = 0
-    if discount_amount > 0:
-        prorated_discount_amount = int(Decimal(discount_amount) * proration_factor)
+    if entry_discount_amount > 0:
+        prorated_discount_amount = int(
+            Decimal(entry_discount_amount) * proration_factor
+        )
 
     billing_entry = BillingEntry(
         start_timestamp=start_timestamp,
@@ -275,7 +282,7 @@ def _generate_seats_subscription_update(
         discount_amount=prorated_discount_amount
         if prorated_discount_amount > 0
         else None,
-        discount=subscription.discount if discount_amount > 0 else None,
+        discount=subscription.discount if entry_discount_amount > 0 else None,
         currency=subscription.currency,
         direction=direction,
         type=entry_type,

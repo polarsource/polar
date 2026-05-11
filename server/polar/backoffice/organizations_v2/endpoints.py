@@ -458,6 +458,8 @@ async def list_organizations(
 
     if first_reviews == "true":
         stmt = stmt.where(Organization.is_first_review.is_(True))
+    elif first_reviews == "false":
+        stmt = stmt.where(Organization.is_first_review.is_(False))
 
     stmt = apply_deleted_filter(stmt, deleted_filter)
 

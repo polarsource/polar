@@ -414,25 +414,22 @@ class OrganizationListView:
 
         # Search and filters section
         with tag.div(classes="my-6"):
-            with tag.form(
-                id="filter-form",
-                classes="space-y-4",
-                hx_get=str(request.url_for("organizations:list")),
-                hx_trigger="submit, change from:.filter-select",
-                hx_target="#org-list",
-                hx_push_url="true",
-            ):
-                # Preserve the active status tab across filter submissions.
-                # Without this, changing any filter drops the `status` query
-                # param and the listing falls back to the default view.
-                if status_filter is not None:
-                    with tag.input(
-                        type="hidden",
-                        name="status",
-                        value=status_filter.value,
-                    ):
-                        pass
+            # Preserve `status` via hx-vals, not a hidden input: with
+            # `change from:.filter-select` HTMX may serialize from the
+            # select and drop sibling form inputs, leaking Snoozed orgs
+            # into the Review tab.
+            form_attrs: dict[str, Any] = {
+                "id": "filter-form",
+                "classes": "space-y-4",
+                "hx_get": str(request.url_for("organizations:list")),
+                "hx_trigger": "submit, change from:.filter-select",
+                "hx_target": "#org-list",
+                "hx_push_url": "true",
+            }
+            if status_filter is not None:
+                form_attrs["hx_vals"] = json.dumps({"status": status_filter.value})
 
+            with tag.form(**form_attrs):
                 # Search bar with filter toggle
                 with tag.div(classes="flex gap-3"):
                     # Search input
@@ -629,13 +626,18 @@ class OrganizationListView:
                                         classes="select select-bordered select-sm w-full filter-select",
                                         name="first_reviews",
                                     ):
-                                        with tag.option(value=""):
-                                            text("All")
-                                        first_review_attrs = {"value": "true"}
-                                        if selected_first_reviews == "true":
-                                            first_review_attrs["selected"] = ""
-                                        with tag.option(**first_review_attrs):
-                                            text("First Reviews")
+                                        for opt_value, opt_label in (
+                                            ("", "All reviews"),
+                                            ("true", "Only first reviews"),
+                                            ("false", "Exclude first reviews"),
+                                        ):
+                                            opt_attrs = {"value": opt_value}
+                                            if (
+                                                selected_first_reviews or ""
+                                            ) == opt_value:
+                                                opt_attrs["selected"] = ""
+                                            with tag.option(**opt_attrs):
+                                                text(opt_label)
 
         self._render_org_list(
             request,

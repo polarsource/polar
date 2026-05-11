@@ -28,6 +28,7 @@ const HEADING_BASE = 'text-black dark:text-white'
 const textVariants = cva('', {
   variants: {
     variant: {
+      dashboard: 'text-sm',
       body: 'text-base leading-relaxed',
       label: 'text-xs font-medium',
       caption: 'text-xs leading-snug',

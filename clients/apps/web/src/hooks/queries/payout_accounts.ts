@@ -33,6 +33,7 @@ export const useDeletePayoutAccount = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] })
       queryClient.invalidateQueries({ queryKey: ['payoutAccounts'] })
+      queryClient.invalidateQueries({ queryKey: ['organizationReviewState'] })
     },
   })
 }
@@ -48,6 +49,9 @@ export const useSetOrganizationPayoutAccount = (organizationId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] })
       queryClient.invalidateQueries({ queryKey: ['payoutAccounts'] })
+      queryClient.invalidateQueries({
+        queryKey: ['organizationReviewState', organizationId],
+      })
     },
   })
 }

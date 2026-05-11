@@ -76,7 +76,7 @@ export const StatusBlock = ({
         rowGap="xs"
         alignItems="center"
       >
-        <Text variant="label" color="default">
+        <Text variant="body" color="default">
           {title}
         </Text>
         {description && (
@@ -87,7 +87,7 @@ export const StatusBlock = ({
           </Box>
         )}
       </Box>
-      {action && <Box marginTop="xs">{action}</Box>}
+      {action && <Box marginTop="m">{action}</Box>}
     </Box>
   )
 }

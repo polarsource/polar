@@ -5,12 +5,7 @@ import { Modal } from '@/components/Modal'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
+
 import { ISODuration } from '@/utils/duration'
 import React, { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
@@ -114,20 +109,16 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </div>
           {summary &&
           summary.available_balance.amount !== summary.balance.amount ? (
-            <div className="dark:text-polar-500 flex items-center gap-2 text-gray-500">
-              <span>Total balance: {totalBalance}</span>
+            <div className="dark:text-polar-500 space-y-1 text-gray-500">
+              <div>Total balance: {totalBalance}</div>
               {hasDelay && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoOutlined fontSize="small" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>
-                      Transactions are available for withdrawal after{' '}
-                      {delayLabel}.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
+                <div>
+                  Available in {delayLabel}:{' '}
+                  {formatCurrency('accounting')(
+                    summary.balance.amount - summary.available_balance.amount,
+                    summary.balance.currency,
+                  )}
+                </div>
               )}
             </div>
           ) : null}

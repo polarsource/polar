@@ -76,13 +76,6 @@ class CheckoutLinkRepository(
             CheckoutLink.organization_id.in_(org_ids)
         )
 
-    async def count_by_organization_id(self, organization_id: UUID) -> int:
-        """Count checkout links for a specific organization."""
-        statement = self.get_base_statement().where(
-            CheckoutLink.organization_id == organization_id
-        )
-        return await self.count(statement)
-
     async def has_with_benefit_types(
         self, organization_id: UUID, benefit_types: Iterable[BenefitType]
     ) -> bool:

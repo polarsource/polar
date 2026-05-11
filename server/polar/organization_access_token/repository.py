@@ -58,19 +58,6 @@ class OrganizationAccessTokenRepository(
             OrganizationAccessToken.organization_id.in_(org_ids)
         )
 
-    async def count_by_organization_id(
-        self,
-        organization_id: UUID,
-    ) -> int:
-        """Count active organization access tokens for an organization."""
-        count = await self.session.scalar(
-            sql.select(sql.func.count(OrganizationAccessToken.id)).where(
-                OrganizationAccessToken.organization_id == organization_id,
-                OrganizationAccessToken.is_deleted.is_(False),
-            )
-        )
-        return count or 0
-
     async def has_by_organization_id(self, organization_id: UUID) -> bool:
         """Whether the organization has any active access token."""
         statement = (

@@ -82,7 +82,7 @@ from polar.worker import JobQueueManager, enqueue_job
 from polar.redis import create_redis
 
 async def main():
-    redis = await create_redis(\"worker\")
+    redis = create_redis(\"worker\")
     async with JobQueueManager.open(dramatiq.get_broker(), redis):
         enqueue_job(\"<actor.name>\", *args)
 

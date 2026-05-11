@@ -12,18 +12,12 @@ async def can_manage(
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> PolicyResult:
-    """Can the subject invite/remove/change members?
-
-    `members:invite` is used as a representative permission — admin and
-    owner share the full member-management set, so checking any one of
-    `members:invite`, `members:remove`, `members:set_role` gives the
-    same answer in this iteration.
-    """
+    """Can the subject invite or remove members?"""
     return await _require_permission(
         session,
         auth_subject,
         organization,
-        permission=OrganizationPermission.members_invite,
+        permission=OrganizationPermission.members_manage,
         denied_msg="Only an organization admin can manage members",
     )
 

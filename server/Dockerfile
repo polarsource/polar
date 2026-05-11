@@ -26,6 +26,7 @@ WORKDIR /app
 
 COPY ./polar/backoffice/pnpm-lock.yaml .
 COPY ./polar/backoffice/package.json .
+COPY ./polar/backoffice/pnpm-workspace.yaml .
 RUN pnpm install --frozen-lockfile
 
 COPY ./polar/backoffice/ .

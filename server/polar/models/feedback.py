@@ -40,6 +40,9 @@ class Feedback(RecordModel):
         JSONB, nullable=False, default=dict
     )
     internal_note: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    support_thread_url: Mapped[str | None] = mapped_column(
+        String(2048), nullable=True, default=None
+    )
 
     user_id: Mapped[UUID] = mapped_column(
         Uuid,

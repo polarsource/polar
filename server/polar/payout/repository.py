@@ -38,7 +38,10 @@ class PayoutRepository(
     async def get_latest_by_account(self, account: UUID) -> Payout | None:
         statement = (
             self.get_base_statement()
-            .where(Payout.account_id == account)
+            .where(
+                Payout.account_id == account,
+                Payout.status != PayoutStatus.canceled,
+            )
             .order_by(Payout.created_at.desc())
             .limit(1)
         )

@@ -34,14 +34,14 @@ checkout testing without onboarding work.
 
 ## Stripe Webhooks
 
-For the default instance (api on `:8000`), run:
-
 ```bash
 dev stripe --listen
+# or, for a non-default instance, pass the API port shown by `dev docker up`:
+dev stripe --listen --port <api-port>
 ```
 
-This handles the full setup in one step: installs the Stripe CLI if
-missing, logs in, writes `POLAR_STRIPE_SECRET_KEY`,
+`dev stripe --listen` handles the full setup in one step: installs the
+Stripe CLI if missing, logs in, writes `POLAR_STRIPE_SECRET_KEY`,
 `POLAR_STRIPE_PUBLISHABLE_KEY`, and `POLAR_STRIPE_WEBHOOK_SECRET` into the
 central secrets file, runs `dev/setup-environment` to propagate them, and
 then starts `stripe listen` forwarding to both the regular webhook endpoint
@@ -49,19 +49,13 @@ and the Stripe Connect endpoint (`/v1/integrations/stripe/webhook` and
 `/v1/integrations/stripe/webhook-connect`). Re-running it later just starts
 the listener.
 
-`dev stripe --listen` is hardcoded to `http://127.0.0.1:8000`, so for a
-non-default instance (Conductor worktrees, multi-instance setups) run
-`stripe listen` manually with the API port from `dev docker up`:
+`--port` defaults to `8000`. Conductor worktrees and multi-instance setups
+land outside the 0–2 base-port table, so always check the port printed by
+`dev docker up` rather than computing it.
 
-```bash
-stripe listen \
-  --forward-to http://localhost:<api-port>/v1/integrations/stripe/webhook \
-  --forward-connect-to http://localhost:<api-port>/v1/integrations/stripe/webhook-connect
-```
-
-Either way, leave it running and `stripe listen` will log each event with
-the API's 2xx response. Missing webhook → confirm the api port matches the
-`dev docker up` output, not the table.
+Leave it running and `stripe listen` will log each event with the API's
+2xx response. Missing webhook → confirm the api port matches the
+`dev docker up` output.
 
 ## Checkout Email Validation
 

@@ -87,9 +87,7 @@ class CheckoutLinkRepository(
         self, organization_id: UUID, benefit_types: Iterable[BenefitType]
     ) -> bool:
         """Whether the organization has any live checkout link pointing at
-        an active product that grants at least one benefit of the given
-        types. Soft-deleted/archived products and soft-deleted benefits are
-        excluded so a stale attachment doesn't satisfy the check."""
+        an active product that grants a benefit of the given types."""
         statement = (
             select(CheckoutLink.id)
             .join(
@@ -105,7 +103,7 @@ class CheckoutLinkRepository(
                 Product.deleted_at.is_(None),
                 Product.is_archived.is_(False),
                 Benefit.deleted_at.is_(None),
-                Benefit.type.in_(tuple(benefit_types)),
+                Benefit.type.in_(list(benefit_types)),
             )
             .limit(1)
         )

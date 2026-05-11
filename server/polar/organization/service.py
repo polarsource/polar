@@ -103,11 +103,7 @@ _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_MIN_DAYS = 1
 SNOOZE_MAX_DAYS = 7
 
-# Benefit types Polar fulfills automatically after a checkout: a customer
-# walks away with something tangible without the merchant having to wire up
-# an API integration. Everything else (custom notes, feature flags, meter
-# credits) either provides no automated value or requires API plumbing, so
-# it can't satisfy the checkout-link path of the setup-readiness check.
+# Benefit types Polar fulfills without merchant API integration.
 _CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = frozenset(
     {
         BenefitType.downloadables,
@@ -1557,16 +1553,14 @@ class OrganizationService:
     async def _build_setup_readiness_check(
         self, session: AsyncReadSession, organization: Organization
     ) -> OrganizationReviewCheck:
-        """Setup readiness is satisfied by either of:
-        - a checkout link pointing at a product with a Polar-fulfillable
-          benefit (downloadables, license keys, GitHub access, Discord), or
-        - an organization access token plus a webhook endpoint, indicating
-          the merchant is integrating through the API.
+        """Setup readiness passes when the merchant either has a checkout
+        link selling a Polar-fulfilled benefit, or has both an organization
+        access token and a webhook endpoint.
 
-        An access token without a webhook is a non-blocking warning: the
-        merchant can still fulfill through their own backend (e.g. via
-        success_url + API calls), but without a webhook we can't observe
-        state changes (refunds, cancellations, etc.) during review.
+        An access token without a webhook is a non-blocking warning rather
+        than a failure: the merchant can still fulfill via success_url +
+        API calls, we just can't observe state changes (refunds,
+        cancellations) without webhooks during review.
         """
         key = OrganizationReviewCheckKey.SETUP_READINESS
 

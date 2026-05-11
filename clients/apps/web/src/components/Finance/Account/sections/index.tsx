@@ -10,9 +10,6 @@ import { SocialLinksSection } from './SocialLinksSection'
 
 interface SectionProps {
   organization: schemas['Organization']
-  // The full check item (`key`, `status`, `reasons`, `value`). Sections can
-  // branch on `step.reasons` — e.g. SetupReadinessSection switches its UI
-  // when `setup_readiness.webhook_missing` is present.
   step: schemas['OrganizationReviewCheck']
 }
 

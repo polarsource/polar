@@ -91,7 +91,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
       <Box display="flex" flexDirection="column" rowGap="s">
         <PathCard
           title="Sell via a checkout link"
-          description="Attach a downloadables, license key, GitHub, or Discord benefit to a product, then create a checkout link for it."
+          description="Attach a Polar-fulfilled benefit (downloadables, license keys, GitHub access, or Discord) to a product, then create a checkout link for it."
           links={[
             {
               label: 'Checkout links',

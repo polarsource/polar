@@ -40,7 +40,9 @@ const PathCard = ({
     flexDirection="column"
     rowGap="xs"
   >
-    <Text variant="label">{title}</Text>
+    <Text variant="label" color="default">
+      {title}
+    </Text>
     <Text variant="caption" color="muted">
       {description}
     </Text>

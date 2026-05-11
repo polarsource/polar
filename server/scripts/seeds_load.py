@@ -27,7 +27,10 @@ from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCrea
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.config import settings
-from polar.customer.schemas.customer import CustomerIndividualCreate
+from polar.customer.schemas.customer import (
+    CustomerIndividualCreate,
+    CustomerTeamCreate,
+)
 from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountPercentageCreate
 from polar.discount.service import discount as discount_service
@@ -46,6 +49,7 @@ from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import generate_uuid, utc_now
+from polar.member.schemas import MemberOwnerCreate
 from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.schemas import MeterCreate
@@ -73,6 +77,7 @@ from polar.models.product_price import (
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.models.user import IdentityVerificationStatus, User
+from polar.models.user_organization import UserOrganization
 from polar.models.webhook_endpoint import (
     WebhookEndpoint,
     WebhookEventType,
@@ -95,6 +100,8 @@ from polar.product.schemas import (
 )
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
+from polar.subscription.schemas import SubscriptionCreateExternalCustomer
+from polar.subscription.service import subscription as subscription_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
@@ -971,6 +978,103 @@ async def _seed_polar_self_billing_catalog(
             )
 
 
+async def _subscribe_seeded_orgs_to_polar_self(
+    session: AsyncSession,
+) -> int:
+    """Add every other seeded org as a team customer of the Polar self org and
+    create a free subscription for it.
+    """
+    polar_self_org = (
+        await session.execute(
+            select(Organization).where(Organization.slug == POLAR_ORG_SLUG)
+        )
+    ).scalar_one_or_none()
+    if polar_self_org is None:
+        return 0
+
+    free_product = (
+        await session.execute(
+            select(Product).where(
+                Product.organization_id == polar_self_org.id,
+                Product.name == "Polar Tier 1",
+            )
+        )
+    ).scalar_one_or_none()
+    if free_product is None:
+        return 0
+
+    other_orgs = (
+        (
+            await session.execute(
+                select(Organization)
+                .where(
+                    Organization.id != polar_self_org.id,
+                    Organization.deleted_at.is_(None),
+                    Organization.status != OrganizationStatus.BLOCKED,
+                )
+                .order_by(Organization.created_at)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    auth_subject: AuthSubject[Organization] = AuthSubject(
+        subject=polar_self_org, scopes=set(), session=None
+    )
+
+    subscribed = 0
+    for organization in other_orgs:
+        owner_row = (
+            (
+                await session.execute(
+                    select(User)
+                    .join(UserOrganization, UserOrganization.user_id == User.id)
+                    .where(
+                        UserOrganization.organization_id == organization.id,
+                        UserOrganization.deleted_at.is_(None),
+                        User.deleted_at.is_(None),
+                    )
+                    .order_by(UserOrganization.created_at)
+                )
+            )
+            .unique()
+            .first()
+        )
+        if owner_row is None:
+            continue
+        owner = owner_row[0]
+
+        await customer_service.create(
+            session,
+            CustomerTeamCreate.model_construct(
+                type="team",
+                email=None,
+                name=organization.name,
+                external_id=str(organization.id),
+                owner=MemberOwnerCreate.model_construct(
+                    email=owner.email,
+                    name=owner.public_name,
+                    external_id=str(owner.id),
+                ),
+            ),
+            auth_subject,
+            created_at=organization.created_at,
+        )
+        await subscription_service.create(
+            session,
+            SubscriptionCreateExternalCustomer(
+                product_id=free_product.id,
+                external_customer_id=str(organization.id),
+            ),
+            auth_subject,
+            created_at=organization.created_at,
+        )
+        subscribed += 1
+
+    return subscribed
+
+
 async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     """Create sample data for development and testing."""
 
@@ -1310,15 +1414,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
-            "products": [
-                {
-                    "name": "Polar Default",
-                    "description": "Default Polar plan with seat-based pricing",
-                    "recurring": SubscriptionRecurringInterval.month,
-                    "seat_based": True,
-                    "price_per_seat": 0,
-                },
-            ],
+            "products": [],
         },
         {
             "name": "SeatBased Members Corp",
@@ -1468,6 +1564,11 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.details_submitted_at = utc_now()
         organization.set_status(org_data.get("status", OrganizationStatus.CREATED))
         organization.feature_settings = org_data.get("feature_settings", {})
+        if org_data["slug"] != POLAR_ORG_SLUG:
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "billing_enabled": True,
+            }
         session.add(organization)
 
         # Attach a fake payout account so seeded orgs are payout-ready
@@ -2007,6 +2108,10 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             update_dict={"is_admin": user.is_admin or org_data.get("is_admin", False)},
         )
 
+    subscribed = await _subscribe_seeded_orgs_to_polar_self(session)
+    if subscribed:
+        print(f"Subscribed {subscribed} organization(s) to the Polar self free plan")
+
     await session.commit()
     print("✅ Sample data created successfully!")
     print("Created 3 organizations with users, products, benefits, and customers")
@@ -2267,7 +2372,7 @@ def polar_self_env() -> None:
                 await session.execute(
                     select(Product).where(
                         Product.organization_id == org.id,
-                        Product.name == "Polar Default",
+                        Product.name == "Polar Tier 1",
                     )
                 )
             ).scalar_one_or_none()

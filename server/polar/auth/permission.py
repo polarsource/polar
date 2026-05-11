@@ -29,7 +29,6 @@ class OrganizationPermission(StrEnum):
     # Member management.
     members_read = "members:read"
     members_manage = "members:manage"
-    members_set_role = "members:set_role"
 
     # Finance — admin-only.
     account_read = "account:read"
@@ -44,7 +43,6 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
     OrganizationPermission.organizations_delete,
     OrganizationPermission.organizations_manage_payout_account,
     OrganizationPermission.members_manage,
-    OrganizationPermission.members_set_role,
     OrganizationPermission.account_read,
     OrganizationPermission.account_write,
     OrganizationPermission.payouts_read,

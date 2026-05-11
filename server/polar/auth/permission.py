@@ -37,8 +37,6 @@ class OrganizationPermission(StrEnum):
     transactions_write = "transactions:write"
     payouts_read = "payouts:read"
     payouts_write = "payouts:write"
-    wallets_read = "wallets:read"
-    wallets_write = "wallets:write"
     disputes_read = "disputes:read"
 
 
@@ -53,8 +51,6 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
     OrganizationPermission.transactions_write,
     OrganizationPermission.payouts_read,
     OrganizationPermission.payouts_write,
-    OrganizationPermission.wallets_read,
-    OrganizationPermission.wallets_write,
     OrganizationPermission.disputes_read,
 }
 

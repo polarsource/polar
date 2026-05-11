@@ -115,25 +115,42 @@ PRODUCTS: list[dict[str, object]] = [
     {
         "name": "Polar Tier 1",
         "price_amount": None,
-        "metadata": {"custom": False, "order": 1},
+        "metadata": {
+            "custom": False,
+            "order": 1,
+            "features": "All features to sell, Standard support",
+        },
         "benefits": ["Transaction Fee (Tier 1)", "Support (Tier 1)"],
     },
     {
         "name": "Polar Tier 2",
         "price_amount": 2000,
-        "metadata": {"custom": False, "order": 2},
+        "metadata": {
+            "custom": False,
+            "order": 2,
+            "features": "Prioritized ticket support, Team permissions",
+        },
         "benefits": ["Transaction Fee (Tier 2)", "Support (Tier 2)"],
     },
     {
         "name": "Polar Tier 3",
         "price_amount": 10000,
-        "metadata": {"custom": False, "order": 3},
+        "metadata": {
+            "custom": False,
+            "order": 3,
+            "highlight": True,
+            "features": "Prioritized ticket support",
+        },
         "benefits": ["Transaction Fee (Tier 3)", "Support (Tier 3)"],
     },
     {
         "name": "Polar Tier 4",
         "price_amount": 40000,
-        "metadata": {"custom": False, "order": 4},
+        "metadata": {
+            "custom": False,
+            "order": 4,
+            "features": "Slack & Prioritized Ticket support",
+        },
         "benefits": ["Transaction Fee (Tier 4)", "Support (Tier 3)"],
     },
     {

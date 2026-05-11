@@ -1,136 +1,97 @@
 ---
 title: "Checkout Links"
 sidebarTitle: "Checkout Links"
-description: "Sell your digital products with ease by sharing a checkout link to select products"
+description: "Persistent URLs that create a Checkout session on visit"
 ---
 
-Checkout links can be shared or linked on your website which automatically
-creates a checkout session for customers.
+A Checkout Link is a persistent URL with a preconfigured Checkout session — products, discount, metadata, and more. When a customer visits the link, Polar creates a fresh Checkout session from that configuration and redirects the customer to it.
+
+This is the simplest way to start selling: configure once in the dashboard, share the URL anywhere — your website, social media, email, a button in your app — and Polar handles the rest.
 
 <Tip>
-  Looking for a way to generate Checkout session programmatically? Checkout
-  Links might not be the right tool for you. Instead, you should use the
-  [Checkout API](/features/checkout/session).
+  If you need to create Checkout sessions programmatically (e.g. with per-customer data computed by your backend), use the [Checkout API](/features/checkout/session) directly instead.
 </Tip>
+
+## How it works
+
+A Checkout Link is a long-lived URL tied to your organization. The link itself doesn't expire — share it indefinitely.
+
+When a customer visits the link:
+
+1. Polar reads the link's configuration (products, preset discount, metadata, etc.).
+2. A new, short-lived Checkout session is created from that configuration.
+3. The customer is redirected to the session's checkout page to complete the purchase.
+
+Each visit produces a new Checkout session. Always share the Checkout Link URL — never the URL of a generated Checkout session, since those are temporary and will expire.
 
 ## Create a Checkout Link
 
-Checkout Links can be managed from the **Checkout Links** tabs of the Products section. Click on **New Link** to create a new one.
+Checkout Links are managed from the **Checkout Links** tab of the Products section. Click on **New Link** to create one.
 
-<Frame>
-  <img
-    className="block dark:hidden"
-    src="/assets/features/checkout/links/create.light.png"
-  />
-  <img
-    className="hidden dark:block"
-    src="/assets/features/checkout/links/create.dark.png"
-  />
-</Frame>
+### Products
 
-#### Label
+You can select one or **several** products. With several products, customers can switch between them on the checkout page.
 
-This is an internal name for the Checkout Link. It's only visible to you.
+### Discount
 
-#### Products
+You can preset a discount on the link — it's **automatically applied** when the customer lands on the checkout page, with no action required from them. Useful for running promotions or offering special pricing through specific links.
 
-You can select one or **several** products. With several products, customers will be able to switch between them on the checkout page.
-
-<img
-  className="block dark:hidden"
-  src="/assets/features/checkout/links/checkout_multiple_products.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/checkout/links/checkout_multiple_products.dark.png"
-/>
-
-#### Discount
-
-You can preset a discount on the Checkout Link: it will be **automatically applied** when the customer lands on the checkout page — no action needed from the customer. This is particularly useful for running promotions or offering special pricing through specific links.
-
-If **Allow discount codes** is enabled, customers can still manually enter other discount codes during checkout, even when a discount is preset.
+If **Allow discount codes** is enabled, customers can still manually enter another discount code during checkout.
 
 <Tip>
-  Discounts without a code can only be applied through Checkout Link presets or the [Checkout API](/features/checkout/session). Learn more about creating and managing discounts in the [Discounts documentation](/features/discounts).
+  Discounts without a code can only be applied through Checkout Link presets or the [Checkout API](/features/checkout/session). Learn more in the [Discounts documentation](/features/discounts).
 </Tip>
 
-#### Metadata
+### Metadata
 
-This is an optional key-value object allowing you to store additional information which may be useful for you when handling the order. This metadata will be copied to the generated Checkout object and, if the checkout succeeds, to the resulting Order and/or Subscription.
+An optional key-value object for storing extra information. Metadata set on the link is copied to the generated Checkout, and propagates to the resulting Order and/or Subscription on success.
 
-## Using Checkout Links
+## Query parameters
 
-You can share the Checkout Link URL on your webpage, social media, or directly to customers.
+Append query parameters to a Checkout Link URL to override or extend its preset configuration on a per-visit basis.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/checkout/links/checkout_link.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/checkout/links/checkout_link.dark.png"
-/>
+### Preselect a product
 
-<Warning>
-  Checkout Links will go against our API, and redirect to short-lived Checkout session. This means that the Checkout page the user will end up on, are temporary and expires after a while if no successful purchase is made.
-
-This means that you need to make sure to always use this Checkout Link URL (as shown above). If you mistakenly copy the URL from a Checkout Session, the link will expire.
-
-</Warning>
-
-### Query parameters
-
-You can pass optional query parameters to your Checkout Links.
-
-#### Preselect a product
-
-When a Checkout Link is configured with several products, you can point the
-customer directly to one of them using the `product_id` query parameter. The
-customer can still switch to another product on the checkout page.
+When a link is configured with several products, point the customer directly to one of them using `product_id`. The customer can still switch products on the checkout page.
 
 <ParamField path="product_id" type="string">
-  ID of the product to preselect on the checkout page. Must be one of the
-  products associated with the Checkout Link.
+  ID of the product to preselect. Must be one of the products configured on the Checkout Link.
 </ParamField>
 
-#### Prepopulate fields
-
-You can prefill the checkout fields with the following query parameters:
+### Prefill fields
 
 <ParamField path="customer_email" type="string">
-  Prefill customer email at checkout
+  Prefill the customer email.
 </ParamField>
 
 <ParamField path="customer_name" type="string">
-  Prefill customer name at checkout
+  Prefill the customer name.
 </ParamField>
 
 <ParamField path="discount_code" type="string">
-  Prefill the discount code field in the checkout form. The code will be pre-populated in the input field so the customer can see it. This only works with discounts that have a code set — see [Discounts](/features/discounts).
+  Prefill the discount code input. Only works with discounts that have a code set — see [Discounts](/features/discounts).
 
-  This is different from presetting a discount in the Checkout Link settings: a preset discount is silently and automatically applied, whereas `discount_code` simply pre-populates the code input field.
+  Different from presetting a discount on the link: a preset discount is silently applied, whereas `discount_code` only fills the input field so the customer can see it.
 </ParamField>
 
 <ParamField path="amount" type="string">
-  Prefill amount in case of Pay What You Want pricing
+  Prefill the amount when the product uses Pay-What-You-Want pricing.
 </ParamField>
 
 <ParamField path="locale" type="string">
   Force the checkout page language, given as an IETF BCP 47 language tag (e.g.
   `en`, `fr`, `pt-BR`). If omitted, the language is detected from the
   customer's browser. Checkout localization is in beta — see
-  [Checkout Localization](/features/checkout/localization) for details on how
-  to enable it.
+  [Checkout Localization](/features/checkout/localization) for details.
 </ParamField>
 
 <ParamField path="custom_field_data.{slug}" type="string">
-  Prefill checkout fields data, where `{slug}` is the slug of the custom field.
+  Prefill custom field data, where `{slug}` is the slug of the custom field.
 </ParamField>
 
-#### Store attribution and reference metadata
+### Attribution and reference metadata
 
-The following query parameters will automatically be set on Checkout [`metadata`](/api-reference/checkouts/get-session#response-metadata).
+These parameters are automatically attached to the generated Checkout [`metadata`](/api-reference/checkouts/get-session#response-metadata).
 
 <ParamField path="reference_id" type="string">
   Your own reference ID for the checkout session.

@@ -65,7 +65,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
         tone="warning"
         icon={WebhookIcon}
         title="Add a webhook endpoint"
-        description="Webhooks let us see how you fulfill orders and keep your system in sync with Polar. We recommend adding one before submitting."
+        description="Webhooks keep your backend in sync with Polar — refunds, cancellations, and renewals. You can fulfill orders without one, but we recommend adding one so reviewers can verify your integration."
         action={
           <Link
             href={`/dashboard/${organization.slug}/settings/webhooks/endpoints`}
@@ -91,7 +91,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
       <Box display="flex" flexDirection="column" rowGap="s">
         <PathCard
           title="Sell via a checkout link"
-          description="Attach a license key, GitHub, Discord, downloadables, or custom benefit to a product, then create a checkout link for it."
+          description="Attach a downloadables, license key, GitHub, or Discord benefit to a product, then create a checkout link for it."
           links={[
             {
               label: 'Checkout links',

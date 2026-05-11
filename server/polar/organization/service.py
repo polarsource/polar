@@ -103,13 +103,18 @@ _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_MIN_DAYS = 1
 SNOOZE_MAX_DAYS = 7
 
-# Benefit types that can be fulfilled by a checkout link alone. Feature flags
-# and meter credits require API plumbing, so they don't count toward the
-# checkout-link path of the setup-readiness check.
+# Benefit types Polar fulfills automatically after a checkout: a customer
+# walks away with something tangible without the merchant having to wire up
+# an API integration. Everything else (custom notes, feature flags, meter
+# credits) either provides no automated value or requires API plumbing, so
+# it can't satisfy the checkout-link path of the setup-readiness check.
 _CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = frozenset(
-    t
-    for t in BenefitType
-    if t not in (BenefitType.feature_flag, BenefitType.meter_credit)
+    {
+        BenefitType.downloadables,
+        BenefitType.license_keys,
+        BenefitType.github_repository,
+        BenefitType.discord,
+    }
 )
 
 
@@ -1553,13 +1558,15 @@ class OrganizationService:
         self, session: AsyncReadSession, organization: Organization
     ) -> OrganizationReviewCheck:
         """Setup readiness is satisfied by either of:
-        - a checkout link that points at a product with at least one benefit
-          fulfillable through checkout alone, or
-        - an organization access token plus a webhook endpoint.
+        - a checkout link pointing at a product with a Polar-fulfillable
+          benefit (downloadables, license keys, GitHub access, Discord), or
+        - an organization access token plus a webhook endpoint, indicating
+          the merchant is integrating through the API.
 
-        If only an organization access token exists (no webhook), we surface
-        a warning so the merchant knows fulfillment automation isn't visible
-        to us, but we don't block submission.
+        An access token without a webhook is a non-blocking warning: the
+        merchant can still fulfill through their own backend (e.g. via
+        success_url + API calls), but without a webhook we can't observe
+        state changes (refunds, cancellations, etc.) during review.
         """
         key = OrganizationReviewCheckKey.SETUP_READINESS
 

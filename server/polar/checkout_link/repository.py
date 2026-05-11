@@ -86,26 +86,26 @@ class CheckoutLinkRepository(
     async def has_with_benefit_types(
         self, organization_id: UUID, benefit_types: Iterable[BenefitType]
     ) -> bool:
-        """Whether the organization has any live checkout link pointing at a
-        live product that grants at least one benefit of the given types."""
+        """Whether the organization has any live checkout link pointing at
+        an active product that grants at least one benefit of the given
+        types. Soft-deleted/archived products and soft-deleted benefits are
+        excluded so a stale attachment doesn't satisfy the check."""
         statement = (
             select(CheckoutLink.id)
             .join(
                 CheckoutLinkProduct,
-                CheckoutLinkProduct.checkout_link_id == CheckoutLink.id,
+                CheckoutLink.id == CheckoutLinkProduct.checkout_link_id,
             )
-            .join(Product, Product.id == CheckoutLinkProduct.product_id)
-            .join(
-                ProductBenefit,
-                ProductBenefit.product_id == CheckoutLinkProduct.product_id,
-            )
-            .join(Benefit, Benefit.id == ProductBenefit.benefit_id)
+            .join(Product, CheckoutLinkProduct.product_id == Product.id)
+            .join(ProductBenefit, Product.id == ProductBenefit.product_id)
+            .join(Benefit, ProductBenefit.benefit_id == Benefit.id)
             .where(
                 CheckoutLink.organization_id == organization_id,
                 CheckoutLink.deleted_at.is_(None),
                 Product.deleted_at.is_(None),
+                Product.is_archived.is_(False),
                 Benefit.deleted_at.is_(None),
-                Benefit.type.in_(list(benefit_types)),
+                Benefit.type.in_(tuple(benefit_types)),
             )
             .limit(1)
         )

@@ -1771,21 +1771,27 @@ class TestGetReviewState:
 
         assert step.status == OrganizationReviewCheckStatus.PASSED
 
+    @pytest.mark.parametrize(
+        "benefit_type",
+        [
+            BenefitType.feature_flag,
+            BenefitType.meter_credit,
+            # `custom` is a free-form note with no automated fulfillment.
+            BenefitType.custom,
+        ],
+    )
     async def test_setup_readiness_ineligible_benefit_does_not_count(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        benefit_type: BenefitType,
     ) -> None:
-        # Feature flag benefits can't be fulfilled through a checkout link
-        # alone, so this should not satisfy the checkout-link path.
         product = await create_product(
             save_fixture, organization=organization, recurring_interval=None
         )
         benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.feature_flag,
+            save_fixture, organization=organization, type=benefit_type
         )
         await set_product_benefits(save_fixture, product=product, benefits=[benefit])
         await create_checkout_link(save_fixture, products=[product])

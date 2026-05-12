@@ -13,7 +13,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
     AuthorizeOrgAccessWrite,
-    AuthorizeOrgDelete,
+    AuthorizeOrgManage,
     AuthorizeOrgManagePayoutAccount,
 )
 from polar.authz.policies import payout_account as pa_policy
@@ -267,7 +267,7 @@ async def check_slug(
     tags=[APITag.public],
 )
 async def update(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     organization_update: OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -316,7 +316,7 @@ async def submit_review(
     tags=[APITag.private],
 )
 async def delete(
-    authz: AuthorizeOrgDelete,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationDeletionResponse:
     """Request deletion of an organization.

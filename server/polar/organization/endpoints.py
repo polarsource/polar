@@ -268,7 +268,7 @@ async def check_slug(
     tags=[APITag.public],
 )
 async def update(
-    authz: AuthorizeOrgManageUser,
+    authz: AuthorizeOrgManage,
     organization_update: OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:

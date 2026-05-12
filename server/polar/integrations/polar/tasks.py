@@ -50,6 +50,15 @@ async def create_customer(
         product_id=product_id,
     )
     await plain_service.upsert_tenant(external_id=external_id, name=name)
+    await plain_service.upsert_customer(
+        external_id=owner_external_id,
+        email=owner_email,
+        name=owner_name,
+    )
+    await plain_service.add_customer_to_tenant(
+        customer_external_id=owner_external_id,
+        tenant_external_id=external_id,
+    )
 
 
 @actor(actor_name="polar_self.create_free_subscription", priority=TaskPriority.LOW)
@@ -79,6 +88,11 @@ async def add_member(
         email=email,
         name=name,
         external_id=external_id,
+    )
+    await plain_service.upsert_customer(
+        external_id=external_id,
+        email=email,
+        name=name,
     )
     await plain_service.add_customer_to_tenant(
         customer_external_id=external_id,

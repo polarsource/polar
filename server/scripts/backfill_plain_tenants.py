@@ -48,11 +48,11 @@ async def _load_organizations(
     return result.scalars().all()
 
 
-async def _load_member_user_ids(
+async def _load_members(
     session: AsyncSession, organization_id: uuid.UUID
-) -> Sequence[uuid.UUID]:
+) -> Sequence[User]:
     statement = (
-        select(User.id)
+        select(User)
         .join(UserOrganization, UserOrganization.user_id == User.id)
         .where(
             UserOrganization.organization_id == organization_id,
@@ -62,7 +62,7 @@ async def _load_member_user_ids(
         .order_by(UserOrganization.created_at)
     )
     result = await session.execute(statement)
-    return [row[0] for row in result.all()]
+    return result.scalars().all()
 
 
 async def run_backfill(
@@ -84,8 +84,8 @@ async def run_backfill(
     with Progress() as progress:
         task = progress.add_task("[cyan]Syncing tenants...", total=len(organizations))
         for organization in organizations:
-            member_user_ids = await _load_member_user_ids(session, organization.id)
-            if not member_user_ids:
+            members = await _load_members(session, organization.id)
+            if not members:
                 result.tenants_without_members += 1
 
             tenant_external_id = str(organization.id)
@@ -93,7 +93,7 @@ async def run_backfill(
             if dry_run:
                 typer.echo(
                     f"  Would upsert tenant {organization.name} ({tenant_external_id}) "
-                    f"with {len(member_user_ids)} members"
+                    f"with {len(members)} members"
                 )
                 progress.advance(task)
                 continue
@@ -115,10 +115,16 @@ async def run_backfill(
                 progress.advance(task)
                 continue
 
-            for user_id in member_user_ids:
+            for user in members:
                 try:
+                    await plain_service.upsert_customer(
+                        external_id=str(user.id),
+                        email=user.email,
+                        name=user.public_name,
+                        email_verified=user.email_verified,
+                    )
                     await plain_service.add_customer_to_tenant(
-                        customer_external_id=str(user_id),
+                        customer_external_id=str(user.id),
                         tenant_external_id=tenant_external_id,
                     )
                     result.members_added += 1
@@ -127,7 +133,7 @@ async def run_backfill(
                     result.error_details.append(
                         (
                             tenant_external_id,
-                            f"add_customer_to_tenant {user_id}",
+                            f"add_customer_to_tenant {user.id}",
                             traceback.format_exc(),
                         )
                     )

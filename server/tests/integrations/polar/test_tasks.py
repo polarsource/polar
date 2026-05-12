@@ -23,6 +23,7 @@ from polar.integrations.polar.tasks import (
 def plain_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock()
     mock.upsert_tenant = AsyncMock()
+    mock.upsert_customer = AsyncMock()
     mock.add_customer_to_tenant = AsyncMock()
     mock.remove_customer_from_tenant = AsyncMock()
     mocker.patch("polar.integrations.polar.tasks.plain_service", mock)

@@ -1386,6 +1386,38 @@ class PlainService:
             log.info(f"There are {nr_threads} threads for user {customer_email}")
             return nr_threads > 0
 
+    async def upsert_customer(
+        self,
+        *,
+        external_id: str,
+        email: str,
+        name: str,
+        email_verified: bool = False,
+    ) -> None:
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(external_id=external_id),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=external_id,
+                        full_name=name,
+                        email=EmailAddressInput(
+                            email=email, is_verified=email_verified
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        email=EmailAddressInput(
+                            email=email, is_verified=email_verified
+                        ),
+                    ),
+                )
+            )
+            if result.error is not None:
+                raise PlainCustomerError(uuid.UUID(external_id), result.error.message)
+
     async def upsert_tenant(self, *, external_id: str, name: str) -> None:
         if not self.enabled:
             return

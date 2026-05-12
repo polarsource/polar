@@ -30,6 +30,9 @@ When in doubt between "answerable" and "off_topic", prefer "answerable" — we w
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
+  headers: {
+    Authorization: `Bearer ${process.env.PYDANTIC_AI_GATEWAY_API_KEY}`,
+  },
   baseURL: 'https://gateway-us.pydantic.dev/proxy/google-vertex/',
 })
 

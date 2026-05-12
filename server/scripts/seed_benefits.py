@@ -130,7 +130,7 @@ BENEFITS: list[dict[str, object]] = [
 
 PRODUCTS: list[dict[str, object]] = [
     {
-        "name": "Polar Tier 1",
+        "name": "Polar Starter",
         "price_amount": None,
         "metadata": {
             "custom": False,
@@ -140,7 +140,7 @@ PRODUCTS: list[dict[str, object]] = [
         "benefits": ["Transaction Fee (Tier 1)", "Support (Tier 1)"],
     },
     {
-        "name": "Polar Tier 2",
+        "name": "Polar Pro",
         "price_amount": 2000,
         "metadata": {
             "custom": False,
@@ -150,7 +150,7 @@ PRODUCTS: list[dict[str, object]] = [
         "benefits": ["Transaction Fee (Tier 2)", "Support (Tier 2)"],
     },
     {
-        "name": "Polar Tier 3",
+        "name": "Polar Startup",
         "price_amount": 10000,
         "metadata": {
             "custom": False,
@@ -161,7 +161,7 @@ PRODUCTS: list[dict[str, object]] = [
         "benefits": ["Transaction Fee (Tier 3)", "Support (Tier 3)"],
     },
     {
-        "name": "Polar Tier 4",
+        "name": "Polar Scale",
         "price_amount": 40000,
         "metadata": {
             "custom": False,

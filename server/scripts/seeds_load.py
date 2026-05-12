@@ -996,7 +996,7 @@ async def _subscribe_seeded_orgs_to_polar_self(
         await session.execute(
             select(Product).where(
                 Product.organization_id == polar_self_org.id,
-                Product.name == "Polar Tier 1",
+                Product.name == "Polar Starter",
             )
         )
     ).scalar_one_or_none()
@@ -2372,7 +2372,7 @@ def polar_self_env() -> None:
                 await session.execute(
                     select(Product).where(
                         Product.organization_id == org.id,
-                        Product.name == "Polar Tier 1",
+                        Product.name == "Polar Starter",
                     )
                 )
             ).scalar_one_or_none()

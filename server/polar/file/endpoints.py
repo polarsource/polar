@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_organization_permission
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -76,6 +78,13 @@ async def create(
 ) -> FileUpload:
     """Create a file."""
     organization = await get_payload_organization(session, auth_subject, file_create)
+    await assert_organization_permission(
+        session,
+        auth_subject,
+        organization.id,
+        OrganizationPermission.products_manage,
+        "Only an organization admin can manage products",
+    )
 
     file_create.organization_id = organization.id
     return await file_service.generate_presigned_upload(

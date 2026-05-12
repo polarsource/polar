@@ -56,6 +56,12 @@ async def assert_organization_permission(
     Use at service-layer mutation entry points where the resource has already
     been fetched (so policy-by-OrgPolicyGuard doesn't apply). For payload-driven
     creates, prefer combining with ``get_payload_organization``.
+
+    Important: this helper raises ``NotPermitted`` (403) for BOTH the
+    non-member and member-without-permission cases, so callers MUST gate the
+    resource fetch first (e.g. ``service.get(..., auth_subject)``) and 404 on
+    missing — otherwise the 403 leaks the existence of resources in orgs the
+    caller isn't a member of.
     """
     org_ids = await get_accessible_org_ids(session, auth_subject, permission)
     if organization_id not in org_ids:

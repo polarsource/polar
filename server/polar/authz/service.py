@@ -18,7 +18,7 @@ async def get_accessible_org_ids(
     if is_organization(auth_subject):
         return {AccessibleOrganizationID(auth_subject.subject.id)}
     if is_user(auth_subject):
-        repository = AuthzRepository(session)
+        repository = AuthzRepository.from_session(session)
         raw_ids = await repository.get_user_org_ids(auth_subject.subject.id)
         return {AccessibleOrganizationID(uid) for uid in raw_ids}
     return set()
@@ -37,7 +37,7 @@ async def get_accessible_org_ids_with_permission(
     if is_organization(auth_subject):
         return {AccessibleOrganizationID(auth_subject.subject.id)}
     if is_user(auth_subject):
-        repository = AuthzRepository(session)
+        repository = AuthzRepository.from_session(session)
         raw_ids = await repository.get_user_org_ids_with_permission(
             auth_subject.subject.id, permission
         )
@@ -51,7 +51,7 @@ async def get_accessible_organization(
     organization_id: UUID,
 ) -> OrganizationModel | None:
     """Fetch an organization by ID, returning it only if the subject can access it."""
-    repository = AuthzRepository(session)
+    repository = AuthzRepository.from_session(session)
     return await repository.get_accessible_organization(auth_subject, organization_id)
 
 

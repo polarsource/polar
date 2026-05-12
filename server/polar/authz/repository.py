@@ -1,3 +1,4 @@
+from typing import Self
 from uuid import UUID
 
 from sqlalchemy import select
@@ -12,6 +13,10 @@ from polar.postgres import AsyncReadSession
 class AuthzRepository:
     def __init__(self, session: AsyncReadSession) -> None:
         self.session = session
+
+    @classmethod
+    def from_session(cls, session: AsyncReadSession) -> Self:
+        return cls(session)
 
     async def get_user_org_ids(self, user_id: UUID) -> set[UUID]:
         """Get all organization IDs a user is a member of that are accessible."""

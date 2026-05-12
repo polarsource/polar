@@ -28,6 +28,7 @@ class OrganizationPlan(Schema):
     price: OrganizationPlanPrice | None = None
     transaction_fee: OrganizationPlanFee | None = None
     highlight: bool = False
+    custom: bool = False
     features: list[str] = Field(default_factory=list)
 
     @classmethod
@@ -76,6 +77,7 @@ class OrganizationPlan(Schema):
                 else None
             ),
             highlight=bool(metadata.get("highlight", False)),
+            custom=bool(metadata.get("custom", False)),
             features=[f.strip() for f in str(features_raw).split(",") if f.strip()],
         )
 

@@ -2,6 +2,7 @@ from uuid import UUID
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
+from polar.exceptions import NotPermitted
 from polar.models.organization import Organization as OrganizationModel
 from polar.postgres import AsyncReadSession
 
@@ -52,3 +53,24 @@ async def get_accessible_organization(
     """Fetch an organization by ID, returning it only if the subject can access it."""
     repository = AuthzRepository(session)
     return await repository.get_accessible_organization(auth_subject, organization_id)
+
+
+async def assert_organization_permission(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization],
+    organization_id: UUID,
+    permission: OrganizationPermission,
+    denied_msg: str,
+) -> None:
+    """Raise ``NotPermitted`` if the subject does not hold ``permission`` for
+    the given organization.
+
+    Use at service-layer mutation entry points where the resource has already
+    been fetched (so policy-by-OrgPolicyGuard doesn't apply). For payload-driven
+    creates, prefer combining with ``get_payload_organization``.
+    """
+    org_ids = await get_accessible_org_ids_with_permission(
+        session, auth_subject, permission
+    )
+    if organization_id not in org_ids:
+        raise NotPermitted(denied_msg)

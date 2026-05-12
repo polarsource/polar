@@ -13,7 +13,6 @@ from polar.authz.dependencies import (
     AuthorizeMembersSetRole,
     AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
-    AuthorizeOrgAccessWrite,
     AuthorizeOrgManage,
     AuthorizeOrgManageUser,
 )

@@ -12,7 +12,6 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
-    get_accessible_org_ids,
     get_accessible_org_ids_with_permission,
 )
 from polar.benefit.strategies import BenefitRetriableError

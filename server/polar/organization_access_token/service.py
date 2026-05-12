@@ -7,8 +7,8 @@ import structlog
 from sqlalchemy import UnaryExpression, asc, desc
 
 from polar.auth.models import AuthSubject, Organization, is_user
-from polar.auth.scope import Scope
 from polar.auth.permission import OrganizationPermission
+from polar.auth.scope import Scope
 from polar.authz.service import (
     assert_organization_permission,
     get_accessible_org_ids_with_permission,

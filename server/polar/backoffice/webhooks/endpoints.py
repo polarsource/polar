@@ -10,7 +10,6 @@ from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.webhook.repository import WebhookEndpointRepository
-from polar.webhook.service import webhook as webhook_service
 from polar.webhook.sorting import WebhookSortProperty
 
 from ..components import button, confirmation_dialog, datatable, description_list, input

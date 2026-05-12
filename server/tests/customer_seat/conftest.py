@@ -12,11 +12,11 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.user_organization import OrganizationRole
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
+from polar.models.user_organization import OrganizationRole
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_checkout,

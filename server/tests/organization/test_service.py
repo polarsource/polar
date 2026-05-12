@@ -1837,12 +1837,21 @@ class TestGetReviewState:
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
-        assert step.status == OrganizationReviewCheckStatus.PENDING
+        # A checkout link exists but has no fulfillable benefit and no
+        # success_url, so the integration is broken: FAILED, not pending.
+        assert step.status == OrganizationReviewCheckStatus.FAILED
         checkout_link_sub = _sub(
             step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
         )
-        assert checkout_link_sub.status == OrganizationReviewCheckStatus.PENDING
-        assert OrganizationReviewCheckReason.NOT_STARTED in checkout_link_sub.reasons
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NO_FULFILLMENT
+            in checkout_link_sub.reasons
+        )
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NO_FULFILLMENT
+            in step.reasons
+        )
 
     async def test_setup_readiness_checkout_link_with_success_url_passes(
         self,
@@ -1870,7 +1879,7 @@ class TestGetReviewState:
             == OrganizationReviewCheckStatus.PASSED
         )
 
-    async def test_setup_readiness_checkout_link_without_benefits_or_success_url_is_not_started(
+    async def test_setup_readiness_checkout_link_without_benefits_or_success_url_fails(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1884,12 +1893,50 @@ class TestGetReviewState:
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
-        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.status == OrganizationReviewCheckStatus.FAILED
         checkout_link_sub = _sub(
             step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
         )
-        assert checkout_link_sub.status == OrganizationReviewCheckStatus.PENDING
-        assert OrganizationReviewCheckReason.NOT_STARTED in checkout_link_sub.reasons
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NO_FULFILLMENT
+            in checkout_link_sub.reasons
+        )
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NO_FULFILLMENT
+            in step.reasons
+        )
+
+    async def test_setup_readiness_broken_checkout_link_fails_even_with_api_path(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Even with the API path configured (access token + webhook), a
+        # broken checkout link is a blocking signal the AI review will flag.
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(save_fixture, products=[product])
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+        await create_webhook_endpoint(save_fixture, organization=organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NO_FULFILLMENT
+            in step.reasons
+        )
 
     async def test_setup_readiness_access_token_and_webhook_passes(
         self,
@@ -1947,7 +1994,12 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
         assert step.status == OrganizationReviewCheckStatus.WARNING
-        assert step.reasons == []
+        # Webhook-missing reason is propagated to the parent so the FE can
+        # render an explanatory line at the rolled-up level.
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING
+            in step.reasons
+        )
         access_token_sub = _sub(
             step, OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN
         )

@@ -119,6 +119,20 @@ class CheckoutLinkRepository(
         result = await self.session.execute(statement)
         return result.scalar_one_or_none() is not None
 
+    async def has_by_organization_id(self, organization_id: UUID) -> bool:
+        """Whether the organization has any live checkout link, regardless
+        of fulfillment configuration."""
+        statement = (
+            select(CheckoutLink.id)
+            .where(
+                CheckoutLink.organization_id == organization_id,
+                CheckoutLink.deleted_at.is_(None),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None
+
     async def archive_product(self, product_id: UUID) -> None:
         statement = (
             self.get_base_statement()

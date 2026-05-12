@@ -1562,14 +1562,20 @@ class OrganizationService:
         endpoint.
 
         A checkout link with neither benefits nor a success_url has no
-        automatic fulfillment path, which is a broken integration.
+        automatic fulfillment path, which is a broken integration: the
+        checkout link sub-check is FAILED in that case (vs PENDING when no
+        checkout link exists at all). FAILED blocks submission because the
+        AI review penalizes orgs with broken checkout links.
 
         An access token without a webhook is a non-blocking warning rather
         than a failure: the merchant can still fulfill via success_url +
         API calls, we just can't observe state changes (refunds,
         cancellations) without webhooks during review. Aggregate checks
         expose per-component state via `sub_checks`; the parent `status`
-        remains the source of truth for gating.
+        remains the source of truth for gating. Sub-check reasons that
+        match the parent's terminal status are also surfaced on the parent
+        so the FE can render a single explanatory line without re-deriving
+        which sub-item drove the rollup.
         """
         key = OrganizationReviewCheckKey.SETUP_READINESS
 
@@ -1596,7 +1602,7 @@ class OrganizationService:
         )
         has_webhook = await webhook_repository.has_by_organization_id(organization.id)
 
-        def _sub(
+        def _passed_or_pending(
             sub_key: OrganizationReviewSubCheckKey, ok: bool
         ) -> OrganizationReviewSubCheck:
             return OrganizationReviewSubCheck(
@@ -1607,13 +1613,28 @@ class OrganizationService:
                 reasons=[] if ok else [OrganizationReviewCheckReason.NOT_STARTED],
             )
 
-        checkout_link_sub = _sub(
-            OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
-            has_fulfillable_checkout_link,
-        )
-        access_token_sub = _sub(
-            OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN,
-            has_access_token,
+        if has_fulfillable_checkout_link:
+            checkout_link_sub = OrganizationReviewSubCheck(
+                key=OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
+                status=OrganizationReviewCheckStatus.PASSED,
+            )
+        elif await checkout_link_repository.has_by_organization_id(organization.id):
+            checkout_link_sub = OrganizationReviewSubCheck(
+                key=OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
+                status=OrganizationReviewCheckStatus.FAILED,
+                reasons=[
+                    OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NO_FULFILLMENT
+                ],
+            )
+        else:
+            checkout_link_sub = OrganizationReviewSubCheck(
+                key=OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
+                status=OrganizationReviewCheckStatus.PENDING,
+                reasons=[OrganizationReviewCheckReason.NOT_STARTED],
+            )
+
+        access_token_sub = _passed_or_pending(
+            OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN, has_access_token
         )
 
         # Webhook escalates to WARNING (not just PENDING) when the merchant
@@ -1627,22 +1648,40 @@ class OrganizationService:
                 reasons=[OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING],
             )
         else:
-            webhook_sub = _sub(
+            webhook_sub = _passed_or_pending(
                 OrganizationReviewSubCheckKey.SETUP_READINESS_WEBHOOK, has_webhook
             )
 
-        if checkout_link_sub.status == OrganizationReviewCheckStatus.PASSED:
+        sub_checks = [checkout_link_sub, access_token_sub, webhook_sub]
+
+        # A broken checkout link is a blocking signal regardless of whether
+        # the API path is also configured: the AI review will flag it.
+        if checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED:
+            parent_status = OrganizationReviewCheckStatus.FAILED
+        elif checkout_link_sub.status == OrganizationReviewCheckStatus.PASSED:
             parent_status = OrganizationReviewCheckStatus.PASSED
         elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
-            # PASSED when webhook is set up, WARNING otherwise.
             parent_status = webhook_sub.status
         else:
             parent_status = OrganizationReviewCheckStatus.PENDING
 
+        # Surface terminal sub-check reasons on the parent so the FE can
+        # render a single explanatory line. PENDING is self-explanatory and
+        # multiple sub-checks may be in that state, so skip it.
+        parent_reasons: list[OrganizationReviewCheckReason] = []
+        if parent_status in (
+            OrganizationReviewCheckStatus.WARNING,
+            OrganizationReviewCheckStatus.FAILED,
+        ):
+            for sub in sub_checks:
+                if sub.status == parent_status:
+                    parent_reasons.extend(sub.reasons)
+
         return OrganizationReviewCheck(
             key=key,
             status=parent_status,
-            sub_checks=[checkout_link_sub, access_token_sub, webhook_sub],
+            reasons=parent_reasons,
+            sub_checks=sub_checks,
         )
 
     async def submit_appeal(

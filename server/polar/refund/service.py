@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.dispute.repository import DisputeRepository
 from polar.enums import PaymentProcessor
@@ -192,6 +192,10 @@ class RefundService:
                     }
                 ]
             )
+
+        await assert_resource_permission(
+            session, auth_subject, order, OrganizationPermission.finance_manage
+        )
 
         try:
             return await self.create(session, order, create_schema=create_schema)

@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const mintlifyApiKey = process.env.MINTLIFY_API_KEY
+  const mintlifyApiKey = process.env.MINTLIFY_ASSISTANT_API_KEY
   if (!mintlifyApiKey || !process.env.PYDANTIC_AI_GATEWAY_API_KEY) {
     return NextResponse.json(
       { error: 'Assistant not configured' },

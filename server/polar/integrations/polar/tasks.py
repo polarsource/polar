@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta
 from decimal import Decimal
 
+import structlog
 from dramatiq import Retry
 from polar_sdk.models import (
     WebhookBenefitGrantCreatedPayload,
@@ -12,6 +13,7 @@ from polar_sdk.models import (
 from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.external_event.service import external_event as external_event_service
+from polar.integrations.plain.service import TenantOperationError
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.utils import utc_now
 from polar.models.external_event import ExternalEventSource
@@ -25,6 +27,8 @@ from polar.worker import (
 
 from .client import get_client
 from .service import polar_self
+
+log = structlog.get_logger(__name__)
 
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
@@ -80,10 +84,18 @@ async def add_member(
         name=name,
         external_id=external_id,
     )
-    await plain_service.add_customer_to_tenant(
-        customer_external_id=external_id,
-        tenant_external_id=external_customer_id,
-    )
+    try:
+        await plain_service.add_customer_to_tenant(
+            customer_external_id=external_id,
+            tenant_external_id=external_customer_id,
+        )
+    except TenantOperationError as e:
+        log.warning(
+            "plain.add_customer_to_tenant failed; skipping",
+            customer_external_id=external_id,
+            tenant_external_id=external_customer_id,
+            error=str(e),
+        )
 
 
 @actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)
@@ -107,10 +119,18 @@ async def remove_member(external_customer_id: str, external_id: str) -> None:
         external_customer_id=external_customer_id,
         external_id=external_id,
     )
-    await plain_service.remove_customer_from_tenant(
-        customer_external_id=external_id,
-        tenant_external_id=external_customer_id,
-    )
+    try:
+        await plain_service.remove_customer_from_tenant(
+            customer_external_id=external_id,
+            tenant_external_id=external_customer_id,
+        )
+    except TenantOperationError as e:
+        log.warning(
+            "plain.remove_customer_from_tenant failed; skipping",
+            customer_external_id=external_id,
+            tenant_external_id=external_customer_id,
+            error=str(e),
+        )
 
 
 @actor(actor_name="polar_self.delete_customer", priority=TaskPriority.LOW)

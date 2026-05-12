@@ -1,7 +1,11 @@
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids,
+)
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
@@ -118,6 +122,13 @@ async def update(
     if not lk:
         raise ResourceNotFound()
 
+    await assert_organization_permission(
+        session,
+        auth_subject,
+        lk.organization_id,
+        OrganizationPermission.products_manage,
+        "You don't have permission to manage products",
+    )
     updated = await license_key_service.update(session, license_key=lk, updates=updates)
     return updated
 

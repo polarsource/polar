@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { ChatMessageBubble } from './ChatMessageBubble'
 import { EscalationCard } from './EscalationCard'
-import { buildTranscript } from './messages'
+import { buildTranscript, extractText } from './messages'
 
 interface QuestionFlowProps {
   question: string
@@ -66,6 +66,22 @@ const findEscalationType = (
   return null
 }
 
+// When the backend forces the escalation tool on the last allowed turn, the
+// model skips its usual warm preamble — detect that so we can render a
+// friendly fallback in its place.
+const hasEscalationPreamble = (messages: UIMessage[]): boolean => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]
+    if (message.role !== 'assistant') continue
+    const hasEscalation = message.parts.some(
+      (part) => part.type === 'tool-escalateToHuman',
+    )
+    if (!hasEscalation) continue
+    return extractText(message).trim().length > 0
+  }
+  return false
+}
+
 export const QuestionFlow = ({
   question,
   conversationId,
@@ -105,6 +121,10 @@ export const QuestionFlow = ({
   }, [messages])
 
   const escalationType = useMemo(() => findEscalationType(messages), [messages])
+  const showEscalationFallback = useMemo(
+    () => escalationType !== null && !hasEscalationPreamble(messages),
+    [escalationType, messages],
+  )
   const isStreaming = status === 'submitted' || status === 'streaming'
   const streamingStatus = useMemo(
     () => getStreamingStatus(messages),
@@ -156,6 +176,15 @@ export const QuestionFlow = ({
         {messages.map((message) => (
           <ChatMessageBubble key={message.id} message={message} />
         ))}
+        {showEscalationFallback && (
+          <div className="prose prose-sm dark:prose-invert">
+            <p>
+              Looks like a human teammate can take this further. If you want,
+              you can hand this off to the Polar team. Add anything else
+              you&rsquo;d like to share below and click Send.
+            </p>
+          </div>
+        )}
         {isStreaming && (
           <Box
             display="flex"

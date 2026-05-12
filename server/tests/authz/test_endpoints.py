@@ -48,7 +48,7 @@ class TestPolicyGuardGetAccount:
 
         response = await client.get(f"/v1/organizations/{organization.id}/account")
         assert response.status_code == 403
-        assert "admin" in response.json()["detail"].lower()
+        assert "permission" in response.json()["detail"].lower()
 
     @pytest.mark.auth
     async def test_admin_returns_200(
@@ -107,7 +107,7 @@ class TestPolicyGuardUpdateOrganization:
         assert response.status_code == 403
         assert (
             response.json()["detail"]
-            == "Only an organization admin can manage the organization"
+            == "You don't have permission to manage the organization"
         )
 
 
@@ -143,7 +143,7 @@ class TestPolicyGuardDeleteOrganization:
         assert response.status_code == 403
         assert (
             response.json()["detail"]
-            == "Only an organization admin can manage the organization"
+            == "You don't have permission to manage the organization"
         )
 
 
@@ -187,7 +187,7 @@ class TestPolicyGuardInviteMember:
         )
         assert response.status_code == 403
         assert (
-            response.json()["detail"] == "Only an organization admin can manage members"
+            response.json()["detail"] == "You don't have permission to manage members"
         )
 
 

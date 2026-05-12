@@ -34,5 +34,5 @@ async def can_manage(
         auth_subject,
         organization,
         permission=OrganizationPermission.analytics_manage,
-        denied_msg="Only an organization admin can manage analytics",
+        denied_msg="You don't have permission to manage analytics",
     )

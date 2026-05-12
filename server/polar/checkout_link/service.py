@@ -147,7 +147,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             auth_subject,
             organization.id,
             OrganizationPermission.products_manage,
-            "Only an organization admin can manage products",
+            "You don't have permission to manage products",
         )
 
         discount: Discount | None = None
@@ -190,7 +190,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             auth_subject,
             checkout_link.organization_id,
             OrganizationPermission.products_manage,
-            "Only an organization admin can manage products",
+            "You don't have permission to manage products",
         )
 
         if checkout_link_update.products is not None:
@@ -254,7 +254,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             auth_subject,
             checkout_link.organization_id,
             OrganizationPermission.products_manage,
-            "Only an organization admin can manage products",
+            "You don't have permission to manage products",
         )
         repository = CheckoutLinkRepository.from_session(session)
         return await repository.soft_delete(checkout_link)

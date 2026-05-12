@@ -180,7 +180,7 @@ async def assign_seat(
             typed_auth_subject,
             organization_id,
             OrganizationPermission.customers_manage,
-            "Only an organization admin can manage customers",
+            "You don't have permission to manage customers",
         )
 
     seat = await seat_service.assign_seat(

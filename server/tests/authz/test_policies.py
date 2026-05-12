@@ -68,7 +68,7 @@ class TestFinanceCanRead:
 
         result = await finance_policy.can_read(session, auth_subject, organization)
         assert isinstance(result, str)
-        assert "admin" in result.lower()
+        assert "permission" in result.lower()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_subject_allowed(
@@ -110,7 +110,7 @@ class TestOrgCanManage:
         await _set_role(save_fixture, user_organization, OrganizationRole.member)
 
         result = await org_policy.can_manage(session, auth_subject, organization)
-        assert result == "Only an organization admin can manage the organization"
+        assert result == "You don't have permission to manage the organization"
 
 
 @pytest.mark.asyncio
@@ -141,7 +141,7 @@ class TestMembersCanManage:
         await _set_role(save_fixture, user_organization, OrganizationRole.member)
 
         result = await members.can_manage(session, auth_subject, organization)
-        assert result == "Only an organization admin can manage members"
+        assert result == "You don't have permission to manage members"
 
 
 @pytest.mark.asyncio

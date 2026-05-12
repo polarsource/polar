@@ -146,7 +146,7 @@ class WebhookService:
             auth_subject,
             organization.id,
             OrganizationPermission.organization_manage,
-            "Only an organization admin can manage the organization",
+            "You don't have permission to manage the organization",
         )
         if create_schema.secret is not None:
             secret = create_schema.secret
@@ -185,7 +185,7 @@ class WebhookService:
             auth_subject,
             endpoint.organization_id,
             OrganizationPermission.organization_manage,
-            "Only an organization admin can manage the organization",
+            "You don't have permission to manage the organization",
         )
         repository = WebhookEndpointRepository.from_session(session)
 
@@ -219,7 +219,7 @@ class WebhookService:
             auth_subject,
             endpoint.organization_id,
             OrganizationPermission.organization_manage,
-            "Only an organization admin can manage the organization",
+            "You don't have permission to manage the organization",
         )
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.update(
@@ -240,7 +240,7 @@ class WebhookService:
             auth_subject,
             endpoint.organization_id,
             OrganizationPermission.organization_manage,
-            "Only an organization admin can manage the organization",
+            "You don't have permission to manage the organization",
         )
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.soft_delete(endpoint)

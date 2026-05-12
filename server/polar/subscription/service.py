@@ -446,7 +446,7 @@ class SubscriptionService:
             auth_subject,
             product.organization_id,
             OrganizationPermission.customers_manage,
-            "Only an organization admin can manage customers",
+            "You don't have permission to manage customers",
         )
 
         assert is_recurring_product(product)

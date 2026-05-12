@@ -314,7 +314,7 @@ async def update(
         auth_subject,
         customer.organization_id,
         OrganizationPermission.customers_manage,
-        "Only an organization admin can manage customers",
+        "You don't have permission to manage customers",
     )
     return await customer_service.update(session, customer, customer_update)
 
@@ -345,7 +345,7 @@ async def update_external(
         auth_subject,
         customer.organization_id,
         OrganizationPermission.customers_manage,
-        "Only an organization admin can manage customers",
+        "You don't have permission to manage customers",
     )
     return await customer_service.update(session, customer, customer_update)
 
@@ -400,7 +400,7 @@ async def delete(
         auth_subject,
         customer.organization_id,
         OrganizationPermission.customers_manage,
-        "Only an organization admin can manage customers",
+        "You don't have permission to manage customers",
     )
     await customer_service.delete(session, customer, anonymize=anonymize)
 
@@ -442,6 +442,6 @@ async def delete_external(
         auth_subject,
         customer.organization_id,
         OrganizationPermission.customers_manage,
-        "Only an organization admin can manage customers",
+        "You don't have permission to manage customers",
     )
     await customer_service.delete(session, customer, anonymize=anonymize)

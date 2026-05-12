@@ -128,7 +128,7 @@ class OrganizationAccessTokenService:
             auth_subject,
             organization.id,
             OrganizationPermission.organization_manage,
-            "Only an organization admin can manage the organization",
+            "You don't have permission to manage the organization",
         )
         self._validate_scopes_within_caller(auth_subject, create_schema.scopes)
         token, token_hash = generate_token_hash_pair(
@@ -169,7 +169,7 @@ class OrganizationAccessTokenService:
             auth_subject,
             organization_access_token.organization_id,
             OrganizationPermission.organization_manage,
-            "Only an organization admin can manage the organization",
+            "You don't have permission to manage the organization",
         )
         repository = OrganizationAccessTokenRepository.from_session(session)
 
@@ -213,7 +213,7 @@ class OrganizationAccessTokenService:
             auth_subject,
             organization_access_token.organization_id,
             OrganizationPermission.organization_manage,
-            "Only an organization admin can manage the organization",
+            "You don't have permission to manage the organization",
         )
         repository = OrganizationAccessTokenRepository.from_session(session)
         await repository.soft_delete(organization_access_token)

@@ -18,7 +18,7 @@ async def can_read(
         auth_subject,
         organization,
         permission=OrganizationPermission.finance_read,
-        denied_msg="Only an organization admin can access financial data",
+        denied_msg="You don't have permission to access financial data",
     )
 
 
@@ -33,5 +33,5 @@ async def can_manage(
         auth_subject,
         organization,
         permission=OrganizationPermission.finance_manage,
-        denied_msg="Only an organization admin can manage financial data",
+        denied_msg="You don't have permission to manage financial data",
     )

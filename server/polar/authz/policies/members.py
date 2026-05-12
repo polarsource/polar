@@ -33,5 +33,5 @@ async def can_manage(
         auth_subject,
         organization,
         permission=OrganizationPermission.members_manage,
-        denied_msg="Only an organization admin can manage members",
+        denied_msg="You don't have permission to manage members",
     )

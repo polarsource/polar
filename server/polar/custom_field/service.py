@@ -110,7 +110,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             auth_subject,
             organization.id,
             OrganizationPermission.custom_fields_manage,
-            "Only an organization admin can manage custom fields",
+            "You don't have permission to manage custom fields",
         )
 
         existing_field = await self._get_by_organization_id_and_slug(
@@ -150,7 +150,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             auth_subject,
             custom_field.organization_id,
             OrganizationPermission.custom_fields_manage,
-            "Only an organization admin can manage custom fields",
+            "You don't have permission to manage custom fields",
         )
 
         if custom_field.type != custom_field_update.type:
@@ -226,7 +226,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             auth_subject,
             custom_field.organization_id,
             OrganizationPermission.custom_fields_manage,
-            "Only an organization admin can manage custom fields",
+            "You don't have permission to manage custom fields",
         )
         custom_field.set_deleted_at()
         session.add(custom_field)

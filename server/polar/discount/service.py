@@ -115,7 +115,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             auth_subject,
             organization.id,
             OrganizationPermission.products_manage,
-            "Only an organization admin can manage products",
+            "You don't have permission to manage products",
         )
 
         repository = DiscountRepository.from_session(session)
@@ -195,7 +195,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             auth_subject,
             discount.organization_id,
             OrganizationPermission.products_manage,
-            "Only an organization admin can manage products",
+            "You don't have permission to manage products",
         )
 
         if (
@@ -325,7 +325,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             auth_subject,
             discount.organization_id,
             OrganizationPermission.products_manage,
-            "Only an organization admin can manage products",
+            "You don't have permission to manage products",
         )
         discount.set_deleted_at()
         session.add(discount)

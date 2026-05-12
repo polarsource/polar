@@ -33,5 +33,5 @@ async def can_manage(
         auth_subject,
         organization,
         permission=OrganizationPermission.customers_manage,
-        denied_msg="Only an organization admin can manage customers",
+        denied_msg="You don't have permission to manage customers",
     )

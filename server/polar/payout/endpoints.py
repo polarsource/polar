@@ -91,7 +91,7 @@ async def get_estimate(
         auth_subject,
         organization.id,
         OrganizationPermission.finance_read,
-        "Only an organization admin can access financial data",
+        "You don't have permission to access financial data",
     )
     return await payout_service.estimate(session, organization)
 
@@ -121,7 +121,7 @@ async def create(
         auth_subject,
         organization.id,
         OrganizationPermission.finance_manage,
-        "Only an organization admin can manage financial data",
+        "You don't have permission to manage financial data",
     )
     return await payout_service.create(session, locker, organization)
 

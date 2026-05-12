@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 
 import type { ValidationStatus } from '@/app/(main)/feedback/question/validation'
 

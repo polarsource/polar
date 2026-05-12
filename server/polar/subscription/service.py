@@ -12,10 +12,8 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import (
-    assert_resource_permission,
-    get_accessible_org_ids,
-)
+from polar.authz.service import assert_resource_permission
+from polar.authz.types import AccessibleOrganizationID
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -416,8 +414,11 @@ class SubscriptionService:
             session, auth_subject, product, OrganizationPermission.customers_manage
         )
 
+        # Scope the customer lookup to the product's own org so a caller with
+        # `customers:manage` on the product's org can't pair it with a customer
+        # belonging to another org they happen to also be a member of.
         customer_repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        product_org_ids = {AccessibleOrganizationID(product.organization_id)}
         error_loc: str
         input_value: uuid.UUID | str
         customer: Customer | None
@@ -425,13 +426,13 @@ class SubscriptionService:
             error_loc = "customer_id"
             input_value = subscription_create.customer_id
             customer = await customer_repository.get_readable_by_id(
-                org_ids, input_value
+                product_org_ids, input_value
             )
         else:
             error_loc = "external_customer_id"
             input_value = subscription_create.external_customer_id
             customer = await customer_repository.get_readable_by_external_id(
-                org_ids, input_value
+                product_org_ids, input_value
             )
 
         if customer is None:

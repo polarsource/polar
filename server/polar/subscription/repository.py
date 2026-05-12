@@ -101,6 +101,14 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
+    async def get_ids_by_product(self, product_id: UUID) -> Sequence[UUID]:
+        statement = select(Subscription.id).where(
+            Subscription.product_id == product_id,
+            Subscription.is_deleted.is_(False),
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     async def get_by_id_and_organization(
         self,
         id: UUID,

@@ -99,6 +99,20 @@ async def subscription_update_product_benefits_grants(
         await subscription_service.update_product_benefits_grants(session, product)
 
 
+@actor(
+    actor_name="subscription.enqueue_benefits_grants",
+    priority=TaskPriority.MEDIUM,
+)
+async def subscription_enqueue_benefits_grants(subscription_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(subscription_id)
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        await subscription_service.enqueue_benefits_grants(session, subscription)
+
+
 @actor(actor_name="subscription.update_meters", priority=TaskPriority.LOW)
 async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:

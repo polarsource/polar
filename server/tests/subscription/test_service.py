@@ -2215,7 +2215,7 @@ class TestUpdateProductBenefitsGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        enqueue_benefits_grants_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
         customer: Customer,
         product: Product,
         product_second: Product,
@@ -2237,11 +2237,13 @@ class TestUpdateProductBenefitsGrants:
 
         await subscription_service.update_product_benefits_grants(session, product)
 
-        assert enqueue_benefits_grants_mock.call_count == 2
-        # Collect actual subscription IDs from the mock calls
-        actual_ids = set(
-            call.args[1].id for call in enqueue_benefits_grants_mock.call_args_list
-        )
+        enqueue_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "subscription.enqueue_benefits_grants"
+        ]
+        assert len(enqueue_calls) == 2
+        actual_ids = {call.args[1] for call in enqueue_calls}
         expected_ids = {subscription_1.id, subscription_2.id}
         assert actual_ids == expected_ids
 

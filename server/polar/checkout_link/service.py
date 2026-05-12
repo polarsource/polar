@@ -320,7 +320,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, ProductPrice]:
         product_price_repository = ProductPriceRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         price = await product_price_repository.get_readable_by_id(price_id, org_ids)
 
         if price is None:

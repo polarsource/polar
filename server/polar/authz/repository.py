@@ -32,8 +32,8 @@ def select_user_org_ids(
         .where(
             UserOrganization.user_id == user_id,
             UserOrganization.is_deleted.is_(False),
-            Organization.is_deleted.is_(False),
             Organization.can_authenticate,
+            Organization.status != OrganizationStatus.BLOCKED,
         )
     )
     if permission is not None:

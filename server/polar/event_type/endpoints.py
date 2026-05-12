@@ -95,6 +95,10 @@ async def update(
         raise ResourceNotFound()
 
     updated_event_type = await event_type_service.update(
-        session, event_type, body.label, auth_subject, body.label_property_selector
+        session,
+        event_type,
+        body.label,
+        auth_subject,
+        label_property_selector=body.label_property_selector,
     )
     return schemas.EventType.model_validate(updated_event_type)

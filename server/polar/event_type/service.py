@@ -199,6 +199,7 @@ class EventTypeService:
         event_type: EventType,
         label: str,
         auth_subject: AuthSubject[User | Organization],
+        *,
         label_property_selector: str | None = None,
     ) -> EventType:
         await assert_organization_permission(

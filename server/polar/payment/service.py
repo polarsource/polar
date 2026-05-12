@@ -4,6 +4,7 @@ from collections.abc import Sequence
 import stripe as stripe_lib
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
@@ -59,7 +60,9 @@ class PaymentService:
         ],
     ) -> tuple[Sequence[Payment], int]:
         repository = PaymentRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.sales_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
 
         if organization_id is not None:
@@ -93,7 +96,9 @@ class PaymentService:
         id: uuid.UUID,
     ) -> Payment | None:
         repository = PaymentRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.sales_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(Payment.id == id)
         return await repository.get_one_or_none(statement)
 

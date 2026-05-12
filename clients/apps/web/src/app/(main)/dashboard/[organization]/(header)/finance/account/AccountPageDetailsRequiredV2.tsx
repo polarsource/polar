@@ -10,6 +10,10 @@ import {
   useOrganizationReviewState,
   useSubmitOrganizationReview,
 } from '@/hooks/queries/org'
+import {
+  usePayoutAccount,
+  usePayoutAccounts,
+} from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -33,13 +37,11 @@ export const AccountPageDetailsRequiredV2 = ({ organization }: Props) => {
     organization.id,
   )
 
-  // Warm the KYC query cache so expanding the Product Description section
-  // doesn't show its loading state mid-accordion-animation.
+  // Warm up query caches to prevent flickering
   useOrganizationKYC(organization.id)
-
-  // Warm the products query cache so the Product Configuration section
-  // doesn't briefly flash the empty state while it fetches.
   useProducts(organization.id, { limit: 1 })
+  usePayoutAccounts()
+  usePayoutAccount(organization.payout_account_id || undefined)
 
   const submitReview = useSubmitOrganizationReview(organization.id)
   const posthog = usePostHog()

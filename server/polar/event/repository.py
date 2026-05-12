@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -69,6 +69,36 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.organization_id == organization_id
         )
         return await self.get_all(statement)
+
+    async def get_recent_balance_order_exchange_rate(
+        self,
+        organization_id: UUID,
+        presentment_currency: str,
+        *,
+        before: datetime,
+    ) -> float | None:
+        # Cap how far back we'll reach. A months-old FX rate doesn't represent
+        # the current value of credit, so prefer "no rate" (which the readers
+        # know how to fall back from) over a stale one.
+        since = before - timedelta(days=30)
+        statement = (
+            select(Event.user_metadata["exchange_rate"].as_string())
+            .where(
+                Event.organization_id == organization_id,
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.balance_order.value,
+                Event.user_metadata["presentment_currency"].as_string()
+                == presentment_currency,
+                Event.user_metadata["exchange_rate"].is_not(None),
+                Event.timestamp < before,
+                Event.timestamp >= since,
+            )
+            .order_by(Event.timestamp.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        value = result.scalar_one_or_none()
+        return float(value) if value is not None else None
 
     async def insert_batch(
         self, events: Sequence[dict[str, Any]]

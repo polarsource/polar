@@ -38,6 +38,7 @@ from polar_sdk.models import (
     ProductPriceFixedCreate,
     ProductPriceFreeCreate,
     ProductUpdate,
+    ProductVisibility,
     SubscriptionRecurringInterval,
 )
 
@@ -173,7 +174,8 @@ PRODUCTS: list[dict[str, object]] = [
     {
         "name": "Polar Free",
         "price_amount": None,
-        "metadata": {"custom": False, "hidden": True},
+        "metadata": {"custom": False},
+        "visibility": ProductVisibility.PRIVATE,
         "benefits": ["Transaction Fee (Grandfather)", "Support (Tier 1)"],
     },
 ]
@@ -286,10 +288,12 @@ async def _seed_products(
         desired_metadata = product["metadata"]
         price_amount = product["price_amount"]
         benefit_descriptions = product["benefits"]
+        desired_visibility = product.get("visibility", ProductVisibility.PUBLIC)
         assert isinstance(name, str)
         assert isinstance(desired_metadata, dict)
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
+        assert isinstance(desired_visibility, ProductVisibility)
 
         desired_benefit_ids: list[str] = []
         for description in benefit_descriptions:
@@ -314,6 +318,7 @@ async def _seed_products(
                 recurring_interval=SubscriptionRecurringInterval.MONTH,
                 prices=[price],
                 metadata=desired_metadata,
+                visibility=desired_visibility,
                 organization_id=organization_id,
             )
             created = await polar.products.create_async(request=request)
@@ -330,17 +335,26 @@ async def _seed_products(
             continue
 
         current_metadata = dict(current.metadata or {})
-        if current_metadata != desired_metadata:
+        current_visibility = current.visibility
+        metadata_changed = current_metadata != desired_metadata
+        visibility_changed = current_visibility != desired_visibility
+        if metadata_changed or visibility_changed:
+            product_update = ProductUpdate()
+            if metadata_changed:
+                product_update.metadata = desired_metadata
+            if visibility_changed:
+                product_update.visibility = desired_visibility
             await polar.products.update_async(
                 id=current.id,
-                product_update=ProductUpdate(metadata=desired_metadata),
+                product_update=product_update,
             )
             typer.echo(
-                f"  update {name!r} -> {current.id} metadata "
-                f"(was {current_metadata}, now {desired_metadata})"
+                f"  update {name!r} -> {current.id} "
+                f"(metadata was {current_metadata}, now {desired_metadata}; "
+                f"visibility was {current_visibility}, now {desired_visibility})"
             )
         else:
-            typer.echo(f"  skip   {name!r} (metadata matches)")
+            typer.echo(f"  skip   {name!r} (metadata and visibility match)")
 
         current_benefit_ids = sorted(b.id for b in current.benefits)
         if current_benefit_ids != sorted(desired_benefit_ids):

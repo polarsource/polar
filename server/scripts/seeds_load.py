@@ -68,7 +68,7 @@ from polar.models.organization import (
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
 from polar.models.payout_account import PayoutAccount
-from polar.models.product import Product
+from polar.models.product import Product, ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
@@ -936,6 +936,12 @@ async def _seed_polar_self_billing_catalog(
         metadata = product_data["metadata"]
         price_amount = product_data["price_amount"]
         benefit_descriptions = product_data["benefits"]
+        visibility_value = product_data.get("visibility")
+        visibility = (
+            ProductVisibility(visibility_value)
+            if isinstance(visibility_value, str)
+            else ProductVisibility.public
+        )
         assert isinstance(name, str)
         assert isinstance(metadata, dict)
         assert isinstance(benefit_descriptions, list)
@@ -962,6 +968,7 @@ async def _seed_polar_self_billing_catalog(
                 recurring_interval=SubscriptionRecurringInterval.month,
                 prices=[price_create],
                 metadata=metadata,
+                visibility=visibility,
             ),
             auth_subject=auth_subject,
         )

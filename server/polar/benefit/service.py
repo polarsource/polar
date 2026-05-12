@@ -5,7 +5,12 @@ from pydantic import BaseModel
 from sqlalchemy import case, delete
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+    get_accessible_org_ids,
+)
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
@@ -44,7 +49,9 @@ class BenefitService:
         query: str | None = None,
     ) -> tuple[Sequence[Benefit], int]:
         repository = BenefitRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
 
         if type is not None:
@@ -97,7 +104,9 @@ class BenefitService:
         id: uuid.UUID,
     ) -> Benefit | None:
         repository = BenefitRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Benefit.id == id)
@@ -114,6 +123,12 @@ class BenefitService:
     ) -> Benefit:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.products_manage,
         )
 
         try:
@@ -157,6 +172,10 @@ class BenefitService:
         benefit_update: BenefitUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Benefit:
+        await assert_resource_permission(
+            session, auth_subject, benefit, OrganizationPermission.products_manage
+        )
+
         if benefit_update.type != benefit.type:
             raise PolarRequestValidationError(
                 [
@@ -199,7 +218,16 @@ class BenefitService:
 
         return benefit
 
-    async def delete(self, session: AsyncSession, benefit: Benefit) -> Benefit:
+    async def delete(
+        self,
+        session: AsyncSession,
+        benefit: Benefit,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> Benefit:
+        await assert_resource_permission(
+            session, auth_subject, benefit, OrganizationPermission.products_manage
+        )
+
         if not benefit.deletable:
             raise NotPermitted()
 

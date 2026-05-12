@@ -75,8 +75,11 @@ class TestCreate:
 
 @pytest.mark.asyncio
 class TestUpdate:
+    @pytest.mark.auth
     async def test_duration_change(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -95,10 +98,14 @@ class TestUpdate:
                 session,
                 discount,
                 discount_update=DiscountUpdate(duration=DiscountDuration.once),
+                auth_subject=auth_subject,
             )
 
+    @pytest.mark.auth
     async def test_type_change(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -117,6 +124,7 @@ class TestUpdate:
                 session,
                 discount,
                 discount_update=DiscountUpdate(type=DiscountType.fixed),
+                auth_subject=auth_subject,
             )
 
     @pytest.mark.parametrize(
@@ -127,8 +135,11 @@ class TestUpdate:
             ("basis_points", 1000),
         ],
     )
+    @pytest.mark.auth
     async def test_update_forbidden_field_with_redemptions(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         field: Literal["amount", "amounts", "basis_points"],
         value: Any,
         save_fixture: SaveFixture,
@@ -171,6 +182,7 @@ class TestUpdate:
                         "currency": "usd",
                     }
                 ),
+                auth_subject=auth_subject,
             )
 
     @pytest.mark.parametrize(
@@ -197,8 +209,11 @@ class TestUpdate:
             ),
         ],
     )
+    @pytest.mark.auth
     async def test_update_sensitive_fields(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         type: DiscountType,
         payload: DiscountUpdate,
         save_fixture: SaveFixture,
@@ -226,7 +241,10 @@ class TestUpdate:
         updated_ends_at = utc_now() + timedelta(days=2)
         payload.ends_at = updated_ends_at
         updated_discount = await discount_service.update(
-            session, discount, discount_update=payload
+            session,
+            discount,
+            discount_update=payload,
+            auth_subject=auth_subject,
         )
 
         if isinstance(updated_discount, DiscountPercentage):
@@ -236,8 +254,11 @@ class TestUpdate:
 
         assert updated_discount.ends_at == updated_ends_at
 
+    @pytest.mark.auth
     async def test_update_name(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -254,12 +275,16 @@ class TestUpdate:
             session,
             discount,
             discount_update=DiscountUpdate(name="Updated Name"),
+            auth_subject=auth_subject,
         )
 
         assert updated_discount.name == "Updated Name"
 
+    @pytest.mark.auth
     async def test_update_products(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -279,12 +304,16 @@ class TestUpdate:
             session,
             discount,
             discount_update=DiscountUpdate(products=[product_one_time.id]),
+            auth_subject=auth_subject,
         )
 
         assert updated_discount.products == [product_one_time]
 
+    @pytest.mark.auth
     async def test_update_products_reset(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -303,12 +332,16 @@ class TestUpdate:
             session,
             discount,
             discount_update=DiscountUpdate(products=[]),
+            auth_subject=auth_subject,
         )
 
         assert updated_discount.products == []
 
+    @pytest.mark.auth
     async def test_update_discount_past_dates(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -331,14 +364,18 @@ class TestUpdate:
                 starts_at=discount.starts_at,
                 ends_at=discount.ends_at,
             ),
+            auth_subject=auth_subject,
         )
 
         assert updated_discount.name == "Updated Name"
         assert updated_discount.starts_at == discount.starts_at
         assert updated_discount.ends_at == discount.ends_at
 
+    @pytest.mark.auth
     async def test_update_code_already_exists(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -365,13 +402,17 @@ class TestUpdate:
                 session,
                 discount_to_update,
                 discount_update=DiscountUpdate(code="EXISTING"),
+                auth_subject=auth_subject,
             )
 
         assert exc_info.value.errors()[0]["loc"] == ("body", "code")
         assert "already exists" in exc_info.value.errors()[0]["msg"]
 
+    @pytest.mark.auth
     async def test_update_code_same_discount(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -389,6 +430,7 @@ class TestUpdate:
             session,
             discount,
             discount_update=DiscountUpdate(code="mycode"),
+            auth_subject=auth_subject,
         )
 
         assert updated_discount.code == "mycode"

@@ -210,6 +210,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         checkout_link: CheckoutLink,
     ) -> None:
         updated_checkout_link = await checkout_link_service.update(
@@ -228,6 +229,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         checkout_link: CheckoutLink,
     ) -> None:
         updated_checkout_link = await checkout_link_service.update(
@@ -246,6 +248,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         checkout_link: CheckoutLink,
         discount_fixed_once: Discount,
     ) -> None:
@@ -344,11 +347,16 @@ class TestUpdate:
 
 @pytest.mark.asyncio
 class TestDelete:
+    @pytest.mark.auth
     async def test_valid(
-        self, session: AsyncSession, checkout_link: CheckoutLink
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        checkout_link: CheckoutLink,
+        user_organization: UserOrganization,
     ) -> None:
         deleted_checkout_link = await checkout_link_service.delete(
-            session, checkout_link
+            session, checkout_link, auth_subject
         )
 
         assert deleted_checkout_link.deleted_at is not None

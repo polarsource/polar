@@ -405,6 +405,7 @@ class TestDelete:
     async def test_not_deletable_benefit(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
@@ -417,7 +418,7 @@ class TestDelete:
         )
 
         with pytest.raises(NotPermitted):
-            await benefit_service.delete(session, benefit)
+            await benefit_service.delete(session, benefit, auth_subject)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -427,10 +428,13 @@ class TestDelete:
         self,
         enqueue_job_mock: AsyncMock,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
         benefit_organization: Benefit,
         user_organization: UserOrganization,
     ) -> None:
-        updated_benefit = await benefit_service.delete(session, benefit_organization)
+        updated_benefit = await benefit_service.delete(
+            session, benefit_organization, auth_subject
+        )
 
         assert updated_benefit.deleted_at is not None
 

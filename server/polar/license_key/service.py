@@ -50,7 +50,7 @@ class LicenseKeyService:
     ) -> tuple[Sequence[LicenseKey], int]:
         repository = LicenseKeyRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.products_read
+            session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
@@ -79,7 +79,7 @@ class LicenseKeyService:
     ) -> LicenseKey | None:
         repository = LicenseKeyRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.products_read
+            session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = (
             repository.get_statement_by_org_ids(org_ids)

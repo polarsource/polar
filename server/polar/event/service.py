@@ -14,9 +14,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import (
-    get_accessible_org_ids,
-)
+from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
@@ -1175,7 +1173,7 @@ class EventService:
             return _validate_organization_id_by_organization
 
         allowed_organizations = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.events_ingest
+            session, auth_subject, permission=OrganizationPermission.events_ingest
         )
 
         def _validate_organization_id_by_user(
@@ -1308,7 +1306,7 @@ class EventService:
     ) -> set[AccessibleOrganizationID]:
         """Get accessible org IDs, optionally filtered to a subset."""
         organization_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.analytics_read
+            session, auth_subject, permission=OrganizationPermission.analytics_read
         )
         if organization_id is not None:
             return {

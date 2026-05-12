@@ -130,7 +130,7 @@ class TestDeleteEndpoint:
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
         deleted_endpoint = await webhook_service.delete_endpoint(
-            session, auth_subject, webhook_endpoint_organization
+            session, auth_subject, endpoint=webhook_endpoint_organization
         )
         assert deleted_endpoint.deleted_at is not None
 

@@ -17,7 +17,7 @@ from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationID
 from polar.payout_account.repository import PayoutAccountRepository
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncReadSession, AsyncSession, get_db_session
 
 from .policies import finance as finance_policy
 from .policies import members
@@ -98,16 +98,16 @@ def OrgPolicyGuard(
 
 
 async def _always_allow(
-    session: AsyncSession,
+    session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
-) -> bool:
+) -> PolicyResult:
     return True
 
 
 async def _check_policy(
     policy_fn: PolicyFn,
-    session: AsyncSession,
+    session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> None:

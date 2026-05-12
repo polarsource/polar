@@ -59,7 +59,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     ) -> tuple[Sequence[CheckoutLink], int]:
         repository = CheckoutLinkRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.products_read
+            session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
         checkout_link_product_load = None
@@ -111,7 +111,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     ) -> CheckoutLink | None:
         repository = CheckoutLinkRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.products_read
+            session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = (
             repository.get_statement_by_org_ids(org_ids)

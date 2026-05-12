@@ -116,7 +116,7 @@ class MetricsService:
     ) -> Sequence[MetricDashboard]:
         repository = MetricDashboardRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.analytics_read
+            session, auth_subject, permission=OrganizationPermission.analytics_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
         if organization_id is not None:
@@ -133,7 +133,7 @@ class MetricsService:
     ) -> MetricDashboard | None:
         repository = MetricDashboardRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.analytics_read
+            session, auth_subject, permission=OrganizationPermission.analytics_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             MetricDashboard.id == id
@@ -472,7 +472,7 @@ class MetricsService:
     ) -> list[AccessibleOrganizationID]:
         """Get accessible org IDs, optionally filtered to a subset."""
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.analytics_read
+            session, auth_subject, permission=OrganizationPermission.analytics_read
         )
         if organization_id is not None and len(organization_id) > 0:
             return [

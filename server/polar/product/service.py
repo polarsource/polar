@@ -84,7 +84,7 @@ class ProductService:
     ) -> tuple[Sequence[Product], int]:
         repository = ProductRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.products_read
+            session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).join(
             ProductPrice,
@@ -152,7 +152,7 @@ class ProductService:
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.products_read
+            session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
@@ -542,7 +542,7 @@ class ProductService:
     ]:
         meter_repository = MeterRepository.from_session(session)
         meter_org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.products_read
+            session, auth_subject, permission=OrganizationPermission.products_read
         )
         prices: list[ProductPrice] = []
         prices_per_currency = defaultdict[str, list[tuple[ProductPrice, int]]](list)

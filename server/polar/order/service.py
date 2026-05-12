@@ -322,7 +322,7 @@ class OrderService:
     ) -> tuple[Sequence[Order], int]:
         repository = OrderRepository.from_session(session)
         accessible_org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.sales_read
+            session, auth_subject, permission=OrganizationPermission.sales_read
         )
         statement = repository.get_statement_by_org_ids(accessible_org_ids)
 

@@ -307,7 +307,7 @@ class TestUpdate:
         updated_meter = await meter_service.update(
             session,
             meter,
-            MeterUpdate(name="New Name"),  # pyright: ignore,
+            MeterUpdate(name="New Name"),  # pyright: ignore
             auth_subject=auth_subject,
         )
         assert updated_meter.name == "New Name"
@@ -331,7 +331,7 @@ class TestUpdate:
         updated_meter = await meter_service.update(
             session,
             meter,
-            MeterUpdate(unit=unit),  # pyright: ignore,
+            MeterUpdate(unit=unit),  # pyright: ignore
             auth_subject=auth_subject,
         )
 

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.models import Organization as OrganizationModel
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession
 
 # A UUID that has been verified as accessible by the current auth subject.
 # Only get_accessible_org_ids should produce these values.
@@ -14,6 +14,6 @@ AccessibleOrganizationID = NewType("AccessibleOrganizationID", UUID)
 PolicyResult = Literal[True] | str
 
 PolicyFn = Callable[
-    [AsyncSession, AuthSubject[User | Organization], OrganizationModel],
+    [AsyncReadSession, AuthSubject[User | Organization], OrganizationModel],
     Awaitable[PolicyResult],
 ]

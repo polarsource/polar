@@ -101,7 +101,7 @@ class WebhookService:
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         repository = WebhookEndpointRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.organization_manage
+            session, auth_subject, permission=OrganizationPermission.organization_manage
         )
         statement = repository.get_statement_by_org_ids(org_ids).order_by(
             WebhookEndpoint.created_at.desc()
@@ -124,7 +124,7 @@ class WebhookService:
     ) -> WebhookEndpoint | None:
         repository = WebhookEndpointRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.organization_manage
+            session, auth_subject, permission=OrganizationPermission.organization_manage
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             WebhookEndpoint.id == id
@@ -230,6 +230,7 @@ class WebhookService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
+        *,
         endpoint: WebhookEndpoint,
     ) -> WebhookEndpoint:
         await assert_organization_permission(
@@ -257,7 +258,7 @@ class WebhookService:
     ) -> tuple[Sequence[WebhookDelivery], int]:
         repository = WebhookDeliveryRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.organization_manage
+            session, auth_subject, permission=OrganizationPermission.organization_manage
         )
 
         if endpoint_id is not None:
@@ -336,7 +337,7 @@ class WebhookService:
     ) -> None:
         repository = WebhookEventRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.organization_manage
+            session, auth_subject, permission=OrganizationPermission.organization_manage
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             WebhookEvent.id == id

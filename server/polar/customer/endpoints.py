@@ -139,7 +139,7 @@ async def export(
 
         repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.customers_read
+            session, auth_subject, permission=OrganizationPermission.customers_read
         )
         stream = repository.stream_by_organization(org_ids, organization_id)
 

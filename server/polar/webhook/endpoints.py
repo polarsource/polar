@@ -157,7 +157,7 @@ async def delete_webhook_endpoint(
     if not endpoint:
         raise ResourceNotFound()
 
-    await webhook_service.delete_endpoint(session, auth_subject, endpoint)
+    await webhook_service.delete_endpoint(session, auth_subject, endpoint=endpoint)
 
 
 @router.get(

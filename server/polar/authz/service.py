@@ -13,6 +13,7 @@ from .types import AccessibleOrganizationID
 async def get_accessible_org_ids(
     session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
+    *,
     permission: OrganizationPermission | None = None,
 ) -> set[AccessibleOrganizationID]:
     """Resolve which organization IDs this subject can access.
@@ -63,6 +64,6 @@ async def assert_organization_permission(
     missing — otherwise the 403 leaks the existence of resources in orgs the
     caller isn't a member of.
     """
-    org_ids = await get_accessible_org_ids(session, auth_subject, permission)
+    org_ids = await get_accessible_org_ids(session, auth_subject, permission=permission)
     if organization_id not in org_ids:
         raise NotPermitted(PERMISSION_DENIED_MESSAGE[permission])

@@ -82,19 +82,16 @@ async def assign_seat(
         typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         subscription_repository = SubscriptionRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, typed_auth_subject, OrganizationPermission.customers_manage
+            session,
+            typed_auth_subject,
+            permission=OrganizationPermission.customers_manage,
         )
 
-        statement = (
-            subscription_repository.get_base_statement()
-            .join(Product)
-            .where(
-                Subscription.id == seat_assign.subscription_id,
-                Product.organization_id.in_(org_ids),
-            )
-            .options(*subscription_repository.get_eager_options())
+        subscription = await subscription_repository.get_by_id_and_org_ids(
+            seat_assign.subscription_id,
+            org_ids,
+            options=subscription_repository.get_eager_options(),
         )
-        subscription = await subscription_repository.get_one_or_none(statement)
 
         if not subscription:
             raise ResourceNotFound("Subscription not found")
@@ -176,7 +173,9 @@ async def assign_seat(
         typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         order_repository = OrderRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, typed_auth_subject, OrganizationPermission.customers_manage
+            session,
+            typed_auth_subject,
+            permission=OrganizationPermission.customers_manage,
         )
 
         order_statement = (
@@ -304,7 +303,7 @@ async def revoke_seat(
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
     seat_repository = CustomerSeatRepository.from_session(session)
     org_ids = await get_accessible_org_ids(
-        session, typed_auth_subject, OrganizationPermission.customers_manage
+        session, typed_auth_subject, permission=OrganizationPermission.customers_manage
     )
 
     seat = await seat_repository.get_by_id_and_org_ids(
@@ -350,7 +349,7 @@ async def resend_invitation(
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
     seat_repository = CustomerSeatRepository.from_session(session)
     org_ids = await get_accessible_org_ids(
-        session, typed_auth_subject, OrganizationPermission.customers_manage
+        session, typed_auth_subject, permission=OrganizationPermission.customers_manage
     )
 
     seat = await seat_repository.get_by_id_and_org_ids(

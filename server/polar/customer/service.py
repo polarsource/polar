@@ -84,7 +84,7 @@ class CustomerService:
     ) -> tuple[Sequence[Customer], int]:
         repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.customers_read
+            session, auth_subject, permission=OrganizationPermission.customers_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
 
@@ -129,7 +129,7 @@ class CustomerService:
     ) -> Customer | None:
         repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.customers_read
+            session, auth_subject, permission=OrganizationPermission.customers_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             Customer.id == id
@@ -144,7 +144,7 @@ class CustomerService:
     ) -> Customer | None:
         repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.customers_read
+            session, auth_subject, permission=OrganizationPermission.customers_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             Customer.external_id == external_id

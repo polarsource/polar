@@ -61,7 +61,7 @@ class PaymentService:
     ) -> tuple[Sequence[Payment], int]:
         repository = PaymentRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.sales_read
+            session, auth_subject, permission=OrganizationPermission.sales_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
 
@@ -97,7 +97,7 @@ class PaymentService:
     ) -> Payment | None:
         repository = PaymentRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.sales_read
+            session, auth_subject, permission=OrganizationPermission.sales_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(Payment.id == id)
         return await repository.get_one_or_none(statement)

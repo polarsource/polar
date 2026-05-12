@@ -32,7 +32,7 @@ class EventTypeService:
     ) -> EventType | None:
         repository = EventTypeRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.analytics_read
+            session, auth_subject, permission=OrganizationPermission.analytics_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             EventType.id == id
@@ -58,7 +58,7 @@ class EventTypeService:
     ) -> tuple[Sequence[EventTypeWithStats], int]:
         event_type_repository = EventTypeRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
-            session, auth_subject, OrganizationPermission.analytics_read
+            session, auth_subject, permission=OrganizationPermission.analytics_read
         )
         if organization_id is not None:
             org_ids = org_ids & set(organization_id)

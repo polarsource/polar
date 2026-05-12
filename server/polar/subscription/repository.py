@@ -24,6 +24,7 @@ from polar.auth.models import (
 )
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_user_org_ids
+from polar.authz.types import AccessibleOrganizationID
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.repository import (
     Options,
@@ -125,6 +126,29 @@ class SubscriptionRepository(
                 Product.organization_id == organization_id,
             )
             .options(contains_eager(Subscription.product), *options)
+        )
+        return await self.get_one_or_none(statement)
+
+    def get_statement_by_org_ids(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Subscription]]:
+        return (
+            self.get_base_statement()
+            .join(Product)
+            .where(Product.organization_id.in_(org_ids))
+        )
+
+    async def get_by_id_and_org_ids(
+        self,
+        id: UUID,
+        org_ids: set[AccessibleOrganizationID],
+        *,
+        options: Options = (),
+    ) -> Subscription | None:
+        statement = (
+            self.get_statement_by_org_ids(org_ids)
+            .where(Subscription.id == id)
+            .options(*options)
         )
         return await self.get_one_or_none(statement)
 

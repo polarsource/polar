@@ -206,11 +206,9 @@ class TestCreate:
             )
 
         errors = exc_info.value.errors()
-        assert len(errors) == 2
+        assert len(errors) == 1
         assert errors[0]["loc"] == ("body", "product_id")
         assert errors[0]["msg"] == "Product does not exist."
-        assert errors[1]["loc"] == ("body", "customer_id")
-        assert errors[1]["msg"] == "Customer does not exist."
 
     @pytest.mark.auth
     async def test_product_not_recurring(

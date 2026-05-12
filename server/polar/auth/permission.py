@@ -47,6 +47,11 @@ class OrganizationPermission(StrEnum):
     analytics_read = "analytics:read"
     analytics_manage = "analytics:manage"
 
+    # Events — ingest is granted to all roles (apps and integrations
+    # commonly run as member-role users); reads/admin go through
+    # `analytics:read` / `analytics:manage`.
+    events_ingest = "events:ingest"
+
     # Finance — admin-only.
     finance_read = "finance:read"
     finance_manage = "finance:manage"
@@ -70,6 +75,7 @@ _MEMBER_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.customers_read,
     OrganizationPermission.sales_read,
     OrganizationPermission.analytics_read,
+    OrganizationPermission.events_ingest,
 }
 
 ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {
@@ -92,6 +98,7 @@ PERMISSION_DENIED_MESSAGE: dict[OrganizationPermission, str] = {
     OrganizationPermission.sales_read: "You don't have permission to view sales data",
     OrganizationPermission.analytics_read: "You don't have permission to view analytics",
     OrganizationPermission.analytics_manage: "You don't have permission to manage analytics",
+    OrganizationPermission.events_ingest: "You don't have permission to ingest events",
     OrganizationPermission.finance_read: "You don't have permission to access financial data",
     OrganizationPermission.finance_manage: "You don't have permission to manage financial data",
 }

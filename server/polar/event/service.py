@@ -1174,16 +1174,9 @@ class EventService:
 
             return _validate_organization_id_by_organization
 
-        statement = select(Organization.id).where(
-            Organization.id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.is_deleted.is_(False),
-                )
-            ),
+        allowed_organizations = await get_accessible_org_ids(
+            session, auth_subject, OrganizationPermission.events_ingest
         )
-        result = await session.execute(statement)
-        allowed_organizations = set(result.scalars().all())
 
         def _validate_organization_id_by_user(
             index: int, organization_id: uuid.UUID | None

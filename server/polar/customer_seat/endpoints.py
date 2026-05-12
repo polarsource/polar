@@ -8,7 +8,11 @@ from sse_starlette import EventSourceResponse
 
 from polar.auth.models import Anonymous, Organization, User
 from polar.auth.models import AuthSubject as AuthSubjectType
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids,
+)
 from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
@@ -42,6 +46,53 @@ router = APIRouter(
 )
 
 
+def _container_organization_id(container: Subscription | Order) -> UUID4:
+    """The org that owns a seat container (subscription or one-time order)."""
+    if isinstance(container, Subscription):
+        return container.product.organization_id
+    return container.organization_id
+
+
+async def _resolve_authorized_seat(
+    session: AsyncSession,
+    auth_subject: SeatWriteOrAnonymous,
+    seat_id: UUID4,
+) -> tuple[CustomerSeat, UUID4]:
+    """Resolve a seat the caller has `customers:manage` on, plus its org id.
+
+    Raises:
+        NotPermitted: anonymous caller.
+        ResourceNotFound: seat not visible to the caller (no membership +
+            `customers:manage`) or has no subscription/order container.
+    """
+    if isinstance(auth_subject.subject, Anonymous):
+        raise NotPermitted("Authentication required")
+
+    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+    seat_repository = CustomerSeatRepository.from_session(session)
+    org_ids = await get_accessible_org_ids(
+        session,
+        typed_auth_subject,
+        permission=OrganizationPermission.customers_manage,
+    )
+
+    seat = await seat_repository.get_by_id_and_org_ids(
+        org_ids,
+        seat_id,
+        options=seat_repository.get_eager_options(),
+    )
+    if not seat:
+        raise ResourceNotFound("Seat not found")
+
+    container = seat.subscription or seat.order
+    if container is None:
+        raise ResourceNotFound("Seat has no subscription or order")
+
+    organization_id = _container_organization_id(container)
+    await seat_service.check_seat_feature_enabled(session, organization_id)
+    return seat, organization_id
+
+
 @router.post(
     "",
     summary="Assign Seat",
@@ -69,21 +120,28 @@ async def assign_seat(
     subscription: Subscription | None = None
     order: Order | None = None
 
+    typed_auth_subject: AuthSubjectType[User | Organization] | None = None
+    if not isinstance(auth_subject.subject, Anonymous):
+        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+
     if seat_assign.subscription_id:
-        if isinstance(auth_subject.subject, Anonymous):
+        if typed_auth_subject is None:
             raise NotPermitted(
                 "Authentication required for subscription-based assignment"
             )
 
-        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         subscription_repository = SubscriptionRepository.from_session(session)
-
-        statement = (
-            subscription_repository.get_readable_statement(typed_auth_subject)
-            .options(*subscription_repository.get_eager_options())
-            .where(Subscription.id == seat_assign.subscription_id)
+        org_ids = await get_accessible_org_ids(
+            session,
+            typed_auth_subject,
+            permission=OrganizationPermission.customers_manage,
         )
-        subscription = await subscription_repository.get_one_or_none(statement)
+
+        subscription = await subscription_repository.get_by_id_and_org_ids(
+            seat_assign.subscription_id,
+            org_ids,
+            options=subscription_repository.get_eager_options(),
+        )
 
         if not subscription:
             raise ResourceNotFound("Subscription not found")
@@ -139,19 +197,35 @@ async def assign_seat(
                     "No subscription or order found for this checkout"
                 )
 
+        # Authenticated callers using a checkout_id (without client_secret short-circuit)
+        # still need `customers:manage` on the resolved org. Anonymous callers are
+        # already authorized by the client_secret check above.
+        if typed_auth_subject is not None:
+            container = subscription or order
+            assert container is not None
+            await assert_organization_permission(
+                session,
+                typed_auth_subject,
+                _container_organization_id(container),
+                OrganizationPermission.customers_manage,
+            )
+
     elif seat_assign.order_id:
-        if isinstance(auth_subject.subject, Anonymous):
+        if typed_auth_subject is None:
             raise NotPermitted("Authentication required for order-based assignment")
 
-        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         order_repository = OrderRepository.from_session(session)
-
-        order_statement = (
-            order_repository.get_readable_statement(typed_auth_subject)
-            .options(*order_repository.get_eager_options())
-            .where(Order.id == seat_assign.order_id)
+        org_ids = await get_accessible_org_ids(
+            session,
+            typed_auth_subject,
+            permission=OrganizationPermission.customers_manage,
         )
-        order = await order_repository.get_one_or_none(order_statement)
+
+        order = await order_repository.get_by_id_and_org_ids(
+            seat_assign.order_id,
+            org_ids,
+            options=order_repository.get_eager_options(),
+        )
 
         if not order:
             raise ResourceNotFound("Order not found")
@@ -265,31 +339,7 @@ async def revoke_seat(
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
-    if isinstance(auth_subject.subject, Anonymous):
-        raise NotPermitted("Authentication required")
-
-    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
-    seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids(session, typed_auth_subject)
-
-    seat = await seat_repository.get_by_id_and_org_ids(
-        org_ids,
-        seat_id,
-        options=seat_repository.get_eager_options(),
-    )
-
-    if not seat:
-        raise ResourceNotFound("Seat not found")
-
-    if seat.subscription:
-        organization_id = seat.subscription.product.organization_id
-    elif seat.order:
-        organization_id = seat.order.organization.id
-    else:
-        raise ResourceNotFound("Seat has no subscription or order")
-
-    await seat_service.check_seat_feature_enabled(session, organization_id)
-
+    seat, _ = await _resolve_authorized_seat(session, auth_subject, seat_id)
     return await seat_service.revoke_seat(session, seat)
 
 
@@ -309,31 +359,7 @@ async def resend_invitation(
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
-    if isinstance(auth_subject.subject, Anonymous):
-        raise NotPermitted("Authentication required")
-
-    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
-    seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids(session, typed_auth_subject)
-
-    seat = await seat_repository.get_by_id_and_org_ids(
-        org_ids,
-        seat_id,
-        options=seat_repository.get_eager_options(),
-    )
-
-    if not seat:
-        raise ResourceNotFound("Seat not found")
-
-    if seat.subscription:
-        organization_id = seat.subscription.product.organization_id
-    elif seat.order:
-        organization_id = seat.order.organization.id
-    else:
-        raise ResourceNotFound("Seat has no subscription or order")
-
-    await seat_service.check_seat_feature_enabled(session, organization_id)
-
+    seat, _ = await _resolve_authorized_seat(session, auth_subject, seat_id)
     return await seat_service.resend_invitation(session, seat)
 
 

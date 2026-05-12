@@ -535,14 +535,20 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** Get */
+    /**
+     * Get
+     * @description **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
+     */
     get: operations['accounts:get']
     put?: never
     post?: never
     delete?: never
     options?: never
     head?: never
-    /** Patch */
+    /**
+     * Patch
+     * @description **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
+     */
     patch: operations['accounts:patch']
     trace?: never
   }
@@ -553,7 +559,10 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** Get Credits */
+    /**
+     * Get Credits
+     * @description **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
+     */
     get: operations['accounts:get_credits']
     put?: never
     post?: never
@@ -601,6 +610,8 @@ export interface paths {
     /**
      * Get Organization
      * @description Get an organization by ID.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get']
     put?: never
@@ -615,6 +626,8 @@ export interface paths {
      *
      *     If deletion cannot proceed immediately (has orders, subscriptions, or
      *     Stripe deletion fails), a support ticket will be created for manual handling.
+     *
+     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:delete']
     options?: never
@@ -622,6 +635,8 @@ export interface paths {
     /**
      * Update Organization
      * @description Update an organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     patch: operations['organizations:update']
     trace?: never
@@ -636,6 +651,8 @@ export interface paths {
     /**
      * Get Organization Account
      * @description Get the account for an organization.
+     *
+     *     **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
      */
     get: operations['organizations:get_account']
     put?: never
@@ -662,6 +679,8 @@ export interface paths {
     /**
      * Set Organization Payout Account
      * @description Set the payout account for an organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     patch: operations['organizations:set_payout_account']
     trace?: never
@@ -676,6 +695,8 @@ export interface paths {
     /**
      * Get Organization KYC Details
      * @description Get an organization's KYC/compliance details.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:get_kyc']
     put?: never
@@ -760,6 +781,8 @@ export interface paths {
     /**
      * Members
      * @description List members in an organization.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:members']
     put?: never
@@ -782,6 +805,8 @@ export interface paths {
     /**
      * Invite Member
      * @description Invite a user to join an organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:invite_member']
     delete?: never
@@ -805,6 +830,8 @@ export interface paths {
      * @description Leave an organization.
      *
      *     The organization owner cannot leave; ownership must be transferred first.
+     *
+     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:leave_organization']
     options?: never
@@ -826,8 +853,9 @@ export interface paths {
      * Remove Member
      * @description Remove a member from an organization.
      *
-     *     Only organization admins can remove members.
-     *     Admins cannot remove themselves.
+     *     Requires `members:manage` permission. Owners cannot be removed.
+     *
+     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:remove_member']
     options?: never
@@ -839,6 +867,8 @@ export interface paths {
      *     Only `admin` and `member` are accepted; ownership transfers go through
      *     a separate flow (`Account.admin_id` mutation, today the backoffice
      *     `change_admin` endpoint).
+     *
+     *     **Scopes**: `members:write`
      */
     patch: operations['organizations:set_member_role']
     trace?: never
@@ -855,6 +885,8 @@ export interface paths {
     /**
      * Get AI Validation Status
      * @description Get the AI validation status. Review runs asynchronously in the background.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:validate_with_ai']
     delete?: never
@@ -875,6 +907,8 @@ export interface paths {
     /**
      * Submit Appeal for Organization Review
      * @description Submit an appeal for organization review after AI validation failure.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:submit_appeal']
     delete?: never
@@ -895,6 +929,8 @@ export interface paths {
     /**
      * Mark AI Onboarding Complete
      * @description Mark the AI onboarding as completed for this organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:mark_ai_onboarding_complete']
     delete?: never
@@ -913,6 +949,8 @@ export interface paths {
     /**
      * Get Organization Review Status
      * @description Get the current review status and appeal information for an organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:get_review_status']
     put?: never
@@ -936,6 +974,8 @@ export interface paths {
      *
      *     Powers the account review UI: pre-submission gating checks plus,
      *     after submission, the AI verdict and appeal state.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:get_review']
     put?: never
@@ -958,6 +998,8 @@ export interface paths {
     /**
      * Validate Website URL
      * @description Validate that a website URL is reachable and not targeting a private network.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:validate_website']
     delete?: never
@@ -976,6 +1018,8 @@ export interface paths {
     /**
      * List Available Plans
      * @description List the plans this organization can subscribe to.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:list_plans']
     put?: never
@@ -996,12 +1040,16 @@ export interface paths {
     /**
      * Get Organization Subscription
      * @description Get the current Polar subscription for this organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:get_subscription']
     put?: never
     /**
      * Start Subscription Checkout
      * @description Create a Polar checkout session for an initial paid subscription.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:start_subscription_checkout']
     delete?: never
@@ -1010,6 +1058,8 @@ export interface paths {
     /**
      * Change Organization Plan
      * @description Change the plan for an organization's existing subscription.
+     *
+     *     **Scopes**: `organizations:write`
      */
     patch: operations['organizations:change_subscription_plan']
     trace?: never
@@ -1024,6 +1074,8 @@ export interface paths {
     /**
      * List Organization Orders
      * @description List Polar orders billed to this organization.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:list_orders']
     put?: never
@@ -1044,6 +1096,8 @@ export interface paths {
     /**
      * Get Organization Order Invoice
      * @description Get the invoice URL for a Polar order belonging to this organization.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_order_invoice']
     put?: never
@@ -4689,11 +4743,17 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** Get */
+    /**
+     * Get
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
     get: operations['payout_accounts:get']
     put?: never
     post?: never
-    /** Delete */
+    /**
+     * Delete
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
     delete: operations['payout_accounts:delete']
     options?: never
     head?: never
@@ -4709,7 +4769,10 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Onboarding Link */
+    /**
+     * Onboarding Link
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
     post: operations['payout_accounts:onboarding_link']
     delete?: never
     options?: never
@@ -4726,7 +4789,10 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Dashboard Link */
+    /**
+     * Dashboard Link
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
     post: operations['payout_accounts:dashboard_link']
     delete?: never
     options?: never
@@ -32448,7 +32514,7 @@ export interface operations {
           'application/json': components['schemas']['Account']
         }
       }
-      /** @description User is not the admin of the account. */
+      /** @description User lacks `finance:read` permission. */
       403: {
         headers: {
           [name: string]: unknown

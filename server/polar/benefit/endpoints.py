@@ -237,4 +237,4 @@ async def delete(
     if benefit is None:
         raise ResourceNotFound()
 
-    await benefit_service.delete(session, benefit)
+    await benefit_service.delete(session, benefit, auth_subject)

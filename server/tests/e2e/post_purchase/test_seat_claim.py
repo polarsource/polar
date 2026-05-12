@@ -12,6 +12,7 @@ from httpx import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product, User, UserOrganization
+from polar.models.user_organization import OrganizationRole
 from tests.e2e.infra import DrainFn, StripeSimulator
 from tests.e2e.post_purchase.conftest import E2E_SEAT_AUTH
 from tests.e2e.purchase.conftest import complete_purchase
@@ -34,7 +35,9 @@ async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
         account,
         feature_settings={"seat_based_pricing_enabled": True},
     )
-    await save_fixture(UserOrganization(user=user, organization=org))
+    await save_fixture(
+        UserOrganization(user=user, organization=org, role=OrganizationRole.owner)
+    )
     return org
 
 

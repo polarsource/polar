@@ -11,7 +11,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission
+from polar.authz.types import AccessibleOrganizationID
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -403,39 +405,47 @@ class SubscriptionService:
                 }
             )
 
-        customer: Customer | None = None
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        assert product is not None
+
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.customers_manage
+        )
+
+        # Scope the customer lookup to the product's own org so a caller with
+        # `customers:manage` on the product's org can't pair it with a customer
+        # belonging to another org they happen to also be a member of.
         customer_repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        product_org_ids = {AccessibleOrganizationID(product.organization_id)}
         error_loc: str
         input_value: uuid.UUID | str
+        customer: Customer | None
         if isinstance(subscription_create, SubscriptionCreateCustomer):
             error_loc = "customer_id"
             input_value = subscription_create.customer_id
             customer = await customer_repository.get_readable_by_id(
-                org_ids, input_value
+                product_org_ids, input_value
             )
         else:
             error_loc = "external_customer_id"
             input_value = subscription_create.external_customer_id
             customer = await customer_repository.get_readable_by_external_id(
-                org_ids, input_value
+                product_org_ids, input_value
             )
 
         if customer is None:
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", error_loc),
-                    "msg": "Customer does not exist.",
-                    "input": input_value,
-                }
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", error_loc),
+                        "msg": "Customer does not exist.",
+                        "input": input_value,
+                    }
+                ]
             )
-
-        if len(errors) > 0:
-            raise PolarRequestValidationError(errors)
-
-        assert product is not None
-        assert customer is not None
 
         assert is_recurring_product(product)
         recurring_interval = product.recurring_interval

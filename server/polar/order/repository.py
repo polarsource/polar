@@ -14,6 +14,8 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
@@ -33,7 +35,6 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
-    UserOrganization,
 )
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
@@ -209,18 +210,31 @@ class OrderRepository(
     ) -> Select[tuple[Order]]:
         return self.get_base_statement().where(Order.organization_id.in_(org_ids))
 
+    async def get_by_id_and_org_ids(
+        self,
+        id: UUID,
+        org_ids: set[AccessibleOrganizationID],
+        *,
+        options: Options = (),
+    ) -> Order | None:
+        statement = (
+            self.get_statement_by_org_ids(org_ids)
+            .where(Order.id == id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
     ) -> Select[tuple[Order]]:
         statement = self.get_base_statement()
 
         if is_user(auth_subject):
-            user = auth_subject.subject
             statement = statement.where(
                 Order.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
+                    select_user_org_ids(
+                        auth_subject.subject.id,
+                        permission=OrganizationPermission.sales_read,
                     )
                 )
             )

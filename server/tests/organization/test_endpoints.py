@@ -1039,9 +1039,7 @@ class TestDeleteOrganization:
 
         assert response.status_code == 403
         json = response.json()
-        assert (
-            json["detail"] == "Only an organization admin can delete the organization"
-        )
+        assert json["detail"] == "You don't have permission to manage the organization"
 
 
 @pytest.mark.asyncio

@@ -124,7 +124,9 @@ async def update(
     if custom_field is None:
         raise ResourceNotFound()
 
-    return await custom_field_service.update(session, custom_field, custom_field_update)
+    return await custom_field_service.update(
+        session, custom_field, custom_field_update, auth_subject
+    )
 
 
 @router.delete(
@@ -147,4 +149,4 @@ async def delete(
     if custom_field is None:
         raise ResourceNotFound()
 
-    await custom_field_service.delete(session, custom_field)
+    await custom_field_service.delete(session, custom_field, auth_subject)

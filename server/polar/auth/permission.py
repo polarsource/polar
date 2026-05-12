@@ -32,6 +32,10 @@ class OrganizationPermission(StrEnum):
     products_read = "products:read"
     products_manage = "products:manage"
 
+    # Custom fields.
+    custom_fields_read = "custom_fields:read"
+    custom_fields_manage = "custom_fields:manage"
+
     # Customers.
     customers_read = "customers:read"
     customers_manage = "customers:manage"
@@ -52,6 +56,7 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
     OrganizationPermission.organization_manage,
     OrganizationPermission.members_manage,
     OrganizationPermission.products_manage,
+    OrganizationPermission.custom_fields_manage,
     OrganizationPermission.customers_manage,
     OrganizationPermission.analytics_manage,
     OrganizationPermission.account_read,
@@ -61,6 +66,7 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
 _MEMBER_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.members_read,
     OrganizationPermission.products_read,
+    OrganizationPermission.custom_fields_read,
     OrganizationPermission.customers_read,
     OrganizationPermission.sales_read,
     OrganizationPermission.analytics_read,

@@ -1,9 +1,10 @@
 import pytest
 import pytest_asyncio
 
+from polar.auth.models import AuthSubject
 from polar.custom_field.schemas import CustomFieldUpdateText
 from polar.custom_field.service import custom_field as custom_field_service
-from polar.models import Customer, Order, Organization, Product
+from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.custom_field import CustomFieldText, CustomFieldType
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
@@ -42,9 +43,12 @@ async def order_text_field_data(
 
 @pytest.mark.asyncio
 class TestUpdate:
+    @pytest.mark.auth
     async def test_slug_update(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         text_field: CustomFieldText,
         order_text_field_data: Order,
     ) -> None:
@@ -52,6 +56,7 @@ class TestUpdate:
             session,
             text_field,
             CustomFieldUpdateText(type=text_field.type, slug="updatedslug"),
+            auth_subject,
         )
 
         assert updated_field.slug == "updatedslug"

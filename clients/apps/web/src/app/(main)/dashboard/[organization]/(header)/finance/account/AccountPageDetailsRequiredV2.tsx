@@ -77,6 +77,11 @@ export const AccountPageDetailsRequiredV2 = ({ organization }: Props) => {
       return
     }
 
+    posthog.capture('dashboard:organizations:account_review:done', {
+      organization_id: organization.id,
+      section: 'cta',
+    })
+
     router.refresh()
   }
 

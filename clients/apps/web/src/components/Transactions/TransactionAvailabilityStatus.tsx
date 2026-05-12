@@ -8,6 +8,7 @@ import {
 import { ISODuration } from '@/utils/duration'
 import { twMerge } from 'tailwind-merge'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { useState } from 'react'
 
 const TransactionAvailabilityStatusColor: Record<
   'on_hold' | 'available' | 'paid_out',
@@ -71,8 +72,12 @@ export const TransactionAvailabilityStatus = ({
   delay: ISODuration | null
 }) => {
   const { status, availableAt } = getTransactionAvailability(transaction, delay)
+  const [mountedAt] = useState(() => Date.now())
 
   if (status === 'on_hold' && availableAt) {
+    const isWithin48Hours =
+      availableAt.getTime() - mountedAt <= 48 * 60 * 60 * 1000
+
     return (
       <Tooltip>
         <TooltipTrigger className="cursor-help">
@@ -87,7 +92,11 @@ export const TransactionAvailabilityStatus = ({
         <TooltipContent>
           <p>
             Available on{' '}
-            <FormattedDateTime datetime={availableAt} dateStyle="medium" />
+            <FormattedDateTime
+              datetime={availableAt}
+              dateStyle="medium"
+              resolution={isWithin48Hours ? 'time' : 'day'}
+            />
           </p>
         </TooltipContent>
       </Tooltip>

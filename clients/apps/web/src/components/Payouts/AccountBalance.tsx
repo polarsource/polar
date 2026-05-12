@@ -6,7 +6,6 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 
-import { ISODuration } from '@/utils/duration'
 import React, { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellFooter, WellHeader } from '../Shared/Well'
@@ -72,25 +71,16 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     showCreatePayoutAccountModal()
   }, [hideManagePayoutAccountModal, showCreatePayoutAccountModal])
 
-  const delay = new ISODuration(account.payout_transaction_delay)
-  const hasDelay = delay.isNonZero()
-  const delayLabel = delay.format()
   const availableBalance = summary
     ? formatCurrency('accounting')(
         summary.available_balance.amount,
         summary.available_balance.currency,
       )
     : null
-  const totalBalance = summary
-    ? formatCurrency('accounting')(
-        summary.balance.amount,
-        summary.balance.currency,
-      )
-    : null
 
   return (
     <div className="flex flex-col gap-8 md:flex-row">
-      <Well className="flex-1 justify-between rounded-2xl bg-gray-50 p-6">
+      <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
           <h2 className="text-lg font-medium capitalize">Available balance</h2>
           <Button className="self-start" onClick={showPayoutConfirmModal}>
@@ -107,29 +97,25 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
               availableBalance
             )}
           </div>
-          {summary &&
-          summary.available_balance.amount !== summary.balance.amount ? (
-            <div className="dark:text-polar-500 space-y-1 text-gray-500">
-              <div>Total balance: {totalBalance}</div>
-              {hasDelay && (
-                <div>
-                  Available in {delayLabel}:{' '}
-                  {formatCurrency('accounting')(
-                    summary.balance.amount - summary.available_balance.amount,
-                    summary.balance.currency,
-                  )}
-                </div>
-              )}
-            </div>
-          ) : null}
         </WellContent>
         <WellFooter>
           <p className="dark:text-polar-500 text-gray-500">
-            Minimum withdrawal amounts apply.
+            {summary &&
+            summary.available_balance.amount !== summary.balance.amount ? (
+              <div className="dark:text-polar-500 space-y-1 text-gray-500">
+                <div>
+                  Held balance:{' '}
+                  {formatCurrency('accounting')(
+                    summary.balance.amount - summary.available_balance.amount,
+                    summary.balance.currency,
+                  )}{' '}
+                </div>
+              </div>
+            ) : null}
           </p>
         </WellFooter>
       </Well>
-      <Well className="flex-1 justify-between rounded-2xl bg-gray-50 p-6">
+      <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
           <h2 className="text-lg font-medium capitalize">Fee Credits</h2>
           <Button
@@ -152,13 +138,13 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
             )}
           </div>
         </WellContent>
-        <WellFooter>
+        <WellFooter className="mt-auto">
           <p className="dark:text-polar-500 text-gray-500">
             Fees are first deducted from available credits.
           </p>
         </WellFooter>
       </Well>
-      <Well className="flex-1 justify-between rounded-2xl bg-gray-50 p-6">
+      <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
           <h2 className="text-lg font-medium capitalize">Payout Account</h2>
           {payoutAccount ? (
@@ -185,7 +171,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
             <p className="dark:text-polar-700 text-4xl text-gray-300">—</p>
           )}
         </WellContent>
-        <WellFooter>
+        <WellFooter className="mt-auto">
           {payoutAccount ? (
             <div className="flex items-center gap-x-3">
               <p className="dark:text-polar-500 text-gray-500">

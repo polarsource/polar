@@ -1591,9 +1591,7 @@ class OrganizationService:
             has_checkout_link_with_fulfillable_benefit
             or has_checkout_link_with_success_url
         )
-        has_any_checkout_link = await checkout_link_repository.has_any(
-            organization.id
-        )
+        has_any_checkout_link = await checkout_link_repository.has_any(organization.id)
         has_access_token = await access_token_repository.has_by_organization_id(
             organization.id
         )

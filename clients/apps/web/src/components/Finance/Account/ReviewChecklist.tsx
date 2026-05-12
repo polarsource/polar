@@ -14,7 +14,7 @@ export const ReviewChecklist = ({ steps, isLoading }: Props) => {
   const { resolvedTheme: theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const items = isLoading ? Array.from({ length: 6 }, () => null) : steps
+  const items = isLoading ? Array.from({ length: 8 }, () => null) : steps
 
   return (
     <Box display="flex" flexDirection="column" rowGap="s">
@@ -26,6 +26,7 @@ export const ReviewChecklist = ({ steps, isLoading }: Props) => {
           borderWidth={isDark ? 0 : 1}
           borderStyle="solid"
           borderColor="border-primary"
+          backgroundColor={isDark ? 'background-card' : undefined}
         >
           <ChecklistRow isLoading={isLoading} step={step ?? undefined} />
         </Box>

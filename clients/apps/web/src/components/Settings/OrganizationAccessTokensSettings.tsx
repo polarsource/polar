@@ -3,7 +3,6 @@
 import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import {
-  useCreateOrganizationAccessToken,
   useDeleteOrganizationAccessToken,
   useOrganizationAccessTokens,
   useUpdateOrganizationAccessToken,

@@ -1080,12 +1080,12 @@ class TestGetReview:
         assert [step["key"] for step in json["preliminary_steps"]] == [
             "product_configuration",
             "setup_readiness",
-            "identity.email",
-            "identity.social_links",
             "identity.stripe_identity_verification",
-            "product_description",
-            "product_url",
             "payout_account",
+            "identity.social_links",
+            "product_url",
+            "identity.email",
+            "product_description",
         ]
 
     @pytest.mark.auth

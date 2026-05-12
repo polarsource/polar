@@ -304,6 +304,7 @@ export const useOrganizationReviewState = (id: string) =>
       ),
     retry: defaultRetry,
     enabled: !!id,
+    refetchOnMount: 'always',
   })
 
 export const useSubmitOrganizationReview = (id: string) =>

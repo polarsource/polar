@@ -9,12 +9,9 @@ export type MintlifyPageContent = {
   content: string
 }
 
-const SCORE_THRESHOLD = 0.5
-const SEARCH_PAGE_SIZE = 10
-const EXCLUDED_PATH_PREFIXES = ['changelog', 'guides']
+const MINTLIFY_DOMAIN = 'polar'
 
-export const MINTLIFY_DOMAIN =
-  process.env.MINTLIFY_ASSISTANT_DOMAIN ?? 'polar.mintlify.app'
+const EXCLUDED_PATH_PREFIXES = ['changelog', 'guides']
 
 const isExcludedPath = (path: string) => {
   const normalized = path.replace(/^\/+/, '').toLowerCase()
@@ -25,13 +22,12 @@ const isExcludedPath = (path: string) => {
 
 const mintlifyPost = async <T>(
   apiKey: string,
-  domain: string,
   endpoint: 'search' | 'page',
   body: Record<string, unknown>,
 ): Promise<T | null> => {
   try {
     const response = await fetch(
-      `https://api.mintlify.com/discovery/v1/${endpoint}/${domain}`,
+      `https://api.mintlify.com/discovery/v1/${endpoint}/${MINTLIFY_DOMAIN}`,
       {
         method: 'POST',
         headers: {
@@ -56,25 +52,22 @@ const mintlifyPost = async <T>(
 
 export const searchMintlify = async (
   apiKey: string,
-  domain: string,
   query: string,
 ): Promise<MintlifySearchResult[]> => {
-  const data = await mintlifyPost<MintlifySearchResult[]>(
-    apiKey,
-    domain,
-    'search',
-    { query, scoreThreshold: SCORE_THRESHOLD, pageSize: SEARCH_PAGE_SIZE },
-  )
+  const data = await mintlifyPost<MintlifySearchResult[]>(apiKey, 'search', {
+    query,
+    scoreThreshold: 0.6,
+    pageSize: 10,
+  })
   if (!Array.isArray(data)) return []
   return data.filter((result) => result?.path && !isExcludedPath(result.path))
 }
 
 export const fetchMintlifyPageContent = async (
   apiKey: string,
-  domain: string,
   path: string,
 ): Promise<MintlifyPageContent | null> => {
-  const data = await mintlifyPost<MintlifyPageContent>(apiKey, domain, 'page', {
+  const data = await mintlifyPost<MintlifyPageContent>(apiKey, 'page', {
     path,
   })
   if (!data?.content || !data?.path) return null

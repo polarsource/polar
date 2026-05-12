@@ -15,11 +15,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { ALLOWED_DASHBOARD_PATHS } from './dashboardPaths'
-import {
-  fetchMintlifyPageContent,
-  MINTLIFY_DOMAIN,
-  searchMintlify,
-} from './mintlify'
+import { fetchMintlifyPageContent, searchMintlify } from './mintlify'
 import { flushPostHog, wrapWithTracing } from './posthog'
 
 const MAX_STEPS = 10
@@ -152,11 +148,7 @@ export async function POST(req: Request) {
           .describe('A concise English search query.'),
       }),
       execute: async ({ query }) => {
-        const results = await searchMintlify(
-          mintlifyApiKey,
-          MINTLIFY_DOMAIN,
-          query,
-        )
+        const results = await searchMintlify(mintlifyApiKey, query)
         return { query, results }
       },
     })
@@ -173,11 +165,7 @@ export async function POST(req: Request) {
           ),
       }),
       execute: async ({ path }) => {
-        const page = await fetchMintlifyPageContent(
-          mintlifyApiKey,
-          MINTLIFY_DOMAIN,
-          path,
-        )
+        const page = await fetchMintlifyPageContent(mintlifyApiKey, path)
         if (!page) {
           return {
             ok: false as const,

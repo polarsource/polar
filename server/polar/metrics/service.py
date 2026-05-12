@@ -9,7 +9,11 @@ import logfire
 from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids_with_permission,
+)
 from polar.authz.types import AccessibleOrganizationID
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -111,7 +115,9 @@ class MetricsService:
         organization_id: Sequence[uuid.UUID] | None = None,
     ) -> Sequence[MetricDashboard]:
         repository = MetricDashboardRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.analytics_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
         if organization_id is not None:
             statement = statement.where(
@@ -126,7 +132,9 @@ class MetricsService:
         id: uuid.UUID,
     ) -> MetricDashboard | None:
         repository = MetricDashboardRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.analytics_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             MetricDashboard.id == id
         )
@@ -140,6 +148,13 @@ class MetricsService:
     ) -> MetricDashboard:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.analytics_manage,
+            "Only an organization admin can manage analytics",
         )
 
         repository = MetricDashboardRepository.from_session(session)
@@ -155,7 +170,15 @@ class MetricsService:
         session: AsyncSession,
         dashboard: MetricDashboard,
         update_schema: MetricDashboardUpdate,
+        auth_subject: AuthSubject[User | Organization],
     ) -> MetricDashboard:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            dashboard.organization_id,
+            OrganizationPermission.analytics_manage,
+            "Only an organization admin can manage analytics",
+        )
         repository = MetricDashboardRepository.from_session(session)
         update_dict = update_schema.model_dump(exclude_unset=True)
         return await repository.update(dashboard, update_dict=update_dict)
@@ -164,7 +187,15 @@ class MetricsService:
         self,
         session: AsyncSession,
         dashboard: MetricDashboard,
+        auth_subject: AuthSubject[User | Organization],
     ) -> None:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            dashboard.organization_id,
+            OrganizationPermission.analytics_manage,
+            "Only an organization admin can manage analytics",
+        )
         await session.delete(dashboard)
         await session.flush()
 
@@ -443,7 +474,9 @@ class MetricsService:
         organization_id: Sequence[uuid.UUID] | None = None,
     ) -> list[AccessibleOrganizationID]:
         """Get accessible org IDs, optionally filtered to a subset."""
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.analytics_read
+        )
         if organization_id is not None and len(organization_id) > 0:
             return [
                 AccessibleOrganizationID(oid)

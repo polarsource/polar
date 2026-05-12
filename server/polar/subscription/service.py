@@ -2287,7 +2287,9 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         subscription_ids = await repository.get_ids_by_product(product.id)
 
-        calculate_delay = make_bulk_job_delay_calculator(len(subscription_ids))
+        calculate_delay = make_bulk_job_delay_calculator(
+            len(subscription_ids), max_spread_ms=30 * 60 * 1000
+        )
         for index, subscription_id in enumerate(subscription_ids):
             enqueue_job(
                 "subscription.enqueue_benefits_grants",

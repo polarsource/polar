@@ -11,7 +11,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids,
+)
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -436,6 +440,14 @@ class SubscriptionService:
 
         assert product is not None
         assert customer is not None
+
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            product.organization_id,
+            OrganizationPermission.customers_manage,
+            "Only an organization admin can manage customers",
+        )
 
         assert is_recurring_product(product)
         recurring_interval = product.recurring_interval

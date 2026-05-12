@@ -32,6 +32,10 @@ class OrganizationPermission(StrEnum):
     products_read = "products:read"
     products_manage = "products:manage"
 
+    # Customers.
+    customers_read = "customers:read"
+    customers_manage = "customers:manage"
+
     # Sales — granted to all roles.
     sales_read = "sales:read"
 
@@ -44,6 +48,7 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
     OrganizationPermission.organization_manage,
     OrganizationPermission.members_manage,
     OrganizationPermission.products_manage,
+    OrganizationPermission.customers_manage,
     OrganizationPermission.account_read,
     OrganizationPermission.account_write,
 }
@@ -51,6 +56,7 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
 _MEMBER_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.members_read,
     OrganizationPermission.products_read,
+    OrganizationPermission.customers_read,
     OrganizationPermission.sales_read,
 }
 

@@ -12,26 +12,11 @@ async def can_manage(
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> PolicyResult:
-    """Can the subject edit or delete this organization?"""
+    """Can the subject edit, delete, or set the payout account for this organization?"""
     return await _require_permission(
         session,
         auth_subject,
         organization,
         permission=OrganizationPermission.organization_manage,
         denied_msg="Only an organization admin can manage the organization",
-    )
-
-
-async def can_manage_payout_account(
-    session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
-    organization: OrganizationModel,
-) -> PolicyResult:
-    """Can the subject set or change the payout account for this organization?"""
-    return await _require_permission(
-        session,
-        auth_subject,
-        organization,
-        permission=OrganizationPermission.organization_manage_payout_account,
-        denied_msg="Only an organization admin can manage the payout account",
     )

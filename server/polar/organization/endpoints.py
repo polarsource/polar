@@ -14,7 +14,6 @@ from polar.authz.dependencies import (
     AuthorizeOrgAccessUser,
     AuthorizeOrgAccessWrite,
     AuthorizeOrgManage,
-    AuthorizeOrgManagePayoutAccount,
 )
 from polar.authz.policies import payout_account as pa_policy
 from polar.config import settings
@@ -178,7 +177,7 @@ async def get_account(
     tags=[APITag.private],
 )
 async def set_payout_account(
-    authz: AuthorizeOrgManagePayoutAccount,
+    authz: AuthorizeOrgManage,
     body: OrganizationPayoutAccountSet,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:

@@ -23,7 +23,6 @@ from polar.models.user_organization import OrganizationRole
 class OrganizationPermission(StrEnum):
     # Org management.
     organization_manage = "organization:manage"
-    organization_manage_payout_account = "organization:manage_payout_account"
 
     # Member management.
     members_read = "members:read"
@@ -39,7 +38,6 @@ class OrganizationPermission(StrEnum):
 
 _ADMIN_ONLY: set[OrganizationPermission] = {
     OrganizationPermission.organization_manage,
-    OrganizationPermission.organization_manage_payout_account,
     OrganizationPermission.members_manage,
     OrganizationPermission.account_read,
     OrganizationPermission.account_write,

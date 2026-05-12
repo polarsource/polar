@@ -9,7 +9,10 @@ from sse_starlette import EventSourceResponse
 from polar.auth.models import Anonymous, Organization, User
 from polar.auth.models import AuthSubject as AuthSubjectType
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids_with_permission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids_with_permission,
+)
 from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
@@ -164,6 +167,21 @@ async def assign_seat(
 
     container = subscription or order
     assert container is not None  # Already validated above
+
+    if not isinstance(auth_subject.subject, Anonymous):
+        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+        organization_id = (
+            container.product.organization_id
+            if isinstance(container, Subscription)
+            else container.organization_id
+        )
+        await assert_organization_permission(
+            session,
+            typed_auth_subject,
+            organization_id,
+            OrganizationPermission.customers_manage,
+            "Only an organization admin can manage customers",
+        )
 
     seat = await seat_service.assign_seat(
         session,

@@ -36,41 +36,14 @@ The discount deducts a fixed amount from the price of the product or subscriptio
 
 #### Recurring Discount
 
-For subscriptions, choose how long the discount remains active:
+The percentage discount to apply to the product or subscription.
 
-- **Once** The discount is applied to the first invoice only.
-- **Several Months** The discount is applied for a fixed number of calendar months (see [How "Several Months" works](#how-several-months-works) below).
+- **Once** The discount is applied once.
+- **Several Months** The discount is applied for a fixed number of months.
 - **Forever** The discount is applied indefinitely.
 
-##### How "Several Months" works
-
-<Warning>
-The duration is counted in **calendar months from when the discount is first applied**, not in billing cycles. This matters when the subscription's billing interval isn't monthly (e.g. yearly, weekly).
-</Warning>
-
-A discount applies to a billing cycle if that cycle's start date falls within the duration window. The window starts when the discount is first applied and ends `duration_in_months` calendar months later.
-
-**Monthly subscriptions** behave intuitively: a 3-month discount applies to 3 invoices, then drops off on the 4th.
-
-**Yearly (or other non-monthly) subscriptions** require some care:
-
-- A discount with a duration of **1–12 months** on a yearly plan applies to the **first yearly invoice only**. The second cycle starts 12 months after the first and falls outside the window, so renewal is charged at full price. The first invoice is still discounted in full — the discount is **not** prorated to only cover the first month of the year.
-- To cover multiple full years, set the duration to a multiple of 12: use **24** for 2 years, **36** for 3 years, and so on.
-- Durations that don't align with the billing interval round in the user's favor: e.g. **18 months** on a yearly plan covers the first 2 yearly invoices (both fall inside the 18-month window), behaving the same as a duration of 24. Always pick durations that map cleanly to your billing interval to avoid confusion.
-
-**Examples**
-
-| Billing interval | `duration_in_months` | Invoices discounted |
-| ---------------- | -------------------- | ------------------- |
-| Monthly          | 3                    | First 3 invoices    |
-| Monthly          | 12                   | First 12 invoices   |
-| Yearly           | 1                    | First yearly invoice only (full year discounted) |
-| Yearly           | 12                   | First yearly invoice only |
-| Yearly           | 24                   | First 2 yearly invoices |
-| Yearly           | 36                   | First 3 yearly invoices |
-
 <Info>
-A "Several Months" discount on a yearly subscription **does not** prorate the discount across the months it covers — the entire invoice for any cycle that falls inside the window is discounted by the full amount or percentage.
+**Several Months** is counted in calendar months from when the discount is first applied — not in billing cycles. On a yearly plan, any duration from 1 to 12 covers only the first yearly invoice (in full, not prorated); to cover multiple years, multiply by 12 (e.g. `24` for 2 years).
 </Info>
 
 #### Restrictions

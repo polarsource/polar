@@ -176,7 +176,6 @@ class ProductService:
             auth_subject,
             organization.id,
             OrganizationPermission.products_manage,
-            "You don't have permission to manage products",
         )
 
         errors: list[ValidationError] = []
@@ -274,7 +273,6 @@ class ProductService:
             auth_subject,
             product.organization_id,
             OrganizationPermission.products_manage,
-            "You don't have permission to manage products",
         )
 
         errors: list[ValidationError] = []
@@ -453,7 +451,6 @@ class ProductService:
             auth_subject,
             product.organization_id,
             OrganizationPermission.products_manage,
-            "You don't have permission to manage products",
         )
 
         previous_benefits = set(product.benefits)

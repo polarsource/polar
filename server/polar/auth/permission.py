@@ -79,6 +79,24 @@ ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {
 }
 
 
+PERMISSION_DENIED_MESSAGE: dict[OrganizationPermission, str] = {
+    OrganizationPermission.organization_manage: "You don't have permission to manage the organization",
+    OrganizationPermission.members_read: "You don't have permission to view members",
+    OrganizationPermission.members_manage: "You don't have permission to manage members",
+    OrganizationPermission.products_read: "You don't have permission to view products",
+    OrganizationPermission.products_manage: "You don't have permission to manage products",
+    OrganizationPermission.custom_fields_read: "You don't have permission to view custom fields",
+    OrganizationPermission.custom_fields_manage: "You don't have permission to manage custom fields",
+    OrganizationPermission.customers_read: "You don't have permission to view customers",
+    OrganizationPermission.customers_manage: "You don't have permission to manage customers",
+    OrganizationPermission.sales_read: "You don't have permission to view sales data",
+    OrganizationPermission.analytics_read: "You don't have permission to view analytics",
+    OrganizationPermission.analytics_manage: "You don't have permission to manage analytics",
+    OrganizationPermission.finance_read: "You don't have permission to access financial data",
+    OrganizationPermission.finance_manage: "You don't have permission to manage financial data",
+}
+
+
 def role_has_permission(
     role: OrganizationRole, permission: OrganizationPermission
 ) -> bool:

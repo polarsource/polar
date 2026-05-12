@@ -206,7 +206,6 @@ class EventTypeService:
             auth_subject,
             event_type.organization_id,
             OrganizationPermission.analytics_manage,
-            "You don't have permission to manage analytics",
         )
         event_type.label = label
         event_type.label_property_selector = label_property_selector

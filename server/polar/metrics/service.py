@@ -154,7 +154,6 @@ class MetricsService:
             auth_subject,
             organization.id,
             OrganizationPermission.analytics_manage,
-            "You don't have permission to manage analytics",
         )
 
         repository = MetricDashboardRepository.from_session(session)
@@ -177,7 +176,6 @@ class MetricsService:
             auth_subject,
             dashboard.organization_id,
             OrganizationPermission.analytics_manage,
-            "You don't have permission to manage analytics",
         )
         repository = MetricDashboardRepository.from_session(session)
         update_dict = update_schema.model_dump(exclude_unset=True)
@@ -194,7 +192,6 @@ class MetricsService:
             auth_subject,
             dashboard.organization_id,
             OrganizationPermission.analytics_manage,
-            "You don't have permission to manage analytics",
         )
         await session.delete(dashboard)
         await session.flush()

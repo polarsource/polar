@@ -167,7 +167,6 @@ async def assign_seat(
                 typed_auth_subject,
                 organization_id,
                 OrganizationPermission.customers_manage,
-                "You don't have permission to manage customers",
             )
 
     elif seat_assign.order_id:

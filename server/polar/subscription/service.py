@@ -417,7 +417,6 @@ class SubscriptionService:
             auth_subject,
             product.organization_id,
             OrganizationPermission.customers_manage,
-            "You don't have permission to manage customers",
         )
 
         customer_repository = CustomerRepository.from_session(session)

@@ -167,7 +167,6 @@ class CustomerService:
             auth_subject,
             organization.id,
             OrganizationPermission.customers_manage,
-            "You don't have permission to manage customers",
         )
         repository = CustomerRepository.from_session(session)
 

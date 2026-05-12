@@ -18,7 +18,6 @@ async def can_read(
         auth_subject,
         organization,
         permission=OrganizationPermission.members_read,
-        denied_msg="You don't have permission to view members",
     )
 
 
@@ -33,5 +32,4 @@ async def can_manage(
         auth_subject,
         organization,
         permission=OrganizationPermission.members_manage,
-        denied_msg="You don't have permission to manage members",
     )

@@ -18,5 +18,4 @@ async def can_manage(
         auth_subject,
         organization,
         permission=OrganizationPermission.organization_manage,
-        denied_msg="You don't have permission to manage the organization",
     )

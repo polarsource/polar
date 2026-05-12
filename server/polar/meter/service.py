@@ -142,7 +142,6 @@ class MeterService:
             auth_subject,
             organization.id,
             OrganizationPermission.products_manage,
-            "You don't have permission to manage products",
         )
 
         meter = await repository.create(
@@ -186,7 +185,6 @@ class MeterService:
             auth_subject,
             meter.organization_id,
             OrganizationPermission.products_manage,
-            "You don't have permission to manage products",
         )
         repository = MeterRepository.from_session(session)
 

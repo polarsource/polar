@@ -127,7 +127,6 @@ async def update(
         auth_subject,
         lk.organization_id,
         OrganizationPermission.products_manage,
-        "You don't have permission to manage products",
     )
     updated = await license_key_service.update(session, license_key=lk, updates=updates)
     return updated

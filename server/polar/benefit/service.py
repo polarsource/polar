@@ -128,7 +128,6 @@ class BenefitService:
             auth_subject,
             organization.id,
             OrganizationPermission.products_manage,
-            "You don't have permission to manage products",
         )
 
         try:
@@ -177,7 +176,6 @@ class BenefitService:
             auth_subject,
             benefit.organization_id,
             OrganizationPermission.products_manage,
-            "You don't have permission to manage products",
         )
 
         if benefit_update.type != benefit.type:
@@ -233,7 +231,6 @@ class BenefitService:
             auth_subject,
             benefit.organization_id,
             OrganizationPermission.products_manage,
-            "You don't have permission to manage products",
         )
 
         if not benefit.deletable:

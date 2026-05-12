@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         Checkout,
         Customer,
         Member,
+        Order,
         Product,
         Subscription,
         SubscriptionProrationBehavior,
@@ -136,6 +137,83 @@ class PolarSelfClient:
 
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
         return await self._sdk.customers.get_external_async(external_id=external_id)
+
+    async def get_customer_by_external_id_or_none(
+        self, external_id: str
+    ) -> Customer | None:
+        from polar_sdk.models.polarerror import PolarError
+
+        try:
+            return await self.get_customer_by_external_id(external_id)
+        except PolarError as e:
+            if e.status_code == 404:
+                return None
+            raise
+
+    async def list_customer_orders(
+        self,
+        *,
+        customer_id: str,
+        page: int = 1,
+        limit: int = 50,
+    ) -> tuple[list[Order], int]:
+        from polar_sdk.models import OrderSortProperty
+        from polar_sdk.models.polarerror import PolarError
+
+        with logfire.span(
+            "polar.list_customer_orders",
+            customer_id=customer_id,
+            page=page,
+            limit=limit,
+        ) as span:
+            try:
+                response = await self._sdk.orders.list_async(
+                    customer_id=customer_id,
+                    page=page,
+                    limit=limit,
+                    sorting=[OrderSortProperty.MINUS_CREATED_AT],
+                )
+            except PolarError as e:
+                _raise_error(span, e, "list_customer_orders")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "list_customer_orders")
+
+            if response is None:
+                return [], 0
+            items = list(response.result.items)
+            total = response.result.pagination.total_count
+            span.set_attribute("order_count", len(items))
+            span.set_attribute("total_count", total)
+            return items, total
+
+    async def get_order(self, *, order_id: str) -> Order | None:
+        from polar_sdk.models.polarerror import PolarError
+
+        with logfire.span("polar.get_order", order_id=order_id) as span:
+            try:
+                return await self._sdk.orders.get_async(id=order_id)
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    return None
+                _raise_error(span, e, "get_order")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "get_order")
+
+    async def get_order_invoice(self, *, order_id: str) -> str | None:
+        from polar_sdk.models.polarerror import PolarError
+
+        with logfire.span("polar.get_order_invoice", order_id=order_id) as span:
+            try:
+                invoice = await self._sdk.orders.invoice_async(id=order_id)
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    return None
+                _raise_error(span, e, "get_order_invoice")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "get_order_invoice")
+            return invoice.url
 
     async def list_recurring_products(self, *, organization_id: str) -> list[Product]:
         from polar_sdk.models import ProductVisibility

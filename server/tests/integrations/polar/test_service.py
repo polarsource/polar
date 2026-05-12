@@ -7,6 +7,7 @@ import pytest
 from polar_sdk.models import (
     BenefitGrant,
     CustomerIndividual,
+    Order,
     Product,
     Subscription,
     WebhookBenefitGrantCreatedPayload,
@@ -17,6 +18,7 @@ from pytest_mock import MockerFixture
 from polar.integrations.polar.service import (
     PolarSelfNoActiveSubscription,
     PolarSelfNotConfigured,
+    PolarSelfOrderNotFound,
     PolarSelfPlanNotFound,
     PolarSelfWebhookError,
     SupportBenefitError,
@@ -828,3 +830,164 @@ class TestChangePlan:
             subscription_id="sub_existing",
             product_id="prod_2",
         )
+
+
+def _make_order(
+    *,
+    id: str = "ord_1",
+    customer_id: str = _CUSTOMER_ID,
+    product_id: str = "prod_1",
+    status: str = "paid",
+) -> Order:
+    return Order.model_validate(
+        {
+            "id": id,
+            "created_at": "2026-01-01T00:00:00Z",
+            "modified_at": None,
+            "status": status,
+            "paid": status == "paid",
+            "subtotal_amount": 2000,
+            "discount_amount": 0,
+            "net_amount": 2000,
+            "tax_amount": 0,
+            "total_amount": 2000,
+            "applied_balance_amount": 0,
+            "due_amount": 2000,
+            "refunded_amount": 0,
+            "refunded_tax_amount": 0,
+            "currency": "usd",
+            "billing_reason": "subscription_cycle",
+            "billing_name": None,
+            "billing_address": None,
+            "invoice_number": "POLAR-0001",
+            "is_invoice_generated": True,
+            "customer_id": customer_id,
+            "product_id": product_id,
+            "discount_id": None,
+            "subscription_id": "00000000-0000-0000-0000-000000000001",
+            "checkout_id": None,
+            "metadata": {},
+            "platform_fee_amount": 0,
+            "platform_fee_currency": None,
+            "customer": _CUSTOMER_DICT,
+            "product": _make_product(id=product_id).model_dump(mode="json"),
+            "discount": None,
+            "subscription": None,
+            "items": [],
+            "description": "Pro subscription",
+        }
+    )
+
+
+@pytest.fixture
+def orders_client_mock(mocker: MockerFixture) -> MagicMock:
+    client = MagicMock()
+    client.get_customer_by_external_id_or_none = AsyncMock(
+        return_value=_make_customer(external_id=str(ORG_A))
+    )
+    client.list_customer_orders = AsyncMock(return_value=([], 0))
+    client.get_order = AsyncMock(return_value=None)
+    client.get_order_invoice = AsyncMock(return_value=None)
+    mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
+    return client
+
+
+@pytest.mark.asyncio
+class TestListOrders:
+    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+
+        with pytest.raises(PolarSelfNotConfigured):
+            await polar_self.list_orders(ORG_A)
+
+    async def test_returns_empty_when_customer_not_found(
+        self, configured: None, orders_client_mock: MagicMock
+    ) -> None:
+        orders_client_mock.get_customer_by_external_id_or_none.return_value = None
+
+        items, total = await polar_self.list_orders(ORG_A)
+
+        assert items == []
+        assert total == 0
+        orders_client_mock.list_customer_orders.assert_not_awaited()
+
+    async def test_lists_orders_for_resolved_customer(
+        self, configured: None, orders_client_mock: MagicMock
+    ) -> None:
+        order = _make_order(id="ord_1")
+        orders_client_mock.list_customer_orders.return_value = ([order], 1)
+
+        items, total = await polar_self.list_orders(ORG_A, page=2, limit=20)
+
+        assert items == [order]
+        assert total == 1
+        orders_client_mock.list_customer_orders.assert_awaited_once_with(
+            customer_id=_CUSTOMER_ID,
+            page=2,
+            limit=20,
+        )
+
+
+@pytest.mark.asyncio
+class TestGetOrderInvoiceUrl:
+    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+
+        with pytest.raises(PolarSelfNotConfigured):
+            await polar_self.get_order_invoice_url(ORG_A, "ord_1")
+
+    async def test_customer_not_found_raises_order_not_found(
+        self, configured: None, orders_client_mock: MagicMock
+    ) -> None:
+        orders_client_mock.get_customer_by_external_id_or_none.return_value = None
+
+        with pytest.raises(PolarSelfOrderNotFound):
+            await polar_self.get_order_invoice_url(ORG_A, "ord_1")
+
+        orders_client_mock.get_order.assert_not_awaited()
+
+    async def test_order_not_found(
+        self, configured: None, orders_client_mock: MagicMock
+    ) -> None:
+        orders_client_mock.get_order.return_value = None
+
+        with pytest.raises(PolarSelfOrderNotFound):
+            await polar_self.get_order_invoice_url(ORG_A, "ord_1")
+
+        orders_client_mock.get_order_invoice.assert_not_awaited()
+
+    async def test_order_belongs_to_other_customer(
+        self, configured: None, orders_client_mock: MagicMock
+    ) -> None:
+        orders_client_mock.get_order.return_value = _make_order(
+            customer_id="some-other-customer"
+        )
+
+        with pytest.raises(PolarSelfOrderNotFound):
+            await polar_self.get_order_invoice_url(ORG_A, "ord_1")
+
+        orders_client_mock.get_order_invoice.assert_not_awaited()
+
+    async def test_invoice_not_available_raises(
+        self, configured: None, orders_client_mock: MagicMock
+    ) -> None:
+        orders_client_mock.get_order.return_value = _make_order()
+        orders_client_mock.get_order_invoice.return_value = None
+
+        with pytest.raises(PolarSelfOrderNotFound):
+            await polar_self.get_order_invoice_url(ORG_A, "ord_1")
+
+    async def test_returns_invoice_url(
+        self, configured: None, orders_client_mock: MagicMock
+    ) -> None:
+        orders_client_mock.get_order.return_value = _make_order()
+        orders_client_mock.get_order_invoice.return_value = (
+            "https://example.com/inv.pdf"
+        )
+
+        url = await polar_self.get_order_invoice_url(ORG_A, "ord_1")
+
+        assert url == "https://example.com/inv.pdf"
+        orders_client_mock.get_order_invoice.assert_awaited_once_with(order_id="ord_1")

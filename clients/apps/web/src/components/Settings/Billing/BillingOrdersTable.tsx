@@ -1,90 +1,135 @@
 'use client'
 
+import { useGetOrganizationOrderInvoice } from '@/hooks/queries/billing'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import { Text } from '@polar-sh/orbit'
+import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
+import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   DataTable,
   DataTableColumnDef,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { formatCurrency } from '@polar-sh/currency'
-import { twMerge } from 'tailwind-merge'
-import { BillingOrder } from './mockData'
+import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { useCallback } from 'react'
 
 const formatPrice = formatCurrency('standard', 'en-US')
 
-const STATUS_LABEL: Record<BillingOrder['status'], string> = {
-  paid: 'Paid',
-  pending: 'Pending',
-  refunded: 'Refunded',
-  void: 'Void',
+type PillColor = React.ComponentProps<typeof Pill>['color']
+
+const STATUS: Record<string, { label: string; color: PillColor }> = {
+  paid: { label: 'Paid', color: 'green' },
+  pending: { label: 'Pending', color: 'yellow' },
+  refunded: { label: 'Refunded', color: 'purple' },
+  partially_refunded: { label: 'Partially refunded', color: 'purple' },
 }
 
-const STATUS_COLOR: Record<BillingOrder['status'], string> = {
-  paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-  pending:
-    'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
-  refunded:
-    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-  void: 'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-400',
+const BILLING_REASON_LABEL: Record<string, string> = {
+  purchase: 'Purchase',
+  subscription_create: 'Subscription',
+  subscription_cycle: 'Subscription renewal',
+  subscription_update: 'Subscription change',
 }
 
-export const BillingOrdersTable = ({ orders }: { orders: BillingOrder[] }) => {
-  const columns: DataTableColumnDef<BillingOrder>[] = [
+const formatDescription = (order: schemas['OrganizationOrder']): string => {
+  const reason =
+    BILLING_REASON_LABEL[order.billing_reason] ?? order.billing_reason
+  return `${order.product_name} — ${reason}`
+}
+
+const DownloadInvoiceButton = ({
+  organizationId,
+  order,
+}: {
+  organizationId: string
+  order: schemas['OrganizationOrder']
+}) => {
+  const getInvoice = useGetOrganizationOrderInvoice(organizationId)
+
+  const onClick = useCallback(async () => {
+    const result = await getInvoice.mutateAsync(order.id)
+    const opened = window.open(result.url, '_blank', 'noopener,noreferrer')
+    if (!opened) {
+      window.location.href = result.url
+    }
+  }, [getInvoice, order.id])
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={onClick}
+      loading={getInvoice.isPending}
+      disabled={getInvoice.isPending}
+      aria-label={`Download invoice ${order.invoice_number}`}
+    >
+      <FileDownloadOutlined fontSize="small" />
+    </Button>
+  )
+}
+
+export const BillingOrdersTable = ({
+  organizationId,
+  orders,
+}: {
+  organizationId: string
+  orders: schemas['OrganizationOrder'][]
+}) => {
+  const columns: DataTableColumnDef<schemas['OrganizationOrder']>[] = [
     {
-      accessorKey: 'date',
+      accessorKey: 'created_at',
       header: 'Date',
       size: 110,
       cell: ({ row: { original } }) => (
-        <FormattedDateTime datetime={original.date} />
+        <FormattedDateTime datetime={original.created_at} />
       ),
     },
     {
       accessorKey: 'description',
       header: 'Description',
-      size: 200,
+      size: 240,
       cell: ({ row: { original } }) => (
-        <Text as="span">{original.description}</Text>
+        <Text as="span">{formatDescription(original)}</Text>
       ),
     },
     {
-      accessorKey: 'amount',
+      accessorKey: 'total_amount',
       header: 'Amount',
-      size: 90,
+      size: 100,
       cell: ({ row: { original } }) => (
         <Text as="span" variant="label">
-          {formatPrice(original.amount, original.currency)}
+          {formatPrice(original.total_amount, original.currency)}
         </Text>
       ),
     },
     {
       accessorKey: 'status',
       header: 'Status',
-      size: 90,
-      cell: ({ row: { original } }) => (
-        <Status
-          className={twMerge(STATUS_COLOR[original.status], 'w-fit')}
-          status={STATUS_LABEL[original.status]}
-        />
-      ),
+      size: 130,
+      cell: ({ row: { original } }) => {
+        const entry = STATUS[original.status]
+        return (
+          <Pill color={entry?.color ?? 'gray'}>
+            {entry?.label ?? original.status}
+          </Pill>
+        )
+      },
     },
     {
       id: 'actions',
       header: () => null,
       size: 56,
-      cell: ({ row: { original } }) => (
-        <Box display="flex" justifyContent="end">
-          <a
-            href={original.invoiceUrl}
-            aria-label={`Download invoice ${original.number}`}
-            className="dark:text-polar-400 dark:hover:bg-polar-700 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:text-white"
-          >
-            <FileDownloadOutlined fontSize="small" />
-          </a>
-        </Box>
-      ),
+      cell: ({ row: { original } }) =>
+        original.is_invoice_generated ? (
+          <Box display="flex" justifyContent="end">
+            <DownloadInvoiceButton
+              organizationId={organizationId}
+              order={original}
+            />
+          </Box>
+        ) : null,
     },
   ]
 

@@ -1014,6 +1014,46 @@ export interface paths {
     patch: operations['organizations:change_subscription_plan']
     trace?: never
   }
+  '/v1/organizations/{id}/orders': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Organization Orders
+     * @description List Polar orders billed to this organization.
+     */
+    get: operations['organizations:list_orders']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/orders/{order_id}/invoice': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization Order Invoice
+     * @description Get the invoice URL for a Polar order belonging to this organization.
+     */
+    get: operations['organizations:get_order_invoice']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -19713,6 +19753,12 @@ export interface components {
       items: components['schemas']['OrganizationMember'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationOrder] */
+    ListResource_OrganizationOrder_: {
+      /** Items */
+      items: components['schemas']['OrganizationOrder'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Organization] */
     ListResource_Organization_: {
       /** Items */
@@ -23692,6 +23738,45 @@ export interface components {
       new_order: boolean
       /** New Subscription */
       new_subscription: boolean
+    }
+    /** OrganizationOrder */
+    OrganizationOrder: {
+      /** Id */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Invoice Number */
+      invoice_number: string
+      /** Status */
+      status: string
+      /** Paid */
+      paid: boolean
+      /**
+       * Total Amount
+       * @description Total amount in cents, after discount and tax.
+       */
+      total_amount: number
+      /**
+       * Refunded Amount
+       * @description Refunded amount in cents.
+       */
+      refunded_amount: number
+      /** Currency */
+      currency: string
+      /** Billing Reason */
+      billing_reason: string
+      /** Product Name */
+      product_name: string
+      /** Is Invoice Generated */
+      is_invoice_generated: boolean
+    }
+    /** OrganizationOrderInvoice */
+    OrganizationOrderInvoice: {
+      /** Url */
+      url: string
     }
     /** OrganizationPaymentStatus */
     OrganizationPaymentStatus: {
@@ -33162,6 +33247,92 @@ export interface operations {
         }
       }
       /** @description Organization or subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:list_orders': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationOrder_']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_order_invoice': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        order_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Order invoice URL returned. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationOrderInvoice']
+        }
+      }
+      /** @description Order or invoice not found. */
       404: {
         headers: {
           [name: string]: unknown

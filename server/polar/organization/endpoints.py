@@ -28,6 +28,8 @@ from polar.exceptions import (
 from polar.integrations.polar.schemas import (
     OrganizationCheckoutRequest,
     OrganizationCheckoutResponse,
+    OrganizationOrder,
+    OrganizationOrderInvoice,
     OrganizationPlan,
     OrganizationSubscription,
     OrganizationSubscriptionUpdate,
@@ -837,3 +839,51 @@ async def change_subscription_plan(
         product_id=body.product_id,
     )
     return OrganizationSubscription.from_sdk(subscription)
+
+
+@router.get(
+    "/{id}/orders",
+    response_model=ListResource[OrganizationOrder],
+    summary="List Organization Orders",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def list_orders(
+    authz: AuthorizeOrgAccess,
+    pagination: PaginationParamsQuery,
+) -> ListResource[OrganizationOrder]:
+    """List Polar orders billed to this organization."""
+    items, total = await polar_self_service.list_orders(
+        authz.organization.id,
+        page=pagination.page,
+        limit=pagination.limit,
+    )
+    return ListResource.from_paginated_results(
+        [OrganizationOrder.from_sdk(order) for order in items],
+        total,
+        pagination,
+    )
+
+
+@router.get(
+    "/{id}/orders/{order_id}/invoice",
+    response_model=OrganizationOrderInvoice,
+    summary="Get Organization Order Invoice",
+    responses={
+        200: {"description": "Order invoice URL returned."},
+        404: {
+            "description": "Order or invoice not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def get_order_invoice(
+    authz: AuthorizeOrgAccess,
+    order_id: str,
+) -> OrganizationOrderInvoice:
+    """Get the invoice URL for a Polar order belonging to this organization."""
+    url = await polar_self_service.get_order_invoice_url(
+        authz.organization.id, order_id
+    )
+    return OrganizationOrderInvoice(url=url)

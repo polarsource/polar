@@ -7,7 +7,7 @@ from pydantic import Field
 from polar.kit.schemas import Schema
 
 if TYPE_CHECKING:
-    from polar_sdk.models import Checkout, Product, Subscription
+    from polar_sdk.models import Checkout, Order, Product, Subscription
 
 
 class OrganizationPlanPrice(Schema):
@@ -153,3 +153,40 @@ class OrganizationCheckoutResponse(Schema):
 
 class OrganizationSubscriptionUpdate(Schema):
     product_id: str = Field(description="Polar product ID to switch the plan to.")
+
+
+class OrganizationOrder(Schema):
+    id: str
+    created_at: datetime
+    invoice_number: str
+    status: str
+    paid: bool
+    total_amount: int = Field(
+        description="Total amount in cents, after discount and tax."
+    )
+    refunded_amount: int = Field(description="Refunded amount in cents.")
+    currency: str
+    billing_reason: str
+    product_name: str
+    is_invoice_generated: bool
+
+    @classmethod
+    def from_sdk(cls, order: "Order") -> "OrganizationOrder":
+        product = order.product
+        return cls(
+            id=order.id,
+            created_at=order.created_at,
+            invoice_number=order.invoice_number,
+            status=order.status.value,
+            paid=order.paid,
+            total_amount=order.total_amount,
+            refunded_amount=order.refunded_amount,
+            currency=order.currency,
+            billing_reason=order.billing_reason.value,
+            product_name=product.name if product is not None else order.description,
+            is_invoice_generated=order.is_invoice_generated,
+        )
+
+
+class OrganizationOrderInvoice(Schema):
+    url: str

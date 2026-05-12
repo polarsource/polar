@@ -42,6 +42,34 @@ export type OrganizationPaymentMethodAddResult = {
   client_secret: string
 }
 
+export const useOrganizationOrders = (organizationId: string) =>
+  useQuery({
+    queryKey: ['organization-billing', organizationId, 'orders'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/orders', {
+          params: {
+            path: { id: organizationId },
+            query: { page: 1, limit: 50 },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!organizationId,
+  })
+
+export const useGetOrganizationOrderInvoice = (organizationId: string) =>
+  useMutation({
+    mutationFn: (orderId: string) =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/orders/{order_id}/invoice', {
+          params: {
+            path: { id: organizationId, order_id: orderId },
+          },
+        }),
+      ),
+  })
+
 export const useOrganizationPlans = (organizationId: string) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'plans'],

@@ -143,6 +143,18 @@ AuthorizeFinanceWrite = Annotated[
         )
     ),
 ]
+AuthorizeMembersRead = Annotated[
+    AuthzContext[User | Organization],
+    Depends(
+        OrgPolicyGuard(
+            members.can_read,
+            required_scopes={
+                Scope.organizations_read,
+                Scope.organizations_write,
+            },
+        )
+    ),
+]
 AuthorizeMembersManage = Annotated[
     AuthzContext[User],
     Depends(

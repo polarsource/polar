@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/nextjs'
+
 export type MintlifySearchResult = {
   content: string
   path: string
@@ -38,14 +40,15 @@ const mintlifyPost = async <T>(
       },
     )
     if (!response.ok) {
-      console.error(
-        `[feedback/question] Mintlify ${endpoint} ${response.status}`,
+      Sentry.captureMessage(
+        `Mintlify ${endpoint} request failed with ${response.status}`,
+        { level: 'error', tags: { endpoint, status: response.status } },
       )
       return null
     }
     return (await response.json()) as T
   } catch (error) {
-    console.error(`[feedback/question] Mintlify ${endpoint} threw:`, error)
+    Sentry.captureException(error, { tags: { endpoint } })
     return null
   }
 }

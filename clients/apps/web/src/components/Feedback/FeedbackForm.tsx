@@ -22,6 +22,7 @@ import { collectClientContext } from './clientContext'
 import {
   ACCOUNT_REVIEW_REPLY,
   REJECTION_OFF_TOPIC_TEXT,
+  REJECTION_PRE_APPROVAL_TEXT,
   REJECTION_UNCLEAR_TEXT,
 } from './constants'
 import { useSubmitFeedback } from './useSubmitFeedback'
@@ -103,6 +104,12 @@ export const FeedbackForm = ({
             setValidationOutcome({
               kind: 'rejection',
               text: REJECTION_OFF_TOPIC_TEXT,
+            })
+            return
+          case 'pre_approval':
+            setValidationOutcome({
+              kind: 'rejection',
+              text: REJECTION_PRE_APPROVAL_TEXT,
             })
             return
           case 'account_review':

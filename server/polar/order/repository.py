@@ -210,6 +210,20 @@ class OrderRepository(
     ) -> Select[tuple[Order]]:
         return self.get_base_statement().where(Order.organization_id.in_(org_ids))
 
+    async def get_by_id_and_org_ids(
+        self,
+        id: UUID,
+        org_ids: set[AccessibleOrganizationID],
+        *,
+        options: Options = (),
+    ) -> Order | None:
+        statement = (
+            self.get_statement_by_org_ids(org_ids)
+            .where(Order.id == id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
     ) -> Select[tuple[Order]]:

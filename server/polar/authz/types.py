@@ -1,5 +1,5 @@
 from collections.abc import Awaitable, Callable
-from typing import NewType
+from typing import Literal, NewType
 from uuid import UUID
 
 from polar.auth.models import AuthSubject, Organization, User
@@ -11,7 +11,7 @@ from polar.postgres import AsyncSession
 AccessibleOrganizationID = NewType("AccessibleOrganizationID", UUID)
 
 # Policy functions return True if allowed, or a denial reason string if denied.
-PolicyResult = bool | str
+PolicyResult = Literal[True] | str
 
 PolicyFn = Callable[
     [AsyncSession, AuthSubject[User | Organization], OrganizationModel],

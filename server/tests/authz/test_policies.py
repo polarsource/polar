@@ -145,7 +145,7 @@ class TestMembersCanManage:
 
 
 @pytest.mark.asyncio
-class TestPayoutAccountCanRead:
+class TestPayoutAccountCanAccess:
     @pytest.mark.auth
     async def test_admin_allowed(
         self,
@@ -157,7 +157,7 @@ class TestPayoutAccountCanRead:
     ) -> None:
         payout_account = await create_payout_account(save_fixture, organization, user)
 
-        result = await pa_policy.can_read(auth_subject, payout_account)
+        result = await pa_policy.can_access(auth_subject, payout_account)
         assert result is True
 
     @pytest.mark.auth
@@ -173,40 +173,6 @@ class TestPayoutAccountCanRead:
             save_fixture, organization, other_user
         )
 
-        result = await pa_policy.can_read(auth_subject, payout_account)
-        assert isinstance(result, str)
-        assert "admin" in result.lower()
-
-
-@pytest.mark.asyncio
-class TestPayoutAccountCanWrite:
-    @pytest.mark.auth
-    async def test_admin_allowed(
-        self,
-        auth_subject: AuthSubject[User],
-        save_fixture: SaveFixture,
-        user: User,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        payout_account = await create_payout_account(save_fixture, organization, user)
-
-        result = await pa_policy.can_write(auth_subject, payout_account)
-        assert result is True
-
-    @pytest.mark.auth
-    async def test_non_admin_denied(
-        self,
-        auth_subject: AuthSubject[User],
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        other_user = await create_user(save_fixture)
-        payout_account = await create_payout_account(
-            save_fixture, organization, other_user
-        )
-
-        result = await pa_policy.can_write(auth_subject, payout_account)
+        result = await pa_policy.can_access(auth_subject, payout_account)
         assert isinstance(result, str)
         assert "admin" in result.lower()

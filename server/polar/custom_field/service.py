@@ -16,14 +16,15 @@ from sqlalchemy import (
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.auth.permission import OrganizationPermission, roles_with_permission
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.authz.service import assert_organization_permission
 from polar.custom_field.sorting import CustomFieldSortProperty
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import CustomField, Organization, User, UserOrganization
+from polar.models import CustomField, Organization, User
 from polar.models.custom_field import CustomFieldType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -269,17 +270,11 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         )
 
         if is_user(auth_subject):
-            user = auth_subject.subject
             statement = statement.where(
                 CustomField.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                        UserOrganization.role.in_(
-                            roles_with_permission(
-                                OrganizationPermission.custom_fields_read
-                            )
-                        ),
+                    select_user_org_ids(
+                        auth_subject.subject.id,
+                        permission=OrganizationPermission.custom_fields_read,
                     )
                 )
             )

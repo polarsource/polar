@@ -190,7 +190,7 @@ async def set_payout_account(
     payout_account = await pa_repo.get_by_id(body.payout_account_id)
     if (
         payout_account is None
-        or await pa_policy.can_write(authz.auth_subject, payout_account) is not True
+        or await pa_policy.can_access(authz.auth_subject, payout_account) is not True
     ):
         raise PolarRequestValidationError(
             [

@@ -1,13 +1,34 @@
 from typing import Self
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 
 from polar.auth.models import AuthSubject, User, is_organization, is_user
 from polar.auth.permission import OrganizationPermission, roles_with_permission
 from polar.models import Organization, UserOrganization
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncReadSession
+
+
+def select_user_org_ids(
+    user_id: UUID,
+    *,
+    permission: OrganizationPermission | None = None,
+) -> Select[tuple[UUID]]:
+    """SQL `SELECT` of organization IDs the user is a member of.
+
+    Intended for use as a subquery inside `Resource.organization_id.in_(...)`
+    when building auth-aware repository statements. When ``permission`` is
+    provided, results are restricted to organizations where the user's role
+    grants that permission.
+    """
+    stmt = select(UserOrganization.organization_id).where(
+        UserOrganization.user_id == user_id,
+        UserOrganization.is_deleted.is_(False),
+    )
+    if permission is not None:
+        stmt = stmt.where(UserOrganization.role.in_(roles_with_permission(permission)))
+    return stmt
 
 
 class AuthzRepository:
@@ -40,10 +61,9 @@ class AuthzRepository:
             )
         )
         if permission is not None:
-            roles = roles_with_permission(permission)
-            if not roles:
-                return set()
-            stmt = stmt.where(UserOrganization.role.in_(roles))
+            stmt = stmt.where(
+                UserOrganization.role.in_(roles_with_permission(permission))
+            )
         result = await self.session.scalars(stmt)
         return set(result.all())
 

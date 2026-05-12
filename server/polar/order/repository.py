@@ -14,7 +14,8 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
-from polar.auth.permission import OrganizationPermission, roles_with_permission
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
@@ -34,7 +35,6 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
-    UserOrganization,
 )
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
@@ -216,15 +216,11 @@ class OrderRepository(
         statement = self.get_base_statement()
 
         if is_user(auth_subject):
-            user = auth_subject.subject
             statement = statement.where(
                 Order.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                        UserOrganization.role.in_(
-                            roles_with_permission(OrganizationPermission.sales_read)
-                        ),
+                    select_user_org_ids(
+                        auth_subject.subject.id,
+                        permission=OrganizationPermission.sales_read,
                     )
                 )
             )

@@ -114,7 +114,7 @@ async def _check_policy(
     """Evaluate a policy function and raise NotPermitted if denied."""
     result = await policy_fn(session, auth_subject, organization)
     if result is not True:
-        raise NotPermitted(result if isinstance(result, str) else "Not permitted")
+        raise NotPermitted(result)
 
 
 AuthorizeFinanceRead = Annotated[
@@ -403,9 +403,9 @@ AuthorizeAccountWrite = Annotated[
     Depends(AccountPolicyGuard(finance_policy.can_manage)),
 ]
 AuthorizePayoutAccountRead = Annotated[
-    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(pa_policy.can_read))
+    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(pa_policy.can_access))
 ]
 AuthorizePayoutAccountWrite = Annotated[
     AuthorizedPayoutAccount,
-    Depends(PayoutAccountPolicyGuard(pa_policy.can_write)),
+    Depends(PayoutAccountPolicyGuard(pa_policy.can_access)),
 ]

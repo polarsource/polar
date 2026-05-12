@@ -22,7 +22,8 @@ from polar.auth.models import (
 from polar.auth.models import (
     Customer as AuthCustomer,
 )
-from polar.auth.permission import OrganizationPermission, roles_with_permission
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.repository import (
     Options,
@@ -43,7 +44,6 @@ from polar.models import (
     SubscriptionMeter,
     SubscriptionProductPrice,
     SubscriptionUpdate,
-    UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
 from polar.models.email_log import EmailLog, EmailLogStatus
@@ -161,15 +161,11 @@ class SubscriptionRepository(
         statement = self.get_base_statement().join(Product)
 
         if is_user(auth_subject):
-            user = auth_subject.subject
             statement = statement.where(
                 Product.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                        UserOrganization.role.in_(
-                            roles_with_permission(OrganizationPermission.sales_read)
-                        ),
+                    select_user_org_ids(
+                        auth_subject.subject.id,
+                        permission=OrganizationPermission.sales_read,
                     )
                 )
             )

@@ -8,7 +8,8 @@ from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, se
 from sqlalchemy.exc import DBAPIError
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.auth.permission import OrganizationPermission, roles_with_permission
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.authz.service import assert_organization_permission
 from polar.discount.repository import DiscountRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
@@ -23,7 +24,6 @@ from polar.models import (
     Organization,
     Product,
     User,
-    UserOrganization,
 )
 from polar.models.checkout import Checkout
 from polar.models.discount import DiscountFixed
@@ -474,15 +474,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         statement = select(Discount).where(Discount.is_deleted.is_(False))
 
         if is_user(auth_subject):
-            user = auth_subject.subject
             statement = statement.where(
                 Discount.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                        UserOrganization.role.in_(
-                            roles_with_permission(OrganizationPermission.products_read)
-                        ),
+                    select_user_org_ids(
+                        auth_subject.subject.id,
+                        permission=OrganizationPermission.products_read,
                     )
                 )
             )

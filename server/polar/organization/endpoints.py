@@ -9,6 +9,7 @@ from polar.account.service import account as account_service
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
+    AuthorizeMembersRead,
     AuthorizeMembersSetRole,
     AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
@@ -373,7 +374,7 @@ async def get_payment_status(
     tags=[APITag.private],
 )
 async def members(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeMembersRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""

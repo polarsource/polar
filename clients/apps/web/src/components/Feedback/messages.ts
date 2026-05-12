@@ -16,7 +16,7 @@ export const buildTranscript = (messages: UIMessage[]): string =>
       const text = extractText(message).trim()
       if (!text) return null
       const speaker = message.role === 'user' ? 'User' : 'Assistant'
-      return `${speaker}: ${text}`
+      return `**${speaker}**\n\n${text}`
     })
     .filter((line): line is string => line !== null)
     .join('\n\n')

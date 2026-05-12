@@ -128,8 +128,8 @@ export const QuestionFlow = ({
       const transcript = buildTranscript(messages)
       const trimmed = note.trim()
       const message = trimmed
-        ? `${trimmed}\n\n---\nConversation transcript:\n\n${transcript}`
-        : `Conversation transcript:\n\n${transcript}`
+        ? `${trimmed}\n\n---\n\n## Transcript\n\n${transcript}`
+        : `## Transcript\n\n${transcript}`
       onEscalate(message, type)
     },
     [messages, onEscalate],

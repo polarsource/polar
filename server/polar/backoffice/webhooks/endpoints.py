@@ -10,7 +10,6 @@ from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.webhook.repository import WebhookEndpointRepository
-from polar.webhook.schemas import WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.sorting import WebhookSortProperty
 
@@ -266,9 +265,8 @@ async def toggle_enabled(
     if webhook is None:
         raise HTTPException(status_code=404)
 
-    update_schema = WebhookEndpointUpdate(enabled=not webhook.enabled)
-    webhook = await webhook_service.update_endpoint(
-        session, endpoint=webhook, update_schema=update_schema
+    webhook = await repository.update(
+        webhook, update_dict={"enabled": not webhook.enabled}
     )
     await session.flush()
 

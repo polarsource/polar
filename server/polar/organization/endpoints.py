@@ -6,6 +6,8 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.auth.models import is_user
+from polar.auth.permission import ROLE_PERMISSIONS
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
@@ -15,6 +17,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgAccessUser,
     AuthorizeOrgAccessWrite,
     AuthorizeOrgManage,
+    AuthorizeOrgManageUser,
 )
 from polar.authz.policies import payout_account as pa_policy
 from polar.config import settings
@@ -53,10 +56,12 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
+from polar.user_organization.repository import UserOrganizationRepository
 from polar.user_organization.schemas import (
     OrganizationMember,
     OrganizationMemberInvite,
     OrganizationMemberRoleUpdate,
+    OrganizationRoleDefinition,
 )
 from polar.user_organization.service import (
     CannotRemoveOrganizationOwner,
@@ -77,6 +82,7 @@ from .schemas import (
     OrganizationDeletionResponse,
     OrganizationID,
     OrganizationKYC,
+    OrganizationListItem,
     OrganizationPaymentStatus,
     OrganizationPayoutAccountSet,
     OrganizationReviewState,
@@ -100,16 +106,17 @@ OrganizationNotFound = {
 @router.get(
     "/",
     summary="List Organizations",
-    response_model=ListResource[OrganizationSchema],
+    response_model=ListResource[OrganizationListItem],
     tags=[APITag.public],
+    operation_id="organizations:list",
 )
-async def list(
+async def list_organizations(
     auth_subject: auth.OrganizationsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     slug: str | None = Query(None, description="Filter by slug."),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[OrganizationSchema]:
+) -> ListResource[OrganizationListItem]:
     """List organizations."""
     results, count = await organization_service.list(
         session,
@@ -119,8 +126,22 @@ async def list(
         sorting=sorting,
     )
 
+    roles_by_org_id: dict[UUID, OrganizationRole] = {}
+    if is_user(auth_subject):
+        user_organization_repository = UserOrganizationRepository(session)
+        roles_by_org_id = (
+            await user_organization_repository.get_roles_by_organization_ids(
+                auth_subject.subject.id, [result.id for result in results]
+            )
+        )
+
     return ListResource.from_paginated_results(
-        [OrganizationSchema.model_validate(result) for result in results],
+        [
+            OrganizationListItem.model_validate(result).model_copy(
+                update={"role": roles_by_org_id.get(result.id)}
+            )
+            for result in results
+        ],
         count,
         pagination,
     )
@@ -178,7 +199,7 @@ async def get_account(
     tags=[APITag.private],
 )
 async def set_payout_account(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageUser,
     body: OrganizationPayoutAccountSet,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -214,7 +235,7 @@ async def set_payout_account(
     tags=[APITag.private],
 )
 async def get_kyc(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> Organization:
     """Get an organization's KYC/compliance details."""
     return authz.organization
@@ -267,7 +288,7 @@ async def check_slug(
     tags=[APITag.public],
 )
 async def update(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageUser,
     organization_update: OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -316,7 +337,7 @@ async def submit_review(
     tags=[APITag.private],
 )
 async def delete(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationDeletionResponse:
     """Request deletion of an organization.
@@ -385,6 +406,25 @@ async def members(
         items=[OrganizationMember.model_validate(m) for m in members],
         pagination=Pagination(total_count=len(members), max_page=1),
     )
+
+
+@router.get(
+    "/{id}/roles",
+    response_model=list[OrganizationRoleDefinition],
+    tags=[APITag.private],
+)
+async def roles(authz: AuthorizeOrgAccess) -> list[OrganizationRoleDefinition]:
+    """List the roles available in an organization, with the permissions
+    each role grants.
+
+    The set is currently static (identical across organizations); the
+    per-organization route shape leaves room for org-level role
+    customization in the future.
+    """
+    return [
+        OrganizationRoleDefinition(id=role, permissions=sorted(permissions))
+        for role, permissions in ROLE_PERMISSIONS.items()
+    ]
 
 
 @router.post(
@@ -593,7 +633,7 @@ async def set_member_role(
     tags=[APITag.private],
 )
 async def validate_with_ai(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationReviewStatus:
     """Get the AI validation status. Review runs asynchronously in the background."""
@@ -625,7 +665,7 @@ async def validate_with_ai(
     tags=[APITag.private],
 )
 async def submit_appeal(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     appeal_request: OrganizationAppealRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationAppealResponse:
@@ -664,7 +704,7 @@ async def submit_appeal(
     tags=[APITag.private],
 )
 async def mark_ai_onboarding_complete(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Mark the AI onboarding as completed for this organization."""
@@ -684,7 +724,7 @@ async def mark_ai_onboarding_complete(
     tags=[APITag.private],
 )
 async def get_review_status(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewStatus:
     """Get the current review status and appeal information for an organization."""
@@ -715,7 +755,7 @@ async def get_review_status(
     tags=[APITag.private],
 )
 async def get_review(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewState:
     """Get the merchant self-review checklist state.
@@ -737,7 +777,7 @@ async def get_review(
     tags=[APITag.private],
 )
 async def validate_website(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationValidateWebsiteRequest,
 ) -> OrganizationValidateWebsiteResponse:
     """Validate that a website URL is reachable and not targeting a private network."""
@@ -757,7 +797,7 @@ async def validate_website(
     tags=[APITag.private],
 )
 async def list_plans(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> Sequence[OrganizationPlan]:
     """List the plans this organization can subscribe to."""
     products = await polar_self_service.list_plans()
@@ -777,7 +817,7 @@ async def list_plans(
     tags=[APITag.private],
 )
 async def get_subscription(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> OrganizationSubscription:
     """Get the current Polar subscription for this organization."""
     subscription = await polar_self_service.get_subscription(authz.organization.id)
@@ -799,7 +839,7 @@ async def get_subscription(
 )
 async def start_subscription_checkout(
     request: Request,
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationCheckoutRequest,
 ) -> OrganizationCheckoutResponse:
     """Create a Polar checkout session for an initial paid subscription."""
@@ -828,7 +868,7 @@ async def start_subscription_checkout(
     tags=[APITag.private],
 )
 async def change_subscription_plan(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationSubscriptionUpdate,
 ) -> OrganizationSubscription:
     """Change the plan for an organization's existing subscription."""

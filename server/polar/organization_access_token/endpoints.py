@@ -104,4 +104,6 @@ async def delete(
     if organization_access_token is None:
         raise ResourceNotFound()
 
-    await organization_access_token_service.delete(session, organization_access_token)
+    await organization_access_token_service.delete(
+        session, auth_subject, organization_access_token
+    )

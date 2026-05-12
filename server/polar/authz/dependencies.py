@@ -176,6 +176,15 @@ AuthorizeMembersSetRole = Annotated[
     ),
 ]
 AuthorizeOrgManage = Annotated[
+    AuthzContext[User | Organization],
+    Depends(
+        OrgPolicyGuard(
+            org_policy.can_manage,
+            required_scopes={Scope.organizations_write},
+        )
+    ),
+]
+AuthorizeOrgManageUser = Annotated[
     AuthzContext[User],
     Depends(
         OrgPolicyGuard(

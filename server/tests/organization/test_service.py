@@ -44,6 +44,8 @@ from polar.organization.schemas import (
     OrganizationReviewCheckReason,
     OrganizationReviewCheckStatus,
     OrganizationReviewState,
+    OrganizationReviewSubCheck,
+    OrganizationReviewSubCheckKey,
     OrganizationSocialLink,
     OrganizationSocialPlatforms,
     OrganizationUpdate,
@@ -1353,6 +1355,15 @@ def _step(
     raise AssertionError(f"step {key} missing from {state}")
 
 
+def _sub(
+    step: OrganizationReviewCheck, key: OrganizationReviewSubCheckKey
+) -> OrganizationReviewSubCheck:
+    for sub in step.sub_checks:
+        if sub.key == key:
+            return sub
+    raise AssertionError(f"sub_check {key} missing from {step}")
+
+
 @pytest.mark.asyncio
 class TestGetReviewState:
     """Test the merchant self-review checklist."""
@@ -1381,10 +1392,17 @@ class TestGetReviewState:
             step.status == OrganizationReviewCheckStatus.PENDING
             for step in state.preliminary_steps
         )
-        assert all(
-            OrganizationReviewCheckReason.NOT_STARTED in step.reasons
-            for step in state.preliminary_steps
-        )
+        # Aggregate checks carry reasons on sub_checks, not the parent.
+        for step in state.preliminary_steps:
+            reason_lists = (
+                [sub.reasons for sub in step.sub_checks]
+                if step.sub_checks
+                else [step.reasons]
+            )
+            assert all(
+                OrganizationReviewCheckReason.NOT_STARTED in reasons
+                for reasons in reason_lists
+            )
 
     async def test_email_set_passes(
         self,
@@ -1747,7 +1765,15 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
         assert step.status == OrganizationReviewCheckStatus.PENDING
-        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+        assert step.reasons == []
+        for sub_key in (
+            OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
+            OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN,
+            OrganizationReviewSubCheckKey.SETUP_READINESS_WEBHOOK,
+        ):
+            sub = _sub(step, sub_key)
+            assert sub.status == OrganizationReviewCheckStatus.PENDING
+            assert OrganizationReviewCheckReason.NOT_STARTED in sub.reasons
 
     async def test_setup_readiness_checkout_link_with_eligible_benefit_passes(
         self,
@@ -1770,6 +1796,18 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
         assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            _sub(
+                step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+            ).status
+            == OrganizationReviewCheckStatus.PASSED
+        )
+        assert (
+            _sub(
+                step, OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN
+            ).status
+            == OrganizationReviewCheckStatus.PENDING
+        )
 
     @pytest.mark.parametrize(
         "benefit_type",
@@ -1800,7 +1838,11 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
         assert step.status == OrganizationReviewCheckStatus.PENDING
-        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+        checkout_link_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+        )
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in checkout_link_sub.reasons
 
     async def test_setup_readiness_checkout_link_with_success_url_passes(
         self,
@@ -1821,6 +1863,12 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
         assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            _sub(
+                step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+            ).status
+            == OrganizationReviewCheckStatus.PASSED
+        )
 
     async def test_setup_readiness_checkout_link_without_benefits_or_success_url_is_not_started(
         self,
@@ -1837,7 +1885,11 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
         assert step.status == OrganizationReviewCheckStatus.PENDING
-        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+        checkout_link_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+        )
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in checkout_link_sub.reasons
 
     async def test_setup_readiness_access_token_and_webhook_passes(
         self,
@@ -1859,6 +1911,22 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
         assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            _sub(
+                step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+            ).status
+            == OrganizationReviewCheckStatus.PENDING
+        )
+        assert (
+            _sub(
+                step, OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN
+            ).status
+            == OrganizationReviewCheckStatus.PASSED
+        )
+        assert (
+            _sub(step, OrganizationReviewSubCheckKey.SETUP_READINESS_WEBHOOK).status
+            == OrganizationReviewCheckStatus.PASSED
+        )
 
     async def test_setup_readiness_access_token_without_webhook_warns(
         self,
@@ -1879,9 +1947,16 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
         assert step.status == OrganizationReviewCheckStatus.WARNING
+        assert step.reasons == []
+        access_token_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN
+        )
+        assert access_token_sub.status == OrganizationReviewCheckStatus.PASSED
+        webhook_sub = _sub(step, OrganizationReviewSubCheckKey.SETUP_READINESS_WEBHOOK)
+        assert webhook_sub.status == OrganizationReviewCheckStatus.WARNING
         assert (
             OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING
-            in step.reasons
+            in webhook_sub.reasons
         )
         # Warnings do not block submission, even when this check is in WARNING.
         non_setup_failing = [

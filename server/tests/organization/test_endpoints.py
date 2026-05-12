@@ -1105,9 +1105,10 @@ class TestGetReview:
         assert json["verdict"] is None
         assert json["appeal"] is None
         assert all(step["status"] == "pending" for step in json["preliminary_steps"])
-        assert all(
-            "not_started" in step["reasons"] for step in json["preliminary_steps"]
-        )
+        # Aggregate checks carry reasons on sub_checks, not the parent.
+        for step in json["preliminary_steps"]:
+            targets = step["sub_checks"] or [step]
+            assert all("not_started" in node["reasons"] for node in targets)
 
 
 @pytest.mark.asyncio

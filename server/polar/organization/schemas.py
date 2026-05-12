@@ -610,6 +610,35 @@ class OrganizationReviewCheckReason(StrEnum):
     SETUP_READINESS_WEBHOOK_MISSING = "setup_readiness.webhook_missing"
 
 
+class OrganizationReviewSubCheckKey(StrEnum):
+    """Stable identifiers for nested sub-checks inside a parent check."""
+
+    SETUP_READINESS_CHECKOUT_LINK = "setup_readiness.checkout_link"
+    SETUP_READINESS_ACCESS_TOKEN = "setup_readiness.access_token"
+    SETUP_READINESS_WEBHOOK = "setup_readiness.webhook"
+
+
+class OrganizationReviewSubCheck(Schema):
+    """A nested sub-item that contributes to a parent check's rolled-up status.
+
+    Sub-checks expose the per-component breakdown for aggregate checks (e.g.
+    `setup_readiness`) so the frontend doesn't have to re-derive which path
+    is configured. The parent's `status` is the source of truth for gating;
+    reasons explaining a sub-item live on the sub-check itself.
+    """
+
+    key: OrganizationReviewSubCheckKey
+    status: OrganizationReviewCheckStatus
+    reasons: list[OrganizationReviewCheckReason] = Field(
+        default_factory=list,
+        description="Reasons for the sub-check's current status. Empty when `passed`.",
+    )
+    value: str | None = Field(
+        default=None,
+        description="Optional contextual value associated with the sub-check.",
+    )
+
+
 class OrganizationReviewCheck(Schema):
     """A single item in the self-review checklist."""
 
@@ -624,6 +653,14 @@ class OrganizationReviewCheck(Schema):
         description=(
             "Optional contextual value associated with the check, e.g. the "
             "product URL for the `product_url` check."
+        ),
+    )
+    sub_checks: list[OrganizationReviewSubCheck] = Field(
+        default_factory=list,
+        description=(
+            "Per-component breakdown, populated only for aggregate checks "
+            "(currently `setup_readiness`). The parent `status` is the "
+            "source of truth for gating."
         ),
     )
 

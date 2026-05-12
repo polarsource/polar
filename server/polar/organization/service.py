@@ -88,6 +88,8 @@ from .schemas import (
     OrganizationReviewCheckReason,
     OrganizationReviewCheckStatus,
     OrganizationReviewState,
+    OrganizationReviewSubCheck,
+    OrganizationReviewSubCheckKey,
     OrganizationReviewSubmissionBody,
     OrganizationReviewVerdict,
     OrganizationSlugAvailability,
@@ -1565,29 +1567,82 @@ class OrganizationService:
         An access token without a webhook is a non-blocking warning rather
         than a failure: the merchant can still fulfill via success_url +
         API calls, we just can't observe state changes (refunds,
-        cancellations) without webhooks during review.
+        cancellations) without webhooks during review. Aggregate checks
+        expose per-component state via `sub_checks`; the parent `status`
+        remains the source of truth for gating.
         """
         key = OrganizationReviewCheckKey.SETUP_READINESS
 
         checkout_link_repository = CheckoutLinkRepository.from_session(session)
-        if await checkout_link_repository.has_with_benefit_types(
-            organization.id, _CHECKOUT_FULFILLABLE_BENEFITS
-        ) or await checkout_link_repository.has_with_success_url(organization.id):
-            return self._passed_check(key)
-
         access_token_repository = OrganizationAccessTokenRepository.from_session(
             session
         )
-        if not await access_token_repository.has_by_organization_id(organization.id):
-            return self._not_started_check(key)
-
         webhook_repository = WebhookEndpointRepository.from_session(session)
-        if await webhook_repository.has_by_organization_id(organization.id):
-            return self._passed_check(key)
+
+        has_checkout_link_with_fulfillable_benefit = (
+            await checkout_link_repository.has_with_benefit_types(
+                organization.id, _CHECKOUT_FULFILLABLE_BENEFITS
+            )
+        )
+        has_checkout_link_with_success_url = (
+            await checkout_link_repository.has_with_success_url(organization.id)
+        )
+        has_fulfillable_checkout_link = (
+            has_checkout_link_with_fulfillable_benefit
+            or has_checkout_link_with_success_url
+        )
+        has_access_token = await access_token_repository.has_by_organization_id(
+            organization.id
+        )
+        has_webhook = await webhook_repository.has_by_organization_id(organization.id)
+
+        def _sub(
+            sub_key: OrganizationReviewSubCheckKey, ok: bool
+        ) -> OrganizationReviewSubCheck:
+            return OrganizationReviewSubCheck(
+                key=sub_key,
+                status=OrganizationReviewCheckStatus.PASSED
+                if ok
+                else OrganizationReviewCheckStatus.PENDING,
+                reasons=[] if ok else [OrganizationReviewCheckReason.NOT_STARTED],
+            )
+
+        checkout_link_sub = _sub(
+            OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
+            has_fulfillable_checkout_link,
+        )
+        access_token_sub = _sub(
+            OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN,
+            has_access_token,
+        )
+
+        # Webhook escalates to WARNING (not just PENDING) when the merchant
+        # has chosen the API path: at that point we expect a webhook for
+        # observability, and its absence is a non-blocking flag rather than
+        # a "not started yet" state.
+        if has_access_token and not has_webhook:
+            webhook_sub = OrganizationReviewSubCheck(
+                key=OrganizationReviewSubCheckKey.SETUP_READINESS_WEBHOOK,
+                status=OrganizationReviewCheckStatus.WARNING,
+                reasons=[OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING],
+            )
+        else:
+            webhook_sub = _sub(
+                OrganizationReviewSubCheckKey.SETUP_READINESS_WEBHOOK, has_webhook
+            )
+
+        if checkout_link_sub.status == OrganizationReviewCheckStatus.PASSED:
+            parent_status = OrganizationReviewCheckStatus.PASSED
+        elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
+            # PASSED when webhook is set up, WARNING otherwise.
+            parent_status = webhook_sub.status
+        else:
+            parent_status = OrganizationReviewCheckStatus.PENDING
+
         return OrganizationReviewCheck(
             key=key,
-            status=OrganizationReviewCheckStatus.WARNING,
-            reasons=[OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING],
+            status=parent_status,
+            sub_checks=[checkout_link_sub, access_token_sub, webhook_sub],
         )
 
     async def submit_appeal(

@@ -12,6 +12,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.user_organization import OrganizationRole
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.order import OrderStatus
@@ -70,6 +71,7 @@ async def user_organization_seat_enabled(
     user_organization = UserOrganization(
         user_id=user.id,
         organization_id=seat_enabled_organization.id,
+        role=OrganizationRole.owner,
     )
     await save_fixture(user_organization)
     return user_organization

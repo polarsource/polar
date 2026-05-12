@@ -720,8 +720,6 @@ export interface paths {
     /**
      * Submit Organization for Review
      * @description Submit an organization's saved details for review.
-     *
-     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:submit_review']
     delete?: never
@@ -826,8 +824,7 @@ export interface paths {
      * Remove Member
      * @description Remove a member from an organization.
      *
-     *     Only organization admins can remove members.
-     *     Admins cannot remove themselves.
+     *     Requires `members:manage` permission. Owners cannot be removed.
      */
     delete: operations['organizations:remove_member']
     options?: never
@@ -32447,7 +32444,7 @@ export interface operations {
           'application/json': components['schemas']['Account']
         }
       }
-      /** @description User is not the admin of the account. */
+      /** @description User lacks `finance:read` permission. */
       403: {
         headers: {
           [name: string]: unknown

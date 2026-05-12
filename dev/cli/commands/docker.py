@@ -423,6 +423,9 @@ def _drop_instance_data(instance: int) -> None:
     bucket = s3_bucket(instance)
     public_bucket = s3_public_bucket(instance)
     console.print(f"[dim]  Removing S3 buckets {bucket}, {public_bucket}...[/dim]")
+    # `set -e` aborts on alias-set failure (e.g. minio unreachable) so the user
+    # sees the error. `|| true` on rb makes a missing bucket non-fatal — that's
+    # the expected case for any instance that never created buckets.
     run_command(
         _shared_compose_cmd()
         + [
@@ -432,10 +435,9 @@ def _drop_instance_data(instance: int) -> None:
             "sh",
             "minio-setup",
             "-c",
-            "mc alias set local http://minio:9000 polar-development polar123456789 "
-            f"&& mc rb --force local/{bucket} 2>/dev/null; "
-            f"mc rb --force local/{public_bucket} 2>/dev/null; "
-            "true",
+            'set -e; mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; '
+            f"mc rb --force local/{bucket} || true; "
+            f"mc rb --force local/{public_bucket} || true",
         ],
         capture=True,
     )
@@ -901,9 +903,8 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                     "[dim]Run `dev docker list` to see all assignments.[/dim]"
                 )
                 raise typer.Exit(1)
-        _write_stored_instance(instance)
-        if instance >= MIN_INSTANCE:
             _upsert_registry(str(ROOT_DIR), instance)
+        _write_stored_instance(instance)
         offset = instance * 100
         console.print(f"[green]Stored instance {instance} in .env.docker[/green]")
         console.print(

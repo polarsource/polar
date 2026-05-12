@@ -16,6 +16,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.permission import OrganizationPermission, roles_with_permission
+from polar.authz.service import assert_organization_permission
 from polar.custom_field.sorting import CustomFieldSortProperty
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
@@ -103,6 +105,13 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         organization = await get_payload_organization(
             session, auth_subject, custom_field_create
         )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.custom_fields_manage,
+            "Only an organization admin can manage custom fields",
+        )
 
         existing_field = await self._get_by_organization_id_and_slug(
             session, organization.id, custom_field_create.slug
@@ -134,7 +143,16 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         session: AsyncSession,
         custom_field: CustomField,
         custom_field_update: CustomFieldUpdate,
+        auth_subject: AuthSubject[User | Organization],
     ) -> CustomField:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            custom_field.organization_id,
+            OrganizationPermission.custom_fields_manage,
+            "Only an organization admin can manage custom fields",
+        )
+
         if custom_field.type != custom_field_update.type:
             raise PolarRequestValidationError(
                 [
@@ -198,8 +216,18 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         return custom_field
 
     async def delete(
-        self, session: AsyncSession, custom_field: CustomField
+        self,
+        session: AsyncSession,
+        custom_field: CustomField,
+        auth_subject: AuthSubject[User | Organization],
     ) -> CustomField:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            custom_field.organization_id,
+            OrganizationPermission.custom_fields_manage,
+            "Only an organization admin can manage custom fields",
+        )
         custom_field.set_deleted_at()
         session.add(custom_field)
 
@@ -250,6 +278,11 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.is_deleted.is_(False),
+                        UserOrganization.role.in_(
+                            roles_with_permission(
+                                OrganizationPermission.custom_fields_read
+                            )
+                        ),
                     )
                 )
             )

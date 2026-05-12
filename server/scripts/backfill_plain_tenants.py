@@ -1,17 +1,17 @@
 import traceback
 import uuid
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import typer
 from rich.progress import Progress
-from sqlalchemy import select
 
 from polar.config import settings
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.models import Organization, User, UserOrganization
+from polar.models import Organization
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, create_async_engine
+from polar.user.repository import UserRepository
 
 from .helper import configure_script_logging, typer_async
 
@@ -28,43 +28,6 @@ class BackfillResult:
     error_details: list[tuple[str, str, str]] = field(default_factory=list)
 
 
-async def _load_organizations(
-    session: AsyncSession,
-    *,
-    self_org_id: uuid.UUID,
-    limit: int | None,
-) -> Sequence[Organization]:
-    statement = (
-        select(Organization)
-        .where(
-            Organization.can_authenticate,
-            Organization.id != self_org_id,
-        )
-        .order_by(Organization.created_at)
-    )
-    if limit is not None:
-        statement = statement.limit(limit)
-    result = await session.execute(statement)
-    return result.scalars().all()
-
-
-async def _load_members(
-    session: AsyncSession, organization_id: uuid.UUID
-) -> Sequence[User]:
-    statement = (
-        select(User)
-        .join(UserOrganization, UserOrganization.user_id == User.id)
-        .where(
-            UserOrganization.organization_id == organization_id,
-            UserOrganization.deleted_at.is_(None),
-            User.deleted_at.is_(None),
-        )
-        .order_by(UserOrganization.created_at)
-    )
-    result = await session.execute(statement)
-    return result.scalars().all()
-
-
 async def run_backfill(
     *,
     session: AsyncSession,
@@ -75,16 +38,27 @@ async def run_backfill(
 
     self_org_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
 
+    organization_repository = OrganizationRepository.from_session(session)
+    user_repository = UserRepository.from_session(session)
+
     typer.echo("Loading organizations...")
-    organizations = await _load_organizations(
-        session, self_org_id=self_org_id, limit=limit
+    organizations_statement = (
+        organization_repository.get_base_statement()
+        .where(
+            Organization.can_authenticate,
+            Organization.id != self_org_id,
+        )
+        .order_by(Organization.created_at)
     )
+    if limit is not None:
+        organizations_statement = organizations_statement.limit(limit)
+    organizations = await organization_repository.get_all(organizations_statement)
     typer.echo(f"Loaded {len(organizations)} organizations")
 
     with Progress() as progress:
         task = progress.add_task("[cyan]Syncing tenants...", total=len(organizations))
         for organization in organizations:
-            members = await _load_members(session, organization.id)
+            members = await user_repository.get_all_by_organization(organization.id)
             if not members:
                 result.tenants_without_members += 1
 

@@ -32,5 +32,4 @@ async def _require_permission(
             return denied_msg
         if role_has_permission(user_org.role, permission):
             return True
-        return denied_msg
-    return "Not permitted"
+    return denied_msg

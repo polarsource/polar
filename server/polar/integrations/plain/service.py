@@ -28,6 +28,7 @@ from plain_client import (
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
+    OptionalStringInput,
     Plain,
     RemoveCustomerFromTenantsInput,
     TenantIdentifierInput,
@@ -1397,9 +1398,27 @@ class PlainService:
             return
 
         async with self._get_plain_client() as plain:
+            existing = await plain.customer_by_email(email=email)
+
+            if existing is not None and existing.external_id == external_id:
+                return
+
+            if existing is not None:
+                if existing.external_id is not None:
+                    log.warning(
+                        "plain.upsert_customer.rebinding_external_id",
+                        plain_customer_id=existing.id,
+                        email=email,
+                        previous_external_id=existing.external_id,
+                        new_external_id=external_id,
+                    )
+                identifier = UpsertCustomerIdentifierInput(email_address=email)
+            else:
+                identifier = UpsertCustomerIdentifierInput(external_id=external_id)
+
             result = await plain.upsert_customer(
                 UpsertCustomerInput(
-                    identifier=UpsertCustomerIdentifierInput(external_id=external_id),
+                    identifier=identifier,
                     on_create=UpsertCustomerOnCreateInput(
                         external_id=external_id,
                         full_name=email,
@@ -1408,6 +1427,7 @@ class PlainService:
                         ),
                     ),
                     on_update=UpsertCustomerOnUpdateInput(
+                        external_id=OptionalStringInput(value=external_id),
                         email=EmailAddressInput(
                             email=email, is_verified=email_verified
                         ),

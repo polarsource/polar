@@ -205,4 +205,4 @@ async def update(
     if meter is None:
         raise ResourceNotFound()
 
-    return await meter_service.update(session, meter, meter_update)
+    return await meter_service.update(session, meter, meter_update, auth_subject)

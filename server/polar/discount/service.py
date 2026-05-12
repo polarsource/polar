@@ -8,6 +8,8 @@ from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, se
 from sqlalchemy.exc import DBAPIError
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.permission import OrganizationPermission, roles_with_permission
+from polar.authz.service import assert_organization_permission
 from polar.discount.repository import DiscountRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
@@ -108,6 +110,13 @@ class DiscountService(ResourceServiceReader[Discount]):
         organization = await get_payload_organization(
             session, auth_subject, discount_create
         )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.products_manage,
+            "Only an organization admin can manage products",
+        )
 
         repository = DiscountRepository.from_session(session)
 
@@ -179,7 +188,16 @@ class DiscountService(ResourceServiceReader[Discount]):
         session: AsyncSession,
         discount: Discount,
         discount_update: DiscountUpdate,
+        auth_subject: AuthSubject[User | Organization],
     ) -> Discount:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            discount.organization_id,
+            OrganizationPermission.products_manage,
+            "Only an organization admin can manage products",
+        )
+
         if (
             "duration" in discount_update.model_fields_set
             and discount_update.duration != discount.duration
@@ -296,7 +314,19 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         return discount
 
-    async def delete(self, session: AsyncSession, discount: Discount) -> Discount:
+    async def delete(
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> Discount:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            discount.organization_id,
+            OrganizationPermission.products_manage,
+            "Only an organization admin can manage products",
+        )
         discount.set_deleted_at()
         session.add(discount)
         return discount
@@ -453,6 +483,9 @@ class DiscountService(ResourceServiceReader[Discount]):
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.is_deleted.is_(False),
+                        UserOrganization.role.in_(
+                            roles_with_permission(OrganizationPermission.products_read)
+                        ),
                     )
                 )
             )

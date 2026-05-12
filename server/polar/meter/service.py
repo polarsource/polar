@@ -22,7 +22,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids_with_permission,
+)
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -73,7 +77,9 @@ class MeterService:
         ],
     ) -> tuple[Sequence[Meter], int]:
         repository = MeterRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.products_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
 
         if organization_id is not None:
@@ -111,7 +117,9 @@ class MeterService:
         id: uuid.UUID,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.products_read
+        )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Meter.id == id)
@@ -128,6 +136,13 @@ class MeterService:
         repository = MeterRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, meter_create
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.products_manage,
+            "Only an organization admin can manage products",
         )
 
         meter = await repository.create(
@@ -160,8 +175,19 @@ class MeterService:
         return meter
 
     async def update(
-        self, session: AsyncSession, meter: Meter, meter_update: MeterUpdate
+        self,
+        session: AsyncSession,
+        meter: Meter,
+        meter_update: MeterUpdate,
+        auth_subject: AuthSubject[User | Organization],
     ) -> Meter:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            meter.organization_id,
+            OrganizationPermission.products_manage,
+            "Only an organization admin can manage products",
+        )
         repository = MeterRepository.from_session(session)
 
         errors: list[ValidationError] = []

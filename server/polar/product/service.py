@@ -10,6 +10,7 @@ from sqlalchemy.orm import contains_eager, selectinload
 from polar.auth.models import AuthSubject, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
+    assert_organization_permission,
     get_accessible_org_ids,
     get_accessible_org_ids_with_permission,
 )
@@ -18,7 +19,6 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
-    NotPermitted,
     PolarRequestValidationError,
     ValidationError,
 )
@@ -172,7 +172,13 @@ class ProductService:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
-        await self._require_manage(session, auth_subject, organization.id)
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.products_manage,
+            "Only an organization admin can manage products",
+        )
 
         errors: list[ValidationError] = []
         prices, _, _, prices_errors = await self.get_validated_prices(
@@ -264,7 +270,13 @@ class ProductService:
         update_schema: ProductUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
-        await self._require_manage(session, auth_subject, product.organization_id)
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            product.organization_id,
+            OrganizationPermission.products_manage,
+            "Only an organization admin can manage products",
+        )
 
         errors: list[ValidationError] = []
 
@@ -437,7 +449,13 @@ class ProductService:
         benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
-        await self._require_manage(session, auth_subject, product.organization_id)
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            product.organization_id,
+            OrganizationPermission.products_manage,
+            "Only an organization admin can manage products",
+        )
 
         previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()
@@ -690,18 +708,6 @@ class ProductService:
             )
 
         return prices, existing_prices, added_prices, errors
-
-    async def _require_manage(
-        self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization_id: uuid.UUID,
-    ) -> None:
-        manage_org_ids = await get_accessible_org_ids_with_permission(
-            session, auth_subject, OrganizationPermission.products_manage
-        )
-        if organization_id not in manage_org_ids:
-            raise NotPermitted("Only an organization admin can manage products")
 
     async def _archive(self, session: AsyncSession, product: Product) -> Product:
         product.is_archived = True

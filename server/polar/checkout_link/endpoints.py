@@ -152,7 +152,7 @@ async def delete(
     if checkout_link is None:
         raise ResourceNotFound()
 
-    await checkout_link_service.delete(session, checkout_link)
+    await checkout_link_service.delete(session, checkout_link, auth_subject)
 
 
 @router.get("/{client_secret}/redirect", include_in_schema=False)

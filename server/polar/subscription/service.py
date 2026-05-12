@@ -407,11 +407,24 @@ class SubscriptionService:
                 }
             )
 
-        customer: Customer | None = None
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        assert product is not None
+
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            product.organization_id,
+            OrganizationPermission.customers_manage,
+            "You don't have permission to manage customers",
+        )
+
         customer_repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         error_loc: str
         input_value: uuid.UUID | str
+        customer: Customer | None
         if isinstance(subscription_create, SubscriptionCreateCustomer):
             error_loc = "customer_id"
             input_value = subscription_create.customer_id
@@ -426,28 +439,16 @@ class SubscriptionService:
             )
 
         if customer is None:
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", error_loc),
-                    "msg": "Customer does not exist.",
-                    "input": input_value,
-                }
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", error_loc),
+                        "msg": "Customer does not exist.",
+                        "input": input_value,
+                    }
+                ]
             )
-
-        if len(errors) > 0:
-            raise PolarRequestValidationError(errors)
-
-        assert product is not None
-        assert customer is not None
-
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            product.organization_id,
-            OrganizationPermission.customers_manage,
-            "You don't have permission to manage customers",
-        )
 
         assert is_recurring_product(product)
         recurring_interval = product.recurring_interval

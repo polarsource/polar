@@ -9,8 +9,8 @@ grandfathered review, and resets the account's payout delay to the new
 
 Usage:
     cd server
-    uv run python -m scripts.revert_unconfigured_grandfathered_orgs            # dry-run
-    uv run python -m scripts.revert_unconfigured_grandfathered_orgs --execute  # apply
+    uv run python -m scripts.reset_unconfigured_grandfathered_orgs            # dry-run
+    uv run python -m scripts.reset_unconfigured_grandfathered_orgs --execute  # apply
 """
 
 import asyncio
@@ -86,7 +86,7 @@ _FILTER_PARAMS: dict[str, object] = {
 
 
 async def _show_targets(session: AsyncSession, *, sample_limit: int) -> int:
-    """Print the total count and a sample of orgs that would be reverted."""
+    """Print the total count and a sample of orgs that would be reset."""
     breakdown_result = await session.execute(
         text(f"""
             SELECT o.status, COUNT(*) AS n
@@ -101,7 +101,7 @@ async def _show_targets(session: AsyncSession, *, sample_limit: int) -> int:
     total = sum(row.n for row in breakdown)
 
     if total == 0:
-        console.print("[green]No grandfathered orgs match — nothing to revert.")
+        console.print("[green]No grandfathered orgs match — nothing to reset.")
         return 0
 
     breakdown_table = Table(title="Targets by current status")
@@ -169,7 +169,7 @@ async def _show_targets(session: AsyncSession, *, sample_limit: int) -> int:
         )
 
     console.print(table)
-    console.print(f"\n[yellow]Total to revert: {total}")
+    console.print(f"\n[yellow]Total to reset: {total}")
     return total
 
 
@@ -193,18 +193,18 @@ async def _show_status_summary(session: AsyncSession) -> None:
     console.print(table)
 
 
-async def _run_revert(
+async def _run_reset(
     sessionmaker: async_sessionmaker[AsyncSession],
     *,
     batch_size: int,
     sleep_seconds: float,
 ) -> int:
-    """Revert matching orgs in batches.
+    """Reset matching orgs in batches.
 
     Per batch, in a single transaction:
 
       1. Pick a batch of matching org ids.
-      2. Revert each org: status → CREATED, capabilities → CREATED defaults,
+      2. Reset each org: status → CREATED, capabilities → CREATED defaults,
          status_updated_at → now(), details → {}, details_submitted_at → NULL,
          internal_notes appended. Bypasses ``Organization.set_status`` because
          ACTIVE → CREATED is not in ``ALLOWED_STATUS_TRANSITIONS``.
@@ -274,7 +274,7 @@ async def _run_revert(
         transient=False,
     ) as progress:
         task = progress.add_task(
-            "[cyan]Reverting grandfathered orgs: Batch 0 — 0 reverted", total=None
+            "[cyan]Resetting grandfathered orgs: Batch 0 — 0 reset", total=None
         )
 
         while True:
@@ -293,7 +293,7 @@ async def _run_revert(
                 if not target_ids:
                     progress.update(
                         task,
-                        description=f"[green]✓ Complete: {total_updated} orgs reverted",
+                        description=f"[green]✓ Complete: {total_updated} orgs reset",
                     )
                     break
 
@@ -322,8 +322,8 @@ async def _run_revert(
                 progress.update(
                     task,
                     description=(
-                        f"[cyan]Reverting grandfathered orgs: "
-                        f"Batch {batch_number} — {total_updated} reverted"
+                        f"[cyan]Resetting grandfathered orgs: "
+                        f"Batch {batch_number} — {total_updated} reset"
                     ),
                 )
 
@@ -335,9 +335,9 @@ async def _run_revert(
 
 @cli.command()
 @typer_async
-async def revert_unconfigured_grandfathered_orgs(
+async def reset_unconfigured_grandfathered_orgs(
     execute: bool = typer.Option(
-        False, help="Actually run the revert (default: dry-run)"
+        False, help="Actually run the reset (default: dry-run)"
     ),
     sample_limit: int = typer.Option(
         50, help="How many target orgs to display in the dry-run preview"
@@ -356,7 +356,7 @@ async def revert_unconfigured_grandfathered_orgs(
                 "[bold]Dry-run: reset ACTIVE/CREATED grandfathered orgs without product, or without checkout link + access token"
             )
             log.info("Running in DRY-RUN mode (no changes will be made)")
-            log.info("Use --execute to actually revert organizations")
+            log.info("Use --execute to actually reset organizations")
             console.print()
 
             async with sessionmaker() as session:
@@ -382,13 +382,13 @@ async def revert_unconfigured_grandfathered_orgs(
             return
 
         console.print()
-        total = await _run_revert(
+        total = await _run_reset(
             sessionmaker,
             batch_size=batch_size,
             sleep_seconds=sleep_seconds,
         )
 
-        log.info("Revert complete", total_reverted=total)
+        log.info("Reset complete", total_reset=total)
         console.print()
 
         async with sessionmaker() as session:

@@ -123,7 +123,7 @@ const CountryStatePicker = ({
             translate="no"
           />
         </SelectTrigger>
-        <SelectContent className={contentClassName}>
+        <SelectContent className={contentClassName} translate="no">
           {Object.entries(states).map(([code, name]) => (
             <SelectItem
               key={code}

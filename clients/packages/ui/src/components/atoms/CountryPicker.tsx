@@ -60,7 +60,7 @@ const CountryPicker = ({
           translate="no"
         />
       </SelectTrigger>
-      <SelectContent className={contentClassName}>
+      <SelectContent className={contentClassName} translate="no">
         {countryList.map(({ code, name }) => (
           <SelectItem
             key={code}

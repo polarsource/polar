@@ -3,8 +3,9 @@ Reset grandfathered orgs that never finished setup so they re-onboard.
 
 Picks ACTIVE/CREATED orgs whose only review is the grandfathering backfill
 and that lack an active product, or both a checkout link and an access
-token. Sends them back to CREATED, clears submitted details, and removes
-the grandfathered review so the merchant has to go through activation again.
+token. Sends them back to CREATED, clears submitted details, removes the
+grandfathered review, and resets the account's payout delay to the new
+7-day default (only if it was still at the legacy 0).
 
 Usage:
     cd server
@@ -210,12 +211,16 @@ async def _run_revert(
       3. Soft-delete the grandfathered ``organization_reviews`` row so the
          next ``maybe_activate`` call doesn't auto-promote the org back to
          ACTIVE. The merchant's re-submission will create a fresh review.
+      4. Bump the linked ``accounts.payout_transaction_delay`` from the
+         legacy 0 to the new 7-day default. Skipped if an operator already
+         set a custom (non-zero) delay.
     """
     now_ts = datetime.now(UTC).strftime("%Y-%m-%d %H:%M")
     note_line = (
         f"[{now_ts} UTC] Reset to CREATED: grandfathered org missing a "
         f"product, or missing both a checkout link and an organization "
-        f"access token. Cleared details and removed grandfathered review."
+        f"access token. Cleared details, removed grandfathered review, "
+        f"reset payout delay to 7 days."
     )
     created_capabilities = json.dumps(STATUS_CAPABILITIES[OrganizationStatus.CREATED])
 
@@ -248,6 +253,15 @@ async def _run_revert(
           AND model_used = :grandfathered_model
           AND reason = :grandfathered_reason
           AND deleted_at IS NULL
+    """)
+
+    reset_payout_delay_sql = text("""
+        UPDATE accounts a
+        SET payout_transaction_delay = INTERVAL '7 days'
+        FROM organizations o
+        WHERE o.account_id = a.id
+          AND o.id = ANY(:ids)
+          AND a.payout_transaction_delay = INTERVAL '0'
     """)
 
     total_updated = 0
@@ -295,6 +309,10 @@ async def _run_revert(
                 await session.execute(
                     soft_delete_reviews_sql,
                     {**_FILTER_PARAMS, "ids": target_ids},
+                )
+                await session.execute(
+                    reset_payout_delay_sql,
+                    {"ids": target_ids},
                 )
                 await session.commit()
                 rows_updated = len(target_ids)

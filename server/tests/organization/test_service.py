@@ -1802,6 +1802,43 @@ class TestGetReviewState:
         assert step.status == OrganizationReviewCheckStatus.PENDING
         assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
 
+    async def test_setup_readiness_checkout_link_with_success_url_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thank-you",
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+
+    async def test_setup_readiness_checkout_link_without_benefits_or_success_url_is_not_started(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(save_fixture, products=[product])
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
     async def test_setup_readiness_access_token_and_webhook_passes(
         self,
         save_fixture: SaveFixture,

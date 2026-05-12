@@ -1553,9 +1553,14 @@ class OrganizationService:
     async def _build_setup_readiness_check(
         self, session: AsyncReadSession, organization: Organization
     ) -> OrganizationReviewCheck:
-        """Setup readiness passes when the merchant either has a checkout
-        link selling a Polar-fulfilled benefit, or has both an organization
-        access token and a webhook endpoint.
+        """Setup readiness passes when the merchant has at least one
+        auto-fulfillable checkout link (selling a Polar-fulfilled benefit,
+        or with a success_url so the merchant handles fulfillment via
+        redirect), or has both an organization access token and a webhook
+        endpoint.
+
+        A checkout link with neither benefits nor a success_url has no
+        automatic fulfillment path, which is a broken integration.
 
         An access token without a webhook is a non-blocking warning rather
         than a failure: the merchant can still fulfill via success_url +
@@ -1567,7 +1572,7 @@ class OrganizationService:
         checkout_link_repository = CheckoutLinkRepository.from_session(session)
         if await checkout_link_repository.has_with_benefit_types(
             organization.id, _CHECKOUT_FULFILLABLE_BENEFITS
-        ):
+        ) or await checkout_link_repository.has_with_success_url(organization.id):
             return self._passed_check(key)
 
         access_token_repository = OrganizationAccessTokenRepository.from_session(

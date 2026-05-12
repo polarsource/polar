@@ -36,15 +36,9 @@ The discount deducts a fixed amount from the price of the product or subscriptio
 
 #### Recurring Discount
 
-For subscriptions, the duration defines the window during which invoices are eligible for the discount — not the length of service the discount covers. Invoices billed within the window are discounted in full; invoices billed after are charged at full price.
-
-- **Once** Only the first invoice is discounted.
-- **Several Months** Invoices billed within the given number of calendar months from the first redemption are discounted.
-- **Forever** Every invoice is discounted, for the lifetime of the subscription.
-
-<Info>
-On a yearly plan, a **Several Months** duration of 1–12 catches only the first yearly invoice — multiply by 12 to cover additional years (e.g. `24` for 2 years).
-</Info>
+- **Once** The discount is applied once.
+- **Several Months** The discount is applied to any invoice billed within the given number of calendar months from the first redemption — not for that many months of service. On a yearly plan, a duration of 1–12 therefore catches only the first yearly invoice; multiply by 12 to cover additional years (e.g. `24` for 2 years).
+- **Forever** The discount is applied indefinitely.
 
 #### Restrictions
 

@@ -46,10 +46,7 @@ SQL >
         AND COALESCE(s.presentment_currency, s.currency) = e.currency
         AND s.timestamp < e.timestamp
         AND s.order_id != e.order_id
-    WHERE
-        e.source = 'system'
-        AND e.order_id IS NOT NULL
-        AND e.name IN ('order.paid', 'balance.order', 'balance.credit_order')
+    WHERE e.source = 'system' AND e.order_id IS NOT NULL AND e.name IN ('order.paid', 'balance.order')
     GROUP BY
         e.organization_id,
         e.order_id,
@@ -80,63 +77,34 @@ SQL >
         sumState(
             toInt64(
                 if(
-                    name IN ('balance.order', 'balance.credit_order'),
+                    name = 'balance.order',
                     toInt64(round(COALESCE(net_amount, amount, 0) * COALESCE(own_fx, lookup_fx, 1.0))),
                     0
                 )
             )
         ) AS settlement_revenue,
-        sumState(
-            toInt64(if(name IN ('balance.order', 'balance.credit_order'), COALESCE(fee, 0), 0))
-        ) AS settlement_fee,
+        sumState(toInt64(if(name = 'balance.order', COALESCE(fee, 0), 0))) AS settlement_fee,
         sumState(
             toInt64(
                 if(
-                    name IN ('balance.order', 'balance.credit_order') AND subscription_id IS NULL,
+                    name = 'balance.order' AND subscription_id IS NULL,
                     toInt64(round(COALESCE(net_amount, amount, 0) * COALESCE(own_fx, lookup_fx, 1.0))),
                     0
                 )
             )
         ) AS one_time_settlement_revenue,
         sumState(
-            toInt64(
-                if(
-                    name IN ('balance.order', 'balance.credit_order') AND subscription_id IS NULL,
-                    COALESCE(fee, 0),
-                    0
-                )
-            )
+            toInt64(if(name = 'balance.order' AND subscription_id IS NULL, COALESCE(fee, 0), 0))
         ) AS one_time_settlement_fee,
-        sumState(
-            toInt64(
-                if(
-                    name IN ('balance.order', 'balance.credit_order') AND net_amount IS NULL,
-                    toInt64(
-                        round(
-                            greatest(COALESCE(applied_balance_amount, 0), 0)
-                            * COALESCE(own_fx, lookup_fx, 1.0)
-                        )
-                    ),
-                    0
-                )
-            )
-        ) AS applied_balance_settlement,
-        sumState(
-            toInt64(
-                if(
-                    name IN ('balance.order', 'balance.credit_order')
-                    AND subscription_id IS NULL
-                    AND net_amount IS NULL,
-                    toInt64(
-                        round(
-                            greatest(COALESCE(applied_balance_amount, 0), 0)
-                            * COALESCE(own_fx, lookup_fx, 1.0)
-                        )
-                    ),
-                    0
-                )
-            )
-        ) AS one_time_applied_balance_settlement
+        -- TODO: drop these columns from orders_base_state_by_quarter_hour.
+        -- They were meant to net customer-balance payments out of revenue at
+        -- the MV layer, but credit_order events never carry
+        -- applied_balance_amount, so the column has always emitted 0 in
+        -- practice. metrics_revenue.pipe's fast path no longer references
+        -- them. Pending a Tinybird schema migration to remove the columns
+        -- from the datasource.
+        sumState(toInt64(0)) AS applied_balance_settlement,
+        sumState(toInt64(0)) AS one_time_applied_balance_settlement
     FROM resolve_fx
     GROUP BY organization_id, quarter_hour, product_id, billing_type, settlement_currency
 

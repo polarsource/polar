@@ -118,6 +118,7 @@ class OrderScenario:
     include_balance_net_amount: bool = True
     balance_exchange_rate: float | None = None
     balance_presentment_currency: str = "usd"
+    balance_credit_order_currency: str = "usd"
     include_order_created_at_metadata: bool = True
     include_order_paid: bool = True
     include_balance: bool = True
@@ -631,6 +632,29 @@ def _build_gamma_customers() -> tuple[CustomerScenario, ...]:
                 ),
             ),
         ),
+        CustomerScenario(
+            key="gamma_credit_order_fast_path",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2025, 6, 1), 10, 0),
+                    amount=2_000,
+                    balance_amount=2_000,
+                    balance_net_amount=2_000,
+                    balance_exchange_rate=0.5,
+                    balance_presentment_currency="eur",
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2025, 6, 15), 10, 0),
+                    amount=2_000,
+                    emit_balance_credit_order=True,
+                    balance_credit_order_currency="eur",
+                    balance_amount=2_000,
+                    include_balance_net_amount=False,
+                ),
+            ),
+        ),
     )
 
 
@@ -912,6 +936,14 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 1, 31),
         interval=TimeInterval.month,
     ),
+    QueryCase(
+        label="gamma_daily_credit_order_fast_path",
+        organization_key="gamma",
+        start_date=date(2025, 6, 15),
+        end_date=date(2025, 6, 15),
+        interval=TimeInterval.day,
+        metrics=("revenue", "net_revenue"),
+    ),
 )
 
 
@@ -1074,6 +1106,7 @@ async def _create_paid_order_events(
     include_balance_net_amount: bool = True,
     balance_exchange_rate: float | None = None,
     balance_presentment_currency: str = "usd",
+    balance_credit_order_currency: str = "usd",
     include_order_created_at_metadata: bool = True,
     include_order_paid: bool = True,
     include_balance: bool = True,
@@ -1144,6 +1177,8 @@ async def _create_paid_order_events(
         balance_metadata["transaction_id"] = str(transaction.id)
         balance_metadata["presentment_amount"] = balance_amount_value
         balance_metadata["presentment_currency"] = balance_presentment_currency
+    else:
+        balance_metadata["currency"] = balance_credit_order_currency
     if balance_exchange_rate is not None:
         balance_metadata["exchange_rate"] = balance_exchange_rate
 
@@ -1345,6 +1380,9 @@ async def _seed_customer_scenario(
                     ),
                     balance_exchange_rate=subscription_order.balance_exchange_rate,
                     balance_presentment_currency=subscription_order.balance_presentment_currency,
+                    balance_credit_order_currency=(
+                        subscription_order.balance_credit_order_currency
+                    ),
                     include_order_created_at_metadata=(
                         subscription_order.include_order_created_at_metadata
                     ),
@@ -1438,6 +1476,9 @@ async def _seed_customer_scenario(
                 include_balance_net_amount=one_time_order.include_balance_net_amount,
                 balance_exchange_rate=one_time_order.balance_exchange_rate,
                 balance_presentment_currency=one_time_order.balance_presentment_currency,
+                balance_credit_order_currency=(
+                    one_time_order.balance_credit_order_currency
+                ),
                 include_order_created_at_metadata=(
                     one_time_order.include_order_created_at_metadata
                 ),
@@ -1622,8 +1663,25 @@ async def metrics_harness(
                     events=events,
                 )
 
+            # Ingest in two batches so balance.credit_order events land in a
+            # separate ClickHouse block from prior balance.order events. This
+            # mirrors the production timing gap (the order's Stripe-backed
+            # balance.order is emitted after the synchronous credit_order on the
+            # next order) and forces any FX lookup that depends on a self-join
+            # to events_by_ingested_at inside an MV trigger to fail — which is
+            # the bug class this suite needs to defend against.
             tinybird_events = [_event_to_tinybird(event) for event in events]
-            await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+            credit_order_events = [
+                e for e in tinybird_events if e.get("name") == "balance.credit_order"
+            ]
+            other_events = [
+                e for e in tinybird_events if e.get("name") != "balance.credit_order"
+            ]
+            await tinybird_client.ingest(DATASOURCE_EVENTS, other_events, wait=True)
+            if credit_order_events:
+                await tinybird_client.ingest(
+                    DATASOURCE_EVENTS, credit_order_events, wait=True
+                )
 
             await session.commit()
 
@@ -1848,6 +1906,20 @@ class TestTinybirdMetrics:
         assert period.orders == 1
         assert period.net_revenue == 4_800
         assert period.one_time_products_net_revenue == 4_800
+
+    def test_credit_order_fast_path_uses_lookup_fx(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots["gamma_daily_credit_order_fast_path"]
+        period = snapshot.periods[0]
+
+        # credit_order event has currency=eur, amount=2000. The prior balance.order
+        # for the same customer used presentment_currency=eur and exchange_rate=0.5,
+        # so the lookup_fx must resolve to 0.5 → settlement contribution = 2000 * 0.5
+        # = 1000. If the fast path falls back to FX=1.0 (the MV-trigger bug), this
+        # would be 2000 instead.
+        assert period.revenue == 1_000
+        assert period.net_revenue == 1_000
 
     def test_renewed_credit_order_with_negative_applied_balance(
         self, metrics_harness: MetricsHarness

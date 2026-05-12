@@ -23780,6 +23780,11 @@ export interface components {
        * @description Optional contextual value associated with the check, e.g. the product URL for the `product_url` check.
        */
       value?: string | null
+      /**
+       * Sub Checks
+       * @description Per-component breakdown, populated only for aggregate checks (currently `setup_readiness`). The parent `status` is the source of truth for gating.
+       */
+      sub_checks?: components['schemas']['OrganizationReviewSubCheck'][]
     }
     /**
      * OrganizationReviewCheckKey
@@ -23865,6 +23870,38 @@ export interface components {
        */
       appeal_reviewed_at?: string | null
     }
+    /**
+     * OrganizationReviewSubCheck
+     * @description A nested sub-item that contributes to a parent check's rolled-up status.
+     *
+     *     Sub-checks expose the per-component breakdown for aggregate checks (e.g.
+     *     `setup_readiness`) so the frontend doesn't have to re-derive which path
+     *     is configured. The parent's `status` is the source of truth for gating;
+     *     reasons explaining a sub-item live on the sub-check itself.
+     */
+    OrganizationReviewSubCheck: {
+      key: components['schemas']['OrganizationReviewSubCheckKey']
+      status: components['schemas']['OrganizationReviewCheckStatus']
+      /**
+       * Reasons
+       * @description Reasons for the sub-check's current status. Empty when `passed`.
+       */
+      reasons?: components['schemas']['OrganizationReviewCheckReason'][]
+      /**
+       * Value
+       * @description Optional contextual value associated with the sub-check.
+       */
+      value?: string | null
+    }
+    /**
+     * OrganizationReviewSubCheckKey
+     * @description Stable identifiers for nested sub-checks inside a parent check.
+     * @enum {string}
+     */
+    OrganizationReviewSubCheckKey:
+      | 'setup_readiness.checkout_link'
+      | 'setup_readiness.access_token'
+      | 'setup_readiness.webhook'
     /**
      * OrganizationRole
      * @enum {string}
@@ -54489,6 +54526,13 @@ export const organizationReviewStateVerdictAnyOf0Values: ReadonlyArray<
 export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']
+export const organizationReviewSubCheckKeyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationReviewSubCheckKey']
+> = [
+  'setup_readiness.checkout_link',
+  'setup_readiness.access_token',
+  'setup_readiness.webhook',
+]
 export const organizationRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationRole']
 > = ['owner', 'admin', 'member']

@@ -3,6 +3,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 from sqlalchemy.orm import joinedload
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_organization_permission
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -84,6 +86,13 @@ async def get_estimate(
     if organization is None:
         raise ResourceNotFound()
 
+    await assert_organization_permission(
+        session,
+        auth_subject,
+        organization.id,
+        OrganizationPermission.finance_read,
+        "Only an organization admin can access financial data",
+    )
     return await payout_service.estimate(session, organization)
 
 
@@ -106,6 +115,14 @@ async def create(
     )
     if organization is None:
         raise ResourceNotFound()
+
+    await assert_organization_permission(
+        session,
+        auth_subject,
+        organization.id,
+        OrganizationPermission.finance_manage,
+        "Only an organization admin can manage financial data",
+    )
     return await payout_service.create(session, locker, organization)
 
 

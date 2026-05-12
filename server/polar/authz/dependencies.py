@@ -19,7 +19,7 @@ from polar.organization.schemas import OrganizationID
 from polar.payout_account.repository import PayoutAccountRepository
 from polar.postgres import AsyncSession, get_db_session
 
-from .policies import account as account_policy
+from .policies import finance as finance_policy
 from .policies import members
 from .policies import organization as org_policy
 from .policies import payout_account as pa_policy
@@ -121,7 +121,7 @@ AuthorizeFinanceRead = Annotated[
     AuthzContext[User | Organization],
     Depends(
         OrgPolicyGuard(
-            account_policy.can_read,
+            finance_policy.can_read,
             required_scopes={
                 Scope.transactions_read,
                 Scope.transactions_write,
@@ -135,7 +135,7 @@ AuthorizeFinanceWrite = Annotated[
     AuthzContext[User | Organization],
     Depends(
         OrgPolicyGuard(
-            account_policy.can_write,
+            finance_policy.can_manage,
             required_scopes={
                 Scope.transactions_write,
                 Scope.payouts_write,
@@ -417,11 +417,11 @@ def PayoutAccountPolicyGuard(
 
 
 AuthorizeAccountRead = Annotated[
-    AuthorizedAccount, Depends(AccountPolicyGuard(account_policy.can_read))
+    AuthorizedAccount, Depends(AccountPolicyGuard(finance_policy.can_read))
 ]
 AuthorizeAccountWrite = Annotated[
     AuthorizedAccount,
-    Depends(AccountPolicyGuard(account_policy.can_write)),
+    Depends(AccountPolicyGuard(finance_policy.can_manage)),
 ]
 AuthorizePayoutAccountRead = Annotated[
     AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(pa_policy.can_read))

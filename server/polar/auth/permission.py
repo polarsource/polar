@@ -48,8 +48,8 @@ class OrganizationPermission(StrEnum):
     analytics_manage = "analytics:manage"
 
     # Finance — admin-only.
-    account_read = "account:read"
-    account_write = "account:write"
+    finance_read = "finance:read"
+    finance_manage = "finance:manage"
 
 
 _ADMIN_ONLY: set[OrganizationPermission] = {
@@ -59,8 +59,8 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
     OrganizationPermission.custom_fields_manage,
     OrganizationPermission.customers_manage,
     OrganizationPermission.analytics_manage,
-    OrganizationPermission.account_read,
-    OrganizationPermission.account_write,
+    OrganizationPermission.finance_read,
+    OrganizationPermission.finance_manage,
 }
 
 _MEMBER_PERMISSIONS: set[OrganizationPermission] = {

@@ -10,7 +10,6 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
     get_accessible_org_ids,
-    get_accessible_org_ids_with_permission,
 )
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.service import discount as discount_service
@@ -59,7 +58,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         ],
     ) -> tuple[Sequence[CheckoutLink], int]:
         repository = CheckoutLinkRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
@@ -111,7 +110,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         id: uuid.UUID,
     ) -> CheckoutLink | None:
         repository = CheckoutLinkRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
         statement = (

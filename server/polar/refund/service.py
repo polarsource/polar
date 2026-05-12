@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids_with_permission
+from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.dispute.repository import DisputeRepository
 from polar.enums import PaymentProcessor
@@ -130,7 +130,7 @@ class RefundService:
         ],
     ) -> tuple[Sequence[Refund], int]:
         repository = RefundRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.sales_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)

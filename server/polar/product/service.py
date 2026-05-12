@@ -11,7 +11,7 @@ from polar.auth.models import AuthSubject, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
-    get_accessible_org_ids_with_permission,
+    get_accessible_org_ids,
 )
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
@@ -83,7 +83,7 @@ class ProductService:
         ],
     ) -> tuple[Sequence[Product], int]:
         repository = ProductRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).join(
@@ -151,7 +151,7 @@ class ProductService:
         id: uuid.UUID,
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
         statement = (
@@ -541,7 +541,7 @@ class ProductService:
         builtins.list[ValidationError],
     ]:
         meter_repository = MeterRepository.from_session(session)
-        meter_org_ids = await get_accessible_org_ids_with_permission(
+        meter_org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
         prices: list[ProductPrice] = []

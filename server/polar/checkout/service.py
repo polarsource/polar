@@ -15,7 +15,6 @@ from polar.auth.models import Anonymous, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     get_accessible_org_ids,
-    get_accessible_org_ids_with_permission,
 )
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
@@ -260,7 +259,7 @@ class CheckoutService:
         ],
     ) -> tuple[Sequence[Checkout], int]:
         repository = CheckoutRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.sales_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).options(
@@ -300,7 +299,7 @@ class CheckoutService:
         id: uuid.UUID,
     ) -> Checkout | None:
         repository = CheckoutRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.sales_read
         )
         statement = (

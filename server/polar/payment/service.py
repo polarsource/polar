@@ -5,7 +5,7 @@ import stripe as stripe_lib
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids_with_permission
+from polar.authz.service import get_accessible_org_ids
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams
@@ -60,7 +60,7 @@ class PaymentService:
         ],
     ) -> tuple[Sequence[Payment], int]:
         repository = PaymentRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.sales_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
@@ -96,7 +96,7 @@ class PaymentService:
         id: uuid.UUID,
     ) -> Payment | None:
         repository = PaymentRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.sales_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(Payment.id == id)

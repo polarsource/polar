@@ -6,7 +6,7 @@ import structlog
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids_with_permission
+from polar.authz.service import get_accessible_org_ids
 from polar.kit.pagination import PaginationParams
 from polar.models import Organization, ProductMedia, User
 from polar.models.file import File, ProductMediaFile
@@ -36,7 +36,7 @@ class FileService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[File], int]:
         repository = FileRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
 
@@ -61,7 +61,7 @@ class FileService:
         id: uuid.UUID,
     ) -> File | None:
         repository = FileRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(File.id == id)

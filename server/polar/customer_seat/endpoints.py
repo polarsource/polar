@@ -11,7 +11,7 @@ from polar.auth.models import AuthSubject as AuthSubjectType
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
-    get_accessible_org_ids_with_permission,
+    get_accessible_org_ids,
 )
 from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
@@ -81,7 +81,7 @@ async def assign_seat(
 
         typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         subscription_repository = SubscriptionRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, typed_auth_subject, OrganizationPermission.customers_manage
         )
 
@@ -175,7 +175,7 @@ async def assign_seat(
 
         typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         order_repository = OrderRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, typed_auth_subject, OrganizationPermission.customers_manage
         )
 
@@ -303,7 +303,7 @@ async def revoke_seat(
 
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
     seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids_with_permission(
+    org_ids = await get_accessible_org_ids(
         session, typed_auth_subject, OrganizationPermission.customers_manage
     )
 
@@ -349,7 +349,7 @@ async def resend_invitation(
 
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
     seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids_with_permission(
+    org_ids = await get_accessible_org_ids(
         session, typed_auth_subject, OrganizationPermission.customers_manage
     )
 

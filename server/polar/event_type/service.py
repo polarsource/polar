@@ -5,7 +5,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
-    get_accessible_org_ids_with_permission,
+    get_accessible_org_ids,
 )
 from polar.customer.repository import CustomerRepository
 from polar.event.system import SYSTEM_EVENT_LABELS
@@ -31,7 +31,7 @@ class EventTypeService:
         id: UUID,
     ) -> EventType | None:
         repository = EventTypeRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.analytics_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
@@ -57,7 +57,7 @@ class EventTypeService:
         ],
     ) -> tuple[Sequence[EventTypeWithStats], int]:
         event_type_repository = EventTypeRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.analytics_read
         )
         if organization_id is not None:

@@ -13,7 +13,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids_with_permission
+from polar.authz.service import get_accessible_org_ids
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
@@ -321,7 +321,7 @@ class OrderService:
         ],
     ) -> tuple[Sequence[Order], int]:
         repository = OrderRepository.from_session(session)
-        accessible_org_ids = await get_accessible_org_ids_with_permission(
+        accessible_org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.sales_read
         )
         statement = repository.get_statement_by_org_ids(accessible_org_ids)

@@ -12,7 +12,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
-    get_accessible_org_ids_with_permission,
+    get_accessible_org_ids,
 )
 from polar.benefit.strategies import BenefitRetriableError
 from polar.customer.repository import CustomerRepository
@@ -164,7 +164,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         ],
     ) -> tuple[Sequence[BenefitGrant], int]:
         repository = BenefitGrantRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.customers_read
         )
         statement = (

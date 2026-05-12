@@ -8,7 +8,7 @@ from pydantic import TypeAdapter
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
-    get_accessible_org_ids_with_permission,
+    get_accessible_org_ids,
 )
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
@@ -138,7 +138,7 @@ async def export(
         )
 
         repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.customers_read
         )
         stream = repository.stream_by_organization(org_ids, organization_id)

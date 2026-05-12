@@ -14,7 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
-    get_accessible_org_ids_with_permission,
+    get_accessible_org_ids,
 )
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
@@ -100,7 +100,7 @@ class WebhookService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         repository = WebhookEndpointRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.organization_manage
         )
         statement = repository.get_statement_by_org_ids(org_ids).order_by(
@@ -123,7 +123,7 @@ class WebhookService:
         id: UUID,
     ) -> WebhookEndpoint | None:
         repository = WebhookEndpointRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.organization_manage
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
@@ -256,7 +256,7 @@ class WebhookService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
         repository = WebhookDeliveryRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.organization_manage
         )
 
@@ -335,7 +335,7 @@ class WebhookService:
         id: UUID,
     ) -> None:
         repository = WebhookEventRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.organization_manage
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(

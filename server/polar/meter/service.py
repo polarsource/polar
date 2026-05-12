@@ -25,7 +25,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
-    get_accessible_org_ids_with_permission,
+    get_accessible_org_ids,
 )
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
@@ -77,7 +77,7 @@ class MeterService:
         ],
     ) -> tuple[Sequence[Meter], int]:
         repository = MeterRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
@@ -117,7 +117,7 @@ class MeterService:
         id: uuid.UUID,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.products_read
         )
         statement = (

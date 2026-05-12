@@ -12,7 +12,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
-    get_accessible_org_ids_with_permission,
+    get_accessible_org_ids,
 )
 from polar.authz.types import AccessibleOrganizationID
 from polar.config import settings
@@ -115,7 +115,7 @@ class MetricsService:
         organization_id: Sequence[uuid.UUID] | None = None,
     ) -> Sequence[MetricDashboard]:
         repository = MetricDashboardRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.analytics_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
@@ -132,7 +132,7 @@ class MetricsService:
         id: uuid.UUID,
     ) -> MetricDashboard | None:
         repository = MetricDashboardRepository.from_session(session)
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.analytics_read
         )
         statement = repository.get_statement_by_org_ids(org_ids).where(
@@ -471,7 +471,7 @@ class MetricsService:
         organization_id: Sequence[uuid.UUID] | None = None,
     ) -> list[AccessibleOrganizationID]:
         """Get accessible org IDs, optionally filtered to a subset."""
-        org_ids = await get_accessible_org_ids_with_permission(
+        org_ids = await get_accessible_org_ids(
             session, auth_subject, OrganizationPermission.analytics_read
         )
         if organization_id is not None and len(organization_id) > 0:

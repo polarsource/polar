@@ -18,39 +18,32 @@ class AuthzRepository:
     def from_session(cls, session: AsyncReadSession) -> Self:
         return cls(session)
 
-    async def get_user_org_ids(self, user_id: UUID) -> set[UUID]:
-        """Get all organization IDs a user is a member of that are accessible."""
-        stmt = (
-            select(UserOrganization.organization_id)
-            .join(Organization, UserOrganization.organization_id == Organization.id)
-            .where(
-                UserOrganization.user_id == user_id,
-                UserOrganization.is_deleted.is_(False),
-                Organization.is_deleted.is_(False),
-                Organization.can_authenticate,
-            )
-        )
-        result = await self.session.scalars(stmt)
-        return set(result.all())
-
-    async def get_user_org_ids_with_permission(
-        self, user_id: UUID, permission: OrganizationPermission
+    async def get_user_org_ids(
+        self,
+        user_id: UUID,
+        *,
+        permission: OrganizationPermission | None = None,
     ) -> set[UUID]:
-        """Get organization IDs where the user's role grants ``permission``."""
-        roles = roles_with_permission(permission)
-        if not roles:
-            return set()
+        """Get accessible organization IDs a user is a member of.
+
+        When ``permission`` is provided, results are further restricted to
+        organizations where the user's role grants that permission.
+        """
         stmt = (
             select(UserOrganization.organization_id)
             .join(Organization, UserOrganization.organization_id == Organization.id)
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.is_deleted.is_(False),
-                UserOrganization.role.in_(roles),
                 Organization.is_deleted.is_(False),
                 Organization.can_authenticate,
             )
         )
+        if permission is not None:
+            roles = roles_with_permission(permission)
+            if not roles:
+                return set()
+            stmt = stmt.where(UserOrganization.role.in_(roles))
         result = await self.session.scalars(stmt)
         return set(result.all())
 

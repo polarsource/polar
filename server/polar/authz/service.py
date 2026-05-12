@@ -13,33 +13,21 @@ from .types import AccessibleOrganizationID
 async def get_accessible_org_ids(
     session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
+    permission: OrganizationPermission | None = None,
 ) -> set[AccessibleOrganizationID]:
-    """Resolve which organization IDs this subject can access."""
-    if is_organization(auth_subject):
-        return {AccessibleOrganizationID(auth_subject.subject.id)}
-    if is_user(auth_subject):
-        repository = AuthzRepository.from_session(session)
-        raw_ids = await repository.get_user_org_ids(auth_subject.subject.id)
-        return {AccessibleOrganizationID(uid) for uid in raw_ids}
-    return set()
+    """Resolve which organization IDs this subject can access.
 
-
-async def get_accessible_org_ids_with_permission(
-    session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
-    permission: OrganizationPermission,
-) -> set[AccessibleOrganizationID]:
-    """Resolve organization IDs the subject can access AND has ``permission`` for.
-
+    When ``permission`` is provided, user subjects are further restricted to
+    organizations where their `UserOrganization.role` grants that permission.
     Organization-token subjects always pass (the token represents the org
-    itself). User subjects are filtered by their `UserOrganization.role`.
+    itself).
     """
     if is_organization(auth_subject):
         return {AccessibleOrganizationID(auth_subject.subject.id)}
     if is_user(auth_subject):
         repository = AuthzRepository.from_session(session)
-        raw_ids = await repository.get_user_org_ids_with_permission(
-            auth_subject.subject.id, permission
+        raw_ids = await repository.get_user_org_ids(
+            auth_subject.subject.id, permission=permission
         )
         return {AccessibleOrganizationID(uid) for uid in raw_ids}
     return set()
@@ -69,8 +57,6 @@ async def assert_organization_permission(
     been fetched (so policy-by-OrgPolicyGuard doesn't apply). For payload-driven
     creates, prefer combining with ``get_payload_organization``.
     """
-    org_ids = await get_accessible_org_ids_with_permission(
-        session, auth_subject, permission
-    )
+    org_ids = await get_accessible_org_ids(session, auth_subject, permission)
     if organization_id not in org_ids:
         raise NotPermitted(PERMISSION_DENIED_MESSAGE[permission])

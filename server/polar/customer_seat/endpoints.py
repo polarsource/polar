@@ -81,11 +81,18 @@ async def assign_seat(
 
         typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         subscription_repository = SubscriptionRepository.from_session(session)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, typed_auth_subject, OrganizationPermission.customers_manage
+        )
 
         statement = (
-            subscription_repository.get_readable_statement(typed_auth_subject)
+            subscription_repository.get_base_statement()
+            .join(Product)
+            .where(
+                Subscription.id == seat_assign.subscription_id,
+                Product.organization_id.in_(org_ids),
+            )
             .options(*subscription_repository.get_eager_options())
-            .where(Subscription.id == seat_assign.subscription_id)
         )
         subscription = await subscription_repository.get_one_or_none(statement)
 
@@ -143,15 +150,38 @@ async def assign_seat(
                     "No subscription or order found for this checkout"
                 )
 
+        # Authenticated callers using a checkout_id (without client_secret short-circuit)
+        # still need `customers:manage` on the resolved org. Anonymous callers are
+        # already authorized by the client_secret check above.
+        if not isinstance(auth_subject.subject, Anonymous):
+            typed_auth_subject = cast(
+                AuthSubjectType[User | Organization], auth_subject
+            )
+            organization_id = (
+                subscription.product.organization_id
+                if subscription is not None
+                else order.organization_id  # type: ignore[union-attr]
+            )
+            await assert_organization_permission(
+                session,
+                typed_auth_subject,
+                organization_id,
+                OrganizationPermission.customers_manage,
+                "You don't have permission to manage customers",
+            )
+
     elif seat_assign.order_id:
         if isinstance(auth_subject.subject, Anonymous):
             raise NotPermitted("Authentication required for order-based assignment")
 
         typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         order_repository = OrderRepository.from_session(session)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, typed_auth_subject, OrganizationPermission.customers_manage
+        )
 
         order_statement = (
-            order_repository.get_readable_statement(typed_auth_subject)
+            order_repository.get_statement_by_org_ids(org_ids)
             .options(*order_repository.get_eager_options())
             .where(Order.id == seat_assign.order_id)
         )
@@ -167,21 +197,6 @@ async def assign_seat(
 
     container = subscription or order
     assert container is not None  # Already validated above
-
-    if not isinstance(auth_subject.subject, Anonymous):
-        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
-        organization_id = (
-            container.product.organization_id
-            if isinstance(container, Subscription)
-            else container.organization_id
-        )
-        await assert_organization_permission(
-            session,
-            typed_auth_subject,
-            organization_id,
-            OrganizationPermission.customers_manage,
-            "You don't have permission to manage customers",
-        )
 
     seat = await seat_service.assign_seat(
         session,

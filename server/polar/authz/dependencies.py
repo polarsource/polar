@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Annotated, Any
 from uuid import UUID
@@ -17,14 +16,13 @@ from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationID
 from polar.payout_account.repository import PayoutAccountRepository
-from polar.postgres import AsyncReadSession, AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_session
 
 from .policies import finance as finance_policy
 from .policies import members
 from .policies import organization as org_policy
-from .policies import payout_account as pa_policy
 from .service import get_accessible_org_ids, get_accessible_organization
-from .types import PolicyFn, PolicyResult
+from .types import PolicyFn
 
 
 @dataclass(frozen=True)
@@ -43,19 +41,19 @@ class AuthzContext[S: User | Organization]:
 
 
 def OrgPolicyGuard(
-    policy_fn: PolicyFn,
+    policy_fn: PolicyFn | None = None,
     *,
     allowed_subjects: set[type] | None = None,
     required_scopes: set[Scope] | None = None,
 ) -> Any:
     """Create a FastAPI dependency that authenticates, resolves an organization,
-    and checks a policy — all in one step.
+    and (optionally) checks a policy.
 
     Steps:
     1. Authenticate the subject via Authenticator.
     2. Resolve the organization from the ``{id}`` path parameter.
     3. Verify the subject is a member of the organization.
-    4. Evaluate the policy function.
+    4. Evaluate the policy function if provided.
     5. Return an ``AuthzContext`` (organization + auth_subject).
 
     Raises:
@@ -65,8 +63,8 @@ def OrgPolicyGuard(
         ResourceNotFound (404): The organization does not exist, or the
             subject is not a member of it. Both cases return 404 to avoid
             leaking the existence of organizations the subject cannot access.
-        NotPermitted (403): The subject is a member but the policy function
-            returned False (e.g. lacks `finance:read` for finance endpoints).
+        NotPermitted (403): The policy function denied access (e.g. the
+            subject is a member but lacks `finance:read` for finance endpoints).
     """
 
     _allowed = allowed_subjects or {User, Organization}
@@ -91,30 +89,13 @@ def OrgPolicyGuard(
         if organization is None:
             raise ResourceNotFound()
 
-        await _check_policy(policy_fn, session, auth_subject, organization)
+        if policy_fn is not None:
+            result = await policy_fn(session, auth_subject, organization)
+            if result is not True:
+                raise NotPermitted(result)
         return AuthzContext(organization=organization, auth_subject=auth_subject)
 
     return dependency
-
-
-async def _always_allow(
-    session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
-    organization: OrganizationModel,
-) -> PolicyResult:
-    return True
-
-
-async def _check_policy(
-    policy_fn: PolicyFn,
-    session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
-    organization: OrganizationModel,
-) -> None:
-    """Evaluate a policy function and raise NotPermitted if denied."""
-    result = await policy_fn(session, auth_subject, organization)
-    if result is not True:
-        raise NotPermitted(result)
 
 
 AuthorizeFinanceRead = Annotated[
@@ -183,13 +164,12 @@ AuthorizeOrgManageUser = Annotated[
     ),
 ]
 AuthorizeOrgAccess = Annotated[
-    AuthzContext[User | Organization], Depends(OrgPolicyGuard(_always_allow))
+    AuthzContext[User | Organization], Depends(OrgPolicyGuard())
 ]
 AuthorizeOrgAccessUser = Annotated[
     AuthzContext[User],
     Depends(
         OrgPolicyGuard(
-            _always_allow,
             allowed_subjects={User},
             required_scopes={Scope.organizations_write},
         )
@@ -340,7 +320,9 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
         if organization is None or organization.id not in org_ids:
             raise ResourceNotFound()
 
-        await _check_policy(policy_fn, session, auth_subject, organization)
+        result = await policy_fn(session, auth_subject, organization)
+        if result is not True:
+            raise NotPermitted(result)
         return AuthorizedAccount(
             account=account, organization=organization, auth_subject=auth_subject
         )
@@ -348,21 +330,17 @@ def AccountPolicyGuard(policy_fn: PolicyFn) -> Any:
     return dependency
 
 
-def PayoutAccountPolicyGuard(
-    policy_fn: Callable[
-        [AuthSubject[User], "PayoutAccountModel"], Awaitable[PolicyResult]
-    ],
-) -> Any:
-    """FastAPI dependency: resolve payout account by {id}, check policy.
+def PayoutAccountPolicyGuard() -> Any:
+    """FastAPI dependency: resolve payout account by {id}, verify ownership.
 
-    Payout accounts are user-owned resources (via ``admin_id``).
-    The policy receives the authenticated user and the payout account
-    instead of an organization.
+    Payout accounts are user-owned resources (via ``admin_id``); access
+    is granted only to the owning user. There's no role-permission layer
+    above ownership, so a single check covers both read and write.
 
     Raises:
         Unauthorized (401): No valid credentials.
-        ResourceNotFound (404): Payout account not found or policy denied
-            access.
+        ResourceNotFound (404): Payout account not found or the
+            authenticated user isn't the account's admin.
     """
 
     _authenticator = Authenticator(
@@ -380,11 +358,7 @@ def PayoutAccountPolicyGuard(
     ) -> AuthorizedPayoutAccount:
         pa_repo = PayoutAccountRepository.from_session(session)
         payout_account = await pa_repo.get_by_id(id)
-        if payout_account is None:
-            raise ResourceNotFound()
-
-        result = await policy_fn(auth_subject, payout_account)
-        if result is not True:
+        if payout_account is None or payout_account.admin_id != auth_subject.subject.id:
             raise ResourceNotFound()
 
         return AuthorizedPayoutAccount(
@@ -403,9 +377,9 @@ AuthorizeAccountWrite = Annotated[
     Depends(AccountPolicyGuard(finance_policy.can_manage)),
 ]
 AuthorizePayoutAccountRead = Annotated[
-    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard(pa_policy.can_access))
+    AuthorizedPayoutAccount, Depends(PayoutAccountPolicyGuard())
 ]
 AuthorizePayoutAccountWrite = Annotated[
     AuthorizedPayoutAccount,
-    Depends(PayoutAccountPolicyGuard(pa_policy.can_access)),
+    Depends(PayoutAccountPolicyGuard()),
 ]

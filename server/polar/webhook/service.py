@@ -14,6 +14,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
+    assert_resource_permission,
     get_accessible_org_ids,
 )
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
@@ -179,11 +180,8 @@ class WebhookService:
         endpoint: WebhookEndpoint,
         update_schema: WebhookEndpointUpdate,
     ) -> WebhookEndpoint:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            endpoint.organization_id,
-            OrganizationPermission.organization_manage,
+        await assert_resource_permission(
+            session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
         repository = WebhookEndpointRepository.from_session(session)
 
@@ -212,11 +210,8 @@ class WebhookService:
         *,
         endpoint: WebhookEndpoint,
     ) -> WebhookEndpoint:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            endpoint.organization_id,
-            OrganizationPermission.organization_manage,
+        await assert_resource_permission(
+            session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.update(
@@ -233,11 +228,8 @@ class WebhookService:
         *,
         endpoint: WebhookEndpoint,
     ) -> WebhookEndpoint:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            endpoint.organization_id,
-            OrganizationPermission.organization_manage,
+        await assert_resource_permission(
+            session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.soft_delete(endpoint)

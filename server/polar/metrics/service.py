@@ -12,6 +12,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
+    assert_resource_permission,
     get_accessible_org_ids,
 )
 from polar.authz.types import AccessibleOrganizationID
@@ -171,11 +172,8 @@ class MetricsService:
         update_schema: MetricDashboardUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> MetricDashboard:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            dashboard.organization_id,
-            OrganizationPermission.analytics_manage,
+        await assert_resource_permission(
+            session, auth_subject, dashboard, OrganizationPermission.analytics_manage
         )
         repository = MetricDashboardRepository.from_session(session)
         update_dict = update_schema.model_dump(exclude_unset=True)
@@ -187,11 +185,8 @@ class MetricsService:
         dashboard: MetricDashboard,
         auth_subject: AuthSubject[User | Organization],
     ) -> None:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            dashboard.organization_id,
-            OrganizationPermission.analytics_manage,
+        await assert_resource_permission(
+            session, auth_subject, dashboard, OrganizationPermission.analytics_manage
         )
         await session.delete(dashboard)
         await session.flush()

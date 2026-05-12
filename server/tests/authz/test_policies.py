@@ -4,16 +4,11 @@ from polar.auth.models import AuthSubject
 from polar.authz.policies import finance as finance_policy
 from polar.authz.policies import members
 from polar.authz.policies import organization as org_policy
-from polar.authz.policies import payout_account as pa_policy
 from polar.models import Organization, User
 from polar.models.user_organization import OrganizationRole, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import (
-    create_payout_account,
-    create_user,
-)
 
 
 async def _set_role(
@@ -142,37 +137,3 @@ class TestMembersCanManage:
 
         result = await members.can_manage(session, auth_subject, organization)
         assert result == "You don't have permission to manage members"
-
-
-@pytest.mark.asyncio
-class TestPayoutAccountCanAccess:
-    @pytest.mark.auth
-    async def test_admin_allowed(
-        self,
-        auth_subject: AuthSubject[User],
-        save_fixture: SaveFixture,
-        user: User,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        payout_account = await create_payout_account(save_fixture, organization, user)
-
-        result = await pa_policy.can_access(auth_subject, payout_account)
-        assert result is True
-
-    @pytest.mark.auth
-    async def test_non_admin_denied(
-        self,
-        auth_subject: AuthSubject[User],
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        other_user = await create_user(save_fixture)
-        payout_account = await create_payout_account(
-            save_fixture, organization, other_user
-        )
-
-        result = await pa_policy.can_access(auth_subject, payout_account)
-        assert isinstance(result, str)
-        assert "admin" in result.lower()

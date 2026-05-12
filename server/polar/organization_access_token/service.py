@@ -11,6 +11,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
 from polar.authz.service import (
     assert_organization_permission,
+    assert_resource_permission,
     get_accessible_org_ids,
 )
 from polar.config import settings
@@ -163,10 +164,10 @@ class OrganizationAccessTokenService:
         organization_access_token: OrganizationAccessToken,
         update_schema: OrganizationAccessTokenUpdate,
     ) -> OrganizationAccessToken:
-        await assert_organization_permission(
+        await assert_resource_permission(
             session,
             auth_subject,
-            organization_access_token.organization_id,
+            organization_access_token,
             OrganizationPermission.organization_manage,
         )
         repository = OrganizationAccessTokenRepository.from_session(session)
@@ -206,10 +207,10 @@ class OrganizationAccessTokenService:
         auth_subject: AuthSubject[User | Organization],
         organization_access_token: OrganizationAccessToken,
     ) -> None:
-        await assert_organization_permission(
+        await assert_resource_permission(
             session,
             auth_subject,
-            organization_access_token.organization_id,
+            organization_access_token,
             OrganizationPermission.organization_manage,
         )
         repository = OrganizationAccessTokenRepository.from_session(session)

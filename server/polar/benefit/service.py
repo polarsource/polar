@@ -8,6 +8,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
+    assert_resource_permission,
     get_accessible_org_ids,
 )
 from polar.exceptions import NotPermitted, PolarRequestValidationError
@@ -171,11 +172,8 @@ class BenefitService:
         benefit_update: BenefitUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Benefit:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            benefit.organization_id,
-            OrganizationPermission.products_manage,
+        await assert_resource_permission(
+            session, auth_subject, benefit, OrganizationPermission.products_manage
         )
 
         if benefit_update.type != benefit.type:
@@ -226,11 +224,8 @@ class BenefitService:
         benefit: Benefit,
         auth_subject: AuthSubject[User | Organization],
     ) -> Benefit:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            benefit.organization_id,
-            OrganizationPermission.products_manage,
+        await assert_resource_permission(
+            session, auth_subject, benefit, OrganizationPermission.products_manage
         )
 
         if not benefit.deletable:

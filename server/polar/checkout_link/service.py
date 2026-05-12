@@ -9,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
+    assert_resource_permission,
     get_accessible_org_ids,
 )
 from polar.checkout_link.repository import CheckoutLinkRepository
@@ -183,11 +184,8 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_update: CheckoutLinkUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            checkout_link.organization_id,
-            OrganizationPermission.products_manage,
+        await assert_resource_permission(
+            session, auth_subject, checkout_link, OrganizationPermission.products_manage
         )
 
         if checkout_link_update.products is not None:
@@ -246,11 +244,8 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link: CheckoutLink,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            checkout_link.organization_id,
-            OrganizationPermission.products_manage,
+        await assert_resource_permission(
+            session, auth_subject, checkout_link, OrganizationPermission.products_manage
         )
         repository = CheckoutLinkRepository.from_session(session)
         return await repository.soft_delete(checkout_link)

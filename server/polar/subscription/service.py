@@ -13,7 +13,7 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
-    assert_organization_permission,
+    assert_resource_permission,
     get_accessible_org_ids,
 )
 from polar.billing_entry.repository import BillingEntryRepository
@@ -412,11 +412,8 @@ class SubscriptionService:
 
         assert product is not None
 
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            product.organization_id,
-            OrganizationPermission.customers_manage,
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.customers_manage
         )
 
         customer_repository = CustomerRepository.from_session(session)

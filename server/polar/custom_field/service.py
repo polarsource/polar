@@ -18,7 +18,10 @@ from sqlalchemy.orm import contains_eager
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_user_org_ids
-from polar.authz.service import assert_organization_permission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+)
 from polar.custom_field.sorting import CustomFieldSortProperty
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
@@ -145,10 +148,10 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         custom_field_update: CustomFieldUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CustomField:
-        await assert_organization_permission(
+        await assert_resource_permission(
             session,
             auth_subject,
-            custom_field.organization_id,
+            custom_field,
             OrganizationPermission.custom_fields_manage,
         )
 
@@ -220,10 +223,10 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         custom_field: CustomField,
         auth_subject: AuthSubject[User | Organization],
     ) -> CustomField:
-        await assert_organization_permission(
+        await assert_resource_permission(
             session,
             auth_subject,
-            custom_field.organization_id,
+            custom_field,
             OrganizationPermission.custom_fields_manage,
         )
         custom_field.set_deleted_at()

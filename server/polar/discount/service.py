@@ -10,7 +10,10 @@ from sqlalchemy.exc import DBAPIError
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_user_org_ids
-from polar.authz.service import assert_organization_permission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+)
 from polar.discount.repository import DiscountRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
@@ -189,11 +192,8 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount_update: DiscountUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Discount:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            discount.organization_id,
-            OrganizationPermission.products_manage,
+        await assert_resource_permission(
+            session, auth_subject, discount, OrganizationPermission.products_manage
         )
 
         if (
@@ -318,11 +318,8 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount: Discount,
         auth_subject: AuthSubject[User | Organization],
     ) -> Discount:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            discount.organization_id,
-            OrganizationPermission.products_manage,
+        await assert_resource_permission(
+            session, auth_subject, discount, OrganizationPermission.products_manage
         )
         discount.set_deleted_at()
         session.add(discount)

@@ -11,6 +11,7 @@ from polar.auth.models import AuthSubject, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
+    assert_resource_permission,
     get_accessible_org_ids,
 )
 from polar.benefit.service import benefit as benefit_service
@@ -268,11 +269,8 @@ class ProductService:
         update_schema: ProductUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            product.organization_id,
-            OrganizationPermission.products_manage,
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.products_manage
         )
 
         errors: list[ValidationError] = []
@@ -446,11 +444,8 @@ class ProductService:
         benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            product.organization_id,
-            OrganizationPermission.products_manage,
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.products_manage
         )
 
         previous_benefits = set(product.benefits)

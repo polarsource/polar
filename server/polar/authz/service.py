@@ -1,3 +1,4 @@
+from typing import Protocol
 from uuid import UUID
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -8,6 +9,10 @@ from polar.postgres import AsyncReadSession
 
 from .repository import AuthzRepository
 from .types import AccessibleOrganizationID
+
+
+class _OrgScopedResource(Protocol):
+    organization_id: UUID
 
 
 async def get_accessible_org_ids(
@@ -67,3 +72,21 @@ async def assert_organization_permission(
     org_ids = await get_accessible_org_ids(session, auth_subject, permission=permission)
     if organization_id not in org_ids:
         raise NotPermitted(PERMISSION_DENIED_MESSAGE[permission])
+
+
+async def assert_resource_permission(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization],
+    resource: _OrgScopedResource,
+    permission: OrganizationPermission,
+) -> None:
+    """Convenience wrapper around ``assert_organization_permission`` that reads
+    ``resource.organization_id`` for callers that have already fetched an
+    org-scoped resource.
+
+    Same ordering caveat applies: callers MUST gate the resource fetch first
+    (e.g. ``service.get(..., auth_subject)``) and 404 on missing.
+    """
+    await assert_organization_permission(
+        session, auth_subject, resource.organization_id, permission
+    )

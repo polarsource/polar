@@ -73,13 +73,16 @@ async def assign_seat(
     subscription: Subscription | None = None
     order: Order | None = None
 
+    typed_auth_subject: AuthSubjectType[User | Organization] | None = None
+    if not isinstance(auth_subject.subject, Anonymous):
+        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+
     if seat_assign.subscription_id:
-        if isinstance(auth_subject.subject, Anonymous):
+        if typed_auth_subject is None:
             raise NotPermitted(
                 "Authentication required for subscription-based assignment"
             )
 
-        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         subscription_repository = SubscriptionRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
             session,
@@ -150,10 +153,7 @@ async def assign_seat(
         # Authenticated callers using a checkout_id (without client_secret short-circuit)
         # still need `customers:manage` on the resolved org. Anonymous callers are
         # already authorized by the client_secret check above.
-        if not isinstance(auth_subject.subject, Anonymous):
-            typed_auth_subject = cast(
-                AuthSubjectType[User | Organization], auth_subject
-            )
+        if typed_auth_subject is not None:
             organization_id = (
                 subscription.product.organization_id
                 if subscription is not None
@@ -167,10 +167,9 @@ async def assign_seat(
             )
 
     elif seat_assign.order_id:
-        if isinstance(auth_subject.subject, Anonymous):
+        if typed_auth_subject is None:
             raise NotPermitted("Authentication required for order-based assignment")
 
-        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         order_repository = OrderRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
             session,

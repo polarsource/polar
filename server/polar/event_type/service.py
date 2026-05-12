@@ -4,7 +4,7 @@ from uuid import UUID
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
-    assert_organization_permission,
+    assert_resource_permission,
     get_accessible_org_ids,
 )
 from polar.customer.repository import CustomerRepository
@@ -202,11 +202,8 @@ class EventTypeService:
         *,
         label_property_selector: str | None = None,
     ) -> EventType:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            event_type.organization_id,
-            OrganizationPermission.analytics_manage,
+        await assert_resource_permission(
+            session, auth_subject, event_type, OrganizationPermission.analytics_manage
         )
         event_type.label = label
         event_type.label_property_selector = label_property_selector

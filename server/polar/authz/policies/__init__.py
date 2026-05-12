@@ -32,8 +32,6 @@ async def _require_permission(
         user_org = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
         )
-        if user_org is None:
-            return PERMISSION_DENIED_MESSAGE[permission]
-        if role_has_permission(user_org.role, permission):
+        if user_org is not None and role_has_permission(user_org.role, permission):
             return True
     return PERMISSION_DENIED_MESSAGE[permission]

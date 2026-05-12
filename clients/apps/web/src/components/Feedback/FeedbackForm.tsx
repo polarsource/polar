@@ -226,7 +226,7 @@ export const FeedbackForm = ({
             color="text-warning"
             padding="l"
           >
-            {validationOutcome.text}
+            <p className="text-sm">{validationOutcome.text}</p>
           </Box>
         )}
 

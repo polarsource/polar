@@ -4,6 +4,8 @@ import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 import { Modal } from '@/components/Modal'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 
 import { ISODuration } from '@/utils/duration'
@@ -98,29 +100,23 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </Button>
         </WellHeader>
         <WellContent>
-          <div className="text-4xl">
-            {isLoading ? (
-              <div className="animate-pulse rounded-lg bg-gray-200 text-gray-200">
-                &nbsp;
-              </div>
-            ) : (
-              availableBalance
-            )}
-          </div>
+          <Text variant="heading-s" loading={isLoading}>
+            {availableBalance}
+          </Text>
           {summary &&
           summary.available_balance.amount !== summary.balance.amount ? (
-            <div className="dark:text-polar-500 space-y-1 text-gray-500">
-              <div>Total balance: {totalBalance}</div>
+            <Box display="flex" flexDirection="column" rowGap="xs">
+              <Text color="muted">Total balance: {totalBalance}</Text>
               {hasDelay && (
-                <div>
+                <Text color="muted">
                   Available in {delayLabel}:{' '}
                   {formatCurrency('accounting')(
                     summary.balance.amount - summary.available_balance.amount,
                     summary.balance.currency,
                   )}
-                </div>
+                </Text>
               )}
-            </div>
+            </Box>
           ) : null}
         </WellContent>
         <WellFooter>
@@ -141,16 +137,10 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </Button>
         </WellHeader>
         <WellContent>
-          <div className="text-4xl">
-            {isLoading ? (
-              <div className="animate-pulse rounded-lg bg-gray-200 text-gray-200">
-                &nbsp;
-              </div>
-            ) : (
-              summary &&
-              formatCurrency('accounting')(account.credit_balance, 'usd')
-            )}
-          </div>
+          <Text variant="heading-s" loading={isLoading}>
+            {summary &&
+              formatCurrency('accounting')(account.credit_balance, 'usd')}
+          </Text>
         </WellContent>
         <WellFooter>
           <p className="dark:text-polar-500 text-gray-500">
@@ -179,11 +169,16 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           )}
         </WellHeader>
         <WellContent>
-          {payoutAccount ? (
-            <p className="text-4xl capitalize">{payoutAccount.type}</p>
-          ) : (
-            <p className="dark:text-polar-700 text-4xl text-gray-300">—</p>
-          )}
+          <Text
+            variant="heading-s"
+            color={payoutAccount ? 'default' : 'disabled'}
+            loading={!payoutAccount && organization.payout_account_id != null}
+          >
+            {payoutAccount
+              ? payoutAccount.type[0].toUpperCase() +
+                payoutAccount.type.slice(1)
+              : '—'}
+          </Text>
         </WellContent>
         <WellFooter>
           {payoutAccount ? (

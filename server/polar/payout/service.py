@@ -255,10 +255,12 @@ class PayoutService:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         id: uuid.UUID,
+        *,
+        permission: OrganizationPermission = OrganizationPermission.finance_read,
     ) -> Payout | None:
         repository = PayoutRepository.from_session(session)
         org_ids = await get_accessible_org_ids_with_permission(
-            session, auth_subject, OrganizationPermission.finance_read
+            session, auth_subject, permission
         )
         statement = (
             repository.get_statement_by_org_ids(org_ids)

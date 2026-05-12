@@ -160,7 +160,9 @@ async def generate_invoice(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Trigger generation of an order's invoice."""
-    payout = await payout_service.get(session, auth_subject, id)
+    payout = await payout_service.get(
+        session, auth_subject, id, permission=OrganizationPermission.finance_manage
+    )
 
     if payout is None:
         raise ResourceNotFound()

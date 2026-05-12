@@ -66,7 +66,7 @@ def OrgPolicyGuard(
             subject is not a member of it. Both cases return 404 to avoid
             leaking the existence of organizations the subject cannot access.
         NotPermitted (403): The subject is a member but the policy function
-            returned False (e.g. not an admin for finance endpoints).
+            returned False (e.g. lacks `finance:read` for finance endpoints).
     """
 
     _allowed = allowed_subjects or {User, Organization}

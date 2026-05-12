@@ -148,7 +148,7 @@ async def get(
     summary="Get Organization Account",
     responses={
         403: {
-            "description": "User is not the admin of the account.",
+            "description": "User lacks `finance:read` permission.",
             "model": NotPermitted.schema(),
         },
         404: {
@@ -511,8 +511,7 @@ async def remove_member(
 ) -> None:
     """Remove a member from an organization.
 
-    Only organization admins can remove members.
-    Admins cannot remove themselves.
+    Requires `members:manage` permission. Owners cannot be removed.
     """
     try:
         target_user_id = UUID(user_id)

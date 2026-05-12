@@ -16,23 +16,11 @@ const EXCLUDED_PATH_PREFIXES = ['changelog', 'guides']
 export const MINTLIFY_DOMAIN =
   process.env.MINTLIFY_ASSISTANT_DOMAIN ?? 'polar.mintlify.app'
 
-export const isExcludedPath = (path: string) => {
+const isExcludedPath = (path: string) => {
   const normalized = path.replace(/^\/+/, '').toLowerCase()
   return EXCLUDED_PATH_PREFIXES.some(
     (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`),
   )
-}
-
-export const dedupeByPath = (results: MintlifySearchResult[]) => {
-  const seen = new Set<string>()
-  const out: MintlifySearchResult[] = []
-  for (const result of results) {
-    if (!result?.path || seen.has(result.path)) continue
-    if (isExcludedPath(result.path)) continue
-    seen.add(result.path)
-    out.push(result)
-  }
-  return out
 }
 
 const mintlifyPost = async <T>(
@@ -77,7 +65,8 @@ export const searchMintlify = async (
     'search',
     { query, scoreThreshold: SCORE_THRESHOLD, pageSize: SEARCH_PAGE_SIZE },
   )
-  return Array.isArray(data) ? data : []
+  if (!Array.isArray(data)) return []
+  return data.filter((result) => result?.path && !isExcludedPath(result.path))
 }
 
 export const fetchMintlifyPageContent = async (

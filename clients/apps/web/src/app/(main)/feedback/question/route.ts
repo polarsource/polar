@@ -16,7 +16,6 @@ import { z } from 'zod'
 
 import { ALLOWED_DASHBOARD_PATHS } from './dashboardPaths'
 import {
-  dedupeByPath,
   fetchMintlifyPageContent,
   MINTLIFY_DOMAIN,
   searchMintlify,
@@ -47,7 +46,7 @@ const ANSWER_SYSTEM_PROMPT = `You are the Polar support assistant. You answer th
 You have three tools:
 - \`search\`: search the Polar docs by an English query. Returns pages with short excerpts and a \`path\`.
 - \`fetchPageContent\`: fetch the full Markdown content of a documentation page by its \`path\` (which must come from a search result).
-- \`escalateToHuman\`: open the escalation panel so the user can hand the conversation to the Polar team. Pick the right \`type\` (question / feedback / bug). You do NOT generate a summary — the user adds any extra note themselves, and the full transcript is attached automatically. Use this when:
+- \`escalateToHuman\`: open the escalation panel so the user can hand the conversation to the Polar team. Pick the right \`type\` (question / feedback / bug). Use this when:
   - The user explicitly asks for a human / support / to talk to someone.
   - The fetched docs do not cover the question and the user still needs an answer.
   - The question is account-specific (refund, missing payout, billing dispute, account access) that docs cannot resolve.
@@ -55,7 +54,7 @@ You have three tools:
   - The user is reporting a bug or unexpected behavior — pass \`type: "bug"\`.
   - The user is sharing product feedback or a feature request — pass \`type: "feedback"\`.
 
-Never proactively offer to escalate or to draft a message to the support team after you have already given a workable answer. Do not end replies with anything like "let me know if you'd like me to draft a message to support", "I can hand this off to support if you need more help", or "I can connect you with someone for more clarification". Escalation only happens when the user explicitly asks for a human, or when the conversation is clearly stuck after repeated attempts — not as a courtesy after a good reply.
+Never proactively offer to escalate or to draft a message to the support team after you have already given a workable answer. Escalation only happens when the user explicitly asks for a human, or when the conversation is clearly stuck after repeated attempts — not as a courtesy after a good reply.
 
 Workflow for answering:
 1. If the documentation already fetched earlier in this conversation contains the answer, use it directly without re-fetching.
@@ -68,7 +67,7 @@ Workflow for answering:
 4. Call \`fetchPageContent\` on the chosen page. The search excerpts alone are not enough — writing an answer from excerpts will hallucinate.
 5. Write your answer grounded in the fetched content. Do not invent details that aren't in fetched pages. Even if the fetched page happens to contain stack-specific examples, keep the reply itself platform-level unless the user explicitly asked about that stack.
 
-When you escalate, first write a brief, warm message in the chat (one or two short sentences) telling the user you'll connect them with the Polar team and that they can add anything else they'd like to share before sending. Make it clear they still need to click Send — never imply the request has already been sent, is already with support, or is "on its way". Don't restate their question. Then call \`escalateToHuman\` with just the \`type\` — do not write or pass a summary, the full conversation transcript is attached automatically. Do not write any text after the tool call — the UI takes over and shows the user an empty textarea where they can optionally add a note before clicking Send.
+When you escalate, first write a brief, warm message in the chat (one or two short sentences) telling the user you'll connect them with the Polar team and that they can add anything else they'd like to share before sending. Make it clear they still need to click Send — never imply the request has already been sent, is already with support, or is "on its way". Don't restate their question. Then call \`escalateToHuman\` with the correct \`type\` — the full conversation transcript is attached automatically. Do not write any text after the tool call — the UI takes over and shows the user an empty textarea where they can optionally add a note before clicking Send.
 
 Guidelines for replies:
 - Be concise and friendly.
@@ -76,7 +75,7 @@ Guidelines for replies:
 - Use Markdown for emphasis, lists, and inline code, but never use Markdown headings (\`#\`, \`##\`, etc.).
 - Do not reply with code unless the user has explicitly asked for code or pasted code into the conversation. This includes code blocks, snippets, request/response payloads, CLI invocations, and configuration files. If a fetched docs page contains code, paraphrase what it does in plain words and let the user follow up if they want the snippet.
 - Do not reply with integration- or framework-specific guidance (e.g. Next.js, React, Astro, Stripe, BetterAuth, GitHub, Discord, the JavaScript SDK, the Python SDK, webhooks code) unless the user has explicitly asked about that integration or framework. Keep the initial answer generic — describe how Polar handles the topic at the platform level — and let the user follow up if they want details for their stack.
-- Example: if the user asks "how do I set a redirect URL?", explain at a high level what a redirect URL is in Polar and where it is configured. Do not show SDK examples, Next.js handlers, or webhook code unless they ask.
+- Example: if the user asks "how do I set a redirect URL?", explain at a high level what a redirect URL is in Polar and where it is configured. Do not show SDK examples, Next.js handlers, or webhook code unless they explicitly ask.
 - When linking to a documentation page, always write the link as \`[Page Title](https://polar.sh/docs/<path>)\` with a short, human-readable page title as the visible label. Derive the title from the fetched page content (its first H1 heading) or from the search result; if no obvious title is available, write a short descriptive label of 3–6 words. Never use the URL or the raw path as the visible link text — links like \`[https://polar.sh/docs/installation](https://polar.sh/docs/installation)\` or \`[/installation](...)\` are not allowed. Never link to a bare path like \`(installation)\` or \`(/installation)\`. \`<path>\` is the value of the \`path\` field from the search/fetch result, without a leading slash.
 
 Linking to the Polar dashboard:
@@ -153,8 +152,10 @@ export async function POST(req: Request) {
           .describe('A concise English search query.'),
       }),
       execute: async ({ query }) => {
-        const results = dedupeByPath(
-          await searchMintlify(mintlifyApiKey, MINTLIFY_DOMAIN, query),
+        const results = await searchMintlify(
+          mintlifyApiKey,
+          MINTLIFY_DOMAIN,
+          query,
         )
         return { query, results }
       },
@@ -189,7 +190,7 @@ export async function POST(req: Request) {
 
     const escalateToHuman = tool({
       description:
-        'Open the escalation panel so the user can hand the conversation off to the Polar team. Calling this tool does NOT submit anything — it surfaces an empty textarea where the user can optionally add anything else they want to share, pick the right category, and then click Send themselves. The full conversation transcript is attached automatically, so you do NOT need to summarize anything. Use this for any request you cannot resolve in the chat: support questions, bug reports, feature feedback. After calling this tool, do not write any further text — the UI takes over.',
+        'Open the escalation panel so the user can hand the conversation off to the Polar team. Calling this tool does NOT submit anything — it surfaces an empty textarea where the user can optionally add anything else they want to share, pick the right category, and then click Send themselves. The full conversation transcript is attached automatically. Use this for any request you cannot resolve in the chat: support questions, bug reports, feature feedback. After calling this tool, do not write any further text — the UI takes over.',
       inputSchema: z.object({
         type: z
           .enum(['question', 'feedback', 'bug'])

@@ -8,12 +8,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject, is_user
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    get_accessible_org_ids,
+    get_accessible_org_ids_with_permission,
+)
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
+    NotPermitted,
     PolarRequestValidationError,
     ValidationError,
 )
@@ -79,7 +84,9 @@ class ProductService:
         ],
     ) -> tuple[Sequence[Product], int]:
         repository = ProductRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.products_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).join(
             ProductPrice,
             onclause=(
@@ -145,7 +152,9 @@ class ProductService:
         id: uuid.UUID,
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.products_read
+        )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Product.id == id)
@@ -163,6 +172,7 @@ class ProductService:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
+        await self._require_manage(session, auth_subject, organization.id)
 
         errors: list[ValidationError] = []
         prices, _, _, prices_errors = await self.get_validated_prices(
@@ -254,6 +264,8 @@ class ProductService:
         update_schema: ProductUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
+        await self._require_manage(session, auth_subject, product.organization_id)
+
         errors: list[ValidationError] = []
 
         # Validate prices
@@ -425,6 +437,8 @@ class ProductService:
         benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
+        await self._require_manage(session, auth_subject, product.organization_id)
+
         previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()
 
@@ -676,6 +690,18 @@ class ProductService:
             )
 
         return prices, existing_prices, added_prices, errors
+
+    async def _require_manage(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: uuid.UUID,
+    ) -> None:
+        manage_org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.products_manage
+        )
+        if organization_id not in manage_org_ids:
+            raise NotPermitted("Only an organization admin can manage products")
 
     async def _archive(self, session: AsyncSession, product: Product) -> Product:
         product.is_archived = True

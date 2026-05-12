@@ -93,6 +93,7 @@ BENEFITS: list[dict[str, object]] = [
             "level": 1,
             "slack": False,
             "prioritized": True,
+            "plain_tier_external_id": "starter",
         },
     },
     {
@@ -102,6 +103,7 @@ BENEFITS: list[dict[str, object]] = [
             "level": 2,
             "slack": False,
             "prioritized": True,
+            "plain_tier_external_id": "pro",
         },
     },
     {
@@ -111,6 +113,17 @@ BENEFITS: list[dict[str, object]] = [
             "level": 3,
             "slack": True,
             "prioritized": True,
+            "plain_tier_external_id": "startup",
+        },
+    },
+    {
+        "description": "Support (Tier 4)",
+        "metadata": {
+            "type": "support",
+            "level": 3,
+            "slack": True,
+            "prioritized": True,
+            "plain_tier_external_id": "scale",
         },
     },
 ]
@@ -155,13 +168,13 @@ PRODUCTS: list[dict[str, object]] = [
             "order": 4,
             "features": "Slack & Prioritized Ticket support",
         },
-        "benefits": ["Transaction Fee (Tier 4)", "Support (Tier 3)"],
+        "benefits": ["Transaction Fee (Tier 4)", "Support (Tier 4)"],
     },
     {
         "name": "Polar Free",
         "price_amount": None,
         "metadata": {"custom": False, "hidden": True},
-        "benefits": ["Transaction Fee (Grandfather)"],
+        "benefits": ["Transaction Fee (Grandfather)", "Support (Tier 1)"],
     },
 ]
 

@@ -83,7 +83,7 @@ class TestAccountCanRead:
 
 
 @pytest.mark.asyncio
-class TestOrgCanDelete:
+class TestOrgCanManage:
     @pytest.mark.auth
     async def test_admin_allowed(
         self,
@@ -95,7 +95,7 @@ class TestOrgCanDelete:
     ) -> None:
         await _set_role(save_fixture, user_organization, OrganizationRole.admin)
 
-        result = await org_policy.can_delete(session, auth_subject, organization)
+        result = await org_policy.can_manage(session, auth_subject, organization)
         assert result is True
 
     @pytest.mark.auth
@@ -109,8 +109,8 @@ class TestOrgCanDelete:
     ) -> None:
         await _set_role(save_fixture, user_organization, OrganizationRole.member)
 
-        result = await org_policy.can_delete(session, auth_subject, organization)
-        assert result == "Only an organization admin can delete the organization"
+        result = await org_policy.can_manage(session, auth_subject, organization)
+        assert result == "Only an organization admin can manage the organization"
 
 
 @pytest.mark.asyncio

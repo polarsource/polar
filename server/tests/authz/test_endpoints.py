@@ -83,6 +83,35 @@ class TestPolicyGuardGetAccount:
 
 
 @pytest.mark.asyncio
+class TestPolicyGuardUpdateOrganization:
+    """Test PolicyGuard behavior on PATCH /organizations/{id}."""
+
+    async def test_anonymous_returns_401(self, client: AsyncClient) -> None:
+        response = await client.patch(f"/v1/organizations/{uuid.uuid4()}", json={})
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_non_admin_returns_403_with_message(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}", json={"name": "Updated"}
+        )
+        assert response.status_code == 403
+        assert (
+            response.json()["detail"]
+            == "Only an organization admin can manage the organization"
+        )
+
+
+@pytest.mark.asyncio
 class TestPolicyGuardDeleteOrganization:
     """Test PolicyGuard behavior on DELETE /organizations/{id}."""
 
@@ -114,7 +143,7 @@ class TestPolicyGuardDeleteOrganization:
         assert response.status_code == 403
         assert (
             response.json()["detail"]
-            == "Only an organization admin can delete the organization"
+            == "Only an organization admin can manage the organization"
         )
 
 

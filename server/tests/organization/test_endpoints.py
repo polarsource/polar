@@ -1040,7 +1040,7 @@ class TestDeleteOrganization:
         assert response.status_code == 403
         json = response.json()
         assert (
-            json["detail"] == "Only an organization admin can delete the organization"
+            json["detail"] == "Only an organization admin can manage the organization"
         )
 
 

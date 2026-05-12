@@ -35,14 +35,18 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
   const stepConfig = STEP_CONFIG[step.key]
   const renderSection = stepConfig?.render
   const label = stepConfig?.label ?? step.key
-  const reasonText = step.reasons
-    ?.map(
-      (reason) =>
-        stepConfig?.reasonLabels?.[reason] ??
-        COMMON_REASON_LABELS[reason] ??
-        reason,
-    )
-    .join(', ')
+  const reasonCount = step.reasons?.length ?? 0
+  const reasonText =
+    reasonCount > 1
+      ? 'Multiple issues need your attention'
+      : step.reasons
+          ?.map(
+            (reason) =>
+              stepConfig?.reasonLabels?.[reason] ??
+              COMMON_REASON_LABELS[reason] ??
+              reason,
+          )
+          .join(', ')
   const isActionable = !!renderSection
   const collapsedLabel = step.status === 'pending' ? 'Add' : 'Update'
   const showExpanded = isExpanded && !!renderSection
@@ -109,7 +113,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               transition={{ duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
               style={{ overflow: 'hidden' }}
             >
-              <Box paddingTop="m">{renderSection({ organization })}</Box>
+              <Box paddingTop="m">{renderSection({ organization, step })}</Box>
             </motion.div>
           )}
         </AnimatePresence>

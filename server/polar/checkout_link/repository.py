@@ -103,6 +103,20 @@ class CheckoutLinkRepository(
         result = await self.session.execute(statement)
         return result.scalar_one_or_none() is not None
 
+    async def has_any(self, organization_id: UUID) -> bool:
+        """Whether the organization has any live checkout link at all,
+        regardless of its product or success_url configuration."""
+        statement = (
+            select(CheckoutLink.id)
+            .where(
+                CheckoutLink.organization_id == organization_id,
+                CheckoutLink.deleted_at.is_(None),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None
+
     async def has_with_success_url(self, organization_id: UUID) -> bool:
         """Whether the organization has any live checkout link with a
         success_url set, meaning the merchant handles fulfillment by

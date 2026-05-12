@@ -1591,6 +1591,9 @@ class OrganizationService:
             has_checkout_link_with_fulfillable_benefit
             or has_checkout_link_with_success_url
         )
+        has_any_checkout_link = await checkout_link_repository.has_any(
+            organization.id
+        )
         has_access_token = await access_token_repository.has_by_organization_id(
             organization.id
         )
@@ -1607,10 +1610,33 @@ class OrganizationService:
                 reasons=[] if ok else [OrganizationReviewCheckReason.NOT_STARTED],
             )
 
-        checkout_link_sub = _sub(
-            OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
-            has_fulfillable_checkout_link,
-        )
+        # Checkout link escalates to WARNING when the merchant has created a
+        # checkout link but it neither sells a fulfillable benefit nor sets a
+        # success_url — i.e. the link exists but won't actually deliver
+        # anything to the customer post-purchase.
+        if has_fulfillable_checkout_link:
+            checkout_link_sub = _sub(
+                OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
+                True,
+            )
+        elif has_any_checkout_link:
+            # The merchant created a checkout link but it neither sells a
+            # fulfillable benefit nor sets a success_url — it can't actually
+            # deliver anything post-purchase. Treat as a hard failure so the
+            # row surfaces it clearly; the parent rollup still falls back to
+            # PASSED if the API path is fully configured.
+            checkout_link_sub = OrganizationReviewSubCheck(
+                key=OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
+                status=OrganizationReviewCheckStatus.FAILED,
+                reasons=[
+                    OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE
+                ],
+            )
+        else:
+            checkout_link_sub = _sub(
+                OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
+                False,
+            )
         access_token_sub = _sub(
             OrganizationReviewSubCheckKey.SETUP_READINESS_ACCESS_TOKEN,
             has_access_token,
@@ -1631,18 +1657,54 @@ class OrganizationService:
                 OrganizationReviewSubCheckKey.SETUP_READINESS_WEBHOOK, has_webhook
             )
 
-        if checkout_link_sub.status == OrganizationReviewCheckStatus.PASSED:
+        api_path_passed = (
+            access_token_sub.status == OrganizationReviewCheckStatus.PASSED
+            and webhook_sub.status == OrganizationReviewCheckStatus.PASSED
+        )
+
+        if (
+            checkout_link_sub.status == OrganizationReviewCheckStatus.PASSED
+            or api_path_passed
+        ):
             parent_status = OrganizationReviewCheckStatus.PASSED
+        elif checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED:
+            # No-code path attempted but the link can't fulfill — surface as
+            # a hard failure so the user can't submit without fixing it.
+            parent_status = OrganizationReviewCheckStatus.FAILED
         elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
-            # PASSED when webhook is set up, WARNING otherwise.
-            parent_status = webhook_sub.status
+            # API path partially configured — token present, webhook missing.
+            parent_status = OrganizationReviewCheckStatus.WARNING
         else:
             parent_status = OrganizationReviewCheckStatus.PENDING
+
+        # Propagate failure/warning-level reasons from sub-checks to the
+        # parent so the row header can surface a single, actionable hint
+        # without the frontend re-deriving which sub-check produced it. Skip
+        # propagation when the parent is already PASSED — one complete path
+        # makes any partial state on the other path irrelevant for the rollup
+        # message.
+        sub_checks = [checkout_link_sub, access_token_sub, webhook_sub]
+        parent_reasons: list[OrganizationReviewCheckReason] = []
+        if parent_status != OrganizationReviewCheckStatus.PASSED:
+            propagated_statuses = {
+                OrganizationReviewCheckStatus.WARNING,
+                OrganizationReviewCheckStatus.FAILED,
+            }
+            seen: set[OrganizationReviewCheckReason] = set()
+            for sub in sub_checks:
+                if sub.status not in propagated_statuses:
+                    continue
+                for reason in sub.reasons:
+                    if reason in seen:
+                        continue
+                    seen.add(reason)
+                    parent_reasons.append(reason)
 
         return OrganizationReviewCheck(
             key=key,
             status=parent_status,
-            sub_checks=[checkout_link_sub, access_token_sub, webhook_sub],
+            reasons=parent_reasons,
+            sub_checks=sub_checks,
         )
 
     async def submit_appeal(

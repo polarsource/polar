@@ -10,6 +10,7 @@ import { SocialLinksSection } from './SocialLinksSection'
 
 interface SectionProps {
   organization: schemas['Organization']
+  step: schemas['OrganizationReviewCheck']
 }
 
 interface StepConfig {
@@ -87,11 +88,11 @@ export const STEP_CONFIG: Partial<
   setup_readiness: {
     label: 'Setup readiness',
     reasonLabels: {
-      'setup_readiness.webhook_missing':
-        'Add a webhook endpoint so we can observe order events',
+      'setup_readiness.webhook_missing': 'Creating a webhook is recommended',
+      'setup_readiness.checkout_link_not_fulfillable': 'Invalid checkout link',
     },
-    render: ({ organization }) => (
-      <SetupReadinessSection organization={organization} />
+    render: ({ organization, step }) => (
+      <SetupReadinessSection organization={organization} step={step} />
     ),
   },
 }

@@ -23907,6 +23907,7 @@ export interface components {
       | 'payout_account.requirements_due'
       | 'payout_account.payouts_disabled'
       | 'setup_readiness.webhook_missing'
+      | 'setup_readiness.checkout_link_not_fulfillable'
     /**
      * OrganizationReviewCheckStatus
      * @enum {string}
@@ -54692,6 +54693,7 @@ export const organizationReviewCheckReasonValues: ReadonlyArray<
   'payout_account.requirements_due',
   'payout_account.payouts_disabled',
   'setup_readiness.webhook_missing',
+  'setup_readiness.checkout_link_not_fulfillable',
 ]
 export const organizationReviewCheckStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckStatus']

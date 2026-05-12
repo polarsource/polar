@@ -608,6 +608,9 @@ class OrganizationReviewCheckReason(StrEnum):
 
     # Setup readiness
     SETUP_READINESS_WEBHOOK_MISSING = "setup_readiness.webhook_missing"
+    SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE = (
+        "setup_readiness.checkout_link_not_fulfillable"
+    )
 
 
 class OrganizationReviewSubCheckKey(StrEnum):

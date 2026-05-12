@@ -16,12 +16,30 @@ import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardI
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { useState } from 'react'
 import { PathCard } from './PathCard'
+import { PathCardBanner } from './PathCardBanner'
 
 interface Props {
   organization: schemas['Organization']
+  step: schemas['OrganizationReviewCheck']
 }
 
-export const SetupReadinessSection = ({ organization }: Props) => {
+const subStatus = (
+  step: schemas['OrganizationReviewCheck'],
+  key: schemas['OrganizationReviewSubCheckKey'],
+): schemas['OrganizationReviewCheckStatus'] | undefined =>
+  step.sub_checks?.find((s) => s.key === key)?.status
+
+export const SetupReadinessSection = ({ organization, step }: Props) => {
+  const checkoutLinkStatus = subStatus(step, 'setup_readiness.checkout_link')
+  const accessTokenStatus = subStatus(step, 'setup_readiness.access_token')
+  const webhookStatus = subStatus(step, 'setup_readiness.webhook')
+
+  const checkoutLinkNeedsEdit =
+    checkoutLinkStatus === 'failed' || checkoutLinkStatus === 'warning'
+  const checkoutLinkHref = checkoutLinkNeedsEdit
+    ? `/dashboard/${organization.slug}/products/checkout-links`
+    : undefined
+
   const {
     isShown: isCreateCheckoutLinkModalShown,
     show: showCreateCheckoutLinkModal,
@@ -64,8 +82,21 @@ export const SetupReadinessSection = ({ organization }: Props) => {
           <PathCard
             title="Create a checkout link"
             description="A pre-configured checkout URL you can share anywhere to start selling without writing any code. Drop it on your site, in emails, on social, or send it straight to customers."
-            onClick={showCreateCheckoutLinkModal}
+            href={checkoutLinkHref}
+            onClick={
+              checkoutLinkNeedsEdit ? undefined : showCreateCheckoutLinkModal
+            }
             docsUrl="https://polar.sh/docs/features/checkout/links"
+            status={checkoutLinkStatus}
+            extra={
+              checkoutLinkStatus === 'failed' && (
+                <PathCardBanner
+                  tone="danger"
+                  title="Checkout link is invalid"
+                  description="Your checkout link needs either a benefit attached or a success URL set."
+                />
+              )
+            }
           />
         </Box>
 
@@ -105,6 +136,7 @@ export const SetupReadinessSection = ({ organization }: Props) => {
             onClick={showCreateTokenModal}
             docsUrl="https://polar.sh/docs/api-reference/introduction"
             required
+            status={accessTokenStatus}
           />
 
           <PathCard
@@ -113,6 +145,16 @@ export const SetupReadinessSection = ({ organization }: Props) => {
             onClick={showCreateWebhookModal}
             recommended
             docsUrl="https://polar.sh/docs/integrate/webhooks/endpoints"
+            status={webhookStatus}
+            extra={
+              webhookStatus === 'warning' && (
+                <PathCardBanner
+                  tone="warning"
+                  title="Webhook missing"
+                  description="Without a webhook, Polar can't notify your app when orders, refunds, or subscription changes happen, which can cause your data to drift out of sync."
+                />
+              )
+            }
           />
         </Box>
       </Box>

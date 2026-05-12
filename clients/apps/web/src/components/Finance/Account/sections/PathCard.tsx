@@ -1,5 +1,6 @@
 'use client'
 
+import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
@@ -13,7 +14,9 @@ export interface PathCardProps {
   onClick?: () => void
   recommended?: boolean
   required?: boolean
+  status?: schemas['OrganizationReviewCheckStatus']
   docsUrl?: string
+  extra?: React.ReactNode
 }
 
 export const PathCard = ({
@@ -23,8 +26,47 @@ export const PathCard = ({
   onClick,
   recommended,
   required,
+  status,
   docsUrl,
+  extra,
 }: PathCardProps) => {
+  const badge =
+    status === 'passed' ? (
+      <Pill color="green">Completed</Pill>
+    ) : status === 'failed' ? (
+      <Box
+        display="inline-flex"
+        alignItems="center"
+        paddingHorizontal="s"
+        paddingVertical="xs"
+        borderRadius="full"
+        backgroundColor="background-danger"
+        color="text-danger"
+      >
+        <Text variant="label" color="inherit">
+          Failed
+        </Text>
+      </Box>
+    ) : status === 'warning' ? (
+      <Box
+        display="inline-flex"
+        alignItems="center"
+        paddingHorizontal="s"
+        paddingVertical="xs"
+        borderRadius="full"
+        backgroundColor="background-warning"
+        color="text-warning"
+      >
+        <Text variant="label" color="inherit">
+          Warning
+        </Text>
+      </Box>
+    ) : required ? (
+      <Pill color="gray">Required</Pill>
+    ) : recommended ? (
+      <Pill color="blue">Recommended</Pill>
+    ) : null
+
   const inner = (
     <>
       <Box
@@ -34,8 +76,7 @@ export const PathCard = ({
         columnGap="s"
       >
         <Text variant="default">{title}</Text>
-        {required && <Pill color="gray">Required</Pill>}
-        {recommended && !required && <Pill color="blue">Recommended</Pill>}
+        {badge}
       </Box>
       <Text variant="caption" color="muted">
         {description}
@@ -58,6 +99,14 @@ export const PathCard = ({
     </>
   )
 
+  const headerWithPadding = (
+    <Box display="flex" flexDirection="column" rowGap="s" padding="l">
+      {inner}
+    </Box>
+  )
+
+  const interactive = !!href || !!onClick
+
   return (
     <Box
       as="article"
@@ -67,23 +116,28 @@ export const PathCard = ({
       borderWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
-      backgroundColor={{ hover: 'background-card' }}
+      backgroundColor={interactive ? { hover: 'background-card' } : undefined}
+      overflow="hidden"
     >
       {href ? (
-        <Link
-          href={href}
-          className="flex flex-col gap-y-2 p-5 focus:outline-none"
-        >
-          {inner}
+        <Link href={href} className="flex flex-col focus:outline-none">
+          {headerWithPadding}
+          {extra}
         </Link>
-      ) : (
+      ) : onClick ? (
         <button
           type="button"
           onClick={onClick}
-          className="flex cursor-pointer flex-col gap-y-2 p-4 text-left focus:outline-none"
+          className="flex cursor-pointer flex-col text-left focus:outline-none"
         >
-          {inner}
+          {headerWithPadding}
+          {extra}
         </button>
+      ) : (
+        <>
+          {headerWithPadding}
+          {extra}
+        </>
       )}
     </Box>
   )

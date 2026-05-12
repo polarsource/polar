@@ -12,6 +12,7 @@ export interface PathCardProps {
   href?: string
   onClick?: () => void
   recommended?: boolean
+  required?: boolean
   docsUrl?: string
 }
 
@@ -21,6 +22,7 @@ export const PathCard = ({
   href,
   onClick,
   recommended,
+  required,
   docsUrl,
 }: PathCardProps) => {
   const inner = (
@@ -32,7 +34,8 @@ export const PathCard = ({
         columnGap="s"
       >
         <Text variant="default">{title}</Text>
-        {recommended && <Pill color="blue">Recommended</Pill>}
+        {required && <Pill color="gray">Required</Pill>}
+        {recommended && !required && <Pill color="blue">Recommended</Pill>}
       </Box>
       <Text variant="caption" color="muted">
         {description}

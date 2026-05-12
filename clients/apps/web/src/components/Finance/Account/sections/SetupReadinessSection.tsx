@@ -59,7 +59,7 @@ export const SetupReadinessSection = ({ organization }: Props) => {
       <Box display="flex" flexDirection="column" rowGap="xl">
         <Box display="flex" flexDirection="column" rowGap="s">
           <Text variant="caption" color="muted">
-            Straight-forward
+            No-code
           </Text>
           <PathCard
             title="Create a checkout link"
@@ -69,16 +69,42 @@ export const SetupReadinessSection = ({ organization }: Props) => {
           />
         </Box>
 
-        <Box display="flex" flexDirection="column" rowGap="s">
-          <Text variant="caption" color="muted">
-            Advanced
+        <Box display="flex" alignItems="center" columnGap="m">
+          <Box
+            flexGrow={1}
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          />
+          <Text
+            variant="caption"
+            color="muted"
+            // eslint-disable-next-line polar/no-classname-text
+            className="text-[11px] font-semibold tracking-wider uppercase"
+          >
+            or
           </Text>
+          <Box
+            flexGrow={1}
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          />
+        </Box>
+
+        <Box display="flex" flexDirection="column" rowGap="s">
+          <Box display="flex" alignItems="baseline" columnGap="s">
+            <Text variant="caption" color="muted">
+              API integration
+            </Text>
+          </Box>
 
           <PathCard
             title="Create an API key"
             description="Authenticate your backend's requests to the Polar API so you can manage products, orders, and subscriptions programmatically from your own app."
             onClick={showCreateTokenModal}
             docsUrl="https://polar.sh/docs/api-reference/introduction"
+            required
           />
 
           <PathCard

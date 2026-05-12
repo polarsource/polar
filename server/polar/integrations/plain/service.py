@@ -1441,6 +1441,22 @@ class PlainService:
                     uuid.UUID(external_id), "No customer returned by upsert"
                 )
 
+    async def list_all_tenant_external_ids(self, *, page_size: int = 100) -> set[str]:
+        if not self.enabled:
+            return set()
+
+        external_ids: set[str] = set()
+        cursor: str | None = None
+        async with self._get_plain_client() as plain:
+            while True:
+                page = await plain.tenants(first=page_size, after=cursor)
+                for edge in page.edges:
+                    external_ids.add(edge.node.external_id)
+                if not page.page_info.has_next_page:
+                    break
+                cursor = page.page_info.end_cursor
+        return external_ids
+
     async def upsert_tenant(self, *, external_id: str, name: str) -> None:
         if not self.enabled:
             return

@@ -1,13 +1,17 @@
+import asyncio
 import traceback
 import uuid
 from dataclasses import dataclass, field
 
 import typer
-from rich.progress import Progress
+from rich.progress import Progress, TaskID
 
 from polar.config import settings
 from polar.integrations.plain.service import plain as plain_service
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import (
+    AsyncSessionMaker,
+    create_async_sessionmaker,
+)
 from polar.models import Organization
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, create_async_engine
@@ -28,18 +32,99 @@ class BackfillResult:
     error_details: list[tuple[str, str, str]] = field(default_factory=list)
 
 
+async def _process_organization(
+    *,
+    organization: Organization,
+    sessionmaker: AsyncSessionMaker,
+    semaphore: asyncio.Semaphore,
+    result: BackfillResult,
+    result_lock: asyncio.Lock,
+    progress: Progress,
+    task_id: TaskID,
+    dry_run: bool,
+) -> None:
+    async with semaphore:
+        async with sessionmaker() as task_session:
+            user_repository = UserRepository.from_session(task_session)
+            members = await user_repository.get_all_by_organization(organization.id)
+
+        tenant_external_id = str(organization.id)
+
+        if not members:
+            async with result_lock:
+                result.tenants_without_members += 1
+
+        if dry_run:
+            typer.echo(
+                f"  Would upsert tenant {organization.name} ({tenant_external_id}) "
+                f"with {len(members)} members"
+            )
+            progress.advance(task_id)
+            return
+
+        try:
+            await plain_service.upsert_tenant(
+                external_id=tenant_external_id, name=organization.name
+            )
+            async with result_lock:
+                result.tenants_upserted += 1
+        except Exception:
+            async with result_lock:
+                result.tenant_errors += 1
+                result.error_details.append(
+                    (
+                        tenant_external_id,
+                        f"upsert_tenant {organization.name}",
+                        traceback.format_exc(),
+                    )
+                )
+            progress.advance(task_id)
+            return
+
+        for user in members:
+            try:
+                await plain_service.upsert_customer(
+                    external_id=str(user.id),
+                    email=user.email,
+                    email_verified=user.email_verified,
+                )
+                await plain_service.add_customer_to_tenant(
+                    customer_external_id=str(user.id),
+                    tenant_external_id=tenant_external_id,
+                )
+                async with result_lock:
+                    result.members_added += 1
+            except Exception:
+                async with result_lock:
+                    result.member_errors += 1
+                    result.error_details.append(
+                        (
+                            tenant_external_id,
+                            f"add_customer_to_tenant {user.id}",
+                            traceback.format_exc(),
+                        )
+                    )
+
+        progress.advance(task_id)
+
+
 async def run_backfill(
     *,
     session: AsyncSession,
+    sessionmaker: AsyncSessionMaker,
     dry_run: bool = False,
     limit: int | None = None,
+    concurrency: int = 20,
 ) -> BackfillResult:
     result = BackfillResult()
 
     self_org_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
 
     organization_repository = OrganizationRepository.from_session(session)
-    user_repository = UserRepository.from_session(session)
+
+    typer.echo("Loading already-synced Plain tenants...")
+    synced_external_ids = await plain_service.list_all_tenant_external_ids()
+    typer.echo(f"Found {len(synced_external_ids)} tenants already in Plain")
 
     typer.echo("Loading organizations...")
     organizations_statement = (
@@ -52,66 +137,40 @@ async def run_backfill(
     )
     if limit is not None:
         organizations_statement = organizations_statement.limit(limit)
-    organizations = await organization_repository.get_all(organizations_statement)
-    typer.echo(f"Loaded {len(organizations)} organizations")
+    all_organizations = await organization_repository.get_all(organizations_statement)
+    organizations = [
+        organization
+        for organization in all_organizations
+        if str(organization.id) not in synced_external_ids
+    ]
+    typer.echo(
+        f"Loaded {len(all_organizations)} organizations, "
+        f"{len(all_organizations) - len(organizations)} already synced, "
+        f"{len(organizations)} to process"
+    )
+
+    semaphore = asyncio.Semaphore(concurrency)
+    result_lock = asyncio.Lock()
 
     with Progress() as progress:
-        task = progress.add_task("[cyan]Syncing tenants...", total=len(organizations))
-        for organization in organizations:
-            members = await user_repository.get_all_by_organization(organization.id)
-            if not members:
-                result.tenants_without_members += 1
-
-            tenant_external_id = str(organization.id)
-
-            if dry_run:
-                typer.echo(
-                    f"  Would upsert tenant {organization.name} ({tenant_external_id}) "
-                    f"with {len(members)} members"
+        task_id = progress.add_task(
+            "[cyan]Syncing tenants...", total=len(organizations)
+        )
+        await asyncio.gather(
+            *(
+                _process_organization(
+                    organization=organization,
+                    sessionmaker=sessionmaker,
+                    semaphore=semaphore,
+                    result=result,
+                    result_lock=result_lock,
+                    progress=progress,
+                    task_id=task_id,
+                    dry_run=dry_run,
                 )
-                progress.advance(task)
-                continue
-
-            try:
-                await plain_service.upsert_tenant(
-                    external_id=tenant_external_id, name=organization.name
-                )
-                result.tenants_upserted += 1
-            except Exception:
-                result.tenant_errors += 1
-                result.error_details.append(
-                    (
-                        tenant_external_id,
-                        f"upsert_tenant {organization.name}",
-                        traceback.format_exc(),
-                    )
-                )
-                progress.advance(task)
-                continue
-
-            for user in members:
-                try:
-                    await plain_service.upsert_customer(
-                        external_id=str(user.id),
-                        email=user.email,
-                        email_verified=user.email_verified,
-                    )
-                    await plain_service.add_customer_to_tenant(
-                        customer_external_id=str(user.id),
-                        tenant_external_id=tenant_external_id,
-                    )
-                    result.members_added += 1
-                except Exception:
-                    result.member_errors += 1
-                    result.error_details.append(
-                        (
-                            tenant_external_id,
-                            f"add_customer_to_tenant {user.id}",
-                            traceback.format_exc(),
-                        )
-                    )
-
-            progress.advance(task)
+                for organization in organizations
+            )
+        )
 
     return result
 
@@ -124,6 +183,9 @@ async def backfill(
     ),
     limit: int | None = typer.Option(
         None, help="Maximum number of organizations to process"
+    ),
+    concurrency: int = typer.Option(
+        20, help="Number of organizations to process in parallel"
     ),
 ) -> None:
     """Backfill Plain tenants and tenant customers for all active organizations."""
@@ -145,7 +207,13 @@ async def backfill(
 
     try:
         async with sessionmaker() as session:
-            result = await run_backfill(session=session, dry_run=dry_run, limit=limit)
+            result = await run_backfill(
+                session=session,
+                sessionmaker=sessionmaker,
+                dry_run=dry_run,
+                limit=limit,
+                concurrency=concurrency,
+            )
 
         typer.echo(
             f"\nDone: {result.tenants_upserted} tenants upserted, "

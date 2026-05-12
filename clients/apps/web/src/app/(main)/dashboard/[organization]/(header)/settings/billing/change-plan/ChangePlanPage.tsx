@@ -136,8 +136,15 @@ export default function ChangePlanPage({
   } = useModal()
 
   const billingHref = `/dashboard/${organization.slug}/settings/billing`
-  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data])
   const subscription = subscriptionQuery.data
+  const plans = useMemo(() => {
+    const data = plansQuery.data ?? []
+    if (!subscription) return data
+    const currentInList = data.some(
+      (p) => p.product_id === subscription.product_id,
+    )
+    return currentInList ? data : [...data, subscription.plan]
+  }, [plansQuery.data, subscription])
   const isCurrentPlanFree = subscription?.amount === 0
 
   const selectedPlan = useMemo(

@@ -3,10 +3,11 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import aliased, joinedload, subqueryload
 
+from polar.auth.permission import OrganizationPermission, roles_with_permission
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
@@ -245,9 +246,19 @@ class TransactionService(BaseTransactionService):
             .where(
                 or_(
                     User.id == user.id,
-                    UserOrganization.user_id == user.id,
+                    and_(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.role.in_(
+                            roles_with_permission(OrganizationPermission.finance_read)
+                        ),
+                    ),
                     Transaction.payment_user_id == user.id,
-                    PaymentUserOrganization.user_id == user.id,
+                    and_(
+                        PaymentUserOrganization.user_id == user.id,
+                        PaymentUserOrganization.role.in_(
+                            roles_with_permission(OrganizationPermission.finance_read)
+                        ),
+                    ),
                 )
             )
         )

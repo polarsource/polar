@@ -1,7 +1,7 @@
 import pytest
 
 from polar.auth.models import AuthSubject
-from polar.authz.policies import account as account_policy
+from polar.authz.policies import finance as finance_policy
 from polar.authz.policies import members
 from polar.authz.policies import organization as org_policy
 from polar.authz.policies import payout_account as pa_policy
@@ -26,7 +26,7 @@ async def _set_role(
 
 
 @pytest.mark.asyncio
-class TestAccountCanRead:
+class TestFinanceCanRead:
     @pytest.mark.auth
     async def test_admin_allowed(
         self,
@@ -38,7 +38,7 @@ class TestAccountCanRead:
     ) -> None:
         await _set_role(save_fixture, user_organization, OrganizationRole.admin)
 
-        result = await account_policy.can_read(session, auth_subject, organization)
+        result = await finance_policy.can_read(session, auth_subject, organization)
         assert result is True
 
     @pytest.mark.auth
@@ -52,7 +52,7 @@ class TestAccountCanRead:
     ) -> None:
         await _set_role(save_fixture, user_organization, OrganizationRole.owner)
 
-        result = await account_policy.can_read(session, auth_subject, organization)
+        result = await finance_policy.can_read(session, auth_subject, organization)
         assert result is True
 
     @pytest.mark.auth
@@ -66,7 +66,7 @@ class TestAccountCanRead:
     ) -> None:
         await _set_role(save_fixture, user_organization, OrganizationRole.member)
 
-        result = await account_policy.can_read(session, auth_subject, organization)
+        result = await finance_policy.can_read(session, auth_subject, organization)
         assert isinstance(result, str)
         assert "admin" in result.lower()
 
@@ -78,7 +78,7 @@ class TestAccountCanRead:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        result = await account_policy.can_read(session, auth_subject, organization)
+        result = await finance_policy.can_read(session, auth_subject, organization)
         assert result is True
 
 

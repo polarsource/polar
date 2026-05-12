@@ -120,7 +120,6 @@ async def run_backfill(
                     await plain_service.upsert_customer(
                         external_id=str(user.id),
                         email=user.email,
-                        name=user.public_name,
                         email_verified=user.email_verified,
                     )
                     await plain_service.add_customer_to_tenant(

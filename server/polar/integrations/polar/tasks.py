@@ -53,7 +53,6 @@ async def create_customer(
     await plain_service.upsert_customer(
         external_id=owner_external_id,
         email=owner_email,
-        name=owner_name,
     )
     await plain_service.add_customer_to_tenant(
         customer_external_id=owner_external_id,
@@ -92,7 +91,6 @@ async def add_member(
     await plain_service.upsert_customer(
         external_id=external_id,
         email=email,
-        name=name,
     )
     await plain_service.add_customer_to_tenant(
         customer_external_id=external_id,

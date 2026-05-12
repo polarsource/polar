@@ -1391,7 +1391,6 @@ class PlainService:
         *,
         external_id: str,
         email: str,
-        name: str,
         email_verified: bool = False,
     ) -> None:
         if not self.enabled:
@@ -1403,7 +1402,7 @@ class PlainService:
                     identifier=UpsertCustomerIdentifierInput(external_id=external_id),
                     on_create=UpsertCustomerOnCreateInput(
                         external_id=external_id,
-                        full_name=name,
+                        full_name=email,
                         email=EmailAddressInput(
                             email=email, is_verified=email_verified
                         ),
@@ -1417,6 +1416,10 @@ class PlainService:
             )
             if result.error is not None:
                 raise PlainCustomerError(uuid.UUID(external_id), result.error.message)
+            if result.customer is None:
+                raise PlainCustomerError(
+                    uuid.UUID(external_id), "No customer returned by upsert"
+                )
 
     async def upsert_tenant(self, *, external_id: str, name: str) -> None:
         if not self.enabled:

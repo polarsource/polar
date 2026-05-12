@@ -201,6 +201,16 @@ def set_platform_fee_mock(mocker: MockerFixture) -> AsyncMock:
 
 
 @pytest.fixture
+def plain_update_tenant_tier_mock(mocker: MockerFixture) -> AsyncMock:
+    mock = AsyncMock()
+    mocker.patch(
+        "polar.integrations.polar.service.plain_service.update_tenant_tier",
+        mock,
+    )
+    return mock
+
+
+@pytest.fixture
 def list_grants_mock(mocker: MockerFixture) -> AsyncMock:
     client = MagicMock()
     client.list_customer_benefit_grants = AsyncMock(return_value=[])
@@ -353,17 +363,28 @@ class TestExtractSupport:
     def test_valid(self) -> None:
         assert polar_self._extract_support(
             {"level": "2", "slack": "true", "prioritized": "false"}, _BENEFIT_ID
-        ) == (2, True, False)
+        ) == (2, True, False, None)
 
     def test_native_typed_values(self) -> None:
         assert polar_self._extract_support(
             {"level": 2, "slack": True, "prioritized": False}, _BENEFIT_ID
-        ) == (2, True, False)
+        ) == (2, True, False, None)
 
     def test_whole_float_level(self) -> None:
         assert polar_self._extract_support(
             {"level": 2.0, "slack": True, "prioritized": False}, _BENEFIT_ID
-        ) == (2, True, False)
+        ) == (2, True, False, None)
+
+    def test_plain_tier_external_id(self) -> None:
+        assert polar_self._extract_support(
+            {
+                "level": "2",
+                "slack": "true",
+                "prioritized": "false",
+                "plain_tier_external_id": "pro",
+            },
+            _BENEFIT_ID,
+        ) == (2, True, False, "pro")
 
     @pytest.mark.parametrize(
         ("metadata", "match"),
@@ -378,6 +399,42 @@ class TestExtractSupport:
             ({"level": "1", "slack": "true"}, "prioritized"),
             ({"level": "1", "slack": "true", "prioritized": "yes"}, "prioritized"),
             ({"level": "1", "slack": "true", "prioritized": 0}, "prioritized"),
+            (
+                {
+                    "level": "1",
+                    "slack": "true",
+                    "prioritized": "true",
+                    "plain_tier_external_id": 123,
+                },
+                "plain_tier_external_id",
+            ),
+            (
+                {
+                    "level": "1",
+                    "slack": "true",
+                    "prioritized": "true",
+                    "plain_tier_external_id": 0,
+                },
+                "plain_tier_external_id",
+            ),
+            (
+                {
+                    "level": "1",
+                    "slack": "true",
+                    "prioritized": "true",
+                    "plain_tier_external_id": False,
+                },
+                "plain_tier_external_id",
+            ),
+            (
+                {
+                    "level": "1",
+                    "slack": "true",
+                    "prioritized": "true",
+                    "plain_tier_external_id": "",
+                },
+                "plain_tier_external_id",
+            ),
         ],
     )
     def test_invalid_field_raises(self, metadata: dict[str, Any], match: str) -> None:
@@ -436,13 +493,50 @@ class TestApplyTransactionFee:
 
 @pytest.mark.asyncio
 class TestApplySupport:
-    async def test_active_grant(self, session_mock: AsyncSession) -> None:
+    async def test_active_grant(
+        self,
+        session_mock: AsyncSession,
+        plain_update_tenant_tier_mock: AsyncMock,
+    ) -> None:
         grant = _make_support_grant()
 
         await polar_self._apply_support(session_mock, ORG_A, grant)
 
-    async def test_no_grant(self, session_mock: AsyncSession) -> None:
+        plain_update_tenant_tier_mock.assert_awaited_once_with(
+            tenant_external_id=str(ORG_A), tier_external_id=None
+        )
+
+    async def test_active_grant_with_plain_tier(
+        self,
+        session_mock: AsyncSession,
+        plain_update_tenant_tier_mock: AsyncMock,
+    ) -> None:
+        grant = _make_grant(
+            metadata={
+                "type": "support",
+                "level": "2",
+                "slack": "true",
+                "prioritized": "true",
+                "plain_tier_external_id": "pro",
+            }
+        )
+
+        await polar_self._apply_support(session_mock, ORG_A, grant)
+
+        plain_update_tenant_tier_mock.assert_awaited_once_with(
+            tenant_external_id=str(ORG_A), tier_external_id="pro"
+        )
+
+    async def test_no_grant_unsets_tier(
+        self,
+        session_mock: AsyncSession,
+        plain_update_tenant_tier_mock: AsyncMock,
+    ) -> None:
         await polar_self._apply_support(session_mock, ORG_A, None)
+
+        plain_update_tenant_tier_mock.assert_awaited_once_with(
+            tenant_external_id=str(ORG_A), tier_external_id=None
+        )
 
     async def test_invalid_metadata_raises(self, session_mock: AsyncSession) -> None:
         grant = _make_support_grant(level="two")

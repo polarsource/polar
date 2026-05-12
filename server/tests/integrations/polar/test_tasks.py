@@ -11,6 +11,7 @@ from pytest_mock import MockerFixture
 from polar.integrations.polar.client import PolarSelfClient
 from polar.integrations.polar.tasks import (
     add_member,
+    create_customer,
     delete_customer,
     remove_member,
     track_event_ingestion,
@@ -18,11 +19,58 @@ from polar.integrations.polar.tasks import (
 )
 
 
+@pytest.fixture
+def plain_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock()
+    mock.upsert_tenant = AsyncMock()
+    mock.add_customer_to_tenant = AsyncMock()
+    mock.remove_customer_from_tenant = AsyncMock()
+    mocker.patch("polar.integrations.polar.tasks.plain_service", mock)
+    return mock
+
+
+@pytest.mark.asyncio
+class TestCreateCustomer:
+    async def test_creates_customer_subscription_and_plain_tenant(
+        self,
+        mocker: MockerFixture,
+        plain_service_mock: MagicMock,
+    ) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await create_customer(
+            external_id="org-123",
+            name="Acme Inc",
+            organization_id="self-org",
+            product_id="prod-free",
+            owner_external_id="user-123",
+            owner_email="owner@example.com",
+            owner_name="Owner",
+        )
+
+        client.create_customer.assert_called_once_with(
+            external_id="org-123",
+            name="Acme Inc",
+            owner_external_id="user-123",
+            owner_email="owner@example.com",
+            owner_name="Owner",
+        )
+        client.create_free_subscription.assert_called_once_with(
+            external_customer_id="org-123",
+            product_id="prod-free",
+        )
+        plain_service_mock.upsert_tenant.assert_awaited_once_with(
+            external_id="org-123", name="Acme Inc"
+        )
+
+
 @pytest.mark.asyncio
 class TestAddMember:
     async def test_adds_member_to_existing_customer(
         self,
         mocker: MockerFixture,
+        plain_service_mock: MagicMock,
     ) -> None:
         fake_customer = MagicMock(id="polar-customer-123")
         client = AsyncMock(spec=PolarSelfClient)
@@ -42,6 +90,10 @@ class TestAddMember:
             email="user@example.com",
             name="User Example",
             external_id="user-123",
+        )
+        plain_service_mock.add_customer_to_tenant.assert_awaited_once_with(
+            customer_external_id="user-123",
+            tenant_external_id="org-123",
         )
 
     async def test_retries_when_customer_is_not_ready(
@@ -103,6 +155,7 @@ class TestRemoveMember:
     async def test_removes_existing_member(
         self,
         mocker: MockerFixture,
+        plain_service_mock: MagicMock,
     ) -> None:
         client = AsyncMock(spec=PolarSelfClient)
         client.get_member_by_external_id.return_value = MagicMock(id="member-123")
@@ -120,6 +173,10 @@ class TestRemoveMember:
         client.remove_member.assert_called_once_with(
             external_customer_id="org-123",
             external_id="user-123",
+        )
+        plain_service_mock.remove_customer_from_tenant.assert_awaited_once_with(
+            customer_external_id="user-123",
+            tenant_external_id="org-123",
         )
 
     async def test_retries_when_member_is_not_ready(

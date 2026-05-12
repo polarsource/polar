@@ -12,6 +12,7 @@ from polar_sdk.models import (
 from polar.account.repository import AccountRepository
 from polar.config import settings
 from polar.exceptions import PolarError
+from polar.integrations.plain.service import plain as plain_service
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
@@ -338,11 +339,19 @@ class PolarSelfService:
 
     def _extract_support(
         self, metadata: dict[str, Any], benefit_id: str
-    ) -> tuple[int, bool, bool]:
+    ) -> tuple[int, bool, bool, str | None]:
         level = self._parse_support_level(metadata, benefit_id)
         slack = self._parse_bool_metadata(metadata, "slack", benefit_id)
         prioritized = self._parse_bool_metadata(metadata, "prioritized", benefit_id)
-        return level, slack, prioritized
+        plain_tier_external_id = metadata.get("plain_tier_external_id")
+        if plain_tier_external_id is not None and not (
+            isinstance(plain_tier_external_id, str) and plain_tier_external_id
+        ):
+            raise SupportBenefitError(
+                f"Benefit {benefit_id} has invalid plain_tier_external_id: "
+                f"{plain_tier_external_id!r}"
+            )
+        return level, slack, prioritized, plain_tier_external_id
 
     def _parse_support_level(self, metadata: dict[str, Any], benefit_id: str) -> int:
         value = metadata.get("level")
@@ -387,19 +396,24 @@ class PolarSelfService:
             level: int | None = None
             slack: bool | None = None
             prioritized: bool | None = None
+            plain_tier_external_id: str | None = None
         else:
-            level, slack, prioritized = self._extract_support(
+            level, slack, prioritized, plain_tier_external_id = self._extract_support(
                 grant.benefit.metadata or {}, grant.benefit_id
             )
 
-        # TODO: persist once support tier fields exist on the org/account.
-        logfire.info(
+        with logfire.span(
             "polar_self.webhook.support.applied",
             organization_id=str(organization_id),
             level=level,
             slack=slack,
             prioritized=prioritized,
-        )
+            plain_tier_external_id=plain_tier_external_id,
+        ):
+            await plain_service.update_tenant_tier(
+                tenant_external_id=str(organization_id),
+                tier_external_id=plain_tier_external_id,
+            )
 
     async def _fetch_active_grant(
         self, customer_id: str, benefit_type: str

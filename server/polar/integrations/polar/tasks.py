@@ -12,6 +12,7 @@ from polar_sdk.models import (
 from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.external_event.service import external_event as external_event_service
+from polar.integrations.plain.service import plain as plain_service
 from polar.kit.utils import utc_now
 from polar.models.external_event import ExternalEventSource
 from polar.worker import (
@@ -48,6 +49,7 @@ async def create_customer(
         external_customer_id=external_id,
         product_id=product_id,
     )
+    await plain_service.upsert_tenant(external_id=external_id, name=name)
 
 
 @actor(actor_name="polar_self.create_free_subscription", priority=TaskPriority.LOW)
@@ -78,6 +80,10 @@ async def add_member(
         name=name,
         external_id=external_id,
     )
+    await plain_service.add_customer_to_tenant(
+        customer_external_id=external_id,
+        tenant_external_id=external_customer_id,
+    )
 
 
 @actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)
@@ -100,6 +106,10 @@ async def remove_member(external_customer_id: str, external_id: str) -> None:
     await client.remove_member(
         external_customer_id=external_customer_id,
         external_id=external_id,
+    )
+    await plain_service.remove_customer_from_tenant(
+        customer_external_id=external_id,
+        tenant_external_id=external_customer_id,
     )
 
 

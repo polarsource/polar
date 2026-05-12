@@ -290,17 +290,11 @@ async def update(
     tags=[APITag.private],
 )
 async def submit_review(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsWrite,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Submit an organization's saved details for review."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    return await organization_service.submit_for_review(session, organization)
+    return await organization_service.submit_for_review(session, authz.organization)
 
 
 @router.delete(

@@ -108,7 +108,7 @@ async def update_webhook_endpoint(
         raise ResourceNotFound()
 
     return await webhook_service.update_endpoint(
-        session, endpoint=endpoint, update_schema=update
+        session, auth_subject, endpoint=endpoint, update_schema=update
     )
 
 
@@ -132,7 +132,9 @@ async def reset_webhook_endpoint_secret(
     if not endpoint:
         raise ResourceNotFound()
 
-    return await webhook_service.reset_endpoint_secret(session, endpoint=endpoint)
+    return await webhook_service.reset_endpoint_secret(
+        session, auth_subject, endpoint=endpoint
+    )
 
 
 @router.delete(
@@ -155,7 +157,7 @@ async def delete_webhook_endpoint(
     if not endpoint:
         raise ResourceNotFound()
 
-    await webhook_service.delete_endpoint(session, endpoint)
+    await webhook_service.delete_endpoint(session, auth_subject, endpoint=endpoint)
 
 
 @router.get(

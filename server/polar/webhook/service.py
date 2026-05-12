@@ -11,7 +11,12 @@ from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+    get_accessible_org_ids,
+)
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
@@ -96,7 +101,9 @@ class WebhookService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         repository = WebhookEndpointRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.organization_manage
+        )
         statement = repository.get_statement_by_org_ids(org_ids).order_by(
             WebhookEndpoint.created_at.desc()
         )
@@ -117,7 +124,9 @@ class WebhookService:
         id: UUID,
     ) -> WebhookEndpoint | None:
         repository = WebhookEndpointRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.organization_manage
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             WebhookEndpoint.id == id
         )
@@ -132,6 +141,12 @@ class WebhookService:
         repository = WebhookEndpointRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, create_schema
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.organization_manage,
         )
         if create_schema.secret is not None:
             secret = create_schema.secret
@@ -160,10 +175,14 @@ class WebhookService:
     async def update_endpoint(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
         *,
         endpoint: WebhookEndpoint,
         update_schema: WebhookEndpointUpdate,
     ) -> WebhookEndpoint:
+        await assert_resource_permission(
+            session, auth_subject, endpoint, OrganizationPermission.organization_manage
+        )
         repository = WebhookEndpointRepository.from_session(session)
 
         is_enabling = update_schema.enabled is True and not endpoint.enabled
@@ -185,8 +204,15 @@ class WebhookService:
         )
 
     async def reset_endpoint_secret(
-        self, session: AsyncSession, *, endpoint: WebhookEndpoint
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        endpoint: WebhookEndpoint,
     ) -> WebhookEndpoint:
+        await assert_resource_permission(
+            session, auth_subject, endpoint, OrganizationPermission.organization_manage
+        )
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.update(
             endpoint,
@@ -198,8 +224,13 @@ class WebhookService:
     async def delete_endpoint(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
         endpoint: WebhookEndpoint,
     ) -> WebhookEndpoint:
+        await assert_resource_permission(
+            session, auth_subject, endpoint, OrganizationPermission.organization_manage
+        )
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.soft_delete(endpoint)
 
@@ -218,7 +249,9 @@ class WebhookService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
         repository = WebhookDeliveryRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.organization_manage
+        )
 
         if endpoint_id is not None:
             endpoint_repository = WebhookEndpointRepository.from_session(session)
@@ -295,7 +328,9 @@ class WebhookService:
         id: UUID,
     ) -> None:
         repository = WebhookEventRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.organization_manage
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             WebhookEvent.id == id
         )

@@ -299,6 +299,7 @@ class TransactionService(BaseTransactionService):
                     User.id == user.id,
                     and_(
                         UserOrganization.user_id == user.id,
+                        UserOrganization.is_deleted.is_(False),
                         UserOrganization.role.in_(
                             roles_with_permission(OrganizationPermission.finance_read)
                         ),
@@ -306,6 +307,7 @@ class TransactionService(BaseTransactionService):
                     Transaction.payment_user_id == user.id,
                     and_(
                         PaymentUserOrganization.user_id == user.id,
+                        PaymentUserOrganization.is_deleted.is_(False),
                         PaymentUserOrganization.role.in_(
                             roles_with_permission(OrganizationPermission.finance_read)
                         ),

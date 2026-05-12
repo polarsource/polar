@@ -1,8 +1,8 @@
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.auth.permission import (
     PERMISSION_DENIED_MESSAGE,
+    ROLE_PERMISSIONS,
     OrganizationPermission,
-    role_has_permission,
 )
 from polar.authz.types import PolicyResult
 from polar.models import Organization as OrganizationModel
@@ -32,6 +32,6 @@ async def _require_permission(
         user_org = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
         )
-        if user_org is not None and role_has_permission(user_org.role, permission):
+        if user_org is not None and permission in ROLE_PERMISSIONS[user_org.role]:
             return True
     return PERMISSION_DENIED_MESSAGE[permission]

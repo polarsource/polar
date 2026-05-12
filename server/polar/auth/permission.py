@@ -104,12 +104,6 @@ PERMISSION_DENIED_MESSAGE: dict[OrganizationPermission, str] = {
 }
 
 
-def role_has_permission(
-    role: OrganizationRole, permission: OrganizationPermission
-) -> bool:
-    return permission in ROLE_PERMISSIONS[role]
-
-
 def roles_with_permission(
     permission: OrganizationPermission,
 ) -> set[OrganizationRole]:

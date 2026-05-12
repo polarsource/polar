@@ -124,6 +124,11 @@ AuthorizeMembersRead = Annotated[
         )
     ),
 ]
+# Both `AuthorizeMembersManage` and `AuthorizeMembersSetRole` enforce the
+# same `members:manage` policy; they differ only by the OAuth scope they
+# accept. `members:manage` covers invite/remove (general member admin);
+# `members:set_role` is a separate scope for the narrower role-change
+# action so callers can opt into the lesser privilege.
 AuthorizeMembersManage = Annotated[
     AuthzContext[User],
     Depends(

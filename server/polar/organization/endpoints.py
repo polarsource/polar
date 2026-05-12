@@ -15,6 +15,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgAccessUser,
     AuthorizeOrgAccessWrite,
     AuthorizeOrgManage,
+    AuthorizeOrgManageUser,
 )
 from polar.authz.policies import payout_account as pa_policy
 from polar.config import settings
@@ -180,7 +181,7 @@ async def get_account(
     tags=[APITag.private],
 )
 async def set_payout_account(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageUser,
     body: OrganizationPayoutAccountSet,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -216,7 +217,7 @@ async def set_payout_account(
     tags=[APITag.private],
 )
 async def get_kyc(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> Organization:
     """Get an organization's KYC/compliance details."""
     return authz.organization
@@ -269,7 +270,7 @@ async def check_slug(
     tags=[APITag.public],
 )
 async def update(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageUser,
     organization_update: OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -318,7 +319,7 @@ async def submit_review(
     tags=[APITag.private],
 )
 async def delete(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationDeletionResponse:
     """Request deletion of an organization.
@@ -595,7 +596,7 @@ async def set_member_role(
     tags=[APITag.private],
 )
 async def validate_with_ai(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationReviewStatus:
     """Get the AI validation status. Review runs asynchronously in the background."""
@@ -627,7 +628,7 @@ async def validate_with_ai(
     tags=[APITag.private],
 )
 async def submit_appeal(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     appeal_request: OrganizationAppealRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationAppealResponse:
@@ -666,7 +667,7 @@ async def submit_appeal(
     tags=[APITag.private],
 )
 async def mark_ai_onboarding_complete(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Mark the AI onboarding as completed for this organization."""
@@ -686,7 +687,7 @@ async def mark_ai_onboarding_complete(
     tags=[APITag.private],
 )
 async def get_review_status(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewStatus:
     """Get the current review status and appeal information for an organization."""
@@ -717,7 +718,7 @@ async def get_review_status(
     tags=[APITag.private],
 )
 async def get_review(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewState:
     """Get the merchant self-review checklist state.
@@ -739,7 +740,7 @@ async def get_review(
     tags=[APITag.private],
 )
 async def validate_website(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationValidateWebsiteRequest,
 ) -> OrganizationValidateWebsiteResponse:
     """Validate that a website URL is reachable and not targeting a private network."""
@@ -759,7 +760,7 @@ async def validate_website(
     tags=[APITag.private],
 )
 async def list_plans(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> Sequence[OrganizationPlan]:
     """List the plans this organization can subscribe to."""
     products = await polar_self_service.list_plans()
@@ -779,7 +780,7 @@ async def list_plans(
     tags=[APITag.private],
 )
 async def get_subscription(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> OrganizationSubscription:
     """Get the current Polar subscription for this organization."""
     subscription = await polar_self_service.get_subscription(authz.organization.id)
@@ -801,7 +802,7 @@ async def get_subscription(
 )
 async def start_subscription_checkout(
     request: Request,
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationCheckoutRequest,
 ) -> OrganizationCheckoutResponse:
     """Create a Polar checkout session for an initial paid subscription."""
@@ -830,7 +831,7 @@ async def start_subscription_checkout(
     tags=[APITag.private],
 )
 async def change_subscription_plan(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationSubscriptionUpdate,
 ) -> OrganizationSubscription:
     """Change the plan for an organization's existing subscription."""

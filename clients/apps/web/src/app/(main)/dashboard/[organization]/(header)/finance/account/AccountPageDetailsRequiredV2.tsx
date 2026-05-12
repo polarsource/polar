@@ -4,6 +4,7 @@ import { ReviewChecklist } from '@/components/Finance/Account/ReviewChecklist'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
+import { useProducts } from '@/hooks/queries'
 import {
   useOrganizationKYC,
   useOrganizationReviewState,
@@ -26,6 +27,10 @@ export const AccountPageDetailsRequiredV2 = ({ organization }: Props) => {
   // Warm the KYC query cache so expanding the Product Description section
   // doesn't show its loading state mid-accordion-animation.
   useOrganizationKYC(organization.id)
+
+  // Warm the products query cache so the Product Configuration section
+  // doesn't briefly flash the empty state while it fetches.
+  useProducts(organization.id, { limit: 1 })
 
   const submitReview = useSubmitOrganizationReview(organization.id)
   const posthog = usePostHog()
@@ -59,7 +64,12 @@ export const AccountPageDetailsRequiredV2 = ({ organization }: Props) => {
         </Button>
       }
     >
-      <Box display="flex" flexDirection="column" rowGap="xl">
+      <Box
+        display="flex"
+        flexDirection="column"
+        rowGap="xl"
+        paddingBottom="3xl"
+      >
         <Box display="flex" flexDirection="column" rowGap="s">
           <Text variant="body" color="muted">
             Verify your business so customers can buy from you. After you

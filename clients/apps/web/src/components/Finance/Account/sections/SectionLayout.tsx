@@ -22,7 +22,7 @@ export const SectionLayout = ({
   return (
     <Box display="flex" flexDirection="column" rowGap="m">
       {description && (
-        <Text variant="caption" color="muted">
+        <Text variant="default" color="muted">
           {description}
         </Text>
       )}

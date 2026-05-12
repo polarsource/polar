@@ -1350,12 +1350,12 @@ class OrganizationService:
         preliminary_steps = [
             product_configuration_check,
             setup_readiness_check,
-            self._build_email_check(organization),
-            self._build_socials_check(organization),
             self._build_identity_verification_check(admin_user),
-            self._build_product_description_check(organization),
-            await product_url_task,
             self._build_payout_account_check(payout_account),
+            self._build_socials_check(organization),
+            await product_url_task,
+            self._build_email_check(organization),
+            self._build_product_description_check(organization),
         ]
 
         submitted_at = organization.details_submitted_at

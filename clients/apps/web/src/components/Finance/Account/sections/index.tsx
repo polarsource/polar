@@ -2,8 +2,10 @@ import { schemas } from '@polar-sh/client'
 import { EmailSection } from './EmailSection'
 import { IdentityVerificationSection } from './IdentityVerificationSection'
 import { PayoutAccountSection } from './PayoutAccountSection'
+import { ProductConfigurationSection } from './ProductConfigurationSection'
 import { ProductDescriptionSection } from './ProductDescriptionSection'
 import { ProductUrlSection } from './ProductUrlSection'
+import { SetupReadinessSection } from './SetupReadinessSection'
 import { SocialLinksSection } from './SocialLinksSection'
 
 interface SectionProps {
@@ -74,6 +76,22 @@ export const STEP_CONFIG: Partial<
     },
     render: ({ organization }) => (
       <PayoutAccountSection organization={organization} />
+    ),
+  },
+  product_configuration: {
+    label: 'Product configuration',
+    render: ({ organization }) => (
+      <ProductConfigurationSection organization={organization} />
+    ),
+  },
+  setup_readiness: {
+    label: 'Setup readiness',
+    reasonLabels: {
+      'setup_readiness.webhook_missing':
+        'Add a webhook endpoint so we can observe order events',
+    },
+    render: ({ organization }) => (
+      <SetupReadinessSection organization={organization} />
     ),
   },
 }

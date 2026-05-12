@@ -11,11 +11,17 @@ export default function Page({
 }) {
   const searchParams = useSearchParams()
   const fromProductId = searchParams.get('fromProductId')
+  const returnToRaw = searchParams.get('return_to')
+  const returnTo =
+    returnToRaw && returnToRaw.startsWith('/') && !returnToRaw.startsWith('//')
+      ? returnToRaw
+      : undefined
 
   return (
     <CreateProductPageWrapper
       organization={organization}
       fromProductId={fromProductId ?? undefined}
+      returnTo={returnTo}
     />
   )
 }

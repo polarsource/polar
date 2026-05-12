@@ -39,6 +39,10 @@ class OrganizationPermission(StrEnum):
     # Sales — granted to all roles.
     sales_read = "sales:read"
 
+    # Analytics.
+    analytics_read = "analytics:read"
+    analytics_manage = "analytics:manage"
+
     # Finance — admin-only.
     account_read = "account:read"
     account_write = "account:write"
@@ -49,6 +53,7 @@ _ADMIN_ONLY: set[OrganizationPermission] = {
     OrganizationPermission.members_manage,
     OrganizationPermission.products_manage,
     OrganizationPermission.customers_manage,
+    OrganizationPermission.analytics_manage,
     OrganizationPermission.account_read,
     OrganizationPermission.account_write,
 }
@@ -58,6 +63,7 @@ _MEMBER_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.products_read,
     OrganizationPermission.customers_read,
     OrganizationPermission.sales_read,
+    OrganizationPermission.analytics_read,
 }
 
 ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {

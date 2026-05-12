@@ -2,7 +2,11 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids_with_permission,
+)
 from polar.customer.repository import CustomerRepository
 from polar.event.system import SYSTEM_EVENT_LABELS
 from polar.event.tinybird_repository import TinybirdEventRepository
@@ -27,7 +31,9 @@ class EventTypeService:
         id: UUID,
     ) -> EventType | None:
         repository = EventTypeRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.analytics_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             EventType.id == id
         )
@@ -51,7 +57,9 @@ class EventTypeService:
         ],
     ) -> tuple[Sequence[EventTypeWithStats], int]:
         event_type_repository = EventTypeRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.analytics_read
+        )
         if organization_id is not None:
             org_ids = org_ids & set(organization_id)
         organization_ids = list(org_ids)
@@ -190,8 +198,16 @@ class EventTypeService:
         session: AsyncSession,
         event_type: EventType,
         label: str,
+        auth_subject: AuthSubject[User | Organization],
         label_property_selector: str | None = None,
     ) -> EventType:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            event_type.organization_id,
+            OrganizationPermission.analytics_manage,
+            "Only an organization admin can manage analytics",
+        )
         event_type.label = label
         event_type.label_property_selector = label_property_selector
         session.add(event_type)

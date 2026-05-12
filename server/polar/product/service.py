@@ -11,7 +11,6 @@ from polar.auth.models import AuthSubject, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
-    get_accessible_org_ids,
     get_accessible_org_ids_with_permission,
 )
 from polar.benefit.service import benefit as benefit_service
@@ -545,7 +544,9 @@ class ProductService:
         builtins.list[ValidationError],
     ]:
         meter_repository = MeterRepository.from_session(session)
-        meter_org_ids = await get_accessible_org_ids(session, auth_subject)
+        meter_org_ids = await get_accessible_org_ids_with_permission(
+            session, auth_subject, OrganizationPermission.products_read
+        )
         prices: list[ProductPrice] = []
         prices_per_currency = defaultdict[str, list[tuple[ProductPrice, int]]](list)
         existing_prices: set[ProductPrice] = set()

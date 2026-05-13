@@ -1,25 +1,71 @@
 ---
-title: "Setup a Payout Account"
+title: "Payout Accounts"
 sidebarTitle: "Payout Accounts"
+description: "Connect a Stripe Connect Express account to receive your earnings"
 ---
 
-Connect Payout Account
------------------------------
+A **payout account** is the external account Polar uses to send you your earnings. As the [Merchant of Record](/merchant-of-record/introduction), Polar collects the money from your customers, then transfers your balance — minus our fees — to your payout account. From there, the funds are deposited into your bank account.
 
-You need to setup an account so that we can issue [payouts](/features/finance/payouts).
+Polar uses [Stripe Connect Express](https://stripe.com/connect) for payout accounts. Stripe handles identity verification (KYC), tax forms, and the underlying bank transfers, so you don't need to integrate with Stripe yourself.
 
-<img className="block dark:hidden" src="/assets/features/finance/accounts/onboarding.light.jpeg" />
-<img className="hidden dark:block" src="/assets/features/finance/accounts/onboarding.dark.jpeg" />
+You need to connect a payout account before you can issue [payouts](/features/finance/payouts). You can do this proactively, even before your first sale, to avoid delays later on.
 
-1. Go to the `Finance` page in your Polar dashboard
-2. Click `Setup` in the card shown above in your dashboard
-3. Choose account type & follow their setup instructions
+## Connecting a Payout Account
 
-*This is only required the first time and you can do this proactively too in order - recommended to avoid any additional delays.*
+1. Open the **Finance → Account** page in your Polar dashboard.
+2. Click **Continue with account setup**.
+3. Select your country:
+    - If this is a personal account, pick your **country of residence**.
+    - If this is a business or organization, pick the **country of tax residency**.
+4. You will be redirected to Stripe to complete onboarding. Stripe will ask for your identity details, business information (if applicable), and the bank account you want to be paid out to.
+5. Once Stripe confirms your account, you're ready to receive payouts.
 
-### Stripe Connect Express
+The user who completes onboarding becomes the **admin** of the payout account. They own the underlying Stripe account and are the legal recipient of the funds.
 
-<img className="block dark:hidden" src="/assets/features/finance/accounts/create.light.jpeg" />
-<img className="hidden dark:block" src="/assets/features/finance/accounts/create.dark.jpeg" />
+<Note>
+  Payouts go to the bank account you connect in Stripe — not to Polar. Polar
+  never touches your bank details.
+</Note>
 
-Stripe is the default and recommended option since it enables instant transfers.
+## Reusing a Payout Account Across Organizations
+
+A single payout account can be linked to **multiple organizations**. If you run several organizations on Polar and want all of their earnings to settle into the same bank account, you don't need to repeat Stripe onboarding for each one.
+
+From the **Finance → Account** page of a new organization, you can either:
+
+- Connect a brand-new payout account, or
+- Select an existing payout account from one of your other organizations.
+
+Only one payout account is active per organization at a time, but you can switch the active account from the **Manage payout accounts** modal. The active account is the one that will receive the next payout from that organization.
+
+## Country & Currency Requirements
+
+Stripe Connect requires the bank account you connect to be in the **same country as the business** and to use that country's **local currency**. This is a Stripe (and underlying banking network) requirement that Polar cannot override.
+
+<AccordionGroup>
+  <Accordion title="Can I have my company registered in Ireland but use a US bank account for payouts?">
+    No. Stripe Connect requires a bank account in the same country as the business, in the local currency. An Irish company must connect an Irish (EUR) bank account; a US company must connect a US (USD) bank account, and so on.
+  </Accordion>
+  <Accordion title="Can I use Wise, Payoneer, Revolut, or another virtual account to receive payouts?">
+    Only if the virtual account provides a real bank account in the same country as your registered business, in the local currency, and is accepted by Stripe. Most multi-currency or "borderless" accounts (Wise, Payoneer, Revolut, etc.) do not satisfy Stripe's verification for Connect payouts. If Stripe rejects the account during onboarding, you'll need to use a domestic bank account instead.
+  </Accordion>
+  <Accordion title="My business is in country A but I live in country B. Which one do I pick?">
+    Pick the country where the business is legally registered for tax purposes. For a personal account, pick your country of residence.
+  </Accordion>
+  <Accordion title="My country isn't in the list. Can I still receive payouts?">
+    Polar supports the countries Stripe Connect supports. If yours isn't listed during onboarding, Stripe doesn't currently support payouts there and we can't work around it. Check Stripe's [supported countries](https://stripe.com/global) for updates.
+  </Accordion>
+</AccordionGroup>
+
+## Managing Your Account
+
+From **Finance → Account → Manage payout accounts** you can:
+
+- **Open in Stripe** — jump into the Stripe-hosted dashboard to update your bank account, business details, or tax information.
+- **Make Active** — switch the organization to a different payout account you already own.
+- **Add Payout Account** — start onboarding for a new payout account (for example, in a different country).
+- **Delete** — remove a payout account you no longer use. You can only delete an account that is not linked to any organization, has no pending payouts, and has a zero Stripe balance.
+
+## Changing the Admin
+
+The admin is the individual whose identity is tied to the Stripe Connect account. If the admin needs to change (for example, the original admin is leaving the organization), reach out to [support@polar.sh](mailto:support@polar.sh). The new admin must already be a member of the organization and have completed Stripe's identity verification.

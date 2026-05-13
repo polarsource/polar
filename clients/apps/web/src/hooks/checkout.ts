@@ -3,8 +3,6 @@ import type { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
-import { CONFIG } from '@/utils/config'
-
 export const useCheckoutConfirmedRedirect = (
   embed: boolean,
   theme?: 'light' | 'dark',
@@ -26,11 +24,11 @@ export const useCheckoutConfirmedRedirect = (
       }
 
       const parsedURL = new URL(checkout.success_url)
-      const isInternalURL = checkout.success_url.startsWith(
-        CONFIG.FRONTEND_BASE_URL,
-      )
 
-      if (isInternalURL) {
+      // For our built-in success URL, checkout.success_url is `${checkout.url}/confirmation`
+      const isInternalSuccessURL = checkout.success_url.startsWith(checkout.url)
+
+      if (isInternalSuccessURL) {
         if (embed) {
           parsedURL.searchParams.set('embed', 'true')
           if (theme) {
@@ -49,7 +47,7 @@ export const useCheckoutConfirmedRedirect = (
       // For external success URL, make sure the checkout is processed before redirecting
       // It ensures the user will have an up-to-date status when they are redirected,
       // especially if the external URL doesn't implement proper webhook handling
-      if (!isInternalURL && listenFulfillment) {
+      if (!isInternalSuccessURL && listenFulfillment) {
         try {
           await listenFulfillment()
         } catch {
@@ -67,7 +65,7 @@ export const useCheckoutConfirmedRedirect = (
           {
             event: 'success',
             successURL: parsedURL.toString(),
-            redirect: !isInternalURL,
+            redirect: !isInternalSuccessURL,
           },
           checkout.embed_origin,
         )
@@ -75,7 +73,7 @@ export const useCheckoutConfirmedRedirect = (
 
       // If we don't have a customer session token, redirect to customer portal login
       // instead of internal success URL
-      if (isInternalURL && !customerSessionToken) {
+      if (isInternalSuccessURL && !customerSessionToken) {
         const {
           organization: { slug },
           customer_email,
@@ -87,7 +85,7 @@ export const useCheckoutConfirmedRedirect = (
         return
       }
 
-      if (isInternalURL || !embed) {
+      if (isInternalSuccessURL || !embed) {
         router.push(parsedURL.toString())
       }
     },

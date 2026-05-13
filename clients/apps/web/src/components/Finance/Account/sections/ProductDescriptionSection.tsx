@@ -83,16 +83,8 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
   )
 
   const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({})
-  const answersDirty = useMemo(() => {
-    const keys = new Set([
-      ...Object.keys(aup.answers),
-      ...Object.keys(savedAnswers),
-    ])
-    for (const k of keys) {
-      if ((aup.answers[k] ?? '') !== (savedAnswers[k] ?? '')) return true
-    }
-    return false
-  }, [aup.answers, savedAnswers])
+  const answersDirty =
+    JSON.stringify(aup.answers) !== JSON.stringify(savedAnswers)
 
   const buildFinalDescription = (
     description: string,
@@ -100,12 +92,12 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
     answers: typeof aup.answers,
   ): string => {
     const sections = questions
-      .map((q) => {
-        const value = answers[q.id]
-        if (!value) return null
-        return `${q.label}\n${value}`
+      .map((question) => {
+        const answer = answers[question.id]
+        if (!answer) return null
+        return `${question.label}\n${answer}`
       })
-      .filter((line): line is string => line !== null)
+      .filter((section): section is string => section !== null)
 
     if (sections.length === 0) return description
     return `${description}\n\n${sections.join('\n\n')}`
@@ -236,14 +228,14 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
     return 'pending'
   }
 
-  const hasUnansweredRequired = aup.questions.some((q) => {
-    if (!q.required) return false
-    const v = aup.answers[q.id]
-    return !v || v.trim().length === 0
+  const hasUnansweredRequired = aup.questions.some((question) => {
+    if (!question.required) return false
+    const answer = aup.answers[question.id]
+    return !answer || answer.trim().length === 0
   })
 
   const hasIrrelevantAnswer = aup.questions.some(
-    (q) => aup.evaluations[q.id]?.is_relevant === false,
+    (question) => aup.evaluations[question.id]?.is_relevant === false,
   )
 
   const hasChanges = formState.isDirty || answersDirty

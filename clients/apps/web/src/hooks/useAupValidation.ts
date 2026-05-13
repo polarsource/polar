@@ -9,6 +9,11 @@ import type {
   FollowUpQuestion,
 } from '@/utils/aup'
 
+type EvaluationMap = Record<
+  string,
+  { is_relevant: boolean; reason: string | null }
+>
+
 export interface AupHistoryEntry {
   product_description: string
   verdict: string
@@ -40,9 +45,7 @@ export const useAupValidation = ({ followUpEnabled = false }: Options = {}) => {
   const [message, setMessage] = useState<string | null>(null)
   const [questions, setQuestions] = useState<FollowUpQuestion[]>([])
   const [answers, setAnswersState] = useState<Record<string, string>>({})
-  const [evaluations, setEvaluations] = useState<
-    Record<string, { is_relevant: boolean; reason: string | null }>
-  >({})
+  const [evaluations, setEvaluations] = useState<EvaluationMap>({})
   const [isValidating, setIsValidating] = useState(false)
 
   const reset = useCallback(() => {
@@ -110,14 +113,11 @@ export const useAupValidation = ({ followUpEnabled = false }: Options = {}) => {
         answer_evaluations?: AnswerEvaluation[]
       } = await res.json()
 
-      const nextEvaluations: Record<
-        string,
-        { is_relevant: boolean; reason: string | null }
-      > = {}
-      for (const e of data.answer_evaluations ?? []) {
-        nextEvaluations[e.question_id] = {
-          is_relevant: e.is_relevant,
-          reason: e.reason ?? null,
+      const nextEvaluations: EvaluationMap = {}
+      for (const evaluation of data.answer_evaluations ?? []) {
+        nextEvaluations[evaluation.question_id] = {
+          is_relevant: evaluation.is_relevant,
+          reason: evaluation.reason ?? null,
         }
       }
       setEvaluations(nextEvaluations)

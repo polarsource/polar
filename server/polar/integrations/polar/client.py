@@ -50,6 +50,11 @@ class PolarSelfClientOperationalError(PolarSelfClientError):
     """Raised for transient/retryable SDK errors (429, 5xx, network)."""
 
 
+class PolarSelfClientValidationError(InternalPolarError):
+    def __init__(self, body: str) -> None:
+        super().__init__(body, status_code=422)
+
+
 def _raise_error(span: Any, error: Any, operation: str) -> NoReturn:
     span.set_attribute("http.status_code", error.status_code)
     span.set_attribute("error.body", str(error.body))
@@ -557,6 +562,10 @@ class PolarSelfClient:
                     request=update,
                 )
             except PolarError as e:
+                if e.status_code == 422:
+                    span.set_attribute("http.status_code", 422)
+                    span.set_attribute("error.body", str(e.body))
+                    raise PolarSelfClientValidationError(e.body) from e
                 _raise_error(span, e, "polar.portal.update_customer")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "polar.portal.update_customer")

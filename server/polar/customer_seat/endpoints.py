@@ -1,20 +1,14 @@
-import secrets
-from typing import Annotated, cast
+from typing import Annotated
 
 from fastapi import Depends, Query, Request
 from pydantic import UUID4
-from sqlalchemy.orm import joinedload
 from sse_starlette import EventSourceResponse
 
-from polar.auth.models import Anonymous, Organization, User
-from polar.auth.models import AuthSubject as AuthSubjectType
 from polar.authz.service import get_accessible_org_ids
-from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
-from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
-from polar.models import CustomerSeat, Order, Product, Subscription
-from polar.models.checkout import CheckoutStatus
+from polar.exceptions import BadRequest, ResourceNotFound
+from polar.models import CustomerSeat, Order, Subscription
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
 from polar.order.repository import OrderRepository
@@ -24,7 +18,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
 
-from .auth import SeatWriteOrAnonymous
+from .auth import SeatWrite
 from .repository import CustomerSeatRepository
 from .schemas import CustomerSeat as CustomerSeatSchema
 from .schemas import (
@@ -48,38 +42,24 @@ router = APIRouter(
     response_model=CustomerSeatSchema,
     responses={
         400: {"description": "No available seats or customer already has a seat"},
-        401: {
-            "description": "Authentication required for direct subscription or order assignment"
-        },
+        401: {"description": "Authentication required"},
         403: {"description": "Not permitted or seat-based pricing not enabled"},
-        404: {"description": "Subscription, order, checkout, or customer not found"},
+        404: {"description": "Subscription, order, or customer not found"},
     },
 )
 async def assign_seat(
     seat_assign: SeatAssign,
-    auth_subject: SeatWriteOrAnonymous,
+    auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
-    # Prevent anonymous users from using immediate_claim
-    if isinstance(auth_subject.subject, Anonymous) and seat_assign.immediate_claim:
-        raise NotPermitted(
-            "Anonymous users cannot use immediate_claim. This feature is only available for authenticated API access."
-        )
-
     subscription: Subscription | None = None
     order: Order | None = None
 
     if seat_assign.subscription_id:
-        if isinstance(auth_subject.subject, Anonymous):
-            raise NotPermitted(
-                "Authentication required for subscription-based assignment"
-            )
-
-        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         subscription_repository = SubscriptionRepository.from_session(session)
 
         statement = (
-            subscription_repository.get_readable_statement(typed_auth_subject)
+            subscription_repository.get_readable_statement(auth_subject)
             .options(*subscription_repository.get_eager_options())
             .where(Subscription.id == seat_assign.subscription_id)
         )
@@ -88,66 +68,11 @@ async def assign_seat(
         if not subscription:
             raise ResourceNotFound("Subscription not found")
 
-    elif seat_assign.checkout_id:
-        subscription_repository = SubscriptionRepository.from_session(session)
-        order_repository = OrderRepository.from_session(session)
-        checkout_repository = CheckoutRepository.from_session(session)
-        checkout = await checkout_repository.get_by_id(seat_assign.checkout_id)
-
-        if not checkout:
-            raise ResourceNotFound("Checkout not found")
-
-        if isinstance(auth_subject.subject, Anonymous):
-            if seat_assign.checkout_client_secret is None or not secrets.compare_digest(
-                seat_assign.checkout_client_secret, checkout.client_secret
-            ):
-                raise NotPermitted(
-                    "checkout_client_secret is required and must match the "
-                    "checkout when assigning seats as an anonymous caller."
-                )
-        elif seat_assign.checkout_client_secret is not None:
-            if not secrets.compare_digest(
-                seat_assign.checkout_client_secret, checkout.client_secret
-            ):
-                raise NotPermitted("checkout_client_secret does not match.")
-
-        if checkout.status != CheckoutStatus.succeeded:
-            raise NotPermitted("Seats can only be assigned from a successful checkout.")
-
-        if checkout.is_expired:
-            raise NotPermitted(
-                "Seats can no longer be assigned from this checkout because it has expired."
-            )
-
-        # Try to find subscription first (for recurring purchases)
-        subscription = await subscription_repository.get_by_checkout_id(
-            seat_assign.checkout_id,
-            options=(
-                joinedload(Subscription.product).joinedload(Product.organization),
-                joinedload(Subscription.customer),
-            ),
-        )
-
-        # If no subscription, try to find order (for one-time purchases)
-        if not subscription:
-            order = await order_repository.get_earliest_by_checkout_id(
-                seat_assign.checkout_id,
-                options=order_repository.get_eager_options(),
-            )
-            if not order:
-                raise ResourceNotFound(
-                    "No subscription or order found for this checkout"
-                )
-
     elif seat_assign.order_id:
-        if isinstance(auth_subject.subject, Anonymous):
-            raise NotPermitted("Authentication required for order-based assignment")
-
-        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
         order_repository = OrderRepository.from_session(session)
 
         order_statement = (
-            order_repository.get_readable_statement(typed_auth_subject)
+            order_repository.get_readable_statement(auth_subject)
             .options(*order_repository.get_eager_options())
             .where(Order.id == seat_assign.order_id)
         )
@@ -156,10 +81,8 @@ async def assign_seat(
         if not order:
             raise ResourceNotFound("Order not found")
 
-    if not subscription and not order:
-        raise BadRequest(
-            "Either subscription_id, checkout_id, or order_id must be provided"
-        )
+    else:
+        raise BadRequest("Either subscription_id or order_id must be provided")
 
     container = subscription or order
     assert container is not None  # Already validated above
@@ -190,16 +113,11 @@ async def assign_seat(
     },
 )
 async def list_seats(
-    auth_subject: SeatWriteOrAnonymous,
+    auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
     subscription_id: Annotated[UUID4 | None, Query()] = None,
     order_id: Annotated[UUID4 | None, Query()] = None,
 ) -> SeatsList:
-    if isinstance(auth_subject.subject, Anonymous):
-        raise NotPermitted("Authentication required")
-
-    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
-
     subscription: Subscription | None = None
     order: Order | None = None
     total_seats = 0
@@ -208,7 +126,7 @@ async def list_seats(
         subscription_repository = SubscriptionRepository.from_session(session)
 
         statement = (
-            subscription_repository.get_readable_statement(typed_auth_subject)
+            subscription_repository.get_readable_statement(auth_subject)
             .options(*subscription_repository.get_eager_options())
             .where(Subscription.id == subscription_id)
         )
@@ -223,7 +141,7 @@ async def list_seats(
         order_repository = OrderRepository.from_session(session)
 
         order_statement = (
-            order_repository.get_readable_statement(typed_auth_subject)
+            order_repository.get_readable_statement(auth_subject)
             .options(*order_repository.get_eager_options())
             .where(Order.id == order_id)
         )
@@ -262,15 +180,11 @@ async def list_seats(
 )
 async def revoke_seat(
     seat_id: UUID4,
-    auth_subject: SeatWriteOrAnonymous,
+    auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
-    if isinstance(auth_subject.subject, Anonymous):
-        raise NotPermitted("Authentication required")
-
-    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
     seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids(session, typed_auth_subject)
+    org_ids = await get_accessible_org_ids(session, auth_subject)
 
     seat = await seat_repository.get_by_id_and_org_ids(
         org_ids,
@@ -306,15 +220,11 @@ async def revoke_seat(
 )
 async def resend_invitation(
     seat_id: UUID4,
-    auth_subject: SeatWriteOrAnonymous,
+    auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
-    if isinstance(auth_subject.subject, Anonymous):
-        raise NotPermitted("Authentication required")
-
-    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
     seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids(session, typed_auth_subject)
+    org_ids = await get_accessible_org_ids(session, auth_subject)
 
     seat = await seat_repository.get_by_id_and_org_ids(
         org_ids,

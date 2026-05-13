@@ -228,7 +228,10 @@ export const CheckoutConfirmation = ({
           )}
           {status === 'succeeded' && (
             <>
-              <CheckoutSeatInvitations checkout={checkout} />
+              <CheckoutSeatInvitations
+                checkout={checkout}
+                customerSessionToken={customerSessionToken}
+              />
               {hasProductCheckout(checkout) &&
                 checkout.product_price.amount_type !== 'seat_based' && (
                   <CheckoutBenefits

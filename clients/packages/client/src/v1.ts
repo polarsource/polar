@@ -27009,22 +27009,12 @@ export interface components {
     SeatAssign: {
       /**
        * Subscription Id
-       * @description Subscription ID. Required if checkout_id and order_id are not provided.
+       * @description Subscription ID. Required if order_id is not provided.
        */
       subscription_id?: string | null
       /**
-       * Checkout Id
-       * @description Checkout ID. Used to look up subscription or order from the checkout page.
-       */
-      checkout_id?: string | null
-      /**
-       * Checkout Client Secret
-       * @description Client secret of the checkout. Required when assigning seats via checkout_id as an anonymous caller (e.g. the checkout confirmation page).
-       */
-      checkout_client_secret?: string | null
-      /**
        * Order Id
-       * @description Order ID for one-time purchases. Required if subscription_id and checkout_id are not provided.
+       * @description Order ID for one-time purchases. Required if subscription_id is not provided.
        */
       order_id?: string | null
       /**
@@ -41926,7 +41916,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Authentication required for direct subscription or order assignment */
+      /** @description Authentication required */
       401: {
         headers: {
           [name: string]: unknown
@@ -41940,7 +41930,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Subscription, order, checkout, or customer not found */
+      /** @description Subscription, order, or customer not found */
       404: {
         headers: {
           [name: string]: unknown

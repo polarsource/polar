@@ -343,6 +343,21 @@ export const useCustomerOrders = (
     retry: defaultRetry,
   })
 
+export const useCustomerSubscriptions = (
+  api: Client,
+  parameters?: operations['customer_portal:subscriptions:list']['parameters']['query'],
+) =>
+  useQuery({
+    queryKey: ['customer_subscriptions', { ...(parameters || {}) }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/', {
+          params: { query: parameters },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useCustomerSubscriptionChargePreview = (api: Client, id: string) =>
   useQuery({
     queryKey: ['customer_subscription_charge_preview', { id }],

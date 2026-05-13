@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.models import (
-    Checkout,
     Customer,
     Order,
     Organization,
@@ -12,13 +11,11 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.checkout import CheckoutStatus
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_checkout,
     create_customer_seat,
     create_order_with_seats,
     create_product,
@@ -135,28 +132,6 @@ async def order_with_seats(
         status=OrderStatus.paid,
     )
     return order
-
-
-@pytest_asyncio.fixture
-async def checkout_with_order(
-    save_fixture: SaveFixture,
-    order_with_seats: Order,
-    session: AsyncSession,
-) -> Checkout:
-    # Refresh product to load prices
-    await session.refresh(order_with_seats.product, ["prices"])
-
-    assert order_with_seats.product is not None
-    checkout = await create_checkout(
-        save_fixture,
-        products=[order_with_seats.product],
-        customer=order_with_seats.customer,
-        status=CheckoutStatus.succeeded,
-    )
-    # Link order to checkout
-    order_with_seats.checkout_id = checkout.id
-    await save_fixture(order_with_seats)
-    return checkout
 
 
 @pytest_asyncio.fixture

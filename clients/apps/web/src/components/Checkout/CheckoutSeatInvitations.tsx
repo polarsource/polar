@@ -12,6 +12,7 @@ import { Well, WellContent, WellHeader } from '../Shared/Well'
 
 export interface CheckoutSeatInvitationsProps {
   checkout: schemas['CheckoutPublic']
+  customerSessionToken?: string
 }
 
 interface EmailInput {
@@ -23,22 +24,43 @@ interface EmailInput {
 
 const CheckoutSeatInvitations = ({
   checkout,
+  customerSessionToken,
 }: CheckoutSeatInvitationsProps) => {
-  const {
-    seats,
-    id: checkoutId,
-    client_secret: checkoutClientSecret,
-  } = checkout
-
-  // Check if this is a seat-based product
   const isSeatBased =
     hasProductCheckout(checkout) &&
     checkout.product_price.amount_type === 'seat_based'
 
+  if (!isSeatBased || !checkout.seats || !customerSessionToken) {
+    return null
+  }
+
+  return (
+    <SeatInvitationsPanel
+      checkoutId={checkout.id}
+      customerEmail={checkout.customer_email}
+      seats={checkout.seats}
+      customerSessionToken={customerSessionToken}
+    />
+  )
+}
+
+interface SeatInvitationsPanelProps {
+  checkoutId: string
+  customerEmail: string | null
+  seats: number
+  customerSessionToken: string
+}
+
+const SeatInvitationsPanel = ({
+  checkoutId,
+  customerEmail,
+  seats,
+  customerSessionToken,
+}: SeatInvitationsPanelProps) => {
   const [emailInputs, setEmailInputs] = useState<EmailInput[]>(
-    checkout.customer_email
+    customerEmail
       ? [
-          { id: '1', value: checkout.customer_email },
+          { id: '1', value: customerEmail },
           { id: '2', value: '' },
         ]
       : [{ id: '1', value: '' }],
@@ -46,9 +68,9 @@ const CheckoutSeatInvitations = ({
   const [isSending, setIsSending] = useState(false)
   const [sentCount, setSentCount] = useState(0)
 
-  const assignSeat = useAssignSeatFromCheckout(checkoutId, checkoutClientSecret)
+  const assignSeat = useAssignSeatFromCheckout(checkoutId, customerSessionToken)
 
-  const availableSeats = (seats || 1) - sentCount
+  const availableSeats = seats - sentCount
   const canAddMore = emailInputs.length < availableSeats
 
   const addEmailInput = () => {
@@ -70,7 +92,6 @@ const CheckoutSeatInvitations = ({
   }
 
   const sendInvitations = async () => {
-    // Validate all emails
     const validatedInputs = emailInputs.map((input) => {
       if (!input.value.trim()) {
         return { ...input, error: 'Email is required' }
@@ -89,7 +110,6 @@ const CheckoutSeatInvitations = ({
 
     setIsSending(true)
 
-    // Send invitations sequentially
     for (const input of emailInputs) {
       if (input.sent) continue
 
@@ -117,11 +137,7 @@ const CheckoutSeatInvitations = ({
   const validEmails = emailInputs.filter(
     (input) => input.value.trim() && !input.error && !input.sent,
   ).length
-  const canSend = validEmails > 0 && !isSending
-
-  if (!isSeatBased || !seats) {
-    return null
-  }
+  const canSend = validEmails > 0 && !isSending && assignSeat.isReady
 
   return (
     <Well className="dark:border-polar-700 dark:bg-polar-800 w-full border border-gray-200 bg-white">

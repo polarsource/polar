@@ -7,19 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.auth.scope import Scope
 from polar.models import (
-    Checkout,
     Customer,
     CustomerSeat,
     Order,
     Subscription,
     UserOrganization,
 )
-from polar.models.checkout import CheckoutStatus
 from polar.models.customer_seat import SeatStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_checkout,
     create_customer,
     create_customer_seat,
     create_member,
@@ -103,7 +100,7 @@ class TestListSeats:
             params={"subscription_id": str(subscription_with_seats.id)},
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -355,251 +352,7 @@ class TestAssignSeat:
             },
         )
 
-        assert response.status_code == 403
-
-    async def test_assign_seat_from_checkout_anonymous(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        from tests.fixtures.random_objects import create_checkout, create_customer
-
-        await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="checkout-user@example.com",
-        )
-
-        await session.refresh(subscription_with_seats.product, ["prices"])
-
-        checkout = await create_checkout(
-            save_fixture,
-            products=[subscription_with_seats.product],
-            price=subscription_with_seats.product.prices[0],
-            subscription=subscription_with_seats,
-            seats=5,
-            status=CheckoutStatus.succeeded,
-        )
-
-        subscription_with_seats.checkout_id = checkout.id
-        await save_fixture(subscription_with_seats)
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(checkout.id),
-                "checkout_client_secret": checkout.client_secret,
-                "email": "checkout-user@example.com",
-            },
-        )
-
-        assert response.status_code == 200, f"Error: {response.json()}"
-        data = response.json()
-        assert data["status"] == "pending"
-        assert data["subscription_id"] == str(subscription_with_seats.id)
-
-    async def test_assign_seat_from_checkout_anonymous_missing_client_secret(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        from tests.fixtures.random_objects import create_checkout, create_customer
-
-        await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="checkout-user@example.com",
-        )
-
-        await session.refresh(subscription_with_seats.product, ["prices"])
-
-        checkout = await create_checkout(
-            save_fixture,
-            products=[subscription_with_seats.product],
-            price=subscription_with_seats.product.prices[0],
-            subscription=subscription_with_seats,
-            seats=5,
-        )
-
-        subscription_with_seats.checkout_id = checkout.id
-        await save_fixture(subscription_with_seats)
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(checkout.id),
-                "email": "attacker@example.com",
-            },
-        )
-
-        assert response.status_code == 403, f"Error: {response.json()}"
-
-    async def test_assign_seat_from_checkout_anonymous_wrong_client_secret(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        from tests.fixtures.random_objects import create_checkout, create_customer
-
-        await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="checkout-user@example.com",
-        )
-
-        await session.refresh(subscription_with_seats.product, ["prices"])
-
-        checkout = await create_checkout(
-            save_fixture,
-            products=[subscription_with_seats.product],
-            price=subscription_with_seats.product.prices[0],
-            subscription=subscription_with_seats,
-            seats=5,
-        )
-
-        subscription_with_seats.checkout_id = checkout.id
-        await save_fixture(subscription_with_seats)
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(checkout.id),
-                "checkout_client_secret": "not-the-real-secret",
-                "email": "attacker@example.com",
-            },
-        )
-
-        assert response.status_code == 403, f"Error: {response.json()}"
-
-    async def _create_checkout_for_subscription(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-        status: CheckoutStatus,
-    ) -> Checkout:
-        await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="checkout-user@example.com",
-        )
-        await session.refresh(subscription_with_seats.product, ["prices"])
-        checkout = await create_checkout(
-            save_fixture,
-            products=[subscription_with_seats.product],
-            price=subscription_with_seats.product.prices[0],
-            subscription=subscription_with_seats,
-            seats=5,
-            status=status,
-        )
-        subscription_with_seats.checkout_id = checkout.id
-        await save_fixture(subscription_with_seats)
-        return checkout
-
-    @pytest.mark.parametrize(
-        "checkout_status",
-        [
-            CheckoutStatus.open,
-            CheckoutStatus.expired,
-            CheckoutStatus.confirmed,
-            CheckoutStatus.failed,
-        ],
-    )
-    async def test_assign_seat_from_checkout_anonymous_rejected_when_not_succeeded(
-        self,
-        checkout_status: CheckoutStatus,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        checkout = await self._create_checkout_for_subscription(
-            save_fixture, session, subscription_with_seats, checkout_status
-        )
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(checkout.id),
-                "checkout_client_secret": checkout.client_secret,
-                "email": "checkout-user@example.com",
-            },
-        )
-
-        assert response.status_code == 403, f"Error: {response.json()}"
-        assert "successful checkout" in response.json()["detail"].lower()
-
-    async def test_assign_seat_from_checkout_anonymous_rejected_when_expired(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="checkout-user@example.com",
-        )
-        await session.refresh(subscription_with_seats.product, ["prices"])
-        checkout = await create_checkout(
-            save_fixture,
-            products=[subscription_with_seats.product],
-            price=subscription_with_seats.product.prices[0],
-            subscription=subscription_with_seats,
-            seats=5,
-            status=CheckoutStatus.succeeded,
-            expires_at=datetime.now(UTC) - timedelta(hours=1),
-        )
-        subscription_with_seats.checkout_id = checkout.id
-        await save_fixture(subscription_with_seats)
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(checkout.id),
-                "checkout_client_secret": checkout.client_secret,
-                "email": "checkout-user@example.com",
-            },
-        )
-
-        assert response.status_code == 403, f"Error: {response.json()}"
-        assert "expired" in response.json()["detail"].lower()
-
-    @pytest.mark.auth(SEAT_AUTH)
-    async def test_assign_seat_from_checkout_rejected_when_not_succeeded_authenticated(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        checkout = await self._create_checkout_for_subscription(
-            save_fixture, session, subscription_with_seats, CheckoutStatus.expired
-        )
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(checkout.id),
-                "email": "checkout-user@example.com",
-            },
-        )
-
-        assert response.status_code == 403, f"Error: {response.json()}"
-        assert "successful checkout" in response.json()["detail"].lower()
+        assert response.status_code == 401
 
     @pytest.mark.auth(SEAT_AUTH)
     async def test_assign_seat_immediate_claim_success(
@@ -630,45 +383,6 @@ class TestAssignSeat:
         assert data["subscription_id"] == str(subscription_with_seats.id)
         assert data["claimed_at"] is not None
         assert data["invitation_token_expires_at"] is None
-
-    async def test_assign_seat_immediate_claim_anonymous_forbidden(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        subscription_with_seats: Subscription,
-    ) -> None:
-        await create_customer(
-            save_fixture,
-            organization=subscription_with_seats.product.organization,
-            email="test@example.com",
-        )
-
-        await session.refresh(subscription_with_seats.product, ["prices"])
-
-        checkout = await create_checkout(
-            save_fixture,
-            products=[subscription_with_seats.product],
-            price=subscription_with_seats.product.prices[0],
-            subscription=subscription_with_seats,
-            seats=5,
-        )
-
-        subscription_with_seats.checkout_id = checkout.id
-        await save_fixture(subscription_with_seats)
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(checkout.id),
-                "email": "test@example.com",
-                "immediate_claim": True,
-            },
-        )
-
-        assert response.status_code == 403
-        data = response.json()
-        assert "immediate_claim" in data["detail"].lower()
 
 
 @pytest.mark.asyncio
@@ -1009,7 +723,7 @@ class TestRevokeSeat:
     ) -> None:
         response = await client.delete(f"/v1/customer-seats/{customer_seat_claimed.id}")
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -1050,28 +764,6 @@ class TestOrderBasedSeats:
             json={
                 "order_id": str(order_with_seats.id),
                 "email": "newuser@example.com",
-            },
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["order_id"] == str(order_with_seats.id)
-        assert data["subscription_id"] is None
-        assert data["status"] == "pending"
-
-    async def test_assign_seat_from_checkout_with_order(
-        self,
-        client: AsyncClient,
-        checkout_with_order: Checkout,
-        order_with_seats: Order,
-    ) -> None:
-        """Test anonymous seat assignment via checkout_id for orders."""
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(checkout_with_order.id),
-                "checkout_client_secret": checkout_with_order.client_secret,
-                "email": "holder@example.com",
             },
         )
 
@@ -1172,10 +864,9 @@ class TestOrderBasedSeats:
         assert data["can_claim"] is True
 
 
-# Seat endpoints use `SeatWriteOrAnonymous`, a hybrid dependency that returns
-# 403 (not 401) for anonymous callers, since assign/claim flows accept
-# checkout_client_secret or invitation_token. Claim endpoints are
-# intentionally public (token-gated).
+# Merchant-API seat endpoints reject anonymous callers with 401. Claim
+# endpoints (`/claim/{token}`, `POST /claim`) are intentionally public
+# (token-gated) and unaffected.
 
 
 @pytest.mark.asyncio
@@ -1190,7 +881,22 @@ class TestCustomerSeatsAuthentication:
             params={"subscription_id": str(subscription_with_seats.id)},
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 401
+
+    async def test_assign_seat_anonymous_rejected(
+        self,
+        client: AsyncClient,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "test@example.com",
+            },
+        )
+
+        assert response.status_code == 401
 
     async def test_revoke_seat_anonymous_rejected(
         self,
@@ -1201,7 +907,7 @@ class TestCustomerSeatsAuthentication:
             f"/v1/customer-seats/{customer_seat_claimed.id}",
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     async def test_resend_invitation_anonymous_rejected(
         self,
@@ -1212,7 +918,7 @@ class TestCustomerSeatsAuthentication:
             f"/v1/customer-seats/{customer_seat_pending.id}/resend",
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 @pytest.mark.asyncio

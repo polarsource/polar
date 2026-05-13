@@ -14,23 +14,11 @@ from polar.models.customer_seat import SeatStatus
 class SeatAssign(Schema):
     subscription_id: UUID | None = Field(
         None,
-        description="Subscription ID. Required if checkout_id and order_id are not provided.",
-    )
-    checkout_id: UUID | None = Field(
-        None,
-        description="Checkout ID. Used to look up subscription or order from the checkout page.",
-    )
-    checkout_client_secret: str | None = Field(
-        None,
-        description=(
-            "Client secret of the checkout. Required when assigning seats "
-            "via checkout_id as an anonymous caller (e.g. the checkout "
-            "confirmation page)."
-        ),
+        description="Subscription ID. Required if order_id is not provided.",
     )
     order_id: UUID | None = Field(
         None,
-        description="Order ID for one-time purchases. Required if subscription_id and checkout_id are not provided.",
+        description="Order ID for one-time purchases. Required if subscription_id is not provided.",
     )
     email: EmailStrDNS | None = Field(
         None, description="Email of the customer to assign the seat to"
@@ -77,13 +65,11 @@ class SeatAssign(Schema):
     def validate_identifiers(self) -> "SeatAssign":
         # Validate exactly one seat source
         seat_source_count = sum(
-            1
-            for x in [self.subscription_id, self.checkout_id, self.order_id]
-            if x is not None
+            1 for x in [self.subscription_id, self.order_id] if x is not None
         )
         if seat_source_count != 1:
             raise ValueError(
-                "Exactly one of subscription_id, checkout_id, or order_id must be provided"
+                "Exactly one of subscription_id or order_id must be provided"
             )
 
         # Count identifier groups

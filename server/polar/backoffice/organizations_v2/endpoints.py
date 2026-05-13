@@ -1980,6 +1980,19 @@ async def create_review_ticket(
             )
             await add_toast(request, f"Failed to create ticket: {e.message}", "error")
             return
+        except Exception as e:
+            error = repr(e)
+            logger.exception(
+                "Unexpected error creating Plain review ticket",
+                organization_id=str(organization_id),
+                error=error,
+            )
+            await add_toast(
+                request,
+                f"Failed to create ticket: {error[:200]}",
+                "error",
+            )
+            return
 
         if not thread_id:
             await add_toast(

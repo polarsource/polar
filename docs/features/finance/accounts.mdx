@@ -33,6 +33,15 @@ From the **Finance → Account** page of a new organization, you can either:
 
 Only one payout account is active per organization at a time, but you can switch the active account from the **Manage payout accounts** modal. The active account is the one that will receive the next payout from that organization.
 
+## Managing Your Account
+
+From **Finance → Account → Manage payout accounts** you can:
+
+- **Open in Stripe** — jump into the Stripe-hosted dashboard to update your bank account, business details, or tax information.
+- **Make Active** — switch the organization to a different payout account you already own.
+- **Add Payout Account** — start onboarding for a new payout account (for example, in a different country).
+- **Delete** — remove a payout account you no longer use. You can only delete an account that is not linked to any organization, has no pending payouts, and has a zero Stripe balance.
+
 ## Country & Currency Requirements
 
 Stripe Connect requires the bank account you connect to be in the **same country as the business** and to use that country's **local currency**. This is a Stripe (and underlying banking network) requirement that Polar cannot override.
@@ -51,12 +60,3 @@ Stripe Connect requires the bank account you connect to be in the **same country
     Polar supports the countries listed in our [supported countries for payouts](/merchant-of-record/supported-countries#payouts). If yours isn't listed during onboarding, we can't currently issue payouts there.
   </Accordion>
 </AccordionGroup>
-
-## Managing Your Account
-
-From **Finance → Account → Manage payout accounts** you can:
-
-- **Open in Stripe** — jump into the Stripe-hosted dashboard to update your bank account, business details, or tax information.
-- **Make Active** — switch the organization to a different payout account you already own.
-- **Add Payout Account** — start onboarding for a new payout account (for example, in a different country).
-- **Delete** — remove a payout account you no longer use. You can only delete an account that is not linked to any organization, has no pending payouts, and has a zero Stripe balance.

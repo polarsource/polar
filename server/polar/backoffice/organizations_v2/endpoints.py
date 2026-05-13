@@ -2002,7 +2002,7 @@ async def create_review_ticket(
             )
             return
 
-        with modal("Review Ticket Created", open=True):
+        with modal("Plain Ticket Created", open=True):
             with tag.div(classes="flex flex-col gap-4"):
                 with tag.p():
                     text(f'Plain ticket "{title}" created successfully.')

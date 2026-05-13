@@ -122,7 +122,7 @@ class OrganizationDetailView:
                 ),
                 hx_target="#modal",
             ):
-                text("Create Review Ticket")
+                text("Create Plain Ticket")
 
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:
@@ -501,8 +501,6 @@ class OrganizationDetailView:
                             ):
                                 text("Set Offboarding")
 
-                        self._render_create_review_ticket_button(request)
-
                     elif self.org.status == OrganizationStatus.SNOOZED:
                         deadline = self.org.snoozed_until
                         snooze_type = self.org.snooze_type or SnoozeType.NEXT_SALE
@@ -578,8 +576,6 @@ class OrganizationDetailView:
                             ):
                                 text("Deny")
 
-                        self._render_create_review_ticket_button(request)
-
                     elif self.org.status == OrganizationStatus.CREATED:
                         with tag.div(classes="w-full"):
                             with button(
@@ -600,21 +596,7 @@ class OrganizationDetailView:
                     with tag.div(classes="divider my-2"):
                         pass
 
-                    with tag.div(classes="w-full"):
-                        with button(
-                            variant="secondary",
-                            size="sm",
-                            outline=True,
-                            hx_get=str(
-                                request.url_for(
-                                    "organizations:detail",
-                                    organization_id=self.org.id,
-                                )
-                            )
-                            + "/plain-thread",
-                            hx_target="#modal",
-                        ):
-                            text("Create Plain Thread")
+                    self._render_create_review_ticket_button(request)
 
                     with tag.div(classes="w-full"):
                         with button(

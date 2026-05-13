@@ -362,6 +362,19 @@
                 ]
               },
               {
+                "group": "Members",
+                "pages": [
+                  "api-reference/members/list",
+                  "api-reference/members/create",
+                  "api-reference/members/get",
+                  "api-reference/members/update",
+                  "api-reference/members/delete",
+                  "api-reference/members/get-external",
+                  "api-reference/members/update-external",
+                  "api-reference/members/delete-external"
+                ]
+              },
+              {
                 "group": "Customer Seats",
                 "pages": [
                   "api-reference/customer-seats/assign",

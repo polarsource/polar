@@ -266,6 +266,10 @@ async def toggle_enabled(
     if webhook is None:
         raise HTTPException(status_code=404)
 
+    # The backoffice doesn't carry a user/org auth_subject, so it can't go
+    # through `webhook_service.update_endpoint` (which now asserts
+    # `organization:manage`). Use the repository directly, and re-implement
+    # the URL-block check the service would normally apply on enable.
     is_enabling = not webhook.enabled
     if is_enabling and is_blocked_webhook_host(urlparse(webhook.url).hostname or ""):
         await add_toast(

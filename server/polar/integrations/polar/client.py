@@ -15,6 +15,7 @@ from polar_sdk.models import (
     Customer,
     CustomerPaymentMethod,
     CustomerPortalCustomer,
+    CustomerPortalCustomersDeletePaymentMethodSecurity,
     CustomerPortalCustomersGetSecurity,
     CustomerPortalCustomersListPaymentMethodsSecurity,
     CustomerPortalCustomersUpdateSecurity,
@@ -575,6 +576,42 @@ class PolarSelfClient:
 
             span.set_attribute("payment_method_count", len(methods))
             return methods
+
+    async def portal_delete_payment_method(
+        self,
+        *,
+        external_customer_id: str,
+        payment_method_id: str,
+        external_member_id: str | None = None,
+    ) -> None:
+        with logfire.span(
+            "polar.portal.delete_payment_method",
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+            payment_method_id=payment_method_id,
+        ) as span:
+            try:
+                session = await self._sdk.customer_sessions.create_async(
+                    request=CustomerSessionCustomerExternalIDCreate(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
+                )
+                await self._sdk.customer_portal.customers.delete_payment_method_async(
+                    security=CustomerPortalCustomersDeletePaymentMethodSecurity(
+                        customer_session=session.token,
+                    ),
+                    id=payment_method_id,
+                )
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    from .service import PolarSelfPaymentMethodNotFound
+
+                    raise PolarSelfPaymentMethodNotFound(payment_method_id) from e
+                _raise_error(span, e, "polar.portal.delete_payment_method")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "polar.portal.delete_payment_method")
 
     async def portal_update_customer(
         self,

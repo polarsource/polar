@@ -86,6 +86,15 @@ class PolarSelfCustomerNotFound(PolarError):
         self.organization_id = organization_id
 
 
+class PolarSelfPaymentMethodNotFound(PolarError):
+    def __init__(self, payment_method_id: str) -> None:
+        super().__init__(
+            f"Payment method {payment_method_id!r} not found.",
+            status_code=404,
+        )
+        self.payment_method_id = payment_method_id
+
+
 class PolarSelfService:
     INITIAL_MEMBER_DELAY_MS = 1000
 
@@ -303,6 +312,20 @@ class PolarSelfService:
         )
         default_id = customer.default_payment_method_id
         return methods, default_id if isinstance(default_id, str) else None
+
+    async def delete_payment_method(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        payment_method_id: str,
+        external_member_id: str | None = None,
+    ) -> None:
+        await self._ensure_polar_customer(organization_id)
+        await get_client().portal_delete_payment_method(
+            external_customer_id=str(organization_id),
+            payment_method_id=payment_method_id,
+            external_member_id=external_member_id,
+        )
 
     async def update_billing_details(
         self,

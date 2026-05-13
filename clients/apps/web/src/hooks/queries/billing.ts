@@ -164,13 +164,19 @@ export const useConfirmOrganizationPaymentMethod = (organizationId: string) =>
     },
   })
 
-// TODO: DELETE `/v1/organizations/{id}/payment-methods/{payment_method_id}`
 export const useDeleteOrganizationPaymentMethod = (organizationId: string) =>
   useMutation({
-    mutationFn: async (paymentMethodId: string): Promise<void> => {
-      void paymentMethodId
-      throw new Error('Organization payment methods are not yet supported.')
-    },
+    mutationFn: (paymentMethodId: string) =>
+      unwrap(
+        api.DELETE(
+          '/v1/organizations/{id}/payment-methods/{payment_method_id}',
+          {
+            params: {
+              path: { id: organizationId, payment_method_id: paymentMethodId },
+            },
+          },
+        ),
+      ),
     onSuccess: () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organization-billing', organizationId, 'payment-methods'],

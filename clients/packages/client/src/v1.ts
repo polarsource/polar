@@ -1136,6 +1136,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/payment-methods/{payment_method_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Delete Organization Payment Method
+     * @description Delete a saved payment method used to pay Polar invoices.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    delete: operations['organizations:delete_payment_method']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/orders/{order_id}/invoice': {
     parameters: {
       query?: never
@@ -33694,6 +33716,45 @@ export interface operations {
         }
       }
       /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:delete_payment_method': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        payment_method_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Payment method deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Organization or payment method not found. */
       404: {
         headers: {
           [name: string]: unknown

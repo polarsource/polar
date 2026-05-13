@@ -118,9 +118,8 @@ async def assign_seat(
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
-    customer = get_customer(auth_subject)
     container = await customer_seat_service.resolve_assign_container(
-        session, customer, seat_assign
+        session, auth_subject, seat_assign
     )
 
     return await seat_service.assign_seat(

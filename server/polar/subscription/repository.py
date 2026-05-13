@@ -138,40 +138,6 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def get_by_id_and_customer(
-        self,
-        id: UUID,
-        customer_id: UUID,
-        *,
-        options: Options = (),
-    ) -> Subscription | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                Subscription.id == id,
-                Subscription.customer_id == customer_id,
-            )
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
-
-    async def get_by_checkout_id_and_customer(
-        self,
-        checkout_id: UUID,
-        customer_id: UUID,
-        *,
-        options: Options = (),
-    ) -> Subscription | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                Subscription.checkout_id == checkout_id,
-                Subscription.customer_id == customer_id,
-            )
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
-
     def get_eager_options(
         self, *, product_load: "_AbstractLoad | None" = None
     ) -> Options:

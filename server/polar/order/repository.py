@@ -90,42 +90,6 @@ class OrderRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_id_and_customer(
-        self,
-        id: UUID,
-        customer_id: UUID,
-        *,
-        options: Options = (),
-    ) -> Order | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                Order.id == id,
-                Order.customer_id == customer_id,
-            )
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
-
-    async def get_earliest_by_checkout_id_and_customer(
-        self,
-        checkout_id: UUID,
-        customer_id: UUID,
-        *,
-        options: Options = (),
-    ) -> Order | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                Order.checkout_id == checkout_id,
-                Order.customer_id == customer_id,
-            )
-            .order_by(Order.created_at.asc())
-            .limit(1)
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
-
     async def lock_for_receipt_allocation(self, order_id: UUID) -> str | None:
         """Lock the Order row and return its current ``receipt_number``.
 

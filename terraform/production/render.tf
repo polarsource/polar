@@ -226,15 +226,6 @@ module "production" {
     }
   }
 
-  cron_jobs = {
-    "bulk-appeal-review" = {
-      schedule      = "0 */6 * * *" # Every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
-      start_command = "uv run python -m scripts.bulk_appeal_review --execute --limit 0"
-      image_url     = "ghcr.io/polarsource/polar-playwright"
-      plan          = "standard"
-    }
-  }
-
   google_secrets = {
     client_id     = var.google_client_id_production
     client_secret = var.google_client_secret_production

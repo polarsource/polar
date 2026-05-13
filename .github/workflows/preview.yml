@@ -65,7 +65,7 @@ jobs:
 
       - name: Install server dependencies
         working-directory: ./server
-        run: uv sync --dev
+        run: uv sync  --frozen --dev
 
       - name: Install Tinybird CLI
         run: curl https://tinybird.co | sh

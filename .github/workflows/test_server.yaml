@@ -69,7 +69,7 @@ jobs:
 
       - name: 🔧 uv install
         working-directory: ./server
-        run: uv sync --dev
+        run: uv sync --dev --frozen
 
       - name: 🐶 Lint Server (ruff)
         working-directory: ./server
@@ -306,7 +306,7 @@ jobs:
       - name: 🔧 uv install
         working-directory: ./server
         run: |
-          uv sync --dev
+          uv sync --dev --frozen
           uv run task generate_dev_jwks
 
       - name: 🐦 Install Tinybird CLI

@@ -61,7 +61,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./lambda/${{ matrix.lambda }}
-        run: uv sync
+        run: uv sync --frozen
 
       - name: Lint
         working-directory: ./lambda/${{ matrix.lambda }}
@@ -95,7 +95,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./lambda/${{ matrix.lambda }}
-        run: uv sync
+        run: uv sync --frozen
 
       - name: Test
         working-directory: ./lambda/${{ matrix.lambda }}

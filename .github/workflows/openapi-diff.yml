@@ -51,13 +51,13 @@ jobs:
       - name: Install head dependencies
         working-directory: ./head/server
         run: |
-          uv sync
+          uv sync --frozen
           uv run task generate_dev_jwks
 
       - name: Install base dependencies
         working-directory: ./base/server
         run: |
-          uv sync
+          uv sync --frozen
           uv run task generate_dev_jwks
 
       - name: Generate OpenAPI schema from head

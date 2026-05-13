@@ -107,7 +107,7 @@ jobs:
       - name: 🔧 uv install
         working-directory: ./server
         run: |
-          uv sync --dev
+          uv sync --dev --frozen
           uv run task generate_dev_jwks
 
       - name: 📚 Setup documentation

@@ -11,7 +11,7 @@ pip install -U pip uv
 
 # Server setup
 cd /workspace/server
-uv sync
+uv sync --frozen
 uv run task generate_dev_jwks
 echo "🐻‍❄️✅ Server ready"
 

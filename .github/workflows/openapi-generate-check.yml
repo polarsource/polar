@@ -90,7 +90,7 @@ jobs:
       - name: Install server dependencies
         working-directory: ./server
         run: |
-          uv sync
+          uv sync --frozen
           uv run task generate_dev_jwks
 
       - name: Install client dependencies

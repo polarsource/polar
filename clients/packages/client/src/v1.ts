@@ -27009,14 +27009,19 @@ export interface components {
     SeatAssign: {
       /**
        * Subscription Id
-       * @description Subscription ID. Required if order_id is not provided.
+       * @description Subscription ID. Required if neither order_id nor checkout_id is provided.
        */
       subscription_id?: string | null
       /**
        * Order Id
-       * @description Order ID for one-time purchases. Required if subscription_id is not provided.
+       * @description Order ID for one-time purchases. Required if neither subscription_id nor checkout_id is provided.
        */
       order_id?: string | null
+      /**
+       * Checkout Id
+       * @description Checkout ID. The endpoint resolves the subscription or order produced by the checkout. Only supported by the customer portal endpoint (`POST /v1/customer-portal/seats`).
+       */
+      checkout_id?: string | null
       /**
        * Email
        * @description Email of the customer to assign the seat to

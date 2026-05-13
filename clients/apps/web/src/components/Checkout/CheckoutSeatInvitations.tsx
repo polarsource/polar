@@ -137,7 +137,7 @@ const SeatInvitationsPanel = ({
   const validEmails = emailInputs.filter(
     (input) => input.value.trim() && !input.error && !input.sent,
   ).length
-  const canSend = validEmails > 0 && !isSending && assignSeat.isReady
+  const canSend = validEmails > 0 && !isSending
 
   return (
     <Well className="dark:border-polar-700 dark:bg-polar-800 w-full border border-gray-200 bg-white">

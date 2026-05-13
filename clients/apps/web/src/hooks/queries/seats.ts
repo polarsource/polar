@@ -2,21 +2,17 @@ import { api, createClientSideAPI } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { useCustomerOrders, useCustomerSubscriptions } from './customerPortal'
 import { defaultRetry } from './retry'
 
 type SeatAssignVariables = Omit<
   schemas['SeatAssign'],
-  'subscription_id' | 'order_id' | 'immediate_claim'
+  'subscription_id' | 'order_id' | 'checkout_id' | 'immediate_claim'
 >
 
 /**
- * Post-checkout seat assignment via the customer portal endpoint. Looks up
- * the subscription or order produced by the checkout, then POSTs the seat
- * with the customer session token issued on confirm.
- *
- * Mount only after confirming the checkout is seat-based and the customer
- * session token is set — the queries fetch unconditionally on mount.
+ * Post-checkout seat assignment via the customer portal endpoint. Sends the
+ * checkout_id; the backend resolves the subscription or order produced by
+ * the checkout (scoped to the authenticated customer).
  */
 export const useAssignSeatFromCheckout = (
   checkoutId: string,
@@ -28,26 +24,14 @@ export const useAssignSeatFromCheckout = (
     [customerSessionToken],
   )
 
-  const subscriptions = useCustomerSubscriptions(portalApi)
-  const orders = useCustomerOrders(portalApi)
-
-  const containerRef = useMemo(() => {
-    const subscription = subscriptions.data?.items.find(
-      (s) => s.checkout_id === checkoutId,
-    )
-    if (subscription) return { subscription_id: subscription.id } as const
-    const order = orders.data?.items.find((o) => o.checkout_id === checkoutId)
-    if (order) return { order_id: order.id } as const
-    return null
-  }, [checkoutId, subscriptions.data, orders.data])
-
-  const mutation = useMutation({
+  return useMutation({
     mutationFn: async (variables: SeatAssignVariables) => {
-      if (!containerRef) {
-        throw new Error('No subscription or order found for this checkout')
-      }
       const result = await portalApi.POST('/v1/customer-portal/seats', {
-        body: { ...variables, ...containerRef, immediate_claim: false },
+        body: {
+          ...variables,
+          checkout_id: checkoutId,
+          immediate_claim: false,
+        },
       })
       if (result.error) {
         const detail = (result.error as { detail?: unknown }).detail
@@ -61,8 +45,6 @@ export const useAssignSeatFromCheckout = (
       queryClient.invalidateQueries({ queryKey: ['customer_seats'] })
     },
   })
-
-  return { ...mutation, isReady: !!containerRef }
 }
 
 /**

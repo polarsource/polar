@@ -155,8 +155,40 @@ async def assign_seat(
         if not order:
             raise ResourceNotFound("Order not found")
 
+    elif seat_assign.checkout_id:
+        subscription_repository = SubscriptionRepository.from_session(session)
+        order_repository = OrderRepository.from_session(session)
+
+        subscription_statement = (
+            subscription_repository.get_base_statement()
+            .options(*subscription_repository.get_eager_options())
+            .where(
+                Subscription.checkout_id == seat_assign.checkout_id,
+                Subscription.customer_id == customer.id,
+            )
+        )
+        subscription = await subscription_repository.get_one_or_none(
+            subscription_statement
+        )
+
+        if not subscription:
+            order_statement = (
+                order_repository.get_base_statement()
+                .options(*order_repository.get_eager_options())
+                .where(
+                    Order.checkout_id == seat_assign.checkout_id,
+                    Order.customer_id == customer.id,
+                )
+            )
+            order = await order_repository.get_one_or_none(order_statement)
+
+            if not order:
+                raise ResourceNotFound(
+                    "No subscription or order found for this checkout"
+                )
+
     else:
-        raise BadRequest("Either subscription_id or order_id is required")
+        raise BadRequest("Either subscription_id, order_id, or checkout_id is required")
 
     container = subscription or order
     assert container is not None  # Already validated above

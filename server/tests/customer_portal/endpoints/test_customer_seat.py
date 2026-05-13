@@ -210,6 +210,111 @@ class TestAssignSeat:
         assert data["status"] == "pending"
         assert data["subscription_id"] == str(subscription.id)
 
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_valid_with_checkout_id(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        from tests.fixtures.random_objects import create_checkout
+
+        organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
+        await save_fixture(organization)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        await session.refresh(product, ["prices"])
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            price=product.prices[0],
+            subscription=subscription,
+            seats=5,
+        )
+
+        subscription.checkout_id = checkout.id
+        await save_fixture(subscription)
+
+        response = await client.post(
+            "/v1/customer-portal/seats",
+            json={
+                "checkout_id": str(checkout.id),
+                "email": "teammate@example.com",
+            },
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert data["customer_email"] == "teammate@example.com"
+        assert data["status"] == "pending"
+        assert data["subscription_id"] == str(subscription.id)
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_checkout_id_not_customer(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer_second: Customer,
+        session: AsyncSession,
+    ) -> None:
+        from tests.fixtures.random_objects import create_checkout
+
+        organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
+        await save_fixture(organization)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer_second,
+            seats=5,
+        )
+
+        await session.refresh(product, ["prices"])
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            price=product.prices[0],
+            subscription=subscription,
+            seats=5,
+        )
+
+        subscription.checkout_id = checkout.id
+        await save_fixture(subscription)
+
+        response = await client.post(
+            "/v1/customer-portal/seats",
+            json={
+                "checkout_id": str(checkout.id),
+                "email": "teammate@example.com",
+            },
+        )
+        assert response.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestRevokeSeat:

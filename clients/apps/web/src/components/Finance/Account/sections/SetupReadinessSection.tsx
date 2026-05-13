@@ -14,6 +14,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
+import Link from 'next/link'
 import { useState } from 'react'
 import { PathCard } from './PathCard'
 import { PathCardBanner } from './PathCardBanner'
@@ -28,6 +29,9 @@ const subStatus = (
   key: schemas['OrganizationReviewSubCheckKey'],
 ): schemas['OrganizationReviewCheckStatus'] | undefined =>
   step.sub_checks?.find((s) => s.key === key)?.status
+
+const INLINE_LINK_CLASS =
+  'dark:text-polar-300 dark:hover:text-polar-100 text-gray-700 underline underline-offset-2 hover:text-gray-900'
 
 export const SetupReadinessSection = ({ organization, step }: Props) => {
   const checkoutLinkStatus = subStatus(step, 'setup_readiness.checkout_link')
@@ -93,7 +97,37 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
                 <PathCardBanner
                   tone="danger"
                   title="Checkout link is invalid"
-                  description="Your checkout link needs either a benefit attached or a success URL set."
+                  description={
+                    <>
+                      Your checkout links needs either a{' '}
+                      <Link
+                        href={`/dashboard/${organization.slug}/products`}
+                        onClick={(e) => e.stopPropagation()}
+                        className={INLINE_LINK_CLASS}
+                      >
+                        product
+                      </Link>{' '}
+                      with a benefit attached or a{' '}
+                      <Link
+                        href={`/dashboard/${organization.slug}/products/checkout-links`}
+                        onClick={(e) => e.stopPropagation()}
+                        className={INLINE_LINK_CLASS}
+                      >
+                        checkout link
+                      </Link>{' '}
+                      with a{' '}
+                      <a
+                        href="https://polar.sh/docs/features/checkout/links#success-url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className={INLINE_LINK_CLASS}
+                      >
+                        Success URL
+                      </a>{' '}
+                      set.
+                    </>
+                  }
                 />
               )
             }

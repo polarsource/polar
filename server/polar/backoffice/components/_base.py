@@ -4,7 +4,24 @@ from collections.abc import Generator, Sequence
 from fastapi import Request
 from tagflow import tag, text
 
+from polar.config import settings
+
 from ..static_urls import static_url
+
+
+def _environment_banner() -> None:
+    if settings.is_production():
+        return
+    label = "LOCAL" if settings.is_development() else settings.ENV.value.upper()
+    color_classes = (
+        "bg-warning text-warning-content"
+        if settings.is_sandbox()
+        else "bg-info text-info-content"
+    )
+    with tag.div(
+        classes=f"w-full text-center text-xs font-semibold uppercase tracking-widest py-1 {color_classes}"
+    ):
+        text(label)
 
 
 @contextlib.contextmanager
@@ -56,6 +73,7 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
                 """)
 
         with tag.body():
+            _environment_banner()
             yield
 
             with tag.div(id="modal"):

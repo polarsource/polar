@@ -66,8 +66,8 @@
   "devDependencies": {
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
-    "@stripe/react-stripe-js": "^4.0.2",
-    "@stripe/stripe-js": "^7.9.0",
+    "@stripe/react-stripe-js": "^5.6.1",
+    "@stripe/stripe-js": "^8.11.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "19.2.14",
@@ -93,8 +93,8 @@
     "date-fns": "^4.1.0"
   },
   "peerDependencies": {
-    "@stripe/react-stripe-js": "^3.6.0 || ^4.0.2",
-    "@stripe/stripe-js": "^7.1.0",
+    "@stripe/react-stripe-js": "^3.6.0 || ^4.0.2 || ^5.6.1",
+    "@stripe/stripe-js": "^7.1.0 || ^8.11.0",
     "react": "^18 || ^19"
   }
 }

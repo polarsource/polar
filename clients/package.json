@@ -18,13 +18,13 @@
     "release-packages": "turbo run build lint test --filter='./packages/*' && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.8",
+    "@changesets/cli": "^2.31.0",
     "@manypkg/cli": "^0.25.1",
     "eslint": "^9.39.4",
-    "knip": "^5.86.0",
+    "knip": "^5.88.1",
     "only-allow": "1.2.2",
     "oxfmt": "^0.41.0",
-    "turbo": "^2.9.4"
+    "turbo": "^2.9.12"
   },
   "resolutions": {
     "sharp": "0.33.3"

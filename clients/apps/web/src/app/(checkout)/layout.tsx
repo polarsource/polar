@@ -13,7 +13,7 @@ export default async function CheckoutLayout({
     <div translate="no">
       <link
         rel="preload"
-        href="https://js.stripe.com/basil/stripe.js"
+        href="https://js.stripe.com/clover/stripe.js"
         as="script"
       />
       <link

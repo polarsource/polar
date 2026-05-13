@@ -64,6 +64,7 @@ dependencies = [
   "anyio>=4.13.0",
   "markdown-it-py>=4.0.0",
   "tzdata>=2025.3",
+  "reauth>=0.1.2",
 ]
 
 [dependency-groups]
@@ -174,6 +175,7 @@ warn_untyped_fields = true
 
 [tool.uv]
 exclude-newer = "1 week"
+exclude-newer-package = { reauth = false } # Reauth is brand new, but remember to remove this exclusion when stabilized
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

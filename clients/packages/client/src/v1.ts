@@ -15578,25 +15578,39 @@ export interface components {
     CustomerSeatAssign: {
       /**
        * Subscription Id
-       * @description Subscription ID. Exactly one of subscription_id, order_id, or checkout_id must be provided.
+       * @description Subscription ID. Required if neither order_id nor checkout_id is provided.
        */
       subscription_id?: string | null
       /**
        * Order Id
-       * @description Order ID for one-time purchases. Exactly one of subscription_id, order_id, or checkout_id must be provided.
+       * @description Order ID for one-time purchases. Required if subscription_id is not provided.
        */
       order_id?: string | null
       /**
-       * Checkout Id
-       * @description Checkout ID. Resolves to the subscription or order produced by the checkout.
-       */
-      checkout_id?: string | null
-      /**
        * Email
-       * Format: email
        * @description Email of the customer to assign the seat to
        */
-      email: string
+      email?: string | null
+      /**
+       * External Customer Id
+       * @description External customer ID for the seat assignment
+       */
+      external_customer_id?: string | null
+      /**
+       * Customer Id
+       * @description Customer ID for the seat assignment
+       */
+      customer_id?: string | null
+      /**
+       * External Member Id
+       * @description External member ID for the seat assignment. Can be used alone (lookup existing member) or with email (create/validate member).
+       */
+      external_member_id?: string | null
+      /**
+       * Member Id
+       * @description Member ID for the seat assignment.
+       */
+      member_id?: string | null
       /**
        * Metadata
        * @description Additional metadata for the seat (max 10 keys, 1KB total)
@@ -15604,6 +15618,17 @@ export interface components {
       metadata?: {
         [key: string]: unknown
       } | null
+      /**
+       * Immediate Claim
+       * @description If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
+       * @default false
+       */
+      immediate_claim: boolean
+      /**
+       * Checkout Id
+       * @description Checkout ID. Resolves to the subscription or order produced by the checkout.
+       */
+      checkout_id?: string | null
     }
     /**
      * CustomerSeatClaimResponse

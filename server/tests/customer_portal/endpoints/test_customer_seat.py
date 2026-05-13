@@ -266,6 +266,51 @@ class TestAssignSeat:
         assert data["subscription_id"] == str(subscription.id)
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_valid_with_member_model_enabled(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        organization.feature_settings["seat_based_pricing_enabled"] = True
+        organization.feature_settings["member_model_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
+        await save_fixture(organization)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        response = await client.post(
+            "/v1/customer-portal/seats",
+            json={
+                "subscription_id": str(subscription.id),
+                "email": "teammate@example.com",
+                "external_member_id": "ext-member-1",
+            },
+        )
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert data["email"] == "teammate@example.com"
+        assert data["member_id"] is not None
+        assert data["member"] is not None
+        assert data["member"]["email"] == "teammate@example.com"
+        assert data["member"]["external_id"] == "ext-member-1"
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_checkout_id_not_customer(
         self,
         client: AsyncClient,

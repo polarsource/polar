@@ -62,15 +62,19 @@ class SeatAssign(Schema):
         return v
 
     @model_validator(mode="after")
-    def validate_identifiers(self) -> "SeatAssign":
-        seat_source_count = sum(
-            1 for x in [self.subscription_id, self.order_id] if x is not None
-        )
-        if seat_source_count != 1:
-            raise ValueError(
-                "Exactly one of subscription_id or order_id must be provided"
-            )
+    def validate_seat_source(self) -> "SeatAssign":
+        if sum(1 for x in self._seat_source_ids() if x is not None) != 1:
+            raise ValueError(self._seat_source_error_message())
+        return self
 
+    def _seat_source_ids(self) -> list[UUID | None]:
+        return [self.subscription_id, self.order_id]
+
+    def _seat_source_error_message(self) -> str:
+        return "Exactly one of subscription_id or order_id must be provided"
+
+    @model_validator(mode="after")
+    def validate_recipient(self) -> "SeatAssign":
         # Count identifier groups
         legacy_count = sum(
             1 for x in [self.external_customer_id, self.customer_id] if x is not None

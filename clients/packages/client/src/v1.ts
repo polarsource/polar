@@ -15322,6 +15322,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: string | null
+      /** Default Payment Method Id */
+      default_payment_method_id?: string | null
     }
     /**
      * CustomerPortalMember

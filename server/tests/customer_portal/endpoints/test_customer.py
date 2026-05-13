@@ -28,6 +28,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.payment_method.service.stripe_service", new=mock)
     mocker.patch("polar.customer_email_update.service.stripe_service", new=mock)
+    mocker.patch("polar.customer_portal.service.customer.stripe_service", new=mock)
     return mock
 
 
@@ -198,6 +199,100 @@ class TestDeletePaymentMethod:
         # Verify payment method is soft deleted
         await session.refresh(payment_method)
         assert payment_method.deleted_at is not None
+
+
+@pytest.mark.asyncio
+class TestUpdateDefaultPaymentMethod:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer)
+        response = await client.patch(
+            "/v1/customer-portal/customers/me",
+            json={"default_payment_method_id": str(payment_method.id)},
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_payment_method_not_found(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        import uuid
+
+        response = await client.patch(
+            "/v1/customer-portal/customers/me",
+            json={"default_payment_method_id": str(uuid.uuid4())},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_payment_method_not_owned_by_customer(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        other_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="other@example.com",
+            stripe_customer_id="STRIPE_OTHER_CUSTOMER_ID",
+        )
+        other_payment_method = await create_payment_method(save_fixture, other_customer)
+
+        response = await client.patch(
+            "/v1/customer-portal/customers/me",
+            json={"default_payment_method_id": str(other_payment_method.id)},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_null_default_payment_method_id_rejected(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        response = await client.patch(
+            "/v1/customer-portal/customers/me",
+            json={"default_payment_method_id": None},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_success(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer)
+
+        response = await client.patch(
+            "/v1/customer-portal/customers/me",
+            json={"default_payment_method_id": str(payment_method.id)},
+        )
+        assert response.status_code == 200
+
+        body = response.json()
+        assert body["default_payment_method_id"] == str(payment_method.id)
+
+        await session.refresh(customer)
+        assert customer.default_payment_method_id == payment_method.id
+
+        stripe_service_mock.update_customer.assert_awaited_once()
+        call_kwargs = stripe_service_mock.update_customer.await_args.kwargs
+        assert call_kwargs["invoice_settings"] == {
+            "default_payment_method": payment_method.processor_id,
+        }
 
 
 async def _create_verification(

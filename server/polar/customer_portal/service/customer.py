@@ -13,6 +13,7 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Customer as CustomerModel
 from polar.models import PaymentMethod
 from polar.order.service import order as order_service
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import InvalidTaxID, to_stripe_tax_id, validate_tax_id
@@ -66,6 +67,37 @@ class CustomerService:
             else:
                 customer.billing_address = customer_update.billing_address
 
+        new_default_payment_method: PaymentMethod | None = None
+        if "default_payment_method_id" in customer_update.model_fields_set:
+            if customer_update.default_payment_method_id is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "default_payment_method_id"),
+                            "msg": "Default payment method cannot be reset to null.",
+                            "input": customer_update.default_payment_method_id,
+                        }
+                    ]
+                )
+            payment_method_repository = PaymentMethodRepository.from_session(session)
+            new_default_payment_method = (
+                await payment_method_repository.get_by_id_and_customer(
+                    customer_update.default_payment_method_id, customer.id
+                )
+            )
+            if new_default_payment_method is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid",
+                            "loc": ("body", "default_payment_method_id"),
+                            "msg": "Payment method not found.",
+                            "input": str(customer_update.default_payment_method_id),
+                        }
+                    ]
+                )
+
         tax_id = customer_update.tax_id or (
             customer.tax_id[0] if customer.tax_id else None
         )
@@ -102,9 +134,20 @@ class CustomerService:
             customer,
             update_dict=customer_update.model_dump(
                 exclude_unset=True,
-                exclude={"billing_name", "billing_address", "tax_id"},
+                exclude={
+                    "billing_name",
+                    "billing_address",
+                    "tax_id",
+                    "default_payment_method_id",
+                },
             ),
         )
+
+        if new_default_payment_method is not None:
+            customer = await repository.update(
+                customer,
+                update_dict={"default_payment_method": new_default_payment_method},
+            )
 
         if customer.stripe_customer_id is not None:
             params: ModifyCustomerParams = {"email": customer.email}
@@ -112,12 +155,21 @@ class CustomerService:
                 params["name"] = customer.billing_name
             if customer.billing_address is not None:
                 params["address"] = customer.billing_address.to_dict()
+            if new_default_payment_method is not None:
+                params["invoice_settings"] = {
+                    "default_payment_method": new_default_payment_method.processor_id,
+                }
             await stripe_service.update_customer(
                 customer.stripe_customer_id,
                 tax_id=to_stripe_tax_id(customer.tax_id)
                 if customer.tax_id is not None
                 else None,
                 **params,
+            )
+
+        if new_default_payment_method is not None:
+            await order_service.schedule_retry_for_past_due_orders(
+                session, customer, new_default_payment_method
             )
 
         return customer

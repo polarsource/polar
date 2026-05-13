@@ -39,6 +39,7 @@ class CustomerPortalCustomerUpdate(Schema):
     billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     billing_address: AddressInput | None = None
     tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    default_payment_method_id: UUID4 | None = None
 
 
 CustomerPaymentMethod = Annotated[

@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: 🛟 Support and bugs
     url: https://polar.sh/dashboard
-    about: Please ask and answer questions from the Polar dashboard
+    about: Please ask questions or report issues from the Polar dashboard

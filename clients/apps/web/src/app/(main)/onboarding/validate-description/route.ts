@@ -251,7 +251,7 @@ Pure DENY from the description itself: "I sell tools to remove watermarks from s
 \`{ "verdict": "DENY", "confidence": 0.95, "message": "Watermark removal tools are not permitted on Polar.", "triggers": [], "answer_evaluations": [] }\``
 
 const formatHistoryEntry = (
-  h: {
+  entry: {
     product_description: string
     verdict: string
     message?: string | null
@@ -261,15 +261,15 @@ const formatHistoryEntry = (
   index: number,
 ): string => {
   const lines: string[] = [
-    `${index + 1}. Description: <user_input>${h.product_description}</user_input>`,
-    `   Verdict: ${h.verdict}${h.message ? ` — "${h.message}"` : ''}`,
+    `${index + 1}. Description: <user_input>${entry.product_description}</user_input>`,
+    `   Verdict: ${entry.verdict}${entry.message ? ` — "${entry.message}"` : ''}`,
   ]
-  if (h.triggers && h.triggers.length > 0) {
-    lines.push(`   Triggered: ${h.triggers.join(', ')}`)
+  if (entry.triggers && entry.triggers.length > 0) {
+    lines.push(`   Triggered: ${entry.triggers.join(', ')}`)
   }
-  if (h.answers && Object.keys(h.answers).length > 0) {
+  if (entry.answers && Object.keys(entry.answers).length > 0) {
     lines.push("   Seller's answers:")
-    for (const [id, value] of Object.entries(h.answers)) {
+    for (const [id, value] of Object.entries(entry.answers)) {
       lines.push(`   - ${id}: <user_input>${value}</user_input>`)
     }
   }
@@ -278,15 +278,15 @@ const formatHistoryEntry = (
 
 const resolveQuestions = (triggers: FollowUpTrigger[]): FollowUpQuestion[] => {
   const seen = new Set<string>()
-  const out: FollowUpQuestion[] = []
+  const questions: FollowUpQuestion[] = []
   for (const trigger of triggers) {
-    for (const q of QUESTIONS_BY_TRIGGER[trigger] ?? []) {
-      if (seen.has(q.id)) continue
-      seen.add(q.id)
-      out.push(q)
+    for (const question of QUESTIONS_BY_TRIGGER[trigger] ?? []) {
+      if (seen.has(question.id)) continue
+      seen.add(question.id)
+      questions.push(question)
     }
   }
-  return out
+  return questions
 }
 
 export async function POST(req: Request) {

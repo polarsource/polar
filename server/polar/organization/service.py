@@ -494,7 +494,7 @@ class OrganizationService:
             },
         )
 
-        if update_schema.details and organization.status == OrganizationStatus.CREATED:
+        if update_schema.details:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
             )

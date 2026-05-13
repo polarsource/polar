@@ -445,7 +445,7 @@ class TestUpdateReviewSubmission:
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth
-    async def test_update_details_ignored_after_initial_status(
+    async def test_update_details_allowed_after_initial_status(
         self,
         session: AsyncSession,
         organization: Organization,
@@ -466,7 +466,7 @@ class TestUpdateReviewSubmission:
             organization,
             OrganizationUpdate(
                 details=OrganizationDetails(
-                    product_description="Attempted tampering after approval.",
+                    product_description="Updated description after approval.",
                     selling_categories=["Other"],
                     pricing_models=["One-time"],
                     switching=True,
@@ -474,7 +474,13 @@ class TestUpdateReviewSubmission:
             ),
         )
 
-        assert result.details == original_details
+        assert result.details is not None
+        assert result.details["product_description"] == (
+            "Updated description after approval."
+        )
+        assert result.details["selling_categories"] == ["Other"]
+        assert result.details["pricing_models"] == ["One-time"]
+        assert result.details["switching"] is True
 
 
 @pytest.mark.asyncio

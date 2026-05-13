@@ -3,6 +3,3 @@ contact_links:
   - name: 🛟 Support and bugs
     url: https://polar.sh/dashboard
     about: Please ask and answer questions from the Polar dashboard
-  - name: 🔒 Security report
-    url: https://github.com/polarsource/polar/security/advisories/new
-    about: Please report security vulnerabilities here

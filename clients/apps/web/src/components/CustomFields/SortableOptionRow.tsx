@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
-import DragIndicatorOutlined from '@mui/icons-material/DragIndicatorOutlined'
+import DragHandleOutlined from '@mui/icons-material/DragHandleOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -62,7 +62,7 @@ const SortableOptionRow: React.FC<SortableOptionRowProps> = ({
         {...attributes}
         {...listeners}
       >
-        <DragIndicatorOutlined fontSize="small" />
+        <DragHandleOutlined fontSize="small" />
       </button>
       <FormField
         control={control}

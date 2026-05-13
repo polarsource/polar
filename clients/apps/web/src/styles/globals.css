@@ -215,13 +215,15 @@
 }
 
 @layer base {
-  html {
-    @apply text-gray-900;
+  html,
+  html body {
+    @apply bg-white text-gray-900 md:bg-gray-50;
     font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv06', 'cv11', 'ss03';
   }
 
-  html.dark {
-    @apply text-gray-200;
+  html.dark,
+  html.dark body {
+    @apply bg-polar-900 md:bg-polar-950 text-gray-200;
   }
 
   input[type='email'] {

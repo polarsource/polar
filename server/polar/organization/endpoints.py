@@ -25,6 +25,8 @@ from polar.exceptions import (
     ResourceNotFound,
 )
 from polar.integrations.polar.schemas import (
+    OrganizationBillingDetails,
+    OrganizationBillingDetailsUpdate,
     OrganizationCheckoutRequest,
     OrganizationCheckoutResponse,
     OrganizationOrder,
@@ -855,6 +857,44 @@ async def list_orders(
         total,
         pagination,
     )
+
+
+@router.get(
+    "/{id}/billing-details",
+    response_model=OrganizationBillingDetails,
+    summary="Get Organization Billing Details",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def get_billing_details(
+    authz: AuthorizeOrgManageUser,
+) -> OrganizationBillingDetails:
+    """Get the billing name, address, and tax ID used on Polar invoices."""
+    customer = await polar_self_service.get_billing_details(
+        authz.organization.id,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    return OrganizationBillingDetails.from_sdk(customer)
+
+
+@router.patch(
+    "/{id}/billing-details",
+    response_model=OrganizationBillingDetails,
+    summary="Update Organization Billing Details",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def update_billing_details(
+    authz: AuthorizeOrgManageUser,
+    body: OrganizationBillingDetailsUpdate,
+) -> OrganizationBillingDetails:
+    """Update the billing name, address, and tax ID used on Polar invoices."""
+    customer = await polar_self_service.update_billing_details(
+        authz.organization.id,
+        update=body,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    return OrganizationBillingDetails.from_sdk(customer)
 
 
 @router.get(

@@ -196,36 +196,32 @@ export const useDeleteOrganizationPaymentMethod = (organizationId: string) =>
     },
   })
 
-export type OrganizationBillingDetails = {
-  billing_name: string | null
-  billing_address: schemas['AddressInput'] | null
-  tax_id: string | null
-}
+export type OrganizationBillingDetails = schemas['OrganizationBillingDetails']
+export type OrganizationBillingDetailsUpdate =
+  schemas['OrganizationBillingDetailsUpdate']
 
-// TODO: GET `/v1/organizations/{id}/billing-details`
 export const useOrganizationBillingDetails = (organizationId: string) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'billing-details'],
-    queryFn: async (): Promise<OrganizationBillingDetails> => ({
-      billing_name: null,
-      billing_address: null,
-      tax_id: null,
-    }),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/billing-details', {
+          params: { path: { id: organizationId } },
+        }),
+      ),
     retry: defaultRetry,
     enabled: !!organizationId,
   })
 
-// TODO: PATCH `/v1/organizations/{id}/billing-details`
 export const useUpdateOrganizationBillingDetails = (organizationId: string) =>
   useMutation({
-    mutationFn: async (
-      body: OrganizationBillingDetails,
-    ): Promise<OrganizationBillingDetails> => {
-      void body
-      throw new Error(
-        'Updating organization billing details is not yet supported.',
-      )
-    },
+    mutationFn: (body: schemas['OrganizationBillingDetailsUpdate']) =>
+      unwrap(
+        api.PATCH('/v1/organizations/{id}/billing-details', {
+          params: { path: { id: organizationId } },
+          body,
+        }),
+      ),
     onSuccess: () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organization-billing', organizationId, 'billing-details'],

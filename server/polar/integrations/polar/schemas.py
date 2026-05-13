@@ -4,10 +4,17 @@ from typing import TYPE_CHECKING
 from polar_sdk.models import LegacyRecurringProductPriceFixed, ProductPriceFixed
 from pydantic import Field
 
+from polar.kit.address import AddressInput
 from polar.kit.schemas import Schema
 
 if TYPE_CHECKING:
-    from polar_sdk.models import Checkout, Order, Product, Subscription
+    from polar_sdk.models import (
+        Checkout,
+        CustomerPortalCustomer,
+        Order,
+        Product,
+        Subscription,
+    )
 
 
 class OrganizationPlanPrice(Schema):
@@ -192,3 +199,46 @@ class OrganizationOrder(Schema):
 
 class OrganizationOrderInvoice(Schema):
     url: str
+
+
+class OrganizationBillingDetails(Schema):
+    billing_name: str | None = Field(
+        default=None,
+        description="The name shown on invoices. Falls back to the customer name.",
+    )
+    billing_address: AddressInput | None = Field(
+        default=None,
+        description="Postal address used on invoices.",
+    )
+    tax_id: str | None = Field(
+        default=None,
+        description="Tax identifier value (without the format suffix).",
+    )
+
+    @classmethod
+    def from_sdk(
+        cls, customer: "CustomerPortalCustomer"
+    ) -> "OrganizationBillingDetails":
+        tax_id_value: str | None = None
+        if customer.tax_id:
+            first = customer.tax_id[0]
+            if isinstance(first, str):
+                tax_id_value = first
+        billing_address = (
+            AddressInput.model_validate(
+                customer.billing_address.model_dump(mode="json")
+            )
+            if customer.billing_address is not None
+            else None
+        )
+        return cls(
+            billing_name=customer.billing_name,
+            billing_address=billing_address,
+            tax_id=tax_id_value,
+        )
+
+
+class OrganizationBillingDetailsUpdate(Schema):
+    billing_name: str | None = None
+    billing_address: AddressInput | None = None
+    tax_id: str | None = None

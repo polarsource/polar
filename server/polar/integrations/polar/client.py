@@ -13,6 +13,11 @@ from polar_sdk.models import (
     CheckoutCreate,
     CostMetadataInput,
     Customer,
+    CustomerPortalCustomer,
+    CustomerPortalCustomersGetSecurity,
+    CustomerPortalCustomersUpdateSecurity,
+    CustomerPortalCustomerUpdate,
+    CustomerSessionCustomerExternalIDCreate,
     CustomerTeamCreate,
     EventCreateCustomer,
     EventCreateExternalCustomer,
@@ -494,6 +499,67 @@ class PolarSelfClient:
                 _raise_error(span, e, "track_organization_review_usage")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "track_organization_review_usage")
+
+    # Customer-portal-scoped operations: create a per-call customer session
+    # and act AS THE CUSTOMER. Used for fields the admin API doesn't expose.
+
+    async def portal_get_customer(
+        self,
+        *,
+        external_customer_id: str,
+        external_member_id: str | None = None,
+    ) -> CustomerPortalCustomer:
+        with logfire.span(
+            "polar.portal.get_customer",
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+        ) as span:
+            try:
+                session = await self._sdk.customer_sessions.create_async(
+                    request=CustomerSessionCustomerExternalIDCreate(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
+                )
+                return await self._sdk.customer_portal.customers.get_async(
+                    security=CustomerPortalCustomersGetSecurity(
+                        customer_session=session.token,
+                    ),
+                )
+            except PolarError as e:
+                _raise_error(span, e, "polar.portal.get_customer")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "polar.portal.get_customer")
+
+    async def portal_update_customer(
+        self,
+        *,
+        external_customer_id: str,
+        update: CustomerPortalCustomerUpdate,
+        external_member_id: str | None = None,
+    ) -> CustomerPortalCustomer:
+        with logfire.span(
+            "polar.portal.update_customer",
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+        ) as span:
+            try:
+                session = await self._sdk.customer_sessions.create_async(
+                    request=CustomerSessionCustomerExternalIDCreate(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
+                )
+                return await self._sdk.customer_portal.customers.update_async(
+                    security=CustomerPortalCustomersUpdateSecurity(
+                        customer_session=session.token,
+                    ),
+                    request=update,
+                )
+            except PolarError as e:
+                _raise_error(span, e, "polar.portal.update_customer")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "polar.portal.update_customer")
 
 
 _client: PolarSelfClient | None = None

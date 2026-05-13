@@ -3,7 +3,7 @@
 import { SocialLinksField } from './SocialLinksField'
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
-import { useUpdateOrganization } from '@/hooks/queries'
+import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -18,11 +18,17 @@ interface Props {
 
 type FormValues = Pick<schemas['OrganizationUpdate'], 'socials'>
 
-export const SocialLinksSection = ({ organization }: Props) => {
+export const SocialLinksSection = ({ organization: initialOrg }: Props) => {
+  const { data: organization = initialOrg } = useOrganization(
+    initialOrg.id,
+    true,
+    initialOrg,
+    'always',
+  )
   const updateOrganization = useUpdateOrganization()
   const posthog = usePostHog()
   const form = useForm<FormValues>({
-    defaultValues: { socials: organization.socials ?? [] },
+    values: { socials: organization.socials ?? [] },
   })
   const { handleSubmit, setError, formState, reset } = form
 

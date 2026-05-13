@@ -2,7 +2,7 @@
 
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
-import { useUpdateOrganization } from '@/hooks/queries'
+import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
@@ -24,7 +24,13 @@ interface FormValues {
   website: string
 }
 
-export const ProductUrlSection = ({ organization }: Props) => {
+export const ProductUrlSection = ({ organization: initialOrg }: Props) => {
+  const { data: organization = initialOrg } = useOrganization(
+    initialOrg.id,
+    true,
+    initialOrg,
+    'always',
+  )
   const updateOrganization = useUpdateOrganization()
   const posthog = usePostHog()
   const { status: urlStatus, validateURL } = useURLValidation({
@@ -32,7 +38,7 @@ export const ProductUrlSection = ({ organization }: Props) => {
   })
 
   const form = useForm<FormValues>({
-    defaultValues: { website: organization.website ?? '' },
+    values: { website: organization.website ?? '' },
   })
   const { control, handleSubmit, setError, formState, reset } = form
 

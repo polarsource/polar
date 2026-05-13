@@ -2,7 +2,7 @@
 
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
-import { useUpdateOrganization } from '@/hooks/queries'
+import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -21,11 +21,17 @@ interface FormValues {
   email: string
 }
 
-export const EmailSection = ({ organization }: Props) => {
+export const EmailSection = ({ organization: initialOrg }: Props) => {
+  const { data: organization = initialOrg } = useOrganization(
+    initialOrg.id,
+    true,
+    initialOrg,
+    'always',
+  )
   const updateOrganization = useUpdateOrganization()
   const posthog = usePostHog()
   const form = useForm<FormValues>({
-    defaultValues: { email: organization.email ?? '' },
+    values: { email: organization.email ?? '' },
   })
   const { control, handleSubmit, setError, formState, reset } = form
 

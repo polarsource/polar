@@ -128,6 +128,7 @@ export const useOrganization = (
   id: string,
   enabled: boolean = true,
   initialData?: schemas['Organization'],
+  refetchOnMount?: boolean | 'always',
 ) =>
   useQuery({
     queryKey: ['organizations', id],
@@ -136,6 +137,7 @@ export const useOrganization = (
     retry: defaultRetry,
     enabled,
     initialData,
+    ...(refetchOnMount !== undefined ? { refetchOnMount } : {}),
   })
 
 export const useOrganizationKYC = (id: string, enabled: boolean = true) =>

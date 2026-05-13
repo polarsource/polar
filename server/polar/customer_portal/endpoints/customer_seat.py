@@ -127,8 +127,6 @@ async def assign_seat(
         session,
         container,
         email=seat_assign.email,
-        external_customer_id=seat_assign.external_customer_id,
-        customer_id=seat_assign.customer_id,
         metadata=seat_assign.metadata,
     )
 

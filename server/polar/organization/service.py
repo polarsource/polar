@@ -115,12 +115,31 @@ _CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = frozenset(
     }
 )
 
+# Hosting domains where it's unreasonable to expect the organization's support email to
+# match the website domain — e.g. a user whose product is hosted at `x.framer.com`
+# won't have `@framer.com` email.
+_HOSTED_WEBSITE_DOMAINS: frozenset[str] = frozenset(
+    {
+        "chromewebstore.google.com",
+        "figma.com",
+        "github.com",
+        "framer.com",
+    }
+)
+
 
 def _website_domain(website: str | None) -> str | None:
     if not website:
         return None
     host = urlparse(website).hostname
     return host.removeprefix("www.") if host else None
+
+
+def _is_hosted_website_domain(website_domain: str) -> bool:
+    return any(
+        website_domain == d or website_domain.endswith(f".{d}")
+        for d in _HOSTED_WEBSITE_DOMAINS
+    )
 
 
 def _append_internal_note(
@@ -1425,7 +1444,11 @@ class OrganizationService:
         if email_domain in settings.PERSONAL_EMAIL_DOMAINS:
             reasons.append(OrganizationReviewCheckReason.IDENTITY_PERSONAL_EMAIL)
 
-        if website_domain and email_domain != website_domain:
+        if (
+            website_domain
+            and email_domain != website_domain
+            and not _is_hosted_website_domain(website_domain)
+        ):
             reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
 
         if reasons:

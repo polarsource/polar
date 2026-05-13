@@ -1482,6 +1482,32 @@ class TestGetReviewState:
         assert step.status == OrganizationReviewCheckStatus.PASSED
         assert step.reasons == []
 
+    @pytest.mark.parametrize(
+        "website",
+        [
+            "https://framer.com/acme",
+            "https://acme.framer.com",
+        ],
+    )
+    async def test_email_skip_domain_mismatch_for_hosted_websites(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        website: str,
+    ) -> None:
+        organization.email = "support@acme.com"
+        organization.website = website
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH not in step.reasons
+        )
+
     async def test_socials_present_passes(
         self,
         save_fixture: SaveFixture,

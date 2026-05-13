@@ -25,7 +25,6 @@ interface StepConfig {
 export const COMMON_REASON_LABELS: Partial<
   Record<schemas['OrganizationReviewCheckReason'], string>
 > = {
-  not_started: 'Not started',
   in_progress: 'In progress',
   external_pending: 'Awaiting external verification',
 }
@@ -36,7 +35,7 @@ export const STEP_CONFIG: Partial<
   'identity.email': {
     label: 'Support email',
     reasonLabels: {
-      'identity.personal_email': 'Please use a business email',
+      'identity.personal_email': 'Business email is preferred',
       'identity.domain_mismatch':
         'Email domain does not match your organization website',
     },
@@ -87,7 +86,7 @@ export const STEP_CONFIG: Partial<
     ),
   },
   payout_account: {
-    label: 'Setup a payout account',
+    label: 'Payout account',
     reasonLabels: {
       'payout_account.requirements_due': 'Additional information required',
       'payout_account.payouts_disabled': 'Payouts are currently disabled',
@@ -107,7 +106,7 @@ export const STEP_CONFIG: Partial<
     ),
   },
   setup_readiness: {
-    label: 'Setup readiness',
+    label: 'Checkout integration',
     reasonLabels: {
       'setup_readiness.webhook_missing': 'Creating a webhook is recommended',
       'setup_readiness.checkout_link_not_fulfillable': 'Invalid checkout link',

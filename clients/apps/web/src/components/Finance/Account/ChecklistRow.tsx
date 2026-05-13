@@ -56,11 +56,11 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
       <Box display="flex" flexDirection="column" rowGap="m">
         <Box display="flex" alignItems="center" columnGap="s">
           <StatusIcon status={step.status} />
-          <Text variant="body">{label}</Text>
+          <Text variant="label">{label}</Text>
           {reasonText && (
-            <span className="dark:text-polar-400 relative top-px text-xs text-gray-500">
+            <Text variant="caption" color="muted">
               {reasonText}
-            </span>
+            </Text>
           )}
           {isActionable && (
             <Box marginLeft="auto">

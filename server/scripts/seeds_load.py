@@ -1003,7 +1003,7 @@ async def _subscribe_seeded_orgs_to_polar_self(
         await session.execute(
             select(Product).where(
                 Product.organization_id == polar_self_org.id,
-                Product.name == "Polar Starter",
+                Product.name == "Starter",
             )
         )
     ).scalar_one_or_none()
@@ -1396,8 +1396,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             },
             "products": [
                 {
-                    "name": "Polar Pro",
-                    "description": "Monthly subscription to Polar Pro features",
+                    "name": "Pro",
+                    "description": "Monthly subscription to Pro features",
                     "price": 2000,
                     "recurring": SubscriptionRecurringInterval.month,
                 },
@@ -2379,7 +2379,7 @@ def polar_self_env() -> None:
                 await session.execute(
                     select(Product).where(
                         Product.organization_id == org.id,
-                        Product.name == "Polar Starter",
+                        Product.name == "Starter",
                     )
                 )
             ).scalar_one_or_none()

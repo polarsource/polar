@@ -28,13 +28,20 @@ class WalletRepository(
     model = Wallet
 
     async def get_by_type_currency_customer(
-        self, type: WalletType, currency: str, customer_id: UUID
+        self,
+        type: WalletType,
+        currency: str,
+        customer_id: UUID,
+        *,
+        for_update: bool = False,
     ) -> Wallet | None:
         statement = self.get_base_statement().where(
             Wallet.type == type,
             Wallet.currency == currency,
             Wallet.customer_id == customer_id,
         )
+        if for_update:
+            statement = statement.with_for_update()
         return await self.get_one_or_none(statement)
 
     def get_statement_by_org_ids(

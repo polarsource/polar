@@ -502,7 +502,7 @@ class RefundService:
 
             # Reduce positive customer balance
             customer_balance = await wallet_service.get_billing_wallet_balance(
-                session, order.customer, order.currency
+                session, order.customer, order.currency, for_update=True
             )
             if customer_balance > 0:
                 reduction_amount = min(

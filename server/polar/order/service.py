@@ -754,7 +754,7 @@ class OrderService:
             )
             total_amount = net_amount + tax_amount
             customer_balance = await wallet_service.get_billing_wallet_balance(
-                session, customer, subscription.currency
+                session, customer, subscription.currency, for_update=True
             )
 
             # Calculate balance change and applied amount
@@ -1945,7 +1945,7 @@ class OrderService:
 
         # Reduce positive customer balance
         customer_balance = await wallet_service.get_billing_wallet_balance(
-            session, order.customer, order.currency
+            session, order.customer, order.currency, for_update=True
         )
         if customer_balance > 0:
             reduction_amount = min(customer_balance, order.due_amount)

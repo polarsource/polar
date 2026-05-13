@@ -205,11 +205,16 @@ class WalletService:
         )
 
     async def get_billing_wallet_balance(
-        self, session: AsyncSession, customer: Customer, currency: str
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        currency: str,
+        *,
+        for_update: bool = False,
     ) -> int:
         repository = WalletRepository.from_session(session)
         wallet = await repository.get_by_type_currency_customer(
-            WalletType.billing, currency, customer.id
+            WalletType.billing, currency, customer.id, for_update=for_update
         )
         # Small optimization to avoid creating wallet if not existing
         if wallet is None:

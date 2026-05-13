@@ -16,9 +16,13 @@ import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
-import { Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { AlertTriangleIcon, Loader2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import {
+  FollowUpQuestionField,
+  type FollowUpStatus,
+} from './FollowUpQuestionField'
 import { SectionLayout } from './SectionLayout'
 
 const MIN_LENGTH = 30
@@ -55,11 +59,13 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
   const sellingCategories = useWatch({ control, name: 'selling_categories' })
   const pricingModels = useWatch({ control, name: 'pricing_models' })
 
-  const aup = useAupValidation()
+  const aup = useAupValidation({ followUpEnabled: true })
   const [submitting, setSubmitting] = useState<SubmittingState>(null)
 
+  const initializedRef = useRef(false)
   useEffect(() => {
-    if (kycData?.details) {
+    if (!initializedRef.current && kycData?.details) {
+      initializedRef.current = true
       reset({
         product_description: kycData.details.product_description ?? '',
         selling_categories: kycData.details.selling_categories ?? [],
@@ -76,13 +82,46 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
     [sellingCategories],
   )
 
-  const persistDetails = async (values: FormValues) => {
+  const [savedAnswers, setSavedAnswers] = useState<Record<string, string>>({})
+  const answersDirty = useMemo(() => {
+    const keys = new Set([
+      ...Object.keys(aup.answers),
+      ...Object.keys(savedAnswers),
+    ])
+    for (const k of keys) {
+      if ((aup.answers[k] ?? '') !== (savedAnswers[k] ?? '')) return true
+    }
+    return false
+  }, [aup.answers, savedAnswers])
+
+  const buildFinalDescription = (
+    description: string,
+    questions: typeof aup.questions,
+    answers: typeof aup.answers,
+  ): string => {
+    const sections = questions
+      .map((q) => {
+        const value = answers[q.id]
+        if (!value) return null
+        return `${q.label}\n${value}`
+      })
+      .filter((line): line is string => line !== null)
+
+    if (sections.length === 0) return description
+    return `${description}\n\n${sections.join('\n\n')}`
+  }
+
+  const persistDetails = async (
+    values: FormValues,
+    apiDescription: string,
+    snapshotAnswers: Record<string, string>,
+  ) => {
     const { error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: {
         details: {
           ...kycData?.details,
-          product_description: values.product_description,
+          product_description: apiDescription,
           selling_categories: values.selling_categories,
           pricing_models: values.pricing_models,
           switching: kycData?.details?.switching ?? false,
@@ -106,7 +145,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
     }
 
     reset(values)
-    aup.reset()
+    setSavedAnswers({ ...snapshotAnswers })
     getQueryClient().invalidateQueries({
       queryKey: ['organizationReviewState', organization.id],
     })
@@ -121,6 +160,10 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
       organization_id: organization.id,
       section: 'product_description',
     })
+
+    const pendingQuestions = aup.questions
+    const pendingAnswers = aup.answers
+
     const result = await aup.validate({
       product_description: values.product_description,
       selling_categories: values.selling_categories,
@@ -137,14 +180,26 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
 
     if (result.verdict === 'DENY' || result.verdict === 'CLARIFY') return
 
+    const finalDescription = buildFinalDescription(
+      values.product_description,
+      pendingQuestions,
+      pendingAnswers,
+    )
+
     setSubmitting('submitting')
-    await persistDetails(values)
+    await persistDetails(values, finalDescription, pendingAnswers)
     setSubmitting(null)
   }
 
   const onContinueAnyway = async () => {
     setSubmitting('submitting-anyway')
-    await persistDetails(form.getValues())
+    const values = form.getValues()
+    const finalDescription = buildFinalDescription(
+      values.product_description,
+      aup.questions,
+      aup.answers,
+    )
+    await persistDetails(values, finalDescription, aup.answers)
     setSubmitting(null)
   }
 
@@ -175,10 +230,29 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
     productDescription.trim().length > 30 &&
     !aup.isValidating
 
+  const statusFor = (questionId: string): FollowUpStatus => {
+    if (aup.verdict === 'DENY') return 'denied'
+    if (aup.evaluations[questionId]?.is_relevant) return 'approved'
+    return 'pending'
+  }
+
+  const hasUnansweredRequired = aup.questions.some((q) => {
+    if (!q.required) return false
+    const v = aup.answers[q.id]
+    return !v || v.trim().length === 0
+  })
+
+  const hasIrrelevantAnswer = aup.questions.some(
+    (q) => aup.evaluations[q.id]?.is_relevant === false,
+  )
+
+  const hasChanges = formState.isDirty || answersDirty
+
   const submitDisabled =
     submitting === 'submitting-anyway' ||
     blockedSelected.length > 0 ||
-    (!formState.isDirty && !aup.verdict)
+    hasUnansweredRequired ||
+    (!hasChanges && !aup.verdict && !hasIrrelevantAnswer)
 
   return (
     <Form {...form}>
@@ -228,12 +302,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
               }}
               render={({ field }) => (
                 <Box display="flex" flexDirection="column" rowGap="xs">
-                  <TextArea
-                    {...field}
-                    rows={4}
-                    placeholder="SaaS project management tool for distributed teams. Subscription pricing at $29/month per user."
-                    className="resize-none"
-                  />
+                  <TextArea {...field} rows={4} className="resize-none" />
                   <Box
                     display="flex"
                     alignItems="center"
@@ -248,6 +317,57 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
                 </Box>
               )}
             />
+
+            {aup.questions.length > 0 && (
+              <Box
+                display="flex"
+                flexDirection="column"
+                rowGap="xl"
+                borderRadius="m"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-primary"
+                padding="l"
+              >
+                {aup.verdict === 'DENY' && (
+                  <Box display="flex" flexDirection="column" rowGap="xs">
+                    <Box display="flex" alignItems="center" columnGap="xs">
+                      <Box color="text-danger" display="inline-flex">
+                        <AlertTriangleIcon className="h-3.5 w-3.5" />
+                      </Box>
+                      <Text variant="label" color="danger">
+                        Use case not supported
+                      </Text>
+                    </Box>
+                    {aup.message && (
+                      <Text variant="caption" color="muted">
+                        {aup.message}
+                      </Text>
+                    )}
+                  </Box>
+                )}
+                <Box display="flex" flexDirection="column" rowGap="xl">
+                  {aup.questions.map((question) => {
+                    const status = statusFor(question.id)
+                    const evaluation = aup.evaluations[question.id]
+                    const reason =
+                      status === 'pending' && evaluation?.is_relevant === false
+                        ? evaluation.reason
+                        : null
+                    return (
+                      <FollowUpQuestionField
+                        key={question.id}
+                        question={question}
+                        value={aup.answers[question.id]}
+                        onChange={(value) => aup.setAnswer(question.id, value)}
+                        status={status}
+                        reason={reason}
+                      />
+                    )
+                  })}
+                </Box>
+              </Box>
+            )}
 
             <Box display="flex" flexDirection="column" rowGap="m">
               <Text variant="label" color="default">
@@ -279,31 +399,6 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
                 }
               />
             </Box>
-
-            {aup.verdict && (
-              <Box
-                display="flex"
-                flexDirection="column"
-                rowGap="s"
-                borderRadius="m"
-                borderWidth={1}
-                borderStyle="solid"
-                borderColor="border-warning"
-                backgroundColor="background-warning"
-                padding="l"
-              >
-                <Text variant="label" color="warning">
-                  {aup.verdict === 'CLARIFY'
-                    ? 'Please clarify your use case'
-                    : 'Use case not supported'}
-                </Text>
-                {aup.message && (
-                  <Text variant="caption" color="warning">
-                    {aup.message}
-                  </Text>
-                )}
-              </Box>
-            )}
           </Box>
         </SectionLayout>
       </form>

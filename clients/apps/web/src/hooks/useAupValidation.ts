@@ -3,13 +3,19 @@
 import * as Sentry from '@sentry/nextjs'
 import { nanoid } from 'nanoid'
 import { useCallback, useState } from 'react'
-
-export type AupVerdict = 'APPROVE' | 'DENY' | 'CLARIFY'
+import type {
+  AnswerEvaluation,
+  AupVerdict,
+  FollowUpQuestion,
+} from '@/utils/aup'
 
 export interface AupHistoryEntry {
   product_description: string
   verdict: string
-  message?: string
+  message?: string | null
+  triggers?: string[]
+  answers?: Record<string, string>
+  answer_evaluations?: AnswerEvaluation[]
 }
 
 interface ValidateParams {
@@ -23,16 +29,38 @@ interface ValidateResult {
   verdict: AupVerdict | null
 }
 
-export const useAupValidation = () => {
+interface Options {
+  followUpEnabled?: boolean
+}
+
+export const useAupValidation = ({ followUpEnabled = false }: Options = {}) => {
   const [conversationId] = useState(() => nanoid())
   const [history, setHistory] = useState<AupHistoryEntry[]>([])
   const [verdict, setVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [questions, setQuestions] = useState<FollowUpQuestion[]>([])
+  const [answers, setAnswersState] = useState<Record<string, string>>({})
+  const [evaluations, setEvaluations] = useState<
+    Record<string, { is_relevant: boolean; reason: string | null }>
+  >({})
   const [isValidating, setIsValidating] = useState(false)
 
   const reset = useCallback(() => {
     setVerdict(null)
     setMessage(null)
+    setQuestions([])
+    setAnswersState({})
+    setEvaluations({})
+  }, [])
+
+  const setAnswer = useCallback((id: string, value: string) => {
+    setAnswersState((prev) => ({ ...prev, [id]: value }))
+    setEvaluations((prev) => {
+      if (!(id in prev)) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
   }, [])
 
   const validate = useCallback(
@@ -52,6 +80,10 @@ export const useAupValidation = () => {
             product_description,
             selling_categories,
             pricing_models,
+            follow_up_enabled: followUpEnabled,
+            ...(followUpEnabled && Object.keys(answers).length > 0
+              ? { follow_up_answers: answers }
+              : {}),
             history,
           }),
         })
@@ -72,20 +104,44 @@ export const useAupValidation = () => {
       const data: {
         verdict: AupVerdict
         confidence: number
-        message?: string
+        message?: string | null
+        triggers?: string[]
+        questions?: FollowUpQuestion[]
+        answer_evaluations?: AnswerEvaluation[]
       } = await res.json()
 
+      const nextEvaluations: Record<
+        string,
+        { is_relevant: boolean; reason: string | null }
+      > = {}
+      for (const e of data.answer_evaluations ?? []) {
+        nextEvaluations[e.question_id] = {
+          is_relevant: e.is_relevant,
+          reason: e.reason ?? null,
+        }
+      }
+      setEvaluations(nextEvaluations)
+
       if (data.verdict === 'DENY' || data.verdict === 'CLARIFY') {
+        const nextQuestions = followUpEnabled ? (data.questions ?? []) : []
         setHistory((prev) => [
           ...prev,
           {
             product_description,
             verdict: data.verdict,
             message: data.message,
+            ...(followUpEnabled
+              ? {
+                  triggers: data.triggers ?? [],
+                  answers: { ...answers },
+                  answer_evaluations: data.answer_evaluations ?? [],
+                }
+              : {}),
           },
         ])
         setVerdict(data.verdict)
         setMessage(data.message ?? null)
+        setQuestions(nextQuestions)
       } else {
         setVerdict(null)
         setMessage(null)
@@ -94,12 +150,16 @@ export const useAupValidation = () => {
       setIsValidating(false)
       return { ok: true, verdict: data.verdict }
     },
-    [conversationId, history],
+    [conversationId, history, followUpEnabled, answers],
   )
 
   return {
     verdict,
     message,
+    questions,
+    answers,
+    evaluations,
+    setAnswer,
     history,
     isValidating,
     validate,

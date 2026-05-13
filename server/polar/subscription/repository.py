@@ -138,6 +138,34 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_readable_by_id(
+        self,
+        auth_subject: AuthSubject[User | Organization | Customer | Member],
+        id: UUID,
+        *,
+        options: Options = (),
+    ) -> Subscription | None:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(Subscription.id == id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_readable_by_checkout_id(
+        self,
+        auth_subject: AuthSubject[User | Organization | Customer | Member],
+        checkout_id: UUID,
+        *,
+        options: Options = (),
+    ) -> Subscription | None:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(Subscription.checkout_id == checkout_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(
         self, *, product_load: "_AbstractLoad | None" = None
     ) -> Options:

@@ -90,6 +90,36 @@ class OrderRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_readable_by_id(
+        self,
+        auth_subject: AuthSubject[User | Organization | Customer | Member],
+        id: UUID,
+        *,
+        options: Options = (),
+    ) -> Order | None:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(Order.id == id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_earliest_readable_by_checkout_id(
+        self,
+        auth_subject: AuthSubject[User | Organization | Customer | Member],
+        checkout_id: UUID,
+        *,
+        options: Options = (),
+    ) -> Order | None:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(Order.checkout_id == checkout_id)
+            .order_by(Order.created_at.asc())
+            .limit(1)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     async def lock_for_receipt_allocation(self, order_id: UUID) -> str | None:
         """Lock the Order row and return its current ``receipt_number``.
 

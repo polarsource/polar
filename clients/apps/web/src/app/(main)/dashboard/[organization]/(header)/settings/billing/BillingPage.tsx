@@ -21,8 +21,10 @@ import AllInclusive from '@mui/icons-material/AllInclusive'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function BillingPage({
   organization,
@@ -30,12 +32,22 @@ export default function BillingPage({
   organization: schemas['Organization']
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const theme = useTheme()
   const themePreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
 
   const subscriptionQuery = useOrganizationSubscription(organization.id)
   const plansQuery = useOrganizationPlans(organization.id)
   const ordersQuery = useOrganizationOrders(organization.id)
+
+  useEffect(() => {
+    if (searchParams.get('checkout_success') !== 'true') return
+    queryClient.invalidateQueries({
+      queryKey: ['organization-billing', organization.id],
+    })
+    router.replace(`/dashboard/${organization.slug}/settings/billing`)
+  }, [searchParams, queryClient, organization.id, organization.slug, router])
 
   const {
     isShown: isAddPaymentMethodOpen,

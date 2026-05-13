@@ -135,7 +135,7 @@ export default function ChangePlanPage({
     hide: hideConfirm,
   } = useModal()
 
-  const billingHref = `/dashboard/${organization.slug}/settings/billing`
+  const billingHref = `/dashboard/${organization.slug}/settings/billing?checkout_success=true`
   const subscription = subscriptionQuery.data
   const isCurrentPlanCustom = subscription?.plan.custom === true
   const plans = useMemo(() => {

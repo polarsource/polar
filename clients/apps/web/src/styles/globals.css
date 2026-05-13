@@ -391,6 +391,10 @@ pre.shiki {
     font-weight: var(--shiki-dark-font-weight) !important;
     text-decoration: var(--shiki-dark-text-decoration) !important;
   }
+
+  iframe[src*='stripe.com'] {
+    color-scheme: normal;
+  }
 }
 
 @keyframes marquee {

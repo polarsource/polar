@@ -1,4 +1,3 @@
-import datetime
 import secrets
 import string
 from math import ceil
@@ -49,8 +48,7 @@ class LoginCodeService:
             code_hash=code_hash,
             email=email,
             user_id=user.id if user is not None else None,
-            expires_at=utc_now()
-            + datetime.timedelta(seconds=settings.LOGIN_CODE_TTL_SECONDS),
+            expires_at=utc_now() + settings.LOGIN_CODE_TTL,
         )
         session.add(login_code)
         await session.flush()

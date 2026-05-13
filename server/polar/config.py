@@ -136,7 +136,7 @@ class Settings(BaseSettings):
     IMPERSONATION_INDICATOR_COOKIE_KEY: str = "polar_is_impersonating"
 
     # Login code
-    LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
+    LOGIN_CODE_TTL: timedelta = timedelta(minutes=30)
     LOGIN_CODE_LENGTH: int = 6
 
     # OAuth state

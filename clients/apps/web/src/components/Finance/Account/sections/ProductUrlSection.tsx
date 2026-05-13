@@ -14,17 +14,24 @@ import Input from '@polar-sh/ui/components/atoms/Input'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
 import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
+import { PathCardBanner } from './PathCardBanner'
 import { SectionLayout } from './SectionLayout'
 
 interface Props {
   organization: schemas['Organization']
+  step: schemas['OrganizationReviewCheck']
+  reasonItems: string[]
 }
 
 interface FormValues {
   website: string
 }
 
-export const ProductUrlSection = ({ organization: initialOrg }: Props) => {
+export const ProductUrlSection = ({
+  organization: initialOrg,
+  step,
+  reasonItems,
+}: Props) => {
   const { data: organization = initialOrg } = useOrganization(
     initialOrg.id,
     true,
@@ -33,6 +40,7 @@ export const ProductUrlSection = ({ organization: initialOrg }: Props) => {
   )
   const updateOrganization = useUpdateOrganization()
   const posthog = usePostHog()
+  const tone = step.status === 'failed' ? 'danger' : 'warning'
   const { status: urlStatus, validateURL } = useURLValidation({
     organizationId: organization.id,
   })
@@ -153,6 +161,9 @@ export const ProductUrlSection = ({ organization: initialOrg }: Props) => {
               </Box>
             )}
           />
+          {reasonItems.map((reason) => (
+            <PathCardBanner key={reason} tone={tone} title={reason} />
+          ))}
         </SectionLayout>
       </form>
     </Form>

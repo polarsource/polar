@@ -11,6 +11,7 @@ import { SocialLinksSection } from './SocialLinksSection'
 interface SectionProps {
   organization: schemas['Organization']
   step: schemas['OrganizationReviewCheck']
+  reasonItems: string[]
 }
 
 interface StepConfig {
@@ -39,7 +40,13 @@ export const STEP_CONFIG: Partial<
       'identity.domain_mismatch':
         'Email domain does not match your organization website',
     },
-    render: ({ organization }) => <EmailSection organization={organization} />,
+    render: ({ organization, step, reasonItems }) => (
+      <EmailSection
+        organization={organization}
+        step={step}
+        reasonItems={reasonItems}
+      />
+    ),
   },
   'identity.social_links': {
     label: 'Social links',
@@ -52,7 +59,13 @@ export const STEP_CONFIG: Partial<
     reasonLabels: {
       'identity.rejected': 'Identity verification was rejected',
     },
-    render: () => <IdentityVerificationSection />,
+    render: ({ organization, step, reasonItems }) => (
+      <IdentityVerificationSection
+        organization={organization}
+        step={step}
+        reasonItems={reasonItems}
+      />
+    ),
   },
   product_description: {
     label: 'Product description',
@@ -65,8 +78,12 @@ export const STEP_CONFIG: Partial<
     reasonLabels: {
       'product_url.unreachable': 'We could not reach this URL',
     },
-    render: ({ organization }) => (
-      <ProductUrlSection organization={organization} />
+    render: ({ organization, step, reasonItems }) => (
+      <ProductUrlSection
+        organization={organization}
+        step={step}
+        reasonItems={reasonItems}
+      />
     ),
   },
   payout_account: {
@@ -75,8 +92,12 @@ export const STEP_CONFIG: Partial<
       'payout_account.requirements_due': 'Additional information required',
       'payout_account.payouts_disabled': 'Payouts are currently disabled',
     },
-    render: ({ organization }) => (
-      <PayoutAccountSection organization={organization} />
+    render: ({ organization, step, reasonItems }) => (
+      <PayoutAccountSection
+        organization={organization}
+        step={step}
+        reasonItems={reasonItems}
+      />
     ),
   },
   product_configuration: {

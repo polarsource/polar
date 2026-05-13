@@ -10,7 +10,7 @@ type Tone = 'danger' | 'warning'
 interface PathCardBannerProps {
   tone: Tone
   title: string
-  description: ReactNode
+  description?: ReactNode
 }
 
 const ICONS: Record<Tone, ComponentType<{ className?: string }>> = {
@@ -27,13 +27,7 @@ export const PathCardBanner = ({
   const iconColor = tone === 'danger' ? 'text-danger' : 'text-warning'
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      rowGap="xs"
-      paddingHorizontal="l"
-      paddingBottom="l"
-    >
+    <Box display="flex" flexDirection="column" rowGap="xs">
       <Box display="flex" alignItems="center" columnGap="xs">
         <Box color={iconColor} display="inline-flex">
           <Icon className="h-3.5 w-3.5" />
@@ -42,9 +36,11 @@ export const PathCardBanner = ({
           {title}
         </Text>
       </Box>
-      <Text variant="caption" color="muted">
-        {description}
-      </Text>
+      {description && (
+        <Text variant="caption" color="muted">
+          {description}
+        </Text>
+      )}
     </Box>
   )
 }

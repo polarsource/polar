@@ -185,7 +185,11 @@ export const PathCard = ({
             recommended={recommended}
           />
         </Header>
-        {extra}
+        {extra && (
+          <Box paddingHorizontal="l" paddingBottom="l">
+            {extra}
+          </Box>
+        )}
       </Content>
     </Box>
   )

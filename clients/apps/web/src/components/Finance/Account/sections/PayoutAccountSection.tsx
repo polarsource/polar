@@ -10,16 +10,32 @@ import {
   usePayoutAccounts,
 } from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ArrowRight, BanknoteIcon, CheckIcon } from 'lucide-react'
 import { useCallback } from 'react'
+import { PathCardBanner } from './PathCardBanner'
 import { StatusBlock } from './StatusBlock'
 
 interface Props {
   organization: schemas['Organization']
+  step: schemas['OrganizationReviewCheck']
+  reasonItems: string[]
 }
 
-export const PayoutAccountSection = ({ organization: initialOrg }: Props) => {
+export const PayoutAccountSection = ({
+  organization: initialOrg,
+  step,
+  reasonItems,
+}: Props) => {
+  const tone = step.status === 'failed' ? 'danger' : 'warning'
+  const banners = reasonItems.length > 0 && (
+    <Box display="flex" flexDirection="column" rowGap="m">
+      {reasonItems.map((reason) => (
+        <PathCardBanner key={reason} tone={tone} title={reason} />
+      ))}
+    </Box>
+  )
   const { data: organization = initialOrg } = useOrganization(
     initialOrg.id,
     true,
@@ -101,6 +117,7 @@ export const PayoutAccountSection = ({ organization: initialOrg }: Props) => {
         />
         {manageModal}
         {createModal}
+        {banners}
       </>
     )
   }
@@ -129,6 +146,7 @@ export const PayoutAccountSection = ({ organization: initialOrg }: Props) => {
         />
         {manageModal}
         {createModal}
+        {banners}
       </>
     )
   }
@@ -161,6 +179,7 @@ export const PayoutAccountSection = ({ organization: initialOrg }: Props) => {
       />
       {manageModal}
       {createModal}
+      {banners}
     </>
   )
 }

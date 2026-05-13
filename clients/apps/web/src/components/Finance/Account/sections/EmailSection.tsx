@@ -11,17 +11,24 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
+import { PathCardBanner } from './PathCardBanner'
 import { SectionLayout } from './SectionLayout'
 
 interface Props {
   organization: schemas['Organization']
+  step: schemas['OrganizationReviewCheck']
+  reasonItems: string[]
 }
 
 interface FormValues {
   email: string
 }
 
-export const EmailSection = ({ organization: initialOrg }: Props) => {
+export const EmailSection = ({
+  organization: initialOrg,
+  step,
+  reasonItems,
+}: Props) => {
   const { data: organization = initialOrg } = useOrganization(
     initialOrg.id,
     true,
@@ -34,6 +41,8 @@ export const EmailSection = ({ organization: initialOrg }: Props) => {
     values: { email: organization.email ?? '' },
   })
   const { control, handleSubmit, setError, formState, reset } = form
+
+  const tone = step.status === 'failed' ? 'danger' : 'warning'
 
   const onSubmit = async ({ email }: FormValues) => {
     posthog.capture('dashboard:organizations:account_review_section:submit', {
@@ -93,6 +102,9 @@ export const EmailSection = ({ organization: initialOrg }: Props) => {
               </Box>
             )}
           />
+          {reasonItems.map((reason) => (
+            <PathCardBanner key={reason} tone={tone} title={reason} />
+          ))}
         </SectionLayout>
       </form>
     </Form>

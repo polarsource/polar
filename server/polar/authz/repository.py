@@ -6,7 +6,6 @@ from sqlalchemy import Select, select
 from polar.auth.models import AuthSubject, User, is_organization, is_user
 from polar.auth.permission import OrganizationPermission, roles_with_permission
 from polar.models import Organization, UserOrganization
-from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncReadSession
 
 
@@ -33,7 +32,6 @@ def select_user_org_ids(
             UserOrganization.user_id == user_id,
             UserOrganization.is_deleted.is_(False),
             Organization.can_authenticate,
-            Organization.status != OrganizationStatus.BLOCKED,
         )
     )
     if permission is not None:
@@ -78,7 +76,6 @@ class AuthzRepository:
         stmt = select(Organization).where(
             Organization.id == organization_id,
             Organization.can_authenticate,
-            Organization.status != OrganizationStatus.BLOCKED,
         )
 
         if is_user(auth_subject):

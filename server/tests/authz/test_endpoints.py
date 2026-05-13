@@ -75,7 +75,7 @@ class TestPolicyGuardGetAccount:
         user_organization: UserOrganization,
     ) -> None:
         organization.account = await create_account(save_fixture, user=user)
-        organization.status = OrganizationStatus.BLOCKED
+        organization.set_status(OrganizationStatus.BLOCKED)
         await save_fixture(organization)
 
         response = await client.get(f"/v1/organizations/{organization.id}/account")

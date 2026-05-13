@@ -898,24 +898,6 @@ class TestCustomerSeatsAuthentication:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth(SEAT_AUTH)
-    async def test_assign_seat_rejects_checkout_id(
-        self,
-        client: AsyncClient,
-        subscription_with_seats: Subscription,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "checkout_id": str(uuid.uuid4()),
-                "email": "test@example.com",
-            },
-        )
-
-        assert response.status_code == 400
-        assert "checkout_id" in response.json()["detail"].lower()
-
     async def test_revoke_seat_anonymous_rejected(
         self,
         client: AsyncClient,

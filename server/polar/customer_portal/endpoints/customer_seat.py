@@ -5,7 +5,6 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 from sqlalchemy.orm import joinedload, selectinload
 
-from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.customer_seat.schemas import SeatAssign, SeatsList
 from polar.customer_seat.service import seat_service
@@ -21,6 +20,7 @@ from polar.subscription.repository import SubscriptionRepository
 
 from .. import auth
 from ..schemas.subscription import CustomerSubscription
+from ..service.customer_seat import customer_seat as customer_seat_service
 from ..utils import get_customer
 
 log = structlog.get_logger()
@@ -119,81 +119,11 @@ async def assign_seat(
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
     customer = get_customer(auth_subject)
+    container = await customer_seat_service.resolve_assign_container(
+        session, customer, seat_assign
+    )
 
-    subscription: Subscription | None = None
-    order: Order | None = None
-
-    if seat_assign.subscription_id:
-        subscription_repository = SubscriptionRepository.from_session(session)
-
-        statement = (
-            subscription_repository.get_base_statement()
-            .options(*subscription_repository.get_eager_options())
-            .where(
-                Subscription.id == seat_assign.subscription_id,
-                Subscription.customer_id == customer.id,
-            )
-        )
-        subscription = await subscription_repository.get_one_or_none(statement)
-
-        if not subscription:
-            raise ResourceNotFound("Subscription not found")
-
-    elif seat_assign.order_id:
-        order_repository = OrderRepository.from_session(session)
-
-        order_statement = (
-            order_repository.get_base_statement()
-            .options(*order_repository.get_eager_options())
-            .where(
-                Order.id == seat_assign.order_id,
-                Order.customer_id == customer.id,
-            )
-        )
-        order = await order_repository.get_one_or_none(order_statement)
-
-        if not order:
-            raise ResourceNotFound("Order not found")
-
-    elif seat_assign.checkout_id:
-        subscription_repository = SubscriptionRepository.from_session(session)
-        order_repository = OrderRepository.from_session(session)
-
-        subscription_statement = (
-            subscription_repository.get_base_statement()
-            .options(*subscription_repository.get_eager_options())
-            .where(
-                Subscription.checkout_id == seat_assign.checkout_id,
-                Subscription.customer_id == customer.id,
-            )
-        )
-        subscription = await subscription_repository.get_one_or_none(
-            subscription_statement
-        )
-
-        if not subscription:
-            order_statement = (
-                order_repository.get_base_statement()
-                .options(*order_repository.get_eager_options())
-                .where(
-                    Order.checkout_id == seat_assign.checkout_id,
-                    Order.customer_id == customer.id,
-                )
-            )
-            order = await order_repository.get_one_or_none(order_statement)
-
-            if not order:
-                raise ResourceNotFound(
-                    "No subscription or order found for this checkout"
-                )
-
-    else:
-        raise BadRequest("Either subscription_id, order_id, or checkout_id is required")
-
-    container = subscription or order
-    assert container is not None  # Already validated above
-
-    seat = await seat_service.assign_seat(
+    return await seat_service.assign_seat(
         session,
         container,
         email=seat_assign.email,
@@ -201,20 +131,6 @@ async def assign_seat(
         customer_id=seat_assign.customer_id,
         metadata=seat_assign.metadata,
     )
-
-    # Reload seat with customer and member relationships
-    seat_repository = CustomerSeatRepository.from_session(session)
-    seat_statement = (
-        seat_repository.get_base_statement()
-        .where(CustomerSeat.id == seat.id)
-        .options(joinedload(CustomerSeat.customer), joinedload(CustomerSeat.member))
-    )
-    reloaded_seat = await seat_repository.get_one_or_none(seat_statement)
-
-    if not reloaded_seat:
-        raise ResourceNotFound("Seat not found after creation")
-
-    return reloaded_seat
 
 
 @router.delete(

@@ -52,12 +52,6 @@ async def assign_seat(
     auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
-    if seat_assign.checkout_id is not None:
-        raise BadRequest(
-            "checkout_id is not supported on the merchant API; "
-            "use POST /v1/customer-portal/seats with a customer session token."
-        )
-
     subscription: Subscription | None = None
     order: Order | None = None
 

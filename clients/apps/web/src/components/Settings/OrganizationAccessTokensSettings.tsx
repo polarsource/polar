@@ -3,7 +3,6 @@
 import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import {
-  useCreateOrganizationAccessToken,
   useDeleteOrganizationAccessToken,
   useOrganizationAccessTokens,
   useUpdateOrganizationAccessToken,
@@ -35,8 +34,9 @@ import { useCallback, useMemo, useState, type MouseEvent } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast, useToast } from '../Toast/use-toast'
+import { CreateAccessTokenModal } from './CreateAccessTokenModal'
 
-interface AccessTokenCreate {
+export interface AccessTokenCreate {
   comment: string
   expires_in: string | null | 'no-expiration'
   scopes: Array<schemas['AvailableScope']>
@@ -47,7 +47,7 @@ interface AccessTokenUpdate {
   scopes: Array<schemas['AvailableScope']>
 }
 
-const AccessTokenForm = ({ update }: { update?: boolean }) => {
+export const AccessTokenForm = ({ update }: { update?: boolean }) => {
   const { control, setValue, watch } = useFormContext<
     AccessTokenCreate | AccessTokenUpdate
   >()
@@ -177,66 +177,6 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
         </div>
       </div>
     </>
-  )
-}
-
-interface CreateAccessTokenModalProps {
-  organization: schemas['Organization']
-  onSuccess: (token: schemas['OrganizationAccessTokenCreateResponse']) => void
-  onHide: () => void
-}
-
-const CreateAccessTokenModal = ({
-  organization,
-  onSuccess,
-  onHide,
-}: CreateAccessTokenModalProps) => {
-  const createToken = useCreateOrganizationAccessToken(organization.id)
-  const form = useForm<AccessTokenCreate>({
-    defaultValues: {
-      comment: '',
-      expires_in: 'P30D',
-      scopes: [],
-    },
-  })
-  const { handleSubmit, reset } = form
-
-  const onCreate = useCallback(
-    async (data: AccessTokenCreate) => {
-      const { data: created } = await createToken.mutateAsync({
-        comment: data.comment ? data.comment : '',
-        expires_in:
-          data.expires_in === 'no-expiration' ? null : data.expires_in,
-        scopes: data.scopes,
-      })
-      if (created) {
-        onSuccess(created)
-        reset({ scopes: [] })
-        createToken.reset()
-      }
-    },
-    [createToken, onSuccess, reset],
-  )
-
-  return (
-    <div className="flex flex-col">
-      <InlineModalHeader hide={onHide}>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Create Organization Token</h2>
-        </div>
-      </InlineModalHeader>
-      <div className="flex flex-col gap-y-8 p-8">
-        <Form {...form}>
-          <form
-            onSubmit={handleSubmit(onCreate)}
-            className="max-w-[700px] space-y-8"
-          >
-            <AccessTokenForm />
-            <Button type="submit">Create Token</Button>
-          </form>
-        </Form>
-      </div>
-    </div>
   )
 }
 

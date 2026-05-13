@@ -501,6 +501,7 @@ class BalanceCreditOrderMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    exchange_rate: NotRequired[float]
 
 
 class BalanceCreditOrderEvent(Event):

@@ -37,6 +37,8 @@ from polar.models import (
     Organization,
     Product,
     Subscription,
+    User,
+    UserOrganization,
 )
 from polar.models.billing_entry import BillingEntryDirection
 from polar.models.customer_seat import SeatStatus
@@ -217,8 +219,11 @@ class TestUpdate:
             ),
         ],
     )
+    @pytest.mark.auth
     async def test_sensitive_update_forbidden(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         meter_update: MeterUpdate,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -234,7 +239,7 @@ class TestUpdate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await meter_service.update(session, meter, meter_update)
+            await meter_service.update(session, meter, meter_update, auth_subject)
 
     @pytest.mark.parametrize(
         "meter_update",
@@ -258,8 +263,11 @@ class TestUpdate:
             ),
         ],
     )
+    @pytest.mark.auth
     async def test_sensitive_update_allowed(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         meter_update: MeterUpdate,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -269,15 +277,20 @@ class TestUpdate:
             save_fixture, organization=organization, last_billed_event=None
         )
 
-        updated_meter = await meter_service.update(session, meter, meter_update)
+        updated_meter = await meter_service.update(
+            session, meter, meter_update, auth_subject
+        )
 
         if meter_update.filter:
             assert updated_meter.filter == meter_update.filter
         if meter_update.aggregation:
             assert updated_meter.aggregation == meter_update.aggregation
 
+    @pytest.mark.auth
     async def test_insensitive_update(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -295,6 +308,7 @@ class TestUpdate:
             session,
             meter,
             MeterUpdate(name="New Name"),  # pyright: ignore
+            auth_subject=auth_subject,
         )
         assert updated_meter.name == "New Name"
 
@@ -302,8 +316,11 @@ class TestUpdate:
         "unit",
         [MeterUnit.scalar, MeterUnit.tokens, MeterUnit.custom],
     )
+    @pytest.mark.auth
     async def test_update_unit(
         self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
         unit: MeterUnit,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -315,6 +332,7 @@ class TestUpdate:
             session,
             meter,
             MeterUpdate(unit=unit),  # pyright: ignore
+            auth_subject=auth_subject,
         )
 
         assert updated_meter.unit == unit

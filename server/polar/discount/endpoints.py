@@ -121,7 +121,9 @@ async def update(
     if discount is None:
         raise ResourceNotFound()
 
-    return await discount_service.update(session, discount, discount_update)
+    return await discount_service.update(
+        session, discount, discount_update, auth_subject
+    )
 
 
 @router.delete(
@@ -144,4 +146,4 @@ async def delete(
     if discount is None:
         raise ResourceNotFound()
 
-    await discount_service.delete(session, discount)
+    await discount_service.delete(session, discount, auth_subject)

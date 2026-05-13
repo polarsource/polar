@@ -1,6 +1,7 @@
 'use client'
 
 import { toast } from '@/components/Toast/use-toast'
+import { usePostHog } from '@/hooks/posthog'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
@@ -22,12 +23,17 @@ interface FormValues {
 
 export const EmailSection = ({ organization }: Props) => {
   const updateOrganization = useUpdateOrganization()
+  const posthog = usePostHog()
   const form = useForm<FormValues>({
     defaultValues: { email: organization.email ?? '' },
   })
   const { control, handleSubmit, setError, formState, reset } = form
 
   const onSubmit = async ({ email }: FormValues) => {
+    posthog.capture('dashboard:organizations:account_review_section:submit', {
+      organization_id: organization.id,
+      section: 'email',
+    })
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: { email },

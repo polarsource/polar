@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Generate App token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@v3.1.1
         with:
           app-id: ${{ secrets.EMERGENCY_MERGE_APP_ID }}
           private-key: ${{ secrets.EMERGENCY_MERGE_APP_PRIVATE_KEY }}
@@ -25,7 +25,7 @@ jobs:
             -f enforcement=disabled
 
       - name: Announce in Slack
-        uses: slackapi/slack-github-action@v3.0.2
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

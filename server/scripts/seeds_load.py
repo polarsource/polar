@@ -3,6 +3,7 @@ import random
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 from uuid import UUID
 
@@ -16,13 +17,20 @@ from polar.auth.scope import Scope
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.strategies.custom.schemas import BenefitCustomCreate
 from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesCreate
+from polar.benefit.strategies.feature_flag.schemas import (
+    BenefitFeatureFlagCreate,
+    BenefitFeatureFlagCreateProperties,
+)
 
 # Import tasks to register all dramatiq actors
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.config import settings
-from polar.customer.schemas.customer import CustomerIndividualCreate
+from polar.customer.schemas.customer import (
+    CustomerIndividualCreate,
+    CustomerTeamCreate,
+)
 from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountPercentageCreate
 from polar.discount.service import discount as discount_service
@@ -37,10 +45,11 @@ from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent as SystemEventEnum
 from polar.event_type.repository import EventTypeRepository
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
-from polar.kit.crypto import generate_token_hash_pair
+from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import generate_uuid, utc_now
+from polar.member.schemas import MemberOwnerCreate
 from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.schemas import MeterCreate
@@ -59,7 +68,7 @@ from polar.models.organization import (
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
 from polar.models.payout_account import PayoutAccount
-from polar.models.product import Product
+from polar.models.product import Product, ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
@@ -68,6 +77,13 @@ from polar.models.product_price import (
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.models.user import IdentityVerificationStatus, User
+from polar.models.user_organization import UserOrganization
+from polar.models.webhook_endpoint import (
+    WebhookEndpoint,
+    WebhookEventType,
+    WebhookFormat,
+)
+from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, create_async_engine
@@ -76,6 +92,7 @@ from polar.product.schemas import (
     ProductCreateOneTime,
     ProductCreateRecurring,
     ProductPriceFixedCreate,
+    ProductPriceFreeCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceSeatTier,
@@ -83,9 +100,17 @@ from polar.product.schemas import (
 )
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
+from polar.subscription.schemas import SubscriptionCreateExternalCustomer
+from polar.subscription.service import subscription as subscription_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
+from scripts.seed_benefits import (
+    BENEFITS as POLAR_SELF_BENEFITS,
+)
+from scripts.seed_benefits import (
+    PRODUCTS as POLAR_SELF_PRODUCTS,
+)
 
 cli = typer.Typer(invoke_without_command=True)
 
@@ -875,6 +900,188 @@ def _build_user_cost_span_events(
     return events
 
 
+async def _seed_polar_self_billing_catalog(
+    session: AsyncSession,
+    redis: Redis,
+    organization: Organization,
+    auth_subject: AuthSubject[User],
+) -> None:
+    """Materialize the Polar self-billing benefits and tier products in the DB.
+
+    Mirrors ``scripts.seed_benefits`` but writes directly via the service layer
+    instead of going through the public HTTP API.
+    """
+    benefits_by_description: dict[str, Any] = {}
+    for benefit_data in POLAR_SELF_BENEFITS:
+        description = benefit_data["description"]
+        metadata = benefit_data["metadata"]
+        assert isinstance(description, str)
+        assert isinstance(metadata, dict)
+        benefit = await benefit_service.user_create(
+            session=session,
+            redis=redis,
+            create_schema=BenefitFeatureFlagCreate(
+                type=BenefitType.feature_flag,
+                description=description,
+                organization_id=organization.id,
+                metadata=metadata,
+                properties=BenefitFeatureFlagCreateProperties(),
+            ),
+            auth_subject=auth_subject,
+        )
+        benefits_by_description[description] = benefit
+
+    for product_data in POLAR_SELF_PRODUCTS:
+        name = product_data["name"]
+        metadata = product_data["metadata"]
+        price_amount = product_data["price_amount"]
+        benefit_descriptions = product_data["benefits"]
+        visibility_value = product_data.get("visibility")
+        visibility = (
+            ProductVisibility(visibility_value)
+            if isinstance(visibility_value, str)
+            else ProductVisibility.public
+        )
+        assert isinstance(name, str)
+        assert isinstance(metadata, dict)
+        assert isinstance(benefit_descriptions, list)
+        assert price_amount is None or isinstance(price_amount, int)
+
+        price_create: ProductPriceFixedCreate | ProductPriceFreeCreate
+        if price_amount is None:
+            price_create = ProductPriceFreeCreate(
+                amount_type=ProductPriceAmountType.free,
+            )
+        else:
+            price_create = ProductPriceFixedCreate(
+                amount_type=ProductPriceAmountType.fixed,
+                tax_behavior=TaxBehaviorOption.exclusive,
+                price_amount=price_amount,
+                price_currency=PresentmentCurrency.usd,
+            )
+
+        product = await product_service.create(
+            session=session,
+            create_schema=ProductCreateRecurring(
+                name=name,
+                organization_id=organization.id,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[price_create],
+                metadata=metadata,
+                visibility=visibility,
+            ),
+            auth_subject=auth_subject,
+        )
+
+        benefit_ids = [
+            benefits_by_description[desc].id for desc in benefit_descriptions
+        ]
+        if benefit_ids:
+            await product_service.update_benefits(
+                session=session,
+                product=product,
+                benefits=benefit_ids,
+                auth_subject=auth_subject,
+            )
+
+
+async def _subscribe_seeded_orgs_to_polar_self(
+    session: AsyncSession,
+) -> int:
+    """Add every other seeded org as a team customer of the Polar self org and
+    create a free subscription for it.
+    """
+    polar_self_org = (
+        await session.execute(
+            select(Organization).where(Organization.slug == POLAR_ORG_SLUG)
+        )
+    ).scalar_one_or_none()
+    if polar_self_org is None:
+        return 0
+
+    free_product = (
+        await session.execute(
+            select(Product).where(
+                Product.organization_id == polar_self_org.id,
+                Product.name == "Starter",
+            )
+        )
+    ).scalar_one_or_none()
+    if free_product is None:
+        return 0
+
+    other_orgs = (
+        (
+            await session.execute(
+                select(Organization)
+                .where(
+                    Organization.id != polar_self_org.id,
+                    Organization.deleted_at.is_(None),
+                    Organization.status != OrganizationStatus.BLOCKED,
+                )
+                .order_by(Organization.created_at)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    auth_subject: AuthSubject[Organization] = AuthSubject(
+        subject=polar_self_org, scopes=set(), session=None
+    )
+
+    subscribed = 0
+    for organization in other_orgs:
+        owner_row = (
+            (
+                await session.execute(
+                    select(User)
+                    .join(UserOrganization, UserOrganization.user_id == User.id)
+                    .where(
+                        UserOrganization.organization_id == organization.id,
+                        UserOrganization.deleted_at.is_(None),
+                        User.deleted_at.is_(None),
+                    )
+                    .order_by(UserOrganization.created_at)
+                )
+            )
+            .unique()
+            .first()
+        )
+        if owner_row is None:
+            continue
+        owner = owner_row[0]
+
+        await customer_service.create(
+            session,
+            CustomerTeamCreate.model_construct(
+                type="team",
+                email=None,
+                name=organization.name,
+                external_id=str(organization.id),
+                owner=MemberOwnerCreate.model_construct(
+                    email=owner.email,
+                    name=owner.public_name,
+                    external_id=str(owner.id),
+                ),
+            ),
+            auth_subject,
+            created_at=organization.created_at,
+        )
+        await subscription_service.create(
+            session,
+            SubscriptionCreateExternalCustomer(
+                product_id=free_product.id,
+                external_customer_id=str(organization.id),
+            ),
+            auth_subject,
+            created_at=organization.created_at,
+        )
+        subscribed += 1
+
+    return subscribed
+
+
 async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     """Create sample data for development and testing."""
 
@@ -1189,8 +1396,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             },
             "products": [
                 {
-                    "name": "Polar Pro",
-                    "description": "Monthly subscription to Polar Pro features",
+                    "name": "Pro",
+                    "description": "Monthly subscription to Pro features",
                     "price": 2000,
                     "recurring": SubscriptionRecurringInterval.month,
                 },
@@ -1214,15 +1421,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
-            "products": [
-                {
-                    "name": "Polar Default",
-                    "description": "Default Polar plan with seat-based pricing",
-                    "recurring": SubscriptionRecurringInterval.month,
-                    "seat_based": True,
-                    "price_per_seat": 0,
-                },
-            ],
+            "products": [],
         },
         {
             "name": "SeatBased Members Corp",
@@ -1372,6 +1571,11 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.details_submitted_at = utc_now()
         organization.set_status(org_data.get("status", OrganizationStatus.CREATED))
         organization.feature_settings = org_data.get("feature_settings", {})
+        if org_data["slug"] != POLAR_ORG_SLUG:
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "billing_enabled": True,
+            }
         session.add(organization)
 
         # Attach a fake payout account so seeded orgs are payout-ready
@@ -1473,6 +1677,13 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             await meter_service.create(
                 session=session,
                 meter_create=meter_create,
+                auth_subject=auth_subject,
+            )
+
+            await _seed_polar_self_billing_catalog(
+                session=session,
+                redis=redis,
+                organization=organization,
                 auth_subject=auth_subject,
             )
 
@@ -1904,6 +2115,10 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             update_dict={"is_admin": user.is_admin or org_data.get("is_admin", False)},
         )
 
+    subscribed = await _subscribe_seeded_orgs_to_polar_self(session)
+    if subscribed:
+        print(f"Subscribed {subscribed} organization(s) to the Polar self free plan")
+
     await session.commit()
     print("✅ Sample data created successfully!")
     print("Created 3 organizations with users, products, benefits, and customers")
@@ -1921,6 +2136,41 @@ TOKEN_SCOPES = " ".join(
         Scope.members_write,
     ]
 )
+
+WEBHOOK_NAME = "Polar self-integration (dev seed)"
+WEBHOOK_URL = "http://127.0.0.1:8000/v1/integrations/polar/webhook"
+WEBHOOK_EVENTS: list[WebhookEventType] = [
+    WebhookEventType.benefit_grant_created,
+    WebhookEventType.benefit_grant_updated,
+    WebhookEventType.benefit_grant_revoked,
+]
+SERVER_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+WEBHOOK_SECRET_ENV_KEY = "POLAR_POLAR_WEBHOOK_SECRET"
+
+
+def _write_webhook_secret_to_env(secret: str) -> None:
+    if not SERVER_ENV_PATH.exists():
+        print(
+            f"# warn: {SERVER_ENV_PATH} not found; "
+            f"skipping {WEBHOOK_SECRET_ENV_KEY} write"
+        )
+        return
+
+    lines = SERVER_ENV_PATH.read_text().splitlines(keepends=True)
+    new_line = f'{WEBHOOK_SECRET_ENV_KEY}="{secret}"\n'
+    replaced = False
+    for i, line in enumerate(lines):
+        if line.startswith(f"{WEBHOOK_SECRET_ENV_KEY}="):
+            lines[i] = new_line
+            replaced = True
+            break
+
+    if not replaced:
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        lines.append(new_line)
+
+    SERVER_ENV_PATH.write_text("".join(lines))
 
 
 async def create_single_org_seed(
@@ -2129,7 +2379,7 @@ def polar_self_env() -> None:
                 await session.execute(
                     select(Product).where(
                         Product.organization_id == org.id,
-                        Product.name == "Polar Default",
+                        Product.name == "Starter",
                     )
                 )
             ).scalar_one_or_none()
@@ -2163,11 +2413,42 @@ def polar_self_env() -> None:
                 comment=TOKEN_COMMENT,
             )
             session.add(oat)
+
+            existing_webhooks = (
+                (
+                    await session.execute(
+                        select(WebhookEndpoint).where(
+                            WebhookEndpoint.organization_id == org.id,
+                            WebhookEndpoint.name == WEBHOOK_NAME,
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            for w in existing_webhooks:
+                await session.delete(w)
+
+            webhook_secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+            webhook = WebhookEndpoint(
+                organization_id=org.id,
+                url=WEBHOOK_URL,
+                name=WEBHOOK_NAME,
+                format=WebhookFormat.raw,
+                secret=webhook_secret,
+                events=WEBHOOK_EVENTS,
+                enabled=True,
+            )
+            session.add(webhook)
+
             await session.commit()
+
+            _write_webhook_secret_to_env(webhook_secret)
 
             print(f"POLAR_POLAR_ORGANIZATION_ID={org.id}")
             print(f"POLAR_POLAR_FREE_PRODUCT_ID={product.id}")
             print(f"POLAR_POLAR_ACCESS_TOKEN={token}")
+            print(f"{WEBHOOK_SECRET_ENV_KEY}={webhook_secret}")
             print("POLAR_POLAR_API_URL=http://127.0.0.1:8000")
 
         await engine.dispose()

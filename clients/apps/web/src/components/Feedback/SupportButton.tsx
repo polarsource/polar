@@ -1,11 +1,12 @@
+import SupportIcon from '@mui/icons-material/Support'
 import { schemas } from '@polar-sh/client'
 import { useSidebar } from '@polar-sh/ui/components/atoms/Sidebar'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { FeedbackModal } from './FeedbackModal'
-import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined'
 
-export const FeedbackButton = ({
+import { FeedbackModal } from './FeedbackModal'
+
+export const SupportButton = ({
   organization,
 }: {
   organization: schemas['Organization']
@@ -22,11 +23,10 @@ export const FeedbackButton = ({
         className={twMerge(
           'flex cursor-pointer flex-row items-center rounded-lg border border-transparent px-2 text-sm transition-colors dark:border-transparent',
           'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
-          isCollapsed && '!dark:text-polar-600',
         )}
       >
-        <ForumOutlinedIcon fontSize="inherit" />
-        {!isCollapsed && <span className="ml-4 font-medium">Feedback</span>}
+        <SupportIcon fontSize="inherit" />
+        {!isCollapsed && <span className="ml-4 font-medium">Support</span>}
       </button>
       <FeedbackModal
         isShown={isShown}

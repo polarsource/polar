@@ -1,28 +1,39 @@
-from __future__ import annotations
-
 from collections.abc import Mapping
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import Any, NoReturn
 from uuid import UUID
 
 import httpx
 import logfire
+from polar_sdk import Polar as PolarSDK
+from polar_sdk.models import (
+    BenefitGrant,
+    Checkout,
+    CheckoutCreate,
+    CostMetadataInput,
+    Customer,
+    CustomerTeamCreate,
+    EventCreateCustomer,
+    EventCreateExternalCustomer,
+    EventsIngest,
+    LLMMetadata,
+    Member,
+    MemberCreate,
+    MemberOwnerCreate,
+    Order,
+    OrderSortProperty,
+    Product,
+    ProductVisibility,
+    Subscription,
+    SubscriptionCreateExternalCustomer,
+    SubscriptionProrationBehavior,
+    SubscriptionUpdateProduct,
+)
+from polar_sdk.models.polarerror import PolarError
 
 from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
-
-if TYPE_CHECKING:
-    from polar_sdk import Polar as PolarSDK
-    from polar_sdk.models import (
-        BenefitGrant,
-        Checkout,
-        Customer,
-        Member,
-        Product,
-        Subscription,
-        SubscriptionProrationBehavior,
-    )
 
 
 class PolarSelfClientError(InternalPolarError):
@@ -32,12 +43,6 @@ class PolarSelfClientError(InternalPolarError):
 
 class PolarSelfClientOperationalError(PolarSelfClientError):
     """Raised for transient/retryable SDK errors (429, 5xx, network)."""
-
-
-def _import_sdk() -> type[PolarSDK]:
-    from polar_sdk import Polar as PolarSDK
-
-    return PolarSDK
 
 
 def _raise_error(span: Any, error: Any, operation: str) -> NoReturn:
@@ -60,8 +65,7 @@ def _raise_network_error(
 
 class PolarSelfClient:
     def __init__(self, *, access_token: str, api_url: str) -> None:
-        cls = _import_sdk()
-        self._sdk = cls(
+        self._sdk = PolarSDK(
             access_token=access_token or "unconfigured",
             server_url=api_url,
         )
@@ -75,9 +79,6 @@ class PolarSelfClient:
         owner_email: str,
         owner_name: str,
     ) -> Customer:
-        from polar_sdk.models import CustomerTeamCreate, MemberOwnerCreate
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span("polar.create_customer", external_id=external_id) as span:
             try:
                 return await self._sdk.customers.create_async(
@@ -111,9 +112,6 @@ class PolarSelfClient:
     async def create_free_subscription(
         self, *, external_customer_id: str, product_id: str
     ) -> None:
-        from polar_sdk.models import SubscriptionCreateExternalCustomer
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span(
             "polar.create_free_subscription",
             external_customer_id=external_customer_id,
@@ -137,10 +135,75 @@ class PolarSelfClient:
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
         return await self._sdk.customers.get_external_async(external_id=external_id)
 
-    async def list_recurring_products(self, *, organization_id: str) -> list[Product]:
-        from polar_sdk.models import ProductVisibility
-        from polar_sdk.models.polarerror import PolarError
+    async def get_customer_by_external_id_or_none(
+        self, external_id: str
+    ) -> Customer | None:
+        try:
+            return await self.get_customer_by_external_id(external_id)
+        except PolarError as e:
+            if e.status_code == 404:
+                return None
+            raise
 
+    async def list_customer_orders(
+        self,
+        *,
+        customer_id: str,
+        page: int = 1,
+        limit: int = 50,
+    ) -> tuple[list[Order], int]:
+        with logfire.span(
+            "polar.list_customer_orders",
+            customer_id=customer_id,
+            page=page,
+            limit=limit,
+        ) as span:
+            try:
+                response = await self._sdk.orders.list_async(
+                    customer_id=customer_id,
+                    page=page,
+                    limit=limit,
+                    sorting=[OrderSortProperty.MINUS_CREATED_AT],
+                )
+            except PolarError as e:
+                _raise_error(span, e, "list_customer_orders")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "list_customer_orders")
+
+            if response is None:
+                return [], 0
+            items = list(response.result.items)
+            total = response.result.pagination.total_count
+            span.set_attribute("order_count", len(items))
+            span.set_attribute("total_count", total)
+            return items, total
+
+    async def get_order(self, *, order_id: str) -> Order | None:
+        with logfire.span("polar.get_order", order_id=order_id) as span:
+            try:
+                return await self._sdk.orders.get_async(id=order_id)
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    return None
+                _raise_error(span, e, "get_order")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "get_order")
+
+    async def get_order_invoice(self, *, order_id: str) -> str | None:
+        with logfire.span("polar.get_order_invoice", order_id=order_id) as span:
+            try:
+                invoice = await self._sdk.orders.invoice_async(id=order_id)
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    return None
+                _raise_error(span, e, "get_order_invoice")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "get_order_invoice")
+            return invoice.url
+
+    async def list_recurring_products(self, *, organization_id: str) -> list[Product]:
         with logfire.span(
             "polar.list_recurring_products", organization_id=organization_id
         ) as span:
@@ -168,8 +231,6 @@ class PolarSelfClient:
     async def get_active_subscription(
         self, *, external_customer_id: str
     ) -> Subscription | None:
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span(
             "polar.get_active_subscription",
             external_customer_id=external_customer_id,
@@ -200,9 +261,6 @@ class PolarSelfClient:
         success_url: str | None = None,
         embed_origin: str | None = None,
     ) -> Checkout:
-        from polar_sdk.models import CheckoutCreate
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span(
             "polar.create_checkout",
             product_id=product_id,
@@ -232,9 +290,6 @@ class PolarSelfClient:
         product_id: str,
         proration_behavior: SubscriptionProrationBehavior | None = None,
     ) -> Subscription:
-        from polar_sdk.models import SubscriptionUpdateProduct
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span(
             "polar.update_subscription_product",
             subscription_id=subscription_id,
@@ -264,9 +319,6 @@ class PolarSelfClient:
     async def add_member(
         self, *, customer_id: str, email: str, name: str, external_id: str
     ) -> None:
-        from polar_sdk.models import MemberCreate
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span(
             "polar.add_member",
             customer_id=customer_id,
@@ -292,8 +344,6 @@ class PolarSelfClient:
     async def remove_member(
         self, *, external_customer_id: str, external_id: str
     ) -> None:
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span(
             "polar.remove_member",
             external_customer_id=external_customer_id,
@@ -315,8 +365,6 @@ class PolarSelfClient:
     async def list_customer_benefit_grants(
         self, *, customer_id: str
     ) -> list[BenefitGrant]:
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span(
             "polar.list_customer_benefit_grants", customer_id=customer_id
         ) as span:
@@ -340,8 +388,6 @@ class PolarSelfClient:
             return grants
 
     async def delete_customer(self, *, external_id: str) -> None:
-        from polar_sdk.models.polarerror import PolarError
-
         with logfire.span("polar.delete_customer", external_id=external_id) as span:
             try:
                 await self._sdk.customers.delete_external_async(
@@ -359,13 +405,6 @@ class PolarSelfClient:
     async def track_event_ingestion(
         self, *, counts: Mapping[UUID, int], cutoff: datetime
     ) -> None:
-        from polar_sdk.models import (
-            EventCreateCustomer,
-            EventCreateExternalCustomer,
-            EventsIngest,
-        )
-        from polar_sdk.models.polarerror import PolarError
-
         cutoff_epoch = int(cutoff.timestamp())
         events: list[EventCreateCustomer | EventCreateExternalCustomer] = [
             EventCreateExternalCustomer(
@@ -404,14 +443,6 @@ class PolarSelfClient:
         output_tokens: int,
         cost_usd: Decimal,
     ) -> None:
-        from polar_sdk.models import (
-            CostMetadataInput,
-            EventCreateExternalCustomer,
-            EventsIngest,
-            LLMMetadata,
-        )
-        from polar_sdk.models.polarerror import PolarError
-
         total_tokens = input_tokens + output_tokens
         cost_cents = (cost_usd * Decimal(100)).quantize(Decimal("0.000001"))
         root_external_id = f"organization_review-{external_customer_id}"

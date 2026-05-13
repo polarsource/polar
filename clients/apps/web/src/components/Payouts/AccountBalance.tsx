@@ -4,6 +4,8 @@ import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 import { Modal } from '@/components/Modal'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 
 import React, { useCallback } from 'react'
@@ -79,45 +81,39 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     : null
 
   return (
-    <div className="flex flex-col gap-8 md:flex-row">
+    <Box display="flex" flexDirection={{ base: 'column', md: 'row' }} gap="2xl">
       <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
-          <h2 className="text-lg font-medium capitalize">Available balance</h2>
+          <Text variant="heading-xxs" as="h2">
+            Available balance
+          </Text>
           <Button className="self-start" onClick={showPayoutConfirmModal}>
             Withdraw
           </Button>
         </WellHeader>
         <WellContent>
-          <div className="text-4xl">
-            {isLoading ? (
-              <div className="animate-pulse rounded-lg bg-gray-200 text-gray-200">
-                &nbsp;
-              </div>
-            ) : (
-              availableBalance
-            )}
-          </div>
+          <Text variant="heading-s" loading={isLoading}>
+            {availableBalance}
+          </Text>
         </WellContent>
         <WellFooter>
-          <p className="dark:text-polar-500 text-gray-500">
-            {summary &&
-            summary.available_balance.amount !== summary.balance.amount ? (
-              <div className="dark:text-polar-500 space-y-1 text-gray-500">
-                <div>
-                  Held balance:{' '}
-                  {formatCurrency('accounting')(
-                    summary.balance.amount - summary.available_balance.amount,
-                    summary.balance.currency,
-                  )}{' '}
-                </div>
-              </div>
-            ) : null}
-          </p>
+          {summary &&
+          summary.available_balance.amount !== summary.balance.amount ? (
+            <Text color="muted">
+              Held balance:{' '}
+              {formatCurrency('accounting')(
+                summary.balance.amount - summary.available_balance.amount,
+                summary.balance.currency,
+              )}
+            </Text>
+          ) : null}
         </WellFooter>
       </Well>
       <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
-          <h2 className="text-lg font-medium capitalize">Fee Credits</h2>
+          <Text variant="heading-xxs" as="h2">
+            Fee Credits
+          </Text>
           <Button
             className="self-start"
             variant="secondary"
@@ -127,26 +123,22 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </Button>
         </WellHeader>
         <WellContent>
-          <div className="text-4xl">
-            {isLoading ? (
-              <div className="animate-pulse rounded-lg bg-gray-200 text-gray-200">
-                &nbsp;
-              </div>
-            ) : (
-              summary &&
-              formatCurrency('accounting')(account.credit_balance, 'usd')
-            )}
-          </div>
+          <Text variant="heading-s" loading={isLoading}>
+            {summary &&
+              formatCurrency('accounting')(account.credit_balance, 'usd')}
+          </Text>
         </WellContent>
         <WellFooter className="mt-auto">
-          <p className="dark:text-polar-500 text-gray-500">
+          <Text color="muted">
             Fees are first deducted from available credits.
-          </p>
+          </Text>
         </WellFooter>
       </Well>
       <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
-          <h2 className="text-lg font-medium capitalize">Payout Account</h2>
+          <Text variant="heading-xxs" as="h2">
+            Payout Account
+          </Text>
           {payoutAccount ? (
             <Button
               className="self-start"
@@ -165,40 +157,45 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           )}
         </WellHeader>
         <WellContent>
-          {payoutAccount ? (
-            <p className="text-4xl capitalize">{payoutAccount.type}</p>
-          ) : (
-            <p className="dark:text-polar-700 text-4xl text-gray-300">—</p>
-          )}
+          <Text
+            variant="heading-s"
+            color={payoutAccount ? 'default' : 'disabled'}
+            loading={!payoutAccount && organization.payout_account_id != null}
+          >
+            {payoutAccount
+              ? payoutAccount.type[0].toUpperCase() +
+                payoutAccount.type.slice(1)
+              : '—'}
+          </Text>
         </WellContent>
         <WellFooter className="mt-auto">
           {payoutAccount ? (
-            <div className="flex items-center gap-x-3">
-              <p className="dark:text-polar-500 text-gray-500">
+            <Box display="flex" alignItems="center" columnGap="m">
+              <Text color="muted">
                 {payoutAccount.country.toUpperCase()} ·{' '}
                 {payoutAccount.currency.toUpperCase()}
-              </p>
-              <span
-                className={`inline-flex items-center gap-x-1.5 text-xs ${
-                  payoutAccount.is_payout_ready
-                    ? 'text-green-600 dark:text-green-500'
-                    : 'text-yellow-600 dark:text-yellow-500'
-                }`}
-              >
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${
+              </Text>
+              <Box display="inline-flex" alignItems="center" columnGap="xs">
+                <Box
+                  width={6}
+                  height={6}
+                  borderRadius="full"
+                  backgroundColor={
                     payoutAccount.is_payout_ready
-                      ? 'bg-green-600 dark:bg-green-500'
-                      : 'bg-yellow-600 dark:bg-yellow-500'
-                  }`}
+                      ? 'background-success'
+                      : 'background-warning'
+                  }
                 />
-                {payoutAccount.is_payout_ready ? 'Ready' : 'Setup required'}
-              </span>
-            </div>
+                <Text
+                  variant="caption"
+                  color={payoutAccount.is_payout_ready ? 'success' : 'warning'}
+                >
+                  {payoutAccount.is_payout_ready ? 'Ready' : 'Setup required'}
+                </Text>
+              </Box>
+            </Box>
           ) : (
-            <p className="dark:text-polar-500 text-gray-500">
-              No payout account configured.
-            </p>
+            <Text color="muted">No payout account configured.</Text>
           )}
         </WellFooter>
       </Well>
@@ -237,7 +234,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           />
         }
       />
-    </div>
+    </Box>
   )
 }
 

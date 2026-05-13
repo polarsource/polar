@@ -76,13 +76,6 @@ class CheckoutLinkRepository(
             CheckoutLink.organization_id.in_(org_ids)
         )
 
-    async def count_by_organization_id(self, organization_id: UUID) -> int:
-        """Count checkout links for a specific organization."""
-        statement = self.get_base_statement().where(
-            CheckoutLink.organization_id == organization_id
-        )
-        return await self.count(statement)
-
     async def has_with_benefit_types(
         self, organization_id: UUID, benefit_types: Iterable[BenefitType]
     ) -> bool:
@@ -104,6 +97,36 @@ class CheckoutLinkRepository(
                 Product.is_archived.is_(False),
                 Benefit.deleted_at.is_(None),
                 Benefit.type.in_(list(benefit_types)),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None
+
+    async def has_any(self, organization_id: UUID) -> bool:
+        """Whether the organization has any live checkout link at all,
+        regardless of its product or success_url configuration."""
+        statement = (
+            select(CheckoutLink.id)
+            .where(
+                CheckoutLink.organization_id == organization_id,
+                CheckoutLink.deleted_at.is_(None),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None
+
+    async def has_with_success_url(self, organization_id: UUID) -> bool:
+        """Whether the organization has any live checkout link with a
+        success_url set, meaning the merchant handles fulfillment by
+        redirecting customers to their own site after checkout."""
+        statement = (
+            select(CheckoutLink.id)
+            .where(
+                CheckoutLink.organization_id == organization_id,
+                CheckoutLink.deleted_at.is_(None),
+                CheckoutLink._success_url.isnot(None),
             )
             .limit(1)
         )

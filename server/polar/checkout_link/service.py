@@ -6,7 +6,12 @@ from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+    get_accessible_org_ids,
+)
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError, ValidationError
@@ -54,7 +59,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         ],
     ) -> tuple[Sequence[CheckoutLink], int]:
         repository = CheckoutLinkRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
         checkout_link_product_load = None
 
@@ -104,7 +111,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         id: uuid.UUID,
     ) -> CheckoutLink | None:
         repository = CheckoutLinkRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(CheckoutLink.id == id)
@@ -132,6 +141,13 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             )
             products = [product]
         organization = products[0].organization
+
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.products_manage,
+        )
 
         discount: Discount | None = None
         if checkout_link_create.discount_id is not None:
@@ -168,6 +184,10 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_update: CheckoutLinkUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
+        await assert_resource_permission(
+            session, auth_subject, checkout_link, OrganizationPermission.products_manage
+        )
+
         if checkout_link_update.products is not None:
             products = await self._get_validated_products(
                 session, checkout_link_update.products, auth_subject
@@ -219,8 +239,14 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         )
 
     async def delete(
-        self, session: AsyncSession, checkout_link: CheckoutLink
+        self,
+        session: AsyncSession,
+        checkout_link: CheckoutLink,
+        auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
+        await assert_resource_permission(
+            session, auth_subject, checkout_link, OrganizationPermission.products_manage
+        )
         repository = CheckoutLinkRepository.from_session(session)
         return await repository.soft_delete(checkout_link)
 
@@ -294,7 +320,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, ProductPrice]:
         product_price_repository = ProductPriceRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         price = await product_price_repository.get_readable_by_id(price_id, org_ids)
 
         if price is None:

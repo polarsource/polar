@@ -6,11 +6,13 @@ import { CreateProductPage } from './CreateProductPage'
 interface CreateProductPageWrapperProps {
   organization: schemas['Organization']
   fromProductId?: string
+  returnTo?: string
 }
 
 export const CreateProductPageWrapper = ({
   organization,
   fromProductId,
+  returnTo,
 }: CreateProductPageWrapperProps) => {
   const { data: sourceProduct, isLoading } = useProduct(fromProductId)
 
@@ -38,6 +40,7 @@ export const CreateProductPageWrapper = ({
     <CreateProductPage
       organization={organization}
       sourceProduct={sourceProduct}
+      returnTo={returnTo}
     />
   )
 }

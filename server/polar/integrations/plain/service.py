@@ -9,6 +9,7 @@ import pycountry
 import pycountry.db
 import structlog
 from plain_client import (
+    AddCustomerToTenantsInput,
     ComponentContainerContentInput,
     ComponentContainerInput,
     ComponentCopyButtonInput,
@@ -27,14 +28,20 @@ from plain_client import (
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
+    OptionalStringInput,
     Plain,
+    RemoveCustomerFromTenantsInput,
+    TenantIdentifierInput,
     ThreadsFilter,
     ThreadStatus,
+    TierIdentifierInput,
+    UpdateTenantTierInput,
     UpsertCustomerIdentifierInput,
     UpsertCustomerInput,
     UpsertCustomerOnCreateInput,
     UpsertCustomerOnUpdateInput,
     UpsertCustomerUpsertCustomer,
+    UpsertTenantInput,
 )
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
@@ -91,6 +98,16 @@ class PlainCustomerError(PlainServiceError):
         self.user_id = user_id
         self.message = message
         super().__init__(f"Error with Plain customer for user ID {user_id}: {message}")
+
+
+class TenantOperationError(PlainServiceError):
+    def __init__(self, tenant_external_id: str, operation: str, message: str) -> None:
+        self.tenant_external_id = tenant_external_id
+        self.operation = operation
+        self.message = message
+        super().__init__(
+            f"Plain tenant {operation} failed for {tenant_external_id!r}: {message}"
+        )
 
 
 class FeedbackThreadCreationError(PlainServiceError):
@@ -1369,6 +1386,157 @@ class PlainService:
                     nr_threads += 1
             log.info(f"There are {nr_threads} threads for user {customer_email}")
             return nr_threads > 0
+
+    async def upsert_customer(
+        self,
+        *,
+        external_id: str,
+        email: str,
+        email_verified: bool = False,
+    ) -> None:
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            existing = await plain.customer_by_email(email=email)
+
+            if existing is not None and existing.external_id == external_id:
+                return
+
+            if existing is not None:
+                if existing.external_id is not None:
+                    log.warning(
+                        "plain.upsert_customer.rebinding_external_id",
+                        plain_customer_id=existing.id,
+                        email=email,
+                        previous_external_id=existing.external_id,
+                        new_external_id=external_id,
+                    )
+                identifier = UpsertCustomerIdentifierInput(email_address=email)
+            else:
+                identifier = UpsertCustomerIdentifierInput(external_id=external_id)
+
+            result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=identifier,
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=external_id,
+                        full_name=email,
+                        email=EmailAddressInput(
+                            email=email, is_verified=email_verified
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        external_id=OptionalStringInput(value=external_id),
+                        email=EmailAddressInput(
+                            email=email, is_verified=email_verified
+                        ),
+                    ),
+                )
+            )
+            if result.error is not None:
+                raise PlainCustomerError(uuid.UUID(external_id), result.error.message)
+            if result.customer is None:
+                raise PlainCustomerError(
+                    uuid.UUID(external_id), "No customer returned by upsert"
+                )
+
+    async def list_all_tenant_external_ids(self, *, page_size: int = 100) -> set[str]:
+        if not self.enabled:
+            return set()
+
+        external_ids: set[str] = set()
+        cursor: str | None = None
+        async with self._get_plain_client() as plain:
+            while True:
+                page = await plain.tenants(first=page_size, after=cursor)
+                for edge in page.edges:
+                    external_ids.add(edge.node.external_id)
+                if not page.page_info.has_next_page:
+                    break
+                cursor = page.page_info.end_cursor
+        return external_ids
+
+    async def upsert_tenant(self, *, external_id: str, name: str) -> None:
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            result = await plain.upsert_tenant(
+                UpsertTenantInput(
+                    identifier=TenantIdentifierInput(external_id=external_id),
+                    name=name,
+                    external_id=external_id,
+                )
+            )
+            if result.error is not None:
+                raise TenantOperationError(external_id, "upsert", result.error.message)
+
+    async def add_customer_to_tenant(
+        self, *, customer_external_id: str, tenant_external_id: str
+    ) -> None:
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            result = await plain.add_customer_to_tenants(
+                AddCustomerToTenantsInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        external_id=customer_external_id
+                    ),
+                    tenant_identifiers=[
+                        TenantIdentifierInput(external_id=tenant_external_id)
+                    ],
+                )
+            )
+            if result.error is not None:
+                raise TenantOperationError(
+                    tenant_external_id, "add_customer", result.error.message
+                )
+
+    async def remove_customer_from_tenant(
+        self, *, customer_external_id: str, tenant_external_id: str
+    ) -> None:
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            result = await plain.remove_customer_from_tenants(
+                RemoveCustomerFromTenantsInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        external_id=customer_external_id
+                    ),
+                    tenant_identifiers=[
+                        TenantIdentifierInput(external_id=tenant_external_id)
+                    ],
+                )
+            )
+            if result.error is not None:
+                raise TenantOperationError(
+                    tenant_external_id, "remove_customer", result.error.message
+                )
+
+    async def update_tenant_tier(
+        self, *, tenant_external_id: str, tier_external_id: str | None
+    ) -> None:
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            result = await plain.update_tenant_tier(
+                UpdateTenantTierInput(
+                    tenant_identifier=TenantIdentifierInput(
+                        external_id=tenant_external_id
+                    ),
+                    tier_identifier=TierIdentifierInput(external_id=tier_external_id)
+                    if tier_external_id is not None
+                    else None,
+                )
+            )
+            if result.error is not None:
+                raise TenantOperationError(
+                    tenant_external_id, "update_tier", result.error.message
+                )
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:

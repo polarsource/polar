@@ -535,14 +535,20 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** Get */
+    /**
+     * Get
+     * @description **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
+     */
     get: operations['accounts:get']
     put?: never
     post?: never
     delete?: never
     options?: never
     head?: never
-    /** Patch */
+    /**
+     * Patch
+     * @description **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
+     */
     patch: operations['accounts:patch']
     trace?: never
   }
@@ -553,7 +559,10 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** Get Credits */
+    /**
+     * Get Credits
+     * @description **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
+     */
     get: operations['accounts:get_credits']
     put?: never
     post?: never
@@ -601,6 +610,8 @@ export interface paths {
     /**
      * Get Organization
      * @description Get an organization by ID.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get']
     put?: never
@@ -615,6 +626,8 @@ export interface paths {
      *
      *     If deletion cannot proceed immediately (has orders, subscriptions, or
      *     Stripe deletion fails), a support ticket will be created for manual handling.
+     *
+     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:delete']
     options?: never
@@ -622,6 +635,8 @@ export interface paths {
     /**
      * Update Organization
      * @description Update an organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     patch: operations['organizations:update']
     trace?: never
@@ -636,6 +651,8 @@ export interface paths {
     /**
      * Get Organization Account
      * @description Get the account for an organization.
+     *
+     *     **Scopes**: `payouts:read` `payouts:write` `transactions:read` `transactions:write`
      */
     get: operations['organizations:get_account']
     put?: never
@@ -662,6 +679,8 @@ export interface paths {
     /**
      * Set Organization Payout Account
      * @description Set the payout account for an organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     patch: operations['organizations:set_payout_account']
     trace?: never
@@ -676,6 +695,8 @@ export interface paths {
     /**
      * Get Organization KYC Details
      * @description Get an organization's KYC/compliance details.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:get_kyc']
     put?: never
@@ -760,6 +781,8 @@ export interface paths {
     /**
      * Members
      * @description List members in an organization.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:members']
     put?: never
@@ -782,6 +805,8 @@ export interface paths {
     /**
      * Invite Member
      * @description Invite a user to join an organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:invite_member']
     delete?: never
@@ -805,6 +830,8 @@ export interface paths {
      * @description Leave an organization.
      *
      *     The organization owner cannot leave; ownership must be transferred first.
+     *
+     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:leave_organization']
     options?: never
@@ -826,8 +853,9 @@ export interface paths {
      * Remove Member
      * @description Remove a member from an organization.
      *
-     *     Only organization admins can remove members.
-     *     Admins cannot remove themselves.
+     *     Requires `members:manage` permission. Owners cannot be removed.
+     *
+     *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:remove_member']
     options?: never
@@ -839,6 +867,8 @@ export interface paths {
      *     Only `admin` and `member` are accepted; ownership transfers go through
      *     a separate flow (`Account.admin_id` mutation, today the backoffice
      *     `change_admin` endpoint).
+     *
+     *     **Scopes**: `members:write`
      */
     patch: operations['organizations:set_member_role']
     trace?: never
@@ -855,6 +885,8 @@ export interface paths {
     /**
      * Get AI Validation Status
      * @description Get the AI validation status. Review runs asynchronously in the background.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:validate_with_ai']
     delete?: never
@@ -875,6 +907,8 @@ export interface paths {
     /**
      * Submit Appeal for Organization Review
      * @description Submit an appeal for organization review after AI validation failure.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:submit_appeal']
     delete?: never
@@ -895,6 +929,8 @@ export interface paths {
     /**
      * Mark AI Onboarding Complete
      * @description Mark the AI onboarding as completed for this organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:mark_ai_onboarding_complete']
     delete?: never
@@ -913,6 +949,8 @@ export interface paths {
     /**
      * Get Organization Review Status
      * @description Get the current review status and appeal information for an organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:get_review_status']
     put?: never
@@ -936,6 +974,8 @@ export interface paths {
      *
      *     Powers the account review UI: pre-submission gating checks plus,
      *     after submission, the AI verdict and appeal state.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:get_review']
     put?: never
@@ -958,6 +998,8 @@ export interface paths {
     /**
      * Validate Website URL
      * @description Validate that a website URL is reachable and not targeting a private network.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:validate_website']
     delete?: never
@@ -976,6 +1018,8 @@ export interface paths {
     /**
      * List Available Plans
      * @description List the plans this organization can subscribe to.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:list_plans']
     put?: never
@@ -996,12 +1040,16 @@ export interface paths {
     /**
      * Get Organization Subscription
      * @description Get the current Polar subscription for this organization.
+     *
+     *     **Scopes**: `organizations:write`
      */
     get: operations['organizations:get_subscription']
     put?: never
     /**
      * Start Subscription Checkout
      * @description Create a Polar checkout session for an initial paid subscription.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:start_subscription_checkout']
     delete?: never
@@ -1010,8 +1058,54 @@ export interface paths {
     /**
      * Change Organization Plan
      * @description Change the plan for an organization's existing subscription.
+     *
+     *     **Scopes**: `organizations:write`
      */
     patch: operations['organizations:change_subscription_plan']
+    trace?: never
+  }
+  '/v1/organizations/{id}/orders': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Organization Orders
+     * @description List Polar orders billed to this organization.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:list_orders']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/orders/{order_id}/invoice': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization Order Invoice
+     * @description Get the invoice URL for a Polar order belonging to this organization.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:get_order_invoice']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/v1/subscriptions/': {
@@ -4649,11 +4743,17 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /** Get */
+    /**
+     * Get
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
     get: operations['payout_accounts:get']
     put?: never
     post?: never
-    /** Delete */
+    /**
+     * Delete
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
     delete: operations['payout_accounts:delete']
     options?: never
     head?: never
@@ -4669,7 +4769,10 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Onboarding Link */
+    /**
+     * Onboarding Link
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
     post: operations['payout_accounts:onboarding_link']
     delete?: never
     options?: never
@@ -4686,7 +4789,10 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Dashboard Link */
+    /**
+     * Dashboard Link
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
     post: operations['payout_accounts:dashboard_link']
     delete?: never
     options?: never
@@ -6623,6 +6729,8 @@ export interface components {
       tax_country?: string | null
       /** Fee */
       fee: number
+      /** Exchange Rate */
+      exchange_rate?: number
     }
     /**
      * BalanceDisputeEvent
@@ -19713,6 +19821,12 @@ export interface components {
       items: components['schemas']['OrganizationMember'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationOrder] */
+    ListResource_OrganizationOrder_: {
+      /** Items */
+      items: components['schemas']['OrganizationOrder'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Organization] */
     ListResource_Organization_: {
       /** Items */
@@ -23693,6 +23807,45 @@ export interface components {
       /** New Subscription */
       new_subscription: boolean
     }
+    /** OrganizationOrder */
+    OrganizationOrder: {
+      /** Id */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Invoice Number */
+      invoice_number: string
+      /** Status */
+      status: string
+      /** Paid */
+      paid: boolean
+      /**
+       * Total Amount
+       * @description Total amount in cents, after discount and tax.
+       */
+      total_amount: number
+      /**
+       * Refunded Amount
+       * @description Refunded amount in cents.
+       */
+      refunded_amount: number
+      /** Currency */
+      currency: string
+      /** Billing Reason */
+      billing_reason: string
+      /** Product Name */
+      product_name: string
+      /** Is Invoice Generated */
+      is_invoice_generated: boolean
+    }
+    /** OrganizationOrderInvoice */
+    OrganizationOrderInvoice: {
+      /** Url */
+      url: string
+    }
     /** OrganizationPaymentStatus */
     OrganizationPaymentStatus: {
       /**
@@ -23729,6 +23882,11 @@ export interface components {
        * @default false
        */
       highlight: boolean
+      /**
+       * Custom
+       * @default false
+       */
+      custom: boolean
       /** Features */
       features?: string[]
     }
@@ -23780,6 +23938,11 @@ export interface components {
        * @description Optional contextual value associated with the check, e.g. the product URL for the `product_url` check.
        */
       value?: string | null
+      /**
+       * Sub Checks
+       * @description Per-component breakdown, populated only for aggregate checks (currently `setup_readiness`). The parent `status` is the source of truth for gating.
+       */
+      sub_checks?: components['schemas']['OrganizationReviewSubCheck'][]
     }
     /**
      * OrganizationReviewCheckKey
@@ -23812,6 +23975,7 @@ export interface components {
       | 'payout_account.requirements_due'
       | 'payout_account.payouts_disabled'
       | 'setup_readiness.webhook_missing'
+      | 'setup_readiness.checkout_link_not_fulfillable'
     /**
      * OrganizationReviewCheckStatus
      * @enum {string}
@@ -23865,6 +24029,38 @@ export interface components {
        */
       appeal_reviewed_at?: string | null
     }
+    /**
+     * OrganizationReviewSubCheck
+     * @description A nested sub-item that contributes to a parent check's rolled-up status.
+     *
+     *     Sub-checks expose the per-component breakdown for aggregate checks (e.g.
+     *     `setup_readiness`) so the frontend doesn't have to re-derive which path
+     *     is configured. The parent's `status` is the source of truth for gating;
+     *     reasons explaining a sub-item live on the sub-check itself.
+     */
+    OrganizationReviewSubCheck: {
+      key: components['schemas']['OrganizationReviewSubCheckKey']
+      status: components['schemas']['OrganizationReviewCheckStatus']
+      /**
+       * Reasons
+       * @description Reasons for the sub-check's current status. Empty when `passed`.
+       */
+      reasons?: components['schemas']['OrganizationReviewCheckReason'][]
+      /**
+       * Value
+       * @description Optional contextual value associated with the sub-check.
+       */
+      value?: string | null
+    }
+    /**
+     * OrganizationReviewSubCheckKey
+     * @description Stable identifiers for nested sub-checks inside a parent check.
+     * @enum {string}
+     */
+    OrganizationReviewSubCheckKey:
+      | 'setup_readiness.checkout_link'
+      | 'setup_readiness.access_token'
+      | 'setup_readiness.webhook'
     /**
      * OrganizationRole
      * @enum {string}
@@ -32320,7 +32516,7 @@ export interface operations {
           'application/json': components['schemas']['Account']
         }
       }
-      /** @description User is not the admin of the account. */
+      /** @description User lacks `finance:read` permission. */
       403: {
         headers: {
           [name: string]: unknown
@@ -33165,6 +33361,92 @@ export interface operations {
         }
       }
       /** @description Organization or subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:list_orders': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationOrder_']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_order_invoice': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        order_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Order invoice URL returned. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationOrderInvoice']
+        }
+      }
+      /** @description Order or invoice not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -54479,6 +54761,7 @@ export const organizationReviewCheckReasonValues: ReadonlyArray<
   'payout_account.requirements_due',
   'payout_account.payouts_disabled',
   'setup_readiness.webhook_missing',
+  'setup_readiness.checkout_link_not_fulfillable',
 ]
 export const organizationReviewCheckStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckStatus']
@@ -54489,6 +54772,13 @@ export const organizationReviewStateVerdictAnyOf0Values: ReadonlyArray<
 export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']
+export const organizationReviewSubCheckKeyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationReviewSubCheckKey']
+> = [
+  'setup_readiness.checkout_link',
+  'setup_readiness.access_token',
+  'setup_readiness.webhook',
+]
 export const organizationRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationRole']
 > = ['owner', 'admin', 'member']

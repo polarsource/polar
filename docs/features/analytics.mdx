@@ -1,69 +1,74 @@
 ---
 title: "Analytics"
 sidebarTitle: "Analytics"
+description: "Understand how every metric in your dashboard is calculated."
 ---
 
-## Sales Metrics
+Polar ships with a built-in analytics dashboard so you can stay focused on growing the business rather than wiring up reporting.
 
-Polar offers a professional metrics dashboard out of the box. So you can stay focused on increasing revenue vs. how to measure it.
+Each section below maps to one of the dashboards on the **Analytics** page and walks through what its metrics actually mean.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/analytics/overview.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/analytics/overview.dark.png"
-/>
+## How metrics are bucketed
 
-**Missing any metrics?** [Let us know so we can add it.](https://github.com/orgs/polarsource/discussions/categories/feature-requests)
+When you pick a date range, Polar splits it into equal-width **intervals** — one hour, one day, one week, one month, or one year each — and aggregates every metric inside each interval. Each interval (sometimes called a "bucket") is one point on the chart and one row in the API response.
 
-### Filters
+## Subscriptions
 
-You can easily slice and dice metrics with the filters below.
+- **Monthly Recurring Revenue (MRR)** — Sum of every active subscription's amount, normalized to a monthly rate (yearly plans are divided by 12). Trialing subscriptions are excluded.
+- **Committed MRR** — MRR restricted to subscriptions still inside a committed billing period. Subscriptions that have been canceled but are running out the clock until period end are excluded.
+- **Trial MRR Including Canceled Trials** — Monthly-normalized amount of every subscription currently in a trial, including trials that have already been canceled.
+- **Trial Committed MRR** — Trial MRR for trials still inside their committed billing period (i.e. canceled trials are excluded).
+- **Active Subscriptions** — Count of subscriptions in the `active` state at the end of each interval. Subscriptions stay active until the end of the period they paid for, even after cancellation.
+- **New Subscriptions** — Subscriptions whose first paid order falls inside the interval. Each subscription is counted once, at creation.
+- **Committed Subscriptions** — Active subscriptions that have not been canceled, or whose cancellation date is after the interval. These are the subscriptions you can reasonably expect to renew.
+- **Renewed Subscriptions** — Number of orders with billing reason `subscription_cycle` in the interval — i.e. renewals on existing subscriptions.
+- **Average Revenue Per User (ARPU)** — MRR divided by the count of distinct paying subscribers in the interval (trials excluded). Returns 0 when there are no paying subscribers.
+- **Lifetime Value (LTV)** — Estimated revenue per customer over their lifetime: `(ARPU - cost per user) / churn rate`. Returns 0 when churn rate is 0.
+- **New Subscriptions Revenue** — Gross revenue from the first paid order on every new subscription created in the interval.
+- **Renewed Subscriptions Revenue** — Gross revenue from subscription renewal orders in the interval.
 
-### Period
+## Cancellations
 
-Change the time period in the X-axis to one of:
+- **Canceled Subscriptions** — Subscriptions where the customer triggered a cancellation in the interval. The subscription itself may still be active until the end of the paid period.
+- **Churned Subscriptions** — Subscriptions whose paid period actually ended inside the interval. This is "real" churn — the moment access stops.
+- **Churn Rate** — Churned subscriptions in the interval divided by the active subscription base at the start of the interval, expressed as a percentage.
+- **Active Subscriptions** — Same definition as in the [Subscriptions](#subscriptions) dashboard. Shown here to contextualise churn against the underlying base.
+- **Committed Subscriptions** — Same definition as in the [Subscriptions](#subscriptions) dashboard.
+- **Cancellation reasons** — Stacked chart of canceled subscriptions broken down by the reason the customer picked at cancellation: *too expensive*, *missing features*, *switched service*, *unused*, *customer service*, *low quality*, *too complex*, or *other* (free-form or no reason given).
 
-- Yearly
-- Monthly
-- Weekly
-- Daily
-- Hourly
+## One-Time Products
 
-### Timeframe
+- **One-Time Products** — Number of completed orders for non-recurring products in the interval. Subscription orders are not included.
+- **One-Time Products Revenue** — Gross revenue (subtotal before fees) from those one-time product orders.
 
-You can choose a date range to view all metrics for.
+## Orders
 
-### Product
+- **Revenue** — Gross revenue from every completed order in the interval: one-time purchases, new subscription orders, and renewal orders. Computed on the order subtotal, before Polar fees and tax.
+- **Orders** — Total number of completed orders in the interval, regardless of billing reason.
+- **Average Order Value (AOV)** — Revenue divided by the number of orders. Returns 0 when there are no orders.
+- **Cumulative Revenue** — Running total of revenue from the start of the selected range up to and including the current interval.
 
-By default metrics reflect the total across all products. However, you can specify individual products or subscription tiers to filter metrics by.
+## Checkouts
 
-## Metrics
+- **Checkouts Conversion** — Succeeded checkouts divided by total checkouts created, as a percentage. Returns 0 when no checkouts were created.
+- **Checkouts** — Every checkout session created in the interval, regardless of outcome (succeeded, expired, or abandoned).
+- **Succeeded Checkouts** — Checkouts that reached the `succeeded` status, meaning they resulted in an order.
 
-- **Revenue**: How much revenue you've earned before fees.
-- **Orders**: How many product sales and subscription payments have been made.
-- **Average Order Value (AOV)**: The average earning per order, i.e. revenue / orders.
-- **One-Time Products**: Amount of products sold.
-- **One-Time Products Revenue**: Amount of revenue earned from products.
-- **New Subscriptions**: Amount of new subscriptions.
-- **New Subscription Revenue**: Amount of revenue earned from new subscriptions.
-- **Renewed Subscriptions**: Amount of renewed subscriptions.
-- **Renewed Subscription Revenue**: Amount of revenue earned from renewed subscriptions.
-- **Active Subscriptions**: Amount of active subscriptions (new + renewed).
-- **Monthly Recurring Revenue (MRR)**: Amount of revenue earned from active subscriptions.
-- **Checkouts**: Number of created checkouts.
-- **Succeeded Checkouts**: Number of successful checkouts, i.e. checkouts that lead to a new order or subscription.
-- **Checkouts Conversion Rate**: The percentage of successful checkouts out of all created checkouts.
+## Net Revenue
 
-## Cost Metrics
+- **Net Revenue** — Revenue after deducting Polar's platform fee and the payment processor's fee on each order. This is the amount actually paid out to you.
+- **Net Average Order Value** — Net revenue divided by the number of orders in the interval.
+- **Net Cumulative Revenue** — Running total of net revenue from the start of the selected range up to the current interval.
+- **New Subscriptions Net Revenue** — Net revenue from the first paid order on every new subscription. Shown when your organization sells recurring products.
+- **Renewed Subscriptions Net Revenue** — Net revenue from subscription renewal orders. Shown when your organization sells recurring products.
+- **One-Time Products Net Revenue** — Net revenue from one-time product orders. Shown when your organization sells one-time products.
 
-- **Costs**: How much costs you've incurred.
-- **Cumulative Costs**: How much costs you've incurred over time.
-- **Cost Per User**: The average cost per active user.
-- **Gross Margin**: The gross margin, i.e. revenue - costs.
-- **Gross Margin Percentage**: The gross margin percentage, i.e. gross margin / revenue.
-- **Net Cashflow**: The net cashflow, i.e. revenue - costs.
-- **Monthly Recurring Cost (MRC)**: The monthly recurring cost, i.e. costs / active subscriptions.
-- **Return on Investment (ROI)**: The return on investment, i.e. (revenue - costs) / costs.
+## Costs
+
+The Costs dashboard is powered by [Cost Insights](/features/cost-insights/introduction) — you'll only see data here once you start sending events with a `_cost` annotation.
+
+- **Costs** — Total operating costs ingested via Cost Insights in the interval. Stored at sub-cent precision so per-event costs (e.g. token-level inference costs) aren't rounded away.
+- **Cost Per User** — Cumulative costs in the selected range divided by the count of active subscribers. Returns 0 when there are no active subscribers.
+- **Gross Margin** — Cumulative revenue minus cumulative costs over the selected range.
+- **Gross Margin %** — Gross margin expressed as a percentage of cumulative revenue. Returns 0 when cumulative revenue is 0.
+- **Cashflow** — Revenue minus costs for the interval itself (not cumulative). Useful for spotting periods where costs outpaced revenue.

@@ -24,9 +24,9 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
     return (
       <Box display="flex" alignItems="center" columnGap="s">
         <LoadingBox width={24} height={24} borderRadius="full" />
-        <LoadingBox width={140} height={14} borderRadius="s" />
+        <LoadingBox width={140} height={26} borderRadius="s" />
         <Box marginLeft="auto">
-          <LoadingBox width={60} height={20} borderRadius="m" />
+          <LoadingBox width={46} height={32} borderRadius="m" />
         </Box>
       </Box>
     )
@@ -35,14 +35,19 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
   const stepConfig = STEP_CONFIG[step.key]
   const renderSection = stepConfig?.render
   const label = stepConfig?.label ?? step.key
-  const reasonText = step.reasons
-    ?.map(
-      (reason) =>
-        stepConfig?.reasonLabels?.[reason] ??
-        COMMON_REASON_LABELS[reason] ??
-        reason,
-    )
-    .join(', ')
+  const getReasonText = (): string | undefined => {
+    if (!step.reasons || step.reasons.length === 0) return undefined
+    if (step.reasons.length > 1) return 'Multiple issues need your attention'
+    return step.reasons
+      .map(
+        (reason) =>
+          stepConfig?.reasonLabels?.[reason] ??
+          COMMON_REASON_LABELS[reason] ??
+          reason,
+      )
+      .join(', ')
+  }
+  const reasonText = getReasonText()
   const isActionable = !!renderSection
   const collapsedLabel = step.status === 'pending' ? 'Add' : 'Update'
   const showExpanded = isExpanded && !!renderSection
@@ -109,7 +114,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               transition={{ duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
               style={{ overflow: 'hidden' }}
             >
-              <Box paddingTop="m">{renderSection({ organization })}</Box>
+              <Box paddingTop="m">{renderSection({ organization, step })}</Box>
             </motion.div>
           )}
         </AnimatePresence>

@@ -7,8 +7,13 @@ import structlog
 from sqlalchemy import UnaryExpression, asc, desc
 
 from polar.auth.models import AuthSubject, Organization, is_user
+from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+    get_accessible_org_ids,
+)
 from polar.config import settings
 from polar.email.schemas import (
     OrganizationAccessTokenLeakedEmail,
@@ -52,7 +57,9 @@ class OrganizationAccessTokenService:
         ],
     ) -> tuple[Sequence[OrganizationAccessToken], int]:
         repository = OrganizationAccessTokenRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.organization_manage
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
 
         if organization_id is not None:
@@ -92,7 +99,9 @@ class OrganizationAccessTokenService:
         id: UUID,
     ) -> OrganizationAccessToken | None:
         repository = OrganizationAccessTokenRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.organization_manage
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             OrganizationAccessToken.id == id,
             OrganizationAccessToken.is_deleted.is_(False),
@@ -114,6 +123,12 @@ class OrganizationAccessTokenService:
     ) -> tuple[OrganizationAccessToken, str]:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.organization_manage,
         )
         self._validate_scopes_within_caller(auth_subject, create_schema.scopes)
         token, token_hash = generate_token_hash_pair(
@@ -149,6 +164,12 @@ class OrganizationAccessTokenService:
         organization_access_token: OrganizationAccessToken,
         update_schema: OrganizationAccessTokenUpdate,
     ) -> OrganizationAccessToken:
+        await assert_resource_permission(
+            session,
+            auth_subject,
+            organization_access_token,
+            OrganizationPermission.organization_manage,
+        )
         repository = OrganizationAccessTokenRepository.from_session(session)
 
         update_dict = update_schema.model_dump(exclude={"scopes"}, exclude_unset=True)
@@ -181,8 +202,17 @@ class OrganizationAccessTokenService:
             )
 
     async def delete(
-        self, session: AsyncSession, organization_access_token: OrganizationAccessToken
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_access_token: OrganizationAccessToken,
     ) -> None:
+        await assert_resource_permission(
+            session,
+            auth_subject,
+            organization_access_token,
+            OrganizationPermission.organization_manage,
+        )
         repository = OrganizationAccessTokenRepository.from_session(session)
         await repository.soft_delete(organization_access_token)
 

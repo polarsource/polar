@@ -6,6 +6,12 @@ description: "Withdraw money from your Polar account"
 
 You can issue a withdrawal — also called a payout — once your balance meets the minimum threshold for your account currency. Polar transfers the balance, minus Stripe payout fees (see below), to your Stripe account, and Stripe issues the payout from there.
 
+## Payout Delay
+
+Transactions are subject to a **7-day settlement delay** from the date they occur before the corresponding funds become available for payout. This delay applies by default to organizations created on or after May 12, 2026. Organizations created before this date continue to receive instant payouts.
+
+We may also extend this delay or hold specific transactions when it makes sense — most commonly to align your settlement window with your refund policy, and occasionally for risk or compliance reasons.
+
 ## Minimum Payout Thresholds
 
 The minimum balance required to issue a payout varies based on the payout currency. Certain currencies have a higher limit due to Stripe requirements, and these limits can change.

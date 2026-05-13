@@ -7,7 +7,7 @@ from typing import Any, Literal, cast, overload
 from urllib.parse import urlencode
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
@@ -2284,28 +2284,18 @@ class SubscriptionService:
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product
     ) -> None:
-        base_statement = select(Subscription).where(
-            Subscription.product_id == product.id, Subscription.is_deleted.is_(False)
-        )
+        repository = SubscriptionRepository.from_session(session)
+        subscription_ids = await repository.get_ids_by_product(product.id)
 
-        count_result = await session.execute(
-            base_statement.with_only_columns(func.count())
+        calculate_delay = make_bulk_job_delay_calculator(
+            len(subscription_ids), max_spread_ms=30 * 60 * 1000
         )
-        total_count = count_result.scalar_one()
-        calculate_delay = make_bulk_job_delay_calculator(total_count)
-
-        subscriptions = await session.stream_scalars(
-            base_statement,
-            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
-        )
-        index = 0
-        async for subscription in subscriptions:
-            await self.enqueue_benefits_grants(
-                session,
-                subscription,
+        for index, subscription_id in enumerate(subscription_ids):
+            enqueue_job(
+                "subscription.enqueue_benefits_grants",
+                subscription_id,
                 delay=calculate_delay(index),
             )
-            index += 1
 
     async def send_uncanceled_email(
         self, session: AsyncSession, subscription: Subscription

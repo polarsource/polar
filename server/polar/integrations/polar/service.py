@@ -12,13 +12,21 @@ from polar_sdk.models import (
 from polar.account.repository import AccountRepository
 from polar.config import settings
 from polar.exceptions import PolarError
+from polar.integrations.plain.service import plain as plain_service
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
 from .client import get_client
 
 if TYPE_CHECKING:
-    from polar_sdk.models import BenefitGrant, Checkout, Customer, Product, Subscription
+    from polar_sdk.models import (
+        BenefitGrant,
+        Checkout,
+        Customer,
+        Order,
+        Product,
+        Subscription,
+    )
 
 
 BenefitGrantWebhookPayload = (
@@ -55,6 +63,12 @@ class PolarSelfNoActiveSubscription(PolarError):
             status_code=404,
         )
         self.organization_id = organization_id
+
+
+class PolarSelfOrderNotFound(PolarError):
+    def __init__(self, order_id: str) -> None:
+        super().__init__(f"Order {order_id!r} not found.", status_code=404)
+        self.order_id = order_id
 
 
 class PolarSelfService:
@@ -221,6 +235,51 @@ class PolarSelfService:
             product_id=product_id,
         )
 
+    async def list_orders(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        page: int = 1,
+        limit: int = 50,
+    ) -> tuple[list["Order"], int]:
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+
+        client = get_client()
+        customer = await client.get_customer_by_external_id_or_none(
+            str(organization_id)
+        )
+        if customer is None:
+            return [], 0
+
+        return await client.list_customer_orders(
+            customer_id=customer.id,
+            page=page,
+            limit=limit,
+        )
+
+    async def get_order_invoice_url(
+        self, organization_id: uuid.UUID, order_id: str
+    ) -> str:
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+
+        client = get_client()
+        customer = await client.get_customer_by_external_id_or_none(
+            str(organization_id)
+        )
+        if customer is None:
+            raise PolarSelfOrderNotFound(order_id)
+
+        order = await client.get_order(order_id=order_id)
+        if order is None or order.customer_id != customer.id:
+            raise PolarSelfOrderNotFound(order_id)
+
+        url = await client.get_order_invoice(order_id=order_id)
+        if url is None:
+            raise PolarSelfOrderNotFound(order_id)
+        return url
+
     async def handle_benefit_grant_event(
         self, session: AsyncSession, payload: BenefitGrantWebhookPayload
     ) -> None:
@@ -338,11 +397,19 @@ class PolarSelfService:
 
     def _extract_support(
         self, metadata: dict[str, Any], benefit_id: str
-    ) -> tuple[int, bool, bool]:
+    ) -> tuple[int, bool, bool, str | None]:
         level = self._parse_support_level(metadata, benefit_id)
         slack = self._parse_bool_metadata(metadata, "slack", benefit_id)
         prioritized = self._parse_bool_metadata(metadata, "prioritized", benefit_id)
-        return level, slack, prioritized
+        plain_tier_external_id = metadata.get("plain_tier_external_id")
+        if plain_tier_external_id is not None and not (
+            isinstance(plain_tier_external_id, str) and plain_tier_external_id
+        ):
+            raise SupportBenefitError(
+                f"Benefit {benefit_id} has invalid plain_tier_external_id: "
+                f"{plain_tier_external_id!r}"
+            )
+        return level, slack, prioritized, plain_tier_external_id
 
     def _parse_support_level(self, metadata: dict[str, Any], benefit_id: str) -> int:
         value = metadata.get("level")
@@ -387,19 +454,24 @@ class PolarSelfService:
             level: int | None = None
             slack: bool | None = None
             prioritized: bool | None = None
+            plain_tier_external_id: str | None = None
         else:
-            level, slack, prioritized = self._extract_support(
+            level, slack, prioritized, plain_tier_external_id = self._extract_support(
                 grant.benefit.metadata or {}, grant.benefit_id
             )
 
-        # TODO: persist once support tier fields exist on the org/account.
-        logfire.info(
+        with logfire.span(
             "polar_self.webhook.support.applied",
             organization_id=str(organization_id),
             level=level,
             slack=slack,
             prioritized=prioritized,
-        )
+            plain_tier_external_id=plain_tier_external_id,
+        ):
+            await plain_service.update_tenant_tier(
+                tenant_external_id=str(organization_id),
+                tier_external_id=plain_tier_external_id,
+            )
 
     async def _fetch_active_grant(
         self, customer_id: str, benefit_type: str

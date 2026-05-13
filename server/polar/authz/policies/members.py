@@ -7,37 +7,29 @@ from polar.postgres import AsyncReadSession
 from . import _require_permission
 
 
+async def can_read(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization],
+    organization: OrganizationModel,
+) -> PolicyResult:
+    """Can the subject view the members of this organization?"""
+    return await _require_permission(
+        session,
+        auth_subject,
+        organization,
+        permission=OrganizationPermission.members_read,
+    )
+
+
 async def can_manage(
     session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> PolicyResult:
-    """Can the subject invite/remove/change members?
-
-    `members:invite` is used as a representative permission — admin and
-    owner share the full member-management set, so checking any one of
-    `members:invite`, `members:remove`, `members:set_role` gives the
-    same answer in this iteration.
-    """
+    """Can the subject invite, remove, or change the role of members?"""
     return await _require_permission(
         session,
         auth_subject,
         organization,
-        permission=OrganizationPermission.members_invite,
-        denied_msg="Only an organization admin can manage members",
-    )
-
-
-async def can_set_role(
-    session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
-    organization: OrganizationModel,
-) -> PolicyResult:
-    """Can the subject change another member's role?"""
-    return await _require_permission(
-        session,
-        auth_subject,
-        organization,
-        permission=OrganizationPermission.members_set_role,
-        denied_msg="Only an organization admin can change member roles",
+        permission=OrganizationPermission.members_manage,
     )

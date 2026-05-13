@@ -18,9 +18,13 @@ const isSupportedKey = (key: unknown): key is keyof typeof ACTIONS => {
 
 const emitter = new EventEmitter()
 
-const useSSE = (streamURL: string, token?: string): EventEmitter => {
+const useSSE = (
+  streamURL: string,
+  token?: string,
+  requiresToken = false,
+): EventEmitter => {
   useEffect(() => {
-    if (!token) {
+    if (requiresToken && !token) {
       return
     }
 
@@ -52,7 +56,7 @@ const useSSE = (streamURL: string, token?: string): EventEmitter => {
     }
 
     return cleanup
-  }, [streamURL, token])
+  }, [streamURL, token, requiresToken])
 
   return emitter
 }
@@ -66,4 +70,5 @@ export const useCustomerSSE = (customerSessionToken?: string) =>
   useSSE(
     getServerURL('/v1/customer-portal/customers/stream'),
     customerSessionToken,
+    true,
   )

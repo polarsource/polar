@@ -2215,7 +2215,7 @@ class TestUpdateProductBenefitsGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        enqueue_benefits_grants_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
         customer: Customer,
         product: Product,
         product_second: Product,
@@ -2237,11 +2237,13 @@ class TestUpdateProductBenefitsGrants:
 
         await subscription_service.update_product_benefits_grants(session, product)
 
-        assert enqueue_benefits_grants_mock.call_count == 2
-        # Collect actual subscription IDs from the mock calls
-        actual_ids = set(
-            call.args[1].id for call in enqueue_benefits_grants_mock.call_args_list
-        )
+        enqueue_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "subscription.enqueue_benefits_grants"
+        ]
+        assert len(enqueue_calls) == 2
+        actual_ids = {call.args[1] for call in enqueue_calls}
         expected_ids = {subscription_1.id, subscription_2.id}
         assert actual_ids == expected_ids
 
@@ -4512,7 +4514,11 @@ class TestUpdateSeats:
         )
         await session.flush()
 
-        # Then: Discount applied to billing entry
+        # Then: Fixed discount does not change between old and new effective
+        # amounts, so it cancels out in the delta. The customer was already
+        # benefiting from the $10 off on the original $50, and continues to
+        # benefit from $10 off on the new $100 — the incremental charge is the
+        # full $50.
         billing_entry_repo = BillingEntryRepository.from_session(session)
         entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
         proration_entries = [
@@ -4521,15 +4527,10 @@ class TestUpdateSeats:
         assert len(proration_entries) == 1
         entry = proration_entries[0]
         assert entry.direction == BillingEntryDirection.debit
-        assert entry.discount_amount is not None
-        # Base delta is $50, fixed discount of $10 on the delta
-        # Since we're at the start of the period (100% time remaining),
-        # proration factor is 1.0, so full discount applies
-        assert entry.discount_amount == 1000  # $10 in cents
-        assert entry.discount == discount
-        # Net charge: $50 - $10 = $40
+        assert entry.discount_amount is None
+        assert entry.discount is None
         assert entry.amount is not None
-        assert entry.amount == 4000  # $40 in cents
+        assert entry.amount == 5000  # $50 in cents
 
     async def test_seat_increase_with_percentage_discount(
         self,
@@ -4643,7 +4644,9 @@ class TestUpdateSeats:
         )
         await session.flush()
 
-        # Then: Discount reduces the credit amount
+        # Then: Fixed discount applies equally to old ($100 → $90) and new
+        # ($50 → $40) effective amounts, so it cancels out in the delta. The
+        # credit reflects the full $50 difference in base amount.
         billing_entry_repo = BillingEntryRepository.from_session(session)
         entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
         credit_entries = [
@@ -4652,16 +4655,10 @@ class TestUpdateSeats:
         assert len(credit_entries) == 1
         entry = credit_entries[0]
         assert entry.direction == BillingEntryDirection.credit
-        assert entry.discount_amount is not None
-        # Base credit delta is -$50, discount of $10 on the delta
-        # reduces the credit to -$40 (customer gets less credit)
-        # Since we're at the start of the period (100% time remaining),
-        # proration factor is 1.0, so full discount applies
-        assert entry.discount_amount == 1000  # $10 in cents
-        assert entry.discount == discount
-        # Net credit: $50 - $10 = $40
+        assert entry.discount_amount is None
+        assert entry.discount is None
         assert entry.amount is not None
-        assert entry.amount == 4000  # $40 in cents
+        assert entry.amount == 5000  # $50 in cents
 
     async def test_seat_increase_without_discount(
         self,

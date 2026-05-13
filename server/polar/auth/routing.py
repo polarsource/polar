@@ -8,6 +8,34 @@ from fastapi.routing import APIRoute
 from polar.auth.dependencies import _Authenticator
 
 
+def _find_authenticator(dependency: typing.Any) -> _Authenticator | None:
+    """Locate an ``_Authenticator`` in a dependency tree.
+
+    Direct ``_Authenticator`` instances are returned as-is. For callables
+    that wrap an authenticator (e.g. ``OrgPolicyGuard``'s inner
+    ``dependency`` function, which takes ``Annotated[..., Depends(_authenticator)]``
+    as one of its own parameters), we recurse one level into the callable's
+    own type hints to find it.
+    """
+    if isinstance(dependency, _Authenticator):
+        return dependency
+    if dependency is None:
+        return None
+    try:
+        hints = typing.get_type_hints(dependency, include_extras=True)
+    except Exception:
+        return None
+    for hint in hints.values():
+        if typing.get_origin(hint) is not typing.Annotated:
+            continue
+        for meta in hint.__metadata__:
+            if not isinstance(meta, Depends):
+                continue
+            if isinstance(meta.dependency, _Authenticator):
+                return meta.dependency
+    return None
+
+
 class DocumentedAuthSubjectAPIRoute(APIRoute):
     """
     A subclass of `APIRoute` that automatically
@@ -28,12 +56,12 @@ class DocumentedAuthSubjectAPIRoute(APIRoute):
                 if len(metadata) == 0 or not isinstance(metadata[0], Depends):
                     continue
 
-                dependency = metadata[0].dependency
-                if not isinstance(dependency, _Authenticator):
+                authenticator = _find_authenticator(metadata[0].dependency)
+                if authenticator is None:
                     continue
 
-                allowed_subjects = dependency.allowed_subjects
-                required_scopes = dependency.required_scopes
+                allowed_subjects = authenticator.allowed_subjects
+                required_scopes = authenticator.required_scopes
 
                 allowed_subjects_names = sorted(
                     [allowed_subject.__name__ for allowed_subject in allowed_subjects]

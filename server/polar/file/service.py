@@ -5,6 +5,7 @@ from datetime import datetime
 import structlog
 
 from polar.auth.models import AuthSubject
+from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.kit.pagination import PaginationParams
 from polar.models import Organization, ProductMedia, User
@@ -35,7 +36,9 @@ class FileService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[File], int]:
         repository = FileRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
 
         statement = repository.get_statement_by_org_ids(org_ids).where(
             File.is_uploaded.is_(True)
@@ -58,7 +61,9 @@ class FileService:
         id: uuid.UUID,
     ) -> File | None:
         repository = FileRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(File.id == id)
         return await repository.get_one_or_none(statement)
 

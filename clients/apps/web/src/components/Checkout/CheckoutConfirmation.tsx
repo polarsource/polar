@@ -52,10 +52,14 @@ const StripeRequiresAction = ({
       setPendingHandling(true)
       if (intent_status === 'requires_action') {
         try {
-          await stripe.handleNextAction({
+          const { paymentIntent, setupIntent } = await stripe.handleNextAction({
             clientSecret: intent_client_secret,
           })
-          setSuccess(true)
+          const currentIntentStatus =
+            paymentIntent?.status || setupIntent?.status
+          if (currentIntentStatus === 'succeeded') {
+            setSuccess(true)
+          }
         } catch (err) {
           // Case where the intent is already confirmed, but we didn't receive the webhook update yet
           if (

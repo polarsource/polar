@@ -19,6 +19,7 @@ async def _create_event(
     timestamp: datetime | None = None,
     source: EventSource = EventSource.user,
     name: str = "test_event",
+    user_metadata: dict[str, object] | None = None,
 ) -> Event:
     event_id = uuid.uuid4()
     event = Event(
@@ -29,7 +30,7 @@ async def _create_event(
         name=name,
         organization=organization,
         root_id=event_id,
-        user_metadata={},
+        user_metadata=user_metadata or {},
     )
     await save_fixture(event)
     return event
@@ -258,6 +259,181 @@ class TestGetLatestPolarSelfIngestionTimestamp:
         repository = EventRepository.from_session(session)
         result = await repository.get_latest_polar_self_ingestion_timestamp(
             organization.id
+        )
+
+        assert result is None
+
+
+async def _create_balance_order(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    timestamp: datetime,
+    exchange_rate: float,
+    presentment_currency: str = "eur",
+) -> Event:
+    return await _create_event(
+        save_fixture,
+        organization=organization,
+        ingested_at=timestamp,
+        timestamp=timestamp,
+        source=EventSource.system,
+        name="balance.order",
+        user_metadata={
+            "presentment_currency": presentment_currency,
+            "exchange_rate": exchange_rate,
+        },
+    )
+
+
+@pytest.mark.asyncio
+class TestGetRecentBalanceOrderExchangeRate:
+    async def test_returns_most_recent_prior_match(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        now = utc_now()
+        await _create_balance_order(
+            save_fixture,
+            organization=organization,
+            timestamp=now - timedelta(hours=2),
+            exchange_rate=0.30,
+        )
+        await _create_balance_order(
+            save_fixture,
+            organization=organization,
+            timestamp=now - timedelta(hours=1),
+            exchange_rate=0.35,
+        )
+
+        repository = EventRepository.from_session(session)
+        result = await repository.get_recent_balance_order_exchange_rate(
+            organization.id, "eur", before=now
+        )
+
+        assert result == 0.35
+
+    async def test_returns_none_without_prior_balance_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repository = EventRepository.from_session(session)
+        result = await repository.get_recent_balance_order_exchange_rate(
+            organization.id, "eur", before=utc_now()
+        )
+
+        assert result is None
+
+    async def test_filters_by_presentment_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        now = utc_now()
+        await _create_balance_order(
+            save_fixture,
+            organization=organization,
+            timestamp=now - timedelta(hours=1),
+            exchange_rate=0.30,
+            presentment_currency="gbp",
+        )
+
+        repository = EventRepository.from_session(session)
+        result = await repository.get_recent_balance_order_exchange_rate(
+            organization.id, "eur", before=now
+        )
+
+        assert result is None
+
+    async def test_filters_by_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        now = utc_now()
+        await _create_balance_order(
+            save_fixture,
+            organization=organization_second,
+            timestamp=now - timedelta(hours=1),
+            exchange_rate=0.30,
+        )
+
+        repository = EventRepository.from_session(session)
+        result = await repository.get_recent_balance_order_exchange_rate(
+            organization.id, "eur", before=now
+        )
+
+        assert result is None
+
+    async def test_ignores_events_after_before_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        now = utc_now()
+        await _create_balance_order(
+            save_fixture,
+            organization=organization,
+            timestamp=now + timedelta(hours=1),
+            exchange_rate=0.30,
+        )
+
+        repository = EventRepository.from_session(session)
+        result = await repository.get_recent_balance_order_exchange_rate(
+            organization.id, "eur", before=now
+        )
+
+        assert result is None
+
+    async def test_ignores_events_older_than_30_day_lookback(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        now = utc_now()
+        await _create_balance_order(
+            save_fixture,
+            organization=organization,
+            timestamp=now - timedelta(days=31),
+            exchange_rate=0.30,
+        )
+
+        repository = EventRepository.from_session(session)
+        result = await repository.get_recent_balance_order_exchange_rate(
+            organization.id, "eur", before=now
+        )
+
+        assert result is None
+
+    async def test_skips_balance_order_without_exchange_rate(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        now = utc_now()
+        await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=now - timedelta(hours=1),
+            timestamp=now - timedelta(hours=1),
+            source=EventSource.system,
+            name="balance.order",
+            user_metadata={"presentment_currency": "eur"},
+        )
+
+        repository = EventRepository.from_session(session)
+        result = await repository.get_recent_balance_order_exchange_rate(
+            organization.id, "eur", before=now
         )
 
         assert result is None

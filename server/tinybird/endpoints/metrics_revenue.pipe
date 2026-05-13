@@ -28,8 +28,7 @@ SQL >
         {% else %} toStartOfDay(toDateTime(m.quarter_hour, {{ String(tz, 'UTC') }})) AS day,
         {% end %}
         COALESCE(sumMerge(m.settlement_revenue), 0) AS settlement_revenue,
-        COALESCE(sumMerge(m.settlement_fee), 0) AS settlement_fee,
-        COALESCE(sumMerge(m.applied_balance_settlement), 0) AS applied_balance_settlement
+        COALESCE(sumMerge(m.settlement_fee), 0) AS settlement_fee
     FROM orders_base_state_by_quarter_hour AS m
     WHERE
         m.organization_id IN (
@@ -135,13 +134,115 @@ SQL >
         {% end %}
     GROUP BY day
 
+NODE credit_resolve_fx
+SQL >
+    %
+    SELECT
+        e.organization_id,
+        e.order_id,
+        COALESCE(e.order_created_at, e.timestamp) AS event_ts,
+        e.product_id,
+        e.amount,
+        multiIf(
+            e.exchange_rate IS NOT NULL AND e.exchange_rate != 0,
+            toFloat64(e.exchange_rate),
+            e.presentment_amount IS NOT NULL AND e.presentment_amount != 0,
+            toFloat64(e.amount) / toFloat64(e.presentment_amount),
+            NULL
+        ) AS own_fx,
+        argMax(
+            multiIf(
+                s.exchange_rate IS NOT NULL AND s.exchange_rate != 0,
+                toFloat64(s.exchange_rate),
+                s.presentment_amount IS NOT NULL AND s.presentment_amount != 0,
+                toFloat64(s.amount) / toFloat64(s.presentment_amount),
+                NULL
+            ),
+            tuple(
+                toUInt8(
+                    if(e.subscription_id IS NOT NULL AND s.subscription_id = e.subscription_id, 1, 0)
+                ),
+                s.timestamp
+            )
+        ) AS lookup_fx
+    FROM system_events_by_org AS e
+    LEFT JOIN
+        system_events_by_org AS s
+        ON s.organization_id = e.organization_id
+        AND s.name = 'balance.order'
+        AND s.order_id IS NOT NULL
+        AND s.customer_id = e.customer_id
+        AND COALESCE(s.presentment_currency, s.currency) = e.currency
+        AND s.timestamp < e.timestamp
+        AND s.order_id != e.order_id
+    WHERE
+        e.order_id IS NOT NULL
+        AND e.name = 'balance.credit_order'
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND COALESCE(e.order_created_at, e.timestamp)
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+    GROUP BY e.organization_id, e.order_id, event_ts, e.product_id, e.subscription_id, e.amount, own_fx
+
+NODE credit_by_bucket
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(cfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(cfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(cfx.event_ts, {{ String(tz, 'UTC') }}), 1) AS day,
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(cfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(cfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% else %} toStartOfDay(toDateTime(cfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% end %}
+        COALESCE(
+            SUM(toInt64(round(COALESCE(cfx.amount, 0) * COALESCE(cfx.own_fx, cfx.lookup_fx, 1.0)))), 0
+        ) AS credit_revenue
+    FROM credit_resolve_fx AS cfx
+    WHERE
+        cfx.event_ts
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND cfx.event_ts
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND COALESCE(cfx.product_id, toUUID('00000000-0000-0000-0000-000000000000'))
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+    GROUP BY day
+
+NODE credit_baseline
+SQL >
+    %
+    SELECT
+        COALESCE(
+            SUM(toInt64(round(COALESCE(cfx.amount, 0) * COALESCE(cfx.own_fx, cfx.lookup_fx, 1.0)))), 0
+        ) AS hist_credit_revenue
+    FROM credit_resolve_fx AS cfx
+    WHERE
+        cfx.event_ts
+        < toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND COALESCE(cfx.product_id, toUUID('00000000-0000-0000-0000-000000000000'))
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+
 NODE mv_baseline
 SQL >
     %
     SELECT
         COALESCE(sumMerge(m.settlement_revenue), 0) AS hist_settlement_revenue,
-        COALESCE(sumMerge(m.settlement_fee), 0) AS hist_settlement_fee,
-        COALESCE(sumMerge(m.applied_balance_settlement), 0) AS hist_applied_balance_settlement
+        COALESCE(sumMerge(m.settlement_fee), 0) AS hist_settlement_fee
     FROM orders_base_state_by_quarter_hour AS m
     WHERE
         m.organization_id IN (
@@ -199,35 +300,37 @@ SQL >
     %
     SELECT
         w.interval AS timestamp,
-        COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0) AS revenue,
-        (COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0))
+        COALESCE(r.settlement_revenue, 0) + COALESCE(c.credit_revenue, 0) AS revenue,
+        (COALESCE(r.settlement_revenue, 0) + COALESCE(c.credit_revenue, 0))
         - COALESCE(r.settlement_fee, 0)
         + COALESCE(a.adjustment_net_amount, 0) AS net_revenue,
         COALESCE(
-            sum(COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0)) OVER (
+            sum(COALESCE(r.settlement_revenue, 0) + COALESCE(c.credit_revenue, 0)) OVER (
                 ORDER BY w.interval
             ),
             0
         )
-        + (mb.hist_settlement_revenue - mb.hist_applied_balance_settlement) AS cumulative_revenue,
+        + (mb.hist_settlement_revenue + cb.hist_credit_revenue) AS cumulative_revenue,
         COALESCE(
             sum(
-                (COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0))
+                (COALESCE(r.settlement_revenue, 0) + COALESCE(c.credit_revenue, 0))
                 - COALESCE(r.settlement_fee, 0)
                 + COALESCE(a.adjustment_net_amount, 0)
             ) OVER (ORDER BY w.interval),
             0
         ) + (
             mb.hist_settlement_revenue
-            - mb.hist_applied_balance_settlement
+            + cb.hist_credit_revenue
             - mb.hist_settlement_fee
             + ab.hist_adjustment_net_amount
         ) AS net_cumulative_revenue
     FROM intervals w
     LEFT JOIN revenue_from_mv r ON r.day = w.interval
     LEFT JOIN adjustments_by_bucket a ON a.day = w.interval
+    LEFT JOIN credit_by_bucket c ON c.day = w.interval
     CROSS JOIN mv_baseline mb
     CROSS JOIN adj_baseline ab
+    CROSS JOIN credit_baseline cb
     ORDER BY w.interval
 
 NODE direct_resolve_fx

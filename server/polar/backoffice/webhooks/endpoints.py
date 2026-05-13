@@ -1,4 +1,5 @@
 import uuid
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4
@@ -10,8 +11,7 @@ from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.webhook.repository import WebhookEndpointRepository
-from polar.webhook.schemas import WebhookEndpointUpdate
-from polar.webhook.service import webhook as webhook_service
+from polar.webhook.schemas import is_blocked_webhook_host
 from polar.webhook.sorting import WebhookSortProperty
 
 from ..components import button, confirmation_dialog, datatable, description_list, input
@@ -266,9 +266,23 @@ async def toggle_enabled(
     if webhook is None:
         raise HTTPException(status_code=404)
 
-    update_schema = WebhookEndpointUpdate(enabled=not webhook.enabled)
-    webhook = await webhook_service.update_endpoint(
-        session, endpoint=webhook, update_schema=update_schema
+    # The backoffice doesn't carry a user/org auth_subject, so it can't go
+    # through `webhook_service.update_endpoint` (which now asserts
+    # `organization:manage`). Use the repository directly, and re-implement
+    # the URL-block check the service would normally apply on enable.
+    is_enabling = not webhook.enabled
+    if is_enabling and is_blocked_webhook_host(urlparse(webhook.url).hostname or ""):
+        await add_toast(
+            request,
+            "Cannot enable a webhook with a localhost or private IP URL.",
+            "error",
+        )
+        with tag.div(id="modal"):
+            pass
+        return
+
+    webhook = await repository.update(
+        webhook, update_dict={"enabled": not webhook.enabled}
     )
     await session.flush()
 

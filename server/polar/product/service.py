@@ -8,7 +8,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject, is_user
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+    get_accessible_org_ids,
+)
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
@@ -79,7 +84,9 @@ class ProductService:
         ],
     ) -> tuple[Sequence[Product], int]:
         repository = ProductRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).join(
             ProductPrice,
             onclause=(
@@ -145,7 +152,9 @@ class ProductService:
         id: uuid.UUID,
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Product.id == id)
@@ -162,6 +171,12 @@ class ProductService:
         repository = ProductRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, create_schema
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.products_manage,
         )
 
         errors: list[ValidationError] = []
@@ -254,6 +269,10 @@ class ProductService:
         update_schema: ProductUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.products_manage
+        )
+
         errors: list[ValidationError] = []
 
         # Validate prices
@@ -425,6 +444,10 @@ class ProductService:
         benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.products_manage
+        )
+
         previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()
 
@@ -513,7 +536,9 @@ class ProductService:
         builtins.list[ValidationError],
     ]:
         meter_repository = MeterRepository.from_session(session)
-        meter_org_ids = await get_accessible_org_ids(session, auth_subject)
+        meter_org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
         prices: list[ProductPrice] = []
         prices_per_currency = defaultdict[str, list[tuple[ProductPrice, int]]](list)
         existing_prices: set[ProductPrice] = set()

@@ -27,11 +27,13 @@ import { Wand2Icon } from 'lucide-react'
 export interface CreateProductPageProps {
   organization: schemas['Organization']
   sourceProduct?: schemas['Product']
+  returnTo?: string
 }
 
 export const CreateProductPage = ({
   organization,
   sourceProduct,
+  returnTo,
 }: CreateProductPageProps) => {
   const router = useRouter()
   const { toast } = useToast()
@@ -154,7 +156,7 @@ export const CreateProductPage = ({
 
         router.push(
           getStatusRedirect(
-            `/dashboard/${organization.slug}/products`,
+            returnTo ?? `/dashboard/${organization.slug}/products`,
             'Product Created',
             `Product ${product.name} was created successfully`,
           ),
@@ -175,9 +177,10 @@ export const CreateProductPage = ({
       updateBenefits,
       enabledBenefitIds,
       router,
+      returnTo,
       organization,
-      setError,
       toast,
+      setError,
     ],
   )
 

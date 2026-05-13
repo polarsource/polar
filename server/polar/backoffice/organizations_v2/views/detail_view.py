@@ -114,7 +114,7 @@ class OrganizationDetailView:
                 variant="secondary",
                 size="sm",
                 outline=True,
-                hx_post=str(
+                hx_get=str(
                     request.url_for(
                         "organizations:create_review_ticket",
                         organization_id=self.org.id,

@@ -1,6 +1,7 @@
 'use client'
 
 import { toast } from '@/components/Toast/use-toast'
+import { usePostHog } from '@/hooks/posthog'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -25,6 +26,7 @@ interface FormValues {
 
 export const ProductUrlSection = ({ organization }: Props) => {
   const updateOrganization = useUpdateOrganization()
+  const posthog = usePostHog()
   const { status: urlStatus, validateURL } = useURLValidation({
     organizationId: organization.id,
   })
@@ -35,6 +37,10 @@ export const ProductUrlSection = ({ organization }: Props) => {
   const { control, handleSubmit, setError, formState, reset } = form
 
   const onSubmit = async ({ website }: FormValues) => {
+    posthog.capture('dashboard:organizations:account_review_section:submit', {
+      organization_id: organization.id,
+      section: 'product_url',
+    })
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: { website },

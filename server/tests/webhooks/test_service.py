@@ -82,14 +82,20 @@ class TestUpdateEndpoint:
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
     async def test_organization_endpoint_valid(
-        self, session: AsyncSession, webhook_endpoint_organization: WebhookEndpoint
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
         update_schema = WebhookEndpointUpdate(
             url=cast(HttpsUrl, "https://example.com/hook-updated")
         )
 
         updated_endpoint = await webhook_service.update_endpoint(
-            session, endpoint=webhook_endpoint_organization, update_schema=update_schema
+            session,
+            auth_subject,
+            endpoint=webhook_endpoint_organization,
+            update_schema=update_schema,
         )
         assert updated_endpoint.url == "https://example.com/hook-updated"
 
@@ -100,11 +106,14 @@ class TestResetEndpointSecret:
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
     async def test_organization_endpoint_valid(
-        self, session: AsyncSession, webhook_endpoint_organization: WebhookEndpoint
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
         old_secret = webhook_endpoint_organization.secret
         updated_endpoint = await webhook_service.reset_endpoint_secret(
-            session, endpoint=webhook_endpoint_organization
+            session, auth_subject, endpoint=webhook_endpoint_organization
         )
         assert updated_endpoint.secret != old_secret
 
@@ -115,10 +124,13 @@ class TestDeleteEndpoint:
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
     async def test_organization_endpoint_valid(
-        self, session: AsyncSession, webhook_endpoint_organization: WebhookEndpoint
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
         deleted_endpoint = await webhook_service.delete_endpoint(
-            session, webhook_endpoint_organization
+            session, auth_subject, endpoint=webhook_endpoint_organization
         )
         assert deleted_endpoint.deleted_at is not None
 

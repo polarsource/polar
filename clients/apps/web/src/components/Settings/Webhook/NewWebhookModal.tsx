@@ -15,9 +15,11 @@ import { FieldEvents, FieldFormat, FieldName, FieldUrl } from './WebhookForm'
 export default function NewWebhookModal({
   organization,
   hide,
+  onSuccess,
 }: {
   organization: schemas['Organization']
   hide: () => void
+  onSuccess?: (endpoint: schemas['WebhookEndpoint']) => void
 }) {
   const router = useRouter()
   const form = useForm<schemas['WebhookEndpointCreate']>({
@@ -44,18 +46,22 @@ export default function NewWebhookModal({
         title: 'Webhook Endpoint Created',
         description: `Webhook Endpoint was created successfully`,
       })
+      if (onSuccess) {
+        onSuccess(data)
+        return
+      }
       router.push(
         `/dashboard/${organization.slug}/settings/webhooks/endpoints/${data.id}`,
       )
     },
-    [organization.slug, router, createWebhookEndpoint],
+    [organization.slug, router, createWebhookEndpoint, onSuccess],
   )
 
   return (
     <>
       <InlineModalHeader hide={hide}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">New webhook</h2>
+          <h2 className="text-xl">Create webhook</h2>
         </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">

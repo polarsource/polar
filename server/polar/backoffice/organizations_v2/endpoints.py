@@ -121,7 +121,12 @@ router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 logger = structlog.getLogger(__name__)
 
-REVIEW_TICKET_TITLE = "Ongoing organization review"
+REVIEW_TICKET_TITLE_PREFIX = "Ongoing organization review"
+
+
+def _default_review_ticket_title(organization: Organization) -> str:
+    name = organization.name or organization.slug
+    return f"{REVIEW_TICKET_TITLE_PREFIX} - {name}"
 
 
 class DeletePayoutAccountForm(BaseModel):
@@ -161,6 +166,22 @@ class SnoozeForm(BaseModel):
 
     @classmethod
     def model_validate_form(cls, data: Any) -> "SnoozeForm":
+        return cls.model_validate(dict(data))
+
+
+class CreateReviewTicketForm(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+
+    @field_validator("title")
+    @classmethod
+    def title_not_blank(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("Title is required")
+        return stripped
+
+    @classmethod
+    def model_validate_form(cls, data: Any) -> "CreateReviewTicketForm":
         return cls.model_validate(dict(data))
 
 
@@ -1914,9 +1935,10 @@ async def unsnooze(
     )
 
 
-@router.post(
+@router.api_route(
     "/{organization_id}/review-ticket",
     name="organizations:create_review_ticket",
+    methods=["GET", "POST"],
     response_model=None,
 )
 async def create_review_ticket(
@@ -1934,42 +1956,87 @@ async def create_review_ticket(
         await add_toast(request, "No admin user found for this organization.", "error")
         return
 
-    try:
-        thread_id = await plain_service.create_manual_organization_thread(
-            session, organization, admin_user, REVIEW_TICKET_TITLE
-        )
-    except AccountReviewThreadCreationError as e:
-        logger.error(
-            "Failed to create Plain review ticket",
-            organization_id=str(organization_id),
-            error=str(e),
-        )
-        await add_toast(request, f"Failed to create ticket: {e.message}", "error")
+    default_title = _default_review_ticket_title(organization)
+
+    if request.method == "POST":
+        form_data = await request.form()
+        try:
+            form = CreateReviewTicketForm.model_validate_form(form_data)
+        except ValidationError as e:
+            detail = [{"loc": err["loc"], "msg": err["msg"]} for err in e.errors()]
+            raise HTTPException(status_code=400, detail=detail) from e
+
+        title = form.title
+
+        try:
+            thread_id = await plain_service.create_manual_organization_thread(
+                session, organization, admin_user, title
+            )
+        except AccountReviewThreadCreationError as e:
+            logger.error(
+                "Failed to create Plain review ticket",
+                organization_id=str(organization_id),
+                error=str(e),
+            )
+            await add_toast(request, f"Failed to create ticket: {e.message}", "error")
+            return
+
+        if not thread_id:
+            await add_toast(
+                request,
+                "Plain integration is disabled; no ticket was created.",
+                "error",
+            )
+            return
+
+        with modal("Review Ticket Created", open=True):
+            with tag.div(classes="flex flex-col gap-4"):
+                with tag.p():
+                    text(f'Plain ticket "{title}" created successfully.')
+                with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                    with tag.form(method="dialog"):
+                        with button(ghost=True):
+                            text("Close")
+                    with tag.a(
+                        href=plain_thread_url(thread_id),
+                        target="_blank",
+                        rel="noopener noreferrer",
+                    ):
+                        with button(variant="primary"):
+                            text("Open Ticket")
         return
 
-    if not thread_id:
-        await add_toast(
-            request,
-            "Plain integration is disabled; no ticket was created.",
-            "error",
-        )
-        return
+    with modal("Create Plain Ticket", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:create_review_ticket",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text font-semibold"):
+                        text("Ticket title")
+                with tag.input(
+                    type="text",
+                    name="title",
+                    value=default_title,
+                    required="required",
+                    maxlength="200",
+                    classes="input input-bordered w-full",
+                ):
+                    pass
 
-    with modal("Review Ticket Created", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p():
-                text(f'Plain ticket "{REVIEW_TICKET_TITLE}" created successfully.')
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):
-                        text("Close")
-                with tag.a(
-                    href=plain_thread_url(thread_id),
-                    target="_blank",
-                    rel="noopener noreferrer",
-                ):
-                    with button(variant="primary"):
-                        text("Open Ticket")
+                        text("Cancel")
+                with button(variant="primary", type="submit"):
+                    text("Create")
 
 
 @router.api_route(

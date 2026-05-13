@@ -136,8 +136,17 @@ export default function ChangePlanPage({
   } = useModal()
 
   const billingHref = `/dashboard/${organization.slug}/settings/billing`
-  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data])
   const subscription = subscriptionQuery.data
+  const isCurrentPlanCustom = subscription?.plan.custom === true
+  const plans = useMemo(() => {
+    const data = plansQuery.data ?? []
+    if (!subscription) return data
+    if (isCurrentPlanCustom) return [subscription.plan]
+    const currentInList = data.some(
+      (p) => p.product_id === subscription.product_id,
+    )
+    return currentInList ? data : [...data, subscription.plan]
+  }, [plansQuery.data, subscription, isCurrentPlanCustom])
   const isCurrentPlanFree = subscription?.amount === 0
 
   const selectedPlan = useMemo(
@@ -230,8 +239,9 @@ export default function ChangePlanPage({
               Change plan
             </Text>
             <Text color="muted">
-              Pick a new plan for your Polar subscription. You can change again
-              at any time.
+              {isCurrentPlanCustom
+                ? 'You are on a custom plan. Send an email to support to change plan or discuss terms.'
+                : 'Pick a new plan for your Polar subscription. You can change again at any time.'}
             </Text>
           </Box>
         </Box>

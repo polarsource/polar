@@ -3,6 +3,11 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+)
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -76,6 +81,12 @@ async def create(
 ) -> FileUpload:
     """Create a file."""
     organization = await get_payload_organization(session, auth_subject, file_create)
+    await assert_organization_permission(
+        session,
+        auth_subject,
+        organization.id,
+        OrganizationPermission.products_manage,
+    )
 
     file_create.organization_id = organization.id
     return await file_service.generate_presigned_upload(
@@ -109,6 +120,9 @@ async def uploaded(
     if file is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, file, OrganizationPermission.products_manage
+    )
     return await file_service.complete_upload(
         session, file=file, completed_schema=completed_schema
     )
@@ -139,6 +153,9 @@ async def update(
     if file is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, file, OrganizationPermission.products_manage
+    )
     return await file_service.patch(session, file=file, patches=patches)
 
 
@@ -165,4 +182,7 @@ async def delete(
     if file is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, file, OrganizationPermission.products_manage
+    )
     await file_service.delete(session, file=file)

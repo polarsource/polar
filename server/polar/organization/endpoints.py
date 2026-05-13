@@ -9,14 +9,13 @@ from polar.account.service import account as account_service
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
+    AuthorizeMembersRead,
     AuthorizeMembersSetRole,
     AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
-    AuthorizeOrgAccessWrite,
-    AuthorizeOrgDelete,
-    AuthorizeOrgManagePayoutAccount,
+    AuthorizeOrgManage,
+    AuthorizeOrgManageUser,
 )
-from polar.authz.policies import payout_account as pa_policy
 from polar.config import settings
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
 from polar.email.sender import enqueue_email_template
@@ -28,6 +27,8 @@ from polar.exceptions import (
 from polar.integrations.polar.schemas import (
     OrganizationCheckoutRequest,
     OrganizationCheckoutResponse,
+    OrganizationOrder,
+    OrganizationOrderInvoice,
     OrganizationPlan,
     OrganizationSubscription,
     OrganizationSubscriptionUpdate,
@@ -146,7 +147,7 @@ async def get(
     summary="Get Organization Account",
     responses={
         403: {
-            "description": "User is not the admin of the account.",
+            "description": "User lacks `finance:read` permission.",
             "model": NotPermitted.schema(),
         },
         404: {
@@ -178,7 +179,7 @@ async def get_account(
     tags=[APITag.private],
 )
 async def set_payout_account(
-    authz: AuthorizeOrgManagePayoutAccount,
+    authz: AuthorizeOrgManageUser,
     body: OrganizationPayoutAccountSet,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -188,7 +189,7 @@ async def set_payout_account(
     payout_account = await pa_repo.get_by_id(body.payout_account_id)
     if (
         payout_account is None
-        or await pa_policy.can_write(authz.auth_subject, payout_account) is not True
+        or payout_account.admin_id != authz.auth_subject.subject.id
     ):
         raise PolarRequestValidationError(
             [
@@ -214,7 +215,7 @@ async def set_payout_account(
     tags=[APITag.private],
 )
 async def get_kyc(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> Organization:
     """Get an organization's KYC/compliance details."""
     return authz.organization
@@ -267,7 +268,7 @@ async def check_slug(
     tags=[APITag.public],
 )
 async def update(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     organization_update: OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -288,17 +289,11 @@ async def update(
     tags=[APITag.private],
 )
 async def submit_review(
-    id: OrganizationID,
-    auth_subject: auth.OrganizationsWrite,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Submit an organization's saved details for review."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    return await organization_service.submit_for_review(session, organization)
+    return await organization_service.submit_for_review(session, authz.organization)
 
 
 @router.delete(
@@ -316,7 +311,7 @@ async def submit_review(
     tags=[APITag.private],
 )
 async def delete(
-    authz: AuthorizeOrgDelete,
+    authz: AuthorizeOrgManageUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationDeletionResponse:
     """Request deletion of an organization.
@@ -374,7 +369,7 @@ async def get_payment_status(
     tags=[APITag.private],
 )
 async def members(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeMembersRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""
@@ -515,8 +510,7 @@ async def remove_member(
 ) -> None:
     """Remove a member from an organization.
 
-    Only organization admins can remove members.
-    Admins cannot remove themselves.
+    Requires `members:manage` permission. Owners cannot be removed.
     """
     try:
         target_user_id = UUID(user_id)
@@ -593,7 +587,7 @@ async def set_member_role(
     tags=[APITag.private],
 )
 async def validate_with_ai(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationReviewStatus:
     """Get the AI validation status. Review runs asynchronously in the background."""
@@ -625,7 +619,7 @@ async def validate_with_ai(
     tags=[APITag.private],
 )
 async def submit_appeal(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     appeal_request: OrganizationAppealRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationAppealResponse:
@@ -664,7 +658,7 @@ async def submit_appeal(
     tags=[APITag.private],
 )
 async def mark_ai_onboarding_complete(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Mark the AI onboarding as completed for this organization."""
@@ -684,7 +678,7 @@ async def mark_ai_onboarding_complete(
     tags=[APITag.private],
 )
 async def get_review_status(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewStatus:
     """Get the current review status and appeal information for an organization."""
@@ -715,7 +709,7 @@ async def get_review_status(
     tags=[APITag.private],
 )
 async def get_review(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewState:
     """Get the merchant self-review checklist state.
@@ -737,7 +731,7 @@ async def get_review(
     tags=[APITag.private],
 )
 async def validate_website(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationValidateWebsiteRequest,
 ) -> OrganizationValidateWebsiteResponse:
     """Validate that a website URL is reachable and not targeting a private network."""
@@ -757,7 +751,7 @@ async def validate_website(
     tags=[APITag.private],
 )
 async def list_plans(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> Sequence[OrganizationPlan]:
     """List the plans this organization can subscribe to."""
     products = await polar_self_service.list_plans()
@@ -777,7 +771,7 @@ async def list_plans(
     tags=[APITag.private],
 )
 async def get_subscription(
-    authz: AuthorizeOrgAccess,
+    authz: AuthorizeOrgManage,
 ) -> OrganizationSubscription:
     """Get the current Polar subscription for this organization."""
     subscription = await polar_self_service.get_subscription(authz.organization.id)
@@ -799,7 +793,7 @@ async def get_subscription(
 )
 async def start_subscription_checkout(
     request: Request,
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationCheckoutRequest,
 ) -> OrganizationCheckoutResponse:
     """Create a Polar checkout session for an initial paid subscription."""
@@ -828,7 +822,7 @@ async def start_subscription_checkout(
     tags=[APITag.private],
 )
 async def change_subscription_plan(
-    authz: AuthorizeOrgAccessWrite,
+    authz: AuthorizeOrgManage,
     body: OrganizationSubscriptionUpdate,
 ) -> OrganizationSubscription:
     """Change the plan for an organization's existing subscription."""
@@ -837,3 +831,51 @@ async def change_subscription_plan(
         product_id=body.product_id,
     )
     return OrganizationSubscription.from_sdk(subscription)
+
+
+@router.get(
+    "/{id}/orders",
+    response_model=ListResource[OrganizationOrder],
+    summary="List Organization Orders",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def list_orders(
+    authz: AuthorizeOrgAccess,
+    pagination: PaginationParamsQuery,
+) -> ListResource[OrganizationOrder]:
+    """List Polar orders billed to this organization."""
+    items, total = await polar_self_service.list_orders(
+        authz.organization.id,
+        page=pagination.page,
+        limit=pagination.limit,
+    )
+    return ListResource.from_paginated_results(
+        [OrganizationOrder.from_sdk(order) for order in items],
+        total,
+        pagination,
+    )
+
+
+@router.get(
+    "/{id}/orders/{order_id}/invoice",
+    response_model=OrganizationOrderInvoice,
+    summary="Get Organization Order Invoice",
+    responses={
+        200: {"description": "Order invoice URL returned."},
+        404: {
+            "description": "Order or invoice not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def get_order_invoice(
+    authz: AuthorizeOrgAccess,
+    order_id: str,
+) -> OrganizationOrderInvoice:
+    """Get the invoice URL for a Polar order belonging to this organization."""
+    url = await polar_self_service.get_order_invoice_url(
+        authz.organization.id, order_id
+    )
+    return OrganizationOrderInvoice(url=url)

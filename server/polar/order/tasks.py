@@ -234,17 +234,6 @@ async def order_invoice(order_id: uuid.UUID) -> None:
     await _run_order_invoice(order_id)
 
 
-# Kept temporarily to drain in-flight `order.invoice.v2` messages still in the
-# `invoices_and_receipts` queue from before the rename. Remove once drained.
-@actor(
-    actor_name="order.invoice.v2",
-    priority=TaskPriority.LOW,
-    queue_name=TaskQueue.INVOICES_AND_RECEIPTS,
-)
-async def order_invoice_v2(order_id: uuid.UUID) -> None:
-    await _run_order_invoice(order_id)
-
-
 @actor(
     actor_name="order.process_dunning",
     cron_trigger=CronTrigger.from_crontab("0 * * * *"),

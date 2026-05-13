@@ -10,10 +10,10 @@ import { BillingAddressSection } from '@/components/Settings/Billing/BillingAddr
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
 import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaymentMethods'
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
-import { MOCK_ORDERS } from '@/components/Settings/Billing/mockData'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import {
+  useOrganizationOrders,
   useOrganizationPlans,
   useOrganizationSubscription,
 } from '@/hooks/queries/billing'
@@ -35,6 +35,7 @@ export default function BillingPage({
 
   const subscriptionQuery = useOrganizationSubscription(organization.id)
   const plansQuery = useOrganizationPlans(organization.id)
+  const ordersQuery = useOrganizationOrders(organization.id)
 
   const {
     isShown: isAddPaymentMethodOpen,
@@ -98,7 +99,14 @@ export default function BillingPage({
             title="Order history"
             description="Past invoices for your Polar subscription"
           />
-          <BillingOrdersTable orders={MOCK_ORDERS} />
+          {ordersQuery.isLoading ? (
+            <LoadingBox height={240} borderRadius="l" />
+          ) : (
+            <BillingOrdersTable
+              organizationId={organization.id}
+              orders={ordersQuery.data?.items ?? []}
+            />
+          )}
         </Section>
       </Box>
 

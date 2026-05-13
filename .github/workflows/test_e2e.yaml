@@ -33,7 +33,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6.0.3
+      - uses: pnpm/action-setup@v6.0.5
         with:
           package_json_file: clients/package.json
 
@@ -119,7 +119,7 @@ jobs:
 
       - name: Configure AWS credentials
         if: steps.e2e.outcome == 'failure'
-        uses: aws-actions/configure-aws-credentials@v6.1.0
+        uses: aws-actions/configure-aws-credentials@v6.1.1
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: e2e-traces
@@ -174,7 +174,7 @@ jobs:
       - name: Notify Slack on failure
         id: slack-failure
         if: steps.e2e.outcome == 'failure' # TEMP: removed schedule-only condition to test Slack
-        uses: slackapi/slack-github-action@v3.0.2
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -212,7 +212,7 @@ jobs:
 
       - name: Notify Slack - starting investigation
         if: steps.e2e.outcome == 'failure'
-        uses: slackapi/slack-github-action@v3.0.2
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

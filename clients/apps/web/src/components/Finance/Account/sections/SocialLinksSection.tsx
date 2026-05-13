@@ -2,6 +2,7 @@
 
 import { SocialLinksField } from './SocialLinksField'
 import { toast } from '@/components/Toast/use-toast'
+import { usePostHog } from '@/hooks/posthog'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
@@ -19,12 +20,17 @@ type FormValues = Pick<schemas['OrganizationUpdate'], 'socials'>
 
 export const SocialLinksSection = ({ organization }: Props) => {
   const updateOrganization = useUpdateOrganization()
+  const posthog = usePostHog()
   const form = useForm<FormValues>({
     defaultValues: { socials: organization.socials ?? [] },
   })
   const { handleSubmit, setError, formState, reset } = form
 
   const onSubmit = async ({ socials }: FormValues) => {
+    posthog.capture('dashboard:organizations:account_review_section:submit', {
+      organization_id: organization.id,
+      section: 'social_links',
+    })
     const cleaned = (socials ?? []).filter(
       (social) => social.url && social.url.trim() !== '',
     )

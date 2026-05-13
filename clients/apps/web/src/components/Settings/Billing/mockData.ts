@@ -39,17 +39,6 @@ export type BillingSubscription = {
   }
 }
 
-export type BillingOrder = {
-  id: string
-  number: string
-  date: string
-  description: string
-  amount: number
-  currency: string
-  status: 'paid' | 'pending' | 'refunded' | 'void'
-  invoiceUrl: string
-}
-
 export const BILLING_PLANS: BillingPlan[] = [
   {
     id: 'starter',
@@ -127,69 +116,6 @@ export const MOCK_SUBSCRIPTION: BillingSubscription = {
     last4: '4242',
   },
 }
-
-export const MOCK_ORDERS: BillingOrder[] = [
-  {
-    id: 'ord_9k2j',
-    number: 'POL-2026-0009',
-    date: '2026-04-12T09:30:00Z',
-    description: 'Pro subscription',
-    amount: 2000,
-    currency: 'USD',
-    status: 'paid',
-    invoiceUrl: '#',
-  },
-  {
-    id: 'ord_8h1f',
-    number: 'POL-2026-0008',
-    date: '2026-03-12T09:30:00Z',
-    description: 'Pro subscription',
-    amount: 2000,
-    currency: 'USD',
-    status: 'paid',
-    invoiceUrl: '#',
-  },
-  {
-    id: 'ord_7g0e',
-    number: 'POL-2026-0007',
-    date: '2026-02-12T09:30:00Z',
-    description: 'Pro subscription',
-    amount: 2000,
-    currency: 'USD',
-    status: 'paid',
-    invoiceUrl: '#',
-  },
-  {
-    id: 'ord_6f9d',
-    number: 'POL-2026-0006',
-    date: '2026-01-12T09:30:00Z',
-    description: 'Pro subscription',
-    amount: 2000,
-    currency: 'USD',
-    status: 'paid',
-    invoiceUrl: '#',
-  },
-  {
-    id: 'ord_5e8c',
-    number: 'POL-2025-0012',
-    date: '2025-12-12T09:30:00Z',
-    description: 'Pro subscription',
-    amount: 2000,
-    currency: 'USD',
-    status: 'paid',
-    invoiceUrl: '#',
-  },
-  {
-    id: 'ord_4d7b',
-    number: 'POL-2025-0011',
-    date: '2025-11-12T09:30:00Z',
-    description: 'Pro subscription',
-    amount: 2000,
-    currency: 'USD',
-    status: 'refunded',
-    invoiceUrl: '#',
-  },
-]
 
 export const getPlanById = (id: BillingPlanId): BillingPlan =>
   BILLING_PLANS.find((p) => p.id === id) ?? BILLING_PLANS[0]

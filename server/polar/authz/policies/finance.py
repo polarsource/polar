@@ -12,26 +12,24 @@ async def can_read(
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> PolicyResult:
-    """Can the subject view accounts, transactions, payouts for this org?"""
+    """Can the subject view the org's financial data (account, transactions, payouts)?"""
     return await _require_permission(
         session,
         auth_subject,
         organization,
-        permission=OrganizationPermission.transactions_read,
-        denied_msg="Only an organization admin can access financial information",
+        permission=OrganizationPermission.finance_read,
     )
 
 
-async def can_write(
+async def can_manage(
     session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization],
     organization: OrganizationModel,
 ) -> PolicyResult:
-    """Can the subject manage payouts, update billing info for this org?"""
+    """Can the subject update the org's financial data (account, payouts)?"""
     return await _require_permission(
         session,
         auth_subject,
         organization,
-        permission=OrganizationPermission.transactions_write,
-        denied_msg="Only an organization admin can manage financial information",
+        permission=OrganizationPermission.finance_manage,
     )

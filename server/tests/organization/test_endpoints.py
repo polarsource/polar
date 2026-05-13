@@ -1039,9 +1039,7 @@ class TestDeleteOrganization:
 
         assert response.status_code == 403
         json = response.json()
-        assert (
-            json["detail"] == "Only an organization admin can delete the organization"
-        )
+        assert json["detail"] == "You don't have permission to manage the organization"
 
 
 @pytest.mark.asyncio
@@ -1080,12 +1078,12 @@ class TestGetReview:
         assert [step["key"] for step in json["preliminary_steps"]] == [
             "product_configuration",
             "setup_readiness",
-            "identity.email",
-            "identity.social_links",
             "identity.stripe_identity_verification",
-            "product_description",
-            "product_url",
             "payout_account",
+            "identity.social_links",
+            "product_url",
+            "identity.email",
+            "product_description",
         ]
 
     @pytest.mark.auth
@@ -1105,9 +1103,10 @@ class TestGetReview:
         assert json["verdict"] is None
         assert json["appeal"] is None
         assert all(step["status"] == "pending" for step in json["preliminary_steps"])
-        assert all(
-            "not_started" in step["reasons"] for step in json["preliminary_steps"]
-        )
+        # Aggregate checks carry reasons on sub_checks, not the parent.
+        for step in json["preliminary_steps"]:
+            targets = step["sub_checks"] or [step]
+            assert all("not_started" in node["reasons"] for node in targets)
 
 
 @pytest.mark.asyncio

@@ -1943,6 +1943,20 @@ class OrderService:
             update_dict={"status": OrderStatus.void, "next_payment_attempt_at": None},
         )
 
+        # Reduce positive customer balance
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, order.customer, order.currency
+        )
+        if customer_balance > 0:
+            reduction_amount = min(customer_balance, order.due_amount)
+            await wallet_service.create_balance_transaction(
+                session,
+                order.customer,
+                -reduction_amount,
+                order.currency,
+                order=order,
+            )
+
         await event_service.create_event(
             session,
             build_system_event(

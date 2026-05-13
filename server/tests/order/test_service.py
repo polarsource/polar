@@ -4736,6 +4736,42 @@ class TestVoidOrder:
         assert result_order.status == OrderStatus.void
         assert result_order.next_payment_attempt_at is None
 
+    @pytest.mark.asyncio
+    async def test_void_reduces_customer_balance(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        next_attempt_at = utc_now() + timedelta(hours=24)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=800,
+        )
+
+        # Create customer balance
+        await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 200
+
 
 @pytest.mark.asyncio
 class TestVoidPendingOrdersForSubscription:

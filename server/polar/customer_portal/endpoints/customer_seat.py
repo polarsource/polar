@@ -6,7 +6,7 @@ from pydantic import UUID4
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
-from polar.customer_seat.schemas import SeatAssign, SeatsList
+from polar.customer_seat.schemas import SeatsList
 from polar.customer_seat.service import seat_service
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
@@ -19,6 +19,7 @@ from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
 
 from .. import auth
+from ..schemas.seat import CustomerSeatAssign
 from ..schemas.subscription import CustomerSubscription
 from ..service.customer_seat import customer_seat as customer_seat_service
 from ..utils import get_customer
@@ -114,7 +115,7 @@ async def list_seats(
     },
 )
 async def assign_seat(
-    seat_assign: SeatAssign,
+    seat_assign: CustomerSeatAssign,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:

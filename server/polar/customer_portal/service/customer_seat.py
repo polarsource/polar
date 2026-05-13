@@ -1,10 +1,11 @@
 from polar.auth.models import AuthSubject, Customer, Member
-from polar.customer_seat.schemas import SeatAssign
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Order, Subscription
 from polar.order.repository import OrderRepository
 from polar.subscription.repository import SubscriptionRepository
+
+from ..schemas.seat import CustomerSeatAssign
 
 
 class CustomerSeatService:
@@ -12,7 +13,7 @@ class CustomerSeatService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Customer | Member],
-        seat_assign: SeatAssign,
+        seat_assign: CustomerSeatAssign,
     ) -> Subscription | Order:
         subscription_repository = SubscriptionRepository.from_session(session)
         order_repository = OrderRepository.from_session(session)

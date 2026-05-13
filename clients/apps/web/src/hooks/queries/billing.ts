@@ -4,28 +4,14 @@ import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-// Placeholder types — replace with generated `schemas['OrganizationPaymentMethod*']`
-// once the backend endpoints exist.
-export type OrganizationPaymentMethodCard = {
-  id: string
-  type: 'card'
-  default: boolean
-  method_metadata: {
-    brand: string
-    last4: string
-    exp_month: number
-    exp_year: number
-  }
-}
-
+export type OrganizationPaymentMethodCard =
+  schemas['OrganizationPaymentMethodCard']
 export type OrganizationPaymentMethod =
   | OrganizationPaymentMethodCard
-  | {
-      id: string
-      type: string
-      default: boolean
-    }
+  | schemas['OrganizationPaymentMethodGeneric']
 
+// Placeholder types — replace with generated schemas once the add/confirm
+// endpoints exist on the backend.
 export type OrganizationPaymentMethodCreate = {
   confirmation_token_id: string
   set_default: boolean
@@ -120,19 +106,15 @@ export const useChangeSubscriptionPlan = (organizationId: string) =>
     },
   })
 
-// TODO: Endpoint `/v1/organizations/{id}/payment-methods` does not exist yet.
-// Backend needs to expose payment-method CRUD via polar_self_service. Once it
-// does, swap the placeholder implementation below for a real api.GET/POST call
-// and drop the OrganizationPaymentMethod* placeholder types above in favour of
-// the generated `schemas['...']` types.
 export const useOrganizationPaymentMethods = (organizationId: string) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'payment-methods'],
-    // TODO: replace with
-    //   unwrap(api.GET('/v1/organizations/{id}/payment-methods', { params: { path: { id: organizationId } } }))
-    queryFn: async (): Promise<{ items: OrganizationPaymentMethod[] }> => ({
-      items: [],
-    }),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/payment-methods', {
+          params: { path: { id: organizationId } },
+        }),
+      ),
     retry: defaultRetry,
     enabled: !!organizationId,
   })

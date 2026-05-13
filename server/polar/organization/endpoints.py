@@ -31,9 +31,11 @@ from polar.integrations.polar.schemas import (
     OrganizationCheckoutResponse,
     OrganizationOrder,
     OrganizationOrderInvoice,
+    OrganizationPaymentMethod,
     OrganizationPlan,
     OrganizationSubscription,
     OrganizationSubscriptionUpdate,
+    organization_payment_method_from_sdk,
 )
 from polar.integrations.polar.service import (
     PolarSelfNoActiveSubscription,
@@ -895,6 +897,33 @@ async def update_billing_details(
         external_member_id=str(authz.auth_subject.subject.id),
     )
     return OrganizationBillingDetails.from_sdk(customer)
+
+
+@router.get(
+    "/{id}/payment-methods",
+    response_model=ListResource[OrganizationPaymentMethod],
+    summary="List Organization Payment Methods",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def list_payment_methods(
+    authz: AuthorizeOrgManageUser,
+) -> ListResource[OrganizationPaymentMethod]:
+    """List the saved payment methods used to pay Polar invoices."""
+    methods, default_payment_method_id = await polar_self_service.list_payment_methods(
+        authz.organization.id,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    items = [
+        organization_payment_method_from_sdk(
+            method, default_payment_method_id=default_payment_method_id
+        )
+        for method in methods
+    ]
+    return ListResource(
+        items=items,
+        pagination=Pagination(total_count=len(items), max_page=1 if items else 0),
+    )
 
 
 @router.get(

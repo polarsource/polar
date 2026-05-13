@@ -1114,6 +1114,28 @@ export interface paths {
     patch: operations['organizations:update_billing_details']
     trace?: never
   }
+  '/v1/organizations/{id}/payment-methods': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Organization Payment Methods
+     * @description List the saved payment methods used to pay Polar invoices.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    get: operations['organizations:list_payment_methods']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/orders/{order_id}/invoice': {
     parameters: {
       query?: never
@@ -19985,6 +20007,15 @@ export interface components {
       items: components['schemas']['WebhookEndpoint'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[] */
+    ListResource__: {
+      /** Items */
+      items: (
+        | components['schemas']['OrganizationPaymentMethodCard']
+        | components['schemas']['OrganizationPaymentMethodGeneric']
+      )[]
+      pagination: components['schemas']['Pagination']
+    }
     /**
      * ListStatisticsTimeseries
      * @description Event statistics timeseries.
@@ -23954,6 +23985,40 @@ export interface components {
     OrganizationOrderInvoice: {
       /** Url */
       url: string
+    }
+    /** OrganizationPaymentMethodCard */
+    OrganizationPaymentMethodCard: {
+      /** Id */
+      id: string
+      /**
+       * Type
+       * @default card
+       * @constant
+       */
+      type: 'card'
+      /** Default */
+      default: boolean
+      method_metadata: components['schemas']['OrganizationPaymentMethodCardMetadata']
+    }
+    /** OrganizationPaymentMethodCardMetadata */
+    OrganizationPaymentMethodCardMetadata: {
+      /** Brand */
+      brand: string
+      /** Last4 */
+      last4: string
+      /** Exp Month */
+      exp_month: number
+      /** Exp Year */
+      exp_year: number
+    }
+    /** OrganizationPaymentMethodGeneric */
+    OrganizationPaymentMethodGeneric: {
+      /** Id */
+      id: string
+      /** Type */
+      type: string
+      /** Default */
+      default: boolean
     }
     /** OrganizationPaymentStatus */
     OrganizationPaymentStatus: {
@@ -33586,6 +33651,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationBillingDetails']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:list_payment_methods': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource__']
         }
       }
       /** @description Organization not found. */

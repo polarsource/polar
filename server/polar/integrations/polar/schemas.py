@@ -1,8 +1,12 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from polar_sdk.models import LegacyRecurringProductPriceFixed, ProductPriceFixed
-from pydantic import Field
+from polar_sdk.models import (
+    LegacyRecurringProductPriceFixed,
+    PaymentMethodCard,
+    ProductPriceFixed,
+)
+from pydantic import Discriminator, Field, Tag
 
 from polar.kit.address import AddressInput
 from polar.kit.schemas import Schema
@@ -10,6 +14,7 @@ from polar.kit.schemas import Schema
 if TYPE_CHECKING:
     from polar_sdk.models import (
         Checkout,
+        CustomerPaymentMethod,
         CustomerPortalCustomer,
         Order,
         Product,
@@ -242,3 +247,62 @@ class OrganizationBillingDetailsUpdate(Schema):
     billing_name: str | None = None
     billing_address: AddressInput | None = None
     tax_id: str | None = None
+
+
+class OrganizationPaymentMethodCardMetadata(Schema):
+    brand: str
+    last4: str
+    exp_month: int
+    exp_year: int
+
+
+class OrganizationPaymentMethodCard(Schema):
+    id: str
+    type: Literal["card"] = "card"
+    default: bool
+    method_metadata: OrganizationPaymentMethodCardMetadata
+
+
+class OrganizationPaymentMethodGeneric(Schema):
+    id: str
+    type: str
+    default: bool
+
+
+def _payment_method_discriminator(value: Any) -> str:
+    type_value = (
+        value.get("type") if isinstance(value, dict) else getattr(value, "type", None)
+    )
+    return "card" if type_value == "card" else "generic"
+
+
+OrganizationPaymentMethod = Annotated[
+    Annotated[OrganizationPaymentMethodCard, Tag("card")]
+    | Annotated[OrganizationPaymentMethodGeneric, Tag("generic")],
+    Discriminator(_payment_method_discriminator),
+]
+
+
+def organization_payment_method_from_sdk(
+    method: "CustomerPaymentMethod", *, default_payment_method_id: str | None
+) -> OrganizationPaymentMethod:
+    is_default = default_payment_method_id is not None and (
+        method.id == default_payment_method_id
+    )
+    if isinstance(method, PaymentMethodCard):
+        metadata = method.method_metadata
+        return OrganizationPaymentMethodCard(
+            id=method.id,
+            default=is_default,
+            method_metadata=OrganizationPaymentMethodCardMetadata(
+                brand=metadata.brand,
+                last4=metadata.last4,
+                exp_month=metadata.exp_month,
+                exp_year=metadata.exp_year,
+            ),
+        )
+    return OrganizationPaymentMethodGeneric(
+        id=method.id,
+        type=method.type,
+        default=is_default,
+    )

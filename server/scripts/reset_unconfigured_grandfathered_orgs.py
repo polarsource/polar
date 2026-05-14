@@ -73,7 +73,37 @@ _TARGET_WHERE = """
                 WHERE oat.organization_id = o.id
                   AND oat.deleted_at IS NULL
             )
+            AND NOT EXISTS (
+                SELECT 1 FROM oauth2_tokens t
+                WHERE t.organization_id = o.id
+                  AND t.deleted_at IS NULL
+                  AND t.access_token_revoked_at IS NULL
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM oauth2_tokens t
+                JOIN user_organizations uo ON uo.user_id = t.user_id
+                WHERE uo.organization_id = o.id
+                  AND t.deleted_at IS NULL
+                  AND t.access_token_revoked_at IS NULL
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM personal_access_tokens pat
+                JOIN user_organizations uo ON uo.user_id = pat.user_id
+                WHERE uo.organization_id = o.id
+                  AND pat.deleted_at IS NULL
+            )
         )
+    )
+    -- Skip orgs that have ever had a checkout session.
+    AND NOT EXISTS (
+        SELECT 1 FROM checkouts c
+        WHERE c.organization_id = o.id
+    )
+    -- Skip orgs that have ever had an order. Covers active subscriptions
+    -- too, since any live subscription in the target set has an order.
+    AND NOT EXISTS (
+        SELECT 1 FROM orders ord
+        WHERE ord.organization_id = o.id
     )
 """
 

@@ -28,6 +28,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_discount
@@ -71,6 +72,39 @@ class TestCreate:
         )
 
         assert discount.name == "A" * 256
+
+    @pytest.mark.auth
+    async def test_member_role_allowed(
+        self,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+
+        discount = await discount_service.create(
+            session,
+            DiscountFixedCreate(
+                duration=DiscountDuration.once,
+                type=DiscountType.fixed,
+                amount=1000,
+                currency=PresentmentCurrency.usd,
+                name="Member-created",
+                code=None,
+                starts_at=None,
+                ends_at=None,
+                max_redemptions=None,
+                products=[product.id],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert discount.name == "Member-created"
 
 
 @pytest.mark.asyncio

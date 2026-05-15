@@ -1222,6 +1222,18 @@ async def approve_denied_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    if organization.status not in (
+        OrganizationStatus.DENIED,
+        OrganizationStatus.BLOCKED,
+    ):
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
     # Fetch AI review for context (needed for both POST validation and GET rendering)
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)

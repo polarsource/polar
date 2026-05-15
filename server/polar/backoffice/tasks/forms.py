@@ -27,7 +27,7 @@ _TaskName = Literal[tuple(_TASK_DEFINITIONS.keys())]  # type: ignore[valid-type]
 
 def _get_function_arguments(
     f: Callable[..., Any],
-) -> Iterator[tuple[str, Any]]:
+) -> Iterator[tuple[str, Any, Any]]:
     signature = inspect.signature(f)
     for key, parameter in signature.parameters.items():
         if key in {"self"}:
@@ -36,12 +36,13 @@ def _get_function_arguments(
         if get_origin(type_hint) is Unpack:
             type_hints_args = get_args(type_hint)
             if is_typeddict(type_hints_args[0]):
-                yield from get_type_hints(type_hints_args[0]).items()
+                for k, v in get_type_hints(type_hints_args[0]).items():
+                    yield k, v, inspect.Parameter.empty
                 return
             elif issubclass(type_hints_args[0], dict):
                 yield from _get_function_arguments(type_hints_args[0].__init__)
                 return
-        yield key, type_hint
+        yield key, type_hint, parameter.default
 
 
 class EnqueueTaskFormBase(forms.BaseForm):
@@ -68,10 +69,13 @@ def build_enqueue_task_form_class(
     }
     if task is not None:
         task_function = _TASK_DEFINITIONS[task]
-        for key, type_hint in _get_function_arguments(task_function.fn):
-            default: Any = ...
-            if type_hint is bool:
+        for key, type_hint, param_default in _get_function_arguments(task_function.fn):
+            if param_default is not inspect.Parameter.empty:
+                default = param_default
+            elif type_hint is bool:
                 default = False
+            else:
+                default = ...
             field_definitions[key] = (type_hint, default)
 
     return create_model(

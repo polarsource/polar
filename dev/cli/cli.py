@@ -145,7 +145,12 @@ def up(
         bool, typer.Option("--clean", help="Force re-run all steps")
     ] = False,
     skip_integrations: Annotated[
-        bool, typer.Option("--skip-integrations", help="Skip GitHub/Stripe setup prompts")
+        bool,
+        typer.Option("--skip-integrations", help="Skip GitHub/Stripe setup prompts"),
+    ] = False,
+    skip_tinybird: Annotated[
+        bool,
+        typer.Option("--skip-tinybird", help="Skip starting and waiting for Tinybird"),
     ] = False,
 ) -> None:
     """
@@ -155,14 +160,24 @@ def up(
     and prompts to configure GitHub and Stripe integrations.
     """
     console.print()
-    console.print(Panel(
-        Text("Setting up Polar development environment", justify="center", style="bold"),
-        border_style="blue",
-        padding=(1, 4),
-    ))
+    console.print(
+        Panel(
+            Text(
+                "Setting up Polar development environment",
+                justify="center",
+                style="bold",
+            ),
+            border_style="blue",
+            padding=(1, 4),
+        )
+    )
     console.print()
 
-    ctx = Context(clean=clean, skip_integrations=skip_integrations)
+    ctx = Context(
+        clean=clean,
+        skip_integrations=skip_integrations,
+        skip_tinybird=skip_tinybird,
+    )
     steps = discover_steps()
     total = len(steps)
     start_time = time.time()
@@ -196,13 +211,15 @@ def up(
     next_steps.add_row("[dim]Need assistance?", "")
     next_steps.add_row("dev help", "Show all available commands")
 
-    console.print(Panel(
-        Padding(next_steps, (1, 2)),
-        title="[bold green]Ready![/bold green]",
-        subtitle=f"[dim]completed in {time_str}[/dim]",
-        border_style="green",
-        padding=(0, 0),
-    ))
+    console.print(
+        Panel(
+            Padding(next_steps, (1, 2)),
+            title="[bold green]Ready![/bold green]",
+            subtitle=f"[dim]completed in {time_str}[/dim]",
+            border_style="green",
+            padding=(0, 0),
+        )
+    )
     console.print()
 
 
@@ -210,11 +227,13 @@ def up(
 def help() -> None:
     """Show all available commands."""
     console.print()
-    console.print(Panel(
-        Text("Polar Development CLI", justify="center", style="bold"),
-        border_style="blue",
-        padding=(1, 4),
-    ))
+    console.print(
+        Panel(
+            Text("Polar Development CLI", justify="center", style="bold"),
+            border_style="blue",
+            padding=(1, 4),
+        )
+    )
 
     recipes = Table(show_header=False, box=None, padding=(0, 2))
     recipes.add_column(style="bold cyan", min_width=24)
@@ -274,7 +293,9 @@ def help() -> None:
 
         return options
 
-    def _section(title: str, commands: list[tuple[str, str, list[tuple[str, str]]]]) -> None:
+    def _section(
+        title: str, commands: list[tuple[str, str, list[tuple[str, str]]]]
+    ) -> None:
         table = Table(show_header=False, box=None, padding=(0, 2))
         table.add_column(style="bold cyan", min_width=24)
         table.add_column(style="dim")

@@ -1,4 +1,4 @@
-"""Start Docker infrastructure (PostgreSQL, Redis, Minio)."""
+"""Start Docker infrastructure (PostgreSQL, Redis, Minio, Tinybird)."""
 
 from shared import (
     SERVER_DIR,
@@ -40,9 +40,19 @@ def run(ctx: Context) -> bool:
         step_status(True, "Docker containers", "already running")
         return True
 
-    with step_spinner("Starting PostgreSQL, Redis, Minio..."):
+    # Build compose command
+    compose_cmd = ["docker", "compose", "up", "-d"]
+    # Include tinybird profile by default; exclude it when skip_tinybird is set
+    if not ctx.skip_tinybird:
+        compose_cmd.extend(["--profile", "tinybird"])
+
+    service_name = "PostgreSQL, Redis, Minio"
+    if not ctx.skip_tinybird:
+        service_name += ", Tinybird"
+
+    with step_spinner(f"Starting {service_name}..."):
         result = run_command(
-            ["docker", "compose", "up", "-d"],
+            compose_cmd,
             cwd=SERVER_DIR,
             capture=True,
         )

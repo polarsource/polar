@@ -32,6 +32,7 @@ class Context:
 
     clean: bool = False
     skip_integrations: bool = False
+    skip_tinybird: bool = False
     state: dict = field(default_factory=dict)
 
 
@@ -92,7 +93,12 @@ def find_available_port(start_port: int, max_attempts: int = 100) -> int:
 def step_spinner(message: str):
     """Return a Rich Live spinner with consistent indentation matching step_status."""
     spinner = Spinner("dots", text=Text(f" {message}", style="bold"))
-    return Live(Padding(spinner, (0, 0, 0, 2)), console=console, refresh_per_second=12, transient=True)
+    return Live(
+        Padding(spinner, (0, 0, 0, 2)),
+        console=console,
+        refresh_per_second=12,
+        transient=True,
+    )
 
 
 def step_status(success: bool, message: str, detail: str = "") -> None:

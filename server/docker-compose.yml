@@ -123,6 +123,8 @@ services:
       interval: 5s
       timeout: 10s
       retries: 30
+    profiles:
+      - tinybird
 
 volumes:
   postgres_data:

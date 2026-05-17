@@ -336,7 +336,7 @@ def _ensure_network() -> None:
     console.print(f"[dim]Created docker network: {SHARED_NETWORK_NAME}[/dim]")
 
 
-def _shared_compose_cmd(monitoring: bool = False) -> list[str]:
+def _shared_compose_cmd(monitoring: bool = False, tinybird: bool = False) -> list[str]:
     cmd = [
         "docker",
         "compose",
@@ -345,8 +345,13 @@ def _shared_compose_cmd(monitoring: bool = False) -> list[str]:
         "-f",
         str(SHARED_COMPOSE_FILE),
     ]
+    profiles = []
     if monitoring:
-        cmd.extend(["--profile", "monitoring"])
+        profiles.append("monitoring")
+    if tinybird:
+        profiles.append("tinybird")
+    for profile in profiles:
+        cmd.extend(["--profile", profile])
     return cmd
 
 
@@ -580,7 +585,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
           `polar-app-N` project
         """
         if service in SHARED_SERVICES:
-            return _shared_compose_cmd(monitoring=True), {}
+            return _shared_compose_cmd(monitoring=True, tinybird=True), {}
         return _build_compose_cmd(instance), _build_compose_env(instance)
 
     @docker_app.command("up")
@@ -598,6 +603,12 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 "--monitoring", help="Include Prometheus and Grafana in shared infra"
             ),
         ] = False,
+        skip_tinybird: Annotated[
+            bool,
+            typer.Option(
+                "--skip-tinybird", help="Skip starting Tinybird service"
+            ),
+        ] = False,
         services: Annotated[
             list[str] | None,
             typer.Argument(help="Services to start (default: all app services)"),
@@ -610,15 +621,15 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         # Bring shared infra up first if it isn't already running.
         _ensure_network()
         if not _shared_is_running():
-            shared_cmd = _shared_compose_cmd(monitoring=monitoring) + ["up", "-d"]
+            shared_cmd = _shared_compose_cmd(monitoring=monitoring, tinybird=not skip_tinybird) + ["up", "-d"]
             console.print("[bold blue]Starting Polar shared infra[/bold blue]")
             result = run_command(shared_cmd)
             if not result or result.returncode != 0:
                 console.print("[red]Failed to start shared infra[/red]")
                 raise typer.Exit(1)
-        elif monitoring:
+        elif monitoring or skip_tinybird:
             console.print(
-                "[yellow]Shared infra is already running; --monitoring only takes effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
+                "[yellow]Shared infra is already running; --monitoring and --skip-tinybird only take effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
             )
 
         env = _build_compose_env(instance)
@@ -678,7 +689,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         if all_:
             console.print("[dim]Stopping shared infra...[/dim]")
-            shared = _shared_compose_cmd(monitoring=True) + ["down"]
+            shared = _shared_compose_cmd(monitoring=True, tinybird=True) + ["down"]
             result = run_command(shared)
             if not result or result.returncode != 0:
                 console.print("[red]Failed to stop shared infra[/red]")
@@ -716,7 +727,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         """List running containers — both shared infra and this instance's app stack."""
         instance = _get_instance(ctx)
         console.print(f"[bold]Shared ({SHARED_PROJECT_NAME})[/bold]")
-        run_command(_shared_compose_cmd(monitoring=True) + ["ps"])
+        run_command(_shared_compose_cmd(monitoring=True, tinybird=True) + ["ps"])
         console.print(f"\n[bold]App ({app_project(instance)})[/bold]")
         run_command(
             _build_compose_cmd(instance) + ["ps"], env=_build_compose_env(instance)
@@ -862,7 +873,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         if all_:
             console.print("[dim]Wiping shared infra volumes...[/dim]")
-            shared = _shared_compose_cmd(monitoring=True) + [
+            shared = _shared_compose_cmd(monitoring=True, tinybird=True) + [
                 "down",
                 "-v",
                 "--remove-orphans",

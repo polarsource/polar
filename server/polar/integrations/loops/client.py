@@ -62,6 +62,12 @@ class LoopsClientLogicalError(LoopsClientError):
         super().__init__(message)
 
 
+class LoopsClientMultipleContactsError(LoopsClientLogicalError):
+    """Raised when Loops API returns 'Multiple contacts found' error."""
+
+    pass
+
+
 class LoopsClient:
     def __init__(self, api_key: str | None) -> None:
         self.client = httpx.AsyncClient(
@@ -126,6 +132,9 @@ class LoopsClient:
         if response.is_server_error or response.status_code == 429:
             raise LoopsClientOperationalError(response.text)
         elif response.is_client_error:
+            # Check for specific "Multiple contacts found" error
+            if "Multiple contacts found" in response.text:
+                raise LoopsClientMultipleContactsError(response)
             raise LoopsClientLogicalError(response)
 
         return response
@@ -133,4 +142,4 @@ class LoopsClient:
 
 client = LoopsClient(settings.LOOPS_API_KEY)
 
-__all__ = ["Properties", "client"]
+__all__ = ["LoopsClientMultipleContactsError", "Properties", "client"]

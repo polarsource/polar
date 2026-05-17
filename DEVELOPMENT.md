@@ -16,12 +16,10 @@ flowchart TD
         REDIS["Redis"]
         S3["S3 Storage"]
         WORKER["Worker"]
-        WORKER_GITHUB["Worker GitHub"]
     end
     subgraph "Frontend"
         WEB["Web client"]
     end
-    GITHUB_WH["GitHub Webhooks"]
     STRIPE_WH["Stripe Webhooks"]
     USERS["Users"]
 
@@ -31,28 +29,15 @@ flowchart TD
     REDIS <--> WORKER
     REDIS <--> WORKER_GITHUB
     WORKER --> POSTGRESQL
-    WORKER_GITHUB --> POSTGRESQL
     API --> S3
     WEB --> S3
 
-    GITHUB_WH -.-> API
     STRIPE_WH -.-> API
     USERS -.-> API
     USERS -.-> WEB
 ```
 
-## Prerequisites
-
-Polar needs a [Python 3](https://www.python.org/downloads/) and [Node.js 24](https://nodejs.org/en/download/package-manager) installations.
-
-## Setup environment
-
-> [!TIP]
-> Want to get started quickly? Use GitHub Codespaces.
->
-> [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/polarsource/polar?machine=standardLinux32gb)
-
-### Quick start with `dev`
+## Quick start with `dev`
 
 We have an internal tool in place called `dev` for an easy setup:
 
@@ -81,7 +66,7 @@ dev stripe           # Start Stripe webhook listener
 
 Running `dev up` after pulling new code is also recommended to make sure dependencies and DB migrations are up-to-date.
 
-### Setup environment variables
+## Setup environment variables
 
 For the Polar stack to run properly, it needs quite a bunch of settings defined as environment variables. To ease things, we provide a script to bootstrap them. It requires [uv](https://docs.astral.sh/uv/getting-started/installation/) to be installed on your system.
 
@@ -93,7 +78,7 @@ Once done, the script will automatically create `server/.env` and `clients/apps/
 
 **Optional: setup GitHub App**
 
-If you want to work with GitHub login and issue funding, you'll need to have a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) for your development environment. Our script is able to help in this task by passing the following parameters:
+If you want to work with GitHub login, you'll need to have a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) for your development environment. Our script is able to help in this task by passing the following parameters:
 
 ```sh
 ./dev/setup-environment --setup-github-app --backend-external-url https://mydomain.ngrok.dev
@@ -102,15 +87,6 @@ If you want to work with GitHub login and issue funding, you'll need to have a [
 Note that you'll need a valid external URL that'll route to your development server. For this task, we recommend to use [ngrok](https://ngrok.com/).
 
 Your browser will open a new page and you'll be prompted to **create a GitHub App**. You can just proceed, all the necessary configuration is already done automatically. The script will then add the necessary values to the environment files.
-
-> [!TIP]
-> If you run on **GitHub Codespaces**, you can just run it like this:
->
-> ```sh
-> ./dev/setup-environment --setup-github-app
-> ```
->
-> The script will automatically use your external GitHub Codespace URL.
 
 **Shared secrets (multi-worktree development)**
 
@@ -154,9 +130,6 @@ If you want to work with payments and subscriptions, you'll need to set up a Str
 
 ### Setup backend
 
-> [!TIP]
-> If you run on **GitHub Codespaces**, you can **skip this step**. This is already done for you.
-
 Setting up the backend consists of basically three things:
 
 **1. Start the development containers**
@@ -180,9 +153,6 @@ uv sync
 ```
 
 ### Setup frontend
-
-> [!TIP]
-> If you run on **GitHub Codespaces**, you can **skip this step**. This is already done for you.
 
 **1. Install JavaScript dependencies**
 
@@ -258,9 +228,6 @@ By default, the web client will be available at [http://127.0.0.1:3000](http://1
 
 > [!TIP]
 > The processes will restart automatically if you make changes to the code.
-
-> [!NOTE]
-> On **GitHub Codespaces**, both API backend and web frontend will be routed on the 8080 port.
 
 ## Docker-Based Development (Alternative)
 

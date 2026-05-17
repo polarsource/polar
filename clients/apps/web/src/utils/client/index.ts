@@ -27,10 +27,6 @@ export const api = createClientSideAPI()
 export const getSSRHeaders = (): Record<string, string> => {
   const headers: Record<string, string> = {}
 
-  if (process.env.GITHUB_TOKEN) {
-    headers['X-Github-Token'] = process.env.GITHUB_TOKEN
-  }
-
   if (process.env.POLAR_PREVIEW_ACCESS_TOKEN) {
     headers['X-Preview-Token'] = process.env.POLAR_PREVIEW_ACCESS_TOKEN
   }
@@ -57,14 +53,6 @@ export const createServerSideAPI = async (
   apiHeaders = {
     ...apiHeaders,
     Cookie: cookies.toString(),
-  }
-
-  // When running inside GitHub Codespaces, we need to pass a token to access forwarded ports
-  if (process.env.GITHUB_TOKEN) {
-    apiHeaders = {
-      ...apiHeaders,
-      'X-Github-Token': process.env.GITHUB_TOKEN,
-    }
   }
 
   // Preview environments: include access token so SSR calls pass through the funnel gate

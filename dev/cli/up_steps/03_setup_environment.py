@@ -23,7 +23,10 @@ def run(ctx: Context) -> bool:
         return True
 
     setup_script = ROOT_DIR / "dev" / "setup-environment"
-    result = run_command([str(setup_script)], capture=False)
+    command: list[str] = [str(setup_script)]
+    if ctx.database_name:
+        command.extend(["--database-name", ctx.database_name])
+    result = run_command(command, capture=False)
 
     if result and result.returncode == 0:
         step_status(True, "Environment files", "generated")

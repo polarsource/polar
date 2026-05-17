@@ -288,10 +288,17 @@ def _write_env_file(
             env_file.write(f"{key}={delimiter}{output_value}{delimiter}\n")
 
 
-def _write_server_env_file(github_app: dict[str, typing.Any] | None = None) -> None:
+def _write_server_env_file(
+    github_app: dict[str, typing.Any] | None = None,
+    database_name: str | None = None,
+) -> None:
     template_file_path = ROOT_PATH / "server" / ".env.template"
     env_file_path = ROOT_PATH / "server" / ".env"
     replacements: dict[str, str] = {}
+
+    if database_name is not None:
+        replacements["POLAR_POSTGRES_DATABASE"] = database_name
+        replacements["POLAR_POSTGRES_READ_DATABASE"] = database_name
 
     # Load central secrets first (can be overridden by explicit values below)
     central_secrets = _load_central_secrets()
@@ -416,6 +423,12 @@ def _get_options():
         help="The base URL of the temporary webserver to create GitHub app",
         default=default_github_setup_base_url,
     )
+    parser.add_argument(
+        "--database-name",
+        type=str,
+        help="The name of the database to use (replaces POLAR_POSTGRES_DATABASE and POLAR_POSTGRES_READ_DATABASE)",
+        default=None,
+    )
 
     args = parser.parse_args()
 
@@ -460,7 +473,7 @@ if __name__ == "__main__":
             spinner.write(f"✅ GitHub App credentials saved to {SECRETS_FILE_PATH}")
 
         spinner.text = "Writing environment files..."
-        _write_server_env_file(github_app)
+        _write_server_env_file(github_app, options.database_name)
         _write_apps_web_env_file(github_app)
         _generate_jwks()
         spinner.ok("Environment files have been successfully setup")

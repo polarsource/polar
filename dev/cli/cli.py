@@ -152,6 +152,12 @@ def up(
         bool,
         typer.Option("--skip-tinybird", help="Skip starting and waiting for Tinybird"),
     ] = False,
+    database_name: Annotated[
+        str | None,
+        typer.Option(
+            "--database-name", help="Use a specific database name for PostgreSQL"
+        ),
+    ] = None,
 ) -> None:
     """
     Prepare the development environment.
@@ -177,6 +183,7 @@ def up(
         clean=clean,
         skip_integrations=skip_integrations,
         skip_tinybird=skip_tinybird,
+        database_name=database_name,
     )
     steps = discover_steps()
     total = len(steps)

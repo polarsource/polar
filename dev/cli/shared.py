@@ -33,6 +33,7 @@ class Context:
     clean: bool = False
     skip_integrations: bool = False
     skip_tinybird: bool = False
+    database_name: str | None = None
     state: dict = field(default_factory=dict)
 
 

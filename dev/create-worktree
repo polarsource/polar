@@ -1,0 +1,45 @@
+#!/bin/bash
+
+set -e
+
+# Check if argument is provided
+if [ $# -eq 0 ]; then
+  echo "Error: Please provide a name for the worktree"
+  exit 1
+fi
+
+name=$1
+
+# Validate the name is a valid slug (lowercase letters, digits, and underscores only)
+if ! [[ "$name" =~ ^[a-z0-9_]+$ ]]; then
+  echo "Error: Worktree name must contain only lowercase letters, digits, and underscores"
+  echo "       Received: '$name'"
+  exit 1
+fi
+
+worktree_dir=".worktrees/$name"
+db_name="polar_dev_$name"
+host="localhost"
+user="polar"
+password="polar"
+
+# Create git worktree
+echo "Creating git worktree in $worktree_dir"
+git worktree add "$worktree_dir" || {
+  echo "Failed to create worktree"
+  exit 1
+}
+
+# Create dedicated database
+echo "Creating database $db_name"
+if ! PGPASSWORD=$password psql -h "$host" -U "$user" -d "postgres" -tAc "SELECT 1 FROM pg_database WHERE datname='$db_name'" | grep -q 1; then
+  PGPASSWORD=$password psql -h "$host" -U "$user" -d "postgres" -c "CREATE DATABASE $db_name;"
+else
+  echo "Database $db_name already exists."
+fi
+
+# Set up environment in the worktree
+echo "Setting up environment in $worktree_dir"
+cd "$worktree_dir" && ./dev/cli/dev up --skip-integrations --skip-tinybird --database-name "$db_name"
+
+echo "Worktree setup complete for $name"

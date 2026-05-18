@@ -100,7 +100,7 @@ def _update_secrets_file(key: str, value: str) -> None:
 
 
 def run(ctx: Context) -> bool:
-    """Wait for PostgreSQL, Redis, and Tinybird to be ready."""
+    """Wait for PostgreSQL, Redis, and optionally Tinybird to be ready."""
     with step_spinner("Waiting for PostgreSQL..."):
         if wait_for_postgres(timeout=60):
             step_status(True, "PostgreSQL", "ready")
@@ -115,16 +115,20 @@ def run(ctx: Context) -> bool:
             step_status(False, "Redis", "timeout after 60s")
             return False
 
-    with step_spinner("Waiting for Tinybird..."):
-        token = wait_for_tinybird_and_get_token(timeout=90)
-        if token:
-            _update_secrets_file("POLAR_TINYBIRD_API_TOKEN", token)
-            _update_secrets_file("POLAR_TINYBIRD_READ_TOKEN", token)
-            _update_secrets_file("POLAR_TINYBIRD_CLICKHOUSE_TOKEN", token)
-            run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
-            step_status(True, "Tinybird", "ready (token configured)")
-        else:
-            step_status(False, "Tinybird", "timeout - continuing without it")
-            # Don't fail the whole setup for tinybird
+    # Only wait for Tinybird if not skipped
+    if ctx.skip_tinybird:
+        step_status(True, "Tinybird", "skipped")
+    else:
+        with step_spinner("Waiting for Tinybird..."):
+            token = wait_for_tinybird_and_get_token(timeout=90)
+            if token:
+                _update_secrets_file("POLAR_TINYBIRD_API_TOKEN", token)
+                _update_secrets_file("POLAR_TINYBIRD_READ_TOKEN", token)
+                _update_secrets_file("POLAR_TINYBIRD_CLICKHOUSE_TOKEN", token)
+                run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+                step_status(True, "Tinybird", "ready (token configured)")
+            else:
+                step_status(False, "Tinybird", "timeout - continuing without it")
+                # Don't fail the whole setup for tinybird
 
     return True

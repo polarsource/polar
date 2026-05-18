@@ -103,6 +103,8 @@ services:
       interval: 5s
       timeout: 10s
       retries: 30
+    profiles:
+      - tinybird
 
   prometheus:
     image: prom/prometheus:v3.7.3

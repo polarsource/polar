@@ -25,6 +25,10 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceNotFound,
 )
+from polar.integrations.polar.exceptions import (
+    PolarSelfNoActiveSubscription,
+    PolarSelfPaymentMethodInUse,
+)
 from polar.integrations.polar.schemas import (
     OrganizationBillingDetails,
     OrganizationBillingDetailsUpdate,
@@ -41,10 +45,6 @@ from polar.integrations.polar.schemas import (
     OrganizationSubscriptionUpdate,
     organization_payment_method_add_response_from_sdk,
     organization_payment_method_from_sdk,
-)
-from polar.integrations.polar.service import (
-    PolarSelfNoActiveSubscription,
-    PolarSelfPaymentMethodInUse,
 )
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable

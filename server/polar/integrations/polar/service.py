@@ -13,13 +13,23 @@ from polar_sdk.models import (
 
 from polar.account.repository import AccountRepository
 from polar.config import settings
-from polar.exceptions import PolarError
 from polar.integrations.plain.service import plain as plain_service
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.worker import enqueue_job
 
 from .client import get_client
+from .exceptions import (
+    PolarSelfCustomerNotFound,
+    PolarSelfNoActiveSubscription,
+    PolarSelfNotApproved,
+    PolarSelfNotConfigured,
+    PolarSelfOrderNotFound,
+    PolarSelfPlanNotFound,
+    PolarSelfWebhookError,
+    SupportBenefitError,
+    TransactionFeeBenefitError,
+)
 from .schemas import (
     OrganizationBillingDetailsUpdate,
     OrganizationPaymentMethodConfirm,
@@ -47,80 +57,6 @@ BenefitGrantWebhookPayload = (
     | WebhookBenefitGrantUpdatedPayload
     | WebhookBenefitGrantRevokedPayload
 )
-
-
-class PolarSelfWebhookError(PolarError): ...
-
-
-class TransactionFeeBenefitError(PolarSelfWebhookError): ...
-
-
-class SupportBenefitError(PolarSelfWebhookError): ...
-
-
-class PolarSelfNotConfigured(PolarError):
-    def __init__(self) -> None:
-        super().__init__("Polar self-billing is not configured.", status_code=404)
-
-
-class PolarSelfPlanNotFound(PolarError):
-    def __init__(self, product_id: str) -> None:
-        super().__init__(f"Plan {product_id!r} is not available.", status_code=404)
-        self.product_id = product_id
-
-
-class PolarSelfNoActiveSubscription(PolarError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        super().__init__(
-            f"Organization {organization_id} has no active subscription.",
-            status_code=404,
-        )
-        self.organization_id = organization_id
-
-
-class PolarSelfNotApproved(PolarError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        super().__init__(
-            "Your organization must complete review and be approved "
-            "before changing plan.",
-            status_code=403,
-        )
-        self.organization_id = organization_id
-
-
-class PolarSelfOrderNotFound(PolarError):
-    def __init__(self, order_id: str) -> None:
-        super().__init__(f"Order {order_id!r} not found.", status_code=404)
-        self.order_id = order_id
-
-
-class PolarSelfCustomerNotFound(PolarError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        super().__init__(
-            f"Organization {organization_id} has no Polar customer.",
-            status_code=404,
-        )
-        self.organization_id = organization_id
-
-
-class PolarSelfPaymentMethodNotFound(PolarError):
-    def __init__(self, payment_method_id: str) -> None:
-        super().__init__(
-            f"Payment method {payment_method_id!r} not found.",
-            status_code=404,
-        )
-        self.payment_method_id = payment_method_id
-
-
-class PolarSelfPaymentMethodInUse(PolarError):
-    def __init__(self, payment_method_id: str) -> None:
-        super().__init__(
-            "This payment method is used by an active subscription and "
-            "no alternative payment method is available. Add another "
-            "payment method before deleting this one.",
-            status_code=400,
-        )
-        self.payment_method_id = payment_method_id
 
 
 class PolarSelfService:

@@ -275,6 +275,7 @@ export const colorStyles = stylex.create({
   'text-primary': { color: textColors['text-primary'] },
   'text-secondary': { color: textColors['text-secondary'] },
   'text-tertiary': { color: textColors['text-tertiary'] },
+  'text-inverse': { color: textColors['text-inverse'] },
   'text-success': { color: textColors['text-success'] },
   'text-danger': { color: textColors['text-danger'] },
   'text-warning': { color: textColors['text-warning'] },

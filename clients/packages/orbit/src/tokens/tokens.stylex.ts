@@ -28,20 +28,20 @@ const DARK = '@media (prefers-color-scheme: dark)'
 
 export const backgroundColors = stylex.defineVars({
   'background-primary': {
-    default: '#ffffff',
-    [DARK]: 'hsl(233, 4%, 3.5%)',
+    default: '#dddddd',
+    [DARK]: '#1B1B1B',
   },
   'background-secondary': {
     default: 'oklch(0.985 0.002 247.839)',
     [DARK]: 'hsl(233, 4%, 6.5%)',
   },
   'background-card': {
-    default: 'oklch(96.7% 0.003 264.54)',
-    [DARK]: 'hsl(233, 4%, 9.5%)',
+    default: '#d1d1d1',
+    [DARK]: '#212121',
   },
   'background-inverse': {
     default: 'oklch(0.21 0.034 264.665)',
-    [DARK]: 'oklch(1.000 0.000 263.3)',
+    [DARK]: '#dddddd',
   },
   'background-warning': {
     default: 'oklch(0.97 0.026 102.5)',
@@ -52,7 +52,7 @@ export const backgroundColors = stylex.defineVars({
     [DARK]: 'oklch(0.696 0.17 162 / 0.2)',
   },
   'background-danger': {
-    default: 'oklch(0.97 0.04 25)',
+    default: '#f27768',
     [DARK]: 'oklch(0.637 0.237 25 / 0.2)',
   },
   'background-pending': {
@@ -63,8 +63,8 @@ export const backgroundColors = stylex.defineVars({
 
 export const textColors = stylex.defineVars({
   'text-primary': {
-    default: 'oklch(0.21 0.034 264.665)',
-    [DARK]: 'oklch(1.000 0.000 263.3)',
+    default: '#343434',
+    [DARK]: '#dddddd',
   },
   'text-secondary': {
     default: 'oklch(0.551 0.027 264.364)',
@@ -73,6 +73,10 @@ export const textColors = stylex.defineVars({
   'text-tertiary': {
     default: 'oklch(0.707 0.022 261.325)',
     [DARK]: 'hsl(233, 4%, 46%)',
+  },
+  'text-inverse': {
+    default: '#dddddd',
+    [DARK]: '#000000',
   },
   'text-success': {
     default: 'oklch(0.696 0.17 162)',
@@ -94,7 +98,7 @@ export const textColors = stylex.defineVars({
 
 export const borderColors = stylex.defineVars({
   'border-primary': {
-    default: 'oklch(0.928 0.006 264.531)',
+    default: '#b1b1b1',
     [DARK]: 'hsl(233, 4%, 12%)',
   },
   'border-secondary': {

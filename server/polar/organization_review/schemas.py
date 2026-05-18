@@ -324,6 +324,15 @@ class DataSnapshot(Schema):
     history: HistoryData
     setup: SetupData = Field(default_factory=SetupData)
     website: WebsiteData | None = None
+    webhook_host: WebsiteData | None = Field(
+        default=None,
+        description=(
+            "Summary of the public site served on the webhook endpoint's host, "
+            "when it differs from the declared website host and is not on the "
+            "known-integration-platform whitelist. None when the webhook host "
+            "matches the declared host, is a known service, or no webhooks exist."
+        ),
+    )
     prior_feedback: PriorFeedbackData = Field(default_factory=PriorFeedbackData)
     appeal_reason: str | None = None
     original_denial_reason: str | None = None

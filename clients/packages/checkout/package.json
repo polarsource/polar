@@ -25,6 +25,14 @@
       "types": "./dist/embed.d.ts",
       "default": "./dist/embed.js"
     },
+    "./payment-method": {
+      "types": "./dist/payment-method.d.ts",
+      "default": "./dist/payment-method.js"
+    },
+    "./react/payment-method": {
+      "types": "./dist/react/payment-method.d.ts",
+      "default": "./dist/react/payment-method.js"
+    },
     "./components": {
       "types": "./dist/components/index.d.ts",
       "default": "./src/components/index.ts"
@@ -48,6 +56,14 @@
       "./embed": {
         "types": "./dist/embed.d.ts",
         "default": "./dist/embed.js"
+      },
+      "./payment-method": {
+        "types": "./dist/payment-method.d.ts",
+        "default": "./dist/payment-method.js"
+      },
+      "./react/payment-method": {
+        "types": "./dist/react/payment-method.d.ts",
+        "default": "./dist/react/payment-method.js"
       },
       "./components": {
         "types": "./dist/components/index.d.ts",

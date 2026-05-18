@@ -13,8 +13,11 @@ from polar_sdk.models import (
     CheckoutCreate,
     CostMetadataInput,
     Customer,
+    CustomerPaymentMethod,
     CustomerPortalCustomer,
+    CustomerPortalCustomersDeletePaymentMethodSecurity,
     CustomerPortalCustomersGetSecurity,
+    CustomerPortalCustomersListPaymentMethodsSecurity,
     CustomerPortalCustomersUpdateSecurity,
     CustomerPortalCustomerUpdate,
     CustomerSessionCustomerExternalIDCreate,
@@ -535,6 +538,80 @@ class PolarSelfClient:
                 _raise_error(span, e, "polar.portal.get_customer")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "polar.portal.get_customer")
+
+    async def portal_list_payment_methods(
+        self,
+        *,
+        external_customer_id: str,
+        external_member_id: str | None = None,
+    ) -> list[CustomerPaymentMethod]:
+        with logfire.span(
+            "polar.portal.list_payment_methods",
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+        ) as span:
+            methods: list[CustomerPaymentMethod] = []
+            try:
+                session = await self._sdk.customer_sessions.create_async(
+                    request=CustomerSessionCustomerExternalIDCreate(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
+                )
+                security = CustomerPortalCustomersListPaymentMethodsSecurity(
+                    customer_session=session.token,
+                )
+                response = await self._sdk.customer_portal.customers.list_payment_methods_async(
+                    security=security,
+                    page=1,
+                    limit=100,
+                )
+                while response is not None:
+                    methods.extend(response.result.items)
+                    response = response.next()
+            except PolarError as e:
+                _raise_error(span, e, "polar.portal.list_payment_methods")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "polar.portal.list_payment_methods")
+
+            span.set_attribute("payment_method_count", len(methods))
+            return methods
+
+    async def portal_delete_payment_method(
+        self,
+        *,
+        external_customer_id: str,
+        payment_method_id: str,
+        external_member_id: str | None = None,
+    ) -> None:
+        with logfire.span(
+            "polar.portal.delete_payment_method",
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+            payment_method_id=payment_method_id,
+        ) as span:
+            try:
+                session = await self._sdk.customer_sessions.create_async(
+                    request=CustomerSessionCustomerExternalIDCreate(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
+                )
+                await self._sdk.customer_portal.customers.delete_payment_method_async(
+                    security=CustomerPortalCustomersDeletePaymentMethodSecurity(
+                        customer_session=session.token,
+                    ),
+                    id=payment_method_id,
+                )
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    from .service import PolarSelfPaymentMethodNotFound
+
+                    raise PolarSelfPaymentMethodNotFound(payment_method_id) from e
+                _raise_error(span, e, "polar.portal.delete_payment_method")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "polar.portal.delete_payment_method")
 
     async def portal_update_customer(
         self,

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
         BenefitGrant,
         Checkout,
         Customer,
+        CustomerPaymentMethod,
         CustomerPortalCustomer,
         Order,
         Product,
@@ -83,6 +84,15 @@ class PolarSelfCustomerNotFound(PolarError):
             status_code=404,
         )
         self.organization_id = organization_id
+
+
+class PolarSelfPaymentMethodNotFound(PolarError):
+    def __init__(self, payment_method_id: str) -> None:
+        super().__init__(
+            f"Payment method {payment_method_id!r} not found.",
+            status_code=404,
+        )
+        self.payment_method_id = payment_method_id
 
 
 class PolarSelfService:
@@ -281,6 +291,39 @@ class PolarSelfService:
         await self._ensure_polar_customer(organization_id)
         return await get_client().portal_get_customer(
             external_customer_id=str(organization_id),
+            external_member_id=external_member_id,
+        )
+
+    async def list_payment_methods(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        external_member_id: str | None = None,
+    ) -> tuple[list["CustomerPaymentMethod"], str | None]:
+        await self._ensure_polar_customer(organization_id)
+        client = get_client()
+        customer = await client.portal_get_customer(
+            external_customer_id=str(organization_id),
+            external_member_id=external_member_id,
+        )
+        methods = await client.portal_list_payment_methods(
+            external_customer_id=str(organization_id),
+            external_member_id=external_member_id,
+        )
+        default_id = customer.default_payment_method_id
+        return methods, default_id if isinstance(default_id, str) else None
+
+    async def delete_payment_method(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        payment_method_id: str,
+        external_member_id: str | None = None,
+    ) -> None:
+        await self._ensure_polar_customer(organization_id)
+        await get_client().portal_delete_payment_method(
+            external_customer_id=str(organization_id),
+            payment_method_id=payment_method_id,
             external_member_id=external_member_id,
         )
 

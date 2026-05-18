@@ -473,9 +473,9 @@ function ChangeRoleModal({
         </SelectContent>
       </Select>
       {orderedRoles.length > 0 && (
-        <div className="dark:border-polar-700 overflow-hidden rounded-md border border-gray-200">
+        <div className="dark:border-polar-700 max-h-[30vh] overflow-y-auto rounded-md border border-gray-200">
           <table className="w-full text-sm">
-            <thead className="dark:bg-polar-700 bg-gray-50 text-xs">
+            <thead className="dark:bg-polar-700 sticky top-0 bg-gray-50 text-xs">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Permission</th>
                 {orderedRoles.map((r) => (

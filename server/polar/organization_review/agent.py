@@ -2,6 +2,7 @@ import asyncio
 import time
 from datetime import UTC, datetime
 from typing import cast
+from urllib.parse import urlparse
 from uuid import UUID
 
 import structlog
@@ -77,11 +78,11 @@ async def run_organization_review(
 
         duration = time.monotonic() - start_time
 
-        collector_usage = (
-            snapshot.website.usage
-            if snapshot.website and snapshot.website.usage
-            else UsageInfo()
-        )
+        collector_usage = UsageInfo()
+        if snapshot.website and snapshot.website.usage:
+            collector_usage = collector_usage + snapshot.website.usage
+        if snapshot.setup.webhook_host and snapshot.setup.webhook_host.usage:
+            collector_usage = collector_usage + snapshot.setup.webhook_host.usage
         usage = analyzer_usage + collector_usage
 
         log.info(
@@ -259,6 +260,77 @@ async def _collect_website(organization: Organization) -> WebsiteData | None:
         return None
 
 
+def _same_registrable_domain(host_a: str, host_b: str) -> bool:
+    """Whether two hosts share a registrable domain after stripping `www.`.
+
+    Subdomains on the same parent are treated as the same domain. Uses suffix
+    matching rather than a hand-rolled SLD split so multi-part TLDs like
+    `*.co.uk` don't collapse false-positives.
+    """
+    a = host_a.lower().removeprefix("www.")
+    b = host_b.lower().removeprefix("www.")
+    if not a or not b:
+        return False
+    return a == b or a.endswith("." + b) or b.endswith("." + a)
+
+
+def _pick_unknown_webhook_host(
+    organization: Organization, setup: SetupData
+) -> str | None:
+    """First webhook host that's worth fetching, or None.
+
+    Skips hosts on the same registrable domain as the declared website, and
+    hosts already classified as known integration platforms by the setup
+    collector (`webhook_known_service_domains`).
+    """
+    declared = urlparse(organization.website or "").hostname or ""
+    known = {d.lower() for d in setup.integration.webhook_known_service_domains}
+
+    for host in setup.integration.webhook_domains:
+        host_l = host.lower()
+        if not host_l or host_l in known:
+            continue
+        if declared and _same_registrable_domain(host_l, declared):
+            continue
+        return host_l
+    return None
+
+
+async def _collect_webhook_host(
+    organization: Organization, setup: SetupData
+) -> WebsiteData | None:
+    """Summarize the public site served on the webhook host when it differs
+    from the declared website and isn't a known integration platform.
+    """
+    host = _pick_unknown_webhook_host(organization, setup)
+    if host is None:
+        return None
+
+    log.debug(
+        "organization_review.webhook_host_collector.start",
+        organization_id=str(organization.id),
+        webhook_host=host,
+    )
+    try:
+        data = await collect_website_data(f"https://{host}/")
+        log.debug(
+            "organization_review.webhook_host_collector.complete",
+            organization_id=str(organization.id),
+            webhook_host=host,
+            pages_scraped=data.total_pages_succeeded,
+            scrape_error=data.scrape_error,
+        )
+        return data
+    except Exception as e:
+        log.warning(
+            "organization_review.webhook_host_collector.failed",
+            organization_id=str(organization.id),
+            webhook_host=host,
+            error=str(e),
+        )
+        return None
+
+
 async def _collect_prior_feedback(organization_id: UUID) -> PriorFeedbackData:
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
@@ -276,6 +348,15 @@ async def _collect_data(
     # Run all collectors in parallel.
     # Each DB-bound collector creates its own session so queries
     # can execute concurrently across separate connections.
+    #
+    # _collect_setup runs first, then _collect_webhook_host chains off it
+    # inside the same parallel slot so the webhook-host fetch (~90s worst
+    # case) doesn't serialize after the rest of the gather.
+    async def _collect_setup_and_webhook_host() -> SetupData:
+        setup = await _collect_setup(organization.id, context)
+        setup.webhook_host = await _collect_webhook_host(organization, setup)
+        return setup
+
     results = cast(
         tuple[
             ProductsData,
@@ -288,7 +369,7 @@ async def _collect_data(
         ],
         await asyncio.gather(
             _collect_products(organization.id, context),
-            _collect_setup(organization.id, context),
+            _collect_setup_and_webhook_host(),
             _collect_metrics(organization.id, context),
             _collect_history(organization),
             _collect_account_identity(organization, context),

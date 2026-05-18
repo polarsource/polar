@@ -6,6 +6,8 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.auth.models import is_user
+from polar.auth.permission import ROLE_PERMISSIONS
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
@@ -59,6 +61,7 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
+from polar.user_organization.repository import UserOrganizationRepository
 from polar.user_organization.schemas import (
     OrganizationMember,
     OrganizationMemberInvite,
@@ -83,10 +86,12 @@ from .schemas import (
     OrganizationDeletionResponse,
     OrganizationID,
     OrganizationKYC,
+    OrganizationListItem,
     OrganizationPaymentStatus,
     OrganizationPayoutAccountSet,
     OrganizationReviewState,
     OrganizationReviewStatus,
+    OrganizationRoleDefinition,
     OrganizationSlugAvailability,
     OrganizationSlugCheck,
     OrganizationUpdate,
@@ -106,16 +111,17 @@ OrganizationNotFound = {
 @router.get(
     "/",
     summary="List Organizations",
-    response_model=ListResource[OrganizationSchema],
+    response_model=ListResource[OrganizationListItem],
     tags=[APITag.public],
+    operation_id="organizations:list",
 )
-async def list(
+async def list_organizations(
     auth_subject: auth.OrganizationsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     slug: str | None = Query(None, description="Filter by slug."),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[OrganizationSchema]:
+) -> ListResource[OrganizationListItem]:
     """List organizations."""
     results, count = await organization_service.list(
         session,
@@ -125,8 +131,20 @@ async def list(
         sorting=sorting,
     )
 
+    roles_by_org_id: dict[UUID, OrganizationRole] = {}
+    if is_user(auth_subject):
+        user_organization_repository = UserOrganizationRepository.from_session(session)
+        roles_by_org_id = await user_organization_repository.get_roles_by_org_ids(
+            auth_subject.subject.id, [result.id for result in results]
+        )
+
     return ListResource.from_paginated_results(
-        [OrganizationSchema.model_validate(result) for result in results],
+        [
+            OrganizationListItem.model_validate(result).model_copy(
+                update={"role": roles_by_org_id.get(result.id)}
+            )
+            for result in results
+        ],
         count,
         pagination,
     )
@@ -385,6 +403,25 @@ async def members(
         items=[OrganizationMember.model_validate(m) for m in members],
         pagination=Pagination(total_count=len(members), max_page=1),
     )
+
+
+@router.get(
+    "/{id}/roles",
+    response_model=list[OrganizationRoleDefinition],
+    tags=[APITag.private],
+)
+async def roles(authz: AuthorizeOrgAccess) -> list[OrganizationRoleDefinition]:
+    """List the roles available in an organization, with the permissions
+    each role grants.
+
+    The set is currently static (identical across organizations); the
+    per-organization route shape leaves room for org-level role
+    customization in the future.
+    """
+    return [
+        OrganizationRoleDefinition(id=role, permissions=sorted(permissions))
+        for role, permissions in ROLE_PERMISSIONS.items()
+    ]
 
 
 @router.post(

@@ -61,6 +61,79 @@ class TestListOrganizations:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(organization.id)
 
+    @pytest.mark.auth
+    async def test_user_role_field_populated(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        user_organization.role = OrganizationRole.admin
+        await save_fixture(user_organization)
+
+        response = await client.get("/v1/organizations/")
+
+        assert response.status_code == 200
+        item = response.json()["items"][0]
+        assert item["id"] == str(organization.id)
+        assert item["role"] == OrganizationRole.admin.value
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_organization_subject_role_is_null(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get("/v1/organizations/")
+
+        assert response.status_code == 200
+        item = response.json()["items"][0]
+        assert item["id"] == str(organization.id)
+        assert item["role"] is None
+
+
+@pytest.mark.asyncio
+class TestListRoles:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/roles")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/roles")
+        assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/roles")
+
+        assert response.status_code == 200
+        roles = response.json()
+        role_ids = {entry["id"] for entry in roles}
+        assert role_ids == {
+            OrganizationRole.member.value,
+            OrganizationRole.admin.value,
+            OrganizationRole.owner.value,
+        }
+        # Every role's permissions list is non-empty.
+        for entry in roles:
+            assert isinstance(entry["permissions"], list)
+            assert len(entry["permissions"]) > 0
+
 
 @pytest.mark.asyncio
 class TestGetOrganization:

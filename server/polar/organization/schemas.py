@@ -16,6 +16,7 @@ from pydantic import (
 from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
+from polar.auth.permission import OrganizationPermission
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior, TaxBehaviorOption
 from polar.kit.address import CountryAlpha2, CountryAlpha2Input
@@ -39,6 +40,7 @@ from polar.models.organization import (
     OrganizationSubscriptionSettings,
 )
 from polar.models.organization_review import OrganizationReview
+from polar.models.user_organization import OrganizationRole
 
 OrganizationID = Annotated[
     UUID4,
@@ -402,6 +404,28 @@ class Organization(OrganizationBase):
 
     capabilities: OrganizationCapabilities = Field(
         description="Capabilities currently granted to the organization.",
+    )
+
+
+class OrganizationListItem(Organization):
+    """Variant of `Organization` returned by `GET /v1/organizations` that
+    includes the caller's role on each organization."""
+
+    role: OrganizationRole | None = Field(
+        None,
+        description=(
+            "The caller's role on this organization. `null` for organization "
+            "tokens (they represent the org itself, not a user-role pairing)."
+        ),
+    )
+
+
+class OrganizationRoleDefinition(Schema):
+    """A role available in an organization and the permissions it grants."""
+
+    id: OrganizationRole = Field(description="The role identifier.")
+    permissions: list[OrganizationPermission] = Field(
+        description="The permissions this role grants in the organization."
     )
 
 

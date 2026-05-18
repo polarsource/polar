@@ -50,7 +50,6 @@ resource "render_env_group" "backend" {
       POLAR_LOG_LEVEL                     = { value = var.backend_config.log_level }
       POLAR_TESTING                       = { value = var.backend_config.testing }
       POLAR_AUTH_COOKIE_DOMAIN            = { value = var.backend_config.auth_cookie_domain }
-      POLAR_INVOICES_ADDITIONAL_INFO      = { value = var.backend_config.invoices_additional_info }
       POLAR_STRIPE_PUBLISHABLE_KEY        = { value = var.backend_secrets.stripe_publishable_key }
       POLAR_CURRENT_JWK_KID               = { value = var.backend_secrets.current_jwk_kid }
       POLAR_DISCORD_BOT_TOKEN             = { value = var.backend_secrets.discord_bot_token }

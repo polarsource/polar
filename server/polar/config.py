@@ -354,9 +354,6 @@ class Settings(BaseSettings):
         state="US-CA",
         country=CountryAlpha2("US"),
     )
-    INVOICES_ADDITIONAL_INFO: str | None = (
-        "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU0000000"
-    )
     PAYOUT_INVOICES_PREFIX: str = "POLAR-"
 
     # Application behaviours

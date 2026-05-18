@@ -16,6 +16,7 @@ from .generator import (
     InvoiceTotalsItem,
 )
 from .render import render_invoice_pdf
+from .seller import get_polar_additional_info
 
 
 class InvoiceError(PolarError): ...
@@ -123,7 +124,7 @@ class InvoiceService:
             seller_additional_info=account.billing_additional_info,
             customer_name=settings.INVOICES_NAME,
             customer_address=settings.INVOICES_ADDRESS,
-            customer_additional_info=settings.INVOICES_ADDITIONAL_INFO,
+            customer_additional_info=get_polar_additional_info(account.billing_address),
             subtotal_amount=payout.amount,
             discount_amount=0,
             tax_amount=0,

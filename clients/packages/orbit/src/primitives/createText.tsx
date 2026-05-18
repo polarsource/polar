@@ -33,17 +33,18 @@ const textVariants = cva('', {
       label: 'text-xs font-medium',
       caption: 'text-xs leading-snug',
       mono: 'font-mono text-xs',
-      'heading-xl': `${HEADING_BASE} font-display text-5xl md:text-7xl`,
-      'heading-l': `${HEADING_BASE} font-display text-4xl md:text-5xl`,
+      'heading-xl': `${HEADING_BASE} font-display text-5xl md:text-7xl [font-weight:350]`,
+      'heading-l': `${HEADING_BASE} font-display text-4xl md:text-5xl [font-weight:350]`,
       'heading-m': `${HEADING_BASE} text-3xl md:text-5xl`,
       'heading-s': `${HEADING_BASE} text-2xl md:text-3xl`,
       'heading-xs': `${HEADING_BASE} text-xl  md:text-2xl`,
       'heading-xxs': `${HEADING_BASE} text-lg  md:text-xl`,
     },
     color: {
-      default: 'text-gray-950 dark:text-polar-50',
-      muted: 'text-gray-500 dark:text-polar-500',
-      disabled: 'text-gray-400 dark:text-polar-600',
+      default: 'text-gray-950 dark:text-gray-50',
+      muted: 'text-gray-500 dark:text-gray-500',
+      disabled: 'text-gray-400 dark:text-gray-600',
+      inverse: 'text-white dark:text-black',
       danger: 'text-red-500 dark:text-red-500',
       error: 'text-red-500 dark:text-red-500',
       warning: 'text-amber-500 dark:text-amber-500',
@@ -86,9 +87,7 @@ type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
     keyof TextStyleProps | 'className' | 'loading'
   >
 
-const HEADING_FONT_FEATURES = "'ss07' 1, 'ss08' 1, 'zero' 1, 'liga' 0"
-const SKELETON_CLASSES =
-  'dark:bg-polar-700 animate-pulse rounded-sm bg-gray-100'
+const SKELETON_CLASSES = 'dark:bg-polar-700 animate-pulse bg-gray-100'
 
 const renderMultiLineSkeleton = (lines: number): ReactNode =>
   Array.from({ length: lines }, (_, i) => (
@@ -158,7 +157,6 @@ function Text<E extends TextTag = 'p'>({
   }
 
   const mergedStyle: React.CSSProperties = {
-    ...(isHeading && { fontFeatureSettings: HEADING_FONT_FEATURES }),
     ...style,
     ...loadingStyle,
   }

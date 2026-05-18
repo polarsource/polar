@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+@stylex;
+
+@source '../../../packages/orbit/src';
+
+html,
+body {
+  height: 100%;
+  font-family:
+    var(--font-pp-neue-montreal),
+    system-ui,
+    -apple-system,
+    sans-serif;
+}

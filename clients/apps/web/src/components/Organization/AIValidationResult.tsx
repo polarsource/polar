@@ -2,7 +2,7 @@
 
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
-import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
+import { CircleAlertIcon, CheckCircleIcon, Loader2Icon } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import AppealForm from './AppealForm'
 
@@ -41,7 +41,7 @@ const AIValidationResult = ({
         type: 'loading',
         title: 'Retrieving organization status…',
         message: '',
-        icon: <Loader2 className="h-4 w-4 animate-spin" />,
+        icon: <Loader2Icon className="h-4 w-4 animate-spin" />,
       }
     }
 
@@ -53,7 +53,7 @@ const AIValidationResult = ({
         title: 'Reviewing organization…',
         message:
           'We are reviewing your organization details against our acceptable use policy. This typically takes one to two minutes.',
-        icon: <Loader2 className="h-4 w-4 animate-spin" />,
+        icon: <Loader2Icon className="h-4 w-4 animate-spin" />,
       }
     }
 
@@ -65,7 +65,7 @@ const AIValidationResult = ({
         message:
           'Technical error during validation. A manual review will be conducted.',
         icon: (
-          <AlertTriangle className="dark:text-polar-400 h-4 w-4 text-gray-500" />
+          <CircleAlertIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
         ),
       }
     }
@@ -84,7 +84,7 @@ const AIValidationResult = ({
           message:
             'Your organization details have been automatically validated. You can accept payments immediately, but a manual review will still occur before your first payout.',
           icon: (
-            <CheckCircle className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
+            <CheckCircleIcon className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
           ),
         }
       case 'FAIL':
@@ -93,7 +93,7 @@ const AIValidationResult = ({
           title: 'Payment access denied',
           message: 'Your organization does not meet our acceptable use policy.',
           icon: (
-            <AlertTriangle className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
+            <CircleAlertIcon className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
           ),
         }
       case 'UNCERTAIN':
@@ -103,7 +103,7 @@ const AIValidationResult = ({
           message:
             'We were unable to automatically verify your organization. You can submit an appeal to expedite the manual review process.',
           icon: (
-            <AlertTriangle className="dark:text-polar-400 h-4 w-4 text-gray-500" />
+            <CircleAlertIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
           ),
         }
       default:

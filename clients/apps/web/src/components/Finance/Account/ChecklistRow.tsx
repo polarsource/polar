@@ -70,7 +70,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
                 onClick={() => setIsExpanded((prev) => !prev)}
                 aria-expanded={isExpanded}
               >
-                {isExpanded ? 'Hide' : collapsedLabel}
+                {isExpanded ? 'Close' : collapsedLabel}
               </Button>
             </Box>
           )}

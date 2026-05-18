@@ -14,6 +14,7 @@ from .schemas import (
     ReviewAgentReport,
     ReviewContext,
     UsageInfo,
+    WebsiteData,
 )
 from .thresholds import thresholds_for_prompt
 
@@ -622,6 +623,28 @@ def _annotate_domains(domains: list[str]) -> str:
     return ", ".join(parts)
 
 
+def _render_scraped_site(
+    parts: list[str], data: WebsiteData, *, empty_message: str
+) -> None:
+    """Append a scraped site's source line, scrape error, and untrusted summary.
+
+    Used for both the declared website and the webhook host scrape. Treats the
+    summary as untrusted merchant content (wrapped in delimiters) so the agent
+    knows not to follow instructions embedded in it.
+    """
+    parts.append(
+        f"Source: {data.base_url} ({data.total_pages_succeeded} page(s) scraped)"
+    )
+    if data.scrape_error:
+        parts.append(f"Scrape error: {data.scrape_error}")
+    if data.summary:
+        parts.append("<untrusted-merchant-content>")
+        parts.append(data.summary)
+        parts.append("</untrusted-merchant-content>")
+    elif not data.pages and not data.scrape_error:
+        parts.append(empty_message)
+
+
 class ReviewAnalyzer:
     def __init__(self, model: str | None = None) -> None:
         model_instance, model_provider, model_name = (
@@ -848,22 +871,12 @@ class ReviewAnalyzer:
         # Website Content
         if snapshot.website:
             parts.append("\n## Website Content")
-            parts.append(
-                f"Source: {snapshot.website.base_url} "
-                f"({snapshot.website.total_pages_succeeded} page(s) scraped)"
+            _render_scraped_site(
+                parts,
+                snapshot.website,
+                empty_message="No content could be extracted from the website.",
             )
-            if snapshot.website.scrape_error:
-                parts.append(f"Scrape error: {snapshot.website.scrape_error}")
-            if snapshot.website.summary:
-                parts.append("<untrusted-merchant-content>")
-                parts.append(snapshot.website.summary)
-                parts.append("</untrusted-merchant-content>")
-            elif not snapshot.website.pages and not snapshot.website.scrape_error:
-                parts.append("No content could be extracted from the website.")
 
-        # Populated by _collect_webhook_host only when the host differs from
-        # the declared website and isn't on the known-integration-platform
-        # whitelist — i.e. the real product surface, not the marketing site.
         webhook_host = snapshot.setup.webhook_host
         if webhook_host:
             parts.append("\n## Webhook Host Content")
@@ -876,22 +889,15 @@ class ReviewAnalyzer:
                 "and PRODUCT_LEGITIMACY on what is summarized below, not on the "
                 "declared website's marketing copy."
             )
-            parts.append(
-                f"Source: {webhook_host.base_url} "
-                f"({webhook_host.total_pages_succeeded} page(s) scraped)"
-            )
-            if webhook_host.scrape_error:
-                parts.append(f"Scrape error: {webhook_host.scrape_error}")
-            if webhook_host.summary:
-                parts.append("<untrusted-merchant-content>")
-                parts.append(webhook_host.summary)
-                parts.append("</untrusted-merchant-content>")
-            elif not webhook_host.pages and not webhook_host.scrape_error:
-                parts.append(
+            _render_scraped_site(
+                parts,
+                webhook_host,
+                empty_message=(
                     "No content could be extracted from the webhook host. "
                     "Treat the unfetchable webhook host on an unknown domain as "
                     "a SETUP_READINESS MEDIUM concern."
-                )
+                ),
+            )
 
         # User Identity (from Stripe Identity VerificationSession)
         parts.append("\n## User Identity")

@@ -7,6 +7,20 @@ third-party webhook and checkout URL domains.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
+
+KnownDomainCategory = Literal[
+    "affiliate",
+    "analytics",
+    "automation",
+    "backend",
+    "cloud",
+    "crm",
+    "integration",
+    "messaging",
+    "no-code-builder",
+    "tunneling",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,7 +29,7 @@ class KnownDomain:
 
     pattern: str
     name: str
-    category: str
+    category: KnownDomainCategory
 
     def matches(self, domain: str) -> bool:
         """Check if *domain* matches this pattern.

@@ -283,7 +283,7 @@ def _pick_unknown_webhook_host(
     hosts already classified as known integration platforms by the setup
     collector (`webhook_known_service_domains`).
     """
-    declared = (urlparse(organization.website or "").hostname or "").lower()
+    declared = urlparse(organization.website or "").hostname or ""
     known = {d.lower() for d in setup.integration.webhook_known_service_domains}
 
     for host in setup.integration.webhook_domains:
@@ -301,11 +301,6 @@ async def _collect_webhook_host(
 ) -> WebsiteData | None:
     """Summarize the public site served on the webhook host when it differs
     from the declared website and isn't a known integration platform.
-
-    The webhook URL is the merchant's declared fulfillment endpoint. When it
-    sits on a different domain than the declared website, that domain is
-    often the real product surface and the declared website may be a
-    placeholder.
     """
     host = _pick_unknown_webhook_host(organization, setup)
     if host is None:

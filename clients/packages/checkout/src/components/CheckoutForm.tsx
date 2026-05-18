@@ -754,12 +754,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   } = checkout
   const stripePromise = useMemo(
     () =>
-      loadStripe(
-        publishable_key,
-        publishable_key.startsWith('pk_test_')
-          ? { developerTools: { assistant: { enabled: false } } }
-          : undefined,
-      ),
+      loadStripe(publishable_key, {
+        developerTools: { assistant: { enabled: false } },
+      }),
     [publishable_key],
   )
 

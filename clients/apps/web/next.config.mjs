@@ -22,7 +22,6 @@ const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
   process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
-const CODESPACES = process.env.CODESPACES === 'true'
 
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
@@ -113,27 +112,6 @@ const nextConfig = {
 
     return config
   },
-
-  // Since Codespaces run behind a proxy, we need to allow it for Server-Side Actions, like cache revalidation
-  // See: https://github.com/vercel/next.js/issues/58019
-  ...(CODESPACES
-    ? {
-        experimental: {
-          serverActions: {
-            allowedForwardedHosts: [
-              `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
-              'localhost:8080',
-              '127.0.0.1:8080',
-            ],
-            allowedOrigins: [
-              `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
-              'localhost:8080',
-              '127.0.0.1:8080',
-            ],
-          },
-        },
-      }
-    : {}),
 
   images: {
     remotePatterns: [

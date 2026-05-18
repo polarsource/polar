@@ -90,7 +90,7 @@ async def get_estimate(
         session,
         auth_subject,
         organization.id,
-        OrganizationPermission.finance_read,
+        OrganizationPermission.finance_manage,
     )
     return await payout_service.estimate(session, organization)
 

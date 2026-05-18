@@ -12,7 +12,7 @@ import {
   ShieldIcon,
   XIcon,
 } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { PathCardBanner } from './PathCardBanner'
 import { StatusBlock } from './StatusBlock'
 
@@ -29,7 +29,12 @@ export const IdentityVerificationSection = ({
 }: Props) => {
   const { start, identityVerificationStatus } = useStartIdentityVerification()
 
+  const isInitialRef = useRef(true)
   useEffect(() => {
+    if (isInitialRef.current) {
+      isInitialRef.current = false
+      return
+    }
     getQueryClient().invalidateQueries({
       queryKey: ['organizationReviewState', organization.id],
     })

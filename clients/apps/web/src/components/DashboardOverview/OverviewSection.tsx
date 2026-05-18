@@ -1,6 +1,6 @@
 'use client'
 
-import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
+import { MetricCardGroup } from '@/components/Metrics/dashboards/MetricCardGroup'
 import { Modal } from '@/components/Modal'
 import { useMetrics } from '@/hooks/queries'
 import { useChartRange } from '@/hooks/useChartRange'
@@ -10,6 +10,7 @@ import {
   ChartRange,
   DEFAULT_OVERVIEW_METRICS,
   getChartRangeParams,
+  getPreviousDateRange,
 } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { SegmentedControl } from '@polar-sh/orbit'
@@ -55,6 +56,19 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
     metrics: activeMetrics,
   })
 
+  const [previousStartDate, previousEndDate] = React.useMemo(
+    () => getPreviousDateRange(startDate, endDate),
+    [startDate, endDate],
+  )
+
+  const { data: previousData } = useMetrics({
+    organization_id: organization.id,
+    startDate: previousStartDate,
+    endDate: previousEndDate,
+    interval,
+    metrics: activeMetrics,
+  })
+
   return (
     <div className="flex flex-col gap-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -82,10 +96,10 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
           </Button>
         </div>
       </div>
-      <MetricGroup
+      <MetricCardGroup
         data={data}
+        previousData={previousData}
         metricKeys={activeMetrics}
-        interval={interval}
         loading={isLoading}
       />
       <Modal

@@ -476,3 +476,23 @@ export const METRIC_GROUPS: MetricGroup[] = [
 ]
 
 export const ALL_METRICS = METRIC_GROUPS.flatMap((g) => g.metrics)
+
+// Metrics where a decrease is the desirable outcome — used to colour trend
+// indicators by sentiment rather than by raw direction.
+export const INVERTED_METRICS: ReadonlySet<keyof schemas['Metrics']> = new Set([
+  'canceled_subscriptions',
+  'canceled_subscriptions_customer_service',
+  'canceled_subscriptions_low_quality',
+  'canceled_subscriptions_missing_features',
+  'canceled_subscriptions_switched_service',
+  'canceled_subscriptions_too_complex',
+  'canceled_subscriptions_too_expensive',
+  'canceled_subscriptions_unused',
+  'canceled_subscriptions_other',
+  'churned_subscriptions',
+  'churn_rate',
+  'costs',
+  'cumulative_costs',
+  'cost_per_user',
+  'churned_seat_customers',
+])

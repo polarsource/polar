@@ -75,13 +75,6 @@ export default async function MainLayout({
     <PolarThemeProvider>
       <link
         rel="preload"
-        href="/fonts/PPNeueMontreal-Variable.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
         href="/fonts/Louize-Italic-205TF.otf"
         as="font"
         type="font/otf"

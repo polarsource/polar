@@ -41,7 +41,7 @@ const textVariants = cva('', {
       'heading-xxs': `${HEADING_BASE} text-lg  md:text-xl`,
     },
     color: {
-      default: 'text-gray-950 dark:text-gray-50',
+      default: 'text-gray-800 dark:text-gray-100',
       muted: 'text-gray-500 dark:text-gray-500',
       disabled: 'text-gray-400 dark:text-gray-600',
       inverse: 'text-white dark:text-black',

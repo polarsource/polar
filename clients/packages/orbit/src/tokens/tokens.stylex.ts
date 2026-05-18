@@ -99,7 +99,7 @@ export const textColors = stylex.defineVars({
 export const borderColors = stylex.defineVars({
   'border-primary': {
     default: '#b1b1b1',
-    [DARK]: 'hsl(233, 4%, 12%)',
+    [DARK]: '#4B4B4B',
   },
   'border-secondary': {
     default: 'oklch(0.928 0.006 264.531)',

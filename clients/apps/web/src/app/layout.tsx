@@ -1,6 +1,14 @@
 import '../styles/globals.css'
 
+import localFont from 'next/font/local'
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
+
+const ppNeueMontreal = localFont({
+  src: './fonts/PPNeueMontreal-Variable.woff2',
+  variable: '--font-pp-neue-montreal',
+  display: 'swap',
+  weight: '100 900',
+})
 import { getExperimentNames } from '@/experiments'
 import { getDistinctId } from '@/experiments/distinct-id'
 import { ExperimentProvider } from '@/experiments/ExperimentProvider'
@@ -49,7 +57,11 @@ export default async function RootLayout({
   })
 
   return (
-    <html lang="en" suppressHydrationWarning className="antialiased">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${ppNeueMontreal.variable} antialiased`}
+    >
       <head>
         {CONFIG.ENVIRONMENT === 'development' ? (
           <>

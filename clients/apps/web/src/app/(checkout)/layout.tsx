@@ -16,13 +16,6 @@ export default async function CheckoutLayout({
         href="https://js.stripe.com/clover/stripe.js"
         as="script"
       />
-      <link
-        rel="preload"
-        href="/fonts/PPNeueMontreal-Variable.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
       {children}
     </div>
   )

@@ -41,7 +41,10 @@ export const OrderPaymentRetryModal = ({
   )
 
   const stripePromise = useMemo(
-    () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
+    () =>
+      loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '', {
+        developerTools: { assistant: { enabled: false } },
+      }),
     [],
   )
 

@@ -22,7 +22,9 @@ import { SpinnerNoMargin } from '../Shared/Spinner'
 import CheckoutBenefits from './CheckoutBenefits'
 import CheckoutSeatInvitations from './CheckoutSeatInvitations'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '', {
+  developerTools: { assistant: { enabled: false } },
+})
 
 const isIntegrationError = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

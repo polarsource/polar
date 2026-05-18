@@ -27,7 +27,9 @@ export const AccountPageApproved = ({ organization }: Props) => {
     organization.payout_account_id || undefined,
   )
 
-  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '', {
+    developerTools: { assistant: { enabled: false } },
+  })
   const createIdentityVerification = useCreateIdentityVerification()
 
   const startIdentityVerification = useCallback(async () => {

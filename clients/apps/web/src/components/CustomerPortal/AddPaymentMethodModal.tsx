@@ -38,7 +38,10 @@ export const AddPaymentMethodModal = ({
   themePreset,
 }: AddPaymentMethodModalProps) => {
   const stripePromise = useMemo(
-    () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
+    () =>
+      loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '', {
+        developerTools: { assistant: { enabled: false } },
+      }),
     [],
   )
   const addPaymentMethod = useAddCustomerPaymentMethod(api)

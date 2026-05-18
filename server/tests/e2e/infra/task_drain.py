@@ -39,10 +39,6 @@ DEFAULT_IGNORED_ACTORS: frozenset[str] = frozenset(
         "order.balance",
         # Uploads invoice PDF to S3/MinIO
         "order.invoice",
-        # Loops.so CRM integration
-        "loops.update_last_order_at",
-        "loops.update_contact",
-        "loops.send_event",
         # Tinybird analytics ingestion
         "tinybird.ingest",
         # Uses Retry for concurrency — AsyncSessionMaker rollback corrupts the

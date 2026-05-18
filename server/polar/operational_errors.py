@@ -70,13 +70,6 @@ def _external_event_already_handled_error_matcher(exc: BaseException) -> bool:
     return isinstance(exc, ExternalEventAlreadyHandled)
 
 
-def _loops_client_operational_error_matcher(exc: BaseException) -> bool:
-    # Import deferred to avoid circular dependency with polar.worker
-    from polar.integrations.loops.client import LoopsClientOperationalError
-
-    return isinstance(exc, LoopsClientOperationalError)
-
-
 def _tinybird_operational_error_matcher(exc: BaseException) -> bool:
     # Import deferred to avoid circular dependency with polar.worker
     from polar.integrations.tinybird.client import TinybirdOperationalError
@@ -104,7 +97,6 @@ _operation_error_matchers: dict[str, OperationalErrorMatcher] = {
     "sql_deadlock_error": _sql_deadlock_error_matcher,
     "timeout_lock_error": _timeout_lock_error_matcher,
     "external_event_already_handled": _external_event_already_handled_error_matcher,
-    "loops_client_operational_error": _loops_client_operational_error_matcher,
     "tinybird_operational_error": _tinybird_operational_error_matcher,
     "polar_self_client_operational_error": _polar_self_client_operational_error_matcher,
     "email_sender_operational_error": _email_sender_operational_error_matcher,

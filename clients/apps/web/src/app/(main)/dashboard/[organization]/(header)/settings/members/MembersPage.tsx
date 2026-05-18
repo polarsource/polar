@@ -15,6 +15,7 @@ import {
   useUpdateOrganizationMemberRole,
 } from '@/hooks/queries/org'
 import Add from '@mui/icons-material/Add'
+import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -32,6 +33,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 
@@ -79,9 +87,17 @@ export default function ClientPage({
     isShown: isLeaveModalShown,
   } = useModal()
 
+  const [memberToChangeRole, setMemberToChangeRole] = useState<
+    schemas['OrganizationMember'] | null
+  >(null)
+  const {
+    show: showChangeRoleModal,
+    hide: hideChangeRoleModal,
+    isShown: isChangeRoleModalShown,
+  } = useModal()
+
   const removeMember = useRemoveOrganizationMember(organization.id)
   const leaveOrganization = useLeaveOrganization(organization.id)
-  const updateMemberRole = useUpdateOrganizationMemberRole(organization.id)
 
   const handleRemoveMember = useCallback(
     (member: schemas['OrganizationMember']) => {
@@ -89,6 +105,14 @@ export default function ClientPage({
       showRemoveModal()
     },
     [showRemoveModal],
+  )
+
+  const handleChangeRole = useCallback(
+    (member: schemas['OrganizationMember']) => {
+      setMemberToChangeRole(member)
+      showChangeRoleModal()
+    },
+    [showChangeRoleModal],
   )
 
   const onConfirmRemove = useCallback(async () => {
@@ -123,24 +147,6 @@ export default function ClientPage({
       })
     }
   }, [leaveOrganization, organization.name, router, toast])
-
-  const handleRoleChange = useCallback(
-    async (member: schemas['OrganizationMember'], role: 'admin' | 'member') => {
-      try {
-        await updateMemberRole.mutateAsync({ userId: member.user_id, role })
-        toast({
-          title: 'Role updated',
-          description: `${member.email} is now ${ROLE_LABELS[role]}.`,
-        })
-      } catch {
-        toast({
-          title: 'Failed to update role',
-          description: 'Please try again.',
-        })
-      }
-    },
-    [updateMemberRole, toast],
-  )
 
   const columns: DataTableColumnDef<schemas['OrganizationMember']>[] = [
     {
@@ -187,51 +193,37 @@ export default function ClientPage({
         const isOwner = member.role === 'owner'
 
         if (canManageMembers && !isCurrentUser) {
-          return (
-            <div className="flex justify-end gap-2">
-              {isOwner ? (
-                <div title={OWNER_TOOLTIP}>
-                  <Select value="owner" disabled>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="owner">Owner</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <Select
-                  value={member.role}
-                  onValueChange={(role) =>
-                    handleRoleChange(member, role as 'admin' | 'member')
-                  }
-                  disabled={updateMemberRole.isPending}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-              {isOwner ? (
-                <span title={OWNER_TOOLTIP}>
-                  <Button variant="secondary" size="sm" disabled>
-                    Remove
-                  </Button>
-                </span>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleRemoveMember(member)}
-                >
-                  Remove
+          if (isOwner) {
+            return (
+              <div className="flex justify-end" title={OWNER_TOOLTIP}>
+                <Button variant="secondary" size="icon" disabled>
+                  <MoreVert fontSize="small" />
                 </Button>
-              )}
+              </div>
+            )
+          }
+
+          return (
+            <div className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" size="icon">
+                    <MoreVert fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleChangeRole(member)}>
+                    Change role
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    destructive
+                    onClick={() => handleRemoveMember(member)}
+                  >
+                    Remove from organization
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )
         }
@@ -310,6 +302,22 @@ export default function ClientPage({
         destructive
         destructiveText="Leave"
       />
+
+      {memberToChangeRole && (
+        <Modal
+          title="Change Role"
+          className="max-w-(--breakpoint-sm)!"
+          modalContent={
+            <ChangeRoleModal
+              organizationId={organization.id}
+              member={memberToChangeRole}
+              onClose={hideChangeRoleModal}
+            />
+          }
+          isShown={isChangeRoleModalShown}
+          hide={hideChangeRoleModal}
+        />
+      )}
     </DashboardBody>
   )
 }
@@ -383,5 +391,75 @@ function InviteMemberModal({
         </Button>
       </div>
     </form>
+  )
+}
+
+function ChangeRoleModal({
+  organizationId,
+  member,
+  onClose,
+}: {
+  organizationId: string
+  member: schemas['OrganizationMember']
+  onClose: () => void
+}) {
+  const { toast } = useToast()
+  const initialRole: 'admin' | 'member' =
+    member.role === 'admin' ? 'admin' : 'member'
+  const [role, setRole] = useState<'admin' | 'member'>(initialRole)
+  const updateMemberRole = useUpdateOrganizationMemberRole(organizationId)
+
+  const handleSave = async () => {
+    if (role === member.role) {
+      onClose()
+      return
+    }
+
+    try {
+      await updateMemberRole.mutateAsync({ userId: member.user_id, role })
+      toast({
+        title: 'Role updated',
+        description: `${member.email} is now ${ROLE_LABELS[role]}.`,
+      })
+      onClose()
+    } catch {
+      toast({
+        title: 'Failed to update role',
+        description: 'Please try again.',
+      })
+    }
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-y-6 p-8">
+      <h3 className="text-lg font-medium">Change Role</h3>
+      <p className="dark:text-polar-500 text-sm text-gray-500">
+        Update the role for <span className="font-medium">{member.email}</span>.
+      </p>
+      <Select
+        value={role}
+        onValueChange={(value) => setRole(value as 'admin' | 'member')}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="admin">Admin</SelectItem>
+          <SelectItem value="member">Member</SelectItem>
+        </SelectContent>
+      </Select>
+      <div className="flex gap-2">
+        <Button
+          onClick={handleSave}
+          disabled={updateMemberRole.isPending}
+          loading={updateMemberRole.isPending}
+        >
+          Save
+        </Button>
+        <Button type="button" variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   )
 }

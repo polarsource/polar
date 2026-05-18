@@ -696,7 +696,7 @@ export interface paths {
      * Get Organization KYC Details
      * @description Get an organization's KYC/compliance details.
      *
-     *     **Scopes**: `organizations:write`
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_kyc']
     put?: never
@@ -950,7 +950,7 @@ export interface paths {
      * Get Organization Review Status
      * @description Get the current review status and appeal information for an organization.
      *
-     *     **Scopes**: `organizations:write`
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_review_status']
     put?: never
@@ -975,7 +975,7 @@ export interface paths {
      *     Powers the account review UI: pre-submission gating checks plus,
      *     after submission, the AI verdict and appeal state.
      *
-     *     **Scopes**: `organizations:write`
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_review']
     put?: never
@@ -1019,7 +1019,7 @@ export interface paths {
      * List Available Plans
      * @description List the plans this organization can subscribe to.
      *
-     *     **Scopes**: `organizations:write`
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:list_plans']
     put?: never
@@ -1041,7 +1041,7 @@ export interface paths {
      * Get Organization Subscription
      * @description Get the current Polar subscription for this organization.
      *
-     *     **Scopes**: `organizations:write`
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_subscription']
     put?: never

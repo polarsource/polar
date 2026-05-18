@@ -1,6 +1,7 @@
 'use client'
 
 import { useStartIdentityVerification } from '@/hooks/identityVerification'
+import { getQueryClient } from '@/utils/api/query'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -11,6 +12,7 @@ import {
   ShieldIcon,
   XIcon,
 } from 'lucide-react'
+import { useEffect } from 'react'
 import { PathCardBanner } from './PathCardBanner'
 import { StatusBlock } from './StatusBlock'
 
@@ -20,8 +22,19 @@ interface Props {
   reasonItems: string[]
 }
 
-export const IdentityVerificationSection = ({ step, reasonItems }: Props) => {
+export const IdentityVerificationSection = ({
+  organization,
+  step,
+  reasonItems,
+}: Props) => {
   const { start, identityVerificationStatus } = useStartIdentityVerification()
+
+  useEffect(() => {
+    getQueryClient().invalidateQueries({
+      queryKey: ['organizationReviewState', organization.id],
+    })
+  }, [identityVerificationStatus, organization.id])
+
   const tone = step.status === 'failed' ? 'danger' : 'warning'
   const banners = reasonItems.length > 0 && (
     <Box display="flex" flexDirection="column" rowGap="m">

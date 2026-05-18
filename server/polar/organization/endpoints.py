@@ -44,6 +44,7 @@ from polar.integrations.polar.schemas import (
 )
 from polar.integrations.polar.service import (
     PolarSelfNoActiveSubscription,
+    PolarSelfPaymentMethodInUse,
 )
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable
@@ -983,6 +984,11 @@ async def confirm_payment_method(
     summary="Delete Organization Payment Method",
     responses={
         204: {"description": "Payment method deleted."},
+        400: {
+            "description": "Payment method is in use by an active "
+            "subscription and cannot be deleted.",
+            "model": PolarSelfPaymentMethodInUse.schema(),
+        },
         404: {
             "description": "Organization or payment method not found.",
             "model": ResourceNotFound.schema(),

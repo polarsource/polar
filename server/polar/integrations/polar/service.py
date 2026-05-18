@@ -112,6 +112,17 @@ class PolarSelfPaymentMethodNotFound(PolarError):
         self.payment_method_id = payment_method_id
 
 
+class PolarSelfPaymentMethodInUse(PolarError):
+    def __init__(self, payment_method_id: str) -> None:
+        super().__init__(
+            "This payment method is used by an active subscription and "
+            "no alternative payment method is available. Add another "
+            "payment method before deleting this one.",
+            status_code=400,
+        )
+        self.payment_method_id = payment_method_id
+
+
 class PolarSelfService:
     INITIAL_MEMBER_DELAY_MS = 1000
 

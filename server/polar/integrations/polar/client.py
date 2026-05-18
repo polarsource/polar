@@ -614,6 +614,12 @@ class PolarSelfClient:
                     from .service import PolarSelfPaymentMethodNotFound
 
                     raise PolarSelfPaymentMethodNotFound(payment_method_id) from e
+                if e.status_code == 400:
+                    span.set_attribute("http.status_code", 400)
+                    span.set_attribute("error.body", str(e.body))
+                    from .service import PolarSelfPaymentMethodInUse
+
+                    raise PolarSelfPaymentMethodInUse(payment_method_id) from e
                 _raise_error(span, e, "polar.portal.delete_payment_method")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "polar.portal.delete_payment_method")

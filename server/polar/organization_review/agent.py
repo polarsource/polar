@@ -81,8 +81,8 @@ async def run_organization_review(
         collector_usage = UsageInfo()
         if snapshot.website and snapshot.website.usage:
             collector_usage = collector_usage + snapshot.website.usage
-        if snapshot.webhook_host and snapshot.webhook_host.usage:
-            collector_usage = collector_usage + snapshot.webhook_host.usage
+        if snapshot.setup.webhook_host and snapshot.setup.webhook_host.usage:
+            collector_usage = collector_usage + snapshot.setup.webhook_host.usage
         usage = analyzer_usage + collector_usage
 
         log.info(
@@ -357,15 +357,15 @@ async def _collect_data(
     # _collect_setup runs first, then _collect_webhook_host chains off it
     # inside the same parallel slot so the webhook-host fetch (~90s worst
     # case) doesn't serialize after the rest of the gather.
-    async def _collect_setup_and_webhook_host() -> tuple[SetupData, WebsiteData | None]:
+    async def _collect_setup_and_webhook_host() -> SetupData:
         setup = await _collect_setup(organization.id, context)
-        webhook_host = await _collect_webhook_host(organization, setup)
-        return setup, webhook_host
+        setup.webhook_host = await _collect_webhook_host(organization, setup)
+        return setup
 
     results = cast(
         tuple[
             ProductsData,
-            tuple[SetupData, WebsiteData | None],
+            SetupData,
             PaymentMetrics,
             HistoryData,
             tuple[PayoutAccountData, IdentityData],
@@ -384,7 +384,7 @@ async def _collect_data(
     )
     (
         products_data,
-        (setup_data, webhook_host_data),
+        setup_data,
         metrics_data,
         history_data,
         (account_data, identity_data),
@@ -402,7 +402,6 @@ async def _collect_data(
         history=history_data,
         setup=setup_data,
         website=website_data,
-        webhook_host=webhook_host_data,
         prior_feedback=prior_feedback_data,
         collected_at=datetime.now(UTC),
     )

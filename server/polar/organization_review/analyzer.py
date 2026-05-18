@@ -864,7 +864,8 @@ class ReviewAnalyzer:
         # Populated by _collect_webhook_host only when the host differs from
         # the declared website and isn't on the known-integration-platform
         # whitelist — i.e. the real product surface, not the marketing site.
-        if snapshot.webhook_host:
+        webhook_host = snapshot.setup.webhook_host
+        if webhook_host:
             parts.append("\n## Webhook Host Content")
             parts.append(
                 "⚠ The webhook endpoint host differs from the declared website "
@@ -876,19 +877,16 @@ class ReviewAnalyzer:
                 "declared website's marketing copy."
             )
             parts.append(
-                f"Source: {snapshot.webhook_host.base_url} "
-                f"({snapshot.webhook_host.total_pages_succeeded} page(s) scraped)"
+                f"Source: {webhook_host.base_url} "
+                f"({webhook_host.total_pages_succeeded} page(s) scraped)"
             )
-            if snapshot.webhook_host.scrape_error:
-                parts.append(f"Scrape error: {snapshot.webhook_host.scrape_error}")
-            if snapshot.webhook_host.summary:
+            if webhook_host.scrape_error:
+                parts.append(f"Scrape error: {webhook_host.scrape_error}")
+            if webhook_host.summary:
                 parts.append("<untrusted-merchant-content>")
-                parts.append(snapshot.webhook_host.summary)
+                parts.append(webhook_host.summary)
                 parts.append("</untrusted-merchant-content>")
-            elif (
-                not snapshot.webhook_host.pages
-                and not snapshot.webhook_host.scrape_error
-            ):
+            elif not webhook_host.pages and not webhook_host.scrape_error:
                 parts.append(
                     "No content could be extracted from the webhook host. "
                     "Treat the unfetchable webhook host on an unknown domain as "

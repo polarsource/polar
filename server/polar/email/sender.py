@@ -36,6 +36,12 @@ def to_ascii_email(email: str) -> str:
 class EmailSenderError(PolarError): ...
 
 
+class EmailSenderOperationalError(EmailSenderError):
+    """Operational error for email sender (e.g., timeout, network issues)."""
+
+    pass
+
+
 class SendEmailError(EmailSenderError):
     def __init__(self, message: str) -> None:
         super().__init__(message)
@@ -134,6 +140,14 @@ class ResendEmailSender(EmailSender):
             response = await self.client.post("/emails", json=payload)
             response.raise_for_status()
             email = response.json()
+        except httpx.RequestError as e:
+            log.warning(
+                "resend.send_network_error",
+                to_email_addr=to_email_addr_ascii,
+                subject=subject,
+                error=e,
+            )
+            raise EmailSenderOperationalError(str(e)) from e
         except httpx.HTTPError as e:
             log.warning(
                 "resend.send_error",

@@ -3,6 +3,7 @@
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import AccountBalance from '@/components/Payouts/AccountBalance'
 import TransactionsList from '@/components/Transactions/TransactionsList'
+import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -11,7 +12,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { ISODuration } from '@/utils/duration'
-import { ClientResponseError, schemas } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function ClientPage({
@@ -56,18 +57,14 @@ export default function ClientPage({
     )
   }
 
-  const {
-    data: account,
-    isLoading: accountIsLoading,
-    error: accountError,
-  } = useOrganizationAccount(organization.id)
+  const canReadFinance = useHasPermission(organization.id, 'finance:read')
+
+  const { data: account, isLoading: accountIsLoading } = useOrganizationAccount(
+    canReadFinance ? organization.id : undefined,
+  )
   const payoutTransactionDelay = account?.payout_transaction_delay
     ? new ISODuration(account.payout_transaction_delay)
     : null
-
-  const isNotAdmin =
-    accountError &&
-    (accountError as ClientResponseError)?.response?.status === 403
 
   const balancesHook = useSearchTransactions({
     account_id: account?.id,
@@ -79,10 +76,10 @@ export default function ClientPage({
   const rowCount = balancesHook.data?.pagination.total_count ?? 0
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
 
-  if (isNotAdmin) {
+  if (!canReadFinance) {
     return (
       <div className="flex flex-col gap-y-6">
-        <AccessRestricted message="You are not the admin of the account. Only the account admin can view income information." />
+        <AccessRestricted message="You don't have permission to view income for this organization. Ask an admin if you need access." />
       </div>
     )
   }

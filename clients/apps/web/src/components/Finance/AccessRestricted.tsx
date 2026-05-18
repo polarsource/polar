@@ -7,7 +7,7 @@ export interface AccessRestrictedProps {
 }
 
 export default function AccessRestricted({
-  message = 'You are not the admin of the account. Only the account admin can manage payout settings and view account details.',
+  message = "You don't have permission to manage payout settings or view account details. Ask an admin if you need access.",
   variant = 'card',
 }: AccessRestrictedProps) {
   const content = (

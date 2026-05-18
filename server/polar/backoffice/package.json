@@ -11,6 +11,7 @@
   "dependencies": {
     "@tailwindcss/cli": "^4.1.17",
     "@tailwindcss/postcss": "^4.1.17",
+    "@tailwindcss/typography": "^0.5.19",
     "daisyui": "^5.4.7",
     "esbuild": "^0.25.12",
     "event-source-plus": "^0.1.15",

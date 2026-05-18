@@ -258,7 +258,7 @@ async def get(
                         text("Message")
                     with tag.div(
                         classes=(
-                            "prose max-w-none "
+                            "prose prose-sm max-w-none "
                             "prose-pre:whitespace-pre-wrap prose-pre:break-words"
                         )
                     ):

@@ -753,7 +753,13 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     payment_processor_metadata: { publishable_key },
   } = checkout
   const stripePromise = useMemo(
-    () => loadStripe(publishable_key),
+    () =>
+      loadStripe(
+        publishable_key,
+        publishable_key.startsWith('pk_test_')
+          ? { developerTools: { assistant: { enabled: false } } }
+          : undefined,
+      ),
     [publishable_key],
   )
 

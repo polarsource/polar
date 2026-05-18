@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
 import { toast } from '@/components/Toast/use-toast'
-import { loadStripe } from '@stripe/stripe-js'
+import { loadPolarStripe } from '@/utils/stripe'
 import { useCallback, useEffect, useRef } from 'react'
 
 const POLL_INTERVAL_MS = 3000
@@ -26,7 +26,7 @@ export const useStartIdentityVerification = () => {
   const { currentUser, reloadUser } = useAuth()
   const identityVerificationStatus = currentUser?.identity_verification_status
   const createIdentityVerification = useCreateIdentityVerification()
-  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+  const stripePromise = loadPolarStripe()
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollingInitialStatusRef = useRef<string | undefined | null>(null)

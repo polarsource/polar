@@ -9,9 +9,9 @@ import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
 import { usePayoutAccount } from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
-import { loadStripe } from '@stripe/stripe-js'
 import { CheckIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
+import { loadPolarStripe } from '@/utils/stripe'
 
 interface Props {
   organization: schemas['Organization']
@@ -27,7 +27,7 @@ export const AccountPageApproved = ({ organization }: Props) => {
     organization.payout_account_id || undefined,
   )
 
-  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+  const stripePromise = loadPolarStripe()
   const createIdentityVerification = useCreateIdentityVerification()
 
   const startIdentityVerification = useCallback(async () => {

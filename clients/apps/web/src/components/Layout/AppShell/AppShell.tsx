@@ -26,6 +26,7 @@ export const AppShell = ({
     flexDirection="row"
     minHeight="100vh"
     width="100%"
+    backgroundColor="background-primary"
   >
     <Sidebar type={type} organization={organization} />
     <Box display="flex" flexDirection="column" flex={1} minWidth={0}>

@@ -356,7 +356,9 @@ async def update_dashboard(
     dashboard = await metrics_service.get_dashboard(session, auth_subject, id)
     if dashboard is None:
         raise ResourceNotFound()
-    updated = await metrics_service.update_dashboard(session, dashboard, body)
+    updated = await metrics_service.update_dashboard(
+        session, dashboard, body, auth_subject
+    )
     return MetricDashboardSchema.model_validate(updated)
 
 
@@ -374,4 +376,4 @@ async def delete_dashboard(
     dashboard = await metrics_service.get_dashboard(session, auth_subject, id)
     if dashboard is None:
         raise ResourceNotFound()
-    await metrics_service.delete_dashboard(session, dashboard)
+    await metrics_service.delete_dashboard(session, dashboard, auth_subject)

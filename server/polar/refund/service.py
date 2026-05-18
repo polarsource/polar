@@ -8,7 +8,8 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.dispute.repository import DisputeRepository
 from polar.enums import PaymentProcessor
@@ -129,7 +130,9 @@ class RefundService:
         ],
     ) -> tuple[Sequence[Refund], int]:
         repository = RefundRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.sales_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
 
         if id is not None:
@@ -189,6 +192,10 @@ class RefundService:
                     }
                 ]
             )
+
+        await assert_resource_permission(
+            session, auth_subject, order, OrganizationPermission.finance_manage
+        )
 
         try:
             return await self.create(session, order, create_schema=create_schema)

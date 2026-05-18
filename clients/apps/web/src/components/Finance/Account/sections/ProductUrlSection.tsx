@@ -3,16 +3,13 @@
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
-import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
-import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { PathCardBanner } from './PathCardBanner'
 import { SectionLayout } from './SectionLayout'
@@ -41,12 +38,11 @@ export const ProductUrlSection = ({
   const updateOrganization = useUpdateOrganization()
   const posthog = usePostHog()
   const tone = step.status === 'failed' ? 'danger' : 'warning'
-  const { status: urlStatus, validateURL } = useURLValidation({
-    organizationId: organization.id,
-  })
 
   const form = useForm<FormValues>({
     values: { website: organization.website ?? '' },
+    mode: 'onSubmit',
+    reValidateMode: 'onSubmit',
   })
   const { control, handleSubmit, setError, formState, reset } = form
 
@@ -122,42 +118,8 @@ export const ProductUrlSection = ({
                   {...field}
                   value={field.value || ''}
                   placeholder="https://acme.com"
-                  onChange={(e) => {
-                    let value = e.target.value
-                    if (value.startsWith('http://')) {
-                      value = value.replace('http://', 'https://')
-                    }
-                    const hasProtocol = value.startsWith('https://')
-                    const isTypingProtocol =
-                      'https://'.startsWith(value) ||
-                      'http://'.startsWith(value)
-                    if (!hasProtocol && !isTypingProtocol) {
-                      value = 'https://' + value
-                    }
-                    field.onChange(value)
-                  }}
-                  onBlur={(e) => {
-                    field.onBlur()
-                    void validateURL(e.target.value)
-                  }}
-                  postSlot={
-                    urlStatus === 'validating' ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                    ) : urlStatus === 'valid' ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : urlStatus === 'invalid' ? (
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    ) : null
-                  }
                 />
                 <FormMessage />
-                {urlStatus === 'invalid' && (
-                  <Box marginTop="xs">
-                    <Text variant="caption" color="warning">
-                      Website appears to be unreachable
-                    </Text>
-                  </Box>
-                )}
               </Box>
             )}
           />

@@ -184,8 +184,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
               webhookStatus === 'warning' && (
                 <PathCardBanner
                   tone="warning"
-                  title="Webhook missing"
-                  description="Without a webhook, Polar can't notify your app when orders, refunds, or subscription changes happen, which can cause your data to drift out of sync."
+                  title="Setting up a webhook is helpful to ensure consistency when you integrate over API"
                 />
               )
             }

@@ -14,6 +14,7 @@ from polar.invoice.generator import (
     InvoiceTotalsItem,
     format_date,
 )
+from polar.invoice.seller import get_polar_additional_info
 from polar.kit.currency import format_currency
 from polar.kit.utils import utc_now
 
@@ -124,7 +125,7 @@ class Receipt(Invoice):
             paid_at=paid_at,
             seller_name=settings.INVOICES_NAME,
             seller_address=settings.INVOICES_ADDRESS,
-            seller_additional_info=settings.INVOICES_ADDITIONAL_INFO,
+            seller_additional_info=get_polar_additional_info(order.billing_address),
             customer_name=customer_name,
             customer_additional_info=customer_additional_info,
             customer_address=order.billing_address,

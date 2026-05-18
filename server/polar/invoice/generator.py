@@ -15,6 +15,7 @@ from fpdf.fonts import FontFace
 from pydantic import BaseModel
 
 from polar.config import Environment, settings
+from polar.invoice.seller import get_polar_additional_info
 from polar.kit.address import Address
 from polar.kit.currency import format_currency
 from polar.kit.utils import utc_now
@@ -217,7 +218,7 @@ class Invoice(BaseModel):
             date=order.created_at,
             seller_name=settings.INVOICES_NAME,
             seller_address=settings.INVOICES_ADDRESS,
-            seller_additional_info=settings.INVOICES_ADDITIONAL_INFO,
+            seller_additional_info=get_polar_additional_info(order.billing_address),
             customer_name=order.billing_name,
             customer_additional_info=order.tax_id[0] if order.tax_id else None,
             customer_address=order.billing_address,

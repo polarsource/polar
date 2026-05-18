@@ -124,7 +124,7 @@ const OrganizationPaymentSettings: React.FC<
                   <FormControl>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value || undefined}
+                      value={field.value || undefined}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a benefit type" />

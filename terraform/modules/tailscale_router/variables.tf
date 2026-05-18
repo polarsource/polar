@@ -40,7 +40,6 @@ variable "tailscale_authkey" {
 variable "advertise_routes" {
   description = "Comma-separated CIDR routes to advertise"
   type        = string
-  default     = "10.208.0.0/16"
 }
 
 variable "tailscale_version" {

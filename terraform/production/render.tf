@@ -378,6 +378,7 @@ module "tailscale_router" {
   render_environment_id  = render_project.polar.environments["Production"].id
   registry_credential_id = render_registry_credential.ghcr.id
   tailscale_authkey      = var.tailscale_authkey
+  advertise_routes       = var.tailscale_advertise_routes
 
   depends_on = [render_registry_credential.ghcr, render_project.polar]
 }

@@ -26,7 +26,6 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ValidationError,
 )
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
@@ -833,7 +832,6 @@ class OrganizationService:
             await session.execute(stmt)
             await session.flush()
         finally:
-            await loops_service.user_organization_added(session, user)
             if enqueue_polar_self_member:
                 polar_self_service.enqueue_add_member(
                     external_customer_id=str(organization.id),

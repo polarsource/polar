@@ -7,7 +7,7 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
-from polar.auth.models import AuthSubject, is_user
+from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -23,7 +23,6 @@ from polar.exceptions import (
     ValidationError,
 )
 from polar.file.service import file as file_service
-from polar.integrations.loops.service import loops as loops_service
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -721,9 +720,6 @@ class ProductService:
         product: Product,
     ) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            await loops_service.user_created_product(user)
 
     async def _after_product_updated(
         self, session: AsyncSession, product: Product

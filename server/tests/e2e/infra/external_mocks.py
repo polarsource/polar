@@ -124,15 +124,6 @@ def mock_posthog(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture(autouse=True)
-def mock_loops_client(mocker: MockerFixture) -> None:
-    """Silence Loops.so HTTP calls from background tasks."""
-    mock = MagicMock()
-    mock.update_contact = AsyncMock()
-    mock.send_event = AsyncMock()
-    mocker.patch("polar.integrations.loops.tasks.loops_client", new=mock)
-
-
-@pytest.fixture(autouse=True)
 def mock_webhook_send(mocker: MockerFixture) -> MagicMock:
     """Mock webhook sending to avoid external HTTP calls."""
     return mocker.patch(

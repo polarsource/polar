@@ -14,6 +14,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
     AuthorizeOrgManage,
+    AuthorizeOrgManageRead,
     AuthorizeOrgManageUser,
 )
 from polar.config import settings
@@ -682,7 +683,7 @@ async def mark_ai_onboarding_complete(
     tags=[APITag.private],
 )
 async def get_review_status(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewStatus:
     """Get the current review status and appeal information for an organization."""

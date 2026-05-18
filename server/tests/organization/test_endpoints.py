@@ -5,6 +5,7 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.scope import READ_ONLY_SCOPES, Scope
 from polar.models import Product, User
 from polar.models.account import Account
 from polar.models.organization import Organization, OrganizationStatus
@@ -1107,6 +1108,81 @@ class TestGetReview:
         for step in json["preliminary_steps"]:
             targets = step["sub_checks"] or [step]
             assert all("not_started" in node["reasons"] for node in targets)
+
+
+@pytest.mark.asyncio
+class TestGetReviewStatus:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review-status"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review-status"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review-status"
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user", scopes=READ_ONLY_SCOPES))
+    async def test_read_only_scopes_allowed(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Impersonation sessions only carry READ_ONLY_SCOPES; the GET
+        endpoint must accept ``organizations_read`` rather than requiring
+        ``organizations_write``."""
+        assert Scope.organizations_read in READ_ONLY_SCOPES
+        assert Scope.organizations_write not in READ_ONLY_SCOPES
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review-status"
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.auth
+    async def test_non_admin_member_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Only admins/owners can view the review status."""
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review-status"
+        )
+
+        assert response.status_code == 403
 
 
 @pytest.mark.asyncio

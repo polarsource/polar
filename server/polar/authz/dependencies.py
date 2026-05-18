@@ -158,6 +158,21 @@ AuthorizeOrgManage = Annotated[
         )
     ),
 ]
+# Read counterpart of ``AuthorizeOrgManage``: same admin-only policy gate,
+# but accepts ``organizations_read`` so impersonation sessions (which carry
+# READ_ONLY_SCOPES) can hit GET endpoints that surface admin-only data.
+AuthorizeOrgManageRead = Annotated[
+    AuthzContext[User | Organization],
+    Depends(
+        OrgPolicyGuard(
+            org_policy.can_manage,
+            required_scopes={
+                Scope.organizations_read,
+                Scope.organizations_write,
+            },
+        )
+    ),
+]
 AuthorizeOrgManageUser = Annotated[
     AuthzContext[User],
     Depends(

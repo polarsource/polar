@@ -15,7 +15,8 @@ from polar.account.repository import AccountRepository
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.integrations.plain.service import plain as plain_service
-from polar.postgres import AsyncSession
+from polar.organization.repository import OrganizationRepository
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.worker import enqueue_job
 
 from .client import get_client
@@ -66,6 +67,16 @@ class PolarSelfNoActiveSubscription(PolarError):
         super().__init__(
             f"Organization {organization_id} has no active subscription.",
             status_code=404,
+        )
+        self.organization_id = organization_id
+
+
+class PolarSelfNotApproved(PolarError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        super().__init__(
+            "Your organization must complete review and be approved "
+            "before changing plan.",
+            status_code=403,
         )
         self.organization_id = organization_id
 
@@ -208,6 +219,7 @@ class PolarSelfService:
     async def start_checkout(
         self,
         *,
+        session: AsyncReadSession,
         organization_id: uuid.UUID,
         product_id: str,
         customer_ip_address: str | None = None,
@@ -217,6 +229,7 @@ class PolarSelfService:
         if not self.is_configured:
             raise PolarSelfNotConfigured()
         await self._ensure_plan(product_id)
+        await self._require_approval(session, organization_id=organization_id)
         client = get_client()
         existing = await client.get_active_subscription(
             external_customer_id=str(organization_id)
@@ -233,12 +246,14 @@ class PolarSelfService:
     async def change_plan(
         self,
         *,
+        session: AsyncReadSession,
         organization_id: uuid.UUID,
         product_id: str,
     ) -> "Subscription":
         if not self.is_configured:
             raise PolarSelfNotConfigured()
         await self._ensure_plan(product_id)
+        await self._require_approval(session, organization_id=organization_id)
         subscription = await get_client().get_active_subscription(
             external_customer_id=str(organization_id)
         )
@@ -248,6 +263,19 @@ class PolarSelfService:
             subscription_id=subscription.id,
             product_id=product_id,
         )
+
+    async def _require_approval(
+        self,
+        session: AsyncReadSession,
+        *,
+        organization_id: uuid.UUID,
+    ) -> None:
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            organization_id, include_blocked=True
+        )
+        if organization is None or not organization.is_active():
+            raise PolarSelfNotApproved(organization_id)
 
     async def list_orders(
         self,

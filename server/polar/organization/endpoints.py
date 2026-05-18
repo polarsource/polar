@@ -797,10 +797,12 @@ async def start_subscription_checkout(
     request: Request,
     authz: AuthorizeOrgManage,
     body: OrganizationCheckoutRequest,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationCheckoutResponse:
     """Create a Polar checkout session for an initial paid subscription."""
     customer_ip_address = request.client.host if request.client else None
     checkout = await polar_self_service.start_checkout(
+        session=session,
         organization_id=authz.organization.id,
         product_id=body.product_id,
         customer_ip_address=customer_ip_address,
@@ -826,9 +828,11 @@ async def start_subscription_checkout(
 async def change_subscription_plan(
     authz: AuthorizeOrgManage,
     body: OrganizationSubscriptionUpdate,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationSubscription:
     """Change the plan for an organization's existing subscription."""
     subscription = await polar_self_service.change_plan(
+        session=session,
         organization_id=authz.organization.id,
         product_id=body.product_id,
     )

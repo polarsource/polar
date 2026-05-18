@@ -1086,6 +1086,34 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/billing-details': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization Billing Details
+     * @description Get the billing name, address, and tax ID used on Polar invoices.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    get: operations['organizations:get_billing_details']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Organization Billing Details
+     * @description Update the billing name, address, and tax ID used on Polar invoices.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    patch: operations['organizations:update_billing_details']
+    trace?: never
+  }
   '/v1/organizations/{id}/orders/{order_id}/invoice': {
     parameters: {
       query?: never
@@ -22900,6 +22928,29 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
+    /** OrganizationBillingDetails */
+    OrganizationBillingDetails: {
+      /**
+       * Billing Name
+       * @description The name shown on invoices. Falls back to the customer name.
+       */
+      billing_name?: string | null
+      /** @description Postal address used on invoices. */
+      billing_address?: components['schemas']['AddressInput'] | null
+      /**
+       * Tax Id
+       * @description Tax identifier value (without the format suffix).
+       */
+      tax_id?: string | null
+    }
+    /** OrganizationBillingDetailsUpdate */
+    OrganizationBillingDetailsUpdate: {
+      /** Billing Name */
+      billing_name?: string | null
+      billing_address?: components['schemas']['AddressInput'] | null
+      /** Tax Id */
+      tax_id?: string | null
+    }
     /** OrganizationCapabilities */
     OrganizationCapabilities: {
       /**
@@ -33451,6 +33502,90 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_OrganizationOrder_']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_billing_details': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationBillingDetails']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:update_billing_details': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationBillingDetailsUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationBillingDetails']
         }
       }
       /** @description Organization not found. */

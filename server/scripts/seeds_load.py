@@ -2130,6 +2130,7 @@ TOKEN_SCOPES = " ".join(
     [
         Scope.customers_read,
         Scope.customers_write,
+        Scope.customer_sessions_write,
         Scope.subscriptions_write,
         Scope.events_write,
         Scope.members_read,

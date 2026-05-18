@@ -4,7 +4,7 @@ import { toast } from '@/components/Toast/use-toast'
 import {
   useOrganizationBillingDetails,
   useUpdateOrganizationBillingDetails,
-  type OrganizationBillingDetails,
+  type OrganizationBillingDetailsUpdate,
 } from '@/hooks/queries/billing'
 import { enums } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -32,7 +32,7 @@ export const BillingAddressModal = ({
   const { data: details } = useOrganizationBillingDetails(organizationId)
   const update = useUpdateOrganizationBillingDetails(organizationId)
 
-  const form = useForm<OrganizationBillingDetails>({
+  const form = useForm<OrganizationBillingDetailsUpdate>({
     defaultValues: {
       billing_name: details?.billing_name ?? null,
       billing_address: details?.billing_address ?? null,
@@ -60,7 +60,7 @@ export const BillingAddressModal = ({
     }
   }, [country, setValue])
 
-  const onSubmit = async (data: OrganizationBillingDetails) => {
+  const onSubmit = async (data: OrganizationBillingDetailsUpdate) => {
     try {
       await update.mutateAsync(data)
       toast({

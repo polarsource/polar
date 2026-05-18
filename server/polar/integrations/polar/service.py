@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import logfire
 from polar_sdk.models import (
+    CustomerPortalCustomerUpdate,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
@@ -18,12 +19,14 @@ from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
 from .client import get_client
+from .schemas import OrganizationBillingDetailsUpdate
 
 if TYPE_CHECKING:
     from polar_sdk.models import (
         BenefitGrant,
         Checkout,
         Customer,
+        CustomerPortalCustomer,
         Order,
         Product,
         Subscription,
@@ -71,6 +74,15 @@ class PolarSelfOrderNotFound(PolarError):
     def __init__(self, order_id: str) -> None:
         super().__init__(f"Order {order_id!r} not found.", status_code=404)
         self.order_id = order_id
+
+
+class PolarSelfCustomerNotFound(PolarError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        super().__init__(
+            f"Organization {organization_id} has no Polar customer.",
+            status_code=404,
+        )
+        self.organization_id = organization_id
 
 
 class PolarSelfService:
@@ -259,6 +271,46 @@ class PolarSelfService:
             page=page,
             limit=limit,
         )
+
+    async def get_billing_details(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        external_member_id: str | None = None,
+    ) -> "CustomerPortalCustomer":
+        await self._ensure_polar_customer(organization_id)
+        return await get_client().portal_get_customer(
+            external_customer_id=str(organization_id),
+            external_member_id=external_member_id,
+        )
+
+    async def update_billing_details(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        update: OrganizationBillingDetailsUpdate,
+        external_member_id: str | None = None,
+    ) -> "CustomerPortalCustomer":
+        await self._ensure_polar_customer(organization_id)
+        # Only forward fields the client explicitly sent so we don't
+        # null out billing_address / tax_id on a partial update.
+        sdk_update = CustomerPortalCustomerUpdate.model_validate(
+            update.model_dump(exclude_unset=True, mode="json")
+        )
+        return await get_client().portal_update_customer(
+            external_customer_id=str(organization_id),
+            update=sdk_update,
+            external_member_id=external_member_id,
+        )
+
+    async def _ensure_polar_customer(self, organization_id: uuid.UUID) -> None:
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+        customer = await get_client().get_customer_by_external_id_or_none(
+            str(organization_id)
+        )
+        if customer is None:
+            raise PolarSelfCustomerNotFound(organization_id)
 
     async def get_order_invoice_url(
         self, organization_id: uuid.UUID, order_id: str

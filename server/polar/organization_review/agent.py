@@ -357,7 +357,7 @@ async def _collect_data(
     # _collect_setup runs first, then _collect_webhook_host chains off it
     # inside the same parallel slot so the webhook-host fetch (~90s worst
     # case) doesn't serialize after the rest of the gather.
-    async def _setup_then_webhook_host() -> tuple[SetupData, WebsiteData | None]:
+    async def _collect_setup_and_webhook_host() -> tuple[SetupData, WebsiteData | None]:
         setup = await _collect_setup(organization.id, context)
         webhook_host = await _collect_webhook_host(organization, setup)
         return setup, webhook_host
@@ -374,7 +374,7 @@ async def _collect_data(
         ],
         await asyncio.gather(
             _collect_products(organization.id, context),
-            _setup_then_webhook_host(),
+            _collect_setup_and_webhook_host(),
             _collect_metrics(organization.id, context),
             _collect_history(organization),
             _collect_account_identity(organization, context),

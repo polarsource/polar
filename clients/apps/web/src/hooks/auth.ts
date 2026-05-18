@@ -9,9 +9,9 @@ export const useAuth = (): {
   authenticated: boolean
   currentUser: schemas['UserRead'] | undefined
   reloadUser: () => Promise<undefined>
-  userOrganizations: schemas['Organization'][]
+  userOrganizations: schemas['OrganizationListItem'][]
   setUserOrganizations: React.Dispatch<
-    React.SetStateAction<schemas['Organization'][]>
+    React.SetStateAction<schemas['OrganizationListItem'][]>
   >
 } => {
   const posthog = usePostHog()

@@ -47,7 +47,7 @@ export const getAuthenticatedUser = cache(_getAuthenticatedUser)
 const _getUserOrganizations = async (
   api: Client,
   bypassCache: boolean = false,
-): Promise<schemas['Organization'][]> => {
+): Promise<schemas['OrganizationListItem'][]> => {
   const user = await getAuthenticatedUser()
   if (!user) {
     return []

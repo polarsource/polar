@@ -32,7 +32,7 @@ export default async function RootLayout({
   const api = await getServerSideAPI()
 
   let authenticatedUser: schemas['UserRead'] | undefined = undefined
-  let userOrganizations: schemas['Organization'][] = []
+  let userOrganizations: schemas['OrganizationListItem'][] = []
 
   try {
     authenticatedUser = await getAuthenticatedUser()

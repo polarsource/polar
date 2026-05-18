@@ -14,7 +14,9 @@ import {
   useRemoveOrganizationMember,
   useUpdateOrganizationMemberRole,
 } from '@/hooks/queries/org'
+import { useOrganizationRoles } from '@/hooks/queries/roles'
 import Add from '@mui/icons-material/Add'
+import Check from '@mui/icons-material/Check'
 import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -41,7 +43,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 type OrganizationRole = schemas['OrganizationRole']
 
@@ -50,6 +52,8 @@ const ROLE_LABELS: Record<OrganizationRole, string> = {
   admin: 'Admin',
   member: 'Member',
 }
+
+const ROLE_ORDER: OrganizationRole[] = ['owner', 'admin', 'member']
 
 const OWNER_TOOLTIP =
   'Contact support to transfer ownership of this organization.'
@@ -408,6 +412,26 @@ function ChangeRoleModal({
     member.role === 'admin' ? 'admin' : 'member'
   const [role, setRole] = useState<'admin' | 'member'>(initialRole)
   const updateMemberRole = useUpdateOrganizationMemberRole(organizationId)
+  const { data: roles } = useOrganizationRoles(organizationId)
+
+  const orderedRoles = useMemo(
+    () =>
+      roles
+        ? [...roles].sort(
+            (a, b) => ROLE_ORDER.indexOf(a.id) - ROLE_ORDER.indexOf(b.id),
+          )
+        : [],
+    [roles],
+  )
+
+  const allPermissions = useMemo(() => {
+    if (!roles) return []
+    const set = new Set<string>()
+    for (const r of roles) {
+      for (const p of r.permissions) set.add(p)
+    }
+    return Array.from(set).sort()
+  }, [roles])
 
   const handleSave = async () => {
     if (role === member.role) {
@@ -448,6 +472,46 @@ function ChangeRoleModal({
           <SelectItem value="member">Member</SelectItem>
         </SelectContent>
       </Select>
+      {orderedRoles.length > 0 && (
+        <div className="dark:border-polar-700 overflow-hidden rounded-md border border-gray-200">
+          <table className="w-full text-sm">
+            <thead className="dark:bg-polar-700 bg-gray-50 text-xs">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Permission</th>
+                {orderedRoles.map((r) => (
+                  <th key={r.id} className="px-3 py-2 text-center font-medium">
+                    {ROLE_LABELS[r.id]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allPermissions.map((permission) => (
+                <tr
+                  key={permission}
+                  className="dark:border-polar-700 border-t border-gray-200"
+                >
+                  <td className="px-3 py-2">
+                    <code className="text-xs">{permission}</code>
+                  </td>
+                  {orderedRoles.map((r) => (
+                    <td key={r.id} className="px-3 py-2 text-center">
+                      {r.permissions.includes(
+                        permission as (typeof r.permissions)[number],
+                      ) ? (
+                        <Check
+                          fontSize="small"
+                          className="inline text-green-600 dark:text-green-400"
+                        />
+                      ) : null}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="flex gap-2">
         <Button
           onClick={handleSave}

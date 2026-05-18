@@ -1,3 +1,5 @@
+import pytest
+
 from polar.organization_review.known_domains import (
     KNOWN_DOMAINS,
     KnownDomain,
@@ -64,3 +66,71 @@ class TestKnownDomainsForPrompt:
         for kd in KNOWN_DOMAINS:
             assert kd.pattern in result
             assert kd.name in result
+
+
+class TestKnownCloudPlatforms:
+    """Cloud platforms must match merchant-owned subdomains.
+
+    Merchants running a backend on a managed cloud host see their webhook on
+    `*.run.app`, `*.vercel.app`, etc. — that's a legitimate setup, not a
+    bypass signal.
+    """
+
+    @pytest.mark.parametrize(
+        "domain",
+        [
+            "my-service-abc123.run.app",
+            "my-func.cloudfunctions.net",
+            "my-app.vercel.app",
+            "my-app.netlify.app",
+            "my-app.fly.dev",
+            "my-app.onrender.com",
+            "my-app.up.railway.app",
+            "my-worker.workers.dev",
+            "my-site.pages.dev",
+            "my-bucket.s3.amazonaws.com",
+            "abc123.execute-api.amazonaws.com",
+            "abc123.lambda-url.amazonaws.com",
+            "my-app.azurewebsites.net",
+        ],
+    )
+    def test_cloud_platform_subdomain_matches(self, domain: str) -> None:
+        result = match_known_domain(domain)
+        assert result is not None, f"{domain} should match a known cloud platform"
+        assert result.category == "cloud"
+
+
+class TestKnownTunnelingDomains:
+    """Tunneling endpoints (ngrok, Cloudflare Tunnel) used for dev/test webhooks."""
+
+    @pytest.mark.parametrize(
+        "domain",
+        [
+            "abc123.ngrok-free.app",
+            "abc123.ngrok.io",
+            "abc123.trycloudflare.com",
+        ],
+    )
+    def test_tunneling_subdomain_matches(self, domain: str) -> None:
+        result = match_known_domain(domain)
+        assert result is not None
+        assert result.category == "tunneling"
+
+
+class TestKnownAutomationHubs:
+    """Low-code/automation hubs (n8n, Make.com, SureTriggers)."""
+
+    @pytest.mark.parametrize(
+        ("domain", "expected_name"),
+        [
+            ("acme.app.n8n.cloud", "n8n"),
+            ("webhook.suretriggers.com", "SureTriggers"),
+            ("hook.us1.make.com", "Make.com"),
+            ("hook.eu1.make.com", "Make.com"),
+            ("hook.eu2.make.com", "Make.com"),
+        ],
+    )
+    def test_automation_hub_matches(self, domain: str, expected_name: str) -> None:
+        result = match_known_domain(domain)
+        assert result is not None
+        assert result.name == expected_name

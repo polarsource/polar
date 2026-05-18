@@ -63,6 +63,82 @@ def _benefit_grant_event(event_type: str) -> dict[str, Any]:
     }
 
 
+_SUBSCRIPTION: dict[str, Any] = {
+    "id": "00000000-0000-0000-0000-000000000010",
+    "created_at": "2026-01-01T00:00:00Z",
+    "modified_at": None,
+    "amount": 0,
+    "currency": "usd",
+    "recurring_interval": "month",
+    "recurring_interval_count": 1,
+    "status": "canceled",
+    "current_period_start": "2026-01-01T00:00:00Z",
+    "current_period_end": "2026-02-01T00:00:00Z",
+    "trial_start": None,
+    "trial_end": None,
+    "cancel_at_period_end": False,
+    "canceled_at": "2026-01-15T00:00:00Z",
+    "started_at": "2026-01-01T00:00:00Z",
+    "ends_at": None,
+    "ended_at": "2026-01-15T00:00:00Z",
+    "customer_id": "00000000-0000-0000-0000-000000000002",
+    "product_id": "00000000-0000-0000-0000-0000000000c1",
+    "discount_id": None,
+    "checkout_id": None,
+    "customer_cancellation_reason": None,
+    "customer_cancellation_comment": None,
+    "metadata": {},
+    "customer": {
+        "id": "00000000-0000-0000-0000-000000000002",
+        "created_at": "2026-01-01T00:00:00Z",
+        "modified_at": None,
+        "metadata": {},
+        "email": "c@example.com",
+        "email_verified": True,
+        "type": "team",
+        "name": "c",
+        "billing_address": None,
+        "tax_id": None,
+        "organization_id": "00000000-0000-0000-0000-000000000099",
+        "deleted_at": None,
+        "avatar_url": "",
+        "external_id": "00000000-0000-0000-0000-00000000000a",
+    },
+    "product": {
+        "id": "00000000-0000-0000-0000-0000000000c1",
+        "created_at": "2026-01-01T00:00:00Z",
+        "modified_at": None,
+        "trial_interval": None,
+        "trial_interval_count": None,
+        "name": "Pro",
+        "description": None,
+        "visibility": "public",
+        "recurring_interval": "month",
+        "recurring_interval_count": 1,
+        "is_recurring": True,
+        "is_archived": False,
+        "organization_id": "00000000-0000-0000-0000-000000000099",
+        "metadata": {},
+        "prices": [],
+        "benefits": [],
+        "medias": [],
+        "attached_custom_fields": [],
+    },
+    "discount": None,
+    "prices": [],
+    "meters": [],
+    "pending_update": None,
+}
+
+
+def _subscription_event(event_type: str) -> dict[str, Any]:
+    return {
+        "type": event_type,
+        "timestamp": "2026-01-01T00:00:00Z",
+        "data": _SUBSCRIPTION,
+    }
+
+
 def _sign(
     payload: dict[str, Any], *, msg_id: str = "msg_test"
 ) -> tuple[bytes, dict[str, str]]:
@@ -182,3 +258,19 @@ class TestWebhook:
         assert call.args[2] == f"polar_self.webhook.{event_type}"
         assert call.args[3] == f"msg_{event_type}"
         assert call.args[4] == payload
+
+    async def test_subscription_revoked_is_enqueued(
+        self,
+        client: AsyncClient,
+        enqueue_mock: AsyncMock,
+    ) -> None:
+        payload = _subscription_event("subscription.revoked")
+        body, headers = _sign(payload, msg_id="msg_subscription.revoked")
+
+        response = await client.post(WEBHOOK_URL, content=body, headers=headers)
+
+        assert response.status_code == 202
+        enqueue_mock.assert_awaited_once()
+        call = enqueue_mock.await_args
+        assert call is not None
+        assert call.args[2] == "polar_self.webhook.subscription.revoked"

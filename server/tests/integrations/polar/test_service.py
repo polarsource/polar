@@ -12,6 +12,7 @@ from polar_sdk.models import (
     Subscription,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
+    WebhookSubscriptionRevokedPayload,
 )
 from pytest_mock import MockerFixture
 
@@ -759,6 +760,81 @@ def client_mock(mocker: MockerFixture) -> MagicMock:
     )
     mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
     return client
+
+
+def _make_subscription_revoked_payload(
+    *,
+    external_id: object = str(ORG_A),
+    subscription_id: str = "00000000-0000-0000-0000-000000000010",
+) -> WebhookSubscriptionRevokedPayload:
+    return WebhookSubscriptionRevokedPayload.model_validate(
+        {
+            "type": "subscription.revoked",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "data": {
+                **_make_subscription(id=subscription_id).model_dump(mode="json"),
+                "customer": _customer_dict(external_id),
+            },
+        }
+    )
+
+
+@pytest.mark.asyncio
+class TestHandleSubscriptionRevokedEvent:
+    async def test_resubscribes_to_free_when_no_active_subscription(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = True
+        settings.POLAR_FREE_PRODUCT_ID = "prod_free"
+        client_mock.get_active_subscription.return_value = None
+        client_mock.create_free_subscription = AsyncMock()
+
+        await polar_self.handle_subscription_revoked_event(
+            _make_subscription_revoked_payload()
+        )
+
+        client_mock.get_active_subscription.assert_awaited_once_with(
+            external_customer_id=str(ORG_A)
+        )
+        client_mock.create_free_subscription.assert_awaited_once_with(
+            external_customer_id=str(ORG_A),
+            product_id="prod_free",
+        )
+
+    async def test_noop_when_active_subscription_exists(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+    ) -> None:
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing"
+        )
+        client_mock.create_free_subscription = AsyncMock()
+
+        await polar_self.handle_subscription_revoked_event(
+            _make_subscription_revoked_payload()
+        )
+
+        client_mock.create_free_subscription.assert_not_awaited()
+
+    async def test_missing_external_id_raises(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+    ) -> None:
+        client_mock.create_free_subscription = AsyncMock()
+
+        with pytest.raises(PolarSelfWebhookError, match="external_id"):
+            await polar_self.handle_subscription_revoked_event(
+                _make_subscription_revoked_payload(external_id=None)
+            )
+
+        client_mock.get_active_subscription.assert_not_awaited()
+        client_mock.create_free_subscription.assert_not_awaited()
 
 
 @pytest.mark.asyncio

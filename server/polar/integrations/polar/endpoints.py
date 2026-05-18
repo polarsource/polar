@@ -20,6 +20,7 @@ IMPLEMENTED_WEBHOOKS = {
     "benefit_grant.created",
     "benefit_grant.updated",
     "benefit_grant.revoked",
+    "subscription.revoked",
 }
 
 

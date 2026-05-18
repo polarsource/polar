@@ -7,6 +7,7 @@ from polar_sdk.models import (
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
+    WebhookSubscriptionRevokedPayload,
 )
 
 from polar.account.repository import AccountRepository
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
         Order,
         Product,
         Subscription,
+        SubscriptionCustomer,
     )
 
 
@@ -314,12 +316,36 @@ class PolarSelfService:
                 case "support":
                     await self._apply_support(session, organization_id, active_grant)
 
+    async def handle_subscription_revoked_event(
+        self, payload: WebhookSubscriptionRevokedPayload
+    ) -> None:
+        subscription = payload.data
+        organization_id = self._resolve_organization_id(subscription.customer)
+
+        with logfire.span(
+            "polar_self.webhook.subscription_revoked",
+            subscription_id=subscription.id,
+            organization_id=str(organization_id),
+        ):
+            client = get_client()
+            active = await client.get_active_subscription(
+                external_customer_id=str(organization_id)
+            )
+            if active is not None:
+                return
+            await client.create_free_subscription(
+                external_customer_id=str(organization_id),
+                product_id=settings.POLAR_FREE_PRODUCT_ID,
+            )
+
     async def _ensure_plan(self, product_id: str) -> None:
         plans = await self.list_plans()
         if not any(plan.id == product_id for plan in plans):
             raise PolarSelfPlanNotFound(product_id)
 
-    def _resolve_organization_id(self, customer: "Customer") -> uuid.UUID:
+    def _resolve_organization_id(
+        self, customer: "Customer | SubscriptionCustomer"
+    ) -> uuid.UUID:
         raw = customer.external_id
         if not isinstance(raw, str):
             raise PolarSelfWebhookError(f"Customer {customer.id} has no external_id")

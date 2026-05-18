@@ -1,18 +1,12 @@
 'use client'
 
-import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import { useAuth } from '@/hooks/auth'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { setLastVisitedOrg } from '@/utils/cookies'
 import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined'
-import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  SidebarTrigger,
-  useSidebar,
-} from '@polar-sh/ui/components/atoms/Sidebar'
+import { useSidebar } from '@polar-sh/ui/components/atoms/Sidebar'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -22,15 +16,13 @@ import {
   useContext,
   useEffect,
   useRef,
-  useState,
   type JSX,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import { useRoute } from '../Navigation/useRoute'
-import { DashboardSidebar } from './Dashboard/DashboardSidebar'
-import TopbarRight from './Public/TopbarRight'
+import { AppShell } from './AppShell/AppShell'
 
 const DashboardLayout = (
   props: PropsWithChildren<{
@@ -48,92 +40,27 @@ const DashboardLayout = (
 
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
-        <MobileNav
-          organization={organization}
-          organizations={organizations ?? []}
-          type={props.type}
-        />
-        <div className="hidden md:flex">
-          <DashboardSidebar
-            organization={organization}
-            organizations={organizations ?? []}
-            type={props.type}
-          />
-        </div>
+      <AppShell
+        type={props.type ?? 'organization'}
+        organization={organization}
+        organizations={organizations ?? []}
+      >
         <div
           className={twMerge(
             'relative flex h-full w-full flex-col',
             props.className,
           )}
         >
-          {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
           <main className="relative flex min-h-0 min-w-0 grow flex-col">
             {props.children}
           </main>
         </div>
-      </div>
+      </AppShell>
     </DashboardProvider>
   )
 }
 
 export default DashboardLayout
-
-const MobileNav = ({
-  type = 'organization',
-  organization,
-  organizations,
-}: {
-  type?: 'organization' | 'account'
-  organization?: schemas['Organization']
-  organizations: schemas['Organization'][]
-}) => {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const pathname = usePathname()
-  const { currentUser } = useAuth()
-
-  /* eslint-disable react-hooks/set-state-in-effect -- close mobile nav on route change */
-  useEffect(() => {
-    setMobileNavOpen(false)
-  }, [pathname])
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const header = (
-    <div className="dark:bg-polar-900 sticky top-0 right-0 left-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
-      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-      <a
-        href="/"
-        className="shrink-0 items-center font-semibold text-black dark:text-white"
-      >
-        <LogoIcon className="h-10 w-10" />
-      </a>
-
-      <div className="flex flex-row items-center gap-x-6">
-        <TopbarRight authenticatedUser={currentUser} />
-        <SidebarTrigger />
-      </div>
-    </div>
-  )
-
-  return (
-    <div className="dark:bg-polar-900 relative z-20 flex w-screen flex-col items-center justify-between bg-gray-50 md:hidden">
-      {mobileNavOpen ? (
-        <div className="relative flex h-full w-full flex-col">
-          {header}
-          <div className="dark:bg-polar-900 flex h-full flex-col bg-gray-50 px-4">
-            <DashboardSidebar
-              organization={organization}
-              organizations={organizations}
-              type={type}
-            />
-          </div>
-        </div>
-      ) : (
-        header
-      )}
-    </div>
-  )
-}
 
 const SubNav = (props: { items: SubRouteWithActive[] }) => {
   const current = props.items.find((i) => i.isActive)
@@ -220,10 +147,10 @@ export const DashboardBody = ({
       animate="animate"
       exit="exit"
     >
-      <div className="dark:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 bg-white px-4 md:overflow-y-auto md:border md:px-8 md:shadow-xs">
+      <div className="relative flex min-w-0 flex-2 flex-col items-center">
         <div
           className={twMerge(
-            'flex h-full w-full flex-col gap-8 pt-8',
+            'flex h-full w-full flex-col gap-8',
             wrapperClassName,
             wide ? '' : 'max-w-(--breakpoint-xl)',
           )}

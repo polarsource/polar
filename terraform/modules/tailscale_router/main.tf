@@ -19,6 +19,4 @@ resource "render_background_worker" "tailscale_router" {
     TAILSCALE_VERSION   = { value = var.tailscale_version }
     RENDER_SERVICE_NAME = { value = "tailscale-router-${var.environment}" }
   }
-
-  # TODO: add a persistent disk for Tailscale state to avoid re-auth on deploys
 }

@@ -4,7 +4,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject, is_user
@@ -338,7 +338,10 @@ class ProductService:
         if update_schema.medias is not None:
             medias_errors: list[ValidationError] = []
             nested = await session.begin_nested()
-            product.medias = []
+            # Explicitly delete all existing medias to avoid unique constraint issues
+            await session.execute(
+                delete(ProductMedia).where(ProductMedia.product_id == product.id)
+            )
             await session.flush()
 
             for order, file_id in enumerate(update_schema.medias):
@@ -364,7 +367,13 @@ class ProductService:
         if update_schema.attached_custom_fields is not None:
             attached_custom_fields_errors: list[ValidationError] = []
             nested = await session.begin_nested()
-            product.attached_custom_fields = []
+            # Explicitly delete all existing custom fields to avoid unique constraint issues
+            # We can't rely on cascade delete because of the nested transaction
+            await session.execute(
+                delete(ProductCustomField).where(
+                    ProductCustomField.product_id == product.id
+                )
+            )
             await session.flush()
 
             for order, attached_custom_field in enumerate(
@@ -479,9 +488,10 @@ class ProductService:
             new_benefits.add(benefit)
             new_product_benefits.append(ProductBenefit(benefit=benefit, order=order))
 
-        # Remove all previous benefits: flush to actually remove them
-        product.product_benefits = []
-        session.add(product)
+        # Remove all previous benefits: explicitly delete to avoid unique constraint issues
+        await session.execute(
+            delete(ProductBenefit).where(ProductBenefit.product_id == product.id)
+        )
         await session.flush()
 
         # Set the new benefits

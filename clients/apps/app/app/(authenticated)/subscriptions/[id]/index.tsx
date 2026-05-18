@@ -128,6 +128,8 @@ export default function Index() {
       <ProductRow
         product={subscription.product}
         currency={subscription.currency}
+        amount={subscription.amount}
+        interval={subscription.recurring_interval}
       />
 
       <Box>

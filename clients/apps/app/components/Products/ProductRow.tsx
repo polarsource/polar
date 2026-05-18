@@ -9,15 +9,24 @@ import { StyleProp, TextStyle } from 'react-native'
 import { Pill } from '../Shared/Pill'
 import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
+import AmountLabel from './AmountLabel'
 import { ProductPriceLabel } from './ProductPriceLabel'
 
 export interface ProductRowProps {
   product: schemas['Product']
   currency: string
+  amount?: number
+  interval?: schemas['SubscriptionRecurringInterval']
   style?: StyleProp<TextStyle>
 }
 
-export const ProductRow = ({ product, currency, style }: ProductRowProps) => {
+export const ProductRow = ({
+  product,
+  currency,
+  amount,
+  interval,
+  style,
+}: ProductRowProps) => {
   const theme = useTheme()
 
   return (
@@ -83,7 +92,15 @@ export const ProductRow = ({ product, currency, style }: ProductRowProps) => {
             </Text>
             {product.is_archived ? <Pill color="red">Archived</Pill> : null}
           </Box>
-          <ProductPriceLabel product={product} currency={currency} />
+          {amount !== undefined ? (
+            <AmountLabel
+              amount={amount}
+              currency={currency}
+              interval={interval}
+            />
+          ) : (
+            <ProductPriceLabel product={product} currency={currency} />
+          )}
         </Box>
       </Touchable>
     </Link>

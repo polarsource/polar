@@ -7,7 +7,7 @@ import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
 import { StyleProp, TextStyle } from 'react-native'
-import { ProductPriceLabel } from '../Products/ProductPriceLabel'
+import AmountLabel from '../Products/AmountLabel'
 import { Pill } from '../Shared/Pill'
 import { Text } from '../Shared/Text'
 
@@ -109,10 +109,11 @@ export const SubscriptionRow = ({
             </Pill>
           </Box>
           <Box flex={1} flexDirection="row" alignItems="center" gap="spacing-8">
-            <ProductPriceLabel
+            <AmountLabel
               loading={loading}
-              product={subscription?.product}
+              amount={subscription?.amount ?? 0}
               currency={subscription?.currency || 'usd'}
+              interval={subscription?.recurring_interval}
             />
             {showCustomer ? (
               <>

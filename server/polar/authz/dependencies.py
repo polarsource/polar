@@ -158,6 +158,22 @@ AuthorizeOrgManage = Annotated[
         )
     ),
 ]
+# Read-only counterpart to `AuthorizeOrgManage`: same `can_manage` policy
+# (so the endpoint is still gated to org admins) but accepts either the
+# read or write scope, so read-only sessions (e.g. backoffice impersonation)
+# can hit GET endpoints that expose admin-only data.
+AuthorizeOrgManageRead = Annotated[
+    AuthzContext[User | Organization],
+    Depends(
+        OrgPolicyGuard(
+            org_policy.can_manage,
+            required_scopes={
+                Scope.organizations_read,
+                Scope.organizations_write,
+            },
+        )
+    ),
+]
 AuthorizeOrgManageUser = Annotated[
     AuthzContext[User],
     Depends(

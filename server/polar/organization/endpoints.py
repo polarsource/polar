@@ -14,6 +14,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
     AuthorizeOrgManage,
+    AuthorizeOrgManageRead,
     AuthorizeOrgManageUser,
 )
 from polar.config import settings
@@ -219,7 +220,7 @@ async def set_payout_account(
     tags=[APITag.private],
 )
 async def get_kyc(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageRead,
 ) -> Organization:
     """Get an organization's KYC/compliance details."""
     return authz.organization
@@ -682,7 +683,7 @@ async def mark_ai_onboarding_complete(
     tags=[APITag.private],
 )
 async def get_review_status(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewStatus:
     """Get the current review status and appeal information for an organization."""
@@ -713,7 +714,7 @@ async def get_review_status(
     tags=[APITag.private],
 )
 async def get_review(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewState:
     """Get the merchant self-review checklist state.
@@ -755,7 +756,7 @@ async def validate_website(
     tags=[APITag.private],
 )
 async def list_plans(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageRead,
 ) -> Sequence[OrganizationPlan]:
     """List the plans this organization can subscribe to."""
     products = await polar_self_service.list_plans()
@@ -775,7 +776,7 @@ async def list_plans(
     tags=[APITag.private],
 )
 async def get_subscription(
-    authz: AuthorizeOrgManage,
+    authz: AuthorizeOrgManageRead,
 ) -> OrganizationSubscription:
     """Get the current Polar subscription for this organization."""
     subscription = await polar_self_service.get_subscription(authz.organization.id)

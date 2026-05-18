@@ -13,61 +13,11 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @font-face {
-  font-family: 'Inter';
-  font-weight: 300;
+  font-family: 'PP Neue Montreal';
+  font-weight: 100 400 900;
   font-style: normal;
   font-display: swap;
-  src: url('/fonts/Inter-Light.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Inter';
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  src: url('/fonts/Inter-Regular.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Inter';
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-  src: url('/fonts/Inter-Medium.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Inter';
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-  src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'InterDisplay';
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-  src: url('/fonts/InterDisplay-Light.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'InterDisplay';
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  src: url('/fonts/InterDisplay-Regular.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'InterDisplay';
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-  src: url('/fonts/InterDisplay-Medium.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'InterDisplay';
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-  src: url('/fonts/InterDisplay-SemiBold.woff2') format('woff2');
+  src: url('/fonts/PPNeueMontreal-Variable.woff2') format('woff2-variations');
 }
 
 @font-face {
@@ -90,8 +40,8 @@
   --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
   --shadow-3xl: 0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04);
 
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'InterDisplay', sans-serif;
+  --font-sans: 'PP Neue Montreal', sans-serif;
+  --font-display: 'PP Neue Montreal', sans-serif;
   --font-mono: 'GeistMono', monospace;
   --font-louize: 'Louize', serif;
 
@@ -217,7 +167,6 @@
 @layer base {
   html {
     @apply text-gray-900;
-    font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv06', 'cv11', 'ss03';
   }
 
   html.dark {

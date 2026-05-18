@@ -18,21 +18,7 @@ export default async function CheckoutLayout({
       />
       <link
         rel="preload"
-        href="/fonts/Inter-Regular.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/Inter-Medium.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/InterDisplay-SemiBold.woff2"
+        href="/fonts/PPNeueMontreal-Variable.woff2"
         as="font"
         type="font/woff2"
         crossOrigin=""

@@ -105,10 +105,10 @@ from polar.subscription.service import subscription as subscription_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
-from scripts.seed_benefits import (
+from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
 )
-from scripts.seed_benefits import (
+from scripts.seed_polar_for_polar import (
     PRODUCTS as POLAR_SELF_PRODUCTS,
 )
 
@@ -908,7 +908,7 @@ async def _seed_polar_self_billing_catalog(
 ) -> None:
     """Materialize the Polar self-billing benefits and tier products in the DB.
 
-    Mirrors ``scripts.seed_benefits`` but writes directly via the service layer
+    Mirrors ``scripts.seed_polar_for_polar`` but writes directly via the service layer
     instead of going through the public HTTP API.
     """
     benefits_by_description: dict[str, Any] = {}

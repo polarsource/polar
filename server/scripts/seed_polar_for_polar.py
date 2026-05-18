@@ -6,13 +6,13 @@ and only creates the ones that are missing (matched by description / name).
 Usage:
 
     # Local (defaults to http://127.0.0.1:8000)
-    POLAR_ACCESS_TOKEN=... uv run python -m scripts.seed_benefits --env local
+    POLAR_ACCESS_TOKEN=... uv run python -m scripts.seed_polar_for_polar --env local
 
     # Sandbox
-    POLAR_ACCESS_TOKEN=... uv run python -m scripts.seed_benefits --env sandbox
+    POLAR_ACCESS_TOKEN=... uv run python -m scripts.seed_polar_for_polar --env sandbox
 
     # Production
-    POLAR_ACCESS_TOKEN=... uv run python -m scripts.seed_benefits --env prod
+    POLAR_ACCESS_TOKEN=... uv run python -m scripts.seed_polar_for_polar --env prod
 
 If you use a user (not organization) access token, pass --organization-id.
 

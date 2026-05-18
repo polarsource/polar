@@ -41,8 +41,6 @@ export const ProductUrlSection = ({
 
   const form = useForm<FormValues>({
     values: { website: organization.website ?? '' },
-    // Validate only when the merchant explicitly hits Save — no in-flight
-    // checks on blur or on each keystroke.
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
   })

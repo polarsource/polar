@@ -111,7 +111,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
-              style={{ overflow: 'hidden' }}
+              className="overflow-hidden focus-within:overflow-visible"
             >
               <Box paddingTop="m">
                 {renderSection({ organization, step, reasonItems })}

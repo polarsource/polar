@@ -1076,6 +1076,7 @@ class TestGetReview:
         json = response.json()
 
         assert [step["key"] for step in json["preliminary_steps"]] == [
+            "product_description",
             "product_configuration",
             "setup_readiness",
             "identity.stripe_identity_verification",
@@ -1083,7 +1084,6 @@ class TestGetReview:
             "identity.social_links",
             "product_url",
             "identity.email",
-            "product_description",
         ]
 
     @pytest.mark.auth

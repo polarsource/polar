@@ -399,3 +399,8 @@ variable "tailscale_authkey" {
   type        = string
   sensitive   = true
 }
+
+variable "tailscale_advertise_routes" {
+  description = "IP routes that should go via Tailscale"
+  type        = string
+}

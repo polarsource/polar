@@ -427,3 +427,11 @@ resource "tfe_variable" "tailscale_authkey_production" {
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }
+
+resource "tfe_variable" "tailscale_advertise_routes_production" {
+  key             = "tailscale_advertise_routes"
+  category        = "terraform"
+  description     = "IP routes that should go via Tailscale for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+}

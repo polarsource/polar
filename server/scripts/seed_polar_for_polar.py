@@ -60,7 +60,7 @@ BENEFITS: list[dict[str, object]] = [
         "metadata": {
             "type": "transaction_fee",
             "fee_percent": 380,
-            "fee_fixed": 35,
+            "fee_fixed": 40,
         },
     },
     {
@@ -68,7 +68,7 @@ BENEFITS: list[dict[str, object]] = [
         "metadata": {
             "type": "transaction_fee",
             "fee_percent": 360,
-            "fee_fixed": 30,
+            "fee_fixed": 35,
         },
     },
     {
@@ -162,7 +162,7 @@ PRODUCTS: list[dict[str, object]] = [
         "benefits": ["Transaction Fee (Tier 3)", "Support (Tier 3)"],
     },
     {
-        "name": "Scale",
+        "name": "Growth",
         "price_amount": 40000,
         "metadata": {
             "custom": False,

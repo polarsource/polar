@@ -235,8 +235,8 @@ module "test" {
       # United Kingdom
       GB = "GB458254961"
     })
-    tax_processors             = "[\"numeral\",\"stripe\"]"
-    tax_record_processor       = "numeral"
+    tax_processors       = "[\"numeral\",\"stripe\"]"
+    tax_record_processor = "numeral"
   }
 
   backend_secrets = {

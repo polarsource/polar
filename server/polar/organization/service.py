@@ -305,6 +305,7 @@ class OrganizationService:
         feature_settings = create_data.get("feature_settings", {})
         feature_settings["member_model_enabled"] = True
         feature_settings["seat_based_pricing_enabled"] = True
+        feature_settings["account_review_v2_enabled"] = True
         create_data["feature_settings"] = feature_settings
 
         if settings.is_sandbox():

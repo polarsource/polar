@@ -74,8 +74,8 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
   return (
     <Box display="flex" flexDirection="column" rowGap="xl">
       <Text variant="default" color="muted">
-        Looks like you&apos;re not integrated with Polar yet. Pick the option
-        that fits your setup, you can always change this later.
+        You&rsquo;re not integrated with Polar yet. Pick the option that fits
+        your setup. You can always switch later.
       </Text>
 
       <Box display="flex" flexDirection="column" rowGap="xl">
@@ -166,7 +166,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
 
           <PathCard
             title="Create an API key"
-            description="Authenticate your backend's requests to the Polar API so you can manage products, orders, and subscriptions programmatically from your own app."
+            description="Integrate your application with the Polar API to manage orders, customers, and subscriptions programmatically."
             onClick={showCreateTokenModal}
             docsUrl="https://polar.sh/docs/api-reference/introduction"
             required
@@ -175,7 +175,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
 
           <PathCard
             title="Create a webhook"
-            description="Receive real-time HTTP callbacks for events like new orders, refunds and subscription changes, keeping data consistent between your app and Polar."
+            description="Receive real-time HTTP callbacks for events like new orders, refunds, and subscription changes, keeping data consistent between your app and Polar."
             onClick={showCreateWebhookModal}
             recommended
             docsUrl="https://polar.sh/docs/integrate/webhooks/endpoints"

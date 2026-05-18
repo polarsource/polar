@@ -41,14 +41,14 @@ export const ProductConfigurationSection = ({ organization }: Props) => {
         title="Product configured"
         description={
           productCount === 1
-            ? 'You have 1 product ready to sell.'
+            ? 'You have one product ready to sell.'
             : `You have ${productCount} products ready to sell.`
         }
         action={
           <Link href={`/dashboard/${organization.slug}/products`}>
             <Button variant="secondary">
               Manage products
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="-mr-1 ml-2 h-4 w-4" />
             </Button>
           </Link>
         }

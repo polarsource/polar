@@ -79,7 +79,7 @@ export const EmailSection = ({
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <SectionLayout
-          description="The email customers and Polar can use to reach you. Use a business email tied to your organization domain."
+          description="Where can customers reach you when something goes wrong?"
           footerEnd={
             <Button
               type="submit"

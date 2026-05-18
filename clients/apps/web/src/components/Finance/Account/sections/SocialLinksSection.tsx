@@ -71,7 +71,7 @@ export const SocialLinksSection = ({ organization: initialOrg }: Props) => {
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <SectionLayout
-          description="Link your public profiles. We use them to verify your organization."
+          description="Link your personal public profiles for additional identity verification. We won't display or share them."
           footerEnd={
             <Button
               type="submit"

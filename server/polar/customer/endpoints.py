@@ -5,7 +5,11 @@ from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import TypeAdapter
 
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_resource_permission,
+    get_accessible_org_ids,
+)
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -134,7 +138,9 @@ async def export(
         )
 
         repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         stream = repository.stream_by_organization(org_ids, organization_id)
 
         async for customer in stream:
@@ -303,6 +309,9 @@ async def update(
     if customer is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, customer, OrganizationPermission.customers_manage
+    )
     return await customer_service.update(session, customer, customer_update)
 
 
@@ -327,6 +336,9 @@ async def update_external(
     if customer is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, customer, OrganizationPermission.customers_manage
+    )
     return await customer_service.update(session, customer, customer_update)
 
 
@@ -375,6 +387,9 @@ async def delete(
     if customer is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, customer, OrganizationPermission.customers_manage
+    )
     await customer_service.delete(session, customer, anonymize=anonymize)
 
 
@@ -410,4 +425,7 @@ async def delete_external(
     if customer is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, customer, OrganizationPermission.customers_manage
+    )
     await customer_service.delete(session, customer, anonymize=anonymize)

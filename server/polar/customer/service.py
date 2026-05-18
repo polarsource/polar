@@ -10,7 +10,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids,
+)
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer_meter.repository import CustomerMeterRepository
@@ -79,7 +83,9 @@ class CustomerService:
         ],
     ) -> tuple[Sequence[Customer], int]:
         repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
 
         if organization_id is not None:
@@ -122,7 +128,9 @@ class CustomerService:
         id: uuid.UUID,
     ) -> Customer | None:
         repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             Customer.id == id
         )
@@ -135,7 +143,9 @@ class CustomerService:
         external_id: str,
     ) -> Customer | None:
         repository = CustomerRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(
             Customer.external_id == external_id
         )
@@ -151,6 +161,12 @@ class CustomerService:
     ) -> Customer:
         organization = await get_payload_organization(
             session, auth_subject, customer_create
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.customers_manage,
         )
         repository = CustomerRepository.from_session(session)
 

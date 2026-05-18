@@ -63,6 +63,26 @@ export const useRemoveOrganizationMember = (organizationId: string) =>
     },
   })
 
+export const useUpdateOrganizationMemberRole = (organizationId: string) =>
+  useMutation({
+    mutationFn: (variables: {
+      userId: string
+      role: schemas['OrganizationMemberRoleUpdate']['role']
+    }) => {
+      return api.PATCH('/v1/organizations/{id}/members/{user_id}', {
+        params: {
+          path: { id: organizationId, user_id: variables.userId },
+        },
+        body: { role: variables.role },
+      })
+    },
+    onSuccess: async () => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizationMembers', organizationId],
+      })
+    },
+  })
+
 export const useListOrganizations = (
   params: operations['organizations:list']['parameters']['query'],
   enabled: boolean = true,

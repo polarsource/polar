@@ -6,11 +6,13 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks/auth'
+import { useHasPermission } from '@/hooks/permissions'
 import {
   useInviteOrganizationMember,
   useLeaveOrganization,
   useListOrganizationMembers,
   useRemoveOrganizationMember,
+  useUpdateOrganizationMemberRole,
 } from '@/hooks/queries/org'
 import Add from '@mui/icons-material/Add'
 import { schemas } from '@polar-sh/client'
@@ -23,8 +25,26 @@ import {
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
+
+type OrganizationRole = schemas['OrganizationRole']
+
+const ROLE_LABELS: Record<OrganizationRole, string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  member: 'Member',
+}
+
+const OWNER_TOOLTIP =
+  'Contact support to transfer ownership of this organization.'
 
 export default function ClientPage({
   organization,
@@ -37,13 +57,13 @@ export default function ClientPage({
   const { data: members, isLoading } = useListOrganizationMembers(
     organization.id,
   )
+  const canManageMembers = useHasPermission(organization.id, 'members:manage')
   const {
     show: openInviteMemberModal,
     hide: hideInviteMemberModal,
     isShown: isInviteMemberModalShown,
   } = useModal()
 
-  // Remove member modal state
   const [memberToRemove, setMemberToRemove] = useState<
     schemas['OrganizationMember'] | null
   >(null)
@@ -53,7 +73,6 @@ export default function ClientPage({
     isShown: isRemoveModalShown,
   } = useModal()
 
-  // Leave organization modal state
   const {
     show: showLeaveModal,
     hide: hideLeaveModal,
@@ -62,13 +81,7 @@ export default function ClientPage({
 
   const removeMember = useRemoveOrganizationMember(organization.id)
   const leaveOrganization = useLeaveOrganization(organization.id)
-
-  // Find the admin user from members list
-  const adminMember = useMemo(
-    () => members?.items.find((m) => m.is_admin),
-    [members],
-  )
-  const isCurrentUserAdmin = adminMember?.user_id === currentUser?.id
+  const updateMemberRole = useUpdateOrganizationMemberRole(organization.id)
 
   const handleRemoveMember = useCallback(
     (member: schemas['OrganizationMember']) => {
@@ -111,6 +124,24 @@ export default function ClientPage({
     }
   }, [leaveOrganization, organization.name, router, toast])
 
+  const handleRoleChange = useCallback(
+    async (member: schemas['OrganizationMember'], role: 'admin' | 'member') => {
+      try {
+        await updateMemberRole.mutateAsync({ userId: member.user_id, role })
+        toast({
+          title: 'Role updated',
+          description: `${member.email} is now ${ROLE_LABELS[role]}.`,
+        })
+      } catch {
+        toast({
+          title: 'Failed to update role',
+          description: 'Please try again.',
+        })
+      }
+    },
+    [updateMemberRole, toast],
+  )
+
   const columns: DataTableColumnDef<schemas['OrganizationMember']>[] = [
     {
       id: 'member',
@@ -126,11 +157,9 @@ export default function ClientPage({
           <div className="flex flex-row items-center gap-2">
             <Avatar avatar_url={member.avatar_url} name={member.email} />
             <div className="fw-medium">{member.email}</div>
-            {member.is_admin && (
-              <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                Admin
-              </span>
-            )}
+            <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              {ROLE_LABELS[member.role]}
+            </span>
             {isCurrentUser && (
               <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
                 You
@@ -155,30 +184,59 @@ export default function ClientPage({
       header: () => null,
       cell: ({ row: { original: member } }) => {
         const isCurrentUser = member.user_id === currentUser?.id
-        const isMemberAdmin = member.is_admin
+        const isOwner = member.role === 'owner'
 
-        // Admin cannot remove themselves
-        if (isCurrentUserAdmin && isMemberAdmin) {
-          return null
-        }
-
-        // Admin can remove other members
-        if (isCurrentUserAdmin && !isMemberAdmin) {
+        if (canManageMembers && !isCurrentUser) {
           return (
-            <div className="flex justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleRemoveMember(member)}
-              >
-                Remove
-              </Button>
+            <div className="flex justify-end gap-2">
+              {isOwner ? (
+                <div title={OWNER_TOOLTIP}>
+                  <Select value="owner" disabled>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="owner">Owner</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <Select
+                  value={member.role}
+                  onValueChange={(role) =>
+                    handleRoleChange(member, role as 'admin' | 'member')
+                  }
+                  disabled={updateMemberRole.isPending}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="member">Member</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {isOwner ? (
+                <span title={OWNER_TOOLTIP}>
+                  <Button variant="secondary" size="sm" disabled>
+                    Remove
+                  </Button>
+                </span>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleRemoveMember(member)}
+                >
+                  Remove
+                </Button>
+              )}
             </div>
           )
         }
 
-        // Non-admin can only leave (their own row)
-        if (!isCurrentUserAdmin && isCurrentUser) {
+        if (isCurrentUser && !isOwner) {
           return (
             <div className="flex justify-end">
               <Button variant="secondary" size="sm" onClick={showLeaveModal}>
@@ -198,16 +256,18 @@ export default function ClientPage({
       wrapperClassName="max-w-(--breakpoint-sm)!"
       className="flex flex-col gap-y-8"
       header={
-        <Button onClick={openInviteMemberModal} variant="default">
-          <Add className="mr-2" fontSize="small" />
-          <span>Invite</span>
-        </Button>
+        canManageMembers ? (
+          <Button onClick={openInviteMemberModal} variant="default">
+            <Add className="mr-2" fontSize="small" />
+            <span>Invite</span>
+          </Button>
+        ) : undefined
       }
     >
       <p className="dark:text-polar-500 text-gray-500">
-        Manage users who have access to this organization. All members are
-        entitled to view and manage organization settings, products,
-        subscriptions, etc.
+        Manage users who have access to this organization. Roles determine what
+        each member can do — admins can manage finance and members, while
+        members can manage day-to-day resources.
       </p>
 
       {members && (

@@ -6,15 +6,23 @@ import logfire
 from polar_sdk.models import (
     CustomerPortalCustomerUpdate,
     LegacyRecurringProductPriceFixed,
+    OrderBillingReason,
     ProductPriceFixed,
     SubscriptionProrationBehavior,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
+    WebhookOrderCreatedPayload,
 )
 
 from polar.account.repository import AccountRepository
 from polar.config import settings
+from polar.email.schemas import (
+    EmailAdapter,
+    PolarSelfSubscriptionConfirmationProps,
+    PolarSelfSubscriptionCycledProps,
+)
+from polar.email.sender import enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -482,6 +490,53 @@ class PolarSelfService:
                     )
                 case "support":
                     await self._apply_support(session, organization_id, active_grant)
+
+    async def handle_order_created_event(
+        self, payload: WebhookOrderCreatedPayload
+    ) -> None:
+        order = payload.data
+        recipient = order.customer.email
+        if not recipient:
+            return
+
+        product_name = order.product.name if order.product is not None else "Polar"
+
+        if order.billing_reason == OrderBillingReason.SUBSCRIPTION_CREATE:
+            email = EmailAdapter.validate_python(
+                {
+                    "template": "polar_self_subscription_confirmation",
+                    "props": PolarSelfSubscriptionConfirmationProps(
+                        email=recipient,
+                        product_name=product_name,
+                    ).model_dump(),
+                }
+            )
+            subject = f"Welcome to {product_name}"
+        elif order.billing_reason == OrderBillingReason.SUBSCRIPTION_CYCLE:
+            email = EmailAdapter.validate_python(
+                {
+                    "template": "polar_self_subscription_cycled",
+                    "props": PolarSelfSubscriptionCycledProps(
+                        email=recipient,
+                        product_name=product_name,
+                        invoice_number=order.invoice_number,
+                    ).model_dump(),
+                }
+            )
+            subject = f"Your {product_name} subscription renewed"
+        else:
+            return
+
+        with logfire.span(
+            "polar_self.webhook.order_created",
+            order_id=order.id,
+            billing_reason=order.billing_reason.value,
+        ):
+            enqueue_email_template(
+                email,
+                to_email_addr=recipient,
+                subject=subject,
+            )
 
     async def _require_approval(
         self,

@@ -7,6 +7,7 @@ from polar_sdk.models import (
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
+    WebhookOrderCreatedPayload,
 )
 
 from polar.config import settings
@@ -193,3 +194,13 @@ async def webhook_benefit_grant_revoked(event_id: uuid.UUID) -> None:
         ) as event:
             payload = WebhookBenefitGrantRevokedPayload.model_validate(event.data)
             await polar_self.handle_benefit_grant_event(session, payload)
+
+
+@actor(actor_name="polar_self.webhook.order.created", priority=TaskPriority.LOW)
+async def webhook_order_created(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ) as event:
+            payload = WebhookOrderCreatedPayload.model_validate(event.data)
+            await polar_self.handle_order_created_event(payload)

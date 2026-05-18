@@ -85,7 +85,7 @@ export const ProductUrlSection = ({
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <SectionLayout
-          description="Add the public URL where customers can learn about your product or buy it. We will verify that the page loads."
+          description="What's the landing page for this product?"
           footerEnd={
             <Button
               type="submit"

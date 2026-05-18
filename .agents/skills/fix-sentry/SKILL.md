@@ -42,7 +42,7 @@ Synthetize the information gathered from the Sentry issue, Logfire logs, and sou
 Always start by creating a git worktree for the work you are about to do. This will allow you to keep your changes organized and separate from the main codebase until they are ready to be merged. Run the following script:
 
 ```bash
-./dev/create-woktree <branch-name>
+./dev/create-worktree <branch-name>
 ```
 
 This will create a worktree and prepare the environment for you to work on the issue. Make sure to replace `<branch-name>` with a descriptive name for your branch, using only **lowercase letters, digits, and underscores**. The worktree is created in the `./worktrees` directory, and you can navigate to it using `cd ./worktrees/<branch-name>`.

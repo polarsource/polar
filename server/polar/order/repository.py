@@ -150,6 +150,7 @@ class OrderRepository(
             .where(
                 Order.next_payment_attempt_at.is_not(None),
                 Order.next_payment_attempt_at <= utc_now(),
+                Order.is_void.is_(False),
                 Organization.is_deleted.is_(False),
                 Organization.can_renew_subscriptions.is_(True),
             )

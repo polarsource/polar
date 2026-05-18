@@ -2170,6 +2170,17 @@ class OrderService:
         """Handle the first dunning attempt for an order, setting the next payment
         attempt date and marking the subscription as past due.
         """
+        # Don't schedule retries for void orders
+        if order.is_void:
+            log.info(
+                "Ignoring first dunning attempt for void order",
+                order_id=order.id,
+            )
+            repository = OrderRepository.from_session(session)
+            return await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+
         assert order.subscription is not None
         subscription = order.subscription
 
@@ -2382,6 +2393,16 @@ class OrderService:
                 organization_id=order.organization_id,
             )
             return order
+
+        if order.is_void:
+            log.info(
+                "Order is void, skipping dunning",
+                order_id=order.id,
+            )
+            repository = OrderRepository.from_session(session)
+            return await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
 
         if order.subscription is None:
             log.warning(

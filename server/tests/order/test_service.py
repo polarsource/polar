@@ -2990,6 +2990,44 @@ class TestHandlePaymentFailure:
         mock_revoke.assert_called_once()
 
     @freeze_time("2024-01-01 12:00:00")
+    async def test_void_order_with_null_next_payment_attempt(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that handle_payment_failure does not set next_payment_attempt_at
+        for void orders when next_payment_attempt_at is None.
+
+        This prevents the inconsistent state where status=void but
+        next_payment_attempt_at is not None.
+        """
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.void,
+            next_payment_attempt_at=None,
+        )
+        await save_fixture(order)
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then - next_payment_attempt_at should remain None for void orders
+        assert result_order.next_payment_attempt_at is None
+        assert result_order.status == OrderStatus.void
+
+    @freeze_time("2024-01-01 12:00:00")
     async def test_non_recoverable_decline_code_skips_dunning(
         self,
         session: AsyncSession,
@@ -3321,6 +3359,36 @@ class TestProcessDunningOrder:
             payment_method_id=payment_method.id,
             payment_trigger="retry_dunning",
         )
+
+    async def test_process_dunning_order_void_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        subscription: Subscription,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that process_dunning_order skips void orders."""
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription.payment_method = payment_method
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.void,
+        )
+        order.next_payment_attempt_at = utc_now() + timedelta(days=1)
+        await save_fixture(order)
+
+        # When
+        result_order = await order_service.process_dunning_order(session, order)
+
+        # Then - void orders should not be processed for dunning
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
 
 
 @pytest.mark.asyncio

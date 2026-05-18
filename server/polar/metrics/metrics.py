@@ -69,7 +69,7 @@ def cumulative_sum(periods: Iterable["MetricsPeriod"], slug: str) -> int | float
 
 def cumulative_last(periods: Iterable["MetricsPeriod"], slug: str) -> int | float:
     dd = deque((getattr(p, slug) for p in periods), maxlen=1)
-    value = dd.pop()
+    value = dd.pop() if dd else None
     return value if value is not None else 0
 
 

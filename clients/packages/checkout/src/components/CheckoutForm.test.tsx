@@ -439,7 +439,9 @@ describe('CheckoutForm', () => {
         />,
       )
 
-      expect(mockLoadStripe).toHaveBeenCalledWith('pk_test_123')
+      expect(mockLoadStripe).toHaveBeenCalledWith('pk_test_123', {
+        developerTools: { assistant: { enabled: false } },
+      })
       expect(screen.getByTestId('mock-payment-element')).toBeInTheDocument()
     })
 

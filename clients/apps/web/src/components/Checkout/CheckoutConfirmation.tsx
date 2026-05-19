@@ -14,15 +14,16 @@ import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
-import { Stripe, loadStripe } from '@stripe/stripe-js'
+import { Stripe } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import LogoType from '../Brand/logos/LogoType'
 import { SpinnerNoMargin } from '../Shared/Spinner'
 import CheckoutBenefits from './CheckoutBenefits'
 import CheckoutSeatInvitations from './CheckoutSeatInvitations'
+import { loadPolarStripe } from '@/utils/stripe'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+const stripePromise = loadPolarStripe()
 
 const isIntegrationError = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

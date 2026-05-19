@@ -14,16 +14,18 @@ export const useOrganizationRole = (
   return match?.role ?? null
 }
 
-// Returns false while roles map is loading; callers can use this to disable
-// controls during fetch.
+// Returns `undefined` while the roles map is loading so callers can
+// distinguish "still resolving" from a definitive grant/denial. Pages
+// that switch to a restricted view should gate on `=== false`.
 export const useHasPermission = (
   organizationId: string | undefined,
   permission: OrganizationPermission,
-): boolean => {
+): boolean | undefined => {
   const role = useOrganizationRole(organizationId)
-  const { data: roles } = useOrganizationRoles(organizationId)
+  const { data: roles, isLoading } = useOrganizationRoles(organizationId)
 
-  if (!role || !roles) return false
+  if (!role) return false
+  if (isLoading || !roles) return undefined
   const definition = roles.find((r) => r.id === role)
   return definition?.permissions.includes(permission) ?? false
 }

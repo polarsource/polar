@@ -76,7 +76,7 @@ export default function ClientPage({
   const rowCount = balancesHook.data?.pagination.total_count ?? 0
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
 
-  if (!canReadFinance) {
+  if (canReadFinance === false) {
     return (
       <div className="flex flex-col gap-y-6">
         <AccessRestricted message="You don't have permission to view income for this organization. Ask an admin if you need access." />

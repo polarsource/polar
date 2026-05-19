@@ -261,7 +261,7 @@ export default function ClientPage({
     },
   ]
 
-  if (!canReadFinance) {
+  if (canReadFinance === false) {
     return (
       <div className="flex flex-col gap-y-6">
         <AccessRestricted message="You don't have permission to view payouts for this organization. Ask an admin if you need access." />

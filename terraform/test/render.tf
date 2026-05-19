@@ -242,6 +242,16 @@ module "test" {
       NZ = "148410224"
       # Norway
       NO = "VOEC3039846"
+      # Turkey
+      TR = "7300889760"
+      # Switzerland
+      CH = "CHE-401.265.595"
+      # South Korea
+      KR = "1118005229"
+      # Kenya
+      KE = "P052518030C"
+      # Canada (GST/HST)
+      CA = "720474766"
     })
     tax_processors       = "[\"numeral\",\"stripe\"]"
     tax_record_processor = "numeral"

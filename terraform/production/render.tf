@@ -289,21 +289,21 @@ module "production" {
       # Vietnam
       VN = "9000020281"
       # Chile
-      CL = "59259480-3"
+      CL = "59.259.480-3"
       # New Zealand
-      NZ = "148410224"
+      NZ = "148-410-224"
       # Norway
       NO = "VOEC3039846"
       # Turkey
       TR = "7300889760"
       # Switzerland
-      CH = "CHE-401.265.595"
+      CH = "CHE-401.265.595 MWST"
       # South Korea
-      KR = "1118005229"
+      KR = "111-80-05229"
       # Kenya
       KE = "P052518030C"
       # Canada (GST/HST)
-      CA = "720474766"
+      CA = "720474766 RT9999"
     })
     tax_processors                = "[\"stripe\"]"
     tax_record_processor          = "stripe"

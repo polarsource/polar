@@ -38,12 +38,30 @@ interface EmbedPaymentMethodMessageSuccess {
 }
 
 /**
+ * Failure modes the embed surfaces via the `error` event.
+ *
+ * - `invalid_request`: required URL params missing or malformed.
+ * - `unauthorized`: session token missing, expired, or rejected.
+ * - `processing_failed`: card declined, 3DS challenge failed, or
+ *   the customer-portal API rejected the new payment method.
+ * - `unknown`: catch-all for unexpected server errors.
+ */
+export type EmbedPaymentMethodErrorCode =
+  | 'invalid_request'
+  | 'unauthorized'
+  | 'processing_failed'
+  | 'unknown'
+
+/**
  * Message sent to the parent window when the iframe can't render the
- * form (e.g. token missing, expired, or rejected by the server).
+ * form or the payment-method flow fails.
+ *
+ * After a failure during the flow, the SDK re-enables closing the modal
+ * so the customer can dismiss it and try again.
  */
 interface EmbedPaymentMethodMessageError {
   event: 'error'
-  code: 'invalid_request' | 'unauthorized' | 'unknown'
+  code: EmbedPaymentMethodErrorCode
 }
 
 /**
@@ -389,6 +407,10 @@ class EmbedPaymentMethod {
     this.close()
   }
 
+  private handleError(): void {
+    this.closable = true
+  }
+
   /**
    * Validate origin, parse the message, dispatch a cancelable
    * `CustomEvent` to consumer listeners, then run the default action
@@ -434,6 +456,9 @@ class EmbedPaymentMethod {
         break
       case 'success':
         this.handleSuccess()
+        break
+      case 'error':
+        this.handleError()
         break
     }
   }

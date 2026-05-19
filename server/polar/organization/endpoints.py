@@ -26,6 +26,7 @@ from polar.exceptions import (
     ResourceNotFound,
 )
 from polar.integrations.polar.schemas import (
+    OrganizationBillingCustomerSession,
     OrganizationBillingDetails,
     OrganizationBillingDetailsUpdate,
     OrganizationCheckoutRequest,
@@ -933,6 +934,27 @@ async def list_payment_methods(
         items=items,
         pagination=Pagination(total_count=len(items), max_page=1 if items else 0),
     )
+
+
+@router.post(
+    "/{id}/billing-customer-session",
+    response_model=OrganizationBillingCustomerSession,
+    status_code=201,
+    summary="Create Organization Billing Customer Session",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def create_billing_customer_session(
+    authz: AuthorizeOrgManageUser,
+) -> OrganizationBillingCustomerSession:
+    """Create a customer session token bound to this org's Polar billing
+    customer. The returned token authenticates against
+    `/v1/customer-portal/customers/me/*` for the duration of its TTL."""
+    token = await polar_self_service.create_customer_session(
+        authz.organization.id,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    return OrganizationBillingCustomerSession(token=token)
 
 
 @router.post(

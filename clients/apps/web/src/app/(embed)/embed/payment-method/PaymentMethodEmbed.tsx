@@ -74,6 +74,13 @@ export const PaymentMethodEmbed = ({
     [embedOrigin],
   )
 
+  const handleProcessingError = useCallback(() => {
+    PolarEmbedPaymentMethod.postMessage(
+      { event: 'error', code: 'processing_failed' },
+      embedOrigin,
+    )
+  }, [embedOrigin])
+
   useEffect(() => {
     if (mode !== 'modal') return
 
@@ -96,6 +103,7 @@ export const PaymentMethodEmbed = ({
       customerBillingDetails={customerBillingDetails}
       onProcessingStart={handleProcessingStart}
       onPaymentMethodAdded={handleSuccess}
+      onProcessingError={handleProcessingError}
       setupIntent={setupIntent}
     />
   )

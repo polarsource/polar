@@ -328,6 +328,22 @@ class PolarSelfService:
             external_member_id=external_member_id,
         )
 
+    async def create_customer_session(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        external_member_id: str | None = None,
+    ) -> str:
+        """Create a customer session token for the org's Polar billing customer.
+
+        Returned token authenticates against `/v1/customer-portal/customers/me/*`
+        for the duration of its TTL."""
+        await self._ensure_polar_customer(organization_id)
+        return await get_client().portal_create_customer_session(
+            external_customer_id=str(organization_id),
+            external_member_id=external_member_id,
+        )
+
     async def list_payment_methods(
         self,
         organization_id: uuid.UUID,

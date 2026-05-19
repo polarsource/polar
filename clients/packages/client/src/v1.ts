@@ -1142,6 +1142,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/billing-customer-session': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create Organization Billing Customer Session
+     * @description Create a customer session token bound to this org's Polar billing
+     *     customer. The returned token authenticates against
+     *     `/v1/customer-portal/customers/me/*` for the duration of its TTL.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:create_billing_customer_session']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/payment-methods/confirm': {
     parameters: {
       query?: never
@@ -23031,6 +23055,14 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
+    /** OrganizationBillingCustomerSession */
+    OrganizationBillingCustomerSession: {
+      /**
+       * Token
+       * @description Short-lived customer session token bound to this organization's mirrored Polar billing customer. Authenticates against `/v1/customer-portal/customers/me/*` for the duration of its TTL.
+       */
+      token: string
+    }
     /** OrganizationBillingDetails */
     OrganizationBillingDetails: {
       /**
@@ -33865,6 +33897,46 @@ export interface operations {
           'application/json':
             | components['schemas']['OrganizationPaymentMethodAddSucceeded']
             | components['schemas']['OrganizationPaymentMethodAddRequiresAction']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:create_billing_customer_session': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationBillingCustomerSession']
         }
       }
       /** @description Organization not found. */

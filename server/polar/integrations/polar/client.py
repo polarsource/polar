@@ -698,6 +698,32 @@ class PolarSelfClient:
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "polar.portal.confirm_payment_method")
 
+    async def portal_create_customer_session(
+        self,
+        *,
+        external_customer_id: str,
+        external_member_id: str | None = None,
+    ) -> str:
+        """Create a short-lived customer session token for the mirrored
+        Polar billing customer."""
+        with logfire.span(
+            "polar.portal.create_customer_session",
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+        ) as span:
+            try:
+                session = await self._sdk.customer_sessions.create_async(
+                    request=CustomerSessionCustomerExternalIDCreate(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
+                )
+                return session.token
+            except PolarError as e:
+                _raise_error(span, e, "polar.portal.create_customer_session")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "polar.portal.create_customer_session")
+
     async def portal_update_customer(
         self,
         *,

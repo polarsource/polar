@@ -10,14 +10,6 @@ export type OrganizationPaymentMethod =
   | OrganizationPaymentMethodCard
   | schemas['OrganizationPaymentMethodGeneric']
 
-export type OrganizationPaymentMethodCreate =
-  schemas['OrganizationPaymentMethodCreate']
-export type OrganizationPaymentMethodConfirm =
-  schemas['OrganizationPaymentMethodConfirm']
-export type OrganizationPaymentMethodAddResult =
-  | schemas['OrganizationPaymentMethodAddSucceeded']
-  | schemas['OrganizationPaymentMethodAddRequiresAction']
-
 export const useOrganizationOrders = (organizationId: string) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'orders'],
@@ -96,6 +88,19 @@ export const useChangeSubscriptionPlan = (organizationId: string) =>
     },
   })
 
+export const useOrganizationBillingCustomerSession = (organizationId: string) =>
+  useQuery({
+    queryKey: ['organization-billing', organizationId, 'customer-session'],
+    queryFn: () =>
+      unwrap(
+        api.POST('/v1/organizations/{id}/billing-customer-session', {
+          params: { path: { id: organizationId } },
+        }),
+      ),
+    staleTime: 30 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+  })
+
 export const useOrganizationPaymentMethods = (organizationId: string) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'payment-methods'],
@@ -107,36 +112,6 @@ export const useOrganizationPaymentMethods = (organizationId: string) =>
       ),
     retry: defaultRetry,
     enabled: !!organizationId,
-  })
-
-export const useAddOrganizationPaymentMethod = (organizationId: string) =>
-  useMutation({
-    mutationFn: (body: OrganizationPaymentMethodCreate) =>
-      api.POST('/v1/organizations/{id}/payment-methods', {
-        params: { path: { id: organizationId } },
-        body,
-      }),
-    onSuccess: (result) => {
-      if (result.error) return
-      getQueryClient().invalidateQueries({
-        queryKey: ['organization-billing', organizationId, 'payment-methods'],
-      })
-    },
-  })
-
-export const useConfirmOrganizationPaymentMethod = (organizationId: string) =>
-  useMutation({
-    mutationFn: (body: OrganizationPaymentMethodConfirm) =>
-      api.POST('/v1/organizations/{id}/payment-methods/confirm', {
-        params: { path: { id: organizationId } },
-        body,
-      }),
-    onSuccess: (result) => {
-      if (result.error) return
-      getQueryClient().invalidateQueries({
-        queryKey: ['organization-billing', organizationId, 'payment-methods'],
-      })
-    },
   })
 
 export const useDeleteOrganizationPaymentMethod = (organizationId: string) =>

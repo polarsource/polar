@@ -507,7 +507,6 @@ class PolarSelfService:
 
         if order.billing_reason not in (
             OrderBillingReason.SUBSCRIPTION_CREATE,
-            OrderBillingReason.SUBSCRIPTION_UPDATE,
             OrderBillingReason.SUBSCRIPTION_CYCLE,
         ):
             return
@@ -520,10 +519,7 @@ class PolarSelfService:
 
         product_name = order.product.name if order.product is not None else "Polar"
 
-        if order.billing_reason in (
-            OrderBillingReason.SUBSCRIPTION_CREATE,
-            OrderBillingReason.SUBSCRIPTION_UPDATE,
-        ):
+        if order.billing_reason == OrderBillingReason.SUBSCRIPTION_CREATE:
             template_name = "polar_self_subscription_confirmation"
             subject = f"Welcome to {product_name}"
         else:

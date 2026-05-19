@@ -2567,14 +2567,11 @@ class CheckoutService:
                 generate_customer_session = False
 
         stripe_customer_id = customer.stripe_customer_id
+        name = checkout.customer_billing_name or checkout.customer_name
         if stripe_customer_id is None:
             create_params: CustomerCreateParams = {}
             if customer.email is not None:
                 create_params["email"] = customer.email
-            # Preserve any existing customer.name (e.g. a company name) so it
-            # isn't overridden by the cardholder name on a wallet/payment method
-            # when an employee or third party checks out on the customer's behalf.
-            name = customer.name or checkout.customer_name
             if name is not None:
                 create_params["name"] = name
             if checkout.customer_billing_address is not None:
@@ -2589,8 +2586,8 @@ class CheckoutService:
             update_params: CustomerModifyParams = {}
             if customer.email is not None:
                 update_params["email"] = customer.email
-            if customer.name is None and checkout.customer_name is not None:
-                update_params["name"] = checkout.customer_name
+            if name is not None:
+                update_params["name"] = name
             if checkout.customer_billing_address is not None:
                 update_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
             await stripe_service.update_customer(
@@ -2603,8 +2600,11 @@ class CheckoutService:
                 **update_params,
             )
 
-        if customer.name is None and checkout.customer_name is not None:
-            customer.name = checkout.customer_name
+        # For existing customers (linked via customer_id or matched by email),
+        # preserve customer.name — checkout.customer_name may be the cardholder
+        # name from a wallet/payment method, not the customer's actual name.
+        if created and name is not None:
+            customer.name = name
         if checkout.customer_billing_name is not None:
             customer.billing_name = checkout.customer_billing_name
         if checkout.customer_billing_address is not None:

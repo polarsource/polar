@@ -2567,13 +2567,15 @@ class CheckoutService:
                 generate_customer_session = False
 
         stripe_customer_id = customer.stripe_customer_id
-        name = checkout.customer_billing_name or checkout.customer_name
+        stripe_customer_name = (
+            checkout.customer_billing_name or checkout.customer_name
+        )
         if stripe_customer_id is None:
             create_params: CustomerCreateParams = {}
             if customer.email is not None:
                 create_params["email"] = customer.email
-            if name is not None:
-                create_params["name"] = name
+            if stripe_customer_name is not None:
+                create_params["name"] = stripe_customer_name
             if checkout.customer_billing_address is not None:
                 create_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
             if checkout.customer_tax_id is not None:
@@ -2586,8 +2588,8 @@ class CheckoutService:
             update_params: CustomerModifyParams = {}
             if customer.email is not None:
                 update_params["email"] = customer.email
-            if name is not None:
-                update_params["name"] = name
+            if stripe_customer_name is not None:
+                update_params["name"] = stripe_customer_name
             if checkout.customer_billing_address is not None:
                 update_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
             await stripe_service.update_customer(
@@ -2600,11 +2602,13 @@ class CheckoutService:
                 **update_params,
             )
 
-        # For existing customers (linked via customer_id or matched by email),
-        # preserve customer.name — checkout.customer_name may be the cardholder
-        # name from a wallet/payment method, not the customer's actual name.
-        if created and name is not None:
-            customer.name = name
+        # Only populate customer.name when creating a new customer. For existing
+        # customers (linked via customer_id or matched by email),
+        # checkout.customer_name may be the cardholder name on a wallet/payment
+        # method — e.g. a CFO or office manager paying on behalf of a company
+        # customer — and must not overwrite the company's name.
+        if created and stripe_customer_name is not None:
+            customer.name = stripe_customer_name
         if checkout.customer_billing_name is not None:
             customer.billing_name = checkout.customer_billing_name
         if checkout.customer_billing_address is not None:

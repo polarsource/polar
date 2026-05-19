@@ -624,7 +624,7 @@
       {
         "tab": "Support",
         "icon": "square-question",
-        "pages": ["support"]
+        "pages": ["support", "security"]
       }
     ]
   },

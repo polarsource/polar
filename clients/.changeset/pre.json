@@ -17,6 +17,7 @@
     "@polar-sh/box-codemod": "0.0.0"
   },
   "changesets": [
-    "fresh-planes-decide"
+    "fresh-planes-decide",
+    "hot-rooms-cheat"
   ]
 }

@@ -4,6 +4,8 @@ from fastapi import Depends, Path, Query, Request
 from pydantic import UUID4
 from sse_starlette.sse import EventSourceResponse
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
@@ -189,6 +191,10 @@ async def update(
 
     if checkout is None:
         raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session, auth_subject, checkout, OrganizationPermission.sales_manage
+    )
 
     return await checkout_service.update(
         session, checkout, checkout_update, ip_geolocation_client

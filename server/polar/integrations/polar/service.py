@@ -504,12 +504,6 @@ class PolarSelfService:
         ):
             return
 
-        # Every polar-self customer always has a subscription (free auto-created on
-        # org creation / after revocation). Free-priced orders shouldn't trigger
-        # the welcome or renewal email.
-        if order.net_amount == 0:
-            return
-
         client = get_client()
         contacts = await client.list_billing_contacts(customer_id=order.customer.id)
         recipients = sorted({contact.email for contact in contacts if contact.email})

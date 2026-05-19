@@ -399,7 +399,6 @@ class PolarSelfSubscriptionConfirmationEmail(BaseModel):
 
 class PolarSelfSubscriptionCycledProps(EmailProps):
     product_name: str
-    invoice_number: str
 
 
 class PolarSelfSubscriptionCycledEmail(BaseModel):

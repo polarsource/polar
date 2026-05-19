@@ -2058,8 +2058,6 @@ export interface components {
       email: string
       /** Product Name */
       product_name: string
-      /** Invoice Number */
-      invoice_number: string
     }
     /** ProductEmail */
     ProductEmail: {

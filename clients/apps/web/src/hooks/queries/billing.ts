@@ -184,6 +184,35 @@ export const useDeleteOrganizationPaymentMethod = (organizationId: string) =>
     },
   })
 
+export const useSetDefaultOrganizationPaymentMethod = (
+  organizationId: string,
+) =>
+  useMutation({
+    mutationFn: async (paymentMethodId: string) => {
+      const result = await api.POST(
+        '/v1/organizations/{id}/payment-methods/{payment_method_id}/default',
+        {
+          params: {
+            path: { id: organizationId, payment_method_id: paymentMethodId },
+          },
+        },
+      )
+      if (result.error) {
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : 'Failed to update default payment method'
+        throw new Error(errorMessage)
+      }
+      return result
+    },
+    onSuccess: () => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['organization-billing', organizationId, 'payment-methods'],
+      })
+    },
+  })
+
 export type OrganizationBillingDetails = schemas['OrganizationBillingDetails']
 export type OrganizationBillingDetailsUpdate =
   schemas['OrganizationBillingDetailsUpdate']

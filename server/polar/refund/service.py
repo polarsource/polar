@@ -194,7 +194,7 @@ class RefundService:
             )
 
         await assert_resource_permission(
-            session, auth_subject, order, OrganizationPermission.finance_manage
+            session, auth_subject, order, OrganizationPermission.sales_manage
         )
 
         try:

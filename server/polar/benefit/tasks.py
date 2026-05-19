@@ -82,11 +82,19 @@ async def enqueue_benefits_grants(
             customer_id, include_deleted=True
         )
         if customer is None:
-            raise CustomerDoesNotExist(customer_id)
+            log.warning(
+                "Customer does not exist, aborting benefit grants enqueue.",
+                customer_id=str(customer_id),
+            )
+            return
 
         # Allow deleted customers to be processed for revocation tasks
         if customer.is_deleted and task == "grant":
-            raise CustomerDoesNotExist(customer_id)
+            log.warning(
+                "Customer is deleted, aborting benefit grants enqueue.",
+                customer_id=str(customer_id),
+            )
+            return
 
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(product_id)
@@ -139,7 +147,11 @@ async def benefit_grant(
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(customer_id)
         if customer is None:
-            raise CustomerDoesNotExist(customer_id)
+            log.warning(
+                "Customer does not exist, aborting benefit grant.",
+                customer_id=str(customer_id),
+            )
+            return
 
         benefit_repository = BenefitRepository.from_session(session)
         benefit = await benefit_repository.get_by_id(
@@ -201,7 +213,11 @@ async def benefit_revoke(
             include_deleted=True,
         )
         if customer is None:
-            raise CustomerDoesNotExist(customer_id)
+            log.warning(
+                "Customer does not exist, aborting benefit revoke.",
+                customer_id=str(customer_id),
+            )
+            return
 
         benefit_repository = BenefitRepository.from_session(session)
         benefit = await benefit_repository.get_by_id(
@@ -336,7 +352,11 @@ async def benefit_revoke_customer(customer_id: uuid.UUID) -> None:
             customer_id, include_deleted=True
         )
         if customer is None:
-            raise CustomerDoesNotExist(customer_id)
+            log.warning(
+                "Customer does not exist, aborting benefit revoke customer.",
+                customer_id=str(customer_id),
+            )
+            return
 
         await benefit_grant_service.enqueue_customer_grant_deletions(session, customer)
 

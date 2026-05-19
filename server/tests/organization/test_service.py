@@ -3528,6 +3528,14 @@ class TestStatusTransitions:
         organization.set_status(OrganizationStatus.OFFBOARDING)
         assert organization.status == OrganizationStatus.OFFBOARDING
 
+    async def test_offboarding_can_go_to_denied(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.set_status(OrganizationStatus.DENIED)
+        assert organization.status == OrganizationStatus.DENIED
+
     @pytest.mark.parametrize(
         "current",
         [

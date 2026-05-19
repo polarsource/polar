@@ -4,6 +4,8 @@ from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
@@ -206,6 +208,10 @@ async def update(
     if order is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session, auth_subject, order, OrganizationPermission.sales_manage
+    )
+
     return await order_service.update(session, order, order_update)
 
 
@@ -230,6 +236,10 @@ async def generate_invoice(
 
     if order is None:
         raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session, auth_subject, order, OrganizationPermission.sales_manage
+    )
 
     await order_service.trigger_invoice_generation(session, order)
 

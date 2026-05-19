@@ -5,6 +5,8 @@ import structlog
 from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
@@ -308,6 +310,13 @@ async def update(
     if subscription is None:
         raise ResourceNotFound()
 
+    await assert_resource_permission(
+        session,
+        auth_subject,
+        subscription.product,
+        OrganizationPermission.sales_manage,
+    )
+
     log.info(
         "subscription.update",
         id=id,
@@ -347,6 +356,13 @@ async def revoke(
     subscription = await subscription_service.get(session, auth_subject, id)
     if subscription is None:
         raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session,
+        auth_subject,
+        subscription.product,
+        OrganizationPermission.sales_manage,
+    )
 
     log.info(
         "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True

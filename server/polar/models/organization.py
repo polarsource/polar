@@ -403,6 +403,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
     OrganizationStatus.OFFBOARDING: frozenset(
         {
+            OrganizationStatus.DENIED,
             OrganizationStatus.BLOCKED,
         }
     ),

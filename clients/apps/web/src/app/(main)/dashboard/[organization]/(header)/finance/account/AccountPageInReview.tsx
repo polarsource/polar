@@ -1,5 +1,6 @@
 'use client'
 
+import { InfoCard } from '@/components/Finance/Account/InfoCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import AIValidationResult from '@/components/Organization/AIValidationResult'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -13,6 +14,7 @@ interface Props {
 
 export const AccountPageInReview = ({ organization }: Props) => {
   const posthog = usePostHog()
+  const isDenied = organization.status === 'denied'
 
   useEffect(() => {
     posthog.capture('dashboard:organizations:account_review:view', {
@@ -30,6 +32,26 @@ export const AccountPageInReview = ({ organization }: Props) => {
           />
           <AIValidationResult organization={organization} />
         </Section>
+
+        {!isDenied && (
+          <>
+            <Section>
+              <SectionDescription
+                title="Payout Account"
+                description="Set up your payout account to receive payouts."
+              />
+              <InfoCard>Please go through account review first</InfoCard>
+            </Section>
+
+            <Section>
+              <SectionDescription
+                title="Identity Verification"
+                description="Verify your identity to comply with financial regulations."
+              />
+              <InfoCard>Please go through account review first</InfoCard>
+            </Section>
+          </>
+        )}
       </div>
     </DashboardBody>
   )

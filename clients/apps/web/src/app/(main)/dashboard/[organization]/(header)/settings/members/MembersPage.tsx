@@ -261,9 +261,7 @@ export default function ClientPage({
       }
     >
       <p className="dark:text-polar-500 text-gray-500">
-        Manage users who have access to this organization. Roles determine what
-        each member can do — admins can manage finance and members, while
-        members can manage day-to-day resources.
+        Manage users who have access to this organization.
       </p>
 
       {members && (

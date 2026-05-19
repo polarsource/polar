@@ -2566,15 +2566,24 @@ class CheckoutService:
                 # Could be a malicious user trying to take over an existing customer's account by using their email
                 generate_customer_session = False
 
+        # Preserve any existing customer.name (e.g. a person's name) so it isn't
+        # overridden by the cardholder name on a wallet/payment method when an
+        # employee or third party checks out on the customer's behalf.
+        # customer.billing_name (the company name) is intentionally updatable.
+        stripe_name = (
+            checkout.customer_billing_name
+            or customer.billing_name
+            or customer.name
+            or checkout.customer_name
+        )
+
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
             create_params: CustomerCreateParams = {}
             if customer.email is not None:
                 create_params["email"] = customer.email
-            if checkout.customer_billing_name is not None:
-                create_params["name"] = checkout.customer_billing_name
-            elif checkout.customer_name is not None:
-                create_params["name"] = checkout.customer_name
+            if stripe_name is not None:
+                create_params["name"] = stripe_name
             if checkout.customer_billing_address is not None:
                 create_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
             if checkout.customer_tax_id is not None:
@@ -2589,7 +2598,7 @@ class CheckoutService:
                 update_params["email"] = customer.email
             if checkout.customer_billing_name is not None:
                 update_params["name"] = checkout.customer_billing_name
-            elif checkout.customer_name is not None:
+            elif customer.name is None and checkout.customer_name is not None:
                 update_params["name"] = checkout.customer_name
             if checkout.customer_billing_address is not None:
                 update_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
@@ -2603,7 +2612,7 @@ class CheckoutService:
                 **update_params,
             )
 
-        if checkout.customer_name is not None:
+        if customer.name is None and checkout.customer_name is not None:
             customer.name = checkout.customer_name
         if checkout.customer_billing_name is not None:
             customer.billing_name = checkout.customer_billing_name

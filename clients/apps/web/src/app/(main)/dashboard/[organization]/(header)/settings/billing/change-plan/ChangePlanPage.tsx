@@ -6,6 +6,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
 import {
+  useCancelSubscription,
   useChangeSubscriptionPlan,
   useOrganizationPlans,
   useOrganizationSubscription,
@@ -13,113 +14,18 @@ import {
 } from '@/hooks/queries/billing'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { PlanCard } from './PlanCard'
 
-const formatPrice = formatCurrency('standard', 'en-US')
-
-const formatFee = (fee: schemas['OrganizationPlanFee']) =>
-  `${(fee.percent / 100).toFixed(2)}% + $${(fee.fixed / 100).toFixed(2)}`
-
-const PlanCard = ({
-  plan,
-  isCurrent,
-  isSelected,
-  isLocked,
-  onSelect,
-}: {
-  plan: schemas['OrganizationPlan']
-  isCurrent: boolean
-  isSelected: boolean
-  isLocked: boolean
-  onSelect: () => void
-}) => {
-  const amount = plan.price?.amount ?? 0
-  const currency = plan.price?.currency ?? 'usd'
-  const disabled = isCurrent || isLocked
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      disabled={disabled}
-      className={twMerge(
-        'dark:border-polar-700 flex h-full flex-col gap-y-8 rounded-2xl border bg-white p-8 text-left transition-colors dark:bg-transparent',
-        disabled
-          ? 'dark:bg-polar-800 cursor-not-allowed border-gray-200 bg-gray-50 opacity-70'
-          : isSelected
-            ? 'border-blue-500 bg-blue-50/40 dark:border-blue-500 dark:bg-blue-950/20'
-            : 'cursor-pointer hover:border-gray-300 dark:hover:border-polar-600',
-      )}
-    >
-      <Box display="flex" flexDirection="column" rowGap="s">
-        <Box display="flex" alignItems="center" columnGap="s">
-          <Text variant="heading-xs" as="h3">
-            {plan.name}
-          </Text>
-          {isCurrent && <Pill color="gray">Current</Pill>}
-          {plan.highlight && !isCurrent && <Pill color="blue">Popular</Pill>}
-        </Box>
-        {plan.description && <Text color="muted">{plan.description}</Text>}
-      </Box>
-
-      <Box display="flex" flexDirection="column" rowGap="s">
-        <Box display="flex" alignItems="baseline" columnGap="m">
-          <Text variant="heading-s" as="span">
-            {amount === 0 ? 'Free' : formatPrice(amount, currency)}
-          </Text>
-          {amount > 0 && plan.recurring_interval && (
-            <Text color="muted" as="span">
-              / {plan.recurring_interval}
-            </Text>
-          )}
-        </Box>
-        {plan.transaction_fee && (
-          <Text color="muted">
-            {formatFee(plan.transaction_fee)} per transaction
-          </Text>
-        )}
-      </Box>
-
-      {(plan.features?.length ?? 0) > 0 && (
-        <Box
-          as="ul"
-          display="flex"
-          flexDirection="column"
-          rowGap="s"
-          borderTopWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-          paddingTop="2xl"
-        >
-          {plan.features?.map((feature) => (
-            <Box
-              as="li"
-              key={feature}
-              display="flex"
-              alignItems="start"
-              columnGap="s"
-            >
-              <CheckOutlined
-                className="mt-0.5 text-blue-500"
-                fontSize="inherit"
-              />
-              <Text as="span">{feature}</Text>
-            </Box>
-          ))}
-        </Box>
-      )}
-    </button>
-  )
-}
+const FREE_PLAN_KEY = '__free__'
+const planKey = (plan: schemas['OrganizationPlan']) =>
+  plan.product_id ?? FREE_PLAN_KEY
 
 export default function ChangePlanPage({
   organization,
@@ -130,6 +36,7 @@ export default function ChangePlanPage({
   const subscriptionQuery = useOrganizationSubscription(organization.id)
   const plansQuery = useOrganizationPlans(organization.id)
   const changePlan = useChangeSubscriptionPlan(organization.id)
+  const cancelSubscription = useCancelSubscription(organization.id)
   const startCheckout = useStartSubscriptionCheckout(organization.id)
 
   const blockChanges = organization.status !== 'active'
@@ -149,16 +56,21 @@ export default function ChangePlanPage({
     if (!subscription) return data
     if (isCurrentPlanCustom) return [subscription.plan]
     const currentInList = data.some(
-      (p) => p.product_id === subscription.product_id,
+      (p) => planKey(p) === planKey(subscription.plan),
     )
     return currentInList ? data : [...data, subscription.plan]
   }, [plansQuery.data, subscription, isCurrentPlanCustom])
   const isCurrentPlanFree = subscription?.amount === 0
 
-  const selectedPlan = useMemo(
-    () => plans.find((p) => p.product_id === selectedPlanId) ?? null,
-    [plans, selectedPlanId],
-  )
+  const selectedPlan = useMemo(() => {
+    if (selectedPlanId === null) return null
+    return (
+      plans.find((p) => (p.product_id ?? FREE_PLAN_KEY) === selectedPlanId) ??
+      null
+    )
+  }, [plans, selectedPlanId])
+
+  const isSelectedPlanFree = (selectedPlan?.price?.amount ?? 0) === 0
 
   const changeKind: 'upgrade' | 'downgrade' | null = useMemo(() => {
     if (!selectedPlan || !subscription) return null
@@ -171,23 +83,30 @@ export default function ChangePlanPage({
   const requiresCheckout =
     isCurrentPlanFree && (selectedPlan?.price?.amount ?? 0) > 0
 
-  const isSubmitting = changePlan.isPending || startCheckout.isPending
+  const isSubmitting =
+    changePlan.isPending ||
+    cancelSubscription.isPending ||
+    startCheckout.isPending
 
   const confirmDescription = useMemo(() => {
     if (!selectedPlan) return ''
     if (requiresCheckout) {
       return `You'll be redirected to checkout to add a payment method and complete the upgrade to ${selectedPlan.name}.`
     }
+    if (isSelectedPlanFree) {
+      return `Your subscription will be canceled at the end of the current period. You'll then be on the free plan with standard transaction fees.`
+    }
     if (changeKind === 'upgrade') {
       return `You'll be charged a prorated amount for the rest of the current period and switched to ${selectedPlan.name}.`
     }
     return `Your plan will switch to ${selectedPlan.name} at the end of the current period.`
-  }, [selectedPlan, changeKind, requiresCheckout])
+  }, [selectedPlan, changeKind, requiresCheckout, isSelectedPlanFree])
 
   const performPlanChange = async () => {
     if (!selectedPlan) return
 
     if (requiresCheckout) {
+      if (!selectedPlan.product_id) return
       const result = await startCheckout.mutateAsync({
         product_id: selectedPlan.product_id,
         success_url: `${window.location.origin}${billingHref}`,
@@ -206,6 +125,25 @@ export default function ChangePlanPage({
       return
     }
 
+    if (isSelectedPlanFree) {
+      const result = await cancelSubscription.mutateAsync()
+      if (result.error) {
+        toast({
+          title: 'Could not cancel subscription',
+          description: 'Please try again.',
+        })
+        return
+      }
+      toast({
+        title: 'Subscription cancellation scheduled',
+        description:
+          "Your subscription will end at the close of the current period. You'll be on the free plan after that.",
+      })
+      router.push(billingHref)
+      return
+    }
+
+    if (!selectedPlan.product_id) return
     const result = await changePlan.mutateAsync({
       product_id: selectedPlan.product_id,
     })
@@ -226,11 +164,13 @@ export default function ChangePlanPage({
 
   const ctaLabel = requiresCheckout
     ? 'Continue to checkout'
-    : changeKind === 'upgrade'
-      ? 'Upgrade plan'
-      : changeKind === 'downgrade'
-        ? 'Downgrade plan'
-        : 'Confirm'
+    : isSelectedPlanFree
+      ? 'Cancel subscription'
+      : changeKind === 'upgrade'
+        ? 'Upgrade plan'
+        : changeKind === 'downgrade'
+          ? 'Downgrade plan'
+          : 'Confirm'
 
   return (
     <DashboardBody title={null} wide>
@@ -267,16 +207,21 @@ export default function ChangePlanPage({
             }}
             gap="l"
           >
-            {plans.map((plan) => (
-              <PlanCard
-                key={plan.product_id}
-                plan={plan}
-                isCurrent={plan.product_id === subscription?.product_id}
-                isSelected={plan.product_id === selectedPlanId}
-                isLocked={blockChanges}
-                onSelect={() => setSelectedPlanId(plan.product_id)}
-              />
-            ))}
+            {plans.map((plan) => {
+              const key = planKey(plan)
+              const currentKey = subscription
+                ? planKey(subscription.plan)
+                : null
+              return (
+                <PlanCard
+                  key={key}
+                  plan={plan}
+                  isCurrent={key === currentKey}
+                  isSelected={key === selectedPlanId}
+                  onSelect={() => setSelectedPlanId(key)}
+                />
+              )
+            })}
           </Box>
         )}
 

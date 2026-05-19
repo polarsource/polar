@@ -10,9 +10,9 @@ from polar_sdk.models import (
     Order,
     Product,
     Subscription,
+    SubscriptionProrationBehavior,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
-    WebhookSubscriptionRevokedPayload,
 )
 from pytest_mock import MockerFixture
 
@@ -706,7 +706,26 @@ def _make_product(
     id: str = "prod_1",
     name: str = "Pro",
     metadata: dict[str, Any] | None = None,
+    price_amount: int | None = None,
 ) -> Product:
+    prices: list[dict[str, Any]] = []
+    if price_amount is not None:
+        prices.append(
+            {
+                "id": f"{id}_price",
+                "created_at": "2026-01-01T00:00:00Z",
+                "modified_at": None,
+                "amount_type": "fixed",
+                "source": "catalog",
+                "is_archived": False,
+                "product_id": id,
+                "type": "recurring",
+                "recurring_interval": "month",
+                "price_currency": "usd",
+                "price_amount": price_amount,
+                "tax_behavior": "inclusive",
+            }
+        )
     return Product.model_validate(
         {
             "id": id,
@@ -723,7 +742,7 @@ def _make_product(
             "is_archived": False,
             "organization_id": str(SELF_ORG_ID),
             "metadata": metadata or {},
-            "prices": [],
+            "prices": prices,
             "benefits": [],
             "medias": [],
             "attached_custom_fields": [],
@@ -732,14 +751,18 @@ def _make_product(
 
 
 def _make_subscription(
-    *, id: str = "sub_1", product_id: str = "prod_1"
+    *,
+    id: str = "sub_1",
+    product_id: str = "prod_1",
+    amount: int = 0,
+    cancel_at_period_end: bool = False,
 ) -> Subscription:
     return Subscription.model_validate(
         {
             "created_at": "2026-01-01T00:00:00Z",
             "modified_at": None,
             "id": id,
-            "amount": 0,
+            "amount": amount,
             "currency": "usd",
             "recurring_interval": "month",
             "recurring_interval_count": 1,
@@ -748,7 +771,7 @@ def _make_subscription(
             "current_period_end": "2026-02-01T00:00:00Z",
             "trial_start": None,
             "trial_end": None,
-            "cancel_at_period_end": False,
+            "cancel_at_period_end": cancel_at_period_end,
             "canceled_at": None,
             "started_at": "2026-01-01T00:00:00Z",
             "ends_at": None,
@@ -779,83 +802,46 @@ def client_mock(mocker: MockerFixture) -> MagicMock:
     client.update_subscription_product = AsyncMock(
         return_value=_make_subscription(id="sub_2", product_id="prod_2")
     )
+    client.cancel_subscription = AsyncMock(
+        return_value=_make_subscription(id="sub_existing")
+    )
+    client.uncancel_subscription = AsyncMock(
+        return_value=_make_subscription(id="sub_existing")
+    )
     mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
     return client
 
 
-def _make_subscription_revoked_payload(
-    *,
-    external_id: object = str(ORG_A),
-    subscription_id: str = "00000000-0000-0000-0000-000000000010",
-) -> WebhookSubscriptionRevokedPayload:
-    return WebhookSubscriptionRevokedPayload.model_validate(
-        {
-            "type": "subscription.revoked",
-            "timestamp": "2026-01-01T00:00:00Z",
-            "data": {
-                **_make_subscription(id=subscription_id).model_dump(mode="json"),
-                "customer": _customer_dict(external_id),
-            },
-        }
-    )
-
-
 @pytest.mark.asyncio
-class TestHandleSubscriptionRevokedEvent:
-    async def test_resubscribes_to_free_when_no_active_subscription(
-        self,
-        configured: None,
-        client_mock: MagicMock,
-        mocker: MockerFixture,
-    ) -> None:
+class TestCancelSubscription:
+    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
         settings = mocker.patch("polar.integrations.polar.service.settings")
-        settings.POLAR_SELF_ENABLED = True
-        settings.POLAR_FREE_PRODUCT_ID = "prod_free"
+        settings.POLAR_SELF_ENABLED = False
+
+        with pytest.raises(PolarSelfNotConfigured):
+            await polar_self.cancel_subscription(organization_id=ORG_A)
+
+    async def test_no_active_subscription_raises(
+        self, configured: None, client_mock: MagicMock
+    ) -> None:
         client_mock.get_active_subscription.return_value = None
-        client_mock.create_free_subscription = AsyncMock()
 
-        await polar_self.handle_subscription_revoked_event(
-            _make_subscription_revoked_payload()
-        )
+        with pytest.raises(PolarSelfNoActiveSubscription):
+            await polar_self.cancel_subscription(organization_id=ORG_A)
 
-        client_mock.get_active_subscription.assert_awaited_once_with(
-            external_customer_id=str(ORG_A)
-        )
-        client_mock.create_free_subscription.assert_awaited_once_with(
-            external_customer_id=str(ORG_A),
-            product_id="prod_free",
-        )
+        client_mock.cancel_subscription.assert_not_awaited()
 
-    async def test_noop_when_active_subscription_exists(
-        self,
-        configured: None,
-        client_mock: MagicMock,
+    async def test_cancels_active_subscription(
+        self, configured: None, client_mock: MagicMock
     ) -> None:
-        client_mock.get_active_subscription.return_value = _make_subscription(
-            id="sub_existing"
+        active = _make_subscription(id="sub_existing")
+        client_mock.get_active_subscription.return_value = active
+
+        await polar_self.cancel_subscription(organization_id=ORG_A)
+
+        client_mock.cancel_subscription.assert_awaited_once_with(
+            subscription_id="sub_existing",
         )
-        client_mock.create_free_subscription = AsyncMock()
-
-        await polar_self.handle_subscription_revoked_event(
-            _make_subscription_revoked_payload()
-        )
-
-        client_mock.create_free_subscription.assert_not_awaited()
-
-    async def test_missing_external_id_raises(
-        self,
-        configured: None,
-        client_mock: MagicMock,
-    ) -> None:
-        client_mock.create_free_subscription = AsyncMock()
-
-        with pytest.raises(PolarSelfWebhookError, match="external_id"):
-            await polar_self.handle_subscription_revoked_event(
-                _make_subscription_revoked_payload(external_id=None)
-            )
-
-        client_mock.get_active_subscription.assert_not_awaited()
-        client_mock.create_free_subscription.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -1055,7 +1041,7 @@ class TestChangePlan:
 
         client_mock.update_subscription_product.assert_not_awaited()
 
-    async def test_updates_existing_subscription(
+    async def test_upgrade_invoices_immediately(
         self,
         configured: None,
         client_mock: MagicMock,
@@ -1063,7 +1049,7 @@ class TestChangePlan:
         read_session_mock: AsyncReadSession,
     ) -> None:
         client_mock.list_recurring_products.return_value = [
-            _make_product(id="prod_2", metadata={"order": 2}),
+            _make_product(id="prod_2", metadata={"order": 2}, price_amount=10000),
         ]
         client_mock.get_active_subscription.return_value = _make_subscription(
             id="sub_existing", product_id="prod_1"
@@ -1076,6 +1062,62 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_2",
+            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+        )
+
+    async def test_downgrade_defers_to_next_period(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_2", metadata={"order": 2}, price_amount=500),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing", product_id="prod_1", amount=2000
+        )
+
+        await polar_self.change_plan(
+            session=read_session_mock, organization_id=ORG_A, product_id="prod_2"
+        )
+
+        client_mock.update_subscription_product.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            product_id="prod_2",
+            proration_behavior=SubscriptionProrationBehavior.NEXT_PERIOD,
+        )
+        client_mock.uncancel_subscription.assert_not_awaited()
+
+    async def test_uncancels_before_switching_when_canceling(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_2", metadata={"order": 2}, price_amount=10000),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing",
+            product_id="prod_1",
+            amount=2000,
+            cancel_at_period_end=True,
+        )
+
+        await polar_self.change_plan(
+            session=read_session_mock, organization_id=ORG_A, product_id="prod_2"
+        )
+
+        client_mock.uncancel_subscription.assert_awaited_once_with(
+            subscription_id="sub_existing",
+        )
+        client_mock.update_subscription_product.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            product_id="prod_2",
+            proration_behavior=SubscriptionProrationBehavior.INVOICE,
         )
 
     async def test_unapproved_rejected(

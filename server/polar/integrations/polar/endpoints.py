@@ -1,8 +1,11 @@
 import json
 
 from fastapi import Depends, HTTPException, Request
-from polar_sdk._webhooks import WebhookVerificationError, validate_event
-from pydantic import ValidationError
+from polar_sdk._webhooks import (
+    WebhookUnknownTypeError,
+    WebhookVerificationError,
+    validate_event,
+)
 
 from polar.config import settings
 from polar.external_event.service import external_event as external_event_service
@@ -40,7 +43,7 @@ async def webhook(
         validate_event(raw_body, headers, secret)
     except WebhookVerificationError:
         raise HTTPException(status_code=401)
-    except ValidationError:
+    except WebhookUnknownTypeError:
         # SDK doesn't recognize this event type yet — ignore for forward compat.
         return
 

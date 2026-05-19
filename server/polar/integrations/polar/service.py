@@ -327,6 +327,22 @@ class PolarSelfService:
             external_member_id=external_member_id,
         )
 
+    async def set_default_payment_method(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        payment_method_id: str,
+        external_member_id: str | None = None,
+    ) -> "CustomerPortalCustomer":
+        await self._ensure_polar_customer(organization_id)
+        return await get_client().portal_update_customer(
+            external_customer_id=str(organization_id),
+            update=CustomerPortalCustomerUpdate(
+                default_payment_method_id=payment_method_id,
+            ),
+            external_member_id=external_member_id,
+        )
+
     async def update_billing_details(
         self,
         organization_id: uuid.UUID,

@@ -29,6 +29,7 @@ interface Props {
   setAsDefault: boolean
   customerBillingDetails: CustomerBillingDetails
   onProcessingStart?: () => void
+  onProcessingError?: () => void
   onPaymentMethodAdded?: (
     paymentMethod: schemas['CustomerPaymentMethod'],
   ) => void
@@ -57,6 +58,7 @@ export const PaymentMethodForm = ({
   setAsDefault,
   customerBillingDetails,
   onProcessingStart,
+  onProcessingError,
   onPaymentMethodAdded,
   setupIntent,
 }: Props) => {
@@ -70,6 +72,15 @@ export const PaymentMethodForm = ({
   // submittable form before the in-flight confirm resolves.
   const [loading, setLoading] = useState(!!setupIntent)
 
+  const reportError = useCallback(
+    (message: string) => {
+      setError(message)
+      setLoading(false)
+      onProcessingError?.()
+    },
+    [onProcessingError],
+  )
+
   const confirmSetupIntent = useCallback(
     async (setupIntentId: string) => {
       let confirmed
@@ -80,19 +91,18 @@ export const PaymentMethodForm = ({
           }),
         )
       } catch {
-        setError(FALLBACK_ERROR)
-        setLoading(false)
+        reportError(FALLBACK_ERROR)
         return
       }
 
-      setLoading(false)
       if (confirmed.status === 'succeeded') {
+        setLoading(false)
         onPaymentMethodAdded?.(confirmed.payment_method)
       } else {
-        setError(FALLBACK_ERROR)
+        reportError(FALLBACK_ERROR)
       }
     },
-    [api, onPaymentMethodAdded, setAsDefault],
+    [api, onPaymentMethodAdded, reportError, setAsDefault],
   )
 
   // 3DS re-entry: if Stripe redirected the customer back with setup intent
@@ -126,8 +136,7 @@ export const PaymentMethodForm = ({
 
       const { error: submitError } = await elements.submit()
       if (submitError) {
-        setError(submitError.message ?? FALLBACK_ERROR)
-        setLoading(false)
+        reportError(submitError.message ?? FALLBACK_ERROR)
         return
       }
 
@@ -142,8 +151,7 @@ export const PaymentMethodForm = ({
         })
 
       if (tokenError || !confirmationToken) {
-        setError(tokenError?.message ?? FALLBACK_ERROR)
-        setLoading(false)
+        reportError(tokenError?.message ?? FALLBACK_ERROR)
         return
       }
 
@@ -161,8 +169,7 @@ export const PaymentMethodForm = ({
           }),
         )
       } catch {
-        setError(FALLBACK_ERROR)
-        setLoading(false)
+        reportError(FALLBACK_ERROR)
         return
       }
 
@@ -176,8 +183,7 @@ export const PaymentMethodForm = ({
         await stripe.handleNextAction({ clientSecret: created.client_secret })
 
       if (actionError || !nextActionIntent) {
-        setError(actionError?.message ?? FALLBACK_ERROR)
-        setLoading(false)
+        reportError(actionError?.message ?? FALLBACK_ERROR)
         return
       }
 
@@ -189,6 +195,7 @@ export const PaymentMethodForm = ({
       customerBillingDetails,
       onPaymentMethodAdded,
       onProcessingStart,
+      reportError,
       setAsDefault,
     ],
   )

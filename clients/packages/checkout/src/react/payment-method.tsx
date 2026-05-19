@@ -1,17 +1,16 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import type { EmbedPaymentMethodErrorCode } from '../payment-method'
 
 const POLAR_PAYMENT_METHOD_EVENT = 'POLAR_PAYMENT_METHOD'
 const EMBED_PATH = '/embed/payment-method'
-
-type ErrorCode = 'invalid_request' | 'unauthorized' | 'unknown'
 
 type IncomingMessage =
   | { event: 'loaded' }
   | { event: 'confirmed' }
   | { event: 'success'; paymentMethodId: string }
-  | { event: 'error'; code: ErrorCode }
+  | { event: 'error'; code: EmbedPaymentMethodErrorCode }
   | { event: 'resize'; height: number }
 
 const isPolarMessage = (
@@ -84,7 +83,7 @@ interface PolarPaymentMethodBaseProps {
    * Fires when the iframe could not render the form (token missing,
    * expired, or rejected).
    */
-  onError?: (code: ErrorCode) => void
+  onError?: (code: EmbedPaymentMethodErrorCode) => void
   /**
    * Optional class name applied to the wrapping `div`. Use this to size
    * or position the embed.

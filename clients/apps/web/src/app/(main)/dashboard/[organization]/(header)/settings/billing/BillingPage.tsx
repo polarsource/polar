@@ -4,7 +4,6 @@ import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import { AddBillingPaymentMethodModal } from '@/components/Settings/Billing/AddBillingPaymentMethodModal'
 import { BillingAddressModal } from '@/components/Settings/Billing/BillingAddressModal'
 import { BillingAddressSection } from '@/components/Settings/Billing/BillingAddressSection'
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
@@ -12,15 +11,18 @@ import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaym
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
+import { toast } from '@/components/Toast/use-toast'
 import { useHasPermission } from '@/hooks/permissions'
 import {
+  useOrganizationBillingCustomerSession,
   useOrganizationOrders,
   useOrganizationPlans,
   useOrganizationSubscription,
 } from '@/hooks/queries/billing'
+import AllInclusive from '@mui/icons-material/AllInclusive'
+import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -35,7 +37,6 @@ export default function BillingPage({
   const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const theme = useTheme()
-  const themePreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
 
   const canManageBilling = useHasPermission(
     organization.id,
@@ -47,6 +48,10 @@ export default function BillingPage({
   const plansQuery = useOrganizationPlans(gatedOrgId)
   const ordersQuery = useOrganizationOrders(gatedOrgId)
 
+  const billingCustomerSessionQuery = useOrganizationBillingCustomerSession(
+    organization.id,
+  )
+
   useEffect(() => {
     if (searchParams.get('checkout_success') !== 'true') return
     queryClient.invalidateQueries({
@@ -56,16 +61,34 @@ export default function BillingPage({
   }, [searchParams, queryClient, organization.id, organization.slug, router])
 
   const {
-    isShown: isAddPaymentMethodOpen,
-    show: showAddPaymentMethod,
-    hide: hideAddPaymentMethod,
-  } = useModal()
-
-  const {
     isShown: isBillingAddressOpen,
     show: showBillingAddress,
     hide: hideBillingAddress,
   } = useModal()
+
+  const onAddPaymentMethod = async () => {
+    const session = billingCustomerSessionQuery.data
+    if (!session) {
+      toast({
+        title: 'Could not start the payment method flow',
+        description: 'Please try again in a moment.',
+        variant: 'error',
+      })
+      return
+    }
+    const embed = await PolarEmbedPaymentMethod.create({
+      sessionToken: session.token,
+      theme: theme.resolvedTheme === 'dark' ? 'dark' : 'light',
+    })
+    embed.addEventListener('success', () => {
+      queryClient.invalidateQueries({
+        queryKey: ['organization-billing', organization.id, 'payment-methods'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['organization-billing', organization.id, 'customer-session'],
+      })
+    })
+  }
 
   const onChangePlan = () => {
     router.push(`/dashboard/${organization.slug}/settings/billing/change-plan`)
@@ -100,7 +123,7 @@ export default function BillingPage({
         <Section id="payment-methods">
           <BillingPaymentMethods
             organizationId={organization.id}
-            onAddPaymentMethod={showAddPaymentMethod}
+            onAddPaymentMethod={onAddPaymentMethod}
           />
         </Section>
 
@@ -126,20 +149,6 @@ export default function BillingPage({
           )}
         </Section>
       </Box>
-
-      <Modal
-        title="Add payment method"
-        isShown={isAddPaymentMethodOpen}
-        hide={hideAddPaymentMethod}
-        modalContent={
-          <AddBillingPaymentMethodModal
-            organizationId={organization.id}
-            onPaymentMethodAdded={hideAddPaymentMethod}
-            hide={hideAddPaymentMethod}
-            themePreset={themePreset}
-          />
-        }
-      />
 
       <Modal
         title="Billing address"

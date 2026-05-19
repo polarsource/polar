@@ -413,6 +413,15 @@ class OrganizationWithRole(Organization):
 
     role: OrganizationRole = Field(description="The user's role on this organization.")
 
+    @classmethod
+    def from_organization(
+        cls, organization: Any, role: OrganizationRole
+    ) -> "OrganizationWithRole":
+        """Build from a SQLAlchemy `Organization` plus the user's role."""
+        return cls.model_validate(
+            {**Organization.model_validate(organization).model_dump(), "role": role}
+        )
+
 
 class OrganizationRoleDefinition(Schema):
     """A role available in an organization and the permissions it grants."""

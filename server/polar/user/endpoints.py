@@ -14,7 +14,6 @@ from polar.customer_portal.endpoints.subscription import router as subscription_
 from polar.models import User
 from polar.models.user import OAuthPlatform
 from polar.openapi import APITag
-from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.schemas import OrganizationWithRole
 from polar.postgres import (
     AsyncReadSession,
@@ -55,10 +54,7 @@ async def get_authenticated(
     return UserRead.model_validate(user).model_copy(
         update={
             "organizations": [
-                OrganizationWithRole(
-                    **OrganizationSchema.model_validate(org).model_dump(),
-                    role=role,
-                )
+                OrganizationWithRole.from_organization(org, role)
                 for org, role in org_with_roles
             ]
         }

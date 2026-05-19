@@ -40,11 +40,11 @@ def run(ctx: Context) -> bool:
         step_status(True, "Docker containers", "already running")
         return True
 
-    # Build compose command
-    compose_cmd = ["docker", "compose", "up", "-d"]
+    compose_cmd = ["docker", "compose"]
     # Include tinybird profile by default; exclude it when skip_tinybird is set
     if not ctx.skip_tinybird:
         compose_cmd.extend(["--profile", "tinybird"])
+    compose_cmd.extend(["up", "-d"])
 
     service_name = "PostgreSQL, Redis, Minio"
     if not ctx.skip_tinybird:

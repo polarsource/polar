@@ -11,9 +11,9 @@ export function PolarSelfSubscriptionCycled({
   return (
     <WrapperPolar>
       <Preview>Your {product_name} subscription renewed</Preview>
-      <Intro headline="Your subscription renewed">
+      <Intro headline={`${product_name} renewed`}>
         Your <span className="font-medium">{product_name}</span> subscription
-        has just renewed. Your invoice is attached.
+        renewed for another cycle. The latest invoice is attached.
       </Intro>
       <Footer email={email} />
     </WrapperPolar>

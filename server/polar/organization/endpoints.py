@@ -393,6 +393,7 @@ async def members(
 @router.get(
     "/{id}/roles",
     response_model=list[OrganizationRoleDefinition],
+    responses={404: OrganizationNotFound},
     tags=[APITag.private],
 )
 async def roles(authz: AuthorizeOrgAccess) -> list[OrganizationRoleDefinition]:

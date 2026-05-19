@@ -30,6 +30,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 
@@ -143,18 +145,12 @@ export default function ClientPage({
       cell: ({ row: { original: member } }) => {
         const isCurrentUser = member.user_id === currentUser?.id
         return (
-          <div className="flex flex-row items-center gap-2">
+          <Box display="flex" flexDirection="row" alignItems="center" gap="s">
             <Avatar avatar_url={member.avatar_url} name={member.email} />
-            <div className="fw-medium">{member.email}</div>
-            <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-              {ROLE_LABELS[member.role]}
-            </span>
-            {isCurrentUser && (
-              <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                You
-              </span>
-            )}
-          </div>
+            <Text>{member.email}</Text>
+            <RowBadge>{ROLE_LABELS[member.role]}</RowBadge>
+            {isCurrentUser && <RowBadge>You</RowBadge>}
+          </Box>
         )
       },
     },
@@ -295,5 +291,21 @@ export default function ClientPage({
         />
       )}
     </DashboardBody>
+  )
+}
+
+function RowBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <Box
+      as="span"
+      paddingHorizontal="s"
+      paddingVertical="xs"
+      borderRadius="full"
+      backgroundColor="background-pending"
+    >
+      <Text variant="caption" color="muted">
+        {children}
+      </Text>
+    </Box>
   )
 }

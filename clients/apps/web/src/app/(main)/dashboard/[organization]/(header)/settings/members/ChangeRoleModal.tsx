@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/auth'
 import { useUpdateOrganizationMemberRole } from '@/hooks/queries/org'
 import { useOrganizationRoles } from '@/hooks/queries/roles'
 import Check from '@mui/icons-material/Check'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -75,18 +77,23 @@ export function ChangeRoleModal({
   }
 
   return (
-    <div className="flex w-full flex-col gap-y-6 p-8">
-      <h3 className="text-lg font-medium">Change Role</h3>
-      <p className="dark:text-polar-500 text-sm text-gray-500">
+    <Box display="flex" flexDirection="column" rowGap="xl" padding="2xl">
+      <Text variant="heading-xxs" as="h3">
+        Change Role
+      </Text>
+      <Text variant="caption" color="muted">
         {isCurrentUser ? (
           'Update your own role.'
         ) : (
           <>
             Update the role for{' '}
-            <span className="font-medium">{member.email}</span>.
+            <Text as="span" variant="label">
+              {member.email}
+            </Text>
+            .
           </>
         )}
-      </p>
+      </Text>
       <Select
         value={role}
         onValueChange={(value) => setRole(value as 'admin' | 'member')}
@@ -100,7 +107,14 @@ export function ChangeRoleModal({
         </SelectContent>
       </Select>
       {orderedRoles.length > 0 && (
-        <div className="dark:border-polar-700 max-h-[30vh] overflow-y-auto rounded-md border border-gray-200">
+        <Box
+          maxHeight="30vh"
+          overflowY="auto"
+          borderRadius="m"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+        >
           <table className="w-full text-sm">
             <thead className="dark:bg-polar-700 sticky top-0 bg-gray-50 text-xs">
               <tr>
@@ -137,9 +151,9 @@ export function ChangeRoleModal({
               ))}
             </tbody>
           </table>
-        </div>
+        </Box>
       )}
-      <div className="flex gap-2">
+      <Box display="flex" columnGap="s">
         <Button
           onClick={handleSave}
           disabled={updateMemberRole.isPending}
@@ -150,7 +164,7 @@ export function ChangeRoleModal({
         <Button type="button" variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

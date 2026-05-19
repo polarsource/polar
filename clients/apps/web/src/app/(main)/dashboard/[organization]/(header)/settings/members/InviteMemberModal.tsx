@@ -1,5 +1,7 @@
 import { useToast } from '@/components/Toast/use-toast'
 import { useInviteOrganizationMember } from '@/hooks/queries/org'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useState } from 'react'
@@ -51,8 +53,17 @@ export function InviteMemberModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-y-6 p-8">
-      <h3 className="text-lg font-medium">Invite User</h3>
+    <Box
+      as="form"
+      onSubmit={handleSubmit}
+      display="flex"
+      flexDirection="column"
+      rowGap="xl"
+      padding="2xl"
+    >
+      <Text variant="heading-xxs" as="h3">
+        Invite User
+      </Text>
       <Input
         type="email"
         placeholder="Enter email address"
@@ -60,7 +71,7 @@ export function InviteMemberModal({
         onChange={(e) => setEmail(e.target.value)}
         autoFocus
       />
-      <div className="flex gap-2">
+      <Box display="flex" columnGap="s">
         <Button
           type="submit"
           disabled={!email || inviteMember.isPending}
@@ -71,7 +82,7 @@ export function InviteMemberModal({
         <Button type="button" variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-      </div>
-    </form>
+      </Box>
+    </Box>
   )
 }

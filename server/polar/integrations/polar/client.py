@@ -34,6 +34,7 @@ from polar_sdk.models import (
     Member,
     MemberCreate,
     MemberOwnerCreate,
+    MemberRole,
     Order,
     OrderSortProperty,
     Product,
@@ -346,6 +347,27 @@ class PolarSelfClient:
             external_id=external_id,
             external_customer_id=external_customer_id,
         )
+
+    async def list_billing_contacts(self, *, customer_id: str) -> list[Member]:
+        contacts: list[Member] = []
+        with logfire.span(
+            "polar.list_billing_contacts", customer_id=customer_id
+        ) as span:
+            for role in (MemberRole.OWNER, MemberRole.BILLING_MANAGER):
+                try:
+                    response = await self._sdk.members.list_members_async(
+                        customer_id=customer_id,
+                        role=role,
+                        limit=100,
+                    )
+                except PolarError as e:
+                    _raise_error(span, e, "list_billing_contacts")
+                except httpx.RequestError as e:
+                    _raise_network_error(span, e, "list_billing_contacts")
+                if response is not None:
+                    contacts.extend(response.result.items)
+            span.set_attribute("count", len(contacts))
+            return contacts
 
     async def add_member(
         self, *, customer_id: str, email: str, name: str, external_id: str

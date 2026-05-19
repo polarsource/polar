@@ -495,9 +495,6 @@ class PolarSelfService:
         self, payload: WebhookOrderCreatedPayload
     ) -> None:
         order = payload.data
-        recipient = order.customer.email
-        if not recipient:
-            return
 
         if order.billing_reason not in (
             OrderBillingReason.SUBSCRIPTION_CREATE,
@@ -506,37 +503,27 @@ class PolarSelfService:
         ):
             return
 
+        client = get_client()
+        contacts = await client.list_billing_contacts(customer_id=order.customer.id)
+        recipients = sorted({contact.email for contact in contacts if contact.email})
+        if not recipients:
+            return
+
         product_name = order.product.name if order.product is not None else "Polar"
 
         if order.billing_reason in (
             OrderBillingReason.SUBSCRIPTION_CREATE,
             OrderBillingReason.SUBSCRIPTION_UPDATE,
         ):
-            email = EmailAdapter.validate_python(
-                {
-                    "template": "polar_self_subscription_confirmation",
-                    "props": PolarSelfSubscriptionConfirmationProps(
-                        email=recipient,
-                        product_name=product_name,
-                    ).model_dump(),
-                }
-            )
+            template_name = "polar_self_subscription_confirmation"
             subject = f"Welcome to {product_name}"
         else:
-            email = EmailAdapter.validate_python(
-                {
-                    "template": "polar_self_subscription_cycled",
-                    "props": PolarSelfSubscriptionCycledProps(
-                        email=recipient,
-                        product_name=product_name,
-                    ).model_dump(),
-                }
-            )
+            template_name = "polar_self_subscription_cycled"
             subject = f"Your {product_name} subscription renewed"
 
         attachments: list[Attachment] | None = None
         if order.is_invoice_generated:
-            invoice_url = await get_client().get_order_invoice(order_id=order.id)
+            invoice_url = await client.get_order_invoice(order_id=order.id)
             if invoice_url is not None:
                 attachments = [
                     {
@@ -550,12 +537,33 @@ class PolarSelfService:
             order_id=order.id,
             billing_reason=order.billing_reason.value,
         ):
-            enqueue_email_template(
-                email,
-                to_email_addr=recipient,
-                subject=subject,
-                attachments=attachments,
-            )
+            for recipient in recipients:
+                if template_name == "polar_self_subscription_confirmation":
+                    email = EmailAdapter.validate_python(
+                        {
+                            "template": template_name,
+                            "props": PolarSelfSubscriptionConfirmationProps(
+                                email=recipient,
+                                product_name=product_name,
+                            ).model_dump(),
+                        }
+                    )
+                else:
+                    email = EmailAdapter.validate_python(
+                        {
+                            "template": template_name,
+                            "props": PolarSelfSubscriptionCycledProps(
+                                email=recipient,
+                                product_name=product_name,
+                            ).model_dump(),
+                        }
+                    )
+                enqueue_email_template(
+                    email,
+                    to_email_addr=recipient,
+                    subject=subject,
+                    attachments=attachments,
+                )
 
     async def _require_approval(
         self,

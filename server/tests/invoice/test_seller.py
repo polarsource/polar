@@ -3,6 +3,7 @@ from pytest_mock import MockerFixture
 
 from polar.invoice.seller import (
     get_polar_additional_info,
+    get_polar_vat_label,
     get_polar_vat_number,
 )
 from polar.kit.address import Address, CountryAlpha2
@@ -12,7 +13,13 @@ def _address(country: str, state: str | None = None) -> Address:
     return Address(country=CountryAlpha2(country), state=state)
 
 
-VAT_NUMBERS = {"FR": "EU372061545", "DE": "EU372061545", "GB": "GB458254961"}
+VAT_NUMBERS = {
+    "FR": "EU372061545",
+    "DE": "EU372061545",
+    "GB": "GB458254961",
+    "CA": "720474766 RT9999",
+    "NZ": "148-410-224",
+}
 
 
 @pytest.fixture(autouse=True)
@@ -38,6 +45,22 @@ class TestGetPolarVatNumber:
         assert get_polar_vat_number("JP") is None
 
 
+class TestGetPolarVatLabel:
+    def test_none_address(self) -> None:
+        assert get_polar_vat_label(None) == "VAT"
+
+    def test_default_label(self) -> None:
+        assert get_polar_vat_label(_address("FR")) == "VAT"
+        assert get_polar_vat_label(_address("GB")) == "VAT"
+        assert get_polar_vat_label(_address("US")) == "VAT"
+
+    def test_canada(self) -> None:
+        assert get_polar_vat_label(_address("CA")) == "GST/HST"
+
+    def test_new_zealand(self) -> None:
+        assert get_polar_vat_label(_address("NZ")) == "GST"
+
+
 class TestGetPolarAdditionalInfo:
     def test_mapped_country(self) -> None:
         info = get_polar_additional_info(_address("FR"))
@@ -46,6 +69,18 @@ class TestGetPolarAdditionalInfo:
     def test_uk(self) -> None:
         info = get_polar_additional_info(_address("GB"))
         assert info == "[support@polar.sh](mailto:support@polar.sh)\nVAT: GB458254961"
+
+    def test_canada_uses_gst_hst_label(self) -> None:
+        info = get_polar_additional_info(_address("CA"))
+        assert info == (
+            "[support@polar.sh](mailto:support@polar.sh)\nGST/HST: 720474766 RT9999"
+        )
+
+    def test_new_zealand_uses_gst_label(self) -> None:
+        info = get_polar_additional_info(_address("NZ"))
+        assert info == (
+            "[support@polar.sh](mailto:support@polar.sh)\nGST: 148-410-224"
+        )
 
     def test_unmapped_country(self) -> None:
         info = get_polar_additional_info(_address("US"))

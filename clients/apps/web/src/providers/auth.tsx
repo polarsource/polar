@@ -5,10 +5,10 @@ import React from 'react'
 
 export type AuthContextValue = {
   user?: schemas['UserRead']
-  userOrganizations: schemas['OrganizationListItem'][]
+  userOrganizations: schemas['OrganizationWithRole'][]
   setUser: React.Dispatch<React.SetStateAction<schemas['UserRead']>>
   setUserOrganizations: React.Dispatch<
-    React.SetStateAction<schemas['OrganizationListItem'][]>
+    React.SetStateAction<schemas['OrganizationWithRole'][]>
   >
 }
 
@@ -28,12 +28,12 @@ export const UserContextProvider = ({
   children,
 }: {
   user: schemas['UserRead'] | undefined
-  userOrganizations: schemas['OrganizationListItem'][]
+  userOrganizations: schemas['OrganizationWithRole'][]
   children: React.ReactNode
 }) => {
   const [user, setUser] = React.useState<schemas['UserRead'] | undefined>(_user)
   const [userOrganizations, setUserOrganizations] =
-    React.useState<schemas['OrganizationListItem'][]>(_userOrganizations)
+    React.useState<schemas['OrganizationWithRole'][]>(_userOrganizations)
 
   const contextValue = React.useMemo(
     () => ({

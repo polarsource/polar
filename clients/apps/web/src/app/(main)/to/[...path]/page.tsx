@@ -1,4 +1,3 @@
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { getLastVisitedOrg } from '@/utils/cookies'
 import { getUserOrganizations } from '@/utils/user'
 import { cookies } from 'next/headers'
@@ -17,8 +16,7 @@ export default async function Page({
   const query = new URLSearchParams(resolvedSearchParams).toString()
   const qs = query ? `?${query}` : ''
 
-  const api = await getServerSideAPI()
-  const userOrganizations = await getUserOrganizations(api, true)
+  const userOrganizations = await getUserOrganizations()
 
   if (userOrganizations.length === 0) {
     redirect(`/onboarding/start${qs}`)

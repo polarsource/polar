@@ -61,38 +61,6 @@ class TestListOrganizations:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(organization.id)
 
-    @pytest.mark.auth
-    async def test_user_role_field_populated(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        user_organization.role = OrganizationRole.admin
-        await save_fixture(user_organization)
-
-        response = await client.get("/v1/organizations/")
-
-        assert response.status_code == 200
-        item = response.json()["items"][0]
-        assert item["id"] == str(organization.id)
-        assert item["role"] == OrganizationRole.admin.value
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_organization_subject_role_is_null(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.get("/v1/organizations/")
-
-        assert response.status_code == 200
-        item = response.json()["items"][0]
-        assert item["id"] == str(organization.id)
-        assert item["role"] is None
-
 
 @pytest.mark.asyncio
 class TestListRoles:

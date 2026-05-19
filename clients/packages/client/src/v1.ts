@@ -19972,12 +19972,6 @@ export interface components {
       items: components['schemas']['OrganizationAccessToken'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[OrganizationListItem] */
-    ListResource_OrganizationListItem_: {
-      /** Items */
-      items: components['schemas']['OrganizationListItem'][]
-      pagination: components['schemas']['Pagination']
-    }
     /** ListResource[OrganizationMember] */
     ListResource_OrganizationMember_: {
       /** Items */
@@ -19988,6 +19982,12 @@ export interface components {
     ListResource_OrganizationOrder_: {
       /** Items */
       items: components['schemas']['OrganizationOrder'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[Organization] */
+    ListResource_Organization_: {
+      /** Items */
+      items: components['schemas']['Organization'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Payment] */
@@ -23945,361 +23945,6 @@ export interface components {
       /** @description Organization compliance details. Only visible to organization members. */
       details?: components['schemas']['OrganizationDetails'] | null
     }
-    /**
-     * OrganizationListItem
-     * @description Variant of `Organization` returned by `GET /v1/organizations` that
-     *     includes the caller's role on each organization.
-     */
-    OrganizationListItem: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Name
-       * @description Organization name shown in checkout, customer portal, emails etc.
-       */
-      name: string
-      /**
-       * Slug
-       * @description Unique organization slug in checkout, customer portal and credit card statements.
-       */
-      slug: string
-      /**
-       * Avatar Url
-       * @description Avatar URL shown in checkout, customer portal, emails etc.
-       */
-      avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
-      /**
-       * Allow Customer Updates
-       * @description Whether customers can update their subscriptions from the customer portal.
-       */
-      allow_customer_updates: boolean
-      /**
-       * Email
-       * @description Public support email.
-       */
-      email: string | null
-      /**
-       * Website
-       * @description Official website of the organization.
-       */
-      website: string | null
-      /**
-       * Socials
-       * @description Links to social profiles.
-       */
-      socials: components['schemas']['OrganizationSocialLink'][]
-      /** @description Current organization status */
-      status: components['schemas']['OrganizationStatus']
-      /**
-       * Details Submitted At
-       * @description When the business details were submitted for review.
-       */
-      details_submitted_at: string | null
-      /**
-       * Default Presentment Currency
-       * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
-       */
-      default_presentment_currency: string
-      /** @description Default tax behavior applied on products. */
-      default_tax_behavior: components['schemas']['TaxBehaviorOption']
-      /** @description Organization feature settings */
-      feature_settings:
-        | components['schemas']['OrganizationFeatureSettings']
-        | null
-      /** @description Settings related to subscriptions management */
-      subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
-      /** @description Settings related to customer emails */
-      customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
-      /** @description Settings related to the customer portal */
-      customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
-      /** @description Two-letter country code (ISO 3166-1 alpha-2). */
-      country?:
-        | (
-            | 'AD'
-            | 'AE'
-            | 'AF'
-            | 'AG'
-            | 'AI'
-            | 'AL'
-            | 'AM'
-            | 'AO'
-            | 'AQ'
-            | 'AR'
-            | 'AS'
-            | 'AT'
-            | 'AU'
-            | 'AW'
-            | 'AX'
-            | 'AZ'
-            | 'BA'
-            | 'BB'
-            | 'BD'
-            | 'BE'
-            | 'BF'
-            | 'BG'
-            | 'BH'
-            | 'BI'
-            | 'BJ'
-            | 'BL'
-            | 'BM'
-            | 'BN'
-            | 'BO'
-            | 'BQ'
-            | 'BR'
-            | 'BS'
-            | 'BT'
-            | 'BV'
-            | 'BW'
-            | 'BY'
-            | 'BZ'
-            | 'CA'
-            | 'CC'
-            | 'CD'
-            | 'CF'
-            | 'CG'
-            | 'CH'
-            | 'CI'
-            | 'CK'
-            | 'CL'
-            | 'CM'
-            | 'CN'
-            | 'CO'
-            | 'CR'
-            | 'CU'
-            | 'CV'
-            | 'CW'
-            | 'CX'
-            | 'CY'
-            | 'CZ'
-            | 'DE'
-            | 'DJ'
-            | 'DK'
-            | 'DM'
-            | 'DO'
-            | 'DZ'
-            | 'EC'
-            | 'EE'
-            | 'EG'
-            | 'EH'
-            | 'ER'
-            | 'ES'
-            | 'ET'
-            | 'FI'
-            | 'FJ'
-            | 'FK'
-            | 'FM'
-            | 'FO'
-            | 'FR'
-            | 'GA'
-            | 'GB'
-            | 'GD'
-            | 'GE'
-            | 'GF'
-            | 'GG'
-            | 'GH'
-            | 'GI'
-            | 'GL'
-            | 'GM'
-            | 'GN'
-            | 'GP'
-            | 'GQ'
-            | 'GR'
-            | 'GS'
-            | 'GT'
-            | 'GU'
-            | 'GW'
-            | 'GY'
-            | 'HK'
-            | 'HM'
-            | 'HN'
-            | 'HR'
-            | 'HT'
-            | 'HU'
-            | 'ID'
-            | 'IE'
-            | 'IL'
-            | 'IM'
-            | 'IN'
-            | 'IO'
-            | 'IQ'
-            | 'IR'
-            | 'IS'
-            | 'IT'
-            | 'JE'
-            | 'JM'
-            | 'JO'
-            | 'JP'
-            | 'KE'
-            | 'KG'
-            | 'KH'
-            | 'KI'
-            | 'KM'
-            | 'KN'
-            | 'KP'
-            | 'KR'
-            | 'KW'
-            | 'KY'
-            | 'KZ'
-            | 'LA'
-            | 'LB'
-            | 'LC'
-            | 'LI'
-            | 'LK'
-            | 'LR'
-            | 'LS'
-            | 'LT'
-            | 'LU'
-            | 'LV'
-            | 'LY'
-            | 'MA'
-            | 'MC'
-            | 'MD'
-            | 'ME'
-            | 'MF'
-            | 'MG'
-            | 'MH'
-            | 'MK'
-            | 'ML'
-            | 'MM'
-            | 'MN'
-            | 'MO'
-            | 'MP'
-            | 'MQ'
-            | 'MR'
-            | 'MS'
-            | 'MT'
-            | 'MU'
-            | 'MV'
-            | 'MW'
-            | 'MX'
-            | 'MY'
-            | 'MZ'
-            | 'NA'
-            | 'NC'
-            | 'NE'
-            | 'NF'
-            | 'NG'
-            | 'NI'
-            | 'NL'
-            | 'NO'
-            | 'NP'
-            | 'NR'
-            | 'NU'
-            | 'NZ'
-            | 'OM'
-            | 'PA'
-            | 'PE'
-            | 'PF'
-            | 'PG'
-            | 'PH'
-            | 'PK'
-            | 'PL'
-            | 'PM'
-            | 'PN'
-            | 'PR'
-            | 'PS'
-            | 'PT'
-            | 'PW'
-            | 'PY'
-            | 'QA'
-            | 'RE'
-            | 'RO'
-            | 'RS'
-            | 'RU'
-            | 'RW'
-            | 'SA'
-            | 'SB'
-            | 'SC'
-            | 'SD'
-            | 'SE'
-            | 'SG'
-            | 'SH'
-            | 'SI'
-            | 'SJ'
-            | 'SK'
-            | 'SL'
-            | 'SM'
-            | 'SN'
-            | 'SO'
-            | 'SR'
-            | 'SS'
-            | 'ST'
-            | 'SV'
-            | 'SX'
-            | 'SY'
-            | 'SZ'
-            | 'TC'
-            | 'TD'
-            | 'TF'
-            | 'TG'
-            | 'TH'
-            | 'TJ'
-            | 'TK'
-            | 'TL'
-            | 'TM'
-            | 'TN'
-            | 'TO'
-            | 'TR'
-            | 'TT'
-            | 'TV'
-            | 'TW'
-            | 'TZ'
-            | 'UA'
-            | 'UG'
-            | 'UM'
-            | 'US'
-            | 'UY'
-            | 'UZ'
-            | 'VA'
-            | 'VC'
-            | 'VE'
-            | 'VG'
-            | 'VI'
-            | 'VN'
-            | 'VU'
-            | 'WF'
-            | 'WS'
-            | 'YE'
-            | 'YT'
-            | 'ZA'
-            | 'ZM'
-            | 'ZW'
-          )
-        | null
-      /**
-       * Account Id
-       * @description ID of the transactions account.
-       */
-      account_id: string | null
-      /**
-       * Payout Account Id
-       * @description ID of the payout account.
-       */
-      payout_account_id: string | null
-      /** @description Capabilities currently granted to the organization. */
-      capabilities: components['schemas']['OrganizationCapabilities']
-      /** @description The caller's role on this organization. `null` for organization tokens (they represent the org itself, not a user-role pairing). */
-      role?: components['schemas']['OrganizationRole'] | null
-    }
     /** OrganizationMember */
     OrganizationMember: {
       /**
@@ -25139,6 +24784,361 @@ export interface components {
        * @description Error message if the URL is not reachable.
        */
       error?: string | null
+    }
+    /**
+     * OrganizationWithRole
+     * @description Variant of `Organization` embedded on `GET /v1/users/me` that
+     *     includes the user's role on the organization.
+     */
+    OrganizationWithRole: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Organization name shown in checkout, customer portal, emails etc.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique organization slug in checkout, customer portal and credit card statements.
+       */
+      slug: string
+      /**
+       * Avatar Url
+       * @description Avatar URL shown in checkout, customer portal, emails etc.
+       */
+      avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
+      /**
+       * Email
+       * @description Public support email.
+       */
+      email: string | null
+      /**
+       * Website
+       * @description Official website of the organization.
+       */
+      website: string | null
+      /**
+       * Socials
+       * @description Links to social profiles.
+       */
+      socials: components['schemas']['OrganizationSocialLink'][]
+      /** @description Current organization status */
+      status: components['schemas']['OrganizationStatus']
+      /**
+       * Details Submitted At
+       * @description When the business details were submitted for review.
+       */
+      details_submitted_at: string | null
+      /**
+       * Default Presentment Currency
+       * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
+       */
+      default_presentment_currency: string
+      /** @description Default tax behavior applied on products. */
+      default_tax_behavior: components['schemas']['TaxBehaviorOption']
+      /** @description Organization feature settings */
+      feature_settings:
+        | components['schemas']['OrganizationFeatureSettings']
+        | null
+      /** @description Settings related to subscriptions management */
+      subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
+      /** @description Settings related to notifications */
+      notification_settings: components['schemas']['OrganizationNotificationSettings']
+      /** @description Settings related to customer emails */
+      customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
+      /** @description Settings related to the customer portal */
+      customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Two-letter country code (ISO 3166-1 alpha-2). */
+      country?:
+        | (
+            | 'AD'
+            | 'AE'
+            | 'AF'
+            | 'AG'
+            | 'AI'
+            | 'AL'
+            | 'AM'
+            | 'AO'
+            | 'AQ'
+            | 'AR'
+            | 'AS'
+            | 'AT'
+            | 'AU'
+            | 'AW'
+            | 'AX'
+            | 'AZ'
+            | 'BA'
+            | 'BB'
+            | 'BD'
+            | 'BE'
+            | 'BF'
+            | 'BG'
+            | 'BH'
+            | 'BI'
+            | 'BJ'
+            | 'BL'
+            | 'BM'
+            | 'BN'
+            | 'BO'
+            | 'BQ'
+            | 'BR'
+            | 'BS'
+            | 'BT'
+            | 'BV'
+            | 'BW'
+            | 'BY'
+            | 'BZ'
+            | 'CA'
+            | 'CC'
+            | 'CD'
+            | 'CF'
+            | 'CG'
+            | 'CH'
+            | 'CI'
+            | 'CK'
+            | 'CL'
+            | 'CM'
+            | 'CN'
+            | 'CO'
+            | 'CR'
+            | 'CU'
+            | 'CV'
+            | 'CW'
+            | 'CX'
+            | 'CY'
+            | 'CZ'
+            | 'DE'
+            | 'DJ'
+            | 'DK'
+            | 'DM'
+            | 'DO'
+            | 'DZ'
+            | 'EC'
+            | 'EE'
+            | 'EG'
+            | 'EH'
+            | 'ER'
+            | 'ES'
+            | 'ET'
+            | 'FI'
+            | 'FJ'
+            | 'FK'
+            | 'FM'
+            | 'FO'
+            | 'FR'
+            | 'GA'
+            | 'GB'
+            | 'GD'
+            | 'GE'
+            | 'GF'
+            | 'GG'
+            | 'GH'
+            | 'GI'
+            | 'GL'
+            | 'GM'
+            | 'GN'
+            | 'GP'
+            | 'GQ'
+            | 'GR'
+            | 'GS'
+            | 'GT'
+            | 'GU'
+            | 'GW'
+            | 'GY'
+            | 'HK'
+            | 'HM'
+            | 'HN'
+            | 'HR'
+            | 'HT'
+            | 'HU'
+            | 'ID'
+            | 'IE'
+            | 'IL'
+            | 'IM'
+            | 'IN'
+            | 'IO'
+            | 'IQ'
+            | 'IR'
+            | 'IS'
+            | 'IT'
+            | 'JE'
+            | 'JM'
+            | 'JO'
+            | 'JP'
+            | 'KE'
+            | 'KG'
+            | 'KH'
+            | 'KI'
+            | 'KM'
+            | 'KN'
+            | 'KP'
+            | 'KR'
+            | 'KW'
+            | 'KY'
+            | 'KZ'
+            | 'LA'
+            | 'LB'
+            | 'LC'
+            | 'LI'
+            | 'LK'
+            | 'LR'
+            | 'LS'
+            | 'LT'
+            | 'LU'
+            | 'LV'
+            | 'LY'
+            | 'MA'
+            | 'MC'
+            | 'MD'
+            | 'ME'
+            | 'MF'
+            | 'MG'
+            | 'MH'
+            | 'MK'
+            | 'ML'
+            | 'MM'
+            | 'MN'
+            | 'MO'
+            | 'MP'
+            | 'MQ'
+            | 'MR'
+            | 'MS'
+            | 'MT'
+            | 'MU'
+            | 'MV'
+            | 'MW'
+            | 'MX'
+            | 'MY'
+            | 'MZ'
+            | 'NA'
+            | 'NC'
+            | 'NE'
+            | 'NF'
+            | 'NG'
+            | 'NI'
+            | 'NL'
+            | 'NO'
+            | 'NP'
+            | 'NR'
+            | 'NU'
+            | 'NZ'
+            | 'OM'
+            | 'PA'
+            | 'PE'
+            | 'PF'
+            | 'PG'
+            | 'PH'
+            | 'PK'
+            | 'PL'
+            | 'PM'
+            | 'PN'
+            | 'PR'
+            | 'PS'
+            | 'PT'
+            | 'PW'
+            | 'PY'
+            | 'QA'
+            | 'RE'
+            | 'RO'
+            | 'RS'
+            | 'RU'
+            | 'RW'
+            | 'SA'
+            | 'SB'
+            | 'SC'
+            | 'SD'
+            | 'SE'
+            | 'SG'
+            | 'SH'
+            | 'SI'
+            | 'SJ'
+            | 'SK'
+            | 'SL'
+            | 'SM'
+            | 'SN'
+            | 'SO'
+            | 'SR'
+            | 'SS'
+            | 'ST'
+            | 'SV'
+            | 'SX'
+            | 'SY'
+            | 'SZ'
+            | 'TC'
+            | 'TD'
+            | 'TF'
+            | 'TG'
+            | 'TH'
+            | 'TJ'
+            | 'TK'
+            | 'TL'
+            | 'TM'
+            | 'TN'
+            | 'TO'
+            | 'TR'
+            | 'TT'
+            | 'TV'
+            | 'TW'
+            | 'TZ'
+            | 'UA'
+            | 'UG'
+            | 'UM'
+            | 'US'
+            | 'UY'
+            | 'UZ'
+            | 'VA'
+            | 'VC'
+            | 'VE'
+            | 'VG'
+            | 'VI'
+            | 'VN'
+            | 'VU'
+            | 'WF'
+            | 'WS'
+            | 'YE'
+            | 'YT'
+            | 'ZA'
+            | 'ZM'
+            | 'ZW'
+          )
+        | null
+      /**
+       * Account Id
+       * @description ID of the transactions account.
+       */
+      account_id: string | null
+      /**
+       * Payout Account Id
+       * @description ID of the payout account.
+       */
+      payout_account_id: string | null
+      /** @description Capabilities currently granted to the organization. */
+      capabilities: components['schemas']['OrganizationCapabilities']
+      /** @description The user's role on this organization. */
+      role: components['schemas']['OrganizationRole']
     }
     /** Pagination */
     Pagination: {
@@ -30253,6 +30253,11 @@ export interface components {
       date_of_birth: string | null
       /** Oauth Accounts */
       oauth_accounts: components['schemas']['OAuthAccountRead'][]
+      /**
+       * Organizations
+       * @description Organizations the user is a member of, with their role on each. Populated by `GET /v1/users/me`; empty otherwise.
+       */
+      organizations?: components['schemas']['OrganizationWithRole'][]
       /** Email Hash */
       readonly email_hash: string | null
     }
@@ -32908,7 +32913,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_OrganizationListItem_']
+          'application/json': components['schemas']['ListResource_Organization_']
         }
       }
       /** @description Validation Error */
@@ -55528,259 +55533,6 @@ export const organizationKYCCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
-export const organizationListItemCountryAnyOf0Values: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['OrganizationListItem']['country']
-> = [
-  'AD',
-  'AE',
-  'AF',
-  'AG',
-  'AI',
-  'AL',
-  'AM',
-  'AO',
-  'AQ',
-  'AR',
-  'AS',
-  'AT',
-  'AU',
-  'AW',
-  'AX',
-  'AZ',
-  'BA',
-  'BB',
-  'BD',
-  'BE',
-  'BF',
-  'BG',
-  'BH',
-  'BI',
-  'BJ',
-  'BL',
-  'BM',
-  'BN',
-  'BO',
-  'BQ',
-  'BR',
-  'BS',
-  'BT',
-  'BV',
-  'BW',
-  'BY',
-  'BZ',
-  'CA',
-  'CC',
-  'CD',
-  'CF',
-  'CG',
-  'CH',
-  'CI',
-  'CK',
-  'CL',
-  'CM',
-  'CN',
-  'CO',
-  'CR',
-  'CU',
-  'CV',
-  'CW',
-  'CX',
-  'CY',
-  'CZ',
-  'DE',
-  'DJ',
-  'DK',
-  'DM',
-  'DO',
-  'DZ',
-  'EC',
-  'EE',
-  'EG',
-  'EH',
-  'ER',
-  'ES',
-  'ET',
-  'FI',
-  'FJ',
-  'FK',
-  'FM',
-  'FO',
-  'FR',
-  'GA',
-  'GB',
-  'GD',
-  'GE',
-  'GF',
-  'GG',
-  'GH',
-  'GI',
-  'GL',
-  'GM',
-  'GN',
-  'GP',
-  'GQ',
-  'GR',
-  'GS',
-  'GT',
-  'GU',
-  'GW',
-  'GY',
-  'HK',
-  'HM',
-  'HN',
-  'HR',
-  'HT',
-  'HU',
-  'ID',
-  'IE',
-  'IL',
-  'IM',
-  'IN',
-  'IO',
-  'IQ',
-  'IR',
-  'IS',
-  'IT',
-  'JE',
-  'JM',
-  'JO',
-  'JP',
-  'KE',
-  'KG',
-  'KH',
-  'KI',
-  'KM',
-  'KN',
-  'KP',
-  'KR',
-  'KW',
-  'KY',
-  'KZ',
-  'LA',
-  'LB',
-  'LC',
-  'LI',
-  'LK',
-  'LR',
-  'LS',
-  'LT',
-  'LU',
-  'LV',
-  'LY',
-  'MA',
-  'MC',
-  'MD',
-  'ME',
-  'MF',
-  'MG',
-  'MH',
-  'MK',
-  'ML',
-  'MM',
-  'MN',
-  'MO',
-  'MP',
-  'MQ',
-  'MR',
-  'MS',
-  'MT',
-  'MU',
-  'MV',
-  'MW',
-  'MX',
-  'MY',
-  'MZ',
-  'NA',
-  'NC',
-  'NE',
-  'NF',
-  'NG',
-  'NI',
-  'NL',
-  'NO',
-  'NP',
-  'NR',
-  'NU',
-  'NZ',
-  'OM',
-  'PA',
-  'PE',
-  'PF',
-  'PG',
-  'PH',
-  'PK',
-  'PL',
-  'PM',
-  'PN',
-  'PR',
-  'PS',
-  'PT',
-  'PW',
-  'PY',
-  'QA',
-  'RE',
-  'RO',
-  'RS',
-  'RU',
-  'RW',
-  'SA',
-  'SB',
-  'SC',
-  'SD',
-  'SE',
-  'SG',
-  'SH',
-  'SI',
-  'SJ',
-  'SK',
-  'SL',
-  'SM',
-  'SN',
-  'SO',
-  'SR',
-  'SS',
-  'ST',
-  'SV',
-  'SX',
-  'SY',
-  'SZ',
-  'TC',
-  'TD',
-  'TF',
-  'TG',
-  'TH',
-  'TJ',
-  'TK',
-  'TL',
-  'TM',
-  'TN',
-  'TO',
-  'TR',
-  'TT',
-  'TV',
-  'TW',
-  'TZ',
-  'UA',
-  'UG',
-  'UM',
-  'US',
-  'UY',
-  'UZ',
-  'VA',
-  'VC',
-  'VE',
-  'VG',
-  'VI',
-  'VN',
-  'VU',
-  'WF',
-  'WS',
-  'YE',
-  'YT',
-  'ZA',
-  'ZM',
-  'ZW',
-]
 export const organizationMemberRoleUpdateRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationMemberRoleUpdate']['role']
 > = ['admin', 'member']
@@ -56101,6 +55853,259 @@ export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<
   'ST',
   'SV',
   'SX',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]
+export const organizationWithRoleCountryAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationWithRole']['country']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CU',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IR',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KP',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RU',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SY',
   'SZ',
   'TC',
   'TD',

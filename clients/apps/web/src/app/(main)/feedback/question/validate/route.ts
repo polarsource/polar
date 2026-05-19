@@ -1,4 +1,3 @@
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
@@ -41,8 +40,7 @@ export async function POST(req: Request) {
 
   let trustedOrganizationId: string | undefined
   if (parsed.data.organizationId) {
-    const api = await getServerSideAPI()
-    const userOrganizations = await getUserOrganizations(api)
+    const userOrganizations = await getUserOrganizations()
     if (
       userOrganizations.some((org) => org.id === parsed.data.organizationId)
     ) {

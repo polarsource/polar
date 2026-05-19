@@ -4,6 +4,7 @@ from httpx import AsyncClient
 from polar.auth.scope import READ_ONLY_SCOPES
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserOrganization
+from polar.models.user_organization import OrganizationRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
@@ -18,6 +19,27 @@ async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
 
     assert json["email"] == user.email
     assert "oauth_accounts" in json
+    assert json["organizations"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_get_users_me_embeds_organizations_with_role(
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user_organization: UserOrganization,
+) -> None:
+    user_organization.role = OrganizationRole.admin
+    await save_fixture(user_organization)
+
+    response = await client.get("/v1/users/me")
+
+    assert response.status_code == 200
+    organizations = response.json()["organizations"]
+    assert len(organizations) == 1
+    assert organizations[0]["id"] == str(organization.id)
+    assert organizations[0]["role"] == OrganizationRole.admin.value
 
 
 @pytest.mark.asyncio

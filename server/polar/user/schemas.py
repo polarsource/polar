@@ -13,6 +13,7 @@ from polar.config import settings
 from polar.kit.address import CountryAlpha2Input
 from polar.kit.schemas import Schema, TimestampedSchema, UUID4ToStr
 from polar.models.user import IdentityVerificationStatus, OAuthPlatform
+from polar.organization.schemas import OrganizationWithRole
 
 
 class UserBase(Schema):
@@ -39,6 +40,13 @@ class UserRead(UserBase, TimestampedSchema):
     country: str | None
     date_of_birth: date | None
     oauth_accounts: list[OAuthAccountRead]
+    organizations: list[OrganizationWithRole] = Field(
+        default_factory=list,
+        description=(
+            "Organizations the user is a member of, with their role on each. "
+            "Populated by `GET /v1/users/me`; empty otherwise."
+        ),
+    )
 
     @computed_field
     def email_hash(self) -> str | None:

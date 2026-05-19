@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 
-from polar.models import UserOrganization
+from polar.models import Organization, UserOrganization
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession
 
@@ -42,3 +42,25 @@ class UserOrganizationRepository:
         )
         result = await self.session.execute(statement)
         return {row.organization_id: row.role for row in result}
+
+    async def get_organizations_with_role(
+        self, user_id: UUID
+    ) -> Sequence[tuple[Organization, OrganizationRole]]:
+        """Return the user's active organizations with their role, ordered
+        by organization name.
+        """
+        statement = (
+            select(Organization, UserOrganization.role)
+            .join(
+                UserOrganization,
+                UserOrganization.organization_id == Organization.id,
+            )
+            .where(
+                UserOrganization.user_id == user_id,
+                UserOrganization.is_deleted.is_(False),
+                Organization.deleted_at.is_(None),
+            )
+            .order_by(Organization.name)
+        )
+        result = await self.session.execute(statement)
+        return [(row[0], row[1]) for row in result.all()]

@@ -407,17 +407,11 @@ class Organization(OrganizationBase):
     )
 
 
-class OrganizationListItem(Organization):
-    """Variant of `Organization` returned by `GET /v1/organizations` that
-    includes the caller's role on each organization."""
+class OrganizationWithRole(Organization):
+    """Variant of `Organization` embedded on `GET /v1/users/me` that
+    includes the user's role on the organization."""
 
-    role: OrganizationRole | None = Field(
-        None,
-        description=(
-            "The caller's role on this organization. `null` for organization "
-            "tokens (they represent the org itself, not a user-role pairing)."
-        ),
-    )
+    role: OrganizationRole = Field(description="The user's role on this organization.")
 
 
 class OrganizationRoleDefinition(Schema):

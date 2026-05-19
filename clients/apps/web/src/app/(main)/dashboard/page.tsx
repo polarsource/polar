@@ -1,4 +1,3 @@
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { getLastVisitedOrg } from '@/utils/cookies'
 import { getUserOrganizations } from '@/utils/user'
 import { cookies } from 'next/headers'
@@ -9,8 +8,7 @@ export default async function Page({
 }: {
   searchParams: Promise<Record<string, string>>
 }) {
-  const api = await getServerSideAPI()
-  const userOrganizations = await getUserOrganizations(api, true)
+  const userOrganizations = await getUserOrganizations()
   const params = await searchParams
   const query = new URLSearchParams(params).toString()
   const qs = query ? `?${query}` : ''

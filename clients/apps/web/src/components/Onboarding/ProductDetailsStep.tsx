@@ -177,7 +177,10 @@ export function ProductDetailsStep() {
       return false
     }
 
-    setUserOrganizations((previous) => [...previous, organization])
+    setUserOrganizations((previous) => [
+      ...previous,
+      { ...organization, role: 'owner' as const },
+    ])
     updateData({
       organizationId: organization.id,
       orgSlug: organization.slug,

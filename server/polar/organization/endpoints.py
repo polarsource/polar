@@ -6,7 +6,6 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
-from polar.auth.models import is_user
 from polar.auth.permission import ROLE_PERMISSIONS
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
@@ -61,7 +60,6 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
-from polar.user_organization.repository import UserOrganizationRepository
 from polar.user_organization.schemas import (
     OrganizationMember,
     OrganizationMemberInvite,
@@ -86,7 +84,6 @@ from .schemas import (
     OrganizationDeletionResponse,
     OrganizationID,
     OrganizationKYC,
-    OrganizationListItem,
     OrganizationPaymentStatus,
     OrganizationPayoutAccountSet,
     OrganizationReviewState,
@@ -111,7 +108,7 @@ OrganizationNotFound = {
 @router.get(
     "/",
     summary="List Organizations",
-    response_model=ListResource[OrganizationListItem],
+    response_model=ListResource[OrganizationSchema],
     tags=[APITag.public],
     operation_id="organizations:list",
 )
@@ -121,7 +118,7 @@ async def list_organizations(
     sorting: sorting.ListSorting,
     slug: str | None = Query(None, description="Filter by slug."),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[OrganizationListItem]:
+) -> ListResource[OrganizationSchema]:
     """List organizations."""
     results, count = await organization_service.list(
         session,
@@ -131,20 +128,8 @@ async def list_organizations(
         sorting=sorting,
     )
 
-    roles_by_org_id: dict[UUID, OrganizationRole] = {}
-    if is_user(auth_subject):
-        user_organization_repository = UserOrganizationRepository.from_session(session)
-        roles_by_org_id = await user_organization_repository.get_roles_by_org_ids(
-            auth_subject.subject.id, [result.id for result in results]
-        )
-
     return ListResource.from_paginated_results(
-        [
-            OrganizationListItem.model_validate(result).model_copy(
-                update={"role": roles_by_org_id.get(result.id)}
-            )
-            for result in results
-        ],
+        [OrganizationSchema.model_validate(result) for result in results],
         count,
         pagination,
     )

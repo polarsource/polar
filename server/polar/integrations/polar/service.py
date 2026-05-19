@@ -172,25 +172,31 @@ class PolarSelfService:
         )
 
     async def resolve_free_plan(
-        self, session: AsyncReadSession, organization_id: uuid.UUID
+        self,
+        session: AsyncReadSession,
+        organization_id: uuid.UUID,
+        *,
+        subscription: "Subscription | None",
     ) -> OrganizationPlan:
         """Return the synthesized free plan for an organization.
 
-        Orgs whose Account carries a platform-fee override (grandfathered from a
-        legacy paid plan) get the "Early Member" variant with the override fees;
-        everyone else gets the standard "Free" plan with platform defaults.
+        Orgs on the free tier whose Account fees match the early-access constants
+        get the "Early Member" variant; everyone else gets the standard "Free"
+        plan with platform defaults. Subscribed orgs always see standard Free,
+        since their Account fees reflect the active paid plan's grant.
         """
-        account = await AccountRepository.from_session(session).get_by_organization(
-            organization_id
-        )
-        if account is not None and (
-            account._platform_fee_percent is not None
-            or account._platform_fee_fixed is not None
-        ):
-            fee_percent, fee_fixed = account.platform_fee
-            return OrganizationPlan.early_member(
-                fee_percent=fee_percent, fee_fixed=fee_fixed
+        if subscription is None:
+            account = await AccountRepository.from_session(session).get_by_organization(
+                organization_id
             )
+            if account is not None and account.platform_fee == (
+                settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,
+                settings.PLATFORM_FEE_FIXED_EARLY_ACCESS,
+            ):
+                return OrganizationPlan.early_member(
+                    fee_percent=settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,
+                    fee_fixed=settings.PLATFORM_FEE_FIXED_EARLY_ACCESS,
+                )
         return OrganizationPlan.free(
             fee_percent=settings.PLATFORM_FEE_BASIS_POINTS,
             fee_fixed=settings.PLATFORM_FEE_FIXED,

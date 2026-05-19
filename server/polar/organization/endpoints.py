@@ -770,8 +770,9 @@ async def list_plans(
     the UI cancels the active subscription instead of creating one.
     """
     products = await polar_self_service.list_plans()
+    subscription = await polar_self_service.get_subscription(authz.organization.id)
     free_plan = await polar_self_service.resolve_free_plan(
-        session, authz.organization.id
+        session, authz.organization.id, subscription=subscription
     )
     return [free_plan, *(OrganizationPlan.from_sdk(product) for product in products)]
 
@@ -795,7 +796,7 @@ async def get_subscription(
     subscription = await polar_self_service.get_subscription(authz.organization.id)
     if subscription is None:
         free_plan = await polar_self_service.resolve_free_plan(
-            session, authz.organization.id
+            session, authz.organization.id, subscription=None
         )
         return OrganizationSubscription.free(plan=free_plan)
     return OrganizationSubscription.from_sdk(subscription)

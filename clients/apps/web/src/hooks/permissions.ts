@@ -5,7 +5,7 @@ import {
 } from '@/hooks/queries/roles'
 import { schemas } from '@polar-sh/client'
 
-export const useOrganizationRole = (
+const useOrganizationRole = (
   organizationId: string | undefined,
 ): schemas['OrganizationRole'] | null => {
   const { userOrganizations } = useAuth()

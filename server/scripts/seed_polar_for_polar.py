@@ -32,6 +32,8 @@ from polar_sdk.models import (
     BenefitFeatureFlagCreate,
     BenefitFeatureFlagCreateProperties,
     BenefitFeatureFlagUpdate,
+    OrganizationSubscriptionSettings,
+    OrganizationUpdate,
     Product,
     ProductBenefitsUpdate,
     ProductCreateRecurring,
@@ -39,6 +41,7 @@ from polar_sdk.models import (
     ProductPriceFreeCreate,
     ProductUpdate,
     ProductVisibility,
+    PublicSubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
 )
 
@@ -376,6 +379,34 @@ async def _seed_products(
             )
 
 
+async def _seed_subscription_settings(
+    polar: Polar, organization_id: str | None
+) -> None:
+    if organization_id is None:
+        typer.echo("Skipping subscription settings (no organization id).")
+        return
+    org = await polar.organizations.get_async(id=organization_id)
+    current = org.subscription_settings
+    if current.proration_behavior == PublicSubscriptionProrationBehavior.INVOICE:
+        typer.echo("  skip   subscription_settings (proration already 'invoice')")
+        return
+    desired = OrganizationSubscriptionSettings(
+        allow_multiple_subscriptions=current.allow_multiple_subscriptions,
+        proration_behavior=PublicSubscriptionProrationBehavior.INVOICE,
+        benefit_revocation_grace_period=current.benefit_revocation_grace_period,
+        prevent_trial_abuse=current.prevent_trial_abuse,
+        allow_customer_updates=current.allow_customer_updates,
+    )
+    await polar.organizations.update_async(
+        id=organization_id,
+        organization_update=OrganizationUpdate(subscription_settings=desired),
+    )
+    typer.echo(
+        f"  update subscription_settings (proration: "
+        f"{current.proration_behavior.value} -> invoice)"
+    )
+
+
 async def _seed(
     env: str,
     token: str,
@@ -389,6 +420,7 @@ async def _seed(
         await _seed_products(polar, organization_id, benefits_by_description)
     else:
         typer.echo("Skipping products (pass --products to seed).")
+    await _seed_subscription_settings(polar, organization_id)
 
 
 @cli.callback()

@@ -37,6 +37,7 @@ from polar.discount.service import discount as discount_service
 from polar.enums import (
     PaymentProcessor,
     PayoutAccountType,
+    SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
     TaxBehavior,
     TaxBehaviorOption,
@@ -1669,6 +1670,11 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 organization=organization,
                 auth_subject=auth_subject,
             )
+            organization.subscription_settings = {
+                **organization.subscription_settings,
+                "proration_behavior": SubscriptionProrationBehavior.invoice,
+            }
+            session.add(organization)
 
         # Create products for organization
         org_products = []

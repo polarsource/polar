@@ -10,7 +10,7 @@ from dramatiq import Retry
 from dramatiq.common import compute_backoff
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -128,25 +128,26 @@ async def _webhook_event_send(
 
     client = HTTPXMiddleware.get()
     try:
-        # TEMP: dev short-circuit disabled to test PolarSelf webhook locally.
-        # if settings.ENV == Environment.development:
-        #     delivery.http_code = event.last_http_code = 200
-        #     delivery.response = None
-        # else:
-        response = await client.post(
-            event.webhook_endpoint.url,
-            content=event.payload,
-            headers=headers,
-            timeout=10.0,
-        )
-        delivery.http_code = response.status_code
-        delivery.response = (
-            # Limit to first 2048 characters to avoid bloating the DB
-            # Strip null bytes which are invalid in PostgreSQL UTF-8 VARCHAR columns
-            response.text.replace("\x00", "")[:2048] if response.text else None
-        )
-        event.last_http_code = response.status_code
-        response.raise_for_status()
+        # In development, don't send webhooks for real
+        # Fail-safe to make sure we don't sent data in the real world
+        if settings.ENV == Environment.development:
+            delivery.http_code = event.last_http_code = 200
+            delivery.response = None
+        else:
+            response = await client.post(
+                event.webhook_endpoint.url,
+                content=event.payload,
+                headers=headers,
+                timeout=10.0,
+            )
+            delivery.http_code = response.status_code
+            delivery.response = (
+                # Limit to first 2048 characters to avoid bloating the DB
+                # Strip null bytes which are invalid in PostgreSQL UTF-8 VARCHAR columns
+                response.text.replace("\x00", "")[:2048] if response.text else None
+            )
+            event.last_http_code = response.status_code
+            response.raise_for_status()
     # Error
     except (httpx.HTTPError, SSLError) as e:
         bound_log.info("An error occurred while sending a webhook", error=e)

@@ -2147,6 +2147,8 @@ WEBHOOK_EVENTS: list[WebhookEventType] = [
     WebhookEventType.benefit_grant_created,
     WebhookEventType.benefit_grant_updated,
     WebhookEventType.benefit_grant_revoked,
+    WebhookEventType.subscription_revoked,
+    WebhookEventType.order_created,
 ]
 SERVER_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 WEBHOOK_SECRET_ENV_KEY = "POLAR_POLAR_WEBHOOK_SECRET"

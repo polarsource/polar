@@ -121,6 +121,11 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000/v1/checkout-links/{client_secret}/redirect"
     )
 
+    # Authentication session
+    AUTHENTICATION_SESSION_TTL: timedelta = timedelta(minutes=15)
+    AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_auth_session"
+    AUTHENTICATION_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
+
     # User session
     USER_SESSION_TTL: timedelta = timedelta(days=31)
     USER_SESSION_COOKIE_KEY: str = "polar_session"

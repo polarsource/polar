@@ -1,5 +1,6 @@
 import { getPublicServerURL } from '@/utils/api'
 import { getServerSideAPI } from '@/utils/client/serverside'
+import { unwrap, UnauthorizedResponseError } from '@polar-sh/client'
 import type { Metadata } from 'next'
 import { EmbedError } from './EmbedError'
 import { PaymentMethodEmbed } from './PaymentMethodEmbed'
@@ -15,6 +16,7 @@ interface SearchParams {
   embed_origin?: string
   theme?: 'light' | 'dark'
   mode?: 'modal' | 'inline'
+  set_default?: string
   setup_intent_client_secret?: string
   setup_intent?: string
 }
@@ -42,6 +44,7 @@ export default async function Page(props: {
     embed_origin,
     theme,
     mode,
+    set_default,
     setup_intent_client_secret,
     setup_intent,
   } = await props.searchParams
@@ -59,16 +62,22 @@ export default async function Page(props: {
   }
 
   const api = await getServerSideAPI(sessionToken)
-  const { response } = await api.GET('/v1/customer-portal/customers/me', {
-    cache: 'no-store',
-  })
-
-  if (response.status === 401) {
-    return <EmbedError code="unauthorized" embedOrigin={embedOrigin} />
-  }
-
-  if (!response.ok) {
-    return <EmbedError code="unknown" embedOrigin={embedOrigin} />
+  let customer
+  try {
+    customer = await unwrap(
+      api.GET('/v1/customer-portal/customers/me', { cache: 'no-store' }),
+    )
+  } catch (error) {
+    return (
+      <EmbedError
+        code={
+          error instanceof UnauthorizedResponseError
+            ? 'unauthorized'
+            : 'unknown'
+        }
+        embedOrigin={embedOrigin}
+      />
+    )
   }
 
   return (
@@ -77,10 +86,16 @@ export default async function Page(props: {
       embedOrigin={embedOrigin}
       theme={theme}
       mode={mode === 'modal' ? 'modal' : 'inline'}
+      setAsDefault={set_default !== 'false'}
       serverURL={getPublicServerURL()}
-      setupIntentParams={
+      customerBillingDetails={{
+        name: customer.name ?? null,
+        email: customer.email ?? null,
+        address: customer.billing_address ?? null,
+      }}
+      setupIntent={
         setup_intent_client_secret && setup_intent
-          ? { setup_intent_client_secret, setup_intent }
+          ? { clientSecret: setup_intent_client_secret, id: setup_intent }
           : undefined
       }
     />

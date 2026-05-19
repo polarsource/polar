@@ -12,32 +12,53 @@ import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+export interface CustomerBillingDetails {
+  name: string | null
+  email: string | null
+  address: schemas['Address'] | null
+}
+
+export interface SetupIntent {
+  clientSecret: string
+  id: string
+}
+
 interface Props {
   api: Client
   themePreset: ThemingPresetProps
-  onProcessingStart: () => void
-  onPaymentMethodAdded: (
+  setAsDefault: boolean
+  customerBillingDetails: CustomerBillingDetails
+  onProcessingStart?: () => void
+  onPaymentMethodAdded?: (
     paymentMethod: schemas['CustomerPaymentMethod'],
   ) => void
-  /**
-   * When the embed re-enters after Stripe's 3DS full-page redirect,
-   * these are the params Stripe appends to the return URL. Presence
-   * means: confirm the setup intent and clean the URL.
-   */
-  setupIntentParams?: {
-    setup_intent_client_secret: string
-    setup_intent: string
-  }
+  setupIntent?: SetupIntent
 }
 
 const FALLBACK_ERROR = 'Something went wrong. Please try again.'
 
+const toStripeBillingDetails = (customer: CustomerBillingDetails) => ({
+  name: customer.name,
+  email: customer.email,
+  phone: null,
+  address: {
+    line1: customer.address?.line1 ?? null,
+    line2: customer.address?.line2 ?? null,
+    postal_code: customer.address?.postal_code ?? null,
+    city: customer.address?.city ?? null,
+    state: customer.address?.state ?? null,
+    country: customer.address?.country ?? null,
+  },
+})
+
 export const PaymentMethodForm = ({
   api,
   themePreset,
+  setAsDefault,
+  customerBillingDetails,
   onProcessingStart,
   onPaymentMethodAdded,
-  setupIntentParams,
+  setupIntent,
 }: Props) => {
   const stripePromise = useMemo(
     () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
@@ -47,7 +68,7 @@ export const PaymentMethodForm = ({
   // Start loading if we're re-entering from a 3DS redirect — the confirm
   // call below will flip it back to false. Avoids a flash of the
   // submittable form before the in-flight confirm resolves.
-  const [loading, setLoading] = useState(!!setupIntentParams)
+  const [loading, setLoading] = useState(!!setupIntent)
 
   const confirmSetupIntent = useCallback(
     async (setupIntentId: string) => {
@@ -55,7 +76,7 @@ export const PaymentMethodForm = ({
       try {
         confirmed = await unwrap(
           api.POST('/v1/customer-portal/customers/me/payment-methods/confirm', {
-            body: { setup_intent_id: setupIntentId, set_default: true },
+            body: { setup_intent_id: setupIntentId, set_default: setAsDefault },
           }),
         )
       } catch {
@@ -66,12 +87,12 @@ export const PaymentMethodForm = ({
 
       setLoading(false)
       if (confirmed.status === 'succeeded') {
-        onPaymentMethodAdded(confirmed.payment_method)
+        onPaymentMethodAdded?.(confirmed.payment_method)
       } else {
         setError(FALLBACK_ERROR)
       }
     },
-    [api, onPaymentMethodAdded],
+    [api, onPaymentMethodAdded, setAsDefault],
   )
 
   // 3DS re-entry: if Stripe redirected the customer back with setup intent
@@ -80,16 +101,16 @@ export const PaymentMethodForm = ({
   const reentryConfirmedRef = useRef(false)
   const router = useRouter()
   useEffect(() => {
-    if (!setupIntentParams || reentryConfirmedRef.current) return
+    if (!setupIntent || reentryConfirmedRef.current) return
     reentryConfirmedRef.current = true
     ;(async () => {
-      await confirmSetupIntent(setupIntentParams.setup_intent)
+      await confirmSetupIntent(setupIntent.id)
       const search = new URLSearchParams(window.location.search)
       search.delete('setup_intent_client_secret')
       search.delete('setup_intent')
       router.replace(`${window.location.pathname}?${search.toString()}`)
     })()
-  }, [setupIntentParams, confirmSetupIntent, router])
+  }, [setupIntent, confirmSetupIntent, router])
 
   const handleSubmit = useCallback(
     async (
@@ -115,19 +136,7 @@ export const PaymentMethodForm = ({
           elements,
           params: {
             payment_method_data: {
-              billing_details: {
-                name: null,
-                email: null,
-                phone: null,
-                address: {
-                  line1: null,
-                  line2: null,
-                  postal_code: null,
-                  city: null,
-                  state: null,
-                  country: null,
-                },
-              },
+              billing_details: toStripeBillingDetails(customerBillingDetails),
             },
           },
         })
@@ -138,7 +147,7 @@ export const PaymentMethodForm = ({
         return
       }
 
-      onProcessingStart()
+      onProcessingStart?.()
 
       let created
       try {
@@ -146,7 +155,7 @@ export const PaymentMethodForm = ({
           api.POST('/v1/customer-portal/customers/me/payment-methods', {
             body: {
               confirmation_token_id: confirmationToken.id,
-              set_default: true,
+              set_default: setAsDefault,
               return_url: window.location.href,
             },
           }),
@@ -159,23 +168,29 @@ export const PaymentMethodForm = ({
 
       if (created.status === 'succeeded') {
         setLoading(false)
-        onPaymentMethodAdded(created.payment_method)
+        onPaymentMethodAdded?.(created.payment_method)
         return
       }
 
-      const { error: actionError, setupIntent } = await stripe.handleNextAction(
-        { clientSecret: created.client_secret },
-      )
+      const { error: actionError, setupIntent: nextActionIntent } =
+        await stripe.handleNextAction({ clientSecret: created.client_secret })
 
-      if (actionError || !setupIntent) {
+      if (actionError || !nextActionIntent) {
         setError(actionError?.message ?? FALLBACK_ERROR)
         setLoading(false)
         return
       }
 
-      await confirmSetupIntent(setupIntent.id)
+      await confirmSetupIntent(nextActionIntent.id)
     },
-    [api, confirmSetupIntent, onPaymentMethodAdded, onProcessingStart],
+    [
+      api,
+      confirmSetupIntent,
+      customerBillingDetails,
+      onPaymentMethodAdded,
+      onProcessingStart,
+      setAsDefault,
+    ],
   )
 
   return (

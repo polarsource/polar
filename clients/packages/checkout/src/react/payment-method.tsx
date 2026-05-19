@@ -80,6 +80,11 @@ interface PolarPaymentMethodBaseProps {
    */
   theme?: 'light' | 'dark'
   /**
+   * Whether the new card should be marked as the customer's default
+   * payment method. Defaults to `true`.
+   */
+  setAsDefault?: boolean
+  /**
    * Fires once when the iframe has loaded and the form is interactive.
    */
   onLoaded?: () => void
@@ -137,6 +142,7 @@ export const PolarPaymentMethod = ({
   customerSessionToken,
   memberSessionToken,
   theme,
+  setAsDefault,
   onLoaded,
   onConfirmed,
   onSuccess,
@@ -179,6 +185,9 @@ export const PolarPaymentMethod = ({
     if (theme) {
       embedURL.searchParams.set('theme', theme)
     }
+    if (setAsDefault === false) {
+      embedURL.searchParams.set('set_default', 'false')
+    }
 
     const iframe = document.createElement('iframe')
     iframe.src = embedURL.toString()
@@ -220,7 +229,7 @@ export const PolarPaymentMethod = ({
       window.removeEventListener('message', messageListener)
       iframe.remove()
     }
-  }, [customerSessionToken, memberSessionToken, theme])
+  }, [customerSessionToken, memberSessionToken, theme, setAsDefault])
 
   return <div ref={containerRef} className={className} style={style} />
 }

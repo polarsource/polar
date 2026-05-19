@@ -104,6 +104,35 @@ describe('PolarEmbedPaymentMethod', () => {
       embed.close()
     })
 
+    it('sets set_default=false when setAsDefault is explicitly false', async () => {
+      const promise = PolarEmbedPaymentMethod.create({
+        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        setAsDefault: false,
+      })
+
+      dispatchLoaded()
+      const embed = await promise
+
+      const iframe = document.querySelector('iframe')!
+      expect(new URL(iframe.src).searchParams.get('set_default')).toBe('false')
+
+      embed.close()
+    })
+
+    it('omits set_default URL param by default', async () => {
+      const promise = PolarEmbedPaymentMethod.create({
+        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+      })
+
+      dispatchLoaded()
+      const embed = await promise
+
+      const iframe = document.querySelector('iframe')!
+      expect(new URL(iframe.src).searchParams.get('set_default')).toBeNull()
+
+      embed.close()
+    })
+
     it('uses member_session_token URL param when given a member token', async () => {
       const promise = PolarEmbedPaymentMethod.create({
         memberSessionToken: 'polar_mst_test_member',

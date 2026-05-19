@@ -42,6 +42,27 @@ describe('PolarPaymentMethod', () => {
     expect(src.searchParams.get('mode')).toBeNull()
   })
 
+  it('sets set_default=false when setAsDefault is explicitly false', () => {
+    const { container } = render(
+      <PolarPaymentMethod
+        customerSessionToken={CUSTOMER_SESSION_TOKEN}
+        setAsDefault={false}
+      />,
+    )
+
+    const iframe = container.querySelector('iframe')!
+    expect(new URL(iframe.src).searchParams.get('set_default')).toBe('false')
+  })
+
+  it('omits set_default URL param by default', () => {
+    const { container } = render(
+      <PolarPaymentMethod customerSessionToken={CUSTOMER_SESSION_TOKEN} />,
+    )
+
+    const iframe = container.querySelector('iframe')!
+    expect(new URL(iframe.src).searchParams.get('set_default')).toBeNull()
+  })
+
   it('uses member_session_token URL param when given a member token', () => {
     const { container } = render(
       <PolarPaymentMethod memberSessionToken="polar_mst_xyz" />,

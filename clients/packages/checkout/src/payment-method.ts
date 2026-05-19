@@ -102,6 +102,11 @@ interface EmbedPaymentMethodBaseOptions {
    */
   theme?: 'light' | 'dark'
   /**
+   * Whether the new card should be marked as the customer's default
+   * payment method. Defaults to `true`.
+   */
+  setAsDefault?: boolean
+  /**
    * Convenience callback fired once when the embed has loaded.
    */
   onLoaded?: (event: CustomEvent<EmbedPaymentMethodMessageLoaded>) => void
@@ -201,7 +206,7 @@ class EmbedPaymentMethod {
     options: EmbedPaymentMethodCreateOptions,
   ): Promise<EmbedPaymentMethod> {
     const session = resolveSessionParam(options)
-    const { theme, onLoaded } = options
+    const { theme, setAsDefault, onLoaded } = options
 
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
@@ -244,6 +249,9 @@ class EmbedPaymentMethod {
     embedURL.searchParams.set('mode', 'modal')
     if (theme) {
       embedURL.searchParams.set('theme', theme)
+    }
+    if (setAsDefault === false) {
+      embedURL.searchParams.set('set_default', 'false')
     }
 
     const iframe = document.createElement('iframe')
@@ -393,6 +401,9 @@ class EmbedPaymentMethod {
       | 'light'
       | 'dark'
       | null
+    const setAsDefaultAttr = element.getAttribute(
+      'data-polar-payment-method-set-as-default',
+    )
     // Sniff the token prefix to forward as the right option. Customer
     // tokens use `polar_cst_`, member tokens use `polar_mst_`. Anything
     // else falls back to customer for backward compat.
@@ -402,6 +413,8 @@ class EmbedPaymentMethod {
     EmbedPaymentMethod.create({
       ...sessionOption,
       theme: theme ?? undefined,
+      setAsDefault:
+        setAsDefaultAttr === null ? undefined : setAsDefaultAttr !== 'false',
     })
   }
 

@@ -5,18 +5,21 @@ import { createClient, schemas } from '@polar-sh/client'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { X } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
-import { PaymentMethodForm } from './PaymentMethodForm'
+import {
+  PaymentMethodForm,
+  type CustomerBillingDetails,
+  type SetupIntent,
+} from './PaymentMethodForm'
 
 interface Props {
   sessionToken: string
   embedOrigin: string
   theme?: 'light' | 'dark'
   mode: 'modal' | 'inline'
+  setAsDefault: boolean
   serverURL: string
-  setupIntentParams?: {
-    setup_intent_client_secret: string
-    setup_intent: string
-  }
+  customerBillingDetails: CustomerBillingDetails
+  setupIntent?: SetupIntent
 }
 
 export const PaymentMethodEmbed = ({
@@ -24,8 +27,10 @@ export const PaymentMethodEmbed = ({
   embedOrigin,
   theme = 'light',
   mode,
+  setAsDefault,
   serverURL,
-  setupIntentParams,
+  customerBillingDetails,
+  setupIntent,
 }: Props) => {
   const themePreset = useMemo(() => getThemePreset(theme), [theme])
   const api = useMemo(
@@ -87,9 +92,11 @@ export const PaymentMethodEmbed = ({
     <PaymentMethodForm
       api={api}
       themePreset={themePreset}
+      setAsDefault={setAsDefault}
+      customerBillingDetails={customerBillingDetails}
       onProcessingStart={handleProcessingStart}
       onPaymentMethodAdded={handleSuccess}
-      setupIntentParams={setupIntentParams}
+      setupIntent={setupIntent}
     />
   )
 

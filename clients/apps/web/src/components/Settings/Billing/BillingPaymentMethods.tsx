@@ -8,6 +8,7 @@ import {
   type OrganizationPaymentMethod,
   type OrganizationPaymentMethodCard,
 } from '@/hooks/queries/billing'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -28,31 +29,33 @@ const capitalize = (value: string) =>
 const PaymentMethodRow = ({
   organizationId,
   paymentMethod,
+  deletable,
 }: {
   organizationId: string
   paymentMethod: OrganizationPaymentMethod
+  deletable: boolean
 }) => {
   const deletePaymentMethod = useDeleteOrganizationPaymentMethod(organizationId)
   const setDefaultPaymentMethod =
     useSetDefaultOrganizationPaymentMethod(organizationId)
 
   const onDelete = async () => {
-    try {
-      await deletePaymentMethod.mutateAsync(paymentMethod.id)
-      toast({
-        title: 'Payment method deleted',
-        description: 'Your payment method has been successfully removed.',
-      })
-    } catch (error) {
+    const { error } = await deletePaymentMethod.mutateAsync(paymentMethod.id)
+    if (error) {
       toast({
         title: 'Failed to delete payment method',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'An error occurred while deleting the payment method.',
+        description: extractApiErrorMessage(
+          error,
+          'An error occurred while deleting the payment method.',
+        ),
         variant: 'error',
       })
+      return
     }
+    toast({
+      title: 'Payment method deleted',
+      description: 'Your payment method has been successfully removed.',
+    })
   }
 
   const onSetDefault = async () => {
@@ -118,16 +121,18 @@ const PaymentMethodRow = ({
             Make default
           </Button>
         )}
-        <Button
-          variant="secondary"
-          size="sm"
-          className="h-8 w-8"
-          onClick={onDelete}
-          loading={deletePaymentMethod.isPending}
-          disabled={deletePaymentMethod.isPending}
-        >
-          <X className="size-4" />
-        </Button>
+        {deletable && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-8 w-8"
+            onClick={onDelete}
+            loading={deletePaymentMethod.isPending}
+            disabled={deletePaymentMethod.isPending}
+          >
+            <X className="size-4" />
+          </Button>
+        )}
       </Box>
     </Box>
   )
@@ -179,6 +184,7 @@ export const BillingPaymentMethods = ({
               key={pm.id}
               organizationId={organizationId}
               paymentMethod={pm}
+              deletable={paymentMethods.length > 1}
             />
           ))
         )}

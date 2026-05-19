@@ -48,6 +48,8 @@ from polar_sdk.models.polarerror import PolarError
 from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
 
+from .exceptions import PolarSelfPaymentMethodInUse, PolarSelfPaymentMethodNotFound
+
 
 class PolarSelfClientError(InternalPolarError):
     def __init__(self, message: str) -> None:
@@ -611,9 +613,11 @@ class PolarSelfClient:
             except PolarError as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
-                    from .service import PolarSelfPaymentMethodNotFound
-
                     raise PolarSelfPaymentMethodNotFound(payment_method_id) from e
+                if e.status_code == 400:
+                    span.set_attribute("http.status_code", 400)
+                    span.set_attribute("error.body", str(e.body))
+                    raise PolarSelfPaymentMethodInUse(payment_method_id) from e
                 _raise_error(span, e, "polar.portal.delete_payment_method")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "polar.portal.delete_payment_method")

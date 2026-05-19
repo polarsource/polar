@@ -142,17 +142,13 @@ export const useConfirmOrganizationPaymentMethod = (organizationId: string) =>
 export const useDeleteOrganizationPaymentMethod = (organizationId: string) =>
   useMutation({
     mutationFn: (paymentMethodId: string) =>
-      unwrap(
-        api.DELETE(
-          '/v1/organizations/{id}/payment-methods/{payment_method_id}',
-          {
-            params: {
-              path: { id: organizationId, payment_method_id: paymentMethodId },
-            },
-          },
-        ),
-      ),
-    onSuccess: () => {
+      api.DELETE('/v1/organizations/{id}/payment-methods/{payment_method_id}', {
+        params: {
+          path: { id: organizationId, payment_method_id: paymentMethodId },
+        },
+      }),
+    onSuccess: (result) => {
+      if (result.error) return
       getQueryClient().invalidateQueries({
         queryKey: ['organization-billing', organizationId, 'payment-methods'],
       })

@@ -16,7 +16,7 @@ from polar_sdk.models import (
 )
 from pytest_mock import MockerFixture
 
-from polar.integrations.polar.service import (
+from polar.integrations.polar.exceptions import (
     PolarSelfNoActiveSubscription,
     PolarSelfNotApproved,
     PolarSelfNotConfigured,
@@ -25,8 +25,8 @@ from polar.integrations.polar.service import (
     PolarSelfWebhookError,
     SupportBenefitError,
     TransactionFeeBenefitError,
-    polar_self,
 )
+from polar.integrations.polar.service import polar_self
 from polar.models.organization import Organization
 from polar.postgres import AsyncReadSession, AsyncSession
 

@@ -25302,6 +25302,17 @@ export interface components {
       | 'disputed'
       | 'charge_disputed'
       | 'cancelled'
+    /** PolarSelfPaymentMethodInUse */
+    PolarSelfPaymentMethodInUse: {
+      /**
+       * Error
+       * @example PolarSelfPaymentMethodInUse
+       * @constant
+       */
+      error: 'PolarSelfPaymentMethodInUse'
+      /** Detail */
+      detail: string
+    }
     /**
      * PortalAuthenticatedUser
      * @description Information about the authenticated portal user.
@@ -33951,6 +33962,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Payment method is in use by an active subscription and cannot be deleted. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolarSelfPaymentMethodInUse']
+        }
       }
       /** @description Organization or payment method not found. */
       404: {

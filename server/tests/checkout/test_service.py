@@ -4707,8 +4707,10 @@ class TestConfirm:
         assert checkout.customer.name == "Existing Person"
         assert checkout.customer.billing_name == "ACME Corp Inc."
 
+        # Stripe's customer.name must stay in sync with Polar's customer.name —
+        # billing_name is a Polar-only concept and shouldn't reach Stripe.
         update_call = stripe_service_mock.update_customer.call_args
-        assert update_call.kwargs.get("name") == "ACME Corp Inc."
+        assert "name" not in update_call.kwargs
 
     async def test_valid_stripe_existing_customer_email(
         self,

@@ -1,5 +1,8 @@
 import { toast } from '@/components/Toast/use-toast'
-import { useDeleteCustomerPaymentMethod } from '@/hooks/queries/customerPortal'
+import {
+  useCustomerPortalCustomer,
+  useDeleteCustomerPaymentMethod,
+} from '@/hooks/queries/customerPortal'
 import type { Client, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
@@ -50,6 +53,8 @@ const PaymentMethod = ({
   deletable: boolean
 }) => {
   const deletePaymentMethod = useDeleteCustomerPaymentMethod(api)
+  const { update: updateCustomer } = useCustomerPortalCustomer()
+  const isDefault = paymentMethod.id === customer.default_payment_method_id
 
   const onDeletePaymentMethod = async () => {
     try {
@@ -70,6 +75,27 @@ const PaymentMethod = ({
     }
   }
 
+  const onSetDefaultPaymentMethod = async () => {
+    try {
+      await updateCustomer.mutateAsync({
+        default_payment_method_id: paymentMethod.id,
+      })
+      toast({
+        title: 'Default payment method updated',
+        description: 'This payment method is now your default.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to update default payment method',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred while updating the default payment method.',
+        variant: 'error',
+      })
+    }
+  }
+
   return (
     <div className="flex items-center justify-between gap-2">
       {isCardPaymentMethod(paymentMethod) ? (
@@ -78,11 +104,21 @@ const PaymentMethod = ({
         <div>{paymentMethod.type}</div>
       )}
       <div className="flex flex-row items-center gap-x-4">
-        {paymentMethod.id === customer.default_payment_method_id && (
+        {isDefault ? (
           <Status
             status="Default Method"
             className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
           />
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onSetDefaultPaymentMethod}
+            loading={updateCustomer.isPending}
+            disabled={updateCustomer.isPending}
+          >
+            Make default
+          </Button>
         )}
         {deletable && (
           <Button

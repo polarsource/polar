@@ -438,6 +438,7 @@ class EmbedPaymentMethod {
 
   private handleSuccess(): void {
     this.closable = true
+    this.close()
   }
 
   /**

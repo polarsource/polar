@@ -272,7 +272,7 @@ describe('PolarEmbedPaymentMethod', () => {
       embed.close()
     })
 
-    it('re-enables closing after success event', async () => {
+    it('auto-closes the modal on success', async () => {
       const promise = PolarEmbedPaymentMethod.create({
         customerSessionToken: CUSTOMER_SESSION_TOKEN,
       })
@@ -296,14 +296,32 @@ describe('PolarEmbedPaymentMethod', () => {
           },
         }),
       )
+
+      expect(document.querySelector('iframe')).toBeNull()
+      embed.close()
+    })
+
+    it('skips the default auto-close when success listener calls preventDefault', async () => {
+      const promise = PolarEmbedPaymentMethod.create({
+        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+      })
+
+      dispatchLoaded()
+      const embed = await promise
+      embed.addEventListener('success', (event) => event.preventDefault())
+
       window.dispatchEvent(
         new MessageEvent('message', {
           origin: ALLOWED_ORIGIN,
-          data: { type: 'POLAR_PAYMENT_METHOD', event: 'close' },
+          data: {
+            type: 'POLAR_PAYMENT_METHOD',
+            event: 'success',
+            paymentMethodId: 'pm_123',
+          },
         }),
       )
 
-      expect(document.querySelector('iframe')).toBeNull()
+      expect(document.querySelector('iframe')).not.toBeNull()
       embed.close()
     })
 

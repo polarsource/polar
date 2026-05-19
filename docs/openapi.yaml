@@ -250,7 +250,7 @@
           "public"
         ],
         "summary": "Get Organization",
-        "description": "Get an organization by ID.",
+        "description": "Get an organization by ID.\n\n**Scopes**: `organizations:read` `organizations:write`",
         "operationId": "organizations:get",
         "parameters": [
           {
@@ -305,6 +305,10 @@
             }
           }
         },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -339,7 +343,7 @@
           "public"
         ],
         "summary": "Update Organization",
-        "description": "Update an organization.",
+        "description": "Update an organization.\n\n**Scopes**: `organizations:write`",
         "operationId": "organizations:update",
         "parameters": [
           {
@@ -414,6 +418,10 @@
             }
           }
         },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1443,6 +1451,10 @@
             }
           }
         },
+        "x-polar-allowed-subjects": [
+          "Anonymous",
+          "User"
+        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1513,6 +1525,10 @@
             }
           }
         },
+        "x-polar-allowed-subjects": [
+          "Anonymous",
+          "User"
+        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1591,6 +1607,10 @@
             }
           }
         },
+        "x-polar-allowed-subjects": [
+          "Anonymous",
+          "User"
+        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1659,6 +1679,10 @@
             }
           }
         },
+        "x-polar-allowed-subjects": [
+          "Anonymous",
+          "User"
+        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -1723,6 +1747,10 @@
             }
           }
         },
+        "x-polar-allowed-subjects": [
+          "Anonymous",
+          "User"
+        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -5750,6 +5778,87 @@
             "lang": "php",
             "label": "PHP (SDK)",
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->orders->invoice(\n    id: '<value>'\n);\n\nif ($response->orderInvoice !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/orders/{id}/receipt": {
+      "get": {
+        "tags": [
+          "orders",
+          "public",
+          "mcp"
+        ],
+        "summary": "Get Order Receipt",
+        "description": "Get a presigned URL to download an order's receipt PDF.\n\n**Scopes**: `orders:read`",
+        "operationId": "orders:receipt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The order ID.",
+              "title": "Id"
+            },
+            "description": "The order ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderReceipt"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Receipt generation in progress."
+          },
+          "404": {
+            "description": "Order not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "read",
+            "orders"
+          ]
+        },
+        "x-speakeasy-group": "orders",
+        "x-speakeasy-name-override": "receipt",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.orders.receipt(id=\"<value>\")\n\n    assert res is not None\n\n    # Handle response\n    print(res)"
           }
         ]
       }
@@ -11207,7 +11316,7 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.discounts.create(request={\n        \"duration\": polar_sdk.DiscountDuration.ONCE,\n        \"type\": polar_sdk.DiscountType.FIXED,\n        \"basis_points\": 449604,\n        \"name\": \"<value>\",\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.discounts.create(request={\n        \"name\": \"<value>\",\n        \"type\": \"percentage\",\n        \"duration\": polar_sdk.DiscountDuration.ONCE,\n        \"basis_points\": 419733,\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -15329,7 +15438,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SeatAssign"
+                "$ref": "#/components/schemas/CustomerSeatAssign"
               }
             }
           }
@@ -17557,6 +17666,93 @@
         ]
       }
     },
+    "/v1/customer-portal/orders/{id}/receipt": {
+      "get": {
+        "tags": [
+          "customer_portal",
+          "orders",
+          "public"
+        ],
+        "summary": "Get Order Receipt",
+        "description": "Get a presigned URL to download an order's receipt PDF.",
+        "operationId": "customer_portal:orders:receipt",
+        "security": [
+          {
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
+          },
+          {
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The order ID.",
+              "title": "Id"
+            },
+            "description": "The order ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrderReceipt"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Receipt generation in progress."
+          },
+          "404": {
+            "description": "Order not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-name-override": "receipt",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.orders.receipt(security=polar_sdk.CustomerPortalOrdersReceiptSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\")\n\n    assert res is not None\n\n    # Handle response\n    print(res)"
+          }
+        ]
+      }
+    },
     "/v1/customer-portal/orders/{id}/payment-status": {
       "get": {
         "tags": [
@@ -18307,7 +18503,7 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.subscriptions.update(security=polar_sdk.CustomerPortalSubscriptionsUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\", customer_subscription_update={})\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.subscriptions.update(security=polar_sdk.CustomerPortalSubscriptionsUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\", customer_subscription_update={\n        \"pending_update\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -18706,13 +18902,13 @@
             "description": "No available seats or customer already has a seat"
           },
           "401": {
-            "description": "Authentication required for direct subscription or order assignment"
+            "description": "Authentication required"
           },
           "403": {
             "description": "Not permitted or seat-based pricing not enabled"
           },
           "404": {
-            "description": "Subscription, order, checkout, or customer not found"
+            "description": "Subscription, order, or customer not found"
           },
           "422": {
             "description": "Validation Error",
@@ -18726,7 +18922,6 @@
           }
         },
         "x-polar-allowed-subjects": [
-          "Anonymous",
           "Organization",
           "User"
         ],
@@ -18834,7 +19029,6 @@
           }
         },
         "x-polar-allowed-subjects": [
-          "Anonymous",
           "Organization",
           "User"
         ],
@@ -18920,7 +19114,6 @@
           }
         },
         "x-polar-allowed-subjects": [
-          "Anonymous",
           "Organization",
           "User"
         ],
@@ -19009,7 +19202,6 @@
           }
         },
         "x-polar-allowed-subjects": [
-          "Anonymous",
           "Organization",
           "User"
         ],
@@ -25055,8 +25247,8 @@
               "openid": "OpenID",
               "profile": "Read your profile",
               "email": "Read your email address",
-              "user:read": "User Read",
-              "user:write": "Delete your user account",
+              "user:read": "Read your user account",
+              "user:write": "Manage your user account",
               "organizations:read": "Read your organizations",
               "organizations:write": "Create or modify organizations",
               "custom_fields:read": "Read custom fields",
@@ -25171,8 +25363,8 @@
               "openid": "OpenID",
               "profile": "Read your profile",
               "email": "Read your email address",
-              "user:read": "User Read",
-              "user:write": "Delete your user account",
+              "user:read": "Read your user account",
+              "user:write": "Manage your user account",
               "organizations:read": "Read your organizations",
               "organizations:write": "Create or modify organizations",
               "custom_fields:read": "Read custom fields",
@@ -25538,6 +25730,10 @@
           "fee": {
             "type": "integer",
             "title": "Fee"
+          },
+          "exchange_rate": {
+            "type": "number",
+            "title": "Exchange Rate"
           }
         },
         "type": "object",
@@ -32743,7 +32939,6 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 99999999,
                 "minimum": 0,
                 "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
@@ -34542,7 +34737,6 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 99999999,
                 "minimum": 0,
                 "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
@@ -35094,7 +35288,6 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 99999999,
                 "minimum": 0,
                 "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
@@ -35494,7 +35687,6 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 99999999,
                 "minimum": 0,
                 "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
@@ -37116,7 +37308,6 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 99999999,
                 "minimum": 0,
                 "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
@@ -37499,7 +37690,6 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 99999999,
                 "minimum": 0,
                 "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
@@ -41239,7 +41429,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -41255,7 +41445,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75.0
+              75
             ]
           },
           "meter": {
@@ -41993,7 +42183,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -42009,7 +42199,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75.0
+              75
             ]
           },
           "customer": {
@@ -42238,6 +42428,18 @@
             "title": "Is Invoice Generated",
             "description": "Whether an invoice has been generated for this order."
           },
+          "receipt_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Number",
+            "description": "The receipt number for this order. Set once the order is paid for organizations with receipts enabled. When set, a downloadable receipt PDF can be obtained via the receipt endpoint."
+          },
           "seats": {
             "anyOf": [
               {
@@ -42351,6 +42553,22 @@
             ],
             "title": "Next Payment Attempt At",
             "description": "When the next payment retry is scheduled"
+          },
+          "refundable_amount": {
+            "type": "integer",
+            "title": "Refundable Amount",
+            "description": "Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.",
+            "examples": [
+              9000
+            ]
+          },
+          "refundable_tax_amount": {
+            "type": "integer",
+            "title": "Refundable Tax Amount",
+            "description": "Sales tax in cents that would be refunded if the full refundable amount is refunded.",
+            "examples": [
+              720
+            ]
           }
         },
         "type": "object",
@@ -42375,6 +42593,7 @@
           "billing_address",
           "invoice_number",
           "is_invoice_generated",
+          "receipt_number",
           "customer_id",
           "product_id",
           "discount_id",
@@ -42383,7 +42602,9 @@
           "product",
           "subscription",
           "items",
-          "description"
+          "description",
+          "refundable_amount",
+          "refundable_tax_amount"
         ],
         "title": "CustomerOrder"
       },
@@ -42671,6 +42892,21 @@
           "organization"
         ],
         "title": "CustomerOrderProduct"
+      },
+      "CustomerOrderReceipt": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The URL to the receipt PDF."
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "CustomerOrderReceipt",
+        "description": "Order's receipt data."
       },
       "CustomerOrderSortProperty": {
         "type": "string",
@@ -43388,6 +43624,18 @@
               }
             ],
             "title": "Tax Id"
+          },
+          "default_payment_method_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Payment Method Id"
           }
         },
         "type": "object",
@@ -43912,6 +44160,133 @@
           "status"
         ],
         "title": "CustomerSeat"
+      },
+      "CustomerSeatAssign": {
+        "properties": {
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "Subscription ID. Required if neither order_id nor checkout_id is provided."
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "Order ID for one-time purchases. Required if subscription_id is not provided."
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "Email of the customer to assign the seat to"
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "External customer ID for the seat assignment"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "Customer ID for the seat assignment"
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "External member ID for the seat assignment. Can be used alone (lookup existing member) or with email (create/validate member)."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "Member ID for the seat assignment."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Additional metadata for the seat (max 10 keys, 1KB total)"
+          },
+          "immediate_claim": {
+            "type": "boolean",
+            "title": "Immediate Claim",
+            "description": "If true, the seat will be immediately claimed without sending an invitation email. API-only feature.",
+            "default": false
+          },
+          "checkout_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Id",
+            "description": "Checkout ID. Resolves to the subscription or order produced by the checkout."
+          }
+        },
+        "type": "object",
+        "title": "CustomerSeatAssign"
       },
       "CustomerSeatClaimResponse": {
         "properties": {
@@ -44513,7 +44888,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -44529,7 +44904,7 @@
             "title": "Balance",
             "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
-              75.0
+              75
             ]
           }
         },
@@ -44833,7 +45208,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -45467,7 +45842,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -45747,8 +46122,25 @@
           },
           {
             "$ref": "#/components/schemas/CustomerSubscriptionCancel"
+          },
+          {
+            "$ref": "#/components/schemas/CustomerSubscriptionUpdateClear"
           }
         ]
+      },
+      "CustomerSubscriptionUpdateClear": {
+        "properties": {
+          "pending_update": {
+            "type": "null",
+            "title": "Pending Update",
+            "description": "Clear the pending subscription update."
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_update"
+        ],
+        "title": "CustomerSubscriptionUpdateClear"
       },
       "CustomerSubscriptionUpdateProduct": {
         "properties": {
@@ -49568,11 +49960,31 @@
       },
       "EventTypeWithStats": {
         "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "The ID of the event type. Null for system event types."
+          },
           "created_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created At",
-            "description": "Creation timestamp of the object."
+            "description": "Creation timestamp of the event type. Null for system event types."
           },
           "modified_at": {
             "anyOf": [
@@ -49585,13 +49997,7 @@
               }
             ],
             "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
+            "description": "Last modification timestamp of the event type. Null for system event types."
           },
           "name": {
             "type": "string",
@@ -49645,9 +50051,6 @@
         },
         "type": "object",
         "required": [
-          "created_at",
-          "modified_at",
-          "id",
           "name",
           "label",
           "organization_id",
@@ -50598,7 +51001,7 @@
           "minimum_amount": {
             "type": "integer",
             "title": "Minimum Amount",
-            "description": "The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents."
+            "description": "The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'."
           },
           "maximum_amount": {
             "anyOf": [
@@ -51584,7 +51987,8 @@
           "increment_usage": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -53222,7 +53626,7 @@
             "title": "Total",
             "description": "The total quantity for the period.",
             "examples": [
-              100.0
+              100
             ]
           }
         },
@@ -53246,7 +53650,7 @@
             "title": "Quantity",
             "description": "The quantity for the current period.",
             "examples": [
-              10.0
+              10
             ]
           }
         },
@@ -56557,6 +56961,18 @@
             "title": "Is Invoice Generated",
             "description": "Whether an invoice has been generated for this order."
           },
+          "receipt_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Number",
+            "description": "The receipt number for this order. Set once the order is paid for organizations with receipts enabled. When set, a downloadable receipt PDF can be obtained via the receipt endpoint."
+          },
           "seats": {
             "anyOf": [
               {
@@ -56736,6 +57152,22 @@
             "examples": [
               "Pro Plan"
             ]
+          },
+          "refundable_amount": {
+            "type": "integer",
+            "title": "Refundable Amount",
+            "description": "Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.",
+            "examples": [
+              9000
+            ]
+          },
+          "refundable_tax_amount": {
+            "type": "integer",
+            "title": "Refundable Tax Amount",
+            "description": "Sales tax in cents that would be refunded if the full refundable amount is refunded.",
+            "examples": [
+              720
+            ]
           }
         },
         "type": "object",
@@ -56760,6 +57192,7 @@
           "billing_address",
           "invoice_number",
           "is_invoice_generated",
+          "receipt_number",
           "customer_id",
           "product_id",
           "discount_id",
@@ -56773,7 +57206,9 @@
           "discount",
           "subscription",
           "items",
-          "description"
+          "description",
+          "refundable_amount",
+          "refundable_tax_amount"
         ],
         "title": "Order"
       },
@@ -57459,6 +57894,21 @@
           "organization_id"
         ],
         "title": "OrderProduct"
+      },
+      "OrderReceipt": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The URL to the receipt PDF."
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "OrderReceipt",
+        "description": "Order's receipt data."
       },
       "OrderRefundedEvent": {
         "properties": {
@@ -60278,22 +60728,16 @@
             "description": "If this organization has the Member model enabled",
             "default": false
           },
-          "tinybird_read": {
-            "type": "boolean",
-            "title": "Tinybird Read",
-            "description": "If this organization reads from Tinybird",
-            "default": false
-          },
-          "tinybird_compare": {
-            "type": "boolean",
-            "title": "Tinybird Compare",
-            "description": "If this organization compares Tinybird results with database",
-            "default": false
-          },
           "checkout_localization_enabled": {
             "type": "boolean",
             "title": "Checkout Localization Enabled",
             "description": "If this organization has checkout localization enabled",
+            "default": false
+          },
+          "account_review_v2_enabled": {
+            "type": "boolean",
+            "title": "Account Review V2 Enabled",
+            "description": "If this organization sees the new account review checklist UI.",
             "default": false
           },
           "overview_metrics": {
@@ -60315,6 +60759,12 @@
             "type": "boolean",
             "title": "Reset Proration Behavior Enabled",
             "description": "If this organization has access to reset proration behavior.",
+            "default": false
+          },
+          "billing_enabled": {
+            "type": "boolean",
+            "title": "Billing Enabled",
+            "description": "If this organization has billing enabled",
             "default": false
           }
         },
@@ -62293,7 +62743,7 @@
           },
           "size": {
             "type": "integer",
-            "maximum": 1.048576E+7,
+            "maximum": 10485760,
             "title": "Size",
             "description": "Size of the file. A maximum of 10 MB is allowed for this type of file."
           },
@@ -62576,7 +63026,7 @@
           "minimum_amount": {
             "type": "integer",
             "title": "Minimum Amount",
-            "description": "The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents."
+            "description": "The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'."
           },
           "maximum_amount": {
             "anyOf": [
@@ -62648,16 +63098,15 @@
             "type": "integer",
             "minimum": 0,
             "title": "Minimum Amount",
-            "description": "The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value between 1-49, it will be rejected. Defaults to 50 cents.",
+            "description": "The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value below the minimum price amount for the currency, it will be rejected. Defaults to the minimum price amount for the currency. Minimum per currency:\n- USD: 0.5\n- AED: 2\n- ALL: 50\n- AMD: 200\n- AOA: 500\n- ARS: 750\n- AUD: 0.7\n- AWG: 1\n- AZN: 1\n- BAM: 1\n- BBD: 2\n- BDT: 70\n- BIF: 2,000\n- BMD: 1\n- BND: 1\n- BOB: 5\n- BRL: 2.5\n- BSD: 1\n- BWP: 10\n- BZD: 2\n- CAD: 0.7\n- CDF: 2,000\n- CHF: 0.5\n- CLP: 500\n- CNY: 5\n- COP: 2,000\n- CRC: 300\n- CVE: 50\n- CZK: 15\n- DJF: 100\n- DKK: 3.2\n- DOP: 40\n- DZD: 70\n- EGP: 30\n- ETB: 80\n- EUR: 0.5\n- FJD: 2\n- FKP: 1\n- GBP: 0.4\n- GEL: 2\n- GNF: 5,000\n- GIP: 1\n- GMD: 40\n- GTQ: 5\n- GYD: 200\n- HKD: 4\n- HNL: 20\n- HTG: 70\n- HUF: 175\n- IDR: 9,000\n- ILS: 1.5\n- INR: 60\n- ISK: 70\n- JMD: 80\n- JPY: 80\n- KES: 70\n- KGS: 50\n- KHR: 3,000\n- KMF: 500\n- KRW: 800\n- KYD: 1\n- KZT: 300\n- LAK: 20,000\n- LKR: 200\n- LRD: 100\n- LSL: 10\n- MAD: 5\n- MDL: 10\n- MGA: 3,000\n- MKD: 50\n- MNT: 2,000\n- MOP: 5\n- MUR: 50\n- MVR: 8\n- MXN: 9\n- MWK: 1,000\n- MYR: 2\n- MZN: 50\n- NAD: 10\n- NGN: 700\n- NIO: 20\n- NOK: 5\n- NPR: 80\n- NZD: 0.9\n- PAB: 1\n- PEN: 2\n- PGK: 3\n- PHP: 35\n- PKR: 200\n- PLN: 2\n- PYG: 4,000\n- QAR: 2\n- RON: 2.5\n- RSD: 60\n- RWF: 1,000\n- SAR: 2\n- SBD: 4\n- SCR: 8\n- SEK: 5\n- SGD: 0.7\n- SHP: 1\n- SOS: 500\n- SRD: 20\n- SZL: 10\n- THB: 20\n- TJS: 5\n- TOP: 2\n- TRY: 30\n- TTD: 4\n- TWD: 20\n- TZS: 2,000\n- UAH: 30\n- UGX: 2,000\n- UYU: 20\n- UZS: 7,000\n- VND: 20,000\n- VUV: 100\n- WST: 2\n- XAF: 500\n- XCD: 2\n- XCG: 1\n- XOF: 500\n- XPF: 100\n- YER: 200\n- ZAR: 9\n- ZMW: 10",
             "default": 50
           },
           "maximum_amount": {
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1E+6,
-                "minimum": 10,
-                "description": "The price in cents.\nMinimum amounts per currency:\n- USD: $0.50\n- AED: AED2.00\n- ARS: ARS0.50\n- AUD: A$0.50\n- BRL: R$0.50\n- CAD: CA$0.50\n- CHF: CHF0.50\n- COP: COP0.50\n- CZK: CZK15.00\n- DKK: DKK2.50\n- EUR: €0.50\n- GBP: £0.30\n- HKD: HK$4.00\n- HUF: HUF175.00\n- IDR: IDR0.50\n- ILS: ₪0.50\n- INR: ₹60.00\n- JPY: ¥50\n- KRW: ₩50\n- MXN: MX$0.10\n- MYR: MYR2.00\n- NOK: NOK3.00\n- NZD: NZ$0.50\n- PHP: ₱0.50\n- PLN: PLN2.00\n- RON: RON2.00\n- RUB: RUB0.50\n- SEK: SEK3.00\n- SGD: SGD0.50\n- THB: THB0.10\n- ZAR: ZAR0.50"
+                "minimum": 1,
+                "description": "The price in cents.\nMinimum amounts per currency:\n- USD: 0.5\n- AED: 2\n- ALL: 50\n- AMD: 200\n- AOA: 500\n- ARS: 750\n- AUD: 0.7\n- AWG: 1\n- AZN: 1\n- BAM: 1\n- BBD: 2\n- BDT: 70\n- BIF: 2,000\n- BMD: 1\n- BND: 1\n- BOB: 5\n- BRL: 2.5\n- BSD: 1\n- BWP: 10\n- BZD: 2\n- CAD: 0.7\n- CDF: 2,000\n- CHF: 0.5\n- CLP: 500\n- CNY: 5\n- COP: 2,000\n- CRC: 300\n- CVE: 50\n- CZK: 15\n- DJF: 100\n- DKK: 3.2\n- DOP: 40\n- DZD: 70\n- EGP: 30\n- ETB: 80\n- EUR: 0.5\n- FJD: 2\n- FKP: 1\n- GBP: 0.4\n- GEL: 2\n- GNF: 5,000\n- GIP: 1\n- GMD: 40\n- GTQ: 5\n- GYD: 200\n- HKD: 4\n- HNL: 20\n- HTG: 70\n- HUF: 175\n- IDR: 9,000\n- ILS: 1.5\n- INR: 60\n- ISK: 70\n- JMD: 80\n- JPY: 80\n- KES: 70\n- KGS: 50\n- KHR: 3,000\n- KMF: 500\n- KRW: 800\n- KYD: 1\n- KZT: 300\n- LAK: 20,000\n- LKR: 200\n- LRD: 100\n- LSL: 10\n- MAD: 5\n- MDL: 10\n- MGA: 3,000\n- MKD: 50\n- MNT: 2,000\n- MOP: 5\n- MUR: 50\n- MVR: 8\n- MXN: 9\n- MWK: 1,000\n- MYR: 2\n- MZN: 50\n- NAD: 10\n- NGN: 700\n- NIO: 20\n- NOK: 5\n- NPR: 80\n- NZD: 0.9\n- PAB: 1\n- PEN: 2\n- PGK: 3\n- PHP: 35\n- PKR: 200\n- PLN: 2\n- PYG: 4,000\n- QAR: 2\n- RON: 2.5\n- RSD: 60\n- RWF: 1,000\n- SAR: 2\n- SBD: 4\n- SCR: 8\n- SEK: 5\n- SGD: 0.7\n- SHP: 1\n- SOS: 500\n- SRD: 20\n- SZL: 10\n- THB: 20\n- TJS: 5\n- TOP: 2\n- TRY: 30\n- TTD: 4\n- TWD: 20\n- TZS: 2,000\n- UAH: 30\n- UGX: 2,000\n- UYU: 20\n- UZS: 7,000\n- VND: 20,000\n- VUV: 100\n- WST: 2\n- XAF: 500\n- XCD: 2\n- XCG: 1\n- XOF: 500\n- XPF: 100\n- YER: 200\n- ZAR: 9\n- ZMW: 10"
               },
               {
                 "type": "null"
@@ -62670,16 +63119,15 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1E+6,
                 "minimum": 0,
-                "description": "The price in cents.\nMinimum amounts per currency:\n- USD: $0.50\n- AED: AED2.00\n- ARS: ARS0.50\n- AUD: A$0.50\n- BRL: R$0.50\n- CAD: CA$0.50\n- CHF: CHF0.50\n- COP: COP0.50\n- CZK: CZK15.00\n- DKK: DKK2.50\n- EUR: €0.50\n- GBP: £0.30\n- HKD: HK$4.00\n- HUF: HUF175.00\n- IDR: IDR0.50\n- ILS: ₪0.50\n- INR: ₹60.00\n- JPY: ¥50\n- KRW: ₩50\n- MXN: MX$0.10\n- MYR: MYR2.00\n- NOK: NOK3.00\n- NZD: NZ$0.50\n- PHP: ₱0.50\n- PLN: PLN2.00\n- RON: RON2.00\n- RUB: RUB0.50\n- SEK: SEK3.00\n- SGD: SGD0.50\n- THB: THB0.10\n- ZAR: ZAR0.50"
+                "description": "The price in cents.\nMinimum amounts per currency:\n- USD: 0.5\n- AED: 2\n- ALL: 50\n- AMD: 200\n- AOA: 500\n- ARS: 750\n- AUD: 0.7\n- AWG: 1\n- AZN: 1\n- BAM: 1\n- BBD: 2\n- BDT: 70\n- BIF: 2,000\n- BMD: 1\n- BND: 1\n- BOB: 5\n- BRL: 2.5\n- BSD: 1\n- BWP: 10\n- BZD: 2\n- CAD: 0.7\n- CDF: 2,000\n- CHF: 0.5\n- CLP: 500\n- CNY: 5\n- COP: 2,000\n- CRC: 300\n- CVE: 50\n- CZK: 15\n- DJF: 100\n- DKK: 3.2\n- DOP: 40\n- DZD: 70\n- EGP: 30\n- ETB: 80\n- EUR: 0.5\n- FJD: 2\n- FKP: 1\n- GBP: 0.4\n- GEL: 2\n- GNF: 5,000\n- GIP: 1\n- GMD: 40\n- GTQ: 5\n- GYD: 200\n- HKD: 4\n- HNL: 20\n- HTG: 70\n- HUF: 175\n- IDR: 9,000\n- ILS: 1.5\n- INR: 60\n- ISK: 70\n- JMD: 80\n- JPY: 80\n- KES: 70\n- KGS: 50\n- KHR: 3,000\n- KMF: 500\n- KRW: 800\n- KYD: 1\n- KZT: 300\n- LAK: 20,000\n- LKR: 200\n- LRD: 100\n- LSL: 10\n- MAD: 5\n- MDL: 10\n- MGA: 3,000\n- MKD: 50\n- MNT: 2,000\n- MOP: 5\n- MUR: 50\n- MVR: 8\n- MXN: 9\n- MWK: 1,000\n- MYR: 2\n- MZN: 50\n- NAD: 10\n- NGN: 700\n- NIO: 20\n- NOK: 5\n- NPR: 80\n- NZD: 0.9\n- PAB: 1\n- PEN: 2\n- PGK: 3\n- PHP: 35\n- PKR: 200\n- PLN: 2\n- PYG: 4,000\n- QAR: 2\n- RON: 2.5\n- RSD: 60\n- RWF: 1,000\n- SAR: 2\n- SBD: 4\n- SCR: 8\n- SEK: 5\n- SGD: 0.7\n- SHP: 1\n- SOS: 500\n- SRD: 20\n- SZL: 10\n- THB: 20\n- TJS: 5\n- TOP: 2\n- TRY: 30\n- TTD: 4\n- TWD: 20\n- TZS: 2,000\n- UAH: 30\n- UGX: 2,000\n- UYU: 20\n- UZS: 7,000\n- VND: 20,000\n- VUV: 100\n- WST: 2\n- XAF: 500\n- XCD: 2\n- XCG: 1\n- XOF: 500\n- XPF: 100\n- YER: 200\n- ZAR: 9\n- ZMW: 10"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Preset Amount",
-            "description": "The initial amount shown to the customer. If 0, the customer will see $0 as the default. Values between 1-49 are rejected."
+            "description": "The initial amount shown to the customer. If 0, the customer will see $0 as the default. If set to a value below the minimum price amount for the currency, it will be rejected.Minimum per currency:\n- USD: 0.5\n- AED: 2\n- ALL: 50\n- AMD: 200\n- AOA: 500\n- ARS: 750\n- AUD: 0.7\n- AWG: 1\n- AZN: 1\n- BAM: 1\n- BBD: 2\n- BDT: 70\n- BIF: 2,000\n- BMD: 1\n- BND: 1\n- BOB: 5\n- BRL: 2.5\n- BSD: 1\n- BWP: 10\n- BZD: 2\n- CAD: 0.7\n- CDF: 2,000\n- CHF: 0.5\n- CLP: 500\n- CNY: 5\n- COP: 2,000\n- CRC: 300\n- CVE: 50\n- CZK: 15\n- DJF: 100\n- DKK: 3.2\n- DOP: 40\n- DZD: 70\n- EGP: 30\n- ETB: 80\n- EUR: 0.5\n- FJD: 2\n- FKP: 1\n- GBP: 0.4\n- GEL: 2\n- GNF: 5,000\n- GIP: 1\n- GMD: 40\n- GTQ: 5\n- GYD: 200\n- HKD: 4\n- HNL: 20\n- HTG: 70\n- HUF: 175\n- IDR: 9,000\n- ILS: 1.5\n- INR: 60\n- ISK: 70\n- JMD: 80\n- JPY: 80\n- KES: 70\n- KGS: 50\n- KHR: 3,000\n- KMF: 500\n- KRW: 800\n- KYD: 1\n- KZT: 300\n- LAK: 20,000\n- LKR: 200\n- LRD: 100\n- LSL: 10\n- MAD: 5\n- MDL: 10\n- MGA: 3,000\n- MKD: 50\n- MNT: 2,000\n- MOP: 5\n- MUR: 50\n- MVR: 8\n- MXN: 9\n- MWK: 1,000\n- MYR: 2\n- MZN: 50\n- NAD: 10\n- NGN: 700\n- NIO: 20\n- NOK: 5\n- NPR: 80\n- NZD: 0.9\n- PAB: 1\n- PEN: 2\n- PGK: 3\n- PHP: 35\n- PKR: 200\n- PLN: 2\n- PYG: 4,000\n- QAR: 2\n- RON: 2.5\n- RSD: 60\n- RWF: 1,000\n- SAR: 2\n- SBD: 4\n- SCR: 8\n- SEK: 5\n- SGD: 0.7\n- SHP: 1\n- SOS: 500\n- SRD: 20\n- SZL: 10\n- THB: 20\n- TJS: 5\n- TOP: 2\n- TRY: 30\n- TTD: 4\n- TWD: 20\n- TZS: 2,000\n- UAH: 30\n- UGX: 2,000\n- UYU: 20\n- UZS: 7,000\n- VND: 20,000\n- VUV: 100\n- WST: 2\n- XAF: 500\n- XCD: 2\n- XCG: 1\n- XOF: 500\n- XPF: 100\n- YER: 200\n- ZAR: 9\n- ZMW: 10"
           }
         },
         "type": "object",
@@ -62799,10 +63247,9 @@
           },
           "price_amount": {
             "type": "integer",
-            "maximum": 99999999,
-            "minimum": 10,
+            "minimum": 1,
             "title": "Price Amount",
-            "description": "The price in cents.\nMinimum amounts per currency:\n- USD: $0.50\n- AED: AED2.00\n- ARS: ARS0.50\n- AUD: A$0.50\n- BRL: R$0.50\n- CAD: CA$0.50\n- CHF: CHF0.50\n- COP: COP0.50\n- CZK: CZK15.00\n- DKK: DKK2.50\n- EUR: €0.50\n- GBP: £0.30\n- HKD: HK$4.00\n- HUF: HUF175.00\n- IDR: IDR0.50\n- ILS: ₪0.50\n- INR: ₹60.00\n- JPY: ¥50\n- KRW: ₩50\n- MXN: MX$0.10\n- MYR: MYR2.00\n- NOK: NOK3.00\n- NZD: NZ$0.50\n- PHP: ₱0.50\n- PLN: PLN2.00\n- RON: RON2.00\n- RUB: RUB0.50\n- SEK: SEK3.00\n- SGD: SGD0.50\n- THB: THB0.10\n- ZAR: ZAR0.50"
+            "description": "The price in cents.\nMinimum amounts per currency:\n- USD: 0.5\n- AED: 2\n- ALL: 50\n- AMD: 200\n- AOA: 500\n- ARS: 750\n- AUD: 0.7\n- AWG: 1\n- AZN: 1\n- BAM: 1\n- BBD: 2\n- BDT: 70\n- BIF: 2,000\n- BMD: 1\n- BND: 1\n- BOB: 5\n- BRL: 2.5\n- BSD: 1\n- BWP: 10\n- BZD: 2\n- CAD: 0.7\n- CDF: 2,000\n- CHF: 0.5\n- CLP: 500\n- CNY: 5\n- COP: 2,000\n- CRC: 300\n- CVE: 50\n- CZK: 15\n- DJF: 100\n- DKK: 3.2\n- DOP: 40\n- DZD: 70\n- EGP: 30\n- ETB: 80\n- EUR: 0.5\n- FJD: 2\n- FKP: 1\n- GBP: 0.4\n- GEL: 2\n- GNF: 5,000\n- GIP: 1\n- GMD: 40\n- GTQ: 5\n- GYD: 200\n- HKD: 4\n- HNL: 20\n- HTG: 70\n- HUF: 175\n- IDR: 9,000\n- ILS: 1.5\n- INR: 60\n- ISK: 70\n- JMD: 80\n- JPY: 80\n- KES: 70\n- KGS: 50\n- KHR: 3,000\n- KMF: 500\n- KRW: 800\n- KYD: 1\n- KZT: 300\n- LAK: 20,000\n- LKR: 200\n- LRD: 100\n- LSL: 10\n- MAD: 5\n- MDL: 10\n- MGA: 3,000\n- MKD: 50\n- MNT: 2,000\n- MOP: 5\n- MUR: 50\n- MVR: 8\n- MXN: 9\n- MWK: 1,000\n- MYR: 2\n- MZN: 50\n- NAD: 10\n- NGN: 700\n- NIO: 20\n- NOK: 5\n- NPR: 80\n- NZD: 0.9\n- PAB: 1\n- PEN: 2\n- PGK: 3\n- PHP: 35\n- PKR: 200\n- PLN: 2\n- PYG: 4,000\n- QAR: 2\n- RON: 2.5\n- RSD: 60\n- RWF: 1,000\n- SAR: 2\n- SBD: 4\n- SCR: 8\n- SEK: 5\n- SGD: 0.7\n- SHP: 1\n- SOS: 500\n- SRD: 20\n- SZL: 10\n- THB: 20\n- TJS: 5\n- TOP: 2\n- TRY: 30\n- TTD: 4\n- TWD: 20\n- TZS: 2,000\n- UAH: 30\n- UGX: 2,000\n- UYU: 20\n- UZS: 7,000\n- VND: 20,000\n- VUV: 100\n- WST: 2\n- XAF: 500\n- XCD: 2\n- XCG: 1\n- XOF: 500\n- XPF: 100\n- YER: 200\n- ZAR: 9\n- ZMW: 10"
           }
         },
         "type": "object",
@@ -63295,7 +63742,6 @@
           },
           "price_per_seat": {
             "type": "integer",
-            "maximum": 99999999,
             "minimum": 0,
             "title": "Price Per Seat",
             "description": "Price per seat in cents for this tier"
@@ -64338,8 +64784,8 @@
           "subscriptions:write": "Create or modify subscriptions made on your organizations",
           "transactions:read": "Read transactions",
           "transactions:write": "Create or modify transactions",
-          "user:read": "User Read",
-          "user:write": "Delete your user account",
+          "user:read": "Read your user account",
+          "user:write": "Manage your user account",
           "wallets:read": "Read wallets",
           "wallets:write": "Create or modify wallets",
           "webhooks:read": "Read webhooks",
@@ -64359,32 +64805,7 @@
               }
             ],
             "title": "Subscription Id",
-            "description": "Subscription ID. Required if checkout_id and order_id are not provided."
-          },
-          "checkout_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checkout Id",
-            "description": "Checkout ID. Used to look up subscription or order from the checkout page."
-          },
-          "checkout_client_secret": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checkout Client Secret",
-            "description": "Client secret of the checkout. Required when assigning seats via checkout_id as an anonymous caller (e.g. the checkout confirmation page)."
+            "description": "Subscription ID. Required if neither order_id nor checkout_id is provided."
           },
           "order_id": {
             "anyOf": [
@@ -64397,7 +64818,7 @@
               }
             ],
             "title": "Order Id",
-            "description": "Order ID for one-time purchases. Required if subscription_id and checkout_id are not provided."
+            "description": "Order ID for one-time purchases. Required if subscription_id is not provided."
           },
           "email": {
             "anyOf": [
@@ -66085,7 +66506,7 @@
             "title": "Consumed Units",
             "description": "The number of consumed units so far in this billing period.",
             "examples": [
-              25.0
+              25
             ]
           },
           "credited_units": {
@@ -66131,6 +66552,189 @@
         ],
         "title": "SubscriptionMeter",
         "description": "Current consumption and spending for a subscription meter."
+      },
+      "SubscriptionPastDueEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ],
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "subscription.past_due",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/SubscriptionPastDueMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "SubscriptionPastDueEvent",
+        "description": "An event created by Polar when a subscription becomes past due."
+      },
+      "SubscriptionPastDueMetadata": {
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          },
+          "past_due_at": {
+            "type": "string",
+            "title": "Past Due At"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "recurring_interval": {
+            "type": "string",
+            "title": "Recurring Interval"
+          },
+          "recurring_interval_count": {
+            "type": "integer",
+            "title": "Recurring Interval Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_id",
+          "past_due_at"
+        ],
+        "title": "SubscriptionPastDueMetadata"
       },
       "SubscriptionProductUpdatedEvent": {
         "properties": {
@@ -66309,6 +66913,184 @@
           "reset"
         ],
         "title": "SubscriptionProrationBehavior"
+      },
+      "SubscriptionReactivatedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ],
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "subscription.reactivated",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/SubscriptionReactivatedMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "SubscriptionReactivatedEvent",
+        "description": "An event created by Polar when a past due subscription is recovered."
+      },
+      "SubscriptionReactivatedMetadata": {
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "recurring_interval": {
+            "type": "string",
+            "title": "Recurring Interval"
+          },
+          "recurring_interval_count": {
+            "type": "integer",
+            "title": "Recurring Interval Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_id"
+        ],
+        "title": "SubscriptionReactivatedMetadata"
       },
       "SubscriptionRecurringInterval": {
         "type": "string",
@@ -66951,6 +67733,9 @@
           },
           {
             "$ref": "#/components/schemas/SubscriptionRevoke"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionUpdateClear"
           }
         ]
       },
@@ -66968,6 +67753,178 @@
           "current_billing_period_end"
         ],
         "title": "SubscriptionUpdateBillingPeriod"
+      },
+      "SubscriptionUpdateClear": {
+        "properties": {
+          "pending_update": {
+            "type": "null",
+            "title": "Pending Update",
+            "description": "Clear the pending subscription update. Set to null to remove scheduled changes."
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_update"
+        ],
+        "title": "SubscriptionUpdateClear"
+      },
+      "SubscriptionUpdateClearedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ],
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "subscription.update_cleared",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/SubscriptionUpdateClearedMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "SubscriptionUpdateClearedEvent",
+        "description": "An event created by Polar when a pending subscription update is cleared without being applied."
+      },
+      "SubscriptionUpdateClearedMetadata": {
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_id"
+        ],
+        "title": "SubscriptionUpdateClearedMetadata"
       },
       "SubscriptionUpdateDiscount": {
         "properties": {
@@ -67424,6 +68381,12 @@
             "$ref": "#/components/schemas/SubscriptionRevokedEvent"
           },
           {
+            "$ref": "#/components/schemas/SubscriptionPastDueEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionReactivatedEvent"
+          },
+          {
             "$ref": "#/components/schemas/SubscriptionUncanceledEvent"
           },
           {
@@ -67434,6 +68397,9 @@
           },
           {
             "$ref": "#/components/schemas/SubscriptionBillingPeriodUpdatedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionUpdateClearedEvent"
           },
           {
             "$ref": "#/components/schemas/OrderPaidEvent"
@@ -67501,10 +68467,13 @@
             "subscription.canceled": "#/components/schemas/SubscriptionCanceledEvent",
             "subscription.created": "#/components/schemas/SubscriptionCreatedEvent",
             "subscription.cycled": "#/components/schemas/SubscriptionCycledEvent",
+            "subscription.past_due": "#/components/schemas/SubscriptionPastDueEvent",
             "subscription.product_updated": "#/components/schemas/SubscriptionProductUpdatedEvent",
+            "subscription.reactivated": "#/components/schemas/SubscriptionReactivatedEvent",
             "subscription.revoked": "#/components/schemas/SubscriptionRevokedEvent",
             "subscription.seats_updated": "#/components/schemas/SubscriptionSeatsUpdatedEvent",
             "subscription.uncanceled": "#/components/schemas/SubscriptionUncanceledEvent",
+            "subscription.update_cleared": "#/components/schemas/SubscriptionUpdateClearedEvent",
             "subscription.updated": "#/components/schemas/SubscriptionUpdatedEvent"
           }
         }

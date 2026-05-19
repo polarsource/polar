@@ -180,7 +180,7 @@ export default function ClientPage({
         }
 
         return (
-          <div className="flex justify-end">
+          <Box display="flex" justifyContent="end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" size="icon">
@@ -210,7 +210,7 @@ export default function ClientPage({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </Box>
         )
       },
     },

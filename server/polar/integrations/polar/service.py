@@ -20,7 +20,7 @@ from polar.email.schemas import (
     PolarSelfSubscriptionConfirmationProps,
     PolarSelfSubscriptionCycledProps,
 )
-from polar.email.sender import enqueue_email_template
+from polar.email.sender import Attachment, enqueue_email_template
 from polar.exceptions import PolarError
 from polar.integrations.plain.service import plain as plain_service
 from polar.organization.repository import OrganizationRepository
@@ -508,9 +508,19 @@ class PolarSelfService:
         if not recipient:
             return
 
+        if order.billing_reason not in (
+            OrderBillingReason.SUBSCRIPTION_CREATE,
+            OrderBillingReason.SUBSCRIPTION_UPDATE,
+            OrderBillingReason.SUBSCRIPTION_CYCLE,
+        ):
+            return
+
         product_name = order.product.name if order.product is not None else "Polar"
 
-        if order.billing_reason == OrderBillingReason.SUBSCRIPTION_CREATE:
+        if order.billing_reason in (
+            OrderBillingReason.SUBSCRIPTION_CREATE,
+            OrderBillingReason.SUBSCRIPTION_UPDATE,
+        ):
             email = EmailAdapter.validate_python(
                 {
                     "template": "polar_self_subscription_confirmation",
@@ -521,20 +531,28 @@ class PolarSelfService:
                 }
             )
             subject = f"Welcome to {product_name}"
-        elif order.billing_reason == OrderBillingReason.SUBSCRIPTION_CYCLE:
+        else:
             email = EmailAdapter.validate_python(
                 {
                     "template": "polar_self_subscription_cycled",
                     "props": PolarSelfSubscriptionCycledProps(
                         email=recipient,
                         product_name=product_name,
-                        invoice_number=order.invoice_number,
                     ).model_dump(),
                 }
             )
             subject = f"Your {product_name} subscription renewed"
-        else:
-            return
+
+        attachments: list[Attachment] | None = None
+        if order.is_invoice_generated:
+            invoice_url = await get_client().get_order_invoice(order_id=order.id)
+            if invoice_url is not None:
+                attachments = [
+                    {
+                        "remote_url": invoice_url,
+                        "filename": f"polar-{order.invoice_number}.pdf",
+                    }
+                ]
 
         with logfire.span(
             "polar_self.webhook.order_created",
@@ -545,6 +563,7 @@ class PolarSelfService:
                 email,
                 to_email_addr=recipient,
                 subject=subject,
+                attachments=attachments,
             )
 
     async def handle_subscription_revoked_event(

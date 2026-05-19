@@ -32,8 +32,6 @@ from .service import polar_self
 async def create_customer(
     external_id: str,
     name: str,
-    organization_id: str,
-    product_id: str,
     owner_external_id: str,
     owner_email: str,
     owner_name: str,
@@ -46,10 +44,6 @@ async def create_customer(
         owner_email=owner_email,
         owner_name=owner_name,
     )
-    await client.create_free_subscription(
-        external_customer_id=external_id,
-        product_id=product_id,
-    )
     await plain_service.upsert_tenant(external_id=external_id, name=name)
     await plain_service.upsert_customer(
         external_id=owner_external_id,
@@ -58,14 +52,6 @@ async def create_customer(
     await plain_service.add_customer_to_tenant(
         customer_external_id=owner_external_id,
         tenant_external_id=external_id,
-    )
-
-
-@actor(actor_name="polar_self.create_free_subscription", priority=TaskPriority.LOW)
-async def create_free_subscription(external_customer_id: str, product_id: str) -> None:
-    await get_client().create_free_subscription(
-        external_customer_id=external_customer_id,
-        product_id=product_id,
     )
 
 

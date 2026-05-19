@@ -32,7 +32,7 @@ def plain_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.mark.asyncio
 class TestCreateCustomer:
-    async def test_creates_customer_subscription_and_plain_tenant(
+    async def test_creates_customer_and_plain_tenant(
         self,
         mocker: MockerFixture,
         plain_service_mock: MagicMock,
@@ -43,8 +43,6 @@ class TestCreateCustomer:
         await create_customer(
             external_id="org-123",
             name="Acme Inc",
-            organization_id="self-org",
-            product_id="prod-free",
             owner_external_id="user-123",
             owner_email="owner@example.com",
             owner_name="Owner",
@@ -57,10 +55,7 @@ class TestCreateCustomer:
             owner_email="owner@example.com",
             owner_name="Owner",
         )
-        client.create_free_subscription.assert_called_once_with(
-            external_customer_id="org-123",
-            product_id="prod-free",
-        )
+        client.create_free_subscription.assert_not_called()
         plain_service_mock.upsert_tenant.assert_awaited_once_with(
             external_id="org-123", name="Acme Inc"
         )

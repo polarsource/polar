@@ -236,6 +236,12 @@ module "test" {
       GB = "GB458254961"
       # Vietnam
       VN = "9000020281"
+      # Chile
+      CL = "59259480-3"
+      # New Zealand
+      NZ = "148410224"
+      # Norway
+      NO = "VOEC3039846"
     })
     tax_processors       = "[\"numeral\",\"stripe\"]"
     tax_record_processor = "numeral"

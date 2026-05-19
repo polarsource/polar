@@ -22,6 +22,6 @@ export default async function Page() {
   }
 
   const lastVisitedOrg = getLastVisitedOrg(await cookies(), userOrganizations)
-  const organization = lastVisitedOrg ? lastVisitedOrg : userOrganizations[0]
+  const organization = lastVisitedOrg ?? userOrganizations[0]
   redirect(`/dashboard/${organization.slug}`)
 }

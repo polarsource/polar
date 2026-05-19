@@ -433,7 +433,7 @@ const nextConfig = {
 
     return [
       {
-        source: '/((?!checkout|oauth2|docs).*)',
+        source: '/((?!checkout|embed|oauth2|docs).*)',
         headers: baseHeaders,
       },
       {
@@ -465,6 +465,28 @@ const nextConfig = {
       },
       {
         source: '/checkout/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: embeddedCSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value: `payment=*, publickey-credentials-get=*, camera=(), microphone=(), geolocation=()`,
+          },
+          ...(ENVIRONMENT === 'sandbox'
+            ? [
+                {
+                  key: 'X-Robots-Tag',
+                  value:
+                    'noindex, nofollow, noarchive, nosnippet, noimageindex',
+                },
+              ]
+            : []),
+        ],
+      },
+      {
+        source: '/embed/:path*',
         headers: [
           {
             key: 'Content-Security-Policy',

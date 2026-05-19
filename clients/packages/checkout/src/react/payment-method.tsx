@@ -1,0 +1,235 @@
+'use client'
+
+import { useEffect, useRef } from 'react'
+
+const POLAR_PAYMENT_METHOD_EVENT = 'POLAR_PAYMENT_METHOD'
+const EMBED_PATH = '/embed/payment-method'
+
+type ErrorCode = 'invalid_request' | 'unauthorized' | 'unknown'
+
+type IncomingMessage =
+  | { event: 'loaded' }
+  | { event: 'confirmed' }
+  | { event: 'success'; paymentMethodId: string }
+  | { event: 'error'; code: ErrorCode }
+  | { event: 'resize'; height: number }
+
+const isPolarMessage = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  message: any,
+): message is IncomingMessage & { type: typeof POLAR_PAYMENT_METHOD_EVENT } => {
+  return (
+    !!message &&
+    typeof message === 'object' &&
+    message.type === POLAR_PAYMENT_METHOD_EVENT
+  )
+}
+
+const resolveEmbedBaseURL = (): string => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore - Defined at build time by tsup
+  const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string
+  return origins.split(',')[0]
+}
+
+const isAllowedOrigin = (origin: string): boolean => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore - Defined at build time by tsup
+  return (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
+    .split(',')
+    .includes(origin)
+}
+
+const buildIframeAllow = (): string => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore - Defined at build time by tsup
+  const origins = (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
+    .split(',')
+    .join(' ')
+  return `payment 'self' ${origins}; publickey-credentials-get 'self' ${origins};`
+}
+
+/**
+ * Discriminated union enforcing that callers pass exactly one of
+ * `customerSessionToken` or `memberSessionToken`. Passing both, or
+ * neither, is a compile-time error.
+ */
+type TokenProps =
+  | {
+      /**
+       * A short-lived customer session token (prefix `polar_cst_`),
+       * minted server-side via `POST /v1/customer-sessions` using a
+       * Polar API key.
+       */
+      customerSessionToken: string
+      memberSessionToken?: never
+    }
+  | {
+      customerSessionToken?: never
+      /**
+       * A short-lived member session token (prefix `polar_mst_`), minted
+       * server-side via `POST /v1/customer-sessions` when the
+       * organisation has `member_model_enabled`.
+       */
+      memberSessionToken: string
+    }
+
+interface PolarPaymentMethodBaseProps {
+  /**
+   * Color scheme for the embed. Defaults to `light`.
+   */
+  theme?: 'light' | 'dark'
+  /**
+   * Whether the new card should be marked as the customer's default
+   * payment method. Defaults to `true`.
+   */
+  setAsDefault?: boolean
+  /**
+   * Fires once when the iframe has loaded and the form is interactive.
+   */
+  onLoaded?: () => void
+  /**
+   * Fires when the customer submits the card and Stripe processing
+   * begins. Use this to disable any "close" / "cancel" actions you
+   * render around the embed until `onSuccess` or `onError` fires.
+   */
+  onConfirmed?: () => void
+  /**
+   * Fires when the payment method has been attached to the customer.
+   */
+  onSuccess?: (paymentMethodId: string) => void
+  /**
+   * Fires when the iframe could not render the form (token missing,
+   * expired, or rejected).
+   */
+  onError?: (code: ErrorCode) => void
+  /**
+   * Optional class name applied to the wrapping `div`. Use this to size
+   * or position the embed.
+   */
+  className?: string
+  /**
+   * Optional inline style applied to the wrapping `div`.
+   */
+  style?: React.CSSProperties
+}
+
+export type PolarPaymentMethodProps = TokenProps & PolarPaymentMethodBaseProps
+
+/**
+ * Embeds the Polar "add payment method" form as a bare, chrome-less
+ * iframe inside the parent React tree.
+ *
+ * The merchant is responsible for any surrounding UI (modal, sheet,
+ * inline card, etc). For a one-line modal experience, use
+ * `PolarEmbedPaymentMethod.create()` from `@polar-sh/checkout/payment-method`
+ * instead.
+ *
+ * The iframe auto-resizes to its content height; you don't need to set
+ * one. To constrain its width, style the wrapping `div` via `className`
+ * or `style`.
+ *
+ * @example
+ * ```tsx
+ * <PolarPaymentMethod
+ *   customerSessionToken={token}
+ *   onSuccess={(id) => console.log('Attached:', id)}
+ *   onError={(code) => console.error(code)}
+ * />
+ * ```
+ */
+export const PolarPaymentMethod = ({
+  customerSessionToken,
+  memberSessionToken,
+  theme,
+  setAsDefault,
+  onLoaded,
+  onConfirmed,
+  onSuccess,
+  onError,
+  className,
+  style,
+}: PolarPaymentMethodProps) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Keep handlers in a ref so the effect doesn't re-mount the iframe
+  // every time the parent re-renders with new callback identities.
+  const handlersRef = useRef({ onLoaded, onConfirmed, onSuccess, onError })
+  useEffect(() => {
+    handlersRef.current = { onLoaded, onConfirmed, onSuccess, onError }
+  })
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    if (customerSessionToken && memberSessionToken) {
+      throw new Error(
+        'PolarPaymentMethod: pass only one of `customerSessionToken` or `memberSessionToken`, not both.',
+      )
+    }
+    const sessionParamName = memberSessionToken
+      ? 'member_session_token'
+      : 'customer_session_token'
+    const sessionParamValue = memberSessionToken ?? customerSessionToken
+    if (!sessionParamValue) {
+      throw new Error(
+        'PolarPaymentMethod: one of `customerSessionToken` or `memberSessionToken` is required.',
+      )
+    }
+
+    const embedURL = new URL(EMBED_PATH, resolveEmbedBaseURL())
+    embedURL.searchParams.set(sessionParamName, sessionParamValue)
+    embedURL.searchParams.set('embed', 'true')
+    embedURL.searchParams.set('embed_origin', window.location.origin)
+    if (theme) {
+      embedURL.searchParams.set('theme', theme)
+    }
+    if (setAsDefault === false) {
+      embedURL.searchParams.set('set_default', 'false')
+    }
+
+    const iframe = document.createElement('iframe')
+    iframe.src = embedURL.toString()
+    iframe.style.display = 'block'
+    iframe.style.width = '100%'
+    iframe.style.height = '0'
+    iframe.style.border = 'none'
+    iframe.style.colorScheme = 'auto'
+    iframe.allow = buildIframeAllow()
+
+    container.replaceChildren(iframe)
+
+    const messageListener = ({ data, origin }: MessageEvent) => {
+      if (!isAllowedOrigin(origin)) return
+      if (!isPolarMessage(data)) return
+
+      switch (data.event) {
+        case 'loaded':
+          handlersRef.current.onLoaded?.()
+          break
+        case 'confirmed':
+          handlersRef.current.onConfirmed?.()
+          break
+        case 'success':
+          handlersRef.current.onSuccess?.(data.paymentMethodId)
+          break
+        case 'error':
+          handlersRef.current.onError?.(data.code)
+          break
+        case 'resize':
+          iframe.style.height = `${Math.max(0, Math.ceil(data.height))}px`
+          break
+      }
+    }
+
+    window.addEventListener('message', messageListener)
+
+    return () => {
+      window.removeEventListener('message', messageListener)
+      iframe.remove()
+    }
+  }, [customerSessionToken, memberSessionToken, theme, setAsDefault])
+
+  return <div ref={containerRef} className={className} style={style} />
+}

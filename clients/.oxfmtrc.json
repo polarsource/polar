@@ -7,5 +7,5 @@
   "useTabs": false,
   "sortTailwindcss": {},
   "sortPackageJson": false,
-  "ignorePatterns": ["node_modules", "dist", "coverage"]
+  "ignorePatterns": ["node_modules", "dist", "coverage", ".changeset"]
 }

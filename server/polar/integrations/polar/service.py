@@ -5,19 +5,27 @@ from typing import TYPE_CHECKING, Any
 import logfire
 from polar_sdk.models import (
     CustomerPortalCustomerUpdate,
+    OrderBillingReason,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
+    WebhookOrderCreatedPayload,
     WebhookSubscriptionRevokedPayload,
 )
 
 from polar.account.repository import AccountRepository
 from polar.config import settings
+from polar.email.schemas import (
+    EmailAdapter,
+    PolarSelfSubscriptionConfirmationProps,
+    PolarSelfSubscriptionCycledProps,
+)
+from polar.email.sender import Attachment, enqueue_email_template
 from polar.exceptions import PolarError
 from polar.integrations.plain.service import plain as plain_service
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.worker import enqueue_job
+from polar.worker import enqueue_job, get_retries
 
 from .client import get_client
 from .schemas import (
@@ -110,6 +118,12 @@ class PolarSelfPaymentMethodNotFound(PolarError):
             status_code=404,
         )
         self.payment_method_id = payment_method_id
+
+
+class PolarSelfInvoiceNotReady(PolarSelfWebhookError):
+    def __init__(self, order_id: str) -> None:
+        super().__init__(f"Invoice for order {order_id!r} not yet generated.")
+        self.order_id = order_id
 
 
 class PolarSelfService:
@@ -491,6 +505,87 @@ class PolarSelfService:
                     )
                 case "support":
                     await self._apply_support(session, organization_id, active_grant)
+
+    async def handle_order_created_event(
+        self, payload: WebhookOrderCreatedPayload
+    ) -> None:
+        order = payload.data
+
+        if order.billing_reason not in (
+            OrderBillingReason.SUBSCRIPTION_CREATE,
+            OrderBillingReason.SUBSCRIPTION_UPDATE,
+            OrderBillingReason.SUBSCRIPTION_CYCLE,
+        ):
+            return
+
+        client = get_client()
+        contacts = await client.list_billing_contacts(customer_id=order.customer.id)
+        recipients = sorted({contact.email for contact in contacts if contact.email})
+        if not recipients:
+            return
+
+        product_name = order.product.name if order.product is not None else "Polar"
+
+        if order.billing_reason == OrderBillingReason.SUBSCRIPTION_CYCLE:
+            template_name = "polar_self_subscription_cycled"
+            subject = f"Your {product_name} subscription renewed"
+        else:
+            template_name = "polar_self_subscription_confirmation"
+            subject = f"You're now on {product_name}"
+
+        # Trigger invoice generation, then GET on each retry until the PDF
+        # is written. If POST is rejected (order not billable) or billing
+        # details are missing, no invoice will ever exist, then we can send without it.
+        attachments: list[Attachment] | None = None
+        invoice_expected = bool(order.billing_name and order.billing_address)
+        if invoice_expected and get_retries() == 0:
+            invoice_expected = await client.trigger_order_invoice_generation(
+                order_id=order.id
+            )
+
+        if invoice_expected:
+            invoice_url = await client.get_order_invoice(order_id=order.id)
+            if invoice_url is None:
+                raise PolarSelfInvoiceNotReady(order.id)
+            attachments = [
+                {
+                    "remote_url": invoice_url,
+                    "filename": f"{order.invoice_number}.pdf",
+                }
+            ]
+
+        with logfire.span(
+            "polar_self.webhook.order_created",
+            order_id=order.id,
+            billing_reason=order.billing_reason.value,
+        ):
+            for recipient in recipients:
+                if template_name == "polar_self_subscription_confirmation":
+                    email = EmailAdapter.validate_python(
+                        {
+                            "template": template_name,
+                            "props": PolarSelfSubscriptionConfirmationProps(
+                                email=recipient,
+                                product_name=product_name,
+                            ).model_dump(),
+                        }
+                    )
+                else:
+                    email = EmailAdapter.validate_python(
+                        {
+                            "template": template_name,
+                            "props": PolarSelfSubscriptionCycledProps(
+                                email=recipient,
+                                product_name=product_name,
+                            ).model_dump(),
+                        }
+                    )
+                enqueue_email_template(
+                    email,
+                    to_email_addr=recipient,
+                    subject=subject,
+                    attachments=attachments,
+                )
 
     async def handle_subscription_revoked_event(
         self, payload: WebhookSubscriptionRevokedPayload

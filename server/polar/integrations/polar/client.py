@@ -34,6 +34,7 @@ from polar_sdk.models import (
     Member,
     MemberCreate,
     MemberOwnerCreate,
+    MemberRole,
     Order,
     OrderSortProperty,
     Product,
@@ -221,6 +222,24 @@ class PolarSelfClient:
                 _raise_network_error(span, e, "get_order_invoice")
             return invoice.url
 
+    async def trigger_order_invoice_generation(self, *, order_id: str) -> bool:
+        """Trigger PDF generation for an order. Returns True if accepted,
+        False if the order isn't billable (e.g. not paid yet, missing billing
+        details) — in which case no invoice will ever be produced."""
+        with logfire.span(
+            "polar.trigger_order_invoice_generation", order_id=order_id
+        ) as span:
+            try:
+                await self._sdk.orders.generate_invoice_async(id=order_id)
+                return True
+            except PolarError as e:
+                if e.status_code == 422:
+                    span.set_attribute("not_billable", True)
+                    return False
+                _raise_error(span, e, "trigger_order_invoice_generation")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "trigger_order_invoice_generation")
+
     async def list_recurring_products(self, *, organization_id: str) -> list[Product]:
         with logfire.span(
             "polar.list_recurring_products", organization_id=organization_id
@@ -333,6 +352,27 @@ class PolarSelfClient:
             external_id=external_id,
             external_customer_id=external_customer_id,
         )
+
+    async def list_billing_contacts(self, *, customer_id: str) -> list[Member]:
+        contacts: list[Member] = []
+        with logfire.span(
+            "polar.list_billing_contacts", customer_id=customer_id
+        ) as span:
+            for role in (MemberRole.OWNER, MemberRole.BILLING_MANAGER):
+                try:
+                    response = await self._sdk.members.list_members_async(
+                        customer_id=customer_id,
+                        role=role,
+                        limit=100,
+                    )
+                except PolarError as e:
+                    _raise_error(span, e, "list_billing_contacts")
+                except httpx.RequestError as e:
+                    _raise_network_error(span, e, "list_billing_contacts")
+                if response is not None:
+                    contacts.extend(response.result.items)
+            span.set_attribute("count", len(contacts))
+            return contacts
 
     async def add_member(
         self, *, customer_id: str, email: str, name: str, external_id: str

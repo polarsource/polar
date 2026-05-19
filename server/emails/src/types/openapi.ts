@@ -1898,6 +1898,12 @@ export interface components {
        */
       checkout_localization_enabled: boolean
       /**
+       * Account Review V2 Enabled
+       * @description If this organization sees the new account review checklist UI.
+       * @default false
+       */
+      account_review_v2_enabled: boolean
+      /**
        * Overview Metrics
        * @description Ordered list of metric slugs shown on the dashboard overview.
        * @default null
@@ -2018,6 +2024,40 @@ export interface components {
       notifier: string
       /** Url */
       url: string
+    }
+    /** PolarSelfSubscriptionConfirmationEmail */
+    PolarSelfSubscriptionConfirmationEmail: {
+      /**
+       * Template
+       * @default polar_self_subscription_confirmation
+       * @constant
+       */
+      template: 'polar_self_subscription_confirmation'
+      props: components['schemas']['PolarSelfSubscriptionConfirmationProps']
+    }
+    /** PolarSelfSubscriptionConfirmationProps */
+    PolarSelfSubscriptionConfirmationProps: {
+      /** Email */
+      email: string
+      /** Product Name */
+      product_name: string
+    }
+    /** PolarSelfSubscriptionCycledEmail */
+    PolarSelfSubscriptionCycledEmail: {
+      /**
+       * Template
+       * @default polar_self_subscription_cycled
+       * @constant
+       */
+      template: 'polar_self_subscription_cycled'
+      props: components['schemas']['PolarSelfSubscriptionCycledProps']
+    }
+    /** PolarSelfSubscriptionCycledProps */
+    PolarSelfSubscriptionCycledProps: {
+      /** Email */
+      email: string
+      /** Product Name */
+      product_name: string
     }
     /** ProductEmail */
     ProductEmail: {

@@ -62,6 +62,7 @@ from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
 from polar.models.organization import (
     Organization,
+    OrganizationCustomerEmailSettings,
     OrganizationDetails,
     OrganizationStatus,
 )
@@ -148,6 +149,7 @@ class OrganizationDict(TypedDict):
     benefits: NotRequired[dict[str, "BenefitDict"]]
     is_admin: NotRequired[bool]
     feature_settings: NotRequired[dict[str, bool]]
+    customer_email_settings: NotRequired[OrganizationCustomerEmailSettings]
     seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
 
 
@@ -1421,6 +1423,19 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
+            "customer_email_settings": {
+                "order_confirmation": False,
+                "subscription_cancellation": False,
+                "subscription_confirmation": False,
+                "subscription_cycled": False,
+                "subscription_cycled_after_trial": False,
+                "subscription_past_due": False,
+                "subscription_renewal_reminder": False,
+                "subscription_revoked": False,
+                "subscription_trial_conversion_reminder": False,
+                "subscription_uncanceled": False,
+                "subscription_updated": False,
+            },
             "products": [],
         },
         {
@@ -1576,6 +1591,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 **organization.feature_settings,
                 "billing_enabled": True,
             }
+        if "customer_email_settings" in org_data:
+            organization.customer_email_settings = org_data["customer_email_settings"]
         session.add(organization)
 
         # Attach a fake payout account so seeded orgs are payout-ready
@@ -2147,6 +2164,8 @@ WEBHOOK_EVENTS: list[WebhookEventType] = [
     WebhookEventType.benefit_grant_created,
     WebhookEventType.benefit_grant_updated,
     WebhookEventType.benefit_grant_revoked,
+    WebhookEventType.subscription_revoked,
+    WebhookEventType.order_created,
 ]
 SERVER_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 WEBHOOK_SECRET_ENV_KEY = "POLAR_POLAR_WEBHOOK_SECRET"

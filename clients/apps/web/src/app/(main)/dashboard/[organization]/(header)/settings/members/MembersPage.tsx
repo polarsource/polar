@@ -196,8 +196,8 @@ export default function ClientPage({
         const isCurrentUser = member.user_id === currentUser?.id
         const isOwner = member.role === 'owner'
 
-        if (canManageMembers && !isCurrentUser) {
-          if (isOwner) {
+        if (isOwner) {
+          if (canManageMembers && !isCurrentUser) {
             return (
               <div className="flex justify-end" title={OWNER_TOOLTIP}>
                 <Button variant="secondary" size="icon" disabled>
@@ -206,43 +206,47 @@ export default function ClientPage({
               </div>
             )
           }
+          return null
+        }
 
-          return (
-            <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="icon">
-                    <MoreVert fontSize="small" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleChangeRole(member)}>
-                    Change role
+        const canChangeRole = canManageMembers
+        if (!canChangeRole && !isCurrentUser) {
+          return null
+        }
+
+        return (
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="icon">
+                  <MoreVert fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canChangeRole && (
+                  <>
+                    <DropdownMenuItem onClick={() => handleChangeRole(member)}>
+                      Change role
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {isCurrentUser ? (
+                  <DropdownMenuItem destructive onClick={showLeaveModal}>
+                    Leave organization
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                ) : (
                   <DropdownMenuItem
                     destructive
                     onClick={() => handleRemoveMember(member)}
                   >
                     Remove from organization
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )
-        }
-
-        if (isCurrentUser && !isOwner) {
-          return (
-            <div className="flex justify-end">
-              <Button variant="secondary" size="sm" onClick={showLeaveModal}>
-                Leave
-              </Button>
-            </div>
-          )
-        }
-
-        return null
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )
       },
     },
   ]
@@ -406,6 +410,8 @@ function ChangeRoleModal({
   onClose: () => void
 }) {
   const { toast } = useToast()
+  const { currentUser } = useAuth()
+  const isCurrentUser = member.user_id === currentUser?.id
   const initialRole: 'admin' | 'member' =
     member.role === 'admin' ? 'admin' : 'member'
   const [role, setRole] = useState<'admin' | 'member'>(initialRole)
@@ -456,7 +462,14 @@ function ChangeRoleModal({
     <div className="flex w-full flex-col gap-y-6 p-8">
       <h3 className="text-lg font-medium">Change Role</h3>
       <p className="dark:text-polar-500 text-sm text-gray-500">
-        Update the role for <span className="font-medium">{member.email}</span>.
+        {isCurrentUser ? (
+          'Update your own role.'
+        ) : (
+          <>
+            Update the role for{' '}
+            <span className="font-medium">{member.email}</span>.
+          </>
+        )}
       </p>
       <Select
         value={role}

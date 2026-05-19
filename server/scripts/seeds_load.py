@@ -100,8 +100,6 @@ from polar.product.schemas import (
 )
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
-from polar.subscription.schemas import SubscriptionCreateExternalCustomer
-from polar.subscription.service import subscription as subscription_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
@@ -933,6 +931,7 @@ async def _seed_polar_self_billing_catalog(
 
     for product_data in POLAR_SELF_PRODUCTS:
         name = product_data["name"]
+        description = product_data.get("description")
         metadata = product_data["metadata"]
         price_amount = product_data["price_amount"]
         benefit_descriptions = product_data["benefits"]
@@ -943,6 +942,7 @@ async def _seed_polar_self_billing_catalog(
             else ProductVisibility.public
         )
         assert isinstance(name, str)
+        assert description is None or isinstance(description, str)
         assert isinstance(metadata, dict)
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
@@ -964,6 +964,7 @@ async def _seed_polar_self_billing_catalog(
             session=session,
             create_schema=ProductCreateRecurring(
                 name=name,
+                description=description,
                 organization_id=organization.id,
                 recurring_interval=SubscriptionRecurringInterval.month,
                 prices=[price_create],
@@ -988,8 +989,10 @@ async def _seed_polar_self_billing_catalog(
 async def _subscribe_seeded_orgs_to_polar_self(
     session: AsyncSession,
 ) -> int:
-    """Add every other seeded org as a team customer of the Polar self org and
-    create a free subscription for it.
+    """Add every other seeded org as a team customer of the Polar self org.
+
+    The free plan is subscriptionless, so no Polar subscription is created here —
+    customers default to the synthesized free plan until they pick a paid one.
     """
     polar_self_org = (
         await session.execute(
@@ -997,17 +1000,6 @@ async def _subscribe_seeded_orgs_to_polar_self(
         )
     ).scalar_one_or_none()
     if polar_self_org is None:
-        return 0
-
-    free_product = (
-        await session.execute(
-            select(Product).where(
-                Product.organization_id == polar_self_org.id,
-                Product.name == "Starter",
-            )
-        )
-    ).scalar_one_or_none()
-    if free_product is None:
         return 0
 
     other_orgs = (
@@ -1064,15 +1056,6 @@ async def _subscribe_seeded_orgs_to_polar_self(
                     name=owner.public_name,
                     external_id=str(owner.id),
                 ),
-            ),
-            auth_subject,
-            created_at=organization.created_at,
-        )
-        await subscription_service.create(
-            session,
-            SubscriptionCreateExternalCustomer(
-                product_id=free_product.id,
-                external_customer_id=str(organization.id),
             ),
             auth_subject,
             created_at=organization.created_at,
@@ -2379,17 +2362,6 @@ def polar_self_env() -> None:
             if org is None:
                 raise typer.Exit(1)
 
-            product = (
-                await session.execute(
-                    select(Product).where(
-                        Product.organization_id == org.id,
-                        Product.name == "Starter",
-                    )
-                )
-            ).scalar_one_or_none()
-            if product is None:
-                raise typer.Exit(1)
-
             # Delete any existing dev seed token
             existing = (
                 (
@@ -2450,7 +2422,6 @@ def polar_self_env() -> None:
             _write_webhook_secret_to_env(webhook_secret)
 
             print(f"POLAR_POLAR_ORGANIZATION_ID={org.id}")
-            print(f"POLAR_POLAR_FREE_PRODUCT_ID={product.id}")
             print(f"POLAR_POLAR_ACCESS_TOKEN={token}")
             print(f"{WEBHOOK_SECRET_ENV_KEY}={webhook_secret}")
             print("POLAR_POLAR_API_URL=http://127.0.0.1:8000")

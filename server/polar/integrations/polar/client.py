@@ -146,6 +146,23 @@ class PolarSelfClient:
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "cancel_subscription")
 
+    async def uncancel_subscription(self, *, subscription_id: str) -> Subscription:
+        with logfire.span(
+            "polar.uncancel_subscription",
+            subscription_id=subscription_id,
+        ) as span:
+            try:
+                return await self._sdk.subscriptions.update_async(
+                    id=subscription_id,
+                    subscription_update=SubscriptionCancel(
+                        cancel_at_period_end=False,
+                    ),
+                )
+            except PolarError as e:
+                _raise_error(span, e, "uncancel_subscription")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "uncancel_subscription")
+
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
         return await self._sdk.customers.get_external_async(external_id=external_id)
 

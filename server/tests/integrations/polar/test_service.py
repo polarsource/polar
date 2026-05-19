@@ -751,7 +751,11 @@ def _make_product(
 
 
 def _make_subscription(
-    *, id: str = "sub_1", product_id: str = "prod_1", amount: int = 0
+    *,
+    id: str = "sub_1",
+    product_id: str = "prod_1",
+    amount: int = 0,
+    cancel_at_period_end: bool = False,
 ) -> Subscription:
     return Subscription.model_validate(
         {
@@ -767,7 +771,7 @@ def _make_subscription(
             "current_period_end": "2026-02-01T00:00:00Z",
             "trial_start": None,
             "trial_end": None,
-            "cancel_at_period_end": False,
+            "cancel_at_period_end": cancel_at_period_end,
             "canceled_at": None,
             "started_at": "2026-01-01T00:00:00Z",
             "ends_at": None,
@@ -799,6 +803,9 @@ def client_mock(mocker: MockerFixture) -> MagicMock:
         return_value=_make_subscription(id="sub_2", product_id="prod_2")
     )
     client.cancel_subscription = AsyncMock(
+        return_value=_make_subscription(id="sub_existing")
+    )
+    client.uncancel_subscription = AsyncMock(
         return_value=_make_subscription(id="sub_existing")
     )
     mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
@@ -1080,6 +1087,37 @@ class TestChangePlan:
             subscription_id="sub_existing",
             product_id="prod_2",
             proration_behavior=SubscriptionProrationBehavior.NEXT_PERIOD,
+        )
+        client_mock.uncancel_subscription.assert_not_awaited()
+
+    async def test_uncancels_before_switching_when_canceling(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_2", metadata={"order": 2}, price_amount=10000),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing",
+            product_id="prod_1",
+            amount=2000,
+            cancel_at_period_end=True,
+        )
+
+        await polar_self.change_plan(
+            session=read_session_mock, organization_id=ORG_A, product_id="prod_2"
+        )
+
+        client_mock.uncancel_subscription.assert_awaited_once_with(
+            subscription_id="sub_existing",
+        )
+        client_mock.update_subscription_product.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            product_id="prod_2",
+            proration_behavior=SubscriptionProrationBehavior.INVOICE,
         )
 
     async def test_unapproved_rejected(

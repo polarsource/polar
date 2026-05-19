@@ -11,7 +11,6 @@ import {
   useOrganizationSubscription,
   useStartSubscriptionCheckout,
 } from '@/hooks/queries/billing'
-import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
@@ -132,12 +131,8 @@ export default function ChangePlanPage({
   const plansQuery = useOrganizationPlans(organization.id)
   const changePlan = useChangeSubscriptionPlan(organization.id)
   const startCheckout = useStartSubscriptionCheckout(organization.id)
-  const reviewStatusQuery = useOrganizationReviewStatus(organization.id)
 
-  const isApproved =
-    reviewStatusQuery.data?.verdict === 'PASS' ||
-    reviewStatusQuery.data?.appeal_decision === 'approved'
-  const blockChanges = !reviewStatusQuery.isLoading && !isApproved
+  const blockChanges = organization.status !== 'active'
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const {

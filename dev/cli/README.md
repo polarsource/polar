@@ -90,6 +90,8 @@ def run(ctx: Context) -> bool:
     """Execute the step. Return True on success."""
     # ctx.clean - if --clean flag was passed
     # ctx.skip_integrations - if --skip-integrations was passed
+    # ctx.skip_tinybird - if --skip-tinybird was passed
+    # ctx.database_name - if --database-name was passed
     step_status(True, "Did something", "details")
     return True
 ```

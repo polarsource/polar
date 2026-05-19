@@ -24209,6 +24209,7 @@ export interface components {
       | 'customers:read'
       | 'customers:manage'
       | 'sales:read'
+      | 'sales:manage'
       | 'analytics:read'
       | 'analytics:manage'
       | 'events:ingest'
@@ -55795,6 +55796,7 @@ export const organizationPermissionValues: ReadonlyArray<
   'customers:read',
   'customers:manage',
   'sales:read',
+  'sales:manage',
   'analytics:read',
   'analytics:manage',
   'events:ingest',

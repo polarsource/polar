@@ -49,32 +49,14 @@ const buildIframeAllow = (): string => {
   return `payment 'self' ${origins}; publickey-credentials-get 'self' ${origins};`
 }
 
-/**
- * Discriminated union enforcing that callers pass exactly one of
- * `customerSessionToken` or `memberSessionToken`. Passing both, or
- * neither, is a compile-time error.
- */
-type TokenProps =
-  | {
-      /**
-       * A short-lived customer session token (prefix `polar_cst_`),
-       * minted server-side via `POST /v1/customer-sessions` using a
-       * Polar API key.
-       */
-      customerSessionToken: string
-      memberSessionToken?: never
-    }
-  | {
-      customerSessionToken?: never
-      /**
-       * A short-lived member session token (prefix `polar_mst_`), minted
-       * server-side via `POST /v1/customer-sessions` when the
-       * organisation has `member_model_enabled`.
-       */
-      memberSessionToken: string
-    }
-
 interface PolarPaymentMethodBaseProps {
+  /**
+   * A short-lived session token returned by
+   * `POST /v1/customer-sessions`. Pass whatever the API returned —
+   * the SDK detects the prefix (`polar_cst_` vs `polar_mst_`) and
+   * routes the request to the right endpoint internally.
+   */
+  sessionToken: string
   /**
    * Color scheme for the embed. Defaults to `light`.
    */
@@ -114,7 +96,7 @@ interface PolarPaymentMethodBaseProps {
   style?: React.CSSProperties
 }
 
-export type PolarPaymentMethodProps = TokenProps & PolarPaymentMethodBaseProps
+export type PolarPaymentMethodProps = PolarPaymentMethodBaseProps
 
 /**
  * Embeds the Polar "add payment method" form as a bare, chrome-less
@@ -132,15 +114,14 @@ export type PolarPaymentMethodProps = TokenProps & PolarPaymentMethodBaseProps
  * @example
  * ```tsx
  * <PolarPaymentMethod
- *   customerSessionToken={token}
+ *   sessionToken={token}
  *   onSuccess={(id) => console.log('Attached:', id)}
  *   onError={(code) => console.error(code)}
  * />
  * ```
  */
 export const PolarPaymentMethod = ({
-  customerSessionToken,
-  memberSessionToken,
+  sessionToken,
   theme,
   setAsDefault,
   onLoaded,
@@ -163,23 +144,8 @@ export const PolarPaymentMethod = ({
     const container = containerRef.current
     if (!container) return
 
-    if (customerSessionToken && memberSessionToken) {
-      throw new Error(
-        'PolarPaymentMethod: pass only one of `customerSessionToken` or `memberSessionToken`, not both.',
-      )
-    }
-    const sessionParamName = memberSessionToken
-      ? 'member_session_token'
-      : 'customer_session_token'
-    const sessionParamValue = memberSessionToken ?? customerSessionToken
-    if (!sessionParamValue) {
-      throw new Error(
-        'PolarPaymentMethod: one of `customerSessionToken` or `memberSessionToken` is required.',
-      )
-    }
-
     const embedURL = new URL(EMBED_PATH, resolveEmbedBaseURL())
-    embedURL.searchParams.set(sessionParamName, sessionParamValue)
+    embedURL.searchParams.set('session_token', sessionToken)
     embedURL.searchParams.set('embed', 'true')
     embedURL.searchParams.set('embed_origin', window.location.origin)
     if (theme) {
@@ -229,7 +195,7 @@ export const PolarPaymentMethod = ({
       window.removeEventListener('message', messageListener)
       iframe.remove()
     }
-  }, [customerSessionToken, memberSessionToken, theme, setAsDefault])
+  }, [sessionToken, theme, setAsDefault])
 
   return <div ref={containerRef} className={className} style={style} />
 }

@@ -25,7 +25,7 @@ const post = (
 describe('PolarPaymentMethod', () => {
   it('renders an iframe pointing at the bare embed route', () => {
     const { container } = render(
-      <PolarPaymentMethod customerSessionToken={CUSTOMER_SESSION_TOKEN} />,
+      <PolarPaymentMethod sessionToken={CUSTOMER_SESSION_TOKEN} />,
     )
 
     const iframe = container.querySelector('iframe')
@@ -34,9 +34,7 @@ describe('PolarPaymentMethod', () => {
     const src = new URL(iframe!.src)
     expect(src.pathname).toBe('/embed/payment-method')
     expect(src.origin).toBe(ALLOWED_ORIGIN)
-    expect(src.searchParams.get('customer_session_token')).toBe(
-      CUSTOMER_SESSION_TOKEN,
-    )
+    expect(src.searchParams.get('session_token')).toBe(CUSTOMER_SESSION_TOKEN)
     expect(src.searchParams.get('embed')).toBe('true')
     expect(src.searchParams.get('embed_origin')).toBe(window.location.origin)
     expect(src.searchParams.get('mode')).toBeNull()
@@ -45,7 +43,7 @@ describe('PolarPaymentMethod', () => {
   it('sets set_default=false when setAsDefault is explicitly false', () => {
     const { container } = render(
       <PolarPaymentMethod
-        customerSessionToken={CUSTOMER_SESSION_TOKEN}
+        sessionToken={CUSTOMER_SESSION_TOKEN}
         setAsDefault={false}
       />,
     )
@@ -56,30 +54,27 @@ describe('PolarPaymentMethod', () => {
 
   it('omits set_default URL param by default', () => {
     const { container } = render(
-      <PolarPaymentMethod customerSessionToken={CUSTOMER_SESSION_TOKEN} />,
+      <PolarPaymentMethod sessionToken={CUSTOMER_SESSION_TOKEN} />,
     )
 
     const iframe = container.querySelector('iframe')!
     expect(new URL(iframe.src).searchParams.get('set_default')).toBeNull()
   })
 
-  it('uses member_session_token URL param when given a member token', () => {
+  it('forwards a member token verbatim — no client-side type sniffing', () => {
     const { container } = render(
-      <PolarPaymentMethod memberSessionToken="polar_mst_xyz" />,
+      <PolarPaymentMethod sessionToken="polar_mst_xyz" />,
     )
 
     const iframe = container.querySelector('iframe')!
-    const src = new URL(iframe.src)
-    expect(src.searchParams.get('member_session_token')).toBe('polar_mst_xyz')
-    expect(src.searchParams.get('customer_session_token')).toBeNull()
+    expect(new URL(iframe.src).searchParams.get('session_token')).toBe(
+      'polar_mst_xyz',
+    )
   })
 
   it('sets the theme query parameter when provided', () => {
     const { container } = render(
-      <PolarPaymentMethod
-        customerSessionToken={CUSTOMER_SESSION_TOKEN}
-        theme="dark"
-      />,
+      <PolarPaymentMethod sessionToken={CUSTOMER_SESSION_TOKEN} theme="dark" />,
     )
 
     const iframe = container.querySelector('iframe')!
@@ -94,7 +89,7 @@ describe('PolarPaymentMethod', () => {
 
     render(
       <PolarPaymentMethod
-        customerSessionToken={CUSTOMER_SESSION_TOKEN}
+        sessionToken={CUSTOMER_SESSION_TOKEN}
         onLoaded={onLoaded}
         onConfirmed={onConfirmed}
         onSuccess={onSuccess}
@@ -125,7 +120,7 @@ describe('PolarPaymentMethod', () => {
 
   it('updates iframe height in response to resize messages', () => {
     const { container } = render(
-      <PolarPaymentMethod customerSessionToken={CUSTOMER_SESSION_TOKEN} />,
+      <PolarPaymentMethod sessionToken={CUSTOMER_SESSION_TOKEN} />,
     )
 
     post({
@@ -143,7 +138,7 @@ describe('PolarPaymentMethod', () => {
 
     render(
       <PolarPaymentMethod
-        customerSessionToken={CUSTOMER_SESSION_TOKEN}
+        sessionToken={CUSTOMER_SESSION_TOKEN}
         onSuccess={onSuccess}
       />,
     )
@@ -165,7 +160,7 @@ describe('PolarPaymentMethod', () => {
 
     render(
       <PolarPaymentMethod
-        customerSessionToken={CUSTOMER_SESSION_TOKEN}
+        sessionToken={CUSTOMER_SESSION_TOKEN}
         onSuccess={onSuccess}
       />,
     )
@@ -181,7 +176,7 @@ describe('PolarPaymentMethod', () => {
 
   it('removes the iframe on unmount', () => {
     const { container, unmount } = render(
-      <PolarPaymentMethod customerSessionToken={CUSTOMER_SESSION_TOKEN} />,
+      <PolarPaymentMethod sessionToken={CUSTOMER_SESSION_TOKEN} />,
     )
     expect(container.querySelector('iframe')).not.toBeNull()
 
@@ -196,7 +191,7 @@ describe('PolarPaymentMethod', () => {
 
     const { rerender, container } = render(
       <PolarPaymentMethod
-        customerSessionToken={CUSTOMER_SESSION_TOKEN}
+        sessionToken={CUSTOMER_SESSION_TOKEN}
         onSuccess={firstSuccess}
       />,
     )
@@ -204,7 +199,7 @@ describe('PolarPaymentMethod', () => {
 
     rerender(
       <PolarPaymentMethod
-        customerSessionToken={CUSTOMER_SESSION_TOKEN}
+        sessionToken={CUSTOMER_SESSION_TOKEN}
         onSuccess={secondSuccess}
       />,
     )

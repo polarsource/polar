@@ -71,32 +71,14 @@ const isEmbedPaymentMethodMessage = (
   return message.type === POLAR_PAYMENT_METHOD_EVENT
 }
 
-/**
- * Discriminated union enforcing that callers pass exactly one of
- * `customerSessionToken` or `memberSessionToken`. Passing both, or
- * neither, is a compile-time error.
- */
-type EmbedPaymentMethodTokenOptions =
-  | {
-      /**
-       * A short-lived customer session token (prefix `polar_cst_`),
-       * minted server-side via `POST /v1/customer-sessions` using a
-       * Polar API key.
-       */
-      customerSessionToken: string
-      memberSessionToken?: never
-    }
-  | {
-      customerSessionToken?: never
-      /**
-       * A short-lived member session token (prefix `polar_mst_`),
-       * minted server-side via `POST /v1/customer-sessions` when the
-       * organisation has `member_model_enabled`.
-       */
-      memberSessionToken: string
-    }
-
-interface EmbedPaymentMethodBaseOptions {
+interface EmbedPaymentMethodCreateOptions {
+  /**
+   * A short-lived session token returned by
+   * `POST /v1/customer-sessions`. Pass whatever the API returned —
+   * the SDK detects the prefix (`polar_cst_` vs `polar_mst_`) and
+   * routes the request to the right endpoint internally.
+   */
+  sessionToken: string
   /**
    * Color scheme for the embed. Defaults to `light`.
    */
@@ -110,33 +92,6 @@ interface EmbedPaymentMethodBaseOptions {
    * Convenience callback fired once when the embed has loaded.
    */
   onLoaded?: (event: CustomEvent<EmbedPaymentMethodMessageLoaded>) => void
-}
-
-type EmbedPaymentMethodCreateOptions = EmbedPaymentMethodTokenOptions &
-  EmbedPaymentMethodBaseOptions
-
-const resolveSessionParam = (options: {
-  customerSessionToken?: string
-  memberSessionToken?: string
-}): {
-  name: 'customer_session_token' | 'member_session_token'
-  value: string
-} => {
-  const { customerSessionToken, memberSessionToken } = options
-  if (customerSessionToken && memberSessionToken) {
-    throw new Error(
-      'PolarEmbedPaymentMethod: pass only one of `customerSessionToken` or `memberSessionToken`, not both.',
-    )
-  }
-  if (customerSessionToken) {
-    return { name: 'customer_session_token', value: customerSessionToken }
-  }
-  if (memberSessionToken) {
-    return { name: 'member_session_token', value: memberSessionToken }
-  }
-  throw new Error(
-    'PolarEmbedPaymentMethod: one of `customerSessionToken` or `memberSessionToken` is required.',
-  )
 }
 
 const resolveEmbedBaseURL = (): string => {
@@ -193,7 +148,7 @@ class EmbedPaymentMethod {
    * @example
    * ```ts
    * const embed = await PolarEmbedPaymentMethod.create({
-   *   customerSessionToken: 'polar_cst_xxx',
+   *   sessionToken: 'polar_cst_xxx',
    *   theme: 'dark',
    * })
    *
@@ -205,8 +160,7 @@ class EmbedPaymentMethod {
   public static create(
     options: EmbedPaymentMethodCreateOptions,
   ): Promise<EmbedPaymentMethod> {
-    const session = resolveSessionParam(options)
-    const { theme, setAsDefault, onLoaded } = options
+    const { sessionToken, theme, setAsDefault, onLoaded } = options
 
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
@@ -243,7 +197,7 @@ class EmbedPaymentMethod {
     document.body.appendChild(loader)
 
     const embedURL = new URL(EMBED_PATH, resolveEmbedBaseURL())
-    embedURL.searchParams.set(session.name, session.value)
+    embedURL.searchParams.set('session_token', sessionToken)
     embedURL.searchParams.set('embed', 'true')
     embedURL.searchParams.set('embed_origin', window.location.origin)
     embedURL.searchParams.set('mode', 'modal')
@@ -404,14 +358,8 @@ class EmbedPaymentMethod {
     const setAsDefaultAttr = element.getAttribute(
       'data-polar-payment-method-set-as-default',
     )
-    // Sniff the token prefix to forward as the right option. Customer
-    // tokens use `polar_cst_`, member tokens use `polar_mst_`. Anything
-    // else falls back to customer for backward compat.
-    const sessionOption = token.startsWith('polar_mst_')
-      ? { memberSessionToken: token }
-      : { customerSessionToken: token }
     EmbedPaymentMethod.create({
-      ...sessionOption,
+      sessionToken: token,
       theme: theme ?? undefined,
       setAsDefault:
         setAsDefaultAttr === null ? undefined : setAsDefaultAttr !== 'false',

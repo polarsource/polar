@@ -66,7 +66,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('creates an iframe with the correct src and modal mode', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -78,9 +78,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const src = new URL(iframe!.src)
       expect(src.pathname).toBe('/embed/payment-method')
       expect(src.origin).toBe(ALLOWED_ORIGIN)
-      expect(src.searchParams.get('customer_session_token')).toBe(
-        CUSTOMER_SESSION_TOKEN,
-      )
+      expect(src.searchParams.get('session_token')).toBe(CUSTOMER_SESSION_TOKEN)
       expect(src.searchParams.get('embed')).toBe('true')
       expect(src.searchParams.get('embed_origin')).toBe(window.location.origin)
       expect(src.searchParams.get('mode')).toBe('modal')
@@ -90,7 +88,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('sets theme query parameter when provided', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
         theme: 'dark',
       })
 
@@ -106,7 +104,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('sets set_default=false when setAsDefault is explicitly false', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
         setAsDefault: false,
       })
 
@@ -121,7 +119,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('omits set_default URL param by default', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -133,9 +131,9 @@ describe('PolarEmbedPaymentMethod', () => {
       embed.close()
     })
 
-    it('uses member_session_token URL param when given a member token', async () => {
+    it('forwards a member token verbatim — no client-side type sniffing', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        memberSessionToken: 'polar_mst_test_member',
+        sessionToken: 'polar_mst_test_member',
       })
 
       dispatchLoaded()
@@ -143,34 +141,16 @@ describe('PolarEmbedPaymentMethod', () => {
 
       const iframe = document.querySelector('iframe')!
       const src = new URL(iframe.src)
-      expect(src.searchParams.get('member_session_token')).toBe(
+      expect(src.searchParams.get('session_token')).toBe(
         'polar_mst_test_member',
       )
-      expect(src.searchParams.get('customer_session_token')).toBeNull()
 
       embed.close()
     })
 
-    it('throws when neither token is provided', () => {
-      expect(() =>
-        PolarEmbedPaymentMethod.create(
-          {} as unknown as Parameters<typeof PolarEmbedPaymentMethod.create>[0],
-        ),
-      ).toThrow(/one of `customerSessionToken` or `memberSessionToken`/)
-    })
-
-    it('throws when both tokens are provided', () => {
-      expect(() =>
-        PolarEmbedPaymentMethod.create({
-          customerSessionToken: CUSTOMER_SESSION_TOKEN,
-          memberSessionToken: 'polar_mst_test_member',
-        } as unknown as Parameters<typeof PolarEmbedPaymentMethod.create>[0]),
-      ).toThrow(/only one of/)
-    })
-
     it('adds polar-no-scroll class to body', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       expect(document.body.classList.contains('polar-no-scroll')).toBe(true)
@@ -184,7 +164,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const onLoaded = vi.fn()
 
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
         onLoaded,
       })
 
@@ -201,7 +181,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('removes the iframe from the DOM', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -214,7 +194,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('removes polar-no-scroll class from body', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -230,7 +210,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('dispatches close event and removes iframe', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -249,7 +229,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('prevents close after confirmed event', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -274,7 +254,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('auto-closes the modal on success', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -303,7 +283,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('skips the default auto-close when success listener calls preventDefault', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -329,7 +309,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const successListener = vi.fn()
 
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -358,7 +338,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const errorListener = vi.fn()
 
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -386,7 +366,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('silently drops resize messages in modal mode', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -414,7 +394,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const closeListener = vi.fn()
 
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -438,7 +418,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const closeListener = vi.fn()
 
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -458,7 +438,7 @@ describe('PolarEmbedPaymentMethod', () => {
 
     it('skips the default close action when preventDefault is called', async () => {
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -484,7 +464,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const listener = vi.fn()
 
       const promise = PolarEmbedPaymentMethod.create({
-        customerSessionToken: CUSTOMER_SESSION_TOKEN,
+        sessionToken: CUSTOMER_SESSION_TOKEN,
       })
 
       dispatchLoaded()
@@ -524,25 +504,7 @@ describe('PolarEmbedPaymentMethod', () => {
       const iframe = document.querySelector('iframe')
       expect(iframe).not.toBeNull()
       const src = new URL(iframe!.src)
-      expect(src.searchParams.get('customer_session_token')).toBe(
-        CUSTOMER_SESSION_TOKEN,
-      )
-    })
-
-    it('detects member tokens and uses member_session_token URL param', () => {
-      const button = document.createElement('button')
-      button.setAttribute('data-polar-payment-method', 'polar_mst_auto_init')
-      document.body.appendChild(button)
-
-      PolarEmbedPaymentMethod.init()
-      button.click()
-
-      const iframe = document.querySelector('iframe')!
-      const src = new URL(iframe.src)
-      expect(src.searchParams.get('member_session_token')).toBe(
-        'polar_mst_auto_init',
-      )
-      expect(src.searchParams.get('customer_session_token')).toBeNull()
+      expect(src.searchParams.get('session_token')).toBe(CUSTOMER_SESSION_TOKEN)
     })
 
     it('reads theme from data-polar-payment-method-theme', () => {

@@ -11,8 +11,7 @@ export const metadata: Metadata = {
 }
 
 interface SearchParams {
-  customer_session_token?: string
-  member_session_token?: string
+  session_token?: string
   embed_origin?: string
   theme?: 'light' | 'dark'
   mode?: 'modal' | 'inline'
@@ -39,8 +38,7 @@ export default async function Page(props: {
   searchParams: Promise<SearchParams>
 }) {
   const {
-    customer_session_token,
-    member_session_token,
+    session_token: sessionToken,
     embed_origin,
     theme,
     mode,
@@ -51,11 +49,6 @@ export default async function Page(props: {
 
   const embedOrigin =
     embed_origin && isValidEmbedOrigin(embed_origin) ? embed_origin : undefined
-
-  const sessionToken =
-    customer_session_token && member_session_token
-      ? null
-      : (customer_session_token ?? member_session_token)
 
   if (!sessionToken || !embedOrigin) {
     return <EmbedError code="invalid_request" embedOrigin={embedOrigin} />

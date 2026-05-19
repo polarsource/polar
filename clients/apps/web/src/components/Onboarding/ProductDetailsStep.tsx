@@ -3,7 +3,6 @@
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { useAupValidation } from '@/hooks/useAupValidation'
-import { asOwnedOrganization } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -180,7 +179,7 @@ export function ProductDetailsStep() {
 
     setUserOrganizations((previous) => [
       ...previous,
-      asOwnedOrganization(organization),
+      { ...organization, role: 'owner' as const },
     ])
     updateData({
       organizationId: organization.id,

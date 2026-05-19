@@ -6,7 +6,6 @@ import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
-import { asOwnedOrganization } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -112,7 +111,10 @@ const OrganizationSelectionPage = ({
     await revalidate(`users:${currentUser?.id}:organizations`, {
       expire: 0,
     })
-    setUserOrganizations((orgs) => [...orgs, asOwnedOrganization(organization)])
+    setUserOrganizations((orgs) => [
+      ...orgs,
+      { ...organization, role: 'owner' as const },
+    ])
 
     // Navigate to the same page with the new organization selected
     const updatedSearchParams = new URLSearchParams({

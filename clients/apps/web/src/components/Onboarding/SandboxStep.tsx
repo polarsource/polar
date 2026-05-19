@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
+import { asOwnedOrganization } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -98,10 +99,7 @@ export function SandboxStep() {
       return
     }
 
-    setUserOrganizations((prev) => [
-      ...prev,
-      { ...org, role: 'owner' as const },
-    ])
+    setUserOrganizations((prev) => [...prev, asOwnedOrganization(org)])
     router.push(`/dashboard/${org.slug}`)
     clearData()
   }

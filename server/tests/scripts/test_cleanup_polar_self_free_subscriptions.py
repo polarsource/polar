@@ -1,6 +1,6 @@
 from typing import Any
 from unittest.mock import AsyncMock
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 from pytest_mock import MockerFixture
@@ -148,7 +148,7 @@ class TestListZeroOrderIds:
             subtotal_amount=0,
             tax_amount=0,
         )
-        # Paid order on the same sub: excluded.
+        # Paid order on free sub: excluded.
         await create_order(
             save_fixture,
             customer=customer,
@@ -157,7 +157,7 @@ class TestListZeroOrderIds:
             subtotal_amount=1000,
             tax_amount=0,
         )
-        # $0 order on a different sub: excluded.
+        # $0 order on a different sub (not in batch): excluded.
         await create_order(
             save_fixture,
             customer=customer,
@@ -233,39 +233,37 @@ class TestListEventIds:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        sub_id = str(uuid4())
-        order_id = str(uuid4())
-        other_sub_id = str(uuid4())
+        sub_id = uuid4()
+        order_id = uuid4()
+        other_sub_id = uuid4()
 
         sub_event = _system_event(
             organization,
             name="subscription.created",
-            user_metadata={"subscription_id": sub_id, "product_id": "p"},
+            user_metadata={"subscription_id": str(sub_id), "product_id": "p"},
             customer=customer,
         )
-        await save_fixture(sub_event)
-
         order_event = _system_event(
             organization,
             name="order.paid",
-            user_metadata={"order_id": order_id, "amount": 0},
+            user_metadata={"order_id": str(order_id), "amount": 0},
             customer=customer,
         )
-        await save_fixture(order_event)
-
         other_event = _system_event(
             organization,
             name="subscription.created",
-            user_metadata={"subscription_id": other_sub_id},
+            user_metadata={"subscription_id": str(other_sub_id)},
             customer=customer,
         )
+        await save_fixture(sub_event)
+        await save_fixture(order_event)
         await save_fixture(other_event)
 
         ids = await _list_event_ids(
             session,
             organization_id=organization.id,
-            subscription_ids=[UUID(sub_id)],
-            order_ids=[UUID(order_id)],
+            subscription_ids=[sub_id],
+            order_ids=[order_id],
         )
 
         assert set(ids) == {sub_event.id, order_event.id}
@@ -434,39 +432,41 @@ class TestDeleteEvents:
 
 @pytest.mark.asyncio
 class TestDeleteEventsTinybird:
-    async def test_batches_ids_and_awaits_jobs(self, mocker: MockerFixture) -> None:
+    async def test_sends_id_in_condition_and_awaits_job(
+        self, mocker: MockerFixture
+    ) -> None:
         delete_mock = mocker.patch(
             "scripts.cleanup_polar_self_free_subscriptions.tinybird_client.delete",
-            new=AsyncMock(side_effect=lambda *args, **kwargs: {"job_id": "j-1"}),
+            new=AsyncMock(return_value={"job_id": "j-1"}),
         )
         get_job_mock = mocker.patch(
             "scripts.cleanup_polar_self_free_subscriptions.tinybird_client.get_job",
-            new=AsyncMock(return_value={"status": "done", "rows_affected": 3}),
-        )
-        # Cap the batch size so we can assert multiple delete calls without
-        # constructing 500+ UUIDs.
-        mocker.patch(
-            "scripts.cleanup_polar_self_free_subscriptions.TINYBIRD_DELETE_BATCH",
-            2,
+            new=AsyncMock(return_value={"status": "done", "rows_affected": 7}),
         )
 
+        organization_id = uuid4()
         ids = [uuid4() for _ in range(5)]
-        total = await _delete_events_tinybird(ids)
+        total = await _delete_events_tinybird(
+            organization_id=organization_id, event_ids=ids
+        )
 
-        assert total == 9  # 3 batches × 3 rows_affected
-        assert delete_mock.await_count == 3
-        first_condition = delete_mock.await_args_list[0].args[1]
-        assert first_condition.startswith("id IN (")
-        # Each ID rendered as a single-quoted UUID, comma-separated.
-        for eid in ids[:2]:
-            assert f"'{eid}'" in first_condition
-        assert get_job_mock.await_count == 3
+        assert total == 7
+        delete_mock.assert_awaited_once()
+        await_args = delete_mock.await_args
+        assert await_args is not None
+        condition = await_args.args[1]
+        assert condition.startswith(
+            f"organization_id = '{organization_id}' AND id IN ("
+        )
+        for eid in ids:
+            assert f"'{eid}'" in condition
+        get_job_mock.assert_awaited_once()
 
     async def test_empty_list_skips_request(self, mocker: MockerFixture) -> None:
         delete_mock = mocker.patch(
             "scripts.cleanup_polar_self_free_subscriptions.tinybird_client.delete",
             new=AsyncMock(),
         )
-        total = await _delete_events_tinybird([])
+        total = await _delete_events_tinybird(organization_id=uuid4(), event_ids=[])
         assert total == 0
         delete_mock.assert_not_called()

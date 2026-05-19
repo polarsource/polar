@@ -2,6 +2,7 @@ import asyncio
 import uuid
 from typing import Any
 
+import structlog
 import typer
 from rich.progress import Progress
 from sqlalchemy import delete, or_, select
@@ -16,10 +17,11 @@ from polar.postgres import create_async_engine
 
 from .helper import configure_script_logging, typer_async
 
+log = structlog.get_logger()
+
 cli = typer.Typer()
 
-BATCH_SIZE = 100
-TINYBIRD_DELETE_BATCH = 500
+DEFAULT_BATCH_SIZE = 1000
 
 
 async def _list_free_subscription_ids(
@@ -45,15 +47,11 @@ async def _list_zero_order_ids(
 ) -> list[uuid.UUID]:
     if not subscription_ids:
         return []
-    statement = (
-        select(Order.id)
-        .where(
-            Order.organization_id == organization_id,
-            Order.subscription_id.in_(subscription_ids),
-            Order.deleted_at.is_(None),
-            (Order.net_amount + Order.tax_amount) == 0,
-        )
-        .order_by(Order.created_at)
+    statement = select(Order.id).where(
+        Order.organization_id == organization_id,
+        Order.subscription_id.in_(subscription_ids),
+        Order.deleted_at.is_(None),
+        (Order.net_amount + Order.tax_amount) == 0,
     )
     result = await session.execute(statement)
     return [row[0] for row in result.all()]
@@ -68,15 +66,17 @@ async def _list_event_ids(
 ) -> list[uuid.UUID]:
     if not subscription_ids and not order_ids:
         return []
-    sub_id_strs = [str(s) for s in subscription_ids]
-    order_id_strs = [str(o) for o in order_ids]
     clauses = []
-    if sub_id_strs:
+    if subscription_ids:
         clauses.append(
-            Event.user_metadata["subscription_id"].as_string().in_(sub_id_strs)
+            Event.user_metadata["subscription_id"]
+            .as_string()
+            .in_([str(s) for s in subscription_ids])
         )
-    if order_id_strs:
-        clauses.append(Event.user_metadata["order_id"].as_string().in_(order_id_strs))
+    if order_ids:
+        clauses.append(
+            Event.user_metadata["order_id"].as_string().in_([str(o) for o in order_ids])
+        )
     statement = select(Event.id).where(
         Event.organization_id == organization_id,
         Event.source == EventSource.system,
@@ -134,22 +134,15 @@ async def _await_tinybird_job(result: dict[str, Any]) -> int:
         await asyncio.sleep(0.25)
 
 
-async def _delete_events_tinybird(event_ids: list[uuid.UUID]) -> int:
+async def _delete_events_tinybird(
+    *, organization_id: uuid.UUID, event_ids: list[uuid.UUID]
+) -> int:
     if not event_ids:
         return 0
-    total = 0
-    with Progress() as progress:
-        task = progress.add_task(
-            "[cyan]Deleting events from Tinybird...", total=len(event_ids)
-        )
-        for start in range(0, len(event_ids), TINYBIRD_DELETE_BATCH):
-            batch = event_ids[start : start + TINYBIRD_DELETE_BATCH]
-            id_list = ",".join(f"'{eid}'" for eid in batch)
-            condition = f"id IN ({id_list})"
-            result = await tinybird_client.delete(DATASOURCE_EVENTS, condition)
-            total += await _await_tinybird_job(result)
-            progress.advance(task, advance=len(batch))
-    return total
+    id_list = ",".join(f"'{uuid.UUID(str(eid))}'" for eid in event_ids)
+    condition = f"organization_id = '{organization_id}' AND id IN ({id_list})"
+    result = await tinybird_client.delete(DATASOURCE_EVENTS, condition)
+    return await _await_tinybird_job(result)
 
 
 @cli.command()
@@ -166,6 +159,13 @@ async def cleanup(
             "from Postgres AND Tinybird for the deleted subs/orders."
         ),
     ),
+    batch_size: int = typer.Option(
+        DEFAULT_BATCH_SIZE,
+        help=(
+            "Subscriptions processed per batch. Lower this if event/order IN "
+            "queries time out for the org."
+        ),
+    ),
 ) -> None:
     """Delete free-plan Subscriptions and their $0 Orders for the Polar org.
 
@@ -176,6 +176,10 @@ async def cleanup(
 
     With --delete-events, also removes the system events those subs/orders
     generated from both Postgres and Tinybird.
+
+    Pause the dramatiq worker (or at least the subscription.cycle / polar_self
+    actors) before running with --no-dry-run, otherwise new events/orders may
+    race the cleanup.
     """
     configure_script_logging()
 
@@ -198,76 +202,95 @@ async def cleanup(
             subscription_ids = await _list_free_subscription_ids(
                 session, product_id=free_product_id
             )
-            order_ids = await _list_zero_order_ids(
-                session,
-                organization_id=organization_id,
-                subscription_ids=subscription_ids,
-            )
-            event_ids: list[uuid.UUID] = []
-            if delete_events:
-                event_ids = await _list_event_ids(
-                    session,
-                    organization_id=organization_id,
-                    subscription_ids=subscription_ids,
-                    order_ids=order_ids,
-                )
 
         typer.echo(
             f"Polar org: {organization_id}\n"
             f"Free product: {free_product_id}\n"
-            f"Free subscriptions to delete: {len(subscription_ids)}\n"
-            f"$0 orders to delete: {len(order_ids)}"
+            f"Free subscriptions: {len(subscription_ids)}"
         )
-        if delete_events:
-            typer.echo(f"System events to delete (PG + Tinybird): {len(event_ids)}")
 
         if not subscription_ids:
             typer.echo("Nothing to do.")
             return
 
-        if dry_run:
-            typer.echo("\nDry run — pass --no-dry-run to actually delete.")
-            return
-
-        if delete_events and event_ids:
-            tb_deleted = await _delete_events_tinybird(event_ids)
-            typer.echo(f"Deleted {tb_deleted} events from Tinybird.")
-            pg_events_deleted = 0
-            with Progress() as progress:
-                task = progress.add_task(
-                    "[cyan]Deleting events from Postgres...", total=len(event_ids)
-                )
-                for start in range(0, len(event_ids), BATCH_SIZE * 10):
-                    batch = event_ids[start : start + BATCH_SIZE * 10]
-                    async with sessionmaker() as session:
-                        pg_events_deleted += await _delete_events(session, batch)
-                        await session.commit()
-                    progress.advance(task, advance=len(batch))
-            typer.echo(f"Deleted {pg_events_deleted} events from Postgres.")
-
         total_orders = 0
         total_subs = 0
+        total_events_pg = 0
+        total_events_tb = 0
+
         with Progress() as progress:
+            label = "Counting" if dry_run else "Deleting"
             task = progress.add_task(
-                "[cyan]Deleting free subscriptions...", total=len(subscription_ids)
+                f"[cyan]{label} free subscriptions...", total=len(subscription_ids)
             )
-            for start in range(0, len(subscription_ids), BATCH_SIZE):
-                batch = subscription_ids[start : start + BATCH_SIZE]
+            for start in range(0, len(subscription_ids), batch_size):
+                sub_batch = subscription_ids[start : start + batch_size]
                 async with sessionmaker() as session:
-                    orders_deleted = await _delete_zero_orders(
+                    order_ids = await _list_zero_order_ids(
                         session,
                         organization_id=organization_id,
-                        subscription_ids=batch,
+                        subscription_ids=sub_batch,
                     )
-                    subs_deleted = await _delete_subscriptions(session, batch)
-                    await session.commit()
-                total_orders += orders_deleted
-                total_subs += subs_deleted
-                progress.advance(task, advance=len(batch))
+                    event_ids: list[uuid.UUID] = []
+                    if delete_events:
+                        event_ids = await _list_event_ids(
+                            session,
+                            organization_id=organization_id,
+                            subscription_ids=sub_batch,
+                            order_ids=order_ids,
+                        )
 
-        typer.echo(
-            f"\nDeleted {total_subs} subscriptions and {total_orders} $0 orders."
-        )
+                    if dry_run:
+                        total_orders += len(order_ids)
+                        total_subs += len(sub_batch)
+                        total_events_pg += len(event_ids)
+                    else:
+                        if event_ids:
+                            total_events_pg += await _delete_events(session, event_ids)
+                        total_orders += await _delete_zero_orders(
+                            session,
+                            organization_id=organization_id,
+                            subscription_ids=sub_batch,
+                        )
+                        total_subs += await _delete_subscriptions(session, sub_batch)
+                        await session.commit()
+
+                        if event_ids:
+                            try:
+                                total_events_tb += await _delete_events_tinybird(
+                                    organization_id=organization_id,
+                                    event_ids=event_ids,
+                                )
+                            except Exception as e:
+                                log.warning(
+                                    "tinybird_event_delete_failed",
+                                    error=str(e),
+                                    organization_id=str(organization_id),
+                                    event_ids=[str(eid) for eid in event_ids],
+                                )
+
+                progress.advance(task, advance=len(sub_batch))
+
+        if dry_run:
+            summary = (
+                f"\nDry run summary:\n"
+                f"  Subscriptions to delete: {total_subs}\n"
+                f"  $0 orders to delete: {total_orders}"
+            )
+            if delete_events:
+                summary += f"\n  System events to delete: {total_events_pg}"
+            summary += "\n\nPass --no-dry-run to actually delete."
+            typer.echo(summary)
+        else:
+            summary = (
+                f"\nDeleted:\n  {total_subs} subscriptions\n  {total_orders} $0 orders"
+            )
+            if delete_events:
+                summary += (
+                    f"\n  {total_events_pg} events from Postgres\n"
+                    f"  {total_events_tb} events from Tinybird"
+                )
+            typer.echo(summary)
     finally:
         await engine.dispose()
 

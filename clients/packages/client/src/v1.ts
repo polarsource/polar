@@ -1158,6 +1158,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/payment-methods/{payment_method_id}/default': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Set Default Organization Payment Method
+     * @description Set the default payment method used to pay Polar invoices.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:set_default_payment_method']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/orders/{order_id}/invoice': {
     parameters: {
       query?: never
@@ -33748,6 +33770,45 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Payment method deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Organization or payment method not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:set_default_payment_method': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        payment_method_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default payment method updated. */
       204: {
         headers: {
           [name: string]: unknown

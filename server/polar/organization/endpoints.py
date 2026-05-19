@@ -952,6 +952,31 @@ async def delete_payment_method(
     )
 
 
+@router.post(
+    "/{id}/payment-methods/{payment_method_id}/default",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Set Default Organization Payment Method",
+    responses={
+        204: {"description": "Default payment method updated."},
+        404: {
+            "description": "Organization or payment method not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def set_default_payment_method(
+    authz: AuthorizeOrgManageUser,
+    payment_method_id: str,
+) -> None:
+    """Set the default payment method used to pay Polar invoices."""
+    await polar_self_service.set_default_payment_method(
+        authz.organization.id,
+        payment_method_id=payment_method_id,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+
+
 @router.get(
     "/{id}/orders/{order_id}/invoice",
     response_model=OrganizationOrderInvoice,

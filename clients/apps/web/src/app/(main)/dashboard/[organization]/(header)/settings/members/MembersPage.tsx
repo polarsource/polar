@@ -8,15 +8,11 @@ import { useToast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks/auth'
 import { useHasPermission } from '@/hooks/permissions'
 import {
-  useInviteOrganizationMember,
   useLeaveOrganization,
   useListOrganizationMembers,
   useRemoveOrganizationMember,
-  useUpdateOrganizationMemberRole,
 } from '@/hooks/queries/org'
-import { useOrganizationRoles } from '@/hooks/queries/roles'
 import Add from '@mui/icons-material/Add'
-import Check from '@mui/icons-material/Check'
 import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -27,14 +23,6 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,17 +31,11 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 
-type OrganizationRole = schemas['OrganizationRole']
-
-const ROLE_LABELS: Record<OrganizationRole, string> = {
-  owner: 'Owner',
-  admin: 'Admin',
-  member: 'Member',
-}
-
-const ROLE_ORDER: OrganizationRole[] = ['owner', 'admin', 'member']
+import { ChangeRoleModal } from './ChangeRoleModal'
+import { InviteMemberModal } from './InviteMemberModal'
+import { ROLE_LABELS } from './constants'
 
 export default function ClientPage({
   organization,
@@ -313,216 +295,5 @@ export default function ClientPage({
         />
       )}
     </DashboardBody>
-  )
-}
-
-function InviteMemberModal({
-  organizationId,
-  onClose,
-}: {
-  organizationId: string
-  onClose: () => void
-}) {
-  const { toast } = useToast()
-  const [email, setEmail] = useState('')
-  const inviteMember = useInviteOrganizationMember(organizationId)
-
-  const handleInvite = async () => {
-    if (!email) return
-
-    try {
-      const result = await inviteMember.mutateAsync(email)
-      if (result.response.status === 200) {
-        toast({
-          title: 'Member already added',
-          description: 'User is already a member of this organization',
-        })
-      } else if (result.data) {
-        toast({
-          title: 'Member added',
-          description: 'User successfully added to organization',
-        })
-        onClose()
-      } else if (result.error) {
-        toast({
-          title: 'Invite failed',
-          description: 'Failed to invite user. Please try again.',
-        })
-      }
-    } catch {
-      toast({
-        title: 'Invite failed',
-        description: 'Failed to invite user. Please try again.',
-      })
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    handleInvite()
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-y-6 p-8">
-      <h3 className="text-lg font-medium">Invite User</h3>
-      <Input
-        type="email"
-        placeholder="Enter email address"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        autoFocus
-      />
-      <div className="flex gap-2">
-        <Button
-          type="submit"
-          disabled={!email || inviteMember.isPending}
-          loading={inviteMember.isPending}
-        >
-          Send Invite
-        </Button>
-        <Button type="button" variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-      </div>
-    </form>
-  )
-}
-
-function ChangeRoleModal({
-  organizationId,
-  member,
-  onClose,
-}: {
-  organizationId: string
-  member: schemas['OrganizationMember']
-  onClose: () => void
-}) {
-  const { toast } = useToast()
-  const { currentUser } = useAuth()
-  const isCurrentUser = member.user_id === currentUser?.id
-  const initialRole: 'admin' | 'member' =
-    member.role === 'admin' ? 'admin' : 'member'
-  const [role, setRole] = useState<'admin' | 'member'>(initialRole)
-  const updateMemberRole = useUpdateOrganizationMemberRole(organizationId)
-  const { data: roles } = useOrganizationRoles(organizationId)
-
-  const orderedRoles = useMemo(
-    () =>
-      roles
-        ? [...roles].sort(
-            (a, b) => ROLE_ORDER.indexOf(a.id) - ROLE_ORDER.indexOf(b.id),
-          )
-        : [],
-    [roles],
-  )
-
-  const allPermissions = useMemo(() => {
-    if (!roles) return []
-    const set = new Set<string>()
-    for (const r of roles) {
-      for (const p of r.permissions) set.add(p)
-    }
-    return Array.from(set).sort()
-  }, [roles])
-
-  const handleSave = async () => {
-    if (role === member.role) {
-      onClose()
-      return
-    }
-
-    try {
-      await updateMemberRole.mutateAsync({ userId: member.user_id, role })
-      toast({
-        title: 'Role updated',
-        description: `${member.email} is now ${ROLE_LABELS[role]}.`,
-      })
-      onClose()
-    } catch {
-      toast({
-        title: 'Failed to update role',
-        description: 'Please try again.',
-      })
-    }
-  }
-
-  return (
-    <div className="flex w-full flex-col gap-y-6 p-8">
-      <h3 className="text-lg font-medium">Change Role</h3>
-      <p className="dark:text-polar-500 text-sm text-gray-500">
-        {isCurrentUser ? (
-          'Update your own role.'
-        ) : (
-          <>
-            Update the role for{' '}
-            <span className="font-medium">{member.email}</span>.
-          </>
-        )}
-      </p>
-      <Select
-        value={role}
-        onValueChange={(value) => setRole(value as 'admin' | 'member')}
-      >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="admin">Admin</SelectItem>
-          <SelectItem value="member">Member</SelectItem>
-        </SelectContent>
-      </Select>
-      {orderedRoles.length > 0 && (
-        <div className="dark:border-polar-700 max-h-[30vh] overflow-y-auto rounded-md border border-gray-200">
-          <table className="w-full text-sm">
-            <thead className="dark:bg-polar-700 sticky top-0 bg-gray-50 text-xs">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Permission</th>
-                {orderedRoles.map((r) => (
-                  <th key={r.id} className="px-3 py-2 text-center font-medium">
-                    {ROLE_LABELS[r.id]}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {allPermissions.map((permission) => (
-                <tr
-                  key={permission}
-                  className="dark:border-polar-700 border-t border-gray-200"
-                >
-                  <td className="px-3 py-2">
-                    <code className="text-xs">{permission}</code>
-                  </td>
-                  {orderedRoles.map((r) => (
-                    <td key={r.id} className="px-3 py-2 text-center">
-                      {r.permissions.includes(
-                        permission as (typeof r.permissions)[number],
-                      ) ? (
-                        <Check
-                          fontSize="small"
-                          className="inline text-green-600 dark:text-green-400"
-                        />
-                      ) : null}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <div className="flex gap-2">
-        <Button
-          onClick={handleSave}
-          disabled={updateMemberRole.isPending}
-          loading={updateMemberRole.isPending}
-        >
-          Save
-        </Button>
-        <Button type="button" variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-      </div>
-    </div>
   )
 }

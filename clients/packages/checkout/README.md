@@ -4,13 +4,15 @@ JavaScript utilities for embedding Polar into your website. Drop in the single C
 
 ## Payment Method
 
+Pass the `token` returned by `POST /v1/customer-sessions` — the SDK accepts either `polar_cst_*` or `polar_mst_*` prefix and routes internally.
+
 ### Modal — vanilla JS
 
 ```ts
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 
 const embed = await PolarEmbedPaymentMethod.create({
-  customerSessionToken, // or memberSessionToken — see below
+  sessionToken,
   theme: 'light',
 })
 
@@ -19,15 +21,61 @@ embed.addEventListener('success', (event) => {
 })
 ```
 
+#### `create()` options
+
+| Option         | Type                           | Default | Description                                                                                       |
+| -------------- | ------------------------------ | ------- | ------------------------------------------------------------------------------------------------- |
+| `sessionToken` | `string`                       | —       | **Required.** Session token from `POST /v1/customer-sessions` (`polar_cst_*` or `polar_mst_*`).   |
+| `theme`        | `'light' \| 'dark'`            | `light` | Colour scheme for the embed.                                                                      |
+| `setAsDefault` | `boolean`                      | `true`  | Whether the new card should become the customer's default payment method.                         |
+| `onLoaded`     | `(event: CustomEvent) => void` | —       | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`. |
+
+#### Events
+
+All events are dispatched as cancelable `CustomEvent`s on the `embed` instance. Call `event.preventDefault()` to opt out of the SDK's default action.
+
+| Event       | Detail                        | Default action                                                        |
+| ----------- | ----------------------------- | --------------------------------------------------------------------- |
+| `loaded`    | —                             | Removes the loader spinner once the iframe is ready.                  |
+| `close`     | —                             | Tears down the iframe (unless locked by a pending `confirmed`).       |
+| `confirmed` | —                             | Marks the modal as non-closable while Stripe is processing.           |
+| `success`   | `{ paymentMethodId: string }` | **Auto-closes the modal.** Call `preventDefault()` to keep it open.   |
+| `error`     | `{ code: ErrorCode }`         | None. `ErrorCode = 'invalid_request' \| 'unauthorized' \| 'unknown'`. |
+
+#### Instance methods
+
+| Method                                      | Description                                             |
+| ------------------------------------------- | ------------------------------------------------------- |
+| `embed.close()`                             | Programmatically close the modal and remove the iframe. |
+| `embed.addEventListener(type, listener)`    | Subscribe to an event. Returns `void`.                  |
+| `embed.removeEventListener(type, listener)` | Unsubscribe.                                            |
+
 ### Inline — React
 
 ```tsx
 import { PolarPaymentMethod } from '@polar-sh/checkout/react/payment-method'
-;<PolarPaymentMethod
-  customerSessionToken={token} // or memberSessionToken
-  onSuccess={(id) => console.log('Attached:', id)}
-/>
+
+return (
+  <PolarPaymentMethod
+    sessionToken={token}
+    onSuccess={(id) => console.log('Attached:', id)}
+  />
+)
 ```
+
+#### Props
+
+| Prop           | Type                                | Default | Description                                                                       |
+| -------------- | ----------------------------------- | ------- | --------------------------------------------------------------------------------- |
+| `sessionToken` | `string`                            | —       | **Required.** Session token from `POST /v1/customer-sessions`.                    |
+| `theme`        | `'light' \| 'dark'`                 | `light` | Colour scheme.                                                                    |
+| `setAsDefault` | `boolean`                           | `true`  | Whether the new card should become the customer's default payment method.         |
+| `onLoaded`     | `() => void`                        | —       | Fires once when the iframe finishes loading and the form becomes interactive.     |
+| `onConfirmed`  | `() => void`                        | —       | Fires when the customer submits and Stripe processing starts.                     |
+| `onSuccess`    | `(paymentMethodId: string) => void` | —       | Fires after the card has been attached to the customer.                           |
+| `onError`      | `(code: ErrorCode) => void`         | —       | Fires when the iframe can't render (token missing/expired). `ErrorCode` as above. |
+| `className`    | `string`                            | —       | Applied to the wrapping `<div>`. Use it to size or position the embed.            |
+| `style`        | `React.CSSProperties`               | —       | Inline style on the wrapping `<div>`.                                             |
 
 ### Auto-init via data attribute
 
@@ -41,11 +89,12 @@ import { PolarPaymentMethod } from '@polar-sh/checkout/react/payment-method'
 <button data-polar-payment-method="polar_cst_xxx">Add payment method</button>
 ```
 
-### Tokens
+The same script also powers `PolarEmbedCheckout` triggers — one tag covers every Polar embed.
 
-`POST /v1/customer-sessions` returns one of two prefixes depending on whether the organisation uses the member model. Pass exactly one option:
+#### Attributes
 
-- `polar_cst_*` → `customerSessionToken`
-- `polar_mst_*` → `memberSessionToken`
-
-The auto-init data attribute accepts either prefix — the SDK detects it.
+| Attribute                                  | Value           | Description                                                                                        |
+| ------------------------------------------ | --------------- | -------------------------------------------------------------------------------------------------- |
+| `data-polar-payment-method`                | `string`        | **Required.** The session token. Clicking the element opens the modal.                             |
+| `data-polar-payment-method-theme`          | `light \| dark` | Optional theme override.                                                                           |
+| `data-polar-payment-method-set-as-default` | `true \| false` | Optional. Default `true`. Passing `"false"` adds the card without overriding the existing default. |

@@ -523,7 +523,7 @@ class PolarSelfService:
             subject = f"Your {product_name} subscription renewed"
         else:
             template_name = "polar_self_subscription_confirmation"
-            subject = f"Welcome to {product_name}"
+            subject = f"You're now on {product_name}"
 
         # Trigger invoice generation, then GET on each retry until the PDF
         # is written. If POST is rejected (order not billable) or billing

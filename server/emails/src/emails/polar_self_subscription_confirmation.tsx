@@ -10,11 +10,11 @@ export function PolarSelfSubscriptionConfirmation({
 }: schemas['PolarSelfSubscriptionConfirmationProps']) {
   return (
     <WrapperPolar>
-      <Preview>Welcome to {product_name}</Preview>
-      <Intro headline={`Welcome to ${product_name}`}>
-        Thank you for subscribing to{' '}
+      <Preview>We're happy to have you selling on Polar!</Preview>
+      <Intro headline="Thanks for choosing Polar!">
+        You're now subscribed to{' '}
         <span className="font-medium">{product_name}</span>. Your invoice is
-        attached.
+        attached for your records.
       </Intro>
       <Footer email={email} />
     </WrapperPolar>

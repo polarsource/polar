@@ -1,6 +1,7 @@
 'use client'
 
 import { useGetOrganizationOrderInvoice } from '@/hooks/queries/billing'
+import { toast } from '@/components/Toast/use-toast'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -48,10 +49,21 @@ const DownloadInvoiceButton = ({
   const getInvoice = useGetOrganizationOrderInvoice(organizationId)
 
   const onClick = useCallback(async () => {
-    const result = await getInvoice.mutateAsync(order.id)
-    const opened = window.open(result.url, '_blank', 'noopener,noreferrer')
-    if (!opened) {
-      window.location.href = result.url
+    try {
+      const result = await getInvoice.mutateAsync(order.id)
+      const opened = window.open(result.url, '_blank', 'noopener,noreferrer')
+      if (!opened) {
+        window.location.href = result.url
+      }
+    } catch (error) {
+      toast({
+        title: 'Failed to download invoice',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred while downloading the invoice.',
+        variant: 'error',
+      })
     }
   }, [getInvoice, order.id])
 

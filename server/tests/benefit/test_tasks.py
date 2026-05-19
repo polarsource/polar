@@ -9,7 +9,6 @@ from polar.benefit.strategies import BenefitRetriableError
 from polar.benefit.tasks import (  # type: ignore[attr-defined]
     BenefitDoesNotExist,
     BenefitGrantDoesNotExist,
-    CustomerDoesNotExist,
     benefit_delete,
     benefit_delete_grant,
     benefit_enqueue_grants,
@@ -36,12 +35,11 @@ class TestBenefitGrant:
         # then
         session.expunge_all()
 
-        with pytest.raises(CustomerDoesNotExist):
-            await benefit_grant(
-                uuid.uuid4(),
-                benefit_organization.id,
-                subscription_id=subscription.id,
-            )
+        await benefit_grant(
+            uuid.uuid4(),
+            benefit_organization.id,
+            subscription_id=subscription.id,
+        )
 
     async def test_not_existing_benefit(
         self,
@@ -119,12 +117,11 @@ class TestBenefitRevoke:
         # then
         session.expunge_all()
 
-        with pytest.raises(CustomerDoesNotExist):
-            await benefit_revoke(
-                uuid.uuid4(),
-                benefit_organization.id,
-                subscription_id=subscription.id,
-            )
+        await benefit_revoke(
+            uuid.uuid4(),
+            benefit_organization.id,
+            subscription_id=subscription.id,
+        )
 
     async def test_not_existing_benefit(
         self,

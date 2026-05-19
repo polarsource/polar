@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.3.0-beta.1
+
+### Patch Changes
+
+- 9b18ea2: Simplify the payment method embed API with a single sessionToken prop/parameter
+
 ## 0.3.0-beta.0
 
 ### Minor Changes
@@ -23,7 +29,7 @@
   The theme should now be passed in an object when calling `PolarEmbedCheckout.create`:
 
   ```ts
-  PolarEmbedCheckout.create('__CHECKOUT_LINK__', { theme: 'dark' })
+  PolarEmbedCheckout.create("__CHECKOUT_LINK__", { theme: "dark" });
   ```
 
 ## 0.1.15

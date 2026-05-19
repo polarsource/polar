@@ -1173,6 +1173,38 @@ class TestMaybeActivate:
         assert result is False
         assert organization.status == OrganizationStatus.DENIED
 
+    async def test_activates_uncertain_verdict_with_approved_appeal(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.UNCERTAIN,
+            risk_score=50.0,
+            violated_sections=[],
+            reason="Borderline",
+            model_used="test",
+            appeal_submitted_at=datetime(2025, 2, 1, tzinfo=UTC),
+            appeal_reason="Please reconsider",
+            appeal_decision=OrganizationReview.AppealDecision.APPROVED,
+            appeal_reviewed_at=datetime(2025, 2, 2, tzinfo=UTC),
+        )
+        session.add(review)
+        await session.flush()
+
+        result = await organization_service.maybe_activate(session, organization)
+
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+
 
 @pytest.mark.asyncio
 class TestBackofficeApprove:

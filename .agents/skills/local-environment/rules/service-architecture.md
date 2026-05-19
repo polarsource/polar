@@ -48,7 +48,7 @@ tags: architecture, services, infrastructure
 
 - **Purpose:** Async task processing
 - **Image:** Same as API
-- **Queues:** high_priority, medium_priority, low_priority
+- **Queues:** high_priority, medium_priority, low_priority, tinybird, invoices_and_receipts
 - **Hot-reload:** Enabled
 - **Depends on:** API (waits for initialization)
 

@@ -18,6 +18,7 @@ from pytest_mock import MockerFixture
 
 from polar.integrations.polar.service import (
     PolarSelfNoActiveSubscription,
+    PolarSelfNotApproved,
     PolarSelfNotConfigured,
     PolarSelfOrderNotFound,
     PolarSelfPlanNotFound,
@@ -26,7 +27,8 @@ from polar.integrations.polar.service import (
     TransactionFeeBenefitError,
     polar_self,
 )
-from polar.postgres import AsyncSession
+from polar.models.organization import Organization
+from polar.postgres import AsyncReadSession, AsyncSession
 
 SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 ORG_A = uuid.UUID("00000000-0000-0000-0000-00000000000a")
@@ -178,11 +180,30 @@ def configured(mocker: MockerFixture) -> None:
     settings = mocker.patch("polar.integrations.polar.service.settings")
     settings.POLAR_SELF_ENABLED = True
     settings.POLAR_ORGANIZATION_ID = str(SELF_ORG_ID)
+    settings.POLAR_FREE_PRODUCT_ID = "prod_free"
 
 
 @pytest.fixture
 def session_mock() -> AsyncSession:
     return MagicMock(spec=AsyncSession)
+
+
+@pytest.fixture
+def read_session_mock() -> AsyncReadSession:
+    return MagicMock(spec=AsyncReadSession)
+
+
+@pytest.fixture
+def organization_repository_mock(mocker: MockerFixture) -> MagicMock:
+    repository = MagicMock()
+    active_organization = MagicMock(spec=Organization)
+    active_organization.is_active.return_value = True
+    repository.get_by_id = AsyncMock(return_value=active_organization)
+    mocker.patch(
+        "polar.integrations.polar.service.OrganizationRepository.from_session",
+        return_value=repository,
+    )
+    return repository
 
 
 @pytest.fixture
@@ -918,27 +939,39 @@ class TestGetSubscription:
 
 @pytest.mark.asyncio
 class TestStartCheckout:
-    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
+    async def test_not_configured_raises(
+        self, mocker: MockerFixture, read_session_mock: AsyncReadSession
+    ) -> None:
         settings = mocker.patch("polar.integrations.polar.service.settings")
         settings.POLAR_SELF_ENABLED = False
 
         with pytest.raises(PolarSelfNotConfigured):
-            await polar_self.start_checkout(organization_id=ORG_A, product_id="prod_1")
+            await polar_self.start_checkout(
+                session=read_session_mock, organization_id=ORG_A, product_id="prod_1"
+            )
 
     async def test_unknown_plan_raises(
-        self, configured: None, client_mock: MagicMock
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
     ) -> None:
         client_mock.list_recurring_products.return_value = [
             _make_product(id="known", metadata={"order": 1}),
         ]
 
         with pytest.raises(PolarSelfPlanNotFound):
-            await polar_self.start_checkout(organization_id=ORG_A, product_id="unknown")
+            await polar_self.start_checkout(
+                session=read_session_mock, organization_id=ORG_A, product_id="unknown"
+            )
 
         client_mock.create_checkout.assert_not_awaited()
 
     async def test_custom_plan_rejected(
-        self, configured: None, client_mock: MagicMock
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
     ) -> None:
         client_mock.list_recurring_products.return_value = [
             _make_product(id="custom_only", metadata={"custom": True}),
@@ -946,33 +979,69 @@ class TestStartCheckout:
 
         with pytest.raises(PolarSelfPlanNotFound):
             await polar_self.start_checkout(
-                organization_id=ORG_A, product_id="custom_only"
+                session=read_session_mock,
+                organization_id=ORG_A,
+                product_id="custom_only",
             )
+
+    async def test_unapproved_rejected(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_paid", metadata={"order": 1}),
+        ]
+        organization_repository_mock.get_by_id.return_value = None
+
+        with pytest.raises(PolarSelfNotApproved):
+            await polar_self.start_checkout(
+                session=read_session_mock,
+                organization_id=ORG_A,
+                product_id="prod_paid",
+            )
+
+        client_mock.create_checkout.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 class TestChangePlan:
-    async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
+    async def test_not_configured_raises(
+        self, mocker: MockerFixture, read_session_mock: AsyncReadSession
+    ) -> None:
         settings = mocker.patch("polar.integrations.polar.service.settings")
         settings.POLAR_SELF_ENABLED = False
 
         with pytest.raises(PolarSelfNotConfigured):
-            await polar_self.change_plan(organization_id=ORG_A, product_id="p")
+            await polar_self.change_plan(
+                session=read_session_mock, organization_id=ORG_A, product_id="p"
+            )
 
     async def test_unknown_plan_raises(
-        self, configured: None, client_mock: MagicMock
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
     ) -> None:
         client_mock.list_recurring_products.return_value = [
             _make_product(id="known", metadata={"order": 1}),
         ]
 
         with pytest.raises(PolarSelfPlanNotFound):
-            await polar_self.change_plan(organization_id=ORG_A, product_id="unknown")
+            await polar_self.change_plan(
+                session=read_session_mock, organization_id=ORG_A, product_id="unknown"
+            )
 
         client_mock.update_subscription_product.assert_not_awaited()
 
     async def test_no_active_subscription_raises(
-        self, configured: None, client_mock: MagicMock
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
     ) -> None:
         client_mock.list_recurring_products.return_value = [
             _make_product(id="prod_2", metadata={"order": 2}),
@@ -980,12 +1049,18 @@ class TestChangePlan:
         client_mock.get_active_subscription.return_value = None
 
         with pytest.raises(PolarSelfNoActiveSubscription):
-            await polar_self.change_plan(organization_id=ORG_A, product_id="prod_2")
+            await polar_self.change_plan(
+                session=read_session_mock, organization_id=ORG_A, product_id="prod_2"
+            )
 
         client_mock.update_subscription_product.assert_not_awaited()
 
     async def test_updates_existing_subscription(
-        self, configured: None, client_mock: MagicMock
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
     ) -> None:
         client_mock.list_recurring_products.return_value = [
             _make_product(id="prod_2", metadata={"order": 2}),
@@ -994,12 +1069,35 @@ class TestChangePlan:
             id="sub_existing", product_id="prod_1"
         )
 
-        await polar_self.change_plan(organization_id=ORG_A, product_id="prod_2")
+        await polar_self.change_plan(
+            session=read_session_mock, organization_id=ORG_A, product_id="prod_2"
+        )
 
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_2",
         )
+
+    async def test_unapproved_rejected(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_2", metadata={"order": 2}),
+        ]
+        inactive = MagicMock(spec=Organization)
+        inactive.is_active.return_value = False
+        organization_repository_mock.get_by_id.return_value = inactive
+
+        with pytest.raises(PolarSelfNotApproved):
+            await polar_self.change_plan(
+                session=read_session_mock, organization_id=ORG_A, product_id="prod_2"
+            )
+
+        client_mock.update_subscription_product.assert_not_awaited()
 
 
 def _make_order(

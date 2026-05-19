@@ -7,6 +7,7 @@ import DownloadInvoice, {
 } from '@/components/Payouts/DownloadInvoice'
 import { PayoutProvider } from '@/components/Payouts/PayoutContext'
 import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
+import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { getServerURL } from '@/utils/api'
@@ -17,7 +18,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { platformFeesDisplayNames } from '@/utils/transaction'
-import { ClientResponseError, schemas } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -84,13 +85,11 @@ export default function ClientPage({
     )
   }
 
-  const { data: account, error: accountError } = useOrganizationAccount(
-    organization.id,
-  )
+  const canReadFinance = useHasPermission(organization.id, 'finance:read')
 
-  const isNotAdmin =
-    accountError &&
-    (accountError as ClientResponseError)?.response?.status === 403
+  const { data: account } = useOrganizationAccount(
+    canReadFinance ? organization.id : undefined,
+  )
 
   const { data: payouts, isLoading } = usePayouts(account?.id, {
     ...getAPIParams(pagination, sorting),
@@ -262,10 +261,10 @@ export default function ClientPage({
     },
   ]
 
-  if (isNotAdmin) {
+  if (canReadFinance === false) {
     return (
       <div className="flex flex-col gap-y-6">
-        <AccessRestricted message="You are not the admin of the account. Only the account admin can view payout information." />
+        <AccessRestricted message="You don't have permission to view payouts for this organization. Ask an admin if you need access." />
       </div>
     )
   }

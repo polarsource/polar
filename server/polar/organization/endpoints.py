@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.auth.permission import ROLE_PERMISSIONS
 from polar.authz.dependencies import (
     AuthorizeFinanceRead,
     AuthorizeMembersManage,
@@ -91,6 +92,7 @@ from .schemas import (
     OrganizationPayoutAccountSet,
     OrganizationReviewState,
     OrganizationReviewStatus,
+    OrganizationRoleDefinition,
     OrganizationSlugAvailability,
     OrganizationSlugCheck,
     OrganizationUpdate,
@@ -112,8 +114,9 @@ OrganizationNotFound = {
     summary="List Organizations",
     response_model=ListResource[OrganizationSchema],
     tags=[APITag.public],
+    operation_id="organizations:list",
 )
-async def list(
+async def list_organizations(
     auth_subject: auth.OrganizationsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
@@ -389,6 +392,26 @@ async def members(
         items=[OrganizationMember.model_validate(m) for m in members],
         pagination=Pagination(total_count=len(members), max_page=1),
     )
+
+
+@router.get(
+    "/{id}/roles",
+    response_model=list[OrganizationRoleDefinition],
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def roles(authz: AuthorizeOrgAccess) -> list[OrganizationRoleDefinition]:
+    """List the roles available in an organization, with the permissions
+    each role grants.
+
+    The set is currently static (identical across organizations); the
+    per-organization route shape leaves room for org-level role
+    customization in the future.
+    """
+    return [
+        OrganizationRoleDefinition(id=role, permissions=sorted(permissions))
+        for role, permissions in ROLE_PERMISSIONS.items()
+    ]
 
 
 @router.post(

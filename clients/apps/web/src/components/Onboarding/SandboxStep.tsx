@@ -98,7 +98,10 @@ export function SandboxStep() {
       return
     }
 
-    setUserOrganizations((prev) => [...prev, org])
+    setUserOrganizations((prev) => [
+      ...prev,
+      { ...org, role: 'owner' as const },
+    ])
     router.push(`/dashboard/${org.slug}`)
     clearData()
   }

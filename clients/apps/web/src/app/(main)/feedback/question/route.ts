@@ -1,4 +1,3 @@
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import * as Sentry from '@sentry/nextjs'
@@ -123,8 +122,7 @@ export async function POST(req: Request) {
   // actually a member — otherwise users can pollute other orgs' analytics.
   let trustedOrganizationId: string | undefined
   if (organizationId) {
-    const api = await getServerSideAPI()
-    const userOrganizations = await getUserOrganizations(api)
+    const userOrganizations = await getUserOrganizations()
     if (userOrganizations.some((org) => org.id === organizationId)) {
       trustedOrganizationId = organizationId
     }

@@ -111,7 +111,10 @@ const OrganizationSelectionPage = ({
     await revalidate(`users:${currentUser?.id}:organizations`, {
       expire: 0,
     })
-    setUserOrganizations((orgs) => [...orgs, organization])
+    setUserOrganizations((orgs) => [
+      ...orgs,
+      { ...organization, role: 'owner' as const },
+    ])
 
     // Navigate to the same page with the new organization selected
     const updatedSearchParams = new URLSearchParams({

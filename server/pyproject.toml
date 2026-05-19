@@ -64,6 +64,7 @@ dependencies = [
   "anyio>=4.13.0",
   "markdown-it-py>=4.0.0",
   "tzdata>=2025.3",
+  "reauth==0.1.4",
 ]
 
 [dependency-groups]
@@ -142,9 +143,19 @@ exclude_lines = [
 target-version = "py312"
 
 [tool.ruff.lint]
-extend-select = ["I", "UP", "T20", "B039", "PT", "RUF022", "RUF023", "RUF10", "RUF20"]
+extend-select = [
+  "I",
+  "UP",
+  "T20",
+  "B039",
+  "PT",
+  "RUF022",
+  "RUF023",
+  "RUF10",
+  "RUF20",
+]
 ignore = [
-  "F841",  # remove unused variables
+  "F841", # remove unused variables
   "PT012",
 ]
 
@@ -174,6 +185,7 @@ warn_untyped_fields = true
 
 [tool.uv]
 exclude-newer = "1 week"
+exclude-newer-package = { reauth = false } # Reauth is brand new, but remember to remove this exclusion when stabilized
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

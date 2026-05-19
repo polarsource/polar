@@ -113,6 +113,7 @@ class Logging[RendererType]:
                             "authlib",
                             "logfire",
                             "apscheduler",
+                            "reauth",
                         ]
                     },
                 },

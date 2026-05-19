@@ -1405,6 +1405,19 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
+            "customer_email_settings": {
+                "order_confirmation": False,
+                "subscription_cancellation": False,
+                "subscription_confirmation": False,
+                "subscription_cycled": False,
+                "subscription_cycled_after_trial": False,
+                "subscription_past_due": False,
+                "subscription_renewal_reminder": False,
+                "subscription_revoked": False,
+                "subscription_trial_conversion_reminder": False,
+                "subscription_uncanceled": False,
+                "subscription_updated": False,
+            },
             "products": [],
         },
         {
@@ -1560,6 +1573,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 **organization.feature_settings,
                 "billing_enabled": True,
             }
+        if "customer_email_settings" in org_data:
+            organization.customer_email_settings = org_data["customer_email_settings"]
         session.add(organization)
 
         # Attach a fake payout account so seeded orgs are payout-ready

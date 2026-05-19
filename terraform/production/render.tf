@@ -286,6 +286,8 @@ module "production" {
       SK = "EU372061545"
       # United Kingdom
       GB = "GB458254961"
+      # Vietnam
+      VN = "9000020281"
     })
     tax_processors                = "[\"stripe\"]"
     tax_record_processor          = "stripe"

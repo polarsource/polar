@@ -14,12 +14,12 @@ import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
 import { useHasPermission } from '@/hooks/permissions'
 import {
-  useOrganizationBillingCustomerSession,
+  useOrganizationCustomerSession,
   useOrganizationOrders,
   useOrganizationPlans,
   useOrganizationSubscription,
 } from '@/hooks/queries/billing'
-import AllInclusive from '@mui/icons-material/AllInclusive'
+
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -48,9 +48,7 @@ export default function BillingPage({
   const plansQuery = useOrganizationPlans(gatedOrgId)
   const ordersQuery = useOrganizationOrders(gatedOrgId)
 
-  const billingCustomerSessionQuery = useOrganizationBillingCustomerSession(
-    organization.id,
-  )
+  const customerSessionQuery = useOrganizationCustomerSession(organization.id)
 
   useEffect(() => {
     if (searchParams.get('checkout_success') !== 'true') return
@@ -67,7 +65,7 @@ export default function BillingPage({
   } = useModal()
 
   const onAddPaymentMethod = async () => {
-    const session = billingCustomerSessionQuery.data
+    const session = customerSessionQuery.data
     if (!session) {
       toast({
         title: 'Could not start the payment method flow',

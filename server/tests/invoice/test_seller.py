@@ -87,9 +87,7 @@ class TestGetPolarAdditionalInfo:
 
     def test_new_zealand_uses_gst_label(self) -> None:
         info = get_polar_additional_info(_address("NZ"))
-        assert info == (
-            "[support@polar.sh](mailto:support@polar.sh)\nGST: 148-410-224"
-        )
+        assert info == ("[support@polar.sh](mailto:support@polar.sh)\nGST: 148-410-224")
 
     def test_unmapped_country(self) -> None:
         info = get_polar_additional_info(_address("US"))

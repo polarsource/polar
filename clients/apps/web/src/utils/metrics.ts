@@ -369,6 +369,23 @@ export const METRIC_GROUPS: MetricGroup[] = [
         description:
           'Subscriptions lost to non-renewal at the end of a billing period.',
       },
+      {
+        slug: 'churn_rate',
+        display_name: 'Churn Rate',
+        description: 'Percentage of active subscriptions lost in the period.',
+      },
+      {
+        slug: 'active_subscriptions',
+        display_name: 'Active Subscriptions',
+        description:
+          'Current count of subscriptions that are active and not canceled.',
+      },
+      {
+        slug: 'committed_subscriptions',
+        display_name: 'Committed Subscriptions',
+        description:
+          'Active subscriptions still within a committed billing period.',
+      },
     ],
   },
   {

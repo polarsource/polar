@@ -55,9 +55,6 @@ const ROLE_LABELS: Record<OrganizationRole, string> = {
 
 const ROLE_ORDER: OrganizationRole[] = ['owner', 'admin', 'member']
 
-const OWNER_TOOLTIP =
-  'Contact support to transfer ownership of this organization.'
-
 export default function ClientPage({
   organization,
 }: {
@@ -197,15 +194,6 @@ export default function ClientPage({
         const isOwner = member.role === 'owner'
 
         if (isOwner) {
-          if (canManageMembers && !isCurrentUser) {
-            return (
-              <div className="flex justify-end" title={OWNER_TOOLTIP}>
-                <Button variant="secondary" size="icon" disabled>
-                  <MoreVert fontSize="small" />
-                </Button>
-              </div>
-            )
-          }
           return null
         }
 

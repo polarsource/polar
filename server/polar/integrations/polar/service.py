@@ -302,6 +302,10 @@ class PolarSelfService:
         )
         if subscription is None:
             raise PolarSelfNoActiveSubscription(organization_id)
+        if subscription.cancel_at_period_end:
+            subscription = await client.uncancel_subscription(
+                subscription_id=subscription.id
+            )
         target_amount = self._product_fixed_price_amount(target_product)
         proration = (
             SubscriptionProrationBehavior.INVOICE

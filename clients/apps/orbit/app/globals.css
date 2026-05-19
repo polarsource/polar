@@ -12,3 +12,31 @@ body {
     -apple-system,
     sans-serif;
 }
+
+:root {
+  --chart-primary: #343434;
+  --chart-secondary: #8a8a8a;
+  --chart-tertiary: #b1b1b1;
+  --chart-quaternary: #c8c8c8;
+  --chart-quinary: #989898;
+  --chart-grid: #b1b1b1;
+  --chart-axis: #707070;
+  --chart-fill: rgba(52, 52, 52, 0.08);
+  --chart-positive: #343434;
+  --chart-negative: #8a8a8a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chart-primary: #dddddd;
+    --chart-secondary: #888888;
+    --chart-tertiary: #555555;
+    --chart-quaternary: #3a3a3a;
+    --chart-quinary: #6b6b6b;
+    --chart-grid: #2a2a2a;
+    --chart-axis: #6a6a6a;
+    --chart-fill: rgba(221, 221, 221, 0.08);
+    --chart-positive: #dddddd;
+    --chart-negative: #6a6a6a;
+  }
+}

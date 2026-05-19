@@ -48,7 +48,7 @@ const PayoutButton = () => (
     display="inline-flex"
     alignItems="center"
     columnGap="s"
-    paddingHorizontal="l"
+    paddingHorizontal="xl"
     paddingVertical="m"
     backgroundColor="background-inverse"
     color="text-inverse"
@@ -108,13 +108,9 @@ const StatsRow = () => (
     <Stat
       label="Next Payout"
       value={
-        FINANCE.nextPayout
-          ? formatMoney(FINANCE.nextPayout.amountCents)
-          : '—'
+        FINANCE.nextPayout ? formatMoney(FINANCE.nextPayout.amountCents) : '—'
       }
-      sub={
-        FINANCE.nextPayout ? formatDate(FINANCE.nextPayout.date) : undefined
-      }
+      sub={FINANCE.nextPayout ? formatDate(FINANCE.nextPayout.date) : undefined}
     />
   </Box>
 )

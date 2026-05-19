@@ -13,6 +13,7 @@ from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import OAuth2Token, User
+from polar.oauth2.repository import OAuth2TokenRepository
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -65,6 +66,13 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
             return None
 
         return token
+
+    async def delete_expired(self, session: AsyncSession) -> None:
+        repository = OAuth2TokenRepository.from_session(session)
+        exclude_client_ids: list[str] = []
+        if APP_CLIENT_ID is not None:
+            exclude_client_ids.append(APP_CLIENT_ID)
+        await repository.delete_expired(exclude_client_ids=exclude_client_ids)
 
     async def revoke_leaked(
         self,

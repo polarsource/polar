@@ -81,8 +81,6 @@ class PolarSelfService:
             "polar_self.create_customer",
             external_id=str(organization_id),
             name=name,
-            organization_id=settings.POLAR_ORGANIZATION_ID,
-            product_id=settings.POLAR_FREE_PRODUCT_ID,
             owner_external_id=owner_external_id,
             owner_email=owner_email,
             owner_name=owner_name,

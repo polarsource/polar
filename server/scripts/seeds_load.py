@@ -62,6 +62,7 @@ from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
 from polar.models.organization import (
     Organization,
+    OrganizationCustomerEmailSettings,
     OrganizationDetails,
     OrganizationStatus,
 )
@@ -148,6 +149,7 @@ class OrganizationDict(TypedDict):
     benefits: NotRequired[dict[str, "BenefitDict"]]
     is_admin: NotRequired[bool]
     feature_settings: NotRequired[dict[str, bool]]
+    customer_email_settings: NotRequired[OrganizationCustomerEmailSettings]
     seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
 
 

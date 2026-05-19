@@ -1,18 +1,20 @@
 'use client'
 
-import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
+import {
+  PolarEmbedPaymentMethod,
+  type EmbedPaymentMethodErrorCode,
+} from '@polar-sh/checkout/payment-method'
 import { useEffect } from 'react'
 
-type Code = 'invalid_request' | 'unauthorized' | 'unknown'
-
-const MESSAGES: Record<Code, string> = {
+const MESSAGES: Record<EmbedPaymentMethodErrorCode, string> = {
   invalid_request: 'Missing required parameters.',
   unauthorized: 'Session expired.',
+  processing_failed: 'Could not process the payment method. Please try again.',
   unknown: 'Something went wrong.',
 }
 
 interface Props {
-  code: Code
+  code: EmbedPaymentMethodErrorCode
   embedOrigin?: string
 }
 

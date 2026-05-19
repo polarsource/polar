@@ -286,6 +286,16 @@ OrganizationPaymentMethod = Annotated[
 ]
 
 
+class OrganizationCustomerSession(Schema):
+    token: str = Field(
+        description=(
+            "Short-lived customer session token bound to this organization's "
+            "mirrored Polar billing customer. Authenticates against "
+            "`/v1/customer-portal/customers/me/*` for the duration of its TTL."
+        ),
+    )
+
+
 class OrganizationPaymentMethodCreate(Schema):
     confirmation_token_id: str = Field(
         description="Stripe ConfirmationToken collected by Stripe Elements.",

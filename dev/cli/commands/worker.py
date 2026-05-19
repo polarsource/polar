@@ -3,7 +3,6 @@
 import os
 
 import typer
-
 from shared import SERVER_DIR, console
 
 
@@ -18,11 +17,24 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         os.chdir(SERVER_DIR)
         cmd = [
-            "uv", "run", "dramatiq",
-            "-p", "1", "-t", "1",
-            "--queues", "high_priority", "medium_priority", "low_priority", "tinybird", "invoices_and_receipts",
-            "--watch", "polar",
-            "-f", "polar.worker.scheduler:start",
+            "uv",
+            "run",
+            "dramatiq",
+            "-p",
+            "1",
+            "-t",
+            "1",
+            "--queues",
+            "high_priority",
+            "medium_priority",
+            "low_priority",
+            "tinybird",
+            "invoices_and_receipts",
+            "webhooks",
+            "--watch",
+            "polar",
+            "-f",
+            "polar.worker.scheduler:start",
             "polar.worker.run",
         ]
 

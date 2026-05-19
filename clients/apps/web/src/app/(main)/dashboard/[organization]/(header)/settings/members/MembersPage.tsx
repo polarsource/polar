@@ -175,8 +175,7 @@ export default function ClientPage({
           return null
         }
 
-        const canChangeRole = canManageMembers
-        if (!canChangeRole && !isCurrentUser) {
+        if (!canManageMembers && !isCurrentUser) {
           return null
         }
 
@@ -189,7 +188,7 @@ export default function ClientPage({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {canChangeRole && (
+                {canManageMembers && (
                   <>
                     <DropdownMenuItem onClick={() => handleChangeRole(member)}>
                       Change role

@@ -259,7 +259,7 @@ class TestWebhook:
         assert call.args[3] == f"msg_{event_type}"
         assert call.args[4] == payload
 
-    async def test_subscription_revoked_is_enqueued(
+    async def test_subscription_revoked_is_ignored(
         self,
         client: AsyncClient,
         enqueue_mock: AsyncMock,
@@ -270,7 +270,4 @@ class TestWebhook:
         response = await client.post(WEBHOOK_URL, content=body, headers=headers)
 
         assert response.status_code == 202
-        enqueue_mock.assert_awaited_once()
-        call = enqueue_mock.await_args
-        assert call is not None
-        assert call.args[2] == "polar_self.webhook.subscription.revoked"
+        enqueue_mock.assert_not_awaited()

@@ -42,9 +42,6 @@ from polar.integrations.polar.schemas import (
     organization_payment_method_add_response_from_sdk,
     organization_payment_method_from_sdk,
 )
-from polar.integrations.polar.service import (
-    PolarSelfNoActiveSubscription,
-)
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
@@ -761,31 +758,42 @@ async def validate_website(
 )
 async def list_plans(
     authz: AuthorizeOrgManageRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Sequence[OrganizationPlan]:
-    """List the plans this organization can subscribe to."""
+    """List the plans this organization can subscribe to.
+
+    The free plan is synthesized (no underlying Polar product); selecting it in
+    the UI cancels the active subscription instead of creating one.
+    """
     products = await polar_self_service.list_plans()
-    return [OrganizationPlan.from_sdk(product) for product in products]
+    free_plan = await polar_self_service.resolve_free_plan(
+        session, authz.organization.id
+    )
+    return [free_plan, *(OrganizationPlan.from_sdk(product) for product in products)]
 
 
 @router.get(
     "/{id}/subscription",
     response_model=OrganizationSubscription,
     summary="Get Organization Subscription",
-    responses={
-        404: {
-            "description": "No active subscription or organization not found.",
-            "model": ResourceNotFound.schema(),
-        }
-    },
+    responses={404: OrganizationNotFound},
     tags=[APITag.private],
 )
 async def get_subscription(
     authz: AuthorizeOrgManageRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationSubscription:
-    """Get the current Polar subscription for this organization."""
+    """Get the current Polar subscription for this organization.
+
+    Returns a synthesized free-plan representation when the organization has no
+    active paid subscription. Grandfathered orgs get the "Early Member" variant.
+    """
     subscription = await polar_self_service.get_subscription(authz.organization.id)
     if subscription is None:
-        raise PolarSelfNoActiveSubscription(authz.organization.id)
+        free_plan = await polar_self_service.resolve_free_plan(
+            session, authz.organization.id
+        )
+        return OrganizationSubscription.free(plan=free_plan)
     return OrganizationSubscription.from_sdk(subscription)
 
 
@@ -842,6 +850,33 @@ async def change_subscription_plan(
         session=session,
         organization_id=authz.organization.id,
         product_id=body.product_id,
+    )
+    return OrganizationSubscription.from_sdk(subscription)
+
+
+@router.delete(
+    "/{id}/subscription",
+    response_model=OrganizationSubscription,
+    summary="Cancel Organization Subscription",
+    responses={
+        200: {"description": "Subscription scheduled for cancellation."},
+        404: {
+            "description": "Organization or active subscription not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def cancel_subscription_endpoint(
+    authz: AuthorizeOrgManage,
+) -> OrganizationSubscription:
+    """Cancel the organization's active subscription at the end of the current period.
+
+    The organization stays on its paid plan until period end, then transitions
+    to the synthesized free plan.
+    """
+    subscription = await polar_self_service.cancel_subscription(
+        organization_id=authz.organization.id,
     )
     return OrganizationSubscription.from_sdk(subscription)
 

@@ -96,6 +96,20 @@ export const useChangeSubscriptionPlan = (organizationId: string) =>
     },
   })
 
+export const useCancelSubscription = (organizationId: string) =>
+  useMutation({
+    mutationFn: () =>
+      api.DELETE('/v1/organizations/{id}/subscription', {
+        params: { path: { id: organizationId } },
+      }),
+    onSuccess: (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({
+        queryKey: ['organization-billing', organizationId, 'subscription'],
+      })
+    },
+  })
+
 export const useOrganizationPaymentMethods = (organizationId: string) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'payment-methods'],

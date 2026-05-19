@@ -39,7 +39,7 @@ from polar_sdk.models import (
     Product,
     ProductVisibility,
     Subscription,
-    SubscriptionCreateExternalCustomer,
+    SubscriptionCancel,
     SubscriptionProrationBehavior,
     SubscriptionUpdateProduct,
 )
@@ -127,28 +127,22 @@ class PolarSelfClient:
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "create_customer.fetch_existing")
 
-    async def create_free_subscription(
-        self, *, external_customer_id: str, product_id: str
-    ) -> None:
+    async def cancel_subscription(self, *, subscription_id: str) -> Subscription:
         with logfire.span(
-            "polar.create_free_subscription",
-            external_customer_id=external_customer_id,
-            product_id=product_id,
+            "polar.cancel_subscription",
+            subscription_id=subscription_id,
         ) as span:
             try:
-                await self._sdk.subscriptions.create_async(
-                    request=SubscriptionCreateExternalCustomer(
-                        product_id=product_id,
-                        external_customer_id=external_customer_id,
-                    )
+                return await self._sdk.subscriptions.update_async(
+                    id=subscription_id,
+                    subscription_update=SubscriptionCancel(
+                        cancel_at_period_end=True,
+                    ),
                 )
             except PolarError as e:
-                if e.status_code == 409:
-                    span.set_attribute("conflict", True)
-                    return
-                _raise_error(span, e, "create_free_subscription")
+                _raise_error(span, e, "cancel_subscription")
             except httpx.RequestError as e:
-                _raise_network_error(span, e, "create_free_subscription")
+                _raise_network_error(span, e, "cancel_subscription")
 
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
         return await self._sdk.customers.get_external_async(external_id=external_id)

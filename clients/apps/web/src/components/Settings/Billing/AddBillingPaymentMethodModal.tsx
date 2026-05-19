@@ -4,6 +4,7 @@ import {
   useAddOrganizationPaymentMethod,
   useConfirmOrganizationPaymentMethod,
 } from '@/hooks/queries/billing'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import {
@@ -55,8 +56,10 @@ export const AddBillingPaymentMethodModal = ({
 
       if (validationError) {
         setError(
-          validationError.detail ??
+          extractApiErrorMessage(
+            validationError,
             'Failed to add payment method, please try again later.',
+          ),
         )
         setLoading(false)
         return
@@ -133,8 +136,10 @@ export const AddBillingPaymentMethodModal = ({
 
       if (validationError || !data) {
         setError(
-          validationError?.detail ??
+          extractApiErrorMessage(
+            validationError,
             'Failed to add payment method, please try again later.',
+          ),
         )
         setLoading(false)
         return

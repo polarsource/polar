@@ -33,9 +33,13 @@ from polar.integrations.polar.schemas import (
     OrganizationOrder,
     OrganizationOrderInvoice,
     OrganizationPaymentMethod,
+    OrganizationPaymentMethodAddResponse,
+    OrganizationPaymentMethodConfirm,
+    OrganizationPaymentMethodCreate,
     OrganizationPlan,
     OrganizationSubscription,
     OrganizationSubscriptionUpdate,
+    organization_payment_method_add_response_from_sdk,
     organization_payment_method_from_sdk,
 )
 from polar.integrations.polar.service import (
@@ -925,6 +929,48 @@ async def list_payment_methods(
         items=items,
         pagination=Pagination(total_count=len(items), max_page=1 if items else 0),
     )
+
+
+@router.post(
+    "/{id}/payment-methods",
+    response_model=OrganizationPaymentMethodAddResponse,
+    status_code=201,
+    summary="Add Organization Payment Method",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def add_payment_method(
+    authz: AuthorizeOrgManageUser,
+    body: OrganizationPaymentMethodCreate,
+) -> OrganizationPaymentMethodAddResponse:
+    """Add a payment method to pay Polar invoices."""
+    response = await polar_self_service.add_payment_method(
+        authz.organization.id,
+        create=body,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    return organization_payment_method_add_response_from_sdk(response)
+
+
+@router.post(
+    "/{id}/payment-methods/confirm",
+    response_model=OrganizationPaymentMethodAddResponse,
+    status_code=201,
+    summary="Confirm Organization Payment Method",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def confirm_payment_method(
+    authz: AuthorizeOrgManageUser,
+    body: OrganizationPaymentMethodConfirm,
+) -> OrganizationPaymentMethodAddResponse:
+    """Confirm a payment method after Stripe's required next action."""
+    response = await polar_self_service.confirm_payment_method(
+        authz.organization.id,
+        confirm=body,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    return organization_payment_method_add_response_from_sdk(response)
 
 
 @router.delete(

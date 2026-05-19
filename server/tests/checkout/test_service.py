@@ -4615,6 +4615,103 @@ class TestConfirm:
         assert checkout.customer is not None
         assert checkout.customer.user_metadata == {"key": "updated", "key2": "value2"}
 
+    async def test_existing_customer_name_not_overridden(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            name="ACME Corp Inc.",
+            stripe_customer_id="CHECKOUT_CUSTOMER_ID",
+        )
+        checkout_one_time_fixed.customer = customer
+        checkout_one_time_fixed.customer_email = customer.email
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "John Smith",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        assert checkout.customer.name == "ACME Corp Inc."
+
+        # Stripe still receives the checkout-provided name (which may be the
+        # cardholder name); only Polar's customer.name is protected.
+        update_call = stripe_service_mock.update_customer.call_args
+        assert update_call.kwargs.get("name") == "John Smith"
+
+    async def test_existing_customer_billing_name_updated(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            name="Existing Person",
+            stripe_customer_id="CHECKOUT_CUSTOMER_ID",
+        )
+        checkout_one_time_fixed.customer = customer
+        checkout_one_time_fixed.customer_email = customer.email
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Cardholder Name",
+                    "is_business_customer": True,
+                    "customer_billing_name": "ACME Corp Inc.",
+                    "customer_billing_address": {
+                        "line1": "123 Main St",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        assert checkout.customer.name == "Existing Person"
+        assert checkout.customer.billing_name == "ACME Corp Inc."
+
+        update_call = stripe_service_mock.update_customer.call_args
+        assert update_call.kwargs.get("name") == "ACME Corp Inc."
+
     async def test_valid_stripe_existing_customer_email(
         self,
         save_fixture: SaveFixture,

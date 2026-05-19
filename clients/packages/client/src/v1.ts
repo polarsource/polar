@@ -1019,6 +1019,9 @@ export interface paths {
      * List Available Plans
      * @description List the plans this organization can subscribe to.
      *
+     *     The free plan is synthesized (no underlying Polar product); selecting it in
+     *     the UI cancels the active subscription instead of creating one.
+     *
      *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:list_plans']
@@ -1041,6 +1044,9 @@ export interface paths {
      * Get Organization Subscription
      * @description Get the current Polar subscription for this organization.
      *
+     *     Returns a synthesized free-plan representation when the organization has no
+     *     active paid subscription. Grandfathered orgs get the "Early Member" variant.
+     *
      *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_subscription']
@@ -1052,7 +1058,16 @@ export interface paths {
      *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:start_subscription_checkout']
-    delete?: never
+    /**
+     * Cancel Organization Subscription
+     * @description Cancel the organization's active subscription at the end of the current period.
+     *
+     *     The organization stays on its paid plan until period end, then transitions
+     *     to the synthesized free plan.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    delete: operations['organizations:cancel_subscription_endpoint']
     options?: never
     head?: never
     /**
@@ -24169,8 +24184,11 @@ export interface components {
     }
     /** OrganizationPlan */
     OrganizationPlan: {
-      /** Product Id */
-      product_id: string
+      /**
+       * Product Id
+       * @description Polar product ID. Null for the synthesized free plan, which has no underlying Polar product.
+       */
+      product_id?: string | null
       /** Name */
       name: string
       /** Description */
@@ -24439,32 +24457,32 @@ export interface components {
       | 'offboarding'
     /** OrganizationSubscription */
     OrganizationSubscription: {
-      /** Subscription Id */
-      subscription_id: string
+      /**
+       * Subscription Id
+       * @description Polar subscription ID. Null when the organization has no active subscription and is on the free plan.
+       */
+      subscription_id?: string | null
       /** Status */
       status: string
       /** Product Id */
-      product_id: string
+      product_id?: string | null
       plan: components['schemas']['OrganizationPlan']
       /** Amount */
       amount: number
       /** Currency */
       currency: string
       /** Recurring Interval */
-      recurring_interval: string
+      recurring_interval?: string | null
       /** Recurring Interval Count */
-      recurring_interval_count: number
+      recurring_interval_count?: number | null
+      /** Current Period Start */
+      current_period_start?: string | null
+      /** Current Period End */
+      current_period_end?: string | null
       /**
-       * Current Period Start
-       * Format: date-time
+       * Cancel At Period End
+       * @default false
        */
-      current_period_start: string
-      /**
-       * Current Period End
-       * Format: date-time
-       */
-      current_period_end: string
-      /** Cancel At Period End */
       cancel_at_period_end: boolean
       /** Canceled At */
       canceled_at?: string | null
@@ -33575,7 +33593,7 @@ export interface operations {
           'application/json': components['schemas']['OrganizationSubscription']
         }
       }
-      /** @description No active subscription or organization not found. */
+      /** @description Organization not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -33620,6 +33638,46 @@ export interface operations {
         }
       }
       /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:cancel_subscription_endpoint': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Subscription scheduled for cancellation. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSubscription']
+        }
+      }
+      /** @description Organization or active subscription not found. */
       404: {
         headers: {
           [name: string]: unknown

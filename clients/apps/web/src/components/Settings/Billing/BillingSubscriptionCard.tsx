@@ -127,26 +127,32 @@ export const BillingSubscriptionCard = ({
         </Box>
       </Box>
 
-      <Box
-        display="grid"
-        gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
-        gap="xl"
-        borderTopWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        paddingTop="xl"
-      >
-        {subscription.started_at && (
-          <Detail label="Started">
-            <FormattedDateTime datetime={subscription.started_at} />
-          </Detail>
-        )}
-        <Detail
-          label={subscription.cancel_at_period_end ? 'Ends on' : 'Renews on'}
+      {(subscription.started_at || subscription.current_period_end) && (
+        <Box
+          display="grid"
+          gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
+          gap="xl"
+          borderTopWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          paddingTop="xl"
         >
-          <FormattedDateTime datetime={subscription.current_period_end} />
-        </Detail>
-      </Box>
+          {subscription.started_at && (
+            <Detail label="Started">
+              <FormattedDateTime datetime={subscription.started_at} />
+            </Detail>
+          )}
+          {subscription.current_period_end && (
+            <Detail
+              label={
+                subscription.cancel_at_period_end ? 'Ends on' : 'Renews on'
+              }
+            >
+              <FormattedDateTime datetime={subscription.current_period_end} />
+            </Detail>
+          )}
+        </Box>
+      )}
 
       {scheduledPlan && pendingChange && (
         <Box

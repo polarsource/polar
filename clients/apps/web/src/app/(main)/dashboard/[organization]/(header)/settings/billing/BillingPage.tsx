@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { EmptyState } from '@/components/CustomerPortal/EmptyState'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { AddBillingPaymentMethodModal } from '@/components/Settings/Billing/AddBillingPaymentMethodModal'
@@ -17,7 +16,6 @@ import {
   useOrganizationPlans,
   useOrganizationSubscription,
 } from '@/hooks/queries/billing'
-import AllInclusive from '@mui/icons-material/AllInclusive'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
@@ -69,25 +67,13 @@ export default function BillingPage({
     <DashboardBody wrapperClassName="max-w-(--breakpoint-md)!" title="Billing">
       <Box display="flex" flexDirection="column" rowGap="3xl">
         <Section id="subscription">
-          {subscriptionQuery.isLoading ? (
+          {subscriptionQuery.isLoading || !subscriptionQuery.data ? (
             <LoadingBox height={240} borderRadius="l" />
-          ) : subscriptionQuery.data ? (
+          ) : (
             <BillingSubscriptionCard
               subscription={subscriptionQuery.data}
               plans={plansQuery.data ?? []}
               onChangePlan={onChangePlan}
-            />
-          ) : (
-            <EmptyState
-              icon={<AllInclusive fontSize="medium" />}
-              title="No active subscription"
-              description="This organization doesn't have an active subscription"
-              actions={[
-                {
-                  children: 'Select Plan',
-                  onClick: onChangePlan,
-                },
-              ]}
             />
           )}
         </Section>

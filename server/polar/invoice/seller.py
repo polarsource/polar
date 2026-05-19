@@ -13,6 +13,9 @@ from polar.kit.address import Address
 # country missing from this map falls back to "VAT".
 COUNTRY_VAT_LABELS: dict[str, str] = {
     "CA": "GST/HST",
+    "CL": "RUT",
+    "KE": "PIN",
+    "KR": "BRN",
     "NZ": "GST",
 }
 

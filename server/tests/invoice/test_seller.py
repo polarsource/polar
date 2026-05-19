@@ -57,6 +57,15 @@ class TestGetPolarVatLabel:
     def test_canada(self) -> None:
         assert get_polar_vat_label(_address("CA")) == "GST/HST"
 
+    def test_chile(self) -> None:
+        assert get_polar_vat_label(_address("CL")) == "RUT"
+
+    def test_kenya(self) -> None:
+        assert get_polar_vat_label(_address("KE")) == "PIN"
+
+    def test_korea(self) -> None:
+        assert get_polar_vat_label(_address("KR")) == "BRN"
+
     def test_new_zealand(self) -> None:
         assert get_polar_vat_label(_address("NZ")) == "GST"
 

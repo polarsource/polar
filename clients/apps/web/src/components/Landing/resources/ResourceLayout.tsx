@@ -74,7 +74,7 @@ export const ResourceSection = ({
       </div>
       <div
         className={twMerge(
-          'dark:border-polar-700 col-span-2 flex flex-col gap-y-4 border-t border-gray-200 pt-4',
+          'dark:border-polar-700 col-span-2 flex flex-col gap-y-6 border-t border-gray-200 pt-4',
           className,
         )}
       >

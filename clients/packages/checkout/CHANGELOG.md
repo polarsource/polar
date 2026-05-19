@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.3.0-beta.0
+
+### Minor Changes
+
+- b9975a9: Adds an embedded payment method to @polar-sh/checkout. With a modal SDK (PolarEmbedPaymentMethod.create()) and React component (<PolarPaymentMethod />) for attaching a card to a customer/member. The CDN embed.global.js now bundles both checkout and payment-method auto-init in a single script.
+
 ## 0.2.1
 
 ### Patch Changes
@@ -17,7 +23,7 @@
   The theme should now be passed in an object when calling `PolarEmbedCheckout.create`:
 
   ```ts
-  PolarEmbedCheckout.create('__CHECKOUT_LINK__', { theme: 'dark' })
+  PolarEmbedCheckout.create("__CHECKOUT_LINK__", { theme: "dark" });
   ```
 
 ## 0.1.15

@@ -16,5 +16,7 @@
     "@polar-sh/ui": "0.1.2",
     "@polar-sh/box-codemod": "0.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "fresh-planes-decide"
+  ]
 }

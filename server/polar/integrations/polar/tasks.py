@@ -26,7 +26,7 @@ from polar.worker import (
 )
 
 from .client import get_client
-from .service import polar_self
+from .service import PolarSelfInvoiceNotReady, polar_self
 
 
 @actor(actor_name="polar_self.create_customer", priority=TaskPriority.LOW)
@@ -228,4 +228,9 @@ async def webhook_order_created(event_id: uuid.UUID) -> None:
             session, ExternalEventSource.polar, event_id
         ) as event:
             payload = WebhookOrderCreatedPayload.model_validate(event.data)
-            await polar_self.handle_order_created_event(payload)
+            try:
+                await polar_self.handle_order_created_event(payload)
+            except PolarSelfInvoiceNotReady as e:
+                if can_retry():
+                    raise Retry() from e
+                raise

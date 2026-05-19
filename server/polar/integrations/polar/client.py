@@ -222,6 +222,24 @@ class PolarSelfClient:
                 _raise_network_error(span, e, "get_order_invoice")
             return invoice.url
 
+    async def trigger_order_invoice_generation(self, *, order_id: str) -> bool:
+        """Trigger PDF generation for an order. Returns True if accepted,
+        False if the order isn't billable (e.g. not paid yet, missing billing
+        details) — in which case no invoice will ever be produced."""
+        with logfire.span(
+            "polar.trigger_order_invoice_generation", order_id=order_id
+        ) as span:
+            try:
+                await self._sdk.orders.generate_invoice_async(id=order_id)
+                return True
+            except PolarError as e:
+                if e.status_code == 422:
+                    span.set_attribute("not_billable", True)
+                    return False
+                _raise_error(span, e, "trigger_order_invoice_generation")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "trigger_order_invoice_generation")
+
     async def list_recurring_products(self, *, organization_id: str) -> list[Product]:
         with logfire.span(
             "polar.list_recurring_products", organization_id=organization_id

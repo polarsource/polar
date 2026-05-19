@@ -88,12 +88,12 @@ export const useChangeSubscriptionPlan = (organizationId: string) =>
     },
   })
 
-export const useOrganizationBillingCustomerSession = (organizationId: string) =>
+export const useOrganizationCustomerSession = (organizationId: string) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'customer-session'],
     queryFn: () =>
       unwrap(
-        api.POST('/v1/organizations/{id}/billing-customer-session', {
+        api.POST('/v1/organizations/{id}/customer-session', {
           params: { path: { id: organizationId } },
         }),
       ),

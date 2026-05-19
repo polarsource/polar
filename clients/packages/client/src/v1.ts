@@ -1142,7 +1142,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/organizations/{id}/billing-customer-session': {
+  '/v1/organizations/{id}/customer-session': {
     parameters: {
       query?: never
       header?: never
@@ -1152,14 +1152,14 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Create Organization Billing Customer Session
+     * Create Organization Customer Session
      * @description Create a customer session token bound to this org's Polar billing
      *     customer. The returned token authenticates against
      *     `/v1/customer-portal/customers/me/*` for the duration of its TTL.
      *
      *     **Scopes**: `organizations:write`
      */
-    post: operations['organizations:create_billing_customer_session']
+    post: operations['organizations:create_customer_session']
     delete?: never
     options?: never
     head?: never
@@ -23055,14 +23055,6 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
-    /** OrganizationBillingCustomerSession */
-    OrganizationBillingCustomerSession: {
-      /**
-       * Token
-       * @description Short-lived customer session token bound to this organization's mirrored Polar billing customer. Authenticates against `/v1/customer-portal/customers/me/*` for the duration of its TTL.
-       */
-      token: string
-    }
     /** OrganizationBillingDetails */
     OrganizationBillingDetails: {
       /**
@@ -23490,6 +23482,14 @@ export interface components {
       usage: components['schemas']['CustomerPortalUsageSettings']
       subscription: components['schemas']['CustomerPortalSubscriptionSettings']
       customer?: components['schemas']['CustomerPortalCustomerSettings']
+    }
+    /** OrganizationCustomerSession */
+    OrganizationCustomerSession: {
+      /**
+       * Token
+       * @description Short-lived customer session token bound to this organization's mirrored Polar billing customer. Authenticates against `/v1/customer-portal/customers/me/*` for the duration of its TTL.
+       */
+      token: string
     }
     /**
      * OrganizationDeletionBlockedReason
@@ -33919,7 +33919,7 @@ export interface operations {
       }
     }
   }
-  'organizations:create_billing_customer_session': {
+  'organizations:create_customer_session': {
     parameters: {
       query?: never
       header?: never
@@ -33936,7 +33936,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['OrganizationBillingCustomerSession']
+          'application/json': components['schemas']['OrganizationCustomerSession']
         }
       }
       /** @description Organization not found. */

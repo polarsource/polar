@@ -13,7 +13,7 @@ import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
 import {
-  useOrganizationBillingCustomerSession,
+  useOrganizationCustomerSession,
   useOrganizationOrders,
   useOrganizationPlans,
   useOrganizationSubscription,
@@ -41,9 +41,7 @@ export default function BillingPage({
   const plansQuery = useOrganizationPlans(organization.id)
   const ordersQuery = useOrganizationOrders(organization.id)
 
-  const billingCustomerSessionQuery = useOrganizationBillingCustomerSession(
-    organization.id,
-  )
+  const customerSessionQuery = useOrganizationCustomerSession(organization.id)
 
   useEffect(() => {
     if (searchParams.get('checkout_success') !== 'true') return
@@ -60,7 +58,7 @@ export default function BillingPage({
   } = useModal()
 
   const onAddPaymentMethod = async () => {
-    const session = billingCustomerSessionQuery.data
+    const session = customerSessionQuery.data
     if (!session) {
       toast({
         title: 'Could not start the payment method flow',

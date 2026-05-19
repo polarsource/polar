@@ -286,7 +286,7 @@ OrganizationPaymentMethod = Annotated[
 ]
 
 
-class OrganizationBillingCustomerSession(Schema):
+class OrganizationCustomerSession(Schema):
     token: str = Field(
         description=(
             "Short-lived customer session token bound to this organization's "

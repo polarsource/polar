@@ -18,6 +18,8 @@ import { useMemo, useState } from 'react'
 
 import { ROLE_LABELS, ROLE_ORDER } from './constants'
 
+type AssignableRole = 'admin' | 'member'
+
 export function ChangeRoleModal({
   organizationId,
   member,
@@ -30,9 +32,10 @@ export function ChangeRoleModal({
   const { toast } = useToast()
   const { currentUser } = useAuth()
   const isCurrentUser = member.user_id === currentUser?.id
-  const initialRole: 'admin' | 'member' =
-    member.role === 'admin' ? 'admin' : 'member'
-  const [role, setRole] = useState<'admin' | 'member'>(initialRole)
+  // Owners can't reach this modal — the MembersPage row filters them out.
+  const [role, setRole] = useState<AssignableRole>(
+    member.role as AssignableRole,
+  )
   const updateMemberRole = useUpdateOrganizationMemberRole(organizationId)
   const { data: roles } = useOrganizationRoles(organizationId)
 
@@ -96,7 +99,7 @@ export function ChangeRoleModal({
       </Text>
       <Select
         value={role}
-        onValueChange={(value) => setRole(value as 'admin' | 'member')}
+        onValueChange={(value) => setRole(value as AssignableRole)}
       >
         <SelectTrigger>
           <SelectValue />

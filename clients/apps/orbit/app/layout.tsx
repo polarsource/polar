@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Geist_Mono } from 'next/font/google'
 import localFont from 'next/font/local'
 import { Suspense } from 'react'
-import { PolarThemeProvider } from './providers'
+import { PolarThemeProvider } from '@/providers'
 import './globals.css'
 import { Box } from '@polar-sh/orbit/Box'
 

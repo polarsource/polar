@@ -8,6 +8,7 @@ const config = {
     '@stylexjs/postcss-plugin': {
       include: [
         'app/**/*.{js,jsx,ts,tsx}',
+        'src/**/*.{js,jsx,ts,tsx}',
         '../../packages/orbit/src/**/*.{js,jsx,ts,tsx}',
       ],
       babelConfig: {

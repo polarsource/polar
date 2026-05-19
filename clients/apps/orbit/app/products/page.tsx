@@ -1,8 +1,8 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Plus } from 'lucide-react'
-import { AppShell } from '../_components/AppShell'
-import { ProductCatalogue } from '../_components/ProductCatalogue'
+import { AppShell } from '@/components/AppShell'
+import { ProductCatalogue } from '@/components/ProductCatalogue'
 
 export default function ProductsPage() {
   return (

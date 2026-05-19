@@ -1,9 +1,10 @@
 'use client'
 
-import { Text } from '@polar-sh/orbit'
+import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Search, User } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useSearch } from './SearchContext'
+import { UserIcon } from './icons/UserIcon'
 
 export const TopBar = () => {
   const { isOpen, toggle } = useSearch()
@@ -18,14 +19,10 @@ export const TopBar = () => {
       paddingVertical="xl"
     >
       <Box display="flex" alignItems="center" columnGap="m">
-        <Box
-          width={28}
-          height={28}
-          borderRadius="full"
-          backgroundColor="background-card"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
+        <Avatar
+          name="New Fragment"
+          className="size-8"
+          avatar_url="https://img.logo.dev/bitspace.sh?size=64&retina=true&token=pk_E-KcYZmdT--jxwGY3dAs1Q&fallback=404"
         />
         <Text variant="body" color="default">
           New Fragment
@@ -39,13 +36,13 @@ export const TopBar = () => {
           onClick={toggle}
         >
           <Search
-            size={16}
-            strokeWidth={1.75}
+            size={20}
+            strokeWidth={2}
             style={{ color: isOpen ? 'white' : 'currentColor' }}
           />
         </IconButton>
         <IconButton ariaLabel="Account">
-          <User size={16} strokeWidth={1.75} />
+          <UserIcon size={20} />
         </IconButton>
       </Box>
     </Box>

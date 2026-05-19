@@ -254,6 +254,9 @@ export const backgroundColorStyles = stylex.create({
     backgroundColor: backgroundColors['background-secondary'],
   },
   'background-card': { backgroundColor: backgroundColors['background-card'] },
+  'background-sidebar': {
+    backgroundColor: backgroundColors['background-sidebar'],
+  },
   'background-inverse': {
     backgroundColor: backgroundColors['background-inverse'],
   },

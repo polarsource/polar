@@ -80,7 +80,7 @@ const AvatarInner = ({
         className,
       )}
     >
-      <span className="absolute inset-0 z-2 rounded-full ring ring-black/10 ring-inset dark:ring-white/10" />
+      <span className="absolute inset-0 z-2 rounded-full ring ring-black/5 ring-inset dark:ring-white/5" />
       {!avatar_url || showInitials ? (
         <div className="absolute inset-0 flex items-center justify-center bg-transparent">
           <span>{initials}</span>

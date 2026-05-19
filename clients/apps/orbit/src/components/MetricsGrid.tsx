@@ -65,9 +65,7 @@ export const MetricsGrid = () => {
           delta={metric.delta}
           trailing={
             metric.trailing === 'withdraw' ? (
-              <Button variant="secondary" size="sm">
-                Withdraw
-              </Button>
+              <Button>Withdraw</Button>
             ) : undefined
           }
         />

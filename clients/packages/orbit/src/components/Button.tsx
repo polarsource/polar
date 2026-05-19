@@ -11,18 +11,13 @@ const buttonVariants = cva(
           'bg-black dark:bg-white dark:text-black text-white hover:opacity-85 transition-opacity duration-100 hover:bg-black dark:hover:bg-white',
         destructive:
           'bg-red-500 dark:bg-red-600 text-white hover:bg-red-400 dark:hover:bg-red-500',
-        outline:
-          'text-black dark:text-white hover:bg-gray-200 dark:bg-transparent dark:hover:bg-polar-700 border-transparent hover:border-gray-200 border dark:border-polar-700 bg-transparent border-gray-100',
         secondary:
           'text-black dark:text-white hover:bg-gray-200 dark:bg-polar-700 dark:hover:bg-polar-600 bg-gray-100 border dark:border-white/5 border-black/4',
-        underline:
-          'text-black dark:text-white bg-transparent border-b hover:border-black dark:hover:border-white border-transparent transition-colors duration-300 p-0! hover:bg-transparent rounded-none!',
-        link: 'text-blue-400 underline-offset-4 hover:underline bg-transparent hover:bg-transparent',
         ghost:
           'bg-transparent hover:bg-gray-200 dark:hover:bg-polar-700 dark:bg-transparent text-black dark:text-white',
       },
       size: {
-        default: 'h-10 px-5 py-3 text-sm',
+        default: 'h-10 px-5 py-3 text-base',
         sm: 'h-8 px-3 py-1.5 text-xs',
         lg: 'h-12 px-5 py-4 text-sm',
         icon: 'flex items-center justify-center h-8 w-8 p-2 text-sm',

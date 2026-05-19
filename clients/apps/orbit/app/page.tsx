@@ -1,8 +1,8 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { AppShell } from './_components/AppShell'
-import { DateRangeSelector } from './_components/DateRangeSelector'
-import { MetricsGrid } from './_components/MetricsGrid'
+import { AppShell } from '@/components/AppShell'
+import { DateRangeSelector } from '@/components/DateRangeSelector'
+import { MetricsGrid } from '@/components/MetricsGrid'
 
 export default function OverviewPage() {
   return (

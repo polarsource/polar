@@ -13,6 +13,7 @@ const TOP_LEVEL: NavItem[] = [
   { label: 'Metrics', href: '/metrics' },
   { label: 'Orders', href: '/orders' },
   { label: 'Products', href: '/products' },
+  { label: 'Customers', href: '/customers' },
   { label: 'Finance', href: '/finance' },
   { label: 'Settings', href: '/settings' },
 ]
@@ -73,7 +74,7 @@ export const Sidebar = () => {
         </Link>
       </Box>
 
-      <Box as="nav" display="flex" flexDirection="column" rowGap="s">
+      <Box as="nav" display="flex" flexDirection="column" rowGap="m">
         {subNav ? (
           <SubNavView nav={subNav} pathname={pathname} />
         ) : (

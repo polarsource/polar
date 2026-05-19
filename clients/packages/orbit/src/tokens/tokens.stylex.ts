@@ -36,8 +36,12 @@ export const backgroundColors = stylex.defineVars({
     [DARK]: 'hsl(233, 4%, 6.5%)',
   },
   'background-card': {
-    default: '#d1d1d1',
+    default: '#E4E4E4',
     [DARK]: '#212121',
+  },
+  'background-sidebar': {
+    default: '#eaeaea',
+    [DARK]: '#0a0a0a',
   },
   'background-inverse': {
     default: 'oklch(0.21 0.034 264.665)',

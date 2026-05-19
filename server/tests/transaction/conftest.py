@@ -18,7 +18,7 @@ from polar.models import (
     User,
 )
 from polar.models.pledge import PledgeType
-from polar.models.transaction import Processor, TransactionType
+from polar.models.transaction import PlatformFeeType, Processor, TransactionType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_order,
@@ -54,6 +54,7 @@ async def create_transaction(
     charge_id: str | None = None,
     dispute_id: str | None = None,
     created_at: datetime | None = None,
+    platform_fee_type: PlatformFeeType | None = None,
 ) -> Transaction:
     transaction = Transaction(
         created_at=created_at,
@@ -82,6 +83,7 @@ async def create_transaction(
         charge_id=charge_id,
         dispute_id=dispute_id,
         incurred_transactions=[],
+        platform_fee_type=platform_fee_type,
     )
     await save_fixture(transaction)
     return transaction

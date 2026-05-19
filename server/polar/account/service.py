@@ -80,6 +80,8 @@ class AccountService:
             Account(
                 currency="usd",  # FIXME: main Polar currency
                 admin=admin,
+                _platform_fee_percent=settings.PLATFORM_FEE_BASIS_POINTS,
+                _platform_fee_fixed=settings.PLATFORM_FEE_FIXED,
             )
         )
 

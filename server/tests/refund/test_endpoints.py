@@ -22,6 +22,7 @@ from polar.models.dispute import DisputeStatus
 from polar.models.order import OrderStatus
 from polar.models.refund import RefundReason, RefundStatus
 from polar.models.subscription import SubscriptionStatus
+from polar.models.user_organization import OrganizationRole
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
@@ -489,6 +490,42 @@ class TestCreateRefunds(StripeRefund):
         assert order.refunded_amount == order_amount
         assert order.refunded_tax_amount == order_tax_amount
         assert order.refunded
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.refunds_write}),
+    )
+    async def test_member_role_can_create_refund(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+
+        order, payment, transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            amount=2000,
+            tax_amount=500,
+        )
+
+        order, _ = await self.create_order_refund(
+            session,
+            client,
+            stripe_service_mock,
+            order,
+            transaction,
+            amount=2000,
+            tax=500,
+        )
+        assert order.status == OrderStatus.refunded
 
 
 @pytest.mark.asyncio

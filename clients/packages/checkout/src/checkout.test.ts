@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { PolarEmbedCheckout } from './embed'
+import { PolarEmbedCheckout } from './checkout'
 
 const ALLOWED_ORIGIN = 'http://127.0.0.1:3000'
 

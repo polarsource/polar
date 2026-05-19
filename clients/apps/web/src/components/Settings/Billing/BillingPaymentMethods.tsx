@@ -4,6 +4,7 @@ import { toast } from '@/components/Toast/use-toast'
 import {
   useDeleteOrganizationPaymentMethod,
   useOrganizationPaymentMethods,
+  useSetDefaultOrganizationPaymentMethod,
   type OrganizationPaymentMethod,
   type OrganizationPaymentMethodCard,
 } from '@/hooks/queries/billing'
@@ -32,6 +33,8 @@ const PaymentMethodRow = ({
   paymentMethod: OrganizationPaymentMethod
 }) => {
   const deletePaymentMethod = useDeleteOrganizationPaymentMethod(organizationId)
+  const setDefaultPaymentMethod =
+    useSetDefaultOrganizationPaymentMethod(organizationId)
 
   const onDelete = async () => {
     try {
@@ -47,6 +50,25 @@ const PaymentMethodRow = ({
           error instanceof Error
             ? error.message
             : 'An error occurred while deleting the payment method.',
+        variant: 'error',
+      })
+    }
+  }
+
+  const onSetDefault = async () => {
+    try {
+      await setDefaultPaymentMethod.mutateAsync(paymentMethod.id)
+      toast({
+        title: 'Default payment method updated',
+        description: 'This payment method is now your default.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to update default payment method',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred while updating the default payment method.',
         variant: 'error',
       })
     }
@@ -80,11 +102,21 @@ const PaymentMethodRow = ({
         <Text>{paymentMethod.type}</Text>
       )}
       <Box display="flex" alignItems="center" columnGap="m">
-        {paymentMethod.default && (
+        {paymentMethod.default ? (
           <Status
             status="Default Method"
             className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
           />
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onSetDefault}
+            loading={setDefaultPaymentMethod.isPending}
+            disabled={setDefaultPaymentMethod.isPending}
+          >
+            Make default
+          </Button>
         )}
         <Button
           variant="secondary"

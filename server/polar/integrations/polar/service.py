@@ -15,11 +15,16 @@ from polar.account.repository import AccountRepository
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.integrations.plain.service import plain as plain_service
-from polar.postgres import AsyncSession
+from polar.organization.repository import OrganizationRepository
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.worker import enqueue_job
 
 from .client import get_client
-from .schemas import OrganizationBillingDetailsUpdate
+from .schemas import (
+    OrganizationBillingDetailsUpdate,
+    OrganizationPaymentMethodConfirm,
+    OrganizationPaymentMethodCreate,
+)
 
 if TYPE_CHECKING:
     from polar_sdk.models import (
@@ -27,6 +32,8 @@ if TYPE_CHECKING:
         Checkout,
         Customer,
         CustomerPaymentMethod,
+        CustomerPaymentMethodCreateRequiresActionResponse,
+        CustomerPaymentMethodCreateSucceededResponse,
         CustomerPortalCustomer,
         Order,
         Product,
@@ -67,6 +74,16 @@ class PolarSelfNoActiveSubscription(PolarError):
         super().__init__(
             f"Organization {organization_id} has no active subscription.",
             status_code=404,
+        )
+        self.organization_id = organization_id
+
+
+class PolarSelfNotApproved(PolarError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        super().__init__(
+            "Your organization must complete review and be approved "
+            "before changing plan.",
+            status_code=403,
         )
         self.organization_id = organization_id
 
@@ -218,6 +235,7 @@ class PolarSelfService:
     async def start_checkout(
         self,
         *,
+        session: AsyncReadSession,
         organization_id: uuid.UUID,
         product_id: str,
         customer_ip_address: str | None = None,
@@ -227,6 +245,7 @@ class PolarSelfService:
         if not self.is_configured:
             raise PolarSelfNotConfigured()
         await self._ensure_plan(product_id)
+        await self._require_approval(session, organization_id=organization_id)
         client = get_client()
         existing = await client.get_active_subscription(
             external_customer_id=str(organization_id)
@@ -243,12 +262,14 @@ class PolarSelfService:
     async def change_plan(
         self,
         *,
+        session: AsyncReadSession,
         organization_id: uuid.UUID,
         product_id: str,
     ) -> "Subscription":
         if not self.is_configured:
             raise PolarSelfNotConfigured()
         await self._ensure_plan(product_id)
+        await self._require_approval(session, organization_id=organization_id)
         subscription = await get_client().get_active_subscription(
             external_customer_id=str(organization_id)
         )
@@ -258,6 +279,19 @@ class PolarSelfService:
             subscription_id=subscription.id,
             product_id=product_id,
         )
+
+    async def _require_approval(
+        self,
+        session: AsyncReadSession,
+        *,
+        organization_id: uuid.UUID,
+    ) -> None:
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            organization_id, include_blocked=True
+        )
+        if organization is None or not organization.is_active():
+            raise PolarSelfNotApproved(organization_id)
 
     async def list_orders(
         self,
@@ -313,6 +347,37 @@ class PolarSelfService:
         default_id = customer.default_payment_method_id
         return methods, default_id if isinstance(default_id, str) else None
 
+    async def add_payment_method(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        create: OrganizationPaymentMethodCreate,
+        external_member_id: str | None = None,
+    ) -> "CustomerPaymentMethodCreateRequiresActionResponse | CustomerPaymentMethodCreateSucceededResponse":
+        await self._ensure_polar_customer(organization_id)
+        return await get_client().portal_add_payment_method(
+            external_customer_id=str(organization_id),
+            confirmation_token_id=create.confirmation_token_id,
+            set_default=create.set_default,
+            return_url=create.return_url,
+            external_member_id=external_member_id,
+        )
+
+    async def confirm_payment_method(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        confirm: OrganizationPaymentMethodConfirm,
+        external_member_id: str | None = None,
+    ) -> "CustomerPaymentMethodCreateRequiresActionResponse | CustomerPaymentMethodCreateSucceededResponse":
+        await self._ensure_polar_customer(organization_id)
+        return await get_client().portal_confirm_payment_method(
+            external_customer_id=str(organization_id),
+            setup_intent_id=confirm.setup_intent_id,
+            set_default=confirm.set_default,
+            external_member_id=external_member_id,
+        )
+
     async def delete_payment_method(
         self,
         organization_id: uuid.UUID,
@@ -324,6 +389,22 @@ class PolarSelfService:
         await get_client().portal_delete_payment_method(
             external_customer_id=str(organization_id),
             payment_method_id=payment_method_id,
+            external_member_id=external_member_id,
+        )
+
+    async def set_default_payment_method(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        payment_method_id: str,
+        external_member_id: str | None = None,
+    ) -> "CustomerPortalCustomer":
+        await self._ensure_polar_customer(organization_id)
+        return await get_client().portal_update_customer(
+            external_customer_id=str(organization_id),
+            update=CustomerPortalCustomerUpdate(
+                default_payment_method_id=payment_method_id,
+            ),
             external_member_id=external_member_id,
         )
 

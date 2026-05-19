@@ -399,15 +399,17 @@ class EmbedCheckout {
 }
 
 declare global {
+  interface PolarWindow {
+    EmbedCheckout: typeof EmbedCheckout
+  }
   interface Window {
-    Polar: {
-      EmbedCheckout: typeof EmbedCheckout
-    }
+    Polar: Partial<PolarWindow>
   }
 }
 
 if (typeof window !== 'undefined') {
   window.Polar = {
+    ...(window.Polar ?? {}),
     EmbedCheckout,
   }
 }

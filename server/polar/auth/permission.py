@@ -42,6 +42,7 @@ class OrganizationPermission(StrEnum):
 
     # Sales — granted to all roles.
     sales_read = "sales:read"
+    sales_manage = "sales:manage"
 
     # Analytics.
     analytics_read = "analytics:read"
@@ -73,6 +74,7 @@ _MEMBER_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.customers_read,
     OrganizationPermission.customers_manage,
     OrganizationPermission.sales_read,
+    OrganizationPermission.sales_manage,
     OrganizationPermission.analytics_read,
     OrganizationPermission.analytics_manage,
     OrganizationPermission.events_ingest,
@@ -96,6 +98,7 @@ PERMISSION_DENIED_MESSAGE: dict[OrganizationPermission, str] = {
     OrganizationPermission.customers_read: "You don't have permission to view customers",
     OrganizationPermission.customers_manage: "You don't have permission to manage customers",
     OrganizationPermission.sales_read: "You don't have permission to view sales data",
+    OrganizationPermission.sales_manage: "You don't have permission to manage sales",
     OrganizationPermission.analytics_read: "You don't have permission to view analytics",
     OrganizationPermission.analytics_manage: "You don't have permission to manage analytics",
     OrganizationPermission.events_ingest: "You don't have permission to ingest events",

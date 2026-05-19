@@ -213,7 +213,7 @@ class TestWebhook:
     ) -> None:
         # subscription.canceled is a valid (parseable) Polar event type, but
         # not in IMPLEMENTED_WEBHOOKS.
-        body, headers = _sign(_benefit_grant_event("subscription.canceled"))
+        body, headers = _sign(_subscription_event("subscription.canceled"))
 
         response = await client.post(WEBHOOK_URL, content=body, headers=headers)
 

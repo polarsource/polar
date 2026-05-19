@@ -10,23 +10,13 @@ export type OrganizationPaymentMethod =
   | OrganizationPaymentMethodCard
   | schemas['OrganizationPaymentMethodGeneric']
 
-// Placeholder types — replace with generated schemas once the add/confirm
-// endpoints exist on the backend.
-export type OrganizationPaymentMethodCreate = {
-  confirmation_token_id: string
-  set_default: boolean
-  return_url: string
-}
-
-export type OrganizationPaymentMethodConfirm = {
-  setup_intent_id: string
-  set_default: boolean
-}
-
-export type OrganizationPaymentMethodAddResult = {
-  status: 'succeeded' | 'requires_action'
-  client_secret: string
-}
+export type OrganizationPaymentMethodCreate =
+  schemas['OrganizationPaymentMethodCreate']
+export type OrganizationPaymentMethodConfirm =
+  schemas['OrganizationPaymentMethodConfirm']
+export type OrganizationPaymentMethodAddResult =
+  | schemas['OrganizationPaymentMethodAddSucceeded']
+  | schemas['OrganizationPaymentMethodAddRequiresAction']
 
 export const useOrganizationOrders = (organizationId: string) =>
   useQuery({
@@ -119,22 +109,13 @@ export const useOrganizationPaymentMethods = (organizationId: string) =>
     enabled: !!organizationId,
   })
 
-// TODO: POST `/v1/organizations/{id}/payment-methods`
 export const useAddOrganizationPaymentMethod = (organizationId: string) =>
   useMutation({
-    mutationFn: async (
-      body: OrganizationPaymentMethodCreate,
-    ): Promise<{
-      data?: OrganizationPaymentMethodAddResult
-      error?: { detail?: string }
-    }> => {
-      void body
-      return {
-        error: {
-          detail: 'Organization payment methods are not yet supported.',
-        },
-      }
-    },
+    mutationFn: (body: OrganizationPaymentMethodCreate) =>
+      api.POST('/v1/organizations/{id}/payment-methods', {
+        params: { path: { id: organizationId } },
+        body,
+      }),
     onSuccess: (result) => {
       if (result.error) return
       getQueryClient().invalidateQueries({
@@ -143,19 +124,13 @@ export const useAddOrganizationPaymentMethod = (organizationId: string) =>
     },
   })
 
-// TODO: POST `/v1/organizations/{id}/payment-methods/confirm`
 export const useConfirmOrganizationPaymentMethod = (organizationId: string) =>
   useMutation({
-    mutationFn: async (
-      body: OrganizationPaymentMethodConfirm,
-    ): Promise<{ error?: { detail?: string } }> => {
-      void body
-      return {
-        error: {
-          detail: 'Organization payment methods are not yet supported.',
-        },
-      }
-    },
+    mutationFn: (body: OrganizationPaymentMethodConfirm) =>
+      api.POST('/v1/organizations/{id}/payment-methods/confirm', {
+        params: { path: { id: organizationId } },
+        body,
+      }),
     onSuccess: (result) => {
       if (result.error) return
       getQueryClient().invalidateQueries({
@@ -177,6 +152,35 @@ export const useDeleteOrganizationPaymentMethod = (organizationId: string) =>
           },
         ),
       ),
+    onSuccess: () => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['organization-billing', organizationId, 'payment-methods'],
+      })
+    },
+  })
+
+export const useSetDefaultOrganizationPaymentMethod = (
+  organizationId: string,
+) =>
+  useMutation({
+    mutationFn: async (paymentMethodId: string) => {
+      const result = await api.POST(
+        '/v1/organizations/{id}/payment-methods/{payment_method_id}/default',
+        {
+          params: {
+            path: { id: organizationId, payment_method_id: paymentMethodId },
+          },
+        },
+      )
+      if (result.error) {
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : 'Failed to update default payment method'
+        throw new Error(errorMessage)
+      }
+      return result
+    },
     onSuccess: () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organization-billing', organizationId, 'payment-methods'],

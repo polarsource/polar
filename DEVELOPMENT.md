@@ -27,7 +27,6 @@ flowchart TD
     API --> POSTGRESQL
     API --> REDIS
     REDIS <--> WORKER
-    REDIS <--> WORKER_GITHUB
     WORKER --> POSTGRESQL
     API --> S3
     WEB --> S3
@@ -173,7 +172,7 @@ pnpm install
 
 ### Start backend
 
-The backend consists of an API server, a general-purpose worker and a worker dedicated to GitHub synchronization. You can run them like this:
+The backend consists of an API server and a worker. You can run them like this:
 
 ```sh
 cd server

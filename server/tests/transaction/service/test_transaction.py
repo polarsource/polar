@@ -7,7 +7,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import Account, Organization, Transaction, User, UserOrganization
-from polar.models.transaction import TransactionType
+from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
 from tests.fixtures.database import SaveFixture
@@ -217,17 +217,29 @@ class TestGetSummary:
             created_at=now - timedelta(days=2),
         )
 
+        # Create a payout fee (2 days ago - should ALWAYS be available)
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.balance,
+            account=account,
+            amount=-100,
+            currency="usd",
+            account_currency="usd",
+            created_at=now - timedelta(days=2),
+            platform_fee_type=PlatformFeeType.payout,
+        )
+
         summary = await transaction_service.get_summary(session, account)
 
         # Total balance should include all transactions
-        assert summary.balance.amount == 1000 + 500 - 2000
-        assert summary.balance.account_amount == 1000 + 500 - 2000
+        assert summary.balance.amount == 1000 + 500 - 2000 - 100
+        assert summary.balance.account_amount == 1000 + 500 - 2000 - 100
 
         # Available balance should exclude recent non-payout transactions
         # old_balance (1000) + payout (-2000) = -1000
         # recent_balance (500) is excluded because it's only 2 days old (< 7 days)
-        assert summary.available_balance.amount == 1000 - 2000
-        assert summary.available_balance.account_amount == 1000 - 2000
+        assert summary.available_balance.amount == 1000 - 2000 - 100
+        assert summary.available_balance.account_amount == 1000 - 2000 - 100
 
         # Payout balance should include all payouts
         assert summary.payout.amount == -2000

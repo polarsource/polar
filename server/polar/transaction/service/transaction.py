@@ -195,12 +195,12 @@ class TransactionService(BaseTransactionService):
                         func.sum(Transaction.account_amount).filter(
                             or_(
                                 Transaction.type == TransactionType.payout,
-                                and_(
-                                    Transaction.type != TransactionType.payout,
-                                    Transaction.created_at
-                                    + Account.payout_transaction_delay
-                                    <= func.now(),
+                                Transaction.platform_fee_type.in_(
+                                    PlatformFeeType.payout_fee_types()
                                 ),
+                                Transaction.created_at
+                                + Account.payout_transaction_delay
+                                <= func.now(),
                             )
                         ),
                         0,

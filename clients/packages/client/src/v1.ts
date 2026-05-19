@@ -1156,7 +1156,35 @@ export interface paths {
      */
     get: operations['organizations:list_payment_methods']
     put?: never
-    post?: never
+    /**
+     * Add Organization Payment Method
+     * @description Add a payment method to pay Polar invoices.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:add_payment_method']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/payment-methods/confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm Organization Payment Method
+     * @description Confirm a payment method after Stripe's required next action.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:confirm_payment_method']
     delete?: never
     options?: never
     head?: never
@@ -1180,6 +1208,28 @@ export interface paths {
      *     **Scopes**: `organizations:write`
      */
     delete: operations['organizations:delete_payment_method']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/payment-methods/{payment_method_id}/default': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Set Default Organization Payment Method
+     * @description Set the default payment method used to pay Polar invoices.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:set_default_payment_method']
+    delete?: never
     options?: never
     head?: never
     patch?: never
@@ -24035,6 +24085,29 @@ export interface components {
       /** Url */
       url: string
     }
+    /** OrganizationPaymentMethodAddRequiresAction */
+    OrganizationPaymentMethodAddRequiresAction: {
+      /**
+       * Status
+       * @default requires_action
+       * @constant
+       */
+      status: 'requires_action'
+      /**
+       * Client Secret
+       * @description SetupIntent client_secret to drive stripe.handleNextAction.
+       */
+      client_secret: string
+    }
+    /** OrganizationPaymentMethodAddSucceeded */
+    OrganizationPaymentMethodAddSucceeded: {
+      /**
+       * Status
+       * @default succeeded
+       * @constant
+       */
+      status: 'succeeded'
+    }
     /** OrganizationPaymentMethodCard */
     OrganizationPaymentMethodCard: {
       /** Id */
@@ -24059,6 +24132,39 @@ export interface components {
       exp_month: number
       /** Exp Year */
       exp_year: number
+    }
+    /** OrganizationPaymentMethodConfirm */
+    OrganizationPaymentMethodConfirm: {
+      /**
+       * Setup Intent Id
+       * @description Stripe SetupIntent ID returned from the requires_action flow.
+       */
+      setup_intent_id: string
+      /**
+       * Set Default
+       * @description Whether to set the confirmed payment method as default.
+       * @default true
+       */
+      set_default: boolean
+    }
+    /** OrganizationPaymentMethodCreate */
+    OrganizationPaymentMethodCreate: {
+      /**
+       * Confirmation Token Id
+       * @description Stripe ConfirmationToken collected by Stripe Elements.
+       */
+      confirmation_token_id: string
+      /**
+       * Set Default
+       * @description Whether to set the new payment method as default.
+       * @default true
+       */
+      set_default: boolean
+      /**
+       * Return Url
+       * @description URL Stripe redirects to after handling next actions (3DS).
+       */
+      return_url: string
     }
     /** OrganizationPaymentMethodGeneric */
     OrganizationPaymentMethodGeneric: {
@@ -34195,6 +34301,98 @@ export interface operations {
       }
     }
   }
+  'organizations:add_payment_method': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationPaymentMethodCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['OrganizationPaymentMethodAddSucceeded']
+            | components['schemas']['OrganizationPaymentMethodAddRequiresAction']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:confirm_payment_method': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationPaymentMethodConfirm']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['OrganizationPaymentMethodAddSucceeded']
+            | components['schemas']['OrganizationPaymentMethodAddRequiresAction']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organizations:delete_payment_method': {
     parameters: {
       query?: never
@@ -34208,6 +34406,45 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Payment method deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Organization or payment method not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:set_default_payment_method': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        payment_method_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default payment method updated. */
       204: {
         headers: {
           [name: string]: unknown

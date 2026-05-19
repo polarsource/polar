@@ -34,9 +34,13 @@ from polar.integrations.polar.schemas import (
     OrganizationOrder,
     OrganizationOrderInvoice,
     OrganizationPaymentMethod,
+    OrganizationPaymentMethodAddResponse,
+    OrganizationPaymentMethodConfirm,
+    OrganizationPaymentMethodCreate,
     OrganizationPlan,
     OrganizationSubscription,
     OrganizationSubscriptionUpdate,
+    organization_payment_method_add_response_from_sdk,
     organization_payment_method_from_sdk,
 )
 from polar.integrations.polar.service import (
@@ -823,10 +827,12 @@ async def start_subscription_checkout(
     request: Request,
     authz: AuthorizeOrgManage,
     body: OrganizationCheckoutRequest,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationCheckoutResponse:
     """Create a Polar checkout session for an initial paid subscription."""
     customer_ip_address = request.client.host if request.client else None
     checkout = await polar_self_service.start_checkout(
+        session=session,
         organization_id=authz.organization.id,
         product_id=body.product_id,
         customer_ip_address=customer_ip_address,
@@ -852,9 +858,11 @@ async def start_subscription_checkout(
 async def change_subscription_plan(
     authz: AuthorizeOrgManage,
     body: OrganizationSubscriptionUpdate,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationSubscription:
     """Change the plan for an organization's existing subscription."""
     subscription = await polar_self_service.change_plan(
+        session=session,
         organization_id=authz.organization.id,
         product_id=body.product_id,
     )
@@ -950,6 +958,48 @@ async def list_payment_methods(
     )
 
 
+@router.post(
+    "/{id}/payment-methods",
+    response_model=OrganizationPaymentMethodAddResponse,
+    status_code=201,
+    summary="Add Organization Payment Method",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def add_payment_method(
+    authz: AuthorizeOrgManageUser,
+    body: OrganizationPaymentMethodCreate,
+) -> OrganizationPaymentMethodAddResponse:
+    """Add a payment method to pay Polar invoices."""
+    response = await polar_self_service.add_payment_method(
+        authz.organization.id,
+        create=body,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    return organization_payment_method_add_response_from_sdk(response)
+
+
+@router.post(
+    "/{id}/payment-methods/confirm",
+    response_model=OrganizationPaymentMethodAddResponse,
+    status_code=201,
+    summary="Confirm Organization Payment Method",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def confirm_payment_method(
+    authz: AuthorizeOrgManageUser,
+    body: OrganizationPaymentMethodConfirm,
+) -> OrganizationPaymentMethodAddResponse:
+    """Confirm a payment method after Stripe's required next action."""
+    response = await polar_self_service.confirm_payment_method(
+        authz.organization.id,
+        confirm=body,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    return organization_payment_method_add_response_from_sdk(response)
+
+
 @router.delete(
     "/{id}/payment-methods/{payment_method_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -969,6 +1019,31 @@ async def delete_payment_method(
 ) -> None:
     """Delete a saved payment method used to pay Polar invoices."""
     await polar_self_service.delete_payment_method(
+        authz.organization.id,
+        payment_method_id=payment_method_id,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+
+
+@router.post(
+    "/{id}/payment-methods/{payment_method_id}/default",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Set Default Organization Payment Method",
+    responses={
+        204: {"description": "Default payment method updated."},
+        404: {
+            "description": "Organization or payment method not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def set_default_payment_method(
+    authz: AuthorizeOrgManageUser,
+    payment_method_id: str,
+) -> None:
+    """Set the default payment method used to pay Polar invoices."""
+    await polar_self_service.set_default_payment_method(
         authz.organization.id,
         payment_method_id=payment_method_id,
         external_member_id=str(authz.auth_subject.subject.id),

@@ -2,6 +2,7 @@ from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
 from .account_credit import AccountCredit
+from .authentication_session import AuthenticationSession
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
@@ -23,6 +24,7 @@ from .discount_redemption import DiscountRedemption
 from .dispute import Dispute
 from .downloadable import Downloadable
 from .email_log import EmailLog
+from .email_otp import EmailOTP
 from .email_verification import EmailVerification
 from .event import Event
 from .event_type import EventType
@@ -43,6 +45,7 @@ from .notification_recipient import NotificationRecipient
 from .oauth2_authorization_code import OAuth2AuthorizationCode
 from .oauth2_client import OAuth2Client
 from .oauth2_grant import OAuth2Grant
+from .oauth2_state import OAuth2State
 from .oauth2_token import OAuth2Token
 from .order import Order
 from .order_item import OrderItem
@@ -80,6 +83,7 @@ from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
+from .totp_enrollment import TOTPEnrollment
 from .transaction import Transaction
 from .trial_redemption import TrialRedemption
 from .user import OAuthAccount, User
@@ -95,6 +99,7 @@ from .webhook_event import WebhookEvent
 __all__ = [
     "Account",
     "AccountCredit",
+    "AuthenticationSession",
     "Benefit",
     "BenefitGrant",
     "BillingEntry",
@@ -116,6 +121,7 @@ __all__ = [
     "Dispute",
     "Downloadable",
     "EmailLog",
+    "EmailOTP",
     "EmailVerification",
     "Event",
     "EventType",
@@ -143,6 +149,7 @@ __all__ = [
     "OAuth2AuthorizationCode",
     "OAuth2Client",
     "OAuth2Grant",
+    "OAuth2State",
     "OAuth2Token",
     "OAuthAccount",
     "Order",
@@ -178,6 +185,7 @@ __all__ = [
     "SubscriptionMeter",
     "SubscriptionProductPrice",
     "SubscriptionUpdate",
+    "TOTPEnrollment",
     "TimestampedModel",
     "Transaction",
     "TrialRedemption",

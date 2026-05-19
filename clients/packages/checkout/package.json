@@ -4,7 +4,7 @@
   "author": "Polar",
   "license": "Apache-2.0",
   "type": "module",
-  "version": "0.2.1",
+  "version": "0.3.0-beta.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/polarsource/polar.git",
@@ -24,6 +24,14 @@
     "./embed": {
       "types": "./dist/embed.d.ts",
       "default": "./dist/embed.js"
+    },
+    "./payment-method": {
+      "types": "./dist/payment-method.d.ts",
+      "default": "./dist/payment-method.js"
+    },
+    "./react/payment-method": {
+      "types": "./dist/react/payment-method.d.ts",
+      "default": "./dist/react/payment-method.js"
     },
     "./components": {
       "types": "./dist/components/index.d.ts",
@@ -48,6 +56,14 @@
       "./embed": {
         "types": "./dist/embed.d.ts",
         "default": "./dist/embed.js"
+      },
+      "./payment-method": {
+        "types": "./dist/payment-method.d.ts",
+        "default": "./dist/payment-method.js"
+      },
+      "./react/payment-method": {
+        "types": "./dist/react/payment-method.d.ts",
+        "default": "./dist/react/payment-method.js"
       },
       "./components": {
         "types": "./dist/components/index.d.ts",

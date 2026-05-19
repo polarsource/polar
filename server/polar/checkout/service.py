@@ -13,7 +13,7 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import Anonymous, AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
@@ -380,6 +380,10 @@ class CheckoutService:
 
         if not product.organization.can_authenticate:
             raise NotPermitted()
+
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.sales_manage
+        )
 
         if checkout_create.amount is not None and is_custom_price(price):
             self._validate_custom_price_amount(price, checkout_create.amount, currency)

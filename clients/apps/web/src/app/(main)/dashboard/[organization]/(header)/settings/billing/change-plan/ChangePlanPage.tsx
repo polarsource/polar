@@ -11,6 +11,7 @@ import {
   useOrganizationSubscription,
   useStartSubscriptionCheckout,
 } from '@/hooks/queries/billing'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import { schemas } from '@polar-sh/client'
@@ -33,23 +34,26 @@ const PlanCard = ({
   plan,
   isCurrent,
   isSelected,
+  isLocked,
   onSelect,
 }: {
   plan: schemas['OrganizationPlan']
   isCurrent: boolean
   isSelected: boolean
+  isLocked: boolean
   onSelect: () => void
 }) => {
   const amount = plan.price?.amount ?? 0
   const currency = plan.price?.currency ?? 'usd'
+  const disabled = isCurrent || isLocked
   return (
     <button
       type="button"
       onClick={onSelect}
-      disabled={isCurrent}
+      disabled={disabled}
       className={twMerge(
         'dark:border-polar-700 flex h-full flex-col gap-y-8 rounded-2xl border bg-white p-8 text-left transition-colors dark:bg-transparent',
-        isCurrent
+        disabled
           ? 'dark:bg-polar-800 cursor-not-allowed border-gray-200 bg-gray-50 opacity-70'
           : isSelected
             ? 'border-blue-500 bg-blue-50/40 dark:border-blue-500 dark:bg-blue-950/20'
@@ -128,6 +132,8 @@ export default function ChangePlanPage({
   const changePlan = useChangeSubscriptionPlan(organization.id)
   const startCheckout = useStartSubscriptionCheckout(organization.id)
 
+  const blockChanges = organization.status !== 'active'
+
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const {
     isShown: isConfirmShown,
@@ -189,7 +195,10 @@ export default function ChangePlanPage({
       if (result.error || !result.data) {
         toast({
           title: 'Could not start checkout',
-          description: 'Please try again.',
+          description: extractApiErrorMessage(
+            result.error,
+            'Please try again.',
+          ),
         })
         return
       }
@@ -203,7 +212,7 @@ export default function ChangePlanPage({
     if (result.error) {
       toast({
         title: 'Could not change plan',
-        description: 'Please try again.',
+        description: extractApiErrorMessage(result.error, 'Please try again.'),
       })
       return
     }
@@ -264,16 +273,36 @@ export default function ChangePlanPage({
                 plan={plan}
                 isCurrent={plan.product_id === subscription?.product_id}
                 isSelected={plan.product_id === selectedPlanId}
+                isLocked={blockChanges}
                 onSelect={() => setSelectedPlanId(plan.product_id)}
               />
             ))}
           </Box>
         )}
 
+        {blockChanges && (
+          <Box
+            borderRadius="m"
+            backgroundColor="background-warning"
+            padding="l"
+          >
+            <Text>
+              Your organization must{' '}
+              <Link
+                href={`/dashboard/${organization.slug}/finance/account`}
+                className="underline"
+              >
+                complete the account review
+              </Link>{' '}
+              and be approved before changing plan.
+            </Text>
+          </Box>
+        )}
+
         <Box display="flex" flexDirection="row" columnGap="s">
           <Button
             onClick={showConfirm}
-            disabled={!selectedPlan || isSubmitting}
+            disabled={!selectedPlan || isSubmitting || blockChanges}
             loading={isSubmitting}
             size="lg"
           >

@@ -60,10 +60,11 @@ dependencies = [
   "clickhouse-connect>=0.8.0",
   "playwright>=1.59.0",
   "trafilatura>=2.0.0",
-  "polar-sdk==0.31.4",
+  "polar-sdk==0.31.5",
   "anyio>=4.13.0",
   "markdown-it-py>=4.0.0",
   "tzdata>=2025.3",
+  "reauth==0.1.4",
 ]
 
 [dependency-groups]
@@ -142,9 +143,19 @@ exclude_lines = [
 target-version = "py312"
 
 [tool.ruff.lint]
-extend-select = ["I", "UP", "T20", "B039", "PT", "RUF022", "RUF023", "RUF10", "RUF20"]
+extend-select = [
+  "I",
+  "UP",
+  "T20",
+  "B039",
+  "PT",
+  "RUF022",
+  "RUF023",
+  "RUF10",
+  "RUF20",
+]
 ignore = [
-  "F841",  # remove unused variables
+  "F841", # remove unused variables
   "PT012",
 ]
 
@@ -174,7 +185,8 @@ warn_untyped_fields = true
 
 [tool.uv]
 exclude-newer = "1 week"
+exclude-newer-package = { reauth = false } # Reauth is brand new, but remember to remove this exclusion when stabilized
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }
-polar-sdk = { url = "https://files.pythonhosted.org/packages/63/19/17e3b6e907390aa80f8bd12c0dfc4c8bd4b1b5fad2a6b927e63e00d20171/polar_sdk-0.31.4-py3-none-any.whl" }
+polar-sdk = { url = "https://files.pythonhosted.org/packages/21/6c/b858596fcc39fdfb0757e24f24b86e96990e17d1ffed86639b04121c6e8c/polar_sdk-0.31.5-py3-none-any.whl" }

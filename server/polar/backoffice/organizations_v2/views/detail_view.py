@@ -576,7 +576,10 @@ class OrganizationDetailView:
                             ):
                                 text("Deny")
 
-                    elif self.org.status == OrganizationStatus.CREATED:
+                    elif self.org.status in (
+                        OrganizationStatus.CREATED,
+                        OrganizationStatus.OFFBOARDING,
+                    ):
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",

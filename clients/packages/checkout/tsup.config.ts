@@ -1,15 +1,27 @@
 import { defineConfig, Options } from 'tsup'
 
+const allowedOriginsDefine = {
+  __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__: `'${process.env.POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS ? process.env.POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS : 'http://127.0.0.1:3000'}'`,
+}
+
 export const options: Options[] = [
   {
-    entry: ['src/embed.ts'],
-    format: ['cjs', 'esm', 'iife'],
+    entry: {
+      embed: 'src/checkout.ts',
+      'payment-method': 'src/payment-method.ts',
+      'react/payment-method': 'src/react/payment-method.tsx',
+    },
+    format: ['cjs', 'esm'],
     dts: true,
     minify: 'terser',
-    define: {
-      // @ts-expect-error - Global defined at build time by tsup
-      __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__: `'${process.env.POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS ? process.env.POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS : 'http://127.0.0.1:3000'}'`,
-    },
+    define: allowedOriginsDefine,
+    external: ['react'],
+  },
+  {
+    entry: { embed: 'src/embed-global.ts' },
+    format: ['iife'],
+    minify: 'terser',
+    define: allowedOriginsDefine,
   },
   {
     entry: [

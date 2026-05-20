@@ -6,7 +6,6 @@ import { getDistinctId } from '@/experiments/distinct-id'
 import { ExperimentProvider } from '@/experiments/ExperimentProvider'
 import { getExperiments } from '@/experiments/server'
 import { UserContextProvider } from '@/providers/auth'
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
@@ -29,14 +28,12 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const api = await getServerSideAPI()
-
   let authenticatedUser: schemas['UserRead'] | undefined = undefined
-  let userOrganizations: schemas['Organization'][] = []
+  let userOrganizations: schemas['OrganizationWithRole'][] = []
 
   try {
     authenticatedUser = await getAuthenticatedUser()
-    userOrganizations = await getUserOrganizations(api)
+    userOrganizations = await getUserOrganizations()
   } catch (e) {
     if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
       throw e

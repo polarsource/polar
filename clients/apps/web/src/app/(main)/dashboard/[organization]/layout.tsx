@@ -37,16 +37,8 @@ export default async function Layout(props: {
     params.organization,
   )
 
-  let userOrganizations = await getUserOrganizations(api, false)
+  const userOrganizations = await getUserOrganizations()
 
-  // If the organization is not in the user's organizations, refetch bypassing the cache
-  // This avoids race conditions with new organizations (e.g. during onboarding) without losing
-  // the cache in 99% of the cases
-  if (!userOrganizations.some((org) => org.id === organization.id)) {
-    userOrganizations = await getUserOrganizations(api, true)
-  }
-
-  // If we can't find the organization even after a refresh, redirect
   if (!userOrganizations.some((org) => org.id === organization.id)) {
     return redirect('/dashboard')
   }

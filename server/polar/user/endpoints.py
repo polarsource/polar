@@ -14,10 +14,17 @@ from polar.customer_portal.endpoints.subscription import router as subscription_
 from polar.models import User
 from polar.models.user import OAuthPlatform
 from polar.openapi import APITag
-from polar.postgres import AsyncSession, get_db_session
+from polar.organization.schemas import OrganizationWithRole
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 from polar.user.oauth_service import oauth_account_service
 from polar.user.service import user as user_service
+from polar.user_organization.repository import UserOrganizationRepository
 
 from .schemas import (
     UserDeletionResponse,
@@ -37,8 +44,21 @@ router.include_router(license_keys_router, deprecated=True, include_in_schema=Fa
 
 
 @router.get("/me", response_model=UserRead)
-async def get_authenticated(auth_subject: AuthorizeWebUserRead) -> User:
-    return auth_subject.subject
+async def get_authenticated(
+    auth_subject: AuthorizeWebUserRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> UserRead:
+    user = auth_subject.subject
+    repository = UserOrganizationRepository.from_session(session)
+    org_with_roles = await repository.get_organizations_with_role(user.id)
+    return UserRead.model_validate(user).model_copy(
+        update={
+            "organizations": [
+                OrganizationWithRole.from_organization(org, role)
+                for org, role in org_with_roles
+            ]
+        }
+    )
 
 
 @router.patch("/me", response_model=UserRead)

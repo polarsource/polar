@@ -6,13 +6,14 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks/auth'
+import { useHasPermission } from '@/hooks/permissions'
 import {
-  useInviteOrganizationMember,
   useLeaveOrganization,
   useListOrganizationMembers,
   useRemoveOrganizationMember,
 } from '@/hooks/queries/org'
 import Add from '@mui/icons-material/Add'
+import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -22,9 +23,21 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
+
+import { ChangeRoleModal } from './ChangeRoleModal'
+import { InviteMemberModal } from './InviteMemberModal'
+import { ROLE_LABELS } from './constants'
 
 export default function ClientPage({
   organization,
@@ -37,13 +50,13 @@ export default function ClientPage({
   const { data: members, isLoading } = useListOrganizationMembers(
     organization.id,
   )
+  const canManageMembers = useHasPermission(organization.id, 'members:manage')
   const {
     show: openInviteMemberModal,
     hide: hideInviteMemberModal,
     isShown: isInviteMemberModalShown,
   } = useModal()
 
-  // Remove member modal state
   const [memberToRemove, setMemberToRemove] = useState<
     schemas['OrganizationMember'] | null
   >(null)
@@ -53,22 +66,23 @@ export default function ClientPage({
     isShown: isRemoveModalShown,
   } = useModal()
 
-  // Leave organization modal state
   const {
     show: showLeaveModal,
     hide: hideLeaveModal,
     isShown: isLeaveModalShown,
   } = useModal()
 
+  const [memberToChangeRole, setMemberToChangeRole] = useState<
+    schemas['OrganizationMember'] | null
+  >(null)
+  const {
+    show: showChangeRoleModal,
+    hide: hideChangeRoleModal,
+    isShown: isChangeRoleModalShown,
+  } = useModal()
+
   const removeMember = useRemoveOrganizationMember(organization.id)
   const leaveOrganization = useLeaveOrganization(organization.id)
-
-  // Find the admin user from members list
-  const adminMember = useMemo(
-    () => members?.items.find((m) => m.is_admin),
-    [members],
-  )
-  const isCurrentUserAdmin = adminMember?.user_id === currentUser?.id
 
   const handleRemoveMember = useCallback(
     (member: schemas['OrganizationMember']) => {
@@ -76,6 +90,14 @@ export default function ClientPage({
       showRemoveModal()
     },
     [showRemoveModal],
+  )
+
+  const handleChangeRole = useCallback(
+    (member: schemas['OrganizationMember']) => {
+      setMemberToChangeRole(member)
+      showChangeRoleModal()
+    },
+    [showChangeRoleModal],
   )
 
   const onConfirmRemove = useCallback(async () => {
@@ -123,20 +145,12 @@ export default function ClientPage({
       cell: ({ row: { original: member } }) => {
         const isCurrentUser = member.user_id === currentUser?.id
         return (
-          <div className="flex flex-row items-center gap-2">
+          <Box display="flex" flexDirection="row" alignItems="center" gap="s">
             <Avatar avatar_url={member.avatar_url} name={member.email} />
-            <div className="fw-medium">{member.email}</div>
-            {member.is_admin && (
-              <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                Admin
-              </span>
-            )}
-            {isCurrentUser && (
-              <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                You
-              </span>
-            )}
-          </div>
+            <Text>{member.email}</Text>
+            <RowBadge>{ROLE_LABELS[member.role]}</RowBadge>
+            {isCurrentUser && <RowBadge>You</RowBadge>}
+          </Box>
         )
       },
     },
@@ -155,40 +169,49 @@ export default function ClientPage({
       header: () => null,
       cell: ({ row: { original: member } }) => {
         const isCurrentUser = member.user_id === currentUser?.id
-        const isMemberAdmin = member.is_admin
+        const isOwner = member.role === 'owner'
 
-        // Admin cannot remove themselves
-        if (isCurrentUserAdmin && isMemberAdmin) {
+        if (isOwner) {
           return null
         }
 
-        // Admin can remove other members
-        if (isCurrentUserAdmin && !isMemberAdmin) {
-          return (
-            <div className="flex justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleRemoveMember(member)}
-              >
-                Remove
-              </Button>
-            </div>
-          )
+        if (!canManageMembers && !isCurrentUser) {
+          return null
         }
 
-        // Non-admin can only leave (their own row)
-        if (!isCurrentUserAdmin && isCurrentUser) {
-          return (
-            <div className="flex justify-end">
-              <Button variant="secondary" size="sm" onClick={showLeaveModal}>
-                Leave
-              </Button>
-            </div>
-          )
-        }
-
-        return null
+        return (
+          <Box display="flex" justifyContent="end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="icon">
+                  <MoreVert fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canManageMembers && (
+                  <>
+                    <DropdownMenuItem onClick={() => handleChangeRole(member)}>
+                      Change role
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {isCurrentUser ? (
+                  <DropdownMenuItem destructive onClick={showLeaveModal}>
+                    Leave organization
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    destructive
+                    onClick={() => handleRemoveMember(member)}
+                  >
+                    Remove from organization
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </Box>
+        )
       },
     },
   ]
@@ -198,16 +221,16 @@ export default function ClientPage({
       wrapperClassName="max-w-(--breakpoint-sm)!"
       className="flex flex-col gap-y-8"
       header={
-        <Button onClick={openInviteMemberModal} variant="default">
-          <Add className="mr-2" fontSize="small" />
-          <span>Invite</span>
-        </Button>
+        canManageMembers ? (
+          <Button onClick={openInviteMemberModal} variant="default">
+            <Add className="mr-2" fontSize="small" />
+            <span>Invite</span>
+          </Button>
+        ) : undefined
       }
     >
       <p className="dark:text-polar-500 text-gray-500">
-        Manage users who have access to this organization. All members are
-        entitled to view and manage organization settings, products,
-        subscriptions, etc.
+        Manage users who have access to this organization.
       </p>
 
       {members && (
@@ -250,78 +273,38 @@ export default function ClientPage({
         destructive
         destructiveText="Leave"
       />
+
+      {memberToChangeRole && (
+        <Modal
+          title="Change Role"
+          className="max-w-(--breakpoint-sm)!"
+          modalContent={
+            <ChangeRoleModal
+              organizationId={organization.id}
+              member={memberToChangeRole}
+              onClose={hideChangeRoleModal}
+            />
+          }
+          isShown={isChangeRoleModalShown}
+          hide={hideChangeRoleModal}
+        />
+      )}
     </DashboardBody>
   )
 }
 
-function InviteMemberModal({
-  organizationId,
-  onClose,
-}: {
-  organizationId: string
-  onClose: () => void
-}) {
-  const { toast } = useToast()
-  const [email, setEmail] = useState('')
-  const inviteMember = useInviteOrganizationMember(organizationId)
-
-  const handleInvite = async () => {
-    if (!email) return
-
-    try {
-      const result = await inviteMember.mutateAsync(email)
-      if (result.response.status === 200) {
-        toast({
-          title: 'Member already added',
-          description: 'User is already a member of this organization',
-        })
-      } else if (result.data) {
-        toast({
-          title: 'Member added',
-          description: 'User successfully added to organization',
-        })
-        onClose()
-      } else if (result.error) {
-        toast({
-          title: 'Invite failed',
-          description: 'Failed to invite user. Please try again.',
-        })
-      }
-    } catch {
-      toast({
-        title: 'Invite failed',
-        description: 'Failed to invite user. Please try again.',
-      })
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    handleInvite()
-  }
-
+function RowBadge({ children }: { children: React.ReactNode }) {
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-y-6 p-8">
-      <h3 className="text-lg font-medium">Invite User</h3>
-      <Input
-        type="email"
-        placeholder="Enter email address"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        autoFocus
-      />
-      <div className="flex gap-2">
-        <Button
-          type="submit"
-          disabled={!email || inviteMember.isPending}
-          loading={inviteMember.isPending}
-        >
-          Send Invite
-        </Button>
-        <Button type="button" variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+    <Box
+      as="span"
+      paddingHorizontal="s"
+      paddingVertical="xs"
+      borderRadius="full"
+      backgroundColor="background-pending"
+    >
+      <Text variant="caption" color="muted">
+        {children}
+      </Text>
+    </Box>
   )
 }

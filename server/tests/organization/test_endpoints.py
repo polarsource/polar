@@ -63,6 +63,47 @@ class TestListOrganizations:
 
 
 @pytest.mark.asyncio
+class TestListRoles:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/roles")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/roles")
+        assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/roles")
+
+        assert response.status_code == 200
+        roles = response.json()
+        role_ids = {entry["id"] for entry in roles}
+        assert role_ids == {
+            OrganizationRole.member.value,
+            OrganizationRole.admin.value,
+            OrganizationRole.owner.value,
+        }
+        # Every role's permissions list is non-empty.
+        for entry in roles:
+            assert isinstance(entry["permissions"], list)
+            assert len(entry["permissions"]) > 0
+
+
+@pytest.mark.asyncio
 class TestGetOrganization:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization

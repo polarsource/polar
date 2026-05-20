@@ -117,6 +117,7 @@ PRODUCTS: list[dict[str, object]] = [
         "metadata": {
             "custom": False,
             "order": 2,
+            "description": "For entrepreneurs & early teams.",
             "features": "All features on Free, Prioritized Support",
         },
         "benefits": ["Transaction Fee (Tier 2)", "Support (Tier 2)"],
@@ -129,6 +130,7 @@ PRODUCTS: list[dict[str, object]] = [
             "custom": False,
             "order": 3,
             "highlight": True,
+            "description": "For scaling startups.",
             "features": "All features on Pro, Prioritized Support",
         },
         "benefits": ["Transaction Fee (Tier 3)", "Support (Tier 3)"],
@@ -140,6 +142,7 @@ PRODUCTS: list[dict[str, object]] = [
         "metadata": {
             "custom": False,
             "order": 4,
+            "description": "For fast growing businesses.",
             "features": "All features on Growth, Slack Channel, P1 Support",
         },
         "benefits": ["Transaction Fee (Tier 4)", "Support (Tier 4)"],

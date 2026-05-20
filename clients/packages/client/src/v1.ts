@@ -24030,11 +24030,6 @@ export interface components {
       avatar_url: string | null
       /** @description The user's role on the organization. */
       role: components['schemas']['OrganizationRole']
-      /**
-       * Is Admin
-       * @description Whether the user has admin capability on the organization. Derived from `role`: true for `owner` or `admin`. Kept as a transitional alias; prefer reading `role` directly.
-       */
-      readonly is_admin: boolean
     }
     /** OrganizationMemberInvite */
     OrganizationMemberInvite: {

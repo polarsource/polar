@@ -607,7 +607,6 @@ class TestSetMemberRole:
         json = response.json()
         assert json["user_id"] == str(user_second.id)
         assert json["role"] == "admin"
-        assert json["is_admin"] is True
 
     @pytest.mark.auth
     @pytest.mark.keep_session_state
@@ -630,7 +629,6 @@ class TestSetMemberRole:
 
         assert response.status_code == 200
         assert response.json()["role"] == "member"
-        assert response.json()["is_admin"] is False
 
     @pytest.mark.auth
     async def test_owner_role_in_body_rejected(

@@ -2,7 +2,6 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
 import ChangePlanPage from './ChangePlanPage'
-import { notFound } from 'next/navigation'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

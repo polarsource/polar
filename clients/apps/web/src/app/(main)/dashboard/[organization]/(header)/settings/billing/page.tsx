@@ -1,7 +1,6 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import BillingPage from './BillingPage'
 
 export async function generateMetadata(): Promise<Metadata> {

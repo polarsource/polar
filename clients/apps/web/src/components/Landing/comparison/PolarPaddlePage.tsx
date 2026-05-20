@@ -3,6 +3,7 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import Link from 'next/link'
 import { ResourceLayout, ResourceSection } from '../resources/ResourceLayout'
 
 export const PolarVsPaddlePage = () => {
@@ -190,11 +191,11 @@ export const PolarVsPaddlePage = () => {
           </div>
         </div>
         <p className="dark:text-polar-300 text-sm text-gray-500">
-          On paid plans, Polar's lower variable rates can save you significantly
-          compared to Paddle as your revenue grows. See our{' '}
-          <a href="/resources/pricing" className="underline">
+          On paid plans, Polar&apos;s lower variable rates can save you
+          significantly compared to Paddle as your revenue grows. See our{' '}
+          <Link href="/resources/pricing" className="underline">
             pricing guide
-          </a>{' '}
+          </Link>{' '}
           for a full breakdown.
         </p>
       </ResourceSection>

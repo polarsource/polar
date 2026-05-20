@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import update
 from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
@@ -13,12 +12,12 @@ from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import Account, Organization, User
 from polar.models.member import MemberRole
-from polar.models.user import IdentityVerificationStatus
-from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.user.repository import UserRepository
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .schemas import AccountUpdate
 
@@ -30,13 +29,6 @@ class AccountServiceError(PolarError):
 class CannotChangeAdminError(AccountServiceError):
     def __init__(self, reason: str) -> None:
         super().__init__(f"Cannot change account admin: {reason}")
-
-
-class UserNotOrganizationMemberError(AccountServiceError):
-    def __init__(self, user_id: uuid.UUID, organization_id: uuid.UUID) -> None:
-        super().__init__(
-            f"User {user_id} is not a member of organization {organization_id}"
-        )
 
 
 class AccountService:
@@ -65,14 +57,6 @@ class AccountService:
     ) -> Account | None:
         repository = AccountRepository.from_session(session)
         return await repository.get_by_organization(organization_id)
-
-    async def is_user_admin(
-        self, session: AsyncReadSession, account_id: uuid.UUID, user: User
-    ) -> bool:
-        account = await self._get_unrestricted(session, account_id)
-        if account is None:
-            return False
-        return account.admin_id == user.id
 
     async def create(self, session: AsyncSession, admin: User) -> Account:
         repository = AccountRepository.from_session(session)
@@ -160,42 +144,12 @@ class AccountService:
         new_admin_id: uuid.UUID,
         organization_id: uuid.UUID,
     ) -> Account:
-        user_repository = UserRepository.from_session(session)
-        is_member = await user_repository.is_organization_member(
-            new_admin_id, organization_id
-        )
-
-        if not is_member:
-            raise UserNotOrganizationMemberError(new_admin_id, organization_id)
-
-        new_admin_user = await user_repository.get_by_id(new_admin_id)
-
-        if new_admin_user is None:
-            raise UserNotOrganizationMemberError(new_admin_id, organization_id)
-
-        if (
-            new_admin_user.identity_verification_status
-            != IdentityVerificationStatus.verified
-        ):
-            raise CannotChangeAdminError(
-                f"New admin must be verified in Stripe. Current status: {new_admin_user.identity_verification_status.get_display_name()}"
-            )
-
-        if account.admin_id == new_admin_id:
-            raise CannotChangeAdminError("New admin is the same as current admin")
-
-        previous_admin_id = account.admin_id
-
-        repository = AccountRepository.from_session(session)
-        account = await repository.update(
-            account, update_dict={"admin_id": new_admin_id}
-        )
-        await self._swap_organization_owner_role(
+        new_admin_user = await user_organization_service.transfer_ownership(
             session,
+            new_owner_user_id=new_admin_id,
             organization_id=organization_id,
-            previous_admin_id=previous_admin_id,
-            new_admin_id=new_admin_id,
         )
+
         await self._sync_polar_self_customer_owner(
             session,
             organization_id=organization_id,
@@ -203,38 +157,6 @@ class AccountService:
         )
 
         return account
-
-    async def _swap_organization_owner_role(
-        self,
-        session: AsyncSession,
-        *,
-        organization_id: uuid.UUID,
-        previous_admin_id: uuid.UUID,
-        new_admin_id: uuid.UUID,
-    ) -> None:
-        """
-        Keep `UserOrganization.role` aligned with `Account.admin_id` during a
-        change_admin flow. Demote the previous admin from `owner` to `admin`
-        only if they currently carry `owner` (pre-backfill rows may still be
-        `member`); promote the new admin to `owner` unconditionally.
-        """
-        await session.execute(
-            update(UserOrganization)
-            .where(
-                UserOrganization.organization_id == organization_id,
-                UserOrganization.user_id == previous_admin_id,
-                UserOrganization.role == OrganizationRole.owner,
-            )
-            .values(role=OrganizationRole.admin)
-        )
-        await session.execute(
-            update(UserOrganization)
-            .where(
-                UserOrganization.organization_id == organization_id,
-                UserOrganization.user_id == new_admin_id,
-            )
-            .values(role=OrganizationRole.owner)
-        )
 
     async def _get_unrestricted(
         self,

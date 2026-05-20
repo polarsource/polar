@@ -4,13 +4,14 @@ from uuid import UUID
 from sqlalchemy import Select, func
 from sqlalchemy.orm import joinedload
 
-from polar.account.repository import AccountRepository
 from polar.exceptions import PolarError
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.utils import utc_now
-from polar.models import UserOrganization
+from polar.models import User, UserOrganization
+from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession, AsyncSession, sql
+from polar.user.repository import UserRepository
 
 
 class UserOrganizationError(PolarError): ...
@@ -70,6 +71,27 @@ class OwnerRoleCannotBeRemoved(UserOrganizationError):
             f"User {user_id} carries the 'owner' role on organization "
             f"{organization_id} and cannot be moved off it directly. "
             f"Ownership must be transferred first."
+        )
+        super().__init__(message, 400)
+
+
+class NewOwnerNotVerified(UserOrganizationError):
+    def __init__(self, user_id: UUID, status: IdentityVerificationStatus) -> None:
+        self.user_id = user_id
+        message = (
+            f"User {user_id} cannot be promoted to 'owner': "
+            f"identity verification status is {status.get_display_name()}, "
+            f"must be {IdentityVerificationStatus.verified.get_display_name()}."
+        )
+        super().__init__(message, 400)
+
+
+class AlreadyOwner(UserOrganizationError):
+    def __init__(self, user_id: UUID, organization_id: UUID) -> None:
+        self.user_id = user_id
+        self.organization_id = organization_id
+        message = (
+            f"User {user_id} already holds 'owner' on organization {organization_id}."
         )
         super().__init__(message, 400)
 
@@ -155,29 +177,20 @@ class UserOrganizationService:
         """
         Set a user's role on an organization, with validation.
 
-        - `role == owner` is only allowed when `user_id` matches the org's
-          `Account.admin_id`.
+        - `role == owner` is rejected. Ownership transfers flow through
+          a dedicated path (today: backoffice `change_admin`), which
+          atomically demotes the previous owner.
         - A user that currently carries `owner` cannot be moved off it
-          directly; ownership transfer flows through `Account.admin_id`
-          mutations (today: backoffice `change_admin`).
-
-        Internal trusted flows that swap roles atomically with an
-        `Account.admin_id` change (`account_service.change_admin`) bypass
-        this method by design.
+          directly; ownership transfer must promote a replacement.
         """
         user_org = await self.get_by_user_and_org(session, user_id, organization_id)
         if user_org is None:
             raise UserNotMemberOfOrganization(user_id, organization_id)
 
-        account_repo = AccountRepository.from_session(session)
-        account = await account_repo.get_by_organization(organization_id)
-        if account is None:
-            raise OrganizationNotFound(organization_id)
-
-        if role == OrganizationRole.owner and user_id != account.admin_id:
+        if role == OrganizationRole.owner:
             raise InvalidOwnerRoleAssignment(user_id, organization_id)
 
-        if user_org.role == OrganizationRole.owner and role != OrganizationRole.owner:
+        if user_org.role == OrganizationRole.owner:
             raise OwnerRoleCannotBeRemoved(user_id, organization_id)
 
         if user_org.role == role:
@@ -193,6 +206,60 @@ class UserOrganizationService:
         )
         user_org.role = role
         return user_org
+
+    async def transfer_ownership(
+        self,
+        session: AsyncSession,
+        *,
+        new_owner_user_id: UUID,
+        organization_id: UUID,
+    ) -> User:
+        """
+        Atomically demote the current `owner` (if any) to `admin` and
+        promote `new_owner_user_id` to `owner`.
+
+        Fires the `IdentityVerificationStatus.verified` gate on the new
+        owner, since payouts route through whoever holds `owner`.
+        """
+        user_repository = UserRepository.from_session(session)
+        new_owner_user = await user_repository.get_by_id(new_owner_user_id)
+        if new_owner_user is None:
+            raise UserNotMemberOfOrganization(new_owner_user_id, organization_id)
+
+        new_owner_user_org = await self.get_by_user_and_org(
+            session, new_owner_user_id, organization_id
+        )
+        if new_owner_user_org is None:
+            raise UserNotMemberOfOrganization(new_owner_user_id, organization_id)
+
+        if new_owner_user_org.role == OrganizationRole.owner:
+            raise AlreadyOwner(new_owner_user_id, organization_id)
+
+        if (
+            new_owner_user.identity_verification_status
+            != IdentityVerificationStatus.verified
+        ):
+            raise NewOwnerNotVerified(
+                new_owner_user_id, new_owner_user.identity_verification_status
+            )
+
+        await session.execute(
+            sql.update(UserOrganization)
+            .where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.role == OrganizationRole.owner,
+            )
+            .values(role=OrganizationRole.admin)
+        )
+        await session.execute(
+            sql.update(UserOrganization)
+            .where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.user_id == new_owner_user_id,
+            )
+            .values(role=OrganizationRole.owner)
+        )
+        return new_owner_user
 
     async def remove_member(
         self,

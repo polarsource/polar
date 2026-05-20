@@ -15,7 +15,6 @@ from polar.kit.repository import (
 )
 from polar.kit.repository.base import Options
 from polar.models import (
-    Account,
     Customer,
     Order,
     Organization,
@@ -33,6 +32,7 @@ from polar.models.discount import (
 from polar.models.organization import OrganizationStatus, SnoozeType
 from polar.models.organization_review import OrganizationReview
 from polar.models.subscription import SubscriptionStatus
+from polar.models.user_organization import OrganizationRole
 
 from .sorting import OrganizationSortProperty
 
@@ -210,12 +210,13 @@ class OrganizationRepository(
         )
 
     async def get_admin_user(self, organization: Organization) -> User | None:
-        """Get the admin user of the organization from the associated account."""
+        """Get the owner of the organization."""
         statement = (
             select(User)
-            .join(Account, Account.admin_id == User.id)
+            .join(UserOrganization, UserOrganization.user_id == User.id)
             .where(
-                Account.id == organization.account_id,
+                UserOrganization.organization_id == organization.id,
+                UserOrganization.role == OrganizationRole.owner,
                 User.is_deleted.is_(False),
             )
         )

@@ -65,7 +65,6 @@ from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
-    Account,
     Checkout,
     CheckoutLink,
     Customer,
@@ -1438,9 +1437,7 @@ class CheckoutService:
             org_ids,
             options=(
                 contains_eager(ProductPrice.product).options(
-                    joinedload(Product.organization)
-                    .joinedload(Organization.account)
-                    .joinedload(Account.admin),
+                    joinedload(Product.organization).joinedload(Organization.account),
                     selectinload(Product.prices),
                 ),
             ),

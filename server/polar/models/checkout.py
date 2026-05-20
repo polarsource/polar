@@ -247,7 +247,10 @@ class Checkout(
     # Only set when a checkout is attached to an existing subscription (free-to-paid upgrades).
     # For subscriptions created by the checkout itself, see `Subscription.checkout_id`.
     subscription_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("subscriptions.id", ondelete="set null"), nullable=True
+        Uuid,
+        ForeignKey("subscriptions.id", ondelete="set null"),
+        nullable=True,
+        index=True,
     )
 
     @declared_attr

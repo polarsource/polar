@@ -139,6 +139,55 @@ def _subscription_event(event_type: str) -> dict[str, Any]:
     }
 
 
+_ORDER: dict[str, Any] = {
+    "id": "00000000-0000-0000-0000-000000000020",
+    "created_at": "2026-01-01T00:00:00Z",
+    "modified_at": None,
+    "status": "paid",
+    "paid": True,
+    "subtotal_amount": 2000,
+    "discount_amount": 0,
+    "net_amount": 2000,
+    "tax_amount": 0,
+    "total_amount": 2000,
+    "applied_balance_amount": 0,
+    "due_amount": 2000,
+    "refunded_amount": 0,
+    "refunded_tax_amount": 0,
+    "refundable_amount": 2000,
+    "refundable_tax_amount": 0,
+    "receipt_number": None,
+    "currency": "usd",
+    "billing_reason": "subscription_cycle",
+    "billing_name": None,
+    "billing_address": None,
+    "invoice_number": "POLAR-0001",
+    "is_invoice_generated": True,
+    "customer_id": "00000000-0000-0000-0000-000000000002",
+    "product_id": "00000000-0000-0000-0000-0000000000c1",
+    "discount_id": None,
+    "subscription_id": "00000000-0000-0000-0000-000000000001",
+    "checkout_id": None,
+    "metadata": {},
+    "platform_fee_amount": 0,
+    "platform_fee_currency": None,
+    "customer": _SUBSCRIPTION["customer"],
+    "product": _SUBSCRIPTION["product"],
+    "discount": None,
+    "subscription": None,
+    "items": [],
+    "description": "Pro subscription",
+}
+
+
+def _order_event(event_type: str) -> dict[str, Any]:
+    return {
+        "type": event_type,
+        "timestamp": "2026-01-01T00:00:00Z",
+        "data": _ORDER,
+    }
+
+
 def _sign(
     payload: dict[str, Any], *, msg_id: str = "msg_test"
 ) -> tuple[bytes, dict[str, str]]:
@@ -258,6 +307,26 @@ class TestWebhook:
         assert call.args[2] == f"polar_self.webhook.{event_type}"
         assert call.args[3] == f"msg_{event_type}"
         assert call.args[4] == payload
+        assert call.kwargs["delay"] is None
+
+    async def test_order_created_is_enqueued_with_delay(
+        self,
+        client: AsyncClient,
+        enqueue_mock: AsyncMock,
+    ) -> None:
+        # Defer order.created processing so payment settlement and invoice
+        # generation have time to complete on Polar's side.
+        payload = _order_event("order.created")
+        body, headers = _sign(payload, msg_id="msg_order.created")
+
+        response = await client.post(WEBHOOK_URL, content=body, headers=headers)
+
+        assert response.status_code == 202
+        enqueue_mock.assert_awaited_once()
+        call = enqueue_mock.await_args
+        assert call is not None
+        assert call.args[2] == "polar_self.webhook.order.created"
+        assert call.kwargs["delay"] == 60_000
 
     async def test_subscription_revoked_is_ignored(
         self,

@@ -26,7 +26,7 @@ from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.worker import enqueue_job, get_retries
+from polar.worker import enqueue_job
 
 from .client import get_client
 from .exceptions import (
@@ -35,6 +35,7 @@ from .exceptions import (
     PolarSelfNoActiveSubscription,
     PolarSelfNotApproved,
     PolarSelfNotConfigured,
+    PolarSelfNotPaidOrder,
     PolarSelfOrderNotFound,
     PolarSelfPlanNotFound,
     PolarSelfWebhookError,
@@ -496,7 +497,12 @@ class PolarSelfService:
     async def handle_order_created_event(
         self, payload: WebhookOrderCreatedPayload
     ) -> None:
-        order = payload.data
+        # The webhook payload reflects the order at creation time; fields like
+        # ``is_invoice_generated`` flip to True later, so refetch over the API.
+        client = get_client()
+        order = await client.get_order(order_id=payload.data.id)
+        if order is None:
+            return
 
         if order.billing_reason not in (
             OrderBillingReason.SUBSCRIPTION_CREATE,
@@ -505,7 +511,10 @@ class PolarSelfService:
         ):
             return
 
-        client = get_client()
+        # Free orders (100% discount, $0 plans) shouldn't trigger an email.
+        if order.net_amount == 0:
+            return
+
         contacts = await client.list_billing_contacts(customer_id=order.customer.id)
         recipients = sorted({contact.email for contact in contacts if contact.email})
         if not recipients:
@@ -520,17 +529,18 @@ class PolarSelfService:
             template_name = "polar_self_subscription_confirmation"
             subject = f"You're now on {product_name}"
 
-        # Trigger invoice generation, then GET on each retry until the PDF
-        # is written. If POST is rejected (order not billable) or billing
-        # details are missing, no invoice will ever exist, then we can send without it.
         attachments: list[Attachment] | None = None
         invoice_expected = bool(order.billing_name and order.billing_address)
-        if invoice_expected and get_retries() == 0:
-            invoice_expected = await client.trigger_order_invoice_generation(
-                order_id=order.id
-            )
-
         if invoice_expected:
+            if not order.is_invoice_generated:
+                # Kick off PDF generation if the API hasn't done so yet, then
+                # retry — generation runs asynchronously on Polar's side.
+                try:
+                    await client.trigger_order_invoice_generation(order_id=order.id)
+                except PolarSelfNotPaidOrder as e:
+                    raise PolarSelfInvoiceNotReady(order.id) from e
+                raise PolarSelfInvoiceNotReady(order.id)
+
             invoice_url = await client.get_order_invoice(order_id=order.id)
             if invoice_url is None:
                 raise PolarSelfInvoiceNotReady(order.id)

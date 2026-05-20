@@ -26,6 +26,10 @@ IMPLEMENTED_WEBHOOKS = {
     "order.created",
 }
 
+# Defer order.created handling so payment settlement and invoice generation
+# have a chance to complete before we try to attach the invoice PDF.
+ORDER_CREATED_DELAY_MS = 60_000
+
 
 @router.post("/webhook", status_code=202, name="integrations.polar.webhook")
 async def webhook(
@@ -57,6 +61,12 @@ async def webhook(
         raise HTTPException(status_code=400)
 
     task_name = f"polar_self.webhook.{event_type}"
+    delay = ORDER_CREATED_DELAY_MS if event_type == "order.created" else None
     await external_event_service.enqueue(
-        session, ExternalEventSource.polar, task_name, delivery_id, payload
+        session,
+        ExternalEventSource.polar,
+        task_name,
+        delivery_id,
+        payload,
+        delay=delay,
     )

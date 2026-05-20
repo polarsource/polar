@@ -124,6 +124,9 @@ class AccountService:
             return
 
         polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+        if organization_id == polar_organization_id:
+            return
+
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_external_id_and_organization(
             str(organization_id), polar_organization_id

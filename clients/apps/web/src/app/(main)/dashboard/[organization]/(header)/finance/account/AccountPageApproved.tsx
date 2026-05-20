@@ -7,7 +7,6 @@ import { Section, SectionDescription } from '@/components/Settings/Section'
 import { toast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
-import { usePayoutAccount } from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
 import { CheckIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
@@ -22,10 +21,6 @@ export const AccountPageApproved = ({ organization }: Props) => {
   const identityVerificationStatus = currentUser?.identity_verification_status
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollingInitialStatusRef = useRef<string | undefined | null>(null)
-
-  const { data: payoutAccount } = usePayoutAccount(
-    organization.payout_account_id || undefined,
-  )
 
   const stripePromise = loadPolarStripe()
   const createIdentityVerification = useCreateIdentityVerification()
@@ -141,10 +136,7 @@ export const AccountPageApproved = ({ organization }: Props) => {
             title="Payout Account"
             description="Set up your payout account to receive payouts."
           />
-          <PayoutAccountStep
-            organization={organization}
-            payoutAccount={payoutAccount}
-          />
+          <PayoutAccountStep organization={organization} />
         </Section>
 
         <Section>

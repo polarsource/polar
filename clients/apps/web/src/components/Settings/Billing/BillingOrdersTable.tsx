@@ -157,7 +157,6 @@ export const BillingOrdersTable = ({
         borderWidth={1}
         borderStyle="solid"
         borderColor="border-primary"
-        backgroundColor="background-card"
         paddingVertical="3xl"
       >
         <Text color="muted">No orders yet</Text>

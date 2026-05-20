@@ -89,9 +89,9 @@ const PaymentMethodRow = ({
       {isCardPaymentMethod(paymentMethod) ? (
         <Box display="flex" alignItems="center" columnGap="m" flexGrow={1}>
           <CreditCardBrandIcon
-            width="4em"
+            width="3.5em"
             brand={paymentMethod.method_metadata.brand}
-            className="dark:border-polar-700 rounded-lg border border-gray-200 p-2"
+            className="dark:border-polar-700 rounded-lg border border-gray-200"
           />
           <Box display="flex" flexDirection="column">
             <Text>

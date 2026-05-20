@@ -205,6 +205,7 @@ export default function ChangePlanPage({
               md: 'repeat(2, 1fr)',
               xl: 'repeat(4, 1fr)',
             }}
+            gridTemplateRows="repeat(3, auto)"
             gap="l"
           >
             {plans.map((plan) => {

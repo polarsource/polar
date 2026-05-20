@@ -73,7 +73,7 @@ dev = [
   "pytest<10",
   "pytest-sugar>=1.0.0",
   "typer>=0.12.5",
-  "coverage>=7.6.0",
+  "coverage>=7.14.0",
   "pytest-mock>=3.10.0",
   "ruff>=0.15.11",
   "pytest-asyncio>=0.24",

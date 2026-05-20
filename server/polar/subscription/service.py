@@ -1361,9 +1361,7 @@ class SubscriptionService:
                 subscription = await self.cycle(session, subscription)
             # Set new trial end date
             else:
-                subscription.trial_end = subscription.current_period_end = cast(
-                    datetime, trial_end
-                )
+                subscription.trial_end = subscription.current_period_end = trial_end
         # Active subscription
         else:
             # Can't end trial if not trialing
@@ -1380,23 +1378,20 @@ class SubscriptionService:
                 )
             # Set a new trial
             else:
-                trial_end_datetime = cast(datetime, trial_end)
                 # Ensure trial_end is after current_period_end to prevent customer loss
-                if trial_end_datetime <= subscription.current_period_end:
+                if trial_end <= subscription.current_period_end:
                     raise PolarRequestValidationError(
                         [
                             {
                                 "type": "value_error",
                                 "loc": ("body", "trial_end"),
                                 "msg": "Trial end must be after the current period end.",
-                                "input": trial_end_datetime,
+                                "input": trial_end,
                             }
                         ]
                     )
                 subscription.status = SubscriptionStatus.trialing
-                subscription.trial_end = subscription.current_period_end = (
-                    trial_end_datetime
-                )
+                subscription.trial_end = subscription.current_period_end = trial_end
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)

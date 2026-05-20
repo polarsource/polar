@@ -246,24 +246,26 @@ export default function ChangePlanPage({
           </Box>
         )}
 
-        <Box display="flex" flexDirection="row" columnGap="s">
-          <Button
-            onClick={showConfirm}
-            disabled={!selectedPlan || isSubmitting || blockChanges}
-            loading={isSubmitting}
-            size="lg"
-          >
-            {ctaLabel}
-          </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => router.push(billingHref)}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-        </Box>
+        {selectedPlan && (
+          <Box display="flex" flexDirection="row-reverse" columnGap="s">
+            <Button
+              onClick={showConfirm}
+              disabled={isSubmitting || blockChanges}
+              loading={isSubmitting}
+              size="lg"
+            >
+              {ctaLabel}
+            </Button>
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => router.push(billingHref)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+          </Box>
+        )}
       </Box>
 
       <ConfirmModal

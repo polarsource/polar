@@ -111,7 +111,7 @@ export const BillingOrdersTable = ({
       header: 'Amount',
       size: 100,
       cell: ({ row: { original } }) => (
-        <Text as="span" variant="label">
+        <Text as="span">
           {formatPrice(original.total_amount, original.currency)}
         </Text>
       ),

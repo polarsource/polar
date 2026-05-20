@@ -12,6 +12,7 @@ import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import TrendingUp from '@mui/icons-material/TrendingUp'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
+import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import { ShoppingCart } from 'lucide-react'
 import { usePathname } from 'next/navigation'
@@ -324,7 +325,9 @@ const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
       {
         title: 'Billing',
         link: `/dashboard/${org?.slug}/settings/billing`,
-        if: org?.feature_settings?.billing_enabled ?? false,
+        if:
+          CONFIG.ENVIRONMENT === 'production' ||
+          (org?.feature_settings?.billing_enabled ?? false),
       },
       {
         title: 'Members',

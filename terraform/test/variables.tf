@@ -280,3 +280,8 @@ variable "tinybird_read_token" {
   type        = string
   sensitive   = true
 }
+
+variable "plain_default_tier_external_id" {
+  description = "Default Plain tier external ID used as a fallback for the polar-self support benefit"
+  type        = string
+}

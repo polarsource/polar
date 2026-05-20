@@ -42,8 +42,8 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 ## Pricing
 
-- 4% + 40¢
-- No fixed monthly costs
+- Starts at 5% + 50¢ (Starter plan, free)
+- Optional paid plans (Pro, Growth, Scale) with lower rates
 - Additional fees may apply. [Read more](https://polar.sh/docs/documentation/polar-as-merchant-of-record/fees)
 
 ## Roadmap, Issues & Feature Requests

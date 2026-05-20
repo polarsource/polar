@@ -6,6 +6,7 @@ export const PricingPage = () => {
   const toc = [
     { id: 'introduction', title: 'Introduction' },
     { id: 'plans', title: 'Plans' },
+    { id: 'early-member', title: 'Early Member' },
     { id: 'additional-fees', title: 'Additional Fees' },
     { id: 'example', title: 'Example' },
     { id: 'dispute-fees', title: 'Dispute/Chargeback Fees' },
@@ -16,7 +17,7 @@ export const PricingPage = () => {
       <ResourceSection id="introduction" title="Introduction">
         <div className="flex flex-col gap-2">
           <h3>Pricing you can read off a page</h3>
-          <p className="dark:text-polar-300 text-gray-500">
+          <p>
             Most Merchant of Record providers only offer lower fees through
             opaque, sales-gated &quot;volume discounts&quot;. Polar goes the
             opposite direction: every rate is posted publicly, and you choose
@@ -51,7 +52,7 @@ export const PricingPage = () => {
                   </td>
                   <td className="px-4 py-2">Free</td>
                   <td className="px-4 py-2">5% + 50¢</td>
-                  <td className="px-4 py-2">Self-serve</td>
+                  <td className="px-4 py-2">Standard Support</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2">
@@ -59,7 +60,7 @@ export const PricingPage = () => {
                   </td>
                   <td className="px-4 py-2">$20 /mo</td>
                   <td className="px-4 py-2">3.8% + 40¢</td>
-                  <td className="px-4 py-2">Prioritized tickets</td>
+                  <td className="px-4 py-2">Prioritized Support</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2">
@@ -67,7 +68,7 @@ export const PricingPage = () => {
                   </td>
                   <td className="px-4 py-2">$100 /mo</td>
                   <td className="px-4 py-2">3.6% + 35¢</td>
-                  <td className="px-4 py-2">Prioritized tickets</td>
+                  <td className="px-4 py-2">Prioritized Support</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2">
@@ -75,13 +76,13 @@ export const PricingPage = () => {
                   </td>
                   <td className="px-4 py-2">$400 /mo</td>
                   <td className="px-4 py-2">3.4% + 30¢</td>
-                  <td className="px-4 py-2">Slack + Prioritized tickets</td>
+                  <td className="px-4 py-2">Slack + Prioritized Support</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <p className="dark:text-polar-300 text-gray-500">
+          <p>
             The paid plans replace the per-transaction Merchant of Record
             premium with a fixed monthly fee and a lower variable rate. As your
             sales grow, the economics flip &mdash; Merchant of Record stops
@@ -92,7 +93,7 @@ export const PricingPage = () => {
 
           <div className="flex flex-col gap-2">
             <h3 className="text-lg">When does a paid plan pay off?</h3>
-            <p className="dark:text-polar-300 text-gray-500">
+            <p>
               Each paid plan crosses over to save you money at a predictable
               monthly sales threshold, so you can decide deliberately rather
               than guess.
@@ -130,10 +131,58 @@ export const PricingPage = () => {
             </table>
           </div>
 
-          <p className="dark:text-polar-300 text-gray-500">
+          <p>
             Below your plan&apos;s threshold, a lower tier is the better deal.
             Above it, the paid plan saves money &mdash; and you get faster
             support on top.
+          </p>
+        </div>
+      </ResourceSection>
+
+      <ResourceSection id="early-member" title="Early Member">
+        <div className="flex flex-col gap-4">
+          <p>
+            Organizations created before <strong>May 27, 2026 </strong> stay on
+            the Early Member rate indefinitely. This was the rate we offered
+            while Polar was catching up on feature parity with other Merchant of
+            Record providers, and we&apos;ve committed to honoring it for
+            everyone who signed up under it.
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="dark:bg-polar-800 bg-gray-50">
+                  <th className="px-4 py-2 text-left">Monthly fee</th>
+                  <th className="px-4 py-2 text-left">Per transaction</th>
+                  <th className="px-4 py-2 text-left">Subscription fee</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="px-4 py-2">Free</td>
+                  <td className="px-4 py-2">4% + 40¢</td>
+                  <td className="px-4 py-2">+0.5%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h3 className="text-lg">One trade-off worth understanding</h3>
+            <p>
+              Early Member is yours forever as long as you stay on it. The
+              moment you upgrade to a paid plan, Early Member is retired for
+              that organization. You can still switch freely between the paid
+              plans afterwards, but downgrading to Starter lands you on the new
+              5% + 50¢ rate, not your original Early Member rate.
+            </p>
+          </div>
+
+          <p>
+            Organizations created on or after May 27, 2026 start on Starter (5%
+            + 50¢). This applies to new organizations even if they&apos;re
+            created by customers who signed up earlier.
           </p>
         </div>
       </ResourceSection>
@@ -157,9 +206,9 @@ export const PricingPage = () => {
           <div className="flex flex-col gap-2">
             <h3 className="text-lg">Payout fees</h3>
             <p>
-              While payouts may incur fees charged by our payout providers
-              (Stripe), Polar does not add any extra fees or markup. These are
-              strictly Stripe&apos;s fees, and Polar does not profit from them.
+              While payouts may incur fees charged by our payout providers,
+              Polar does not add any extra fees or markup. These are strictly
+              Stripe&apos;s fees, and Polar does not profit from them.
             </p>
             <p>
               In addition, Polar offers manual withdrawals for developers,
@@ -208,7 +257,7 @@ export const PricingPage = () => {
                   <td className="px-4 py-2">VAT (25%)</td>
                   <td className="px-4 py-2">$7.5</td>
                 </tr>
-                <tr className="dark:bg-polar-800 bg-gray-50">
+                <tr className="dark:bg-polar-800 bg-gray-50 font-bold">
                   <td className="px-4 py-2">Total Transaction Value</td>
                   <td className="px-4 py-2">$37.5</td>
                 </tr>
@@ -216,7 +265,7 @@ export const PricingPage = () => {
             </table>
           </div>
 
-          <p className="dark:text-polar-300 text-gray-500">
+          <p>
             Here&apos;s how the fees on that $37.5 transaction compare across
             plans.
           </p>
@@ -275,10 +324,10 @@ export const PricingPage = () => {
           <p>
             Sometimes, customers can open a <strong>dispute/chargeback</strong>{' '}
             via their bank for a purchase.{' '}
-            <strong>Disputes cost $15 per dispute</strong> regardless of outcome
-            and is deducted from your balance directly. This fee is charged by
-            the underlying credit card networks & PSPs regardless of outcome and
-            therefore something we cannot refund.
+            <strong>Disputes cost $15 per dispute,</strong> regardless of
+            outcome and is deducted from your balance directly. This fee is
+            charged by the underlying credit card networks & PSPs regardless of
+            outcome and therefore something we cannot refund.
           </p>
           <p>
             However, we continuously work to proactively reduce the rate of

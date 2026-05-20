@@ -46,7 +46,7 @@ const TIERS: Tier[] = [
     period: '/month',
     desc: 'For fast growing businesses.',
     fees: ['3.40% + 30¢ per transaction'],
-    features: ['All features on Growth', 'P1 Support'],
+    features: ['All features on Growth', 'Slack Channel', 'P1 Support'],
   },
 ]
 

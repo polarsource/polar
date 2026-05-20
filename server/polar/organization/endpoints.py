@@ -26,7 +26,6 @@ from polar.exceptions import (
     ResourceNotFound,
 )
 from polar.integrations.polar.exceptions import (
-    PolarSelfNoActiveSubscription,
     PolarSelfPaymentMethodInUse,
 )
 from polar.integrations.polar.schemas import (

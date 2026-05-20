@@ -9,21 +9,18 @@ interface AmountLabelProps {
   intervalCount?: number | null
 }
 
-const ordinalRules = new Intl.PluralRules('en', { type: 'ordinal' })
-
-const suffixes = {
-  zero: '',
-  one: 'st',
-  two: 'nd',
-  few: 'rd',
-  many: '',
-  other: 'th',
+const UNIT_PLURAL: Record<schemas['SubscriptionRecurringInterval'], string> = {
+  day: 'days',
+  week: 'weeks',
+  month: 'months',
+  year: 'years',
 }
 
-const ordinal = (number: number): string => {
-  const category = ordinalRules.select(number)
-  const suffix = suffixes[category]
-  return number + suffix
+const UNIT_SHORT: Record<schemas['SubscriptionRecurringInterval'], string> = {
+  day: 'dy',
+  week: 'wk',
+  month: 'mo',
+  year: 'yr',
 }
 
 const AmountLabel: React.FC<AmountLabelProps> = ({
@@ -36,23 +33,10 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
     if (!interval) {
       return ''
     }
-    const prefix =
-      intervalCount && intervalCount > 1
-        ? ` every ${ordinal(intervalCount)}`
-        : ''
-
-    switch (interval) {
-      case 'day':
-        return ` /${prefix} dy`
-      case 'week':
-        return ` /${prefix} wk`
-      case 'month':
-        return ` /${prefix} mo`
-      case 'year':
-        return ` /${prefix} yr`
-      default:
-        return ``
+    if (intervalCount && intervalCount > 1) {
+      return ` / every ${intervalCount} ${UNIT_PLURAL[interval]}`
     }
+    return ` / ${UNIT_SHORT[interval]}`
   }, [interval, intervalCount])
 
   return (

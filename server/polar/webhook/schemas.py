@@ -38,12 +38,12 @@ HttpsUrl = Annotated[
     PlainSerializer(lambda v: str(v), return_type=str),
 ]
 
+ENDPOINT_URL_DESCRIPTION = "The URL where the webhook events will be sent."
+ENDPOINT_URL_EXAMPLES = ["https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"]
+
 EndpointURL = Annotated[
     HttpsUrl,
-    Field(
-        description="The URL where the webhook events will be sent.",
-        examples=["https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"],
-    ),
+    Field(description=ENDPOINT_URL_DESCRIPTION, examples=ENDPOINT_URL_EXAMPLES),
 ]
 EndpointFormat = Annotated[
     WebhookFormat,
@@ -67,7 +67,9 @@ class WebhookEndpoint(IDSchema, TimestampedSchema):
     A webhook endpoint.
     """
 
-    url: EndpointURL
+    url: str = Field(
+        description=ENDPOINT_URL_DESCRIPTION, examples=ENDPOINT_URL_EXAMPLES
+    )
     name: str | None = Field(
         default=None,
         description="An optional name for the webhook endpoint to help organize and identify it.",

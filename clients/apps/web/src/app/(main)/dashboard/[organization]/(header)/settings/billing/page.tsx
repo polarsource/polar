@@ -20,9 +20,5 @@ export default async function Page(props: {
     params.organization,
   )
 
-  if (!organization.feature_settings?.billing_enabled) {
-    notFound()
-  }
-
   return <BillingPage organization={organization} />
 }

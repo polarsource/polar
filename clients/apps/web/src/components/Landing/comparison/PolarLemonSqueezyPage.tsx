@@ -135,7 +135,8 @@ export const PolarVsLemonSqueezyPage = () => {
               <h3 className="text-lg font-medium">Polar</h3>
               <div className="text-4xl">5% + 50¢</div>
               <p className="dark:text-polar-300 text-sm text-gray-500">
-                per transaction (Starter plan — paid plans available with lower rates)
+                per transaction (Starter plan — paid plans available with lower
+                rates)
               </p>
             </div>
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
@@ -193,7 +194,10 @@ export const PolarVsLemonSqueezyPage = () => {
         <p className="dark:text-polar-300 text-sm text-gray-500">
           On paid plans, Polar's lower variable rates can save you significantly
           compared to Lemon Squeezy as your revenue grows. See our{' '}
-          <a href="/resources/pricing" className="underline">pricing guide</a> for a full breakdown.
+          <a href="/resources/pricing" className="underline">
+            pricing guide
+          </a>{' '}
+          for a full breakdown.
         </p>
       </ResourceSection>
 
@@ -308,7 +312,8 @@ export const PolarVsLemonSqueezyPage = () => {
           <li>
             <h4 className="font-medium">Lower fees as you scale</h4>
             <p className="dark:text-polar-300 text-gray-500">
-              Paid plans (Pro, Growth, Scale) offer lower variable rates with the same MoR benefits.
+              Paid plans (Pro, Growth, Scale) offer lower variable rates with
+              the same MoR benefits.
             </p>
           </li>
           <li>

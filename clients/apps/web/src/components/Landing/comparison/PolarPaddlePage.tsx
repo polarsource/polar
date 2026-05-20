@@ -133,7 +133,8 @@ export const PolarVsPaddlePage = () => {
               <h3 className="text-lg font-medium">Polar</h3>
               <div className="text-4xl">5% + 50¢</div>
               <p className="dark:text-polar-300 text-sm text-gray-500">
-                per transaction (Starter plan — paid plans available with lower rates)
+                per transaction (Starter plan — paid plans available with lower
+                rates)
               </p>
             </div>
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
@@ -191,7 +192,10 @@ export const PolarVsPaddlePage = () => {
         <p className="dark:text-polar-300 text-sm text-gray-500">
           On paid plans, Polar's lower variable rates can save you significantly
           compared to Paddle as your revenue grows. See our{' '}
-          <a href="/resources/pricing" className="underline">pricing guide</a> for a full breakdown.
+          <a href="/resources/pricing" className="underline">
+            pricing guide
+          </a>{' '}
+          for a full breakdown.
         </p>
       </ResourceSection>
 
@@ -303,7 +307,8 @@ export const PolarVsPaddlePage = () => {
           <li>
             <h4 className="font-medium">Lower fees on paid plans</h4>
             <p className="dark:text-polar-300 text-gray-500">
-              Same MoR benefits with lower variable rates available through Pro, Growth, and Scale plans.
+              Same MoR benefits with lower variable rates available through Pro,
+              Growth, and Scale plans.
             </p>
           </li>
           <li>

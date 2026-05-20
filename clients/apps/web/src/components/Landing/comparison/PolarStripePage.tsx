@@ -134,7 +134,8 @@ export const PolarVsStripePage = () => {
               <h3 className="text-lg font-medium">Polar</h3>
               <div className="text-4xl">5% + 50¢</div>
               <p className="dark:text-polar-300 text-sm text-gray-500">
-                per transaction (Starter plan — paid plans available with lower rates)
+                per transaction (Starter plan — paid plans available with lower
+                rates)
               </p>
             </div>
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">

@@ -81,3 +81,9 @@ class PolarSelfInvoiceNotReady(PolarSelfWebhookError):
     def __init__(self, order_id: str) -> None:
         super().__init__(f"Invoice for order {order_id!r} not yet generated.")
         self.order_id = order_id
+
+
+class PolarSelfNotPaidOrder(PolarSelfWebhookError):
+    def __init__(self, order_id: str) -> None:
+        super().__init__(f"Order {order_id!r} is not paid yet.")
+        self.order_id = order_id

@@ -13,14 +13,17 @@ from polar_sdk.models import (
     SubscriptionProrationBehavior,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
+    WebhookOrderCreatedPayload,
 )
 from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.integrations.polar.exceptions import (
+    PolarSelfInvoiceNotReady,
     PolarSelfNoActiveSubscription,
     PolarSelfNotApproved,
     PolarSelfNotConfigured,
+    PolarSelfNotPaidOrder,
     PolarSelfOrderNotFound,
     PolarSelfPlanNotFound,
     PolarSelfWebhookError,
@@ -1153,52 +1156,69 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_not_awaited()
 
 
-def _make_order(
+def _order_dict(
     *,
     id: str = "ord_1",
     customer_id: str = _CUSTOMER_ID,
     product_id: str = "prod_1",
     status: str = "paid",
-) -> Order:
-    return Order.model_validate(
+    net_amount: int = 2000,
+    billing_reason: str = "subscription_cycle",
+    billing_name: str | None = None,
+    billing_address: dict[str, Any] | None = None,
+    is_invoice_generated: bool = True,
+) -> dict[str, Any]:
+    return {
+        "id": id,
+        "created_at": "2026-01-01T00:00:00Z",
+        "modified_at": None,
+        "status": status,
+        "paid": status == "paid",
+        "subtotal_amount": net_amount,
+        "discount_amount": 0,
+        "net_amount": net_amount,
+        "tax_amount": 0,
+        "total_amount": net_amount,
+        "applied_balance_amount": 0,
+        "due_amount": net_amount,
+        "refunded_amount": 0,
+        "refunded_tax_amount": 0,
+        "refundable_amount": net_amount,
+        "refundable_tax_amount": 0,
+        "receipt_number": None,
+        "currency": "usd",
+        "billing_reason": billing_reason,
+        "billing_name": billing_name,
+        "billing_address": billing_address,
+        "invoice_number": "POLAR-0001",
+        "is_invoice_generated": is_invoice_generated,
+        "customer_id": customer_id,
+        "product_id": product_id,
+        "discount_id": None,
+        "subscription_id": "00000000-0000-0000-0000-000000000001",
+        "checkout_id": None,
+        "metadata": {},
+        "platform_fee_amount": 0,
+        "platform_fee_currency": None,
+        "customer": _CUSTOMER_DICT,
+        "product": _make_product(id=product_id).model_dump(mode="json"),
+        "discount": None,
+        "subscription": None,
+        "items": [],
+        "description": "Pro subscription",
+    }
+
+
+def _make_order(**kwargs: Any) -> Order:
+    return Order.model_validate(_order_dict(**kwargs))
+
+
+def _make_order_created_payload(**kwargs: Any) -> WebhookOrderCreatedPayload:
+    return WebhookOrderCreatedPayload.model_validate(
         {
-            "id": id,
-            "created_at": "2026-01-01T00:00:00Z",
-            "modified_at": None,
-            "status": status,
-            "paid": status == "paid",
-            "subtotal_amount": 2000,
-            "discount_amount": 0,
-            "net_amount": 2000,
-            "tax_amount": 0,
-            "total_amount": 2000,
-            "applied_balance_amount": 0,
-            "due_amount": 2000,
-            "refunded_amount": 0,
-            "refunded_tax_amount": 0,
-            "refundable_amount": 2000,
-            "refundable_tax_amount": 0,
-            "receipt_number": None,
-            "currency": "usd",
-            "billing_reason": "subscription_cycle",
-            "billing_name": None,
-            "billing_address": None,
-            "invoice_number": "POLAR-0001",
-            "is_invoice_generated": True,
-            "customer_id": customer_id,
-            "product_id": product_id,
-            "discount_id": None,
-            "subscription_id": "00000000-0000-0000-0000-000000000001",
-            "checkout_id": None,
-            "metadata": {},
-            "platform_fee_amount": 0,
-            "platform_fee_currency": None,
-            "customer": _CUSTOMER_DICT,
-            "product": _make_product(id=product_id).model_dump(mode="json"),
-            "discount": None,
-            "subscription": None,
-            "items": [],
-            "description": "Pro subscription",
+            "type": "order.created",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "data": _order_dict(**kwargs),
         }
     )
 
@@ -1315,3 +1335,216 @@ class TestGetOrderInvoiceUrl:
 
         assert url == "https://example.com/inv.pdf"
         orders_client_mock.get_order_invoice.assert_awaited_once_with(order_id="ord_1")
+
+
+_BILLING_ADDRESS = {
+    "country": "US",
+    "line1": "1 Market St",
+    "line2": None,
+    "postal_code": "94105",
+    "city": "San Francisco",
+    "state": "CA",
+}
+
+
+def _make_contact(email: str) -> MagicMock:
+    contact = MagicMock()
+    contact.email = email
+    return contact
+
+
+@pytest.fixture
+def order_webhook_client_mock(mocker: MockerFixture) -> MagicMock:
+    client = MagicMock()
+    client.get_order = AsyncMock()
+    client.list_billing_contacts = AsyncMock(
+        return_value=[_make_contact("billing@example.com")]
+    )
+    client.trigger_order_invoice_generation = AsyncMock()
+    client.get_order_invoice = AsyncMock(return_value="https://example.com/inv.pdf")
+    mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
+    return client
+
+
+@pytest.fixture
+def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.integrations.polar.service.enqueue_email_template")
+
+
+@pytest.mark.asyncio
+class TestHandleOrderCreatedEvent:
+    async def test_ignores_non_subscription_billing_reasons(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        order_webhook_client_mock.get_order.return_value = _make_order(
+            billing_reason="purchase"
+        )
+        payload = _make_order_created_payload(billing_reason="purchase")
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_order_not_found(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        order_webhook_client_mock.get_order.return_value = None
+        payload = _make_order_created_payload()
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_net_amount_is_zero(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        # Free orders ($0 plans or 100%-discounted) shouldn't notify or attach
+        # an invoice — we'd email customers about an order they never paid for.
+        order_webhook_client_mock.get_order.return_value = _make_order(net_amount=0)
+        payload = _make_order_created_payload(net_amount=0)
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        order_webhook_client_mock.trigger_order_invoice_generation.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_no_billing_contacts(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        order_webhook_client_mock.get_order.return_value = _make_order()
+        order_webhook_client_mock.list_billing_contacts.return_value = []
+        payload = _make_order_created_payload()
+
+        await polar_self.handle_order_created_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_sends_email_without_invoice_when_billing_details_missing(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        order_webhook_client_mock.get_order.return_value = _make_order(
+            billing_name=None, billing_address=None
+        )
+        payload = _make_order_created_payload()
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.trigger_order_invoice_generation.assert_not_awaited()
+        order_webhook_client_mock.get_order_invoice.assert_not_awaited()
+        enqueue_email_mock.assert_called_once()
+        assert enqueue_email_mock.call_args.kwargs["attachments"] is None
+
+    async def test_attaches_invoice_when_already_generated(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        order_webhook_client_mock.get_order.return_value = _make_order(
+            billing_name="Acme Inc",
+            billing_address=_BILLING_ADDRESS,
+            is_invoice_generated=True,
+        )
+        payload = _make_order_created_payload()
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.trigger_order_invoice_generation.assert_not_awaited()
+        order_webhook_client_mock.get_order_invoice.assert_awaited_once_with(
+            order_id="ord_1"
+        )
+        enqueue_email_mock.assert_called_once()
+        attachments = enqueue_email_mock.call_args.kwargs["attachments"]
+        assert attachments == [
+            {
+                "remote_url": "https://example.com/inv.pdf",
+                "filename": "POLAR-0001.pdf",
+            }
+        ]
+
+    async def test_triggers_generation_and_retries_when_not_yet_generated(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        order_webhook_client_mock.get_order.return_value = _make_order(
+            billing_name="Acme Inc",
+            billing_address=_BILLING_ADDRESS,
+            is_invoice_generated=False,
+        )
+        payload = _make_order_created_payload()
+
+        with pytest.raises(PolarSelfInvoiceNotReady):
+            await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.trigger_order_invoice_generation.assert_awaited_once_with(
+            order_id="ord_1"
+        )
+        enqueue_email_mock.assert_not_called()
+
+    async def test_retries_when_invoice_generation_returns_not_paid(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        # NotPaidOrder (422) means payment hasn't settled yet — retry rather
+        # than silently sending the email without an invoice attached.
+        order_webhook_client_mock.get_order.return_value = _make_order(
+            billing_name="Acme Inc",
+            billing_address=_BILLING_ADDRESS,
+            is_invoice_generated=False,
+        )
+        order_webhook_client_mock.trigger_order_invoice_generation.side_effect = (
+            PolarSelfNotPaidOrder("ord_1")
+        )
+        payload = _make_order_created_payload()
+
+        with pytest.raises(PolarSelfInvoiceNotReady):
+            await polar_self.handle_order_created_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_retries_when_invoice_url_is_none(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        order_webhook_client_mock.get_order.return_value = _make_order(
+            billing_name="Acme Inc",
+            billing_address=_BILLING_ADDRESS,
+            is_invoice_generated=True,
+        )
+        order_webhook_client_mock.get_order_invoice.return_value = None
+        payload = _make_order_created_payload()
+
+        with pytest.raises(PolarSelfInvoiceNotReady):
+            await polar_self.handle_order_created_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_uses_fresh_order_payload_from_api(
+        self,
+        order_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        # The webhook payload's net_amount could be stale; the fresh fetch is
+        # the source of truth — here, the fresh order is free, so we skip.
+        order_webhook_client_mock.get_order.return_value = _make_order(net_amount=0)
+        payload = _make_order_created_payload(net_amount=2000)
+
+        await polar_self.handle_order_created_event(payload)
+
+        order_webhook_client_mock.get_order.assert_awaited_once_with(order_id="ord_1")
+        enqueue_email_mock.assert_not_called()

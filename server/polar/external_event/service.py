@@ -38,6 +38,8 @@ class ExternalEventService:
         task_name: str,
         external_id: str,
         data: dict[str, Any],
+        *,
+        delay: int | None = None,
     ) -> ExternalEvent:
         repository = ExternalEventRepository.from_session(session)
 
@@ -51,7 +53,7 @@ class ExternalEventService:
             ),
             flush=True,
         )
-        enqueue_job(task_name, event.id)
+        enqueue_job(task_name, event.id, delay=delay)
         return event
 
     async def resend(self, event: ExternalEvent) -> None:

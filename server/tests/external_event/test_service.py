@@ -28,7 +28,7 @@ class TestEnqueue:
         assert event.task_name == "task_name"
         assert event.external_id == "EXTERNAL_EVENT_ID"
 
-        enqueue_job_mock.assert_called_once_with("task_name", event.id)
+        enqueue_job_mock.assert_called_once_with("task_name", event.id, delay=None)
 
     async def test_already_existing(
         self,

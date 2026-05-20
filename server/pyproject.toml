@@ -69,7 +69,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "mypy>=1.11",
+  "mypy>=2.1.0",
   "pytest<10",
   "pytest-sugar>=1.0.0",
   "typer>=0.12.5",
@@ -111,7 +111,7 @@ loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8
 lint = { cmd = "ruff format . && ruff check --fix . && task lint_subquery", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check . && task lint_subquery", help = "run ruff linter" }
 lint_subquery = { cmd = "python scripts/lint_subquery.py", help = "flag .subquery() calls that don't narrow columns" }
-lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
+lint_types = { cmd = "mypy --num-workers 2 polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }

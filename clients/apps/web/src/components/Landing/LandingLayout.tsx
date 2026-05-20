@@ -88,6 +88,10 @@ const mobileNavigationItems: NavigationItem[] = [
     isActive: (pathname) => pathname === '/',
   },
   {
+    title: 'Pricing',
+    href: '/resources/pricing',
+  },
+  {
     title: 'Documentation',
     href: 'https://polar.sh/docs',
     target: '_blank',
@@ -317,6 +321,9 @@ const LandingPageDesktopNavigation = () => {
               sections={featuresSections}
               isActive={pathname.startsWith('/features')}
             />
+          </li>
+          <li>
+            <NavLink href="/resources/pricing">Pricing</NavLink>
           </li>
           <li>
             <NavPopover trigger="Docs" sections={docsSections} layout="flex" />

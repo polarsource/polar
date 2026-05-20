@@ -113,19 +113,19 @@ export const PricingPage = () => {
                   <td className="px-4 py-2">
                     <strong>Pro</strong>
                   </td>
-                  <td className="px-4 py-2">~$1,379/mo in sales</td>
+                  <td className="px-4 py-2">~$1,379 /mo in sales</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2">
                     <strong>Growth</strong>
                   </td>
-                  <td className="px-4 py-2">~$5,634/mo in sales</td>
+                  <td className="px-4 py-2">~$5,634 /mo in sales</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2">
                     <strong>Scale</strong>
                   </td>
-                  <td className="px-4 py-2">~$19,048/mo in sales</td>
+                  <td className="px-4 py-2">~$19,048 /mo in sales</td>
                 </tr>
               </tbody>
             </table>

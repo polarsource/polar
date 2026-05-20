@@ -13,13 +13,13 @@ import {
   PaymentElement,
 } from '@stripe/react-stripe-js'
 import {
-  loadStripe,
   type ConfirmationToken,
   type Stripe,
   type StripeElements,
   type StripeError,
 } from '@stripe/stripe-js'
 import { useCallback, useMemo, useState } from 'react'
+import { loadPolarStripe } from '@/utils/stripe'
 
 export interface AddBillingPaymentMethodModalProps {
   organizationId: string
@@ -34,10 +34,7 @@ export const AddBillingPaymentMethodModal = ({
   hide,
   themePreset,
 }: AddBillingPaymentMethodModalProps) => {
-  const stripePromise = useMemo(
-    () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
-    [],
-  )
+  const stripePromise = useMemo(() => loadPolarStripe(), [])
   const addPaymentMethod = useAddOrganizationPaymentMethod(organizationId)
   const confirmPaymentMethod =
     useConfirmOrganizationPaymentMethod(organizationId)

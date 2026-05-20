@@ -11,7 +11,6 @@ import {
   PaymentElement,
 } from '@stripe/react-stripe-js'
 import {
-  loadStripe,
   type ConfirmationToken,
   type Stripe,
   type StripeElements,
@@ -19,6 +18,7 @@ import {
 } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { loadPolarStripe } from '@/utils/stripe'
 export interface AddPaymentMethodModalProps {
   api: Client
   onPaymentMethodAdded: () => void
@@ -37,10 +37,7 @@ export const AddPaymentMethodModal = ({
   hide,
   themePreset,
 }: AddPaymentMethodModalProps) => {
-  const stripePromise = useMemo(
-    () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
-    [],
-  )
+  const stripePromise = useMemo(() => loadPolarStripe(), [])
   const addPaymentMethod = useAddCustomerPaymentMethod(api)
   const confirmPaymentMethod = useConfirmCustomerPaymentMethod(api)
   const [error, setError] = useState<string | null>(null)

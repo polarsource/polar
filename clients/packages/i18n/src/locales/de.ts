@@ -279,12 +279,4 @@ export default {
     meter_credit: 'Verbrauchsguthaben',
     feature_flag: 'Feature-Flag',
   },
-  ordinal: {
-    zero: '.',
-    one: '.',
-    two: '.',
-    few: '.',
-    many: '.',
-    other: '.',
-  },
 } as const

@@ -273,12 +273,4 @@ export default {
     meter_credit: 'Használat alapú kreditek',
     feature_flag: 'Feature flag',
   },
-  ordinal: {
-    zero: '.',
-    one: '.',
-    two: '.',
-    few: '.',
-    many: '.',
-    other: '.',
-  },
 } as const

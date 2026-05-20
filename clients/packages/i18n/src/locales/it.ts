@@ -275,12 +275,4 @@ export default {
     meter_credit: 'Crediti a consumo',
     feature_flag: 'Feature flag',
   },
-  ordinal: {
-    zero: '°',
-    one: '°',
-    two: '°',
-    few: '°',
-    many: '°',
-    other: '°',
-  },
 } as const

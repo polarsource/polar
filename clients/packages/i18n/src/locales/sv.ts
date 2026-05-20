@@ -272,12 +272,4 @@ export default {
     meter_credit: 'Mätarkrediter',
     feature_flag: 'Feature flag',
   },
-  ordinal: {
-    zero: ':e',
-    one: ':a',
-    two: ':a',
-    few: ':e',
-    many: ':e',
-    other: ':e',
-  },
 } as const

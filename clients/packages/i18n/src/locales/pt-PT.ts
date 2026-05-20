@@ -273,12 +273,4 @@ export default {
     meter_credit: 'Créditos de uso',
     feature_flag: 'Feature flag',
   },
-  ordinal: {
-    zero: 'º',
-    one: 'º',
-    two: 'º',
-    few: 'º',
-    many: 'º',
-    other: 'º',
-  },
 } as const

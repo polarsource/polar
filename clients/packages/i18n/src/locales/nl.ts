@@ -275,12 +275,4 @@ export default {
     meter_credit: 'Verbruikstegoed',
     feature_flag: 'Feature flag',
   },
-  ordinal: {
-    zero: 'de',
-    one: 'e',
-    two: 'e',
-    few: 'e',
-    many: 'e',
-    other: 'e',
-  },
 } as const

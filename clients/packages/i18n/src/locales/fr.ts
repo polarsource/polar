@@ -277,12 +277,4 @@ export default {
     meter_credit: 'Crédits prépayés',
     feature_flag: 'Accès à une fonctionnalité',
   },
-  ordinal: {
-    zero: 'e',
-    one: 'er',
-    two: 'e',
-    few: 'e',
-    many: 'e',
-    other: 'e',
-  },
 } as const

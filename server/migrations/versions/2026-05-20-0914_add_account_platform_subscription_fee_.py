@@ -24,6 +24,13 @@ def upgrade() -> None:
         "accounts",
         sa.Column("platform_subscription_fee_percent", sa.Integer(), nullable=True),
     )
+    op.execute(
+        """
+        UPDATE accounts
+        SET platform_subscription_fee_percent = 50
+        WHERE platform_subscription_fee_percent IS NULL
+        """
+    )
     # ### end Alembic commands ###
 
 

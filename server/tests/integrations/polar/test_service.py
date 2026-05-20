@@ -16,6 +16,7 @@ from polar_sdk.models import (
 )
 from pytest_mock import MockerFixture
 
+from polar.config import settings
 from polar.integrations.polar.exceptions import (
     PolarSelfNoActiveSubscription,
     PolarSelfNotApproved,
@@ -503,9 +504,9 @@ class TestApplyTransactionFee:
         set_platform_fee_mock.assert_awaited_once()
         assert set_platform_fee_mock.await_args is not None
         assert set_platform_fee_mock.await_args.kwargs == {
-            "fee_percent": None,
-            "fee_fixed": None,
-            "subscription_fee_percent": None,
+            "fee_percent": settings.PLATFORM_FEE_BASIS_POINTS,
+            "fee_fixed": settings.PLATFORM_FEE_FIXED,
+            "subscription_fee_percent": settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS,
         }
 
     async def test_no_account_is_silent_noop(
@@ -623,9 +624,9 @@ class TestHandleBenefitGrantEvent:
         set_platform_fee_mock.assert_awaited_once()
         assert set_platform_fee_mock.await_args is not None
         assert set_platform_fee_mock.await_args.kwargs == {
-            "fee_percent": None,
-            "fee_fixed": None,
-            "subscription_fee_percent": None,
+            "fee_percent": settings.PLATFORM_FEE_BASIS_POINTS,
+            "fee_fixed": settings.PLATFORM_FEE_FIXED,
+            "subscription_fee_percent": settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS,
         }
 
     async def test_revoked_with_replacement_grant_applies_replacement(

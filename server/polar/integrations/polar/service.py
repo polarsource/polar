@@ -567,7 +567,11 @@ class PolarSelfService:
             return
 
         if grant is None:
-            fee_percent, fee_fixed, subscription_fee_percent = None, None, None
+            fee_percent, fee_fixed, subscription_fee_percent = (
+                settings.PLATFORM_FEE_BASIS_POINTS,
+                settings.PLATFORM_FEE_FIXED,
+                settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS,
+            )
         else:
             fee_percent, fee_fixed, subscription_fee_percent = (
                 self._extract_transaction_fee(

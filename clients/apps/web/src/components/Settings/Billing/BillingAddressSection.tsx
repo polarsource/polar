@@ -7,6 +7,8 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { LoadingBox } from '../../Shared/LoadingBox'
 import { SectionDescription } from '../Section'
 
+const regionName = new Intl.DisplayNames(['en'], { type: 'region' })
+
 const formatAddress = (
   details: ReturnType<typeof useOrganizationBillingDetails>['data'],
 ): string[] => {
@@ -19,8 +21,10 @@ const formatAddress = (
   if (a.line2) lines.push(a.line2)
   const cityLine = [a.postal_code, a.city].filter(Boolean).join(' ')
   if (cityLine) lines.push(cityLine)
-  const regionLine = [a.state, a.country].filter(Boolean).join(', ')
-  if (regionLine) lines.push(regionLine)
+  const regionLine = [a.state, regionName.of(a.country)]
+    .filter(Boolean)
+    .join(', ')
+  lines.push(regionLine)
   return lines
 }
 
@@ -72,11 +76,7 @@ export const BillingAddressSection = ({
                 {line}
               </Text>
             ))}
-            {taxId && (
-              <Text color="muted" variant="caption">
-                Tax ID: {taxId}
-              </Text>
-            )}
+            {taxId && <Text color="muted">Tax ID: {taxId}</Text>}
           </Box>
         ) : (
           <Box paddingVertical="l" textAlign="center">

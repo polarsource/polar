@@ -82,6 +82,7 @@ class AccountService:
                 admin=admin,
                 _platform_fee_percent=settings.PLATFORM_FEE_BASIS_POINTS,
                 _platform_fee_fixed=settings.PLATFORM_FEE_FIXED,
+                _platform_subscription_fee_percent=settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS,
             )
         )
 

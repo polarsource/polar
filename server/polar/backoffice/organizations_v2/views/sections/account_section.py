@@ -67,7 +67,9 @@ class AccountSection:
                         text("View Payouts →")
 
                 account = self.org.account
-                basis_points, fixed_cents = account.platform_fee
+                basis_points, fixed_cents, subscription_basis_points = (
+                    account.platform_fee
+                )
 
                 with tag.div(classes="space-y-4"):
                     # Top row: ID + currency
@@ -86,7 +88,7 @@ class AccountSection:
 
                     # Fees row
                     with tag.div(classes="pt-4 border-t border-base-300"):
-                        with tag.div(classes="grid grid-cols-2 gap-4"):
+                        with tag.div(classes="grid grid-cols-3 gap-4"):
                             with tag.div():
                                 with tag.div(
                                     classes="text-sm text-base-content/60 mb-1"
@@ -108,6 +110,14 @@ class AccountSection:
                                     text(
                                         f"{basis_points / 100:.2f}% + {_format_cents(fixed_cents)}"
                                     )
+
+                            with tag.div():
+                                with tag.div(
+                                    classes="text-sm text-base-content/60 mb-1"
+                                ):
+                                    text("Subscription Fee Rate")
+                                with tag.div(classes="font-semibold"):
+                                    text(f"{subscription_basis_points / 100:.2f}%")
 
                             # Payout Transaction Delay - span both columns
                             with tag.div(classes="col-span-2"):

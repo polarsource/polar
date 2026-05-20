@@ -42,14 +42,6 @@ def get_stripe_international_fee(amount: int) -> int:
     return round_stripe(amount * 0.015)
 
 
-def get_stripe_subscription_fee(amount: int) -> int:
-    return round_stripe(amount * 0.005)
-
-
-def get_stripe_invoice_fee(amount: int) -> int:
-    return round_stripe(amount * 0.005)
-
-
 def get_stripe_account_fee() -> int:
     """
     Account fees vary per country, as per the data in `country_fees`.
@@ -80,10 +72,4 @@ def get_reverse_stripe_payout_fees(amount: int, country: str) -> tuple[int, int]
     return transfer_fee, payout_fee
 
 
-__all__ = [
-    "get_reverse_stripe_payout_fees",
-    "get_stripe_account_fee",
-    "get_stripe_invoice_fee",
-    "get_stripe_subscription_fee",
-    "round_stripe",
-]
+__all__ = ["get_reverse_stripe_payout_fees", "get_stripe_account_fee", "round_stripe"]

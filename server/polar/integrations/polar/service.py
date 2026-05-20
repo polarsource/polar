@@ -192,6 +192,7 @@ class PolarSelfService:
             if account is not None and account.platform_fee == (
                 settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,
                 settings.PLATFORM_FEE_FIXED_EARLY_ACCESS,
+                settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS_EARLY_ACCESS,
             ):
                 return OrganizationPlan.early_member(
                     fee_percent=settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,

@@ -142,7 +142,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               name={customer.email ?? customer.name ?? '—'}
             />
             <div className="fw-medium overflow-hidden text-ellipsis">
-              {customer.email ?? customer.name ?? '—'}
+              {customer.name ?? customer.email ?? '—'}
             </div>
           </div>
         )

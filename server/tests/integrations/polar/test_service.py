@@ -107,6 +107,7 @@ def _make_fee_grant(
     benefit_id: str = _BENEFIT_ID,
     fee_percent: str = "380",
     fee_fixed: str = "35",
+    subscription_fee_percent: str = "0",
 ) -> BenefitGrant:
     return _make_grant(
         benefit_id=benefit_id,
@@ -114,6 +115,7 @@ def _make_fee_grant(
             "type": "transaction_fee",
             "fee_percent": fee_percent,
             "fee_fixed": fee_fixed,
+            "subscription_fee_percent": subscription_fee_percent,
         },
     )
 
@@ -343,18 +345,21 @@ class TestResolveOrganizationId:
 class TestExtractTransactionFee:
     def test_valid(self) -> None:
         assert polar_self._extract_transaction_fee(
-            {"fee_percent": "380", "fee_fixed": "35"}, _BENEFIT_ID
-        ) == (380, 35)
+            {"fee_percent": "380", "fee_fixed": "35", "subscription_fee_percent": "0"},
+            _BENEFIT_ID,
+        ) == (380, 35, 0)
 
     def test_native_int_values(self) -> None:
         assert polar_self._extract_transaction_fee(
-            {"fee_percent": 380, "fee_fixed": 35}, _BENEFIT_ID
-        ) == (380, 35)
+            {"fee_percent": 380, "fee_fixed": 35, "subscription_fee_percent": 0},
+            _BENEFIT_ID,
+        ) == (380, 35, 0)
 
     def test_whole_float_values(self) -> None:
         assert polar_self._extract_transaction_fee(
-            {"fee_percent": 380.0, "fee_fixed": 35.0}, _BENEFIT_ID
-        ) == (380, 35)
+            {"fee_percent": 380.0, "fee_fixed": 35.0, "subscription_fee_percent": 0.0},
+            _BENEFIT_ID,
+        ) == (380, 35, 0)
 
     @pytest.mark.parametrize(
         "metadata",
@@ -484,6 +489,7 @@ class TestApplyTransactionFee:
         assert set_platform_fee_mock.await_args.kwargs == {
             "fee_percent": 380,
             "fee_fixed": 35,
+            "subscription_fee_percent": 0,
         }
 
     async def test_no_grant_resets_to_defaults(
@@ -499,6 +505,7 @@ class TestApplyTransactionFee:
         assert set_platform_fee_mock.await_args.kwargs == {
             "fee_percent": None,
             "fee_fixed": None,
+            "subscription_fee_percent": None,
         }
 
     async def test_no_account_is_silent_noop(
@@ -593,6 +600,7 @@ class TestHandleBenefitGrantEvent:
         assert set_platform_fee_mock.await_args.kwargs == {
             "fee_percent": 380,
             "fee_fixed": 35,
+            "subscription_fee_percent": 0,
         }
 
     async def test_revoked_with_no_remaining_grant_resets_fees(
@@ -617,6 +625,7 @@ class TestHandleBenefitGrantEvent:
         assert set_platform_fee_mock.await_args.kwargs == {
             "fee_percent": None,
             "fee_fixed": None,
+            "subscription_fee_percent": None,
         }
 
     async def test_revoked_with_replacement_grant_applies_replacement(
@@ -645,6 +654,7 @@ class TestHandleBenefitGrantEvent:
         assert set_platform_fee_mock.await_args.kwargs == {
             "fee_percent": 340,
             "fee_fixed": 30,
+            "subscription_fee_percent": 0,
         }
 
     async def test_unknown_metadata_type_is_noop(

@@ -3,6 +3,7 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import Link from 'next/link'
 import { ResourceLayout, ResourceSection } from '../resources/ResourceLayout'
 
 export const PolarVsPaddlePage = () => {
@@ -131,16 +132,17 @@ export const PolarVsPaddlePage = () => {
           <div className="dark:border-polar-700 flex flex-col gap-4 border border-gray-200 p-6">
             <div className="flex flex-col gap-2">
               <h3 className="text-lg font-medium">Polar</h3>
-              <div className="text-4xl">4% + 40¢</div>
+              <div className="text-4xl">5% + 50¢</div>
               <p className="dark:text-polar-300 text-sm text-gray-500">
-                per transaction
+                per transaction (Starter plan — paid plans available with lower
+                rates)
               </p>
             </div>
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
                 <span className="dark:text-polar-300 text-sm text-gray-600">
-                  20% cheaper than Paddle
+                  Lower rates on paid plans (Pro, Growth, Scale)
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
@@ -189,8 +191,12 @@ export const PolarVsPaddlePage = () => {
           </div>
         </div>
         <p className="dark:text-polar-300 text-sm text-gray-500">
-          On $100,000 in monthly revenue, Polar saves you ~$1,000/month compared
-          to Paddle ($4,000 vs $5,000 in fees).
+          On paid plans, Polar&apos;s lower variable rates can save you
+          significantly compared to Paddle as your revenue grows. See our{' '}
+          <Link href="/resources/pricing" className="underline">
+            pricing guide
+          </Link>{' '}
+          for a full breakdown.
         </p>
       </ResourceSection>
 
@@ -300,9 +306,10 @@ export const PolarVsPaddlePage = () => {
         </div>
         <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-3">
           <li>
-            <h4 className="font-medium">20% cheaper</h4>
+            <h4 className="font-medium">Lower fees on paid plans</h4>
             <p className="dark:text-polar-300 text-gray-500">
-              Same MoR benefits, lower fees (4% vs 5%).
+              Same MoR benefits with lower variable rates available through Pro,
+              Growth, and Scale plans.
             </p>
           </li>
           <li>

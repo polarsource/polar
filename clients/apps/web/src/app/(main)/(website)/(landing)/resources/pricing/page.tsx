@@ -3,7 +3,7 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Pricing',
-  description: 'The cheapest MoR on the market',
+  description: 'Transparent pricing for every stage of growth',
   keywords:
     'pricing, price, usage billing, polar, pricing, pricing for polar, pricing for polar, pricing for polar',
   openGraph: {

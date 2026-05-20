@@ -18,14 +18,14 @@ export type OrganizationPaymentMethodAddResult =
   | schemas['OrganizationPaymentMethodAddSucceeded']
   | schemas['OrganizationPaymentMethodAddRequiresAction']
 
-export const useOrganizationOrders = (organizationId: string) =>
+export const useOrganizationOrders = (organizationId: string | undefined) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'orders'],
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/orders', {
           params: {
-            path: { id: organizationId },
+            path: { id: organizationId ?? '' },
             query: { page: 1, limit: 50 },
           },
         }),
@@ -46,26 +46,28 @@ export const useGetOrganizationOrderInvoice = (organizationId: string) =>
       ),
   })
 
-export const useOrganizationPlans = (organizationId: string) =>
+export const useOrganizationPlans = (organizationId: string | undefined) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'plans'],
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/plans', {
-          params: { path: { id: organizationId } },
+          params: { path: { id: organizationId ?? '' } },
         }),
       ),
     retry: defaultRetry,
     enabled: !!organizationId,
   })
 
-export const useOrganizationSubscription = (organizationId: string) =>
+export const useOrganizationSubscription = (
+  organizationId: string | undefined,
+) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'subscription'],
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/subscription', {
-          params: { path: { id: organizationId } },
+          params: { path: { id: organizationId ?? '' } },
         }),
       ),
     retry: defaultRetry,
@@ -110,13 +112,15 @@ export const useCancelSubscription = (organizationId: string) =>
     },
   })
 
-export const useOrganizationPaymentMethods = (organizationId: string) =>
+export const useOrganizationPaymentMethods = (
+  organizationId: string | undefined,
+) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'payment-methods'],
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/payment-methods', {
-          params: { path: { id: organizationId } },
+          params: { path: { id: organizationId ?? '' } },
         }),
       ),
     retry: defaultRetry,
@@ -202,13 +206,15 @@ export type OrganizationBillingDetails = schemas['OrganizationBillingDetails']
 export type OrganizationBillingDetailsUpdate =
   schemas['OrganizationBillingDetailsUpdate']
 
-export const useOrganizationBillingDetails = (organizationId: string) =>
+export const useOrganizationBillingDetails = (
+  organizationId: string | undefined,
+) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'billing-details'],
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/billing-details', {
-          params: { path: { id: organizationId } },
+          params: { path: { id: organizationId ?? '' } },
         }),
       ),
     retry: defaultRetry,

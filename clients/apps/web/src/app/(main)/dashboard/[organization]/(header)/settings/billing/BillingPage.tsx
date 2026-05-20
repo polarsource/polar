@@ -1,5 +1,6 @@
 'use client'
 
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
@@ -11,6 +12,7 @@ import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaym
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
+import { useHasPermission } from '@/hooks/permissions'
 import {
   useOrganizationOrders,
   useOrganizationPlans,
@@ -35,9 +37,15 @@ export default function BillingPage({
   const theme = useTheme()
   const themePreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
 
-  const subscriptionQuery = useOrganizationSubscription(organization.id)
-  const plansQuery = useOrganizationPlans(organization.id)
-  const ordersQuery = useOrganizationOrders(organization.id)
+  const canManageBilling = useHasPermission(
+    organization.id,
+    'organization:manage',
+  )
+  const gatedOrgId = canManageBilling ? organization.id : undefined
+
+  const subscriptionQuery = useOrganizationSubscription(gatedOrgId)
+  const plansQuery = useOrganizationPlans(gatedOrgId)
+  const ordersQuery = useOrganizationOrders(gatedOrgId)
 
   useEffect(() => {
     if (searchParams.get('checkout_success') !== 'true') return
@@ -61,6 +69,17 @@ export default function BillingPage({
 
   const onChangePlan = () => {
     router.push(`/dashboard/${organization.slug}/settings/billing/change-plan`)
+  }
+
+  if (canManageBilling === false) {
+    return (
+      <DashboardBody
+        wrapperClassName="max-w-(--breakpoint-md)!"
+        title="Billing"
+      >
+        <AccessRestricted message="You don't have permission to manage billing for this organization. Ask an admin if you need access." />
+      </DashboardBody>
+    )
   }
 
   return (

@@ -8,7 +8,6 @@ import {
   useTranslations,
 } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
-import { formatOrdinal } from '@polar-sh/i18n/formatters/ordinal'
 import type { ProductCheckoutPublic } from '../guards'
 import { isLegacyRecurringPrice } from '../utils/product'
 
@@ -60,7 +59,7 @@ const CheckoutTrialHeroPrice = ({
     if (intervalCount && intervalCount > 1) {
       const shortInterval =
         getTranslations(effectiveLocale).intervals.short[interval]
-      return ` / ${formatOrdinal(intervalCount, effectiveLocale)} ${shortInterval}`
+      return ` / ${intervalCount} ${shortInterval}`
     }
     return t(
       INTERVAL_SUFFIX_KEYS[interval as keyof typeof INTERVAL_SUFFIX_KEYS],

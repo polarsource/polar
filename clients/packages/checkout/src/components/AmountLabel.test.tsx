@@ -102,7 +102,7 @@ describe('AmountLabel', () => {
   })
 
   describe('with intervalCount > 1', () => {
-    it('renders ordinal interval count for every 3rd month', () => {
+    it('renders cardinal interval count for every 3 months', () => {
       const { container } = render(
         <AmountLabel
           amount={2999}
@@ -114,11 +114,10 @@ describe('AmountLabel', () => {
         />,
       )
       expect(container.textContent).toContain('$29.99')
-      expect(container.textContent).toContain('3rd')
-      expect(container.textContent).toContain('mo')
+      expect(container.textContent).toContain('/ 3 mo')
     })
 
-    it('renders ordinal interval count for every 2nd year', () => {
+    it('renders cardinal interval count for every 2 years', () => {
       const { container } = render(
         <AmountLabel
           amount={19999}
@@ -130,13 +129,27 @@ describe('AmountLabel', () => {
         />,
       )
       expect(container.textContent).toContain('$199.99')
-      expect(container.textContent).toContain('2nd')
-      expect(container.textContent).toContain('yr')
+      expect(container.textContent).toContain('/ 2 yr')
+    })
+
+    it('renders cardinal interval count in French without ordinal suffix', () => {
+      const { container } = render(
+        <AmountLabel
+          amount={2999}
+          currency="eur"
+          interval="month"
+          intervalCount={3}
+          mode="standard"
+          locale="fr"
+        />,
+      )
+      expect(container.textContent).toContain('/ 3 mois')
+      expect(container.textContent).not.toContain('3e')
     })
   })
 
-  describe('intervalCount = 1 (no ordinal)', () => {
-    it('does not show ordinal for intervalCount of 1', () => {
+  describe('intervalCount = 1 (no count prefix)', () => {
+    it('does not show count prefix for intervalCount of 1', () => {
       const { container } = render(
         <AmountLabel
           amount={999}
@@ -149,7 +162,7 @@ describe('AmountLabel', () => {
       )
       expect(container.textContent).toContain('$9.99')
       expect(container.textContent).toContain('/ mo')
-      expect(container.textContent).not.toContain('1st')
+      expect(container.textContent).not.toContain('1 mo')
     })
   })
 

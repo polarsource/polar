@@ -212,7 +212,7 @@ describe('CheckoutTrialHeroPrice', () => {
         <CheckoutTrialHeroPrice checkout={checkout} locale="en" />,
       )
 
-      expect(container.textContent).toContain('$41.06 / 3rd mo')
+      expect(container.textContent).toContain('$41.06 / 3 mo')
       expect(container.textContent).not.toMatch(/\$41\.06\/month/)
     })
 
@@ -251,7 +251,7 @@ describe('CheckoutTrialHeroPrice', () => {
         <CheckoutTrialHeroPrice checkout={checkout} locale="en" />,
       )
 
-      expect(container.textContent).toContain('$199.99 / 2nd yr')
+      expect(container.textContent).toContain('$199.99 / 2 yr')
     })
   })
 })

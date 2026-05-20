@@ -36,7 +36,13 @@ class OrganizationPlanFee(Schema):
 
 
 class OrganizationPlan(Schema):
-    product_id: str
+    product_id: str | None = Field(
+        default=None,
+        description=(
+            "Polar product ID. Null for the synthesized free plan, which has no "
+            "underlying Polar product."
+        ),
+    )
     name: str
     description: str | None = None
     recurring_interval: str | None = None
@@ -45,6 +51,38 @@ class OrganizationPlan(Schema):
     highlight: bool = False
     custom: bool = False
     features: list[str] = Field(default_factory=list)
+
+    @classmethod
+    def free(
+        cls, *, fee_percent: int, fee_fixed: int, currency: str = "usd"
+    ) -> "OrganizationPlan":
+        return cls(
+            product_id=None,
+            name="Free",
+            description="Free to start and validate ideas",
+            recurring_interval=None,
+            price=OrganizationPlanPrice(amount=0, currency=currency),
+            transaction_fee=OrganizationPlanFee(percent=fee_percent, fixed=fee_fixed),
+            highlight=False,
+            custom=False,
+            features=["All features to sell", "Standard Support"],
+        )
+
+    @classmethod
+    def early_member(
+        cls, *, fee_percent: int, fee_fixed: int, currency: str = "usd"
+    ) -> "OrganizationPlan":
+        return cls(
+            product_id=None,
+            name="Early Member",
+            description="For our founding community of early members.",
+            recurring_interval=None,
+            price=OrganizationPlanPrice(amount=0, currency=currency),
+            transaction_fee=OrganizationPlanFee(percent=fee_percent, fixed=fee_fixed),
+            highlight=False,
+            custom=False,
+            features=["All features to sell", "Standard Support"],
+        )
 
     @classmethod
     def from_sdk(cls, product: "Product") -> "OrganizationPlan":
@@ -103,21 +141,48 @@ class OrganizationSubscriptionPendingChange(Schema):
 
 
 class OrganizationSubscription(Schema):
-    subscription_id: str
+    subscription_id: str | None = Field(
+        default=None,
+        description=(
+            "Polar subscription ID. Null when the organization has no active "
+            "subscription and is on the free plan."
+        ),
+    )
     status: str
-    product_id: str
+    product_id: str | None = None
     plan: OrganizationPlan
     amount: int
     currency: str
-    recurring_interval: str
-    recurring_interval_count: int
-    current_period_start: datetime
-    current_period_end: datetime
-    cancel_at_period_end: bool
+    recurring_interval: str | None = None
+    recurring_interval_count: int | None = None
+    current_period_start: datetime | None = None
+    current_period_end: datetime | None = None
+    cancel_at_period_end: bool = False
     canceled_at: datetime | None = None
     started_at: datetime | None = None
     ends_at: datetime | None = None
     pending_change: OrganizationSubscriptionPendingChange | None = None
+
+    @classmethod
+    def free(cls, *, plan: OrganizationPlan) -> "OrganizationSubscription":
+        currency = plan.price.currency if plan.price is not None else "usd"
+        return cls(
+            subscription_id=None,
+            status="active",
+            product_id=None,
+            plan=plan,
+            amount=0,
+            currency=currency,
+            recurring_interval=None,
+            recurring_interval_count=None,
+            current_period_start=None,
+            current_period_end=None,
+            cancel_at_period_end=False,
+            canceled_at=None,
+            started_at=None,
+            ends_at=None,
+            pending_change=None,
+        )
 
     @classmethod
     def from_sdk(cls, subscription: "Subscription") -> "OrganizationSubscription":

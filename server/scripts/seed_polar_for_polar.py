@@ -32,6 +32,8 @@ from polar_sdk.models import (
     BenefitFeatureFlagCreate,
     BenefitFeatureFlagCreateProperties,
     BenefitFeatureFlagUpdate,
+    OrganizationSubscriptionSettings,
+    OrganizationUpdate,
     Product,
     ProductBenefitsUpdate,
     ProductCreateRecurring,
@@ -39,6 +41,7 @@ from polar_sdk.models import (
     ProductPriceFreeCreate,
     ProductUpdate,
     ProductVisibility,
+    PublicSubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
 )
 
@@ -131,48 +134,42 @@ BENEFITS: list[dict[str, object]] = [
 
 PRODUCTS: list[dict[str, object]] = [
     {
-        "name": "Starter",
-        "price_amount": None,
-        "metadata": {
-            "custom": False,
-            "order": 1,
-            "features": "All features to sell, Standard support",
-        },
-        "benefits": ["Transaction Fee (Tier 1)", "Support (Tier 1)"],
-    },
-    {
         "name": "Pro",
+        "description": "For entrepreneurs & early teams.",
         "price_amount": 2000,
         "metadata": {
             "custom": False,
             "order": 2,
-            "features": "Prioritized ticket support, Team permissions",
+            "features": "All features on Free, Prioritized Support",
         },
         "benefits": ["Transaction Fee (Tier 2)", "Support (Tier 2)"],
     },
     {
-        "name": "Startup",
+        "name": "Growth",
+        "description": "For scaling startups.",
         "price_amount": 10000,
         "metadata": {
             "custom": False,
             "order": 3,
             "highlight": True,
-            "features": "Prioritized ticket support",
+            "features": "All features on Pro, Prioritized Support",
         },
         "benefits": ["Transaction Fee (Tier 3)", "Support (Tier 3)"],
     },
     {
-        "name": "Growth",
+        "name": "Scale",
+        "description": "For fast growing businesses.",
         "price_amount": 40000,
         "metadata": {
             "custom": False,
             "order": 4,
-            "features": "Slack & Prioritized Ticket support",
+            "features": "All features on Growth, P1 Support",
         },
         "benefits": ["Transaction Fee (Tier 4)", "Support (Tier 4)"],
     },
     {
         "name": "Early Adopter",
+        "description": None,
         "price_amount": None,
         "metadata": {"custom": False},
         "visibility": ProductVisibility.PRIVATE,
@@ -285,11 +282,13 @@ async def _seed_products(
 
     for product in PRODUCTS:
         name = product["name"]
+        desired_description = product.get("description")
         desired_metadata = product["metadata"]
         price_amount = product["price_amount"]
         benefit_descriptions = product["benefits"]
         desired_visibility = product.get("visibility", ProductVisibility.PUBLIC)
         assert isinstance(name, str)
+        assert desired_description is None or isinstance(desired_description, str)
         assert isinstance(desired_metadata, dict)
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
@@ -315,6 +314,7 @@ async def _seed_products(
                 price = ProductPriceFixedCreate(price_amount=price_amount)
             request = ProductCreateRecurring(
                 name=name,
+                description=desired_description,
                 recurring_interval=SubscriptionRecurringInterval.MONTH,
                 prices=[price],
                 metadata=desired_metadata,
@@ -336,14 +336,20 @@ async def _seed_products(
 
         current_metadata = dict(current.metadata or {})
         current_visibility = current.visibility
+        current_description = current.description
         metadata_changed = current_metadata != desired_metadata
         visibility_changed = current_visibility != desired_visibility
-        if metadata_changed or visibility_changed:
+        description_changed = (current_description or None) != (
+            desired_description or None
+        )
+        if metadata_changed or visibility_changed or description_changed:
             product_update = ProductUpdate()
             if metadata_changed:
                 product_update.metadata = desired_metadata
             if visibility_changed:
                 product_update.visibility = desired_visibility
+            if description_changed:
+                product_update.description = desired_description
             await polar.products.update_async(
                 id=current.id,
                 product_update=product_update,
@@ -351,10 +357,13 @@ async def _seed_products(
             typer.echo(
                 f"  update {name!r} -> {current.id} "
                 f"(metadata was {current_metadata}, now {desired_metadata}; "
-                f"visibility was {current_visibility}, now {desired_visibility})"
+                f"visibility was {current_visibility}, now {desired_visibility}; "
+                f"description was {current_description!r}, now {desired_description!r})"
             )
         else:
-            typer.echo(f"  skip   {name!r} (metadata and visibility match)")
+            typer.echo(
+                f"  skip   {name!r} (metadata, visibility and description match)"
+            )
 
         current_benefit_ids = sorted(b.id for b in current.benefits)
         if current_benefit_ids != sorted(desired_benefit_ids):
@@ -370,6 +379,34 @@ async def _seed_products(
             )
 
 
+async def _seed_subscription_settings(
+    polar: Polar, organization_id: str | None
+) -> None:
+    if organization_id is None:
+        typer.echo("Skipping subscription settings (no organization id).")
+        return
+    org = await polar.organizations.get_async(id=organization_id)
+    current = org.subscription_settings
+    if current.proration_behavior == PublicSubscriptionProrationBehavior.INVOICE:
+        typer.echo("  skip   subscription_settings (proration already 'invoice')")
+        return
+    desired = OrganizationSubscriptionSettings(
+        allow_multiple_subscriptions=current.allow_multiple_subscriptions,
+        proration_behavior=PublicSubscriptionProrationBehavior.INVOICE,
+        benefit_revocation_grace_period=current.benefit_revocation_grace_period,
+        prevent_trial_abuse=current.prevent_trial_abuse,
+        allow_customer_updates=current.allow_customer_updates,
+    )
+    await polar.organizations.update_async(
+        id=organization_id,
+        organization_update=OrganizationUpdate(subscription_settings=desired),
+    )
+    typer.echo(
+        f"  update subscription_settings (proration: "
+        f"{current.proration_behavior.value} -> invoice)"
+    )
+
+
 async def _seed(
     env: str,
     token: str,
@@ -383,6 +420,7 @@ async def _seed(
         await _seed_products(polar, organization_id, benefits_by_description)
     else:
         typer.echo("Skipping products (pass --products to seed).")
+    await _seed_subscription_settings(polar, organization_id)
 
 
 @cli.callback()

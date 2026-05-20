@@ -55,7 +55,6 @@ class TestCreateCustomer:
             owner_email="owner@example.com",
             owner_name="Owner",
         )
-        client.create_free_subscription.assert_not_called()
         plain_service_mock.upsert_tenant.assert_awaited_once_with(
             external_id="org-123", name="Acme Inc"
         )

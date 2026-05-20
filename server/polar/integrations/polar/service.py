@@ -5,10 +5,12 @@ from typing import TYPE_CHECKING, Any
 import logfire
 from polar_sdk.models import (
     CustomerPortalCustomerUpdate,
+    LegacyRecurringProductPriceFixed,
+    ProductPriceFixed,
+    SubscriptionProrationBehavior,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
-    WebhookSubscriptionRevokedPayload,
 )
 
 from polar.account.repository import AccountRepository
@@ -34,6 +36,7 @@ from .schemas import (
     OrganizationBillingDetailsUpdate,
     OrganizationPaymentMethodConfirm,
     OrganizationPaymentMethodCreate,
+    OrganizationPlan,
 )
 
 if TYPE_CHECKING:
@@ -168,6 +171,37 @@ class PolarSelfService:
             key=lambda p: (p.metadata or {}).get("order", float("inf")),
         )
 
+    async def resolve_free_plan(
+        self,
+        session: AsyncReadSession,
+        organization_id: uuid.UUID,
+        *,
+        subscription: "Subscription | None",
+    ) -> OrganizationPlan:
+        """Return the synthesized free plan for an organization.
+
+        Orgs on the free tier whose Account fees match the early-access constants
+        get the "Early Member" variant; everyone else gets the standard "Free"
+        plan with platform defaults. Subscribed orgs always see standard Free,
+        since their Account fees reflect the active paid plan's grant.
+        """
+        if subscription is None:
+            account = await AccountRepository.from_session(session).get_by_organization(
+                organization_id
+            )
+            if account is not None and account.platform_fee == (
+                settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,
+                settings.PLATFORM_FEE_FIXED_EARLY_ACCESS,
+            ):
+                return OrganizationPlan.early_member(
+                    fee_percent=settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,
+                    fee_fixed=settings.PLATFORM_FEE_FIXED_EARLY_ACCESS,
+                )
+        return OrganizationPlan.free(
+            fee_percent=settings.PLATFORM_FEE_BASIS_POINTS,
+            fee_fixed=settings.PLATFORM_FEE_FIXED,
+        )
+
     async def get_subscription(
         self, organization_id: uuid.UUID
     ) -> "Subscription | None":
@@ -213,30 +247,42 @@ class PolarSelfService:
     ) -> "Subscription":
         if not self.is_configured:
             raise PolarSelfNotConfigured()
-        await self._ensure_plan(product_id)
+        target_product = await self._ensure_plan(product_id)
         await self._require_approval(session, organization_id=organization_id)
-        subscription = await get_client().get_active_subscription(
+        client = get_client()
+        subscription = await client.get_active_subscription(
             external_customer_id=str(organization_id)
         )
         if subscription is None:
             raise PolarSelfNoActiveSubscription(organization_id)
-        return await get_client().update_subscription_product(
+        if subscription.cancel_at_period_end:
+            subscription = await client.uncancel_subscription(
+                subscription_id=subscription.id
+            )
+        target_amount = self._product_fixed_price_amount(target_product)
+        proration = (
+            SubscriptionProrationBehavior.INVOICE
+            if target_amount > subscription.amount
+            else SubscriptionProrationBehavior.NEXT_PERIOD
+        )
+        return await client.update_subscription_product(
             subscription_id=subscription.id,
             product_id=product_id,
+            proration_behavior=proration,
         )
 
-    async def _require_approval(
-        self,
-        session: AsyncReadSession,
-        *,
-        organization_id: uuid.UUID,
-    ) -> None:
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(
-            organization_id, include_blocked=True
+    async def cancel_subscription(
+        self, *, organization_id: uuid.UUID
+    ) -> "Subscription":
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+        client = get_client()
+        subscription = await client.get_active_subscription(
+            external_customer_id=str(organization_id)
         )
-        if organization is None or not organization.is_active():
-            raise PolarSelfNotApproved(organization_id)
+        if subscription is None:
+            raise PolarSelfNoActiveSubscription(organization_id)
+        return await client.cancel_subscription(subscription_id=subscription.id)
 
     async def list_orders(
         self,
@@ -437,32 +483,31 @@ class PolarSelfService:
                 case "support":
                     await self._apply_support(session, organization_id, active_grant)
 
-    async def handle_subscription_revoked_event(
-        self, payload: WebhookSubscriptionRevokedPayload
+    async def _require_approval(
+        self,
+        session: AsyncReadSession,
+        *,
+        organization_id: uuid.UUID,
     ) -> None:
-        subscription = payload.data
-        organization_id = self._resolve_organization_id(subscription.customer)
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            organization_id, include_blocked=True
+        )
+        if organization is None or not organization.is_active():
+            raise PolarSelfNotApproved(organization_id)
 
-        with logfire.span(
-            "polar_self.webhook.subscription_revoked",
-            subscription_id=subscription.id,
-            organization_id=str(organization_id),
-        ):
-            client = get_client()
-            active = await client.get_active_subscription(
-                external_customer_id=str(organization_id)
-            )
-            if active is not None:
-                return
-            await client.create_free_subscription(
-                external_customer_id=str(organization_id),
-                product_id=settings.POLAR_FREE_PRODUCT_ID,
-            )
-
-    async def _ensure_plan(self, product_id: str) -> None:
+    async def _ensure_plan(self, product_id: str) -> "Product":
         plans = await self.list_plans()
-        if not any(plan.id == product_id for plan in plans):
+        plan = next((p for p in plans if p.id == product_id), None)
+        if plan is None:
             raise PolarSelfPlanNotFound(product_id)
+        return plan
+
+    def _product_fixed_price_amount(self, product: "Product") -> int:
+        for price in product.prices:
+            if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
+                return price.price_amount
+        return 0
 
     def _resolve_organization_id(
         self, customer: "Customer | SubscriptionCustomer"

@@ -416,6 +416,8 @@ class Settings(BaseSettings):
     }
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40
+    PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS: int = 400
+    PLATFORM_FEE_FIXED_EARLY_ACCESS: int = 40
 
     ORGANIZATION_BLOCKED_WORDS: list[str] = [
         "porn",

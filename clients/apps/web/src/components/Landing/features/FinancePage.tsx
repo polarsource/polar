@@ -115,12 +115,12 @@ export const FinancePage = () => {
 
       <FeatureRichList
         title="Fees, end to end"
-        description="The platform fee is a flat 4% + 40¢. Card-network and Stripe extras are passed through transparently, never hidden inside the platform fee."
+        description="The platform fee varies by plan (Starter: 5% + 50¢, down to 3.4% + 30¢ on Scale). Card-network and Stripe extras are passed through transparently, never hidden inside the platform fee."
         items={[
           {
             title: 'Platform fee',
             description:
-              "4% + 40¢ on the full transaction amount. Polar covers Stripe's 2.9% + 30¢ from this.",
+              'Varies by plan. Starter is 5% + 50¢; paid plans (Pro, Growth, Scale) offer lower rates. See the pricing guide for details.',
           },
           {
             title: 'International cards',
@@ -130,7 +130,7 @@ export const FinancePage = () => {
           {
             title: 'Subscription payments',
             description:
-              '+0.5% on recurring charges. A pass-through from Stripe.',
+              '+0.5% on recurring charges for Early Member accounts. No subscription surcharge on Starter, Pro, Growth, or Scale.',
           },
           {
             title: 'Refunds',

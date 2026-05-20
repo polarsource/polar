@@ -133,16 +133,16 @@ export const PolarVsLemonSqueezyPage = () => {
           <div className="dark:border-polar-700 flex flex-col gap-4 border border-gray-200 p-6">
             <div className="flex flex-col gap-2">
               <h3 className="text-lg font-medium">Polar</h3>
-              <div className="text-4xl">4% + 40¢</div>
+              <div className="text-4xl">5% + 50¢</div>
               <p className="dark:text-polar-300 text-sm text-gray-500">
-                per transaction
+                per transaction (Starter plan — paid plans available with lower rates)
               </p>
             </div>
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
                 <span className="dark:text-polar-300 text-sm text-gray-600">
-                  20% cheaper than Lemon Squeezy
+                  Lower rates on paid plans (Pro, Growth, Scale)
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
@@ -191,8 +191,9 @@ export const PolarVsLemonSqueezyPage = () => {
           </div>
         </div>
         <p className="dark:text-polar-300 text-sm text-gray-500">
-          At $50,000 monthly revenue, Polar saves you $500/month. At $100,000,
-          you save $1,000/month compared to Lemon Squeezy.
+          On paid plans, Polar's lower variable rates can save you significantly
+          compared to Lemon Squeezy as your revenue grows. See our{' '}
+          <a href="/resources/pricing" className="underline">pricing guide</a> for a full breakdown.
         </p>
       </ResourceSection>
 
@@ -305,9 +306,9 @@ export const PolarVsLemonSqueezyPage = () => {
         </div>
         <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-3">
           <li>
-            <h4 className="font-medium">Better pricing</h4>
+            <h4 className="font-medium">Lower fees as you scale</h4>
             <p className="dark:text-polar-300 text-gray-500">
-              20% cheaper with the same MoR benefits (4% vs 5%).
+              Paid plans (Pro, Growth, Scale) offer lower variable rates with the same MoR benefits.
             </p>
           </li>
           <li>

@@ -201,10 +201,11 @@ export const WhyPolarPage = () => {
       <ResourceSection id="pricing" title="Pricing">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <h3>Cheapest MoR on the market</h3>
+            <h3>Transparent, published pricing</h3>
             <p className="dark:text-polar-300 text-gray-500">
-              Polar is priced 20% cheaper than other MoR alternatives. 4% and
-              40¢ per transaction.
+              Polar posts every rate publicly. Start free on Starter (5% + 50¢),
+              or upgrade to Pro, Growth, or Scale for lower fees and prioritized
+              support. No sales process required.
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -279,7 +280,7 @@ export const WhyPolarPage = () => {
         <FAQItem
           number="01"
           question="Do I still pay Stripe fees if I use Polar?"
-          answer="Polar covers Stripe's 2.9% + 30¢ from our 4% + 40¢. Stripe's additional fees, like +1.5% for international cards, are passed through at cost."
+          answer="Polar's platform fee covers Stripe's processing costs. Stripe's additional fees, like +1.5% for international cards, are passed through at cost. Your platform fee depends on your plan; see the pricing guide for details."
         />
         <FAQItem
           number="02"

@@ -31290,7 +31290,6 @@ export interface components {
       id: string
       /**
        * Url
-       * Format: uri
        * @description The URL where the webhook events will be sent.
        * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
        */

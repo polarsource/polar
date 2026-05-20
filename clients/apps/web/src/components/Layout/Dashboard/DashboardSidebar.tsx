@@ -37,7 +37,6 @@ import {
   AccountNavigation,
   OrganizationNavigation,
 } from './DashboardNavigation'
-import { useBillingSubscription } from '@/components/Settings/Billing/useBillingStore'
 import { useOrganizationSubscription } from '@/hooks/queries'
 
 export const DashboardSidebar = ({

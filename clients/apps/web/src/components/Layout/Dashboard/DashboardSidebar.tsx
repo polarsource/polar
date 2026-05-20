@@ -155,7 +155,7 @@ export const DashboardSidebar = ({
       </SidebarContent>
       <SidebarFooter>
         {isOnFreePlan && (
-          <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-2 rounded-sm border border-gray-100 bg-gray-100 p-4">
+          <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-2 rounded-sm border border-gray-100 bg-white p-4">
             <h3 className="text-sm">Introducing Polar Plans</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
               Get a lower fee with our subscription plans

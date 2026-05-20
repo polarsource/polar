@@ -1542,6 +1542,7 @@ class PlainService:
     async def _get_plain_client(self) -> AsyncIterator[Plain]:
         async with httpx.AsyncClient(
             headers={"Authorization": f"Bearer {settings.PLAIN_TOKEN}"},
+            timeout=httpx.Timeout(10.0, connect=5.0),
             # Set a MockTransport if not enabled
             # Basically, we disable Plain requests.
             transport=(

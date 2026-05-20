@@ -8,6 +8,7 @@ import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { schemas } from '@polar-sh/client'
 import { OrganizationStatusBanner } from './OrganizationStatusBanner'
+import { PricingAnnouncementBanner } from './PricingAnnouncementBanner'
 
 const cellClassName =
   'dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200'
@@ -20,6 +21,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   return (
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-12" title={null}>
       <IOSAppBanner />
+      <PricingAnnouncementBanner />
       <OrganizationStatusBanner organization={organization} />
       <OverviewSection organization={organization} />
 

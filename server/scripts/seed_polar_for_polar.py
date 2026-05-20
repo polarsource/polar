@@ -51,15 +51,6 @@ LOCAL_SERVER_URL = "http://127.0.0.1:8000"
 
 BENEFITS: list[dict[str, object]] = [
     {
-        "description": "Transaction Fee (Tier 1)",
-        "metadata": {
-            "type": "transaction_fee",
-            "fee_percent": 500,
-            "fee_fixed": 50,
-            "subscription_fee_percent": 0,
-        },
-    },
-    {
         "description": "Transaction Fee (Tier 2)",
         "metadata": {
             "type": "transaction_fee",
@@ -84,25 +75,6 @@ BENEFITS: list[dict[str, object]] = [
             "fee_percent": 340,
             "fee_fixed": 30,
             "subscription_fee_percent": 0,
-        },
-    },
-    {
-        "description": "Transaction Fee (Grandfather)",
-        "metadata": {
-            "type": "transaction_fee",
-            "fee_percent": 400,
-            "fee_fixed": 40,
-            "subscription_fee_percent": 50,
-        },
-    },
-    {
-        "description": "Support (Tier 1)",
-        "metadata": {
-            "type": "support",
-            "level": 1,
-            "slack": False,
-            "prioritized": True,
-            "plain_tier_external_id": "starter",
         },
     },
     {
@@ -168,17 +140,9 @@ PRODUCTS: list[dict[str, object]] = [
         "metadata": {
             "custom": False,
             "order": 4,
-            "features": "All features on Growth, P1 Support",
+            "features": "All features on Growth, Slack Channel, P1 Support",
         },
         "benefits": ["Transaction Fee (Tier 4)", "Support (Tier 4)"],
-    },
-    {
-        "name": "Early Adopter",
-        "description": None,
-        "price_amount": None,
-        "metadata": {"custom": False},
-        "visibility": ProductVisibility.PRIVATE,
-        "benefits": ["Transaction Fee (Grandfather)", "Support (Tier 1)"],
     },
 ]
 
@@ -236,11 +200,13 @@ async def _existing_products(
 
 
 async def _seed_benefits(
-    polar: Polar, organization_id: str | None
+    polar: Polar, organization_id: str | None, dry_run: bool
 ) -> dict[str, Benefit]:
     typer.echo("Listing existing benefits...")
     existing = await _existing_benefits(polar, organization_id)
     typer.echo(f"Found {len(existing)} existing benefits.")
+
+    prefix = "[dry-run] " if dry_run else ""
 
     for benefit in BENEFITS:
         description = benefit["description"]
@@ -250,6 +216,9 @@ async def _seed_benefits(
 
         current = existing.get(description)
         if current is None:
+            if dry_run:
+                typer.echo(f"  {prefix}create {description!r}")
+                continue
             request = BenefitFeatureFlagCreate(
                 description=description,
                 properties=BenefitFeatureFlagCreateProperties(),
@@ -266,6 +235,13 @@ async def _seed_benefits(
             typer.echo(f"  skip   {description!r} (metadata matches)")
             continue
 
+        if dry_run:
+            typer.echo(
+                f"  {prefix}update {description!r} -> {current.id} "
+                f"(was {current_metadata}, now {desired_metadata})"
+            )
+            continue
+
         update = BenefitFeatureFlagUpdate(metadata=desired_metadata)
         await polar.benefits.update_async(id=current.id, request_body=update)
         typer.echo(
@@ -280,10 +256,13 @@ async def _seed_products(
     polar: Polar,
     organization_id: str | None,
     benefits_by_description: dict[str, Benefit],
+    dry_run: bool,
 ) -> None:
     typer.echo("Listing existing products...")
     existing = await _existing_products(polar, organization_id)
     typer.echo(f"Found {len(existing)} existing products.")
+
+    prefix = "[dry-run] " if dry_run else ""
 
     for product in PRODUCTS:
         name = product["name"]
@@ -304,6 +283,9 @@ async def _seed_products(
             assert isinstance(description, str)
             benefit = benefits_by_description.get(description)
             if benefit is None:
+                if dry_run:
+                    desired_benefit_ids.append(f"<missing:{description}>")
+                    continue
                 raise typer.BadParameter(
                     f"Product {name!r} references missing benefit "
                     f"{description!r}; seed benefits first."
@@ -312,6 +294,12 @@ async def _seed_products(
 
         current = existing.get(name)
         if current is None:
+            if dry_run:
+                typer.echo(
+                    f"  {prefix}create {name!r} "
+                    f"with {len(desired_benefit_ids)} benefit(s)"
+                )
+                continue
             price: ProductPriceFixedCreate | ProductPriceFreeCreate
             if price_amount is None:
                 price = ProductPriceFreeCreate()
@@ -348,23 +336,31 @@ async def _seed_products(
             desired_description or None
         )
         if metadata_changed or visibility_changed or description_changed:
-            product_update = ProductUpdate()
-            if metadata_changed:
-                product_update.metadata = desired_metadata
-            if visibility_changed:
-                product_update.visibility = desired_visibility
-            if description_changed:
-                product_update.description = desired_description
-            await polar.products.update_async(
-                id=current.id,
-                product_update=product_update,
-            )
-            typer.echo(
-                f"  update {name!r} -> {current.id} "
-                f"(metadata was {current_metadata}, now {desired_metadata}; "
-                f"visibility was {current_visibility}, now {desired_visibility}; "
-                f"description was {current_description!r}, now {desired_description!r})"
-            )
+            if dry_run:
+                typer.echo(
+                    f"  {prefix}update {name!r} -> {current.id} "
+                    f"(metadata was {current_metadata}, now {desired_metadata}; "
+                    f"visibility was {current_visibility}, now {desired_visibility}; "
+                    f"description was {current_description!r}, now {desired_description!r})"
+                )
+            else:
+                product_update = ProductUpdate()
+                if metadata_changed:
+                    product_update.metadata = desired_metadata
+                if visibility_changed:
+                    product_update.visibility = desired_visibility
+                if description_changed:
+                    product_update.description = desired_description
+                await polar.products.update_async(
+                    id=current.id,
+                    product_update=product_update,
+                )
+                typer.echo(
+                    f"  update {name!r} -> {current.id} "
+                    f"(metadata was {current_metadata}, now {desired_metadata}; "
+                    f"visibility was {current_visibility}, now {desired_visibility}; "
+                    f"description was {current_description!r}, now {desired_description!r})"
+                )
         else:
             typer.echo(
                 f"  skip   {name!r} (metadata, visibility and description match)"
@@ -372,20 +368,26 @@ async def _seed_products(
 
         current_benefit_ids = sorted(b.id for b in current.benefits)
         if current_benefit_ids != sorted(desired_benefit_ids):
-            await polar.products.update_benefits_async(
-                id=current.id,
-                product_benefits_update=ProductBenefitsUpdate(
-                    benefits=desired_benefit_ids
-                ),
-            )
-            typer.echo(
-                f"  update {name!r} -> {current.id} benefits "
-                f"(was {current_benefit_ids}, now {sorted(desired_benefit_ids)})"
-            )
+            if dry_run:
+                typer.echo(
+                    f"  {prefix}update {name!r} -> {current.id} benefits "
+                    f"(was {current_benefit_ids}, now {sorted(desired_benefit_ids)})"
+                )
+            else:
+                await polar.products.update_benefits_async(
+                    id=current.id,
+                    product_benefits_update=ProductBenefitsUpdate(
+                        benefits=desired_benefit_ids
+                    ),
+                )
+                typer.echo(
+                    f"  update {name!r} -> {current.id} benefits "
+                    f"(was {current_benefit_ids}, now {sorted(desired_benefit_ids)})"
+                )
 
 
 async def _seed_subscription_settings(
-    polar: Polar, organization_id: str | None
+    polar: Polar, organization_id: str | None, dry_run: bool
 ) -> None:
     if organization_id is None:
         typer.echo("Skipping subscription settings (no organization id).")
@@ -394,6 +396,13 @@ async def _seed_subscription_settings(
     current = org.subscription_settings
     if current.proration_behavior == PublicSubscriptionProrationBehavior.INVOICE:
         typer.echo("  skip   subscription_settings (proration already 'invoice')")
+        return
+    prefix = "[dry-run] " if dry_run else ""
+    if dry_run:
+        typer.echo(
+            f"  {prefix}update subscription_settings (proration: "
+            f"{current.proration_behavior.value} -> invoice)"
+        )
         return
     desired = OrganizationSubscriptionSettings(
         allow_multiple_subscriptions=current.allow_multiple_subscriptions,
@@ -417,15 +426,17 @@ async def _seed(
     token: str,
     organization_id: str | None,
     seed_products: bool,
+    dry_run: bool,
 ) -> None:
     polar = _make_client(env, token)
-    typer.echo(f"Seeding on {env}...")
-    benefits_by_description = await _seed_benefits(polar, organization_id)
+    mode = " (dry-run, no changes will be made)" if dry_run else ""
+    typer.echo(f"Seeding on {env}{mode}...")
+    benefits_by_description = await _seed_benefits(polar, organization_id, dry_run)
     if seed_products:
-        await _seed_products(polar, organization_id, benefits_by_description)
+        await _seed_products(polar, organization_id, benefits_by_description, dry_run)
     else:
         typer.echo("Skipping products (pass --products to seed).")
-    await _seed_subscription_settings(polar, organization_id)
+    await _seed_subscription_settings(polar, organization_id, dry_run)
 
 
 @cli.callback()
@@ -456,13 +467,20 @@ def main(
             help="Also seed tier products and bind them to benefits.",
         ),
     ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            help="List the changes that would be made without executing them.",
+        ),
+    ] = False,
 ) -> None:
     access_token = token or os.environ.get("POLAR_ACCESS_TOKEN")
     if not access_token:
         raise typer.BadParameter(
             "Missing access token: pass --token or set POLAR_ACCESS_TOKEN."
         )
-    asyncio.run(_seed(env, access_token, organization_id, seed_products))
+    asyncio.run(_seed(env, access_token, organization_id, seed_products, dry_run))
 
 
 if __name__ == "__main__":

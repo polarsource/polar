@@ -75,3 +75,9 @@ class PolarSelfNotApproved(PolarError):
             status_code=403,
         )
         self.organization_id = organization_id
+
+
+class PolarSelfInvoiceNotReady(PolarSelfWebhookError):
+    def __init__(self, order_id: str) -> None:
+        super().__init__(f"Invoice for order {order_id!r} not yet generated.")
+        self.order_id = order_id

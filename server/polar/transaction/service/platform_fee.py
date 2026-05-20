@@ -171,17 +171,20 @@ class PlatformFeeTransactionService(BaseTransactionService):
             fees_balances.append(fee_balances)
 
         # International fee
-        if await self._is_international_payment_transaction(payment_transaction):
-            international_fee_amount = get_stripe_international_fee(total_amount)
-            fee_balances = await balance_transaction_service.create_reversal_balance(
-                session,
-                balance_transactions=balance_transactions,
-                amount=international_fee_amount,
-                platform_fee_type=PlatformFeeType.international_payment,
-                outgoing_incurred_by=incoming,
-                incoming_incurred_by=outgoing,
-            )
-            fees_balances.append(fee_balances)
+        if account.processor_fees_applicable:
+            if await self._is_international_payment_transaction(payment_transaction):
+                international_fee_amount = get_stripe_international_fee(total_amount)
+                fee_balances = (
+                    await balance_transaction_service.create_reversal_balance(
+                        session,
+                        balance_transactions=balance_transactions,
+                        amount=international_fee_amount,
+                        platform_fee_type=PlatformFeeType.international_payment,
+                        outgoing_incurred_by=incoming,
+                        incoming_incurred_by=outgoing,
+                    )
+                )
+                fees_balances.append(fee_balances)
 
         # Subscription fee
         if incoming.order_id is not None:

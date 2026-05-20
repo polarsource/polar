@@ -27,6 +27,7 @@ import {
   DisputeStatusDisplayColor,
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
+import { formatCountry } from '@/utils/formatters'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
@@ -266,27 +267,57 @@ const ClientPage: React.FC<ClientPageProps> = ({
               </>
             )}
 
-            {order.billing_address ? (
+            {order.billing_address ||
+            order.billing_name ||
+            order.customer.tax_id ? (
               <>
                 <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
-                <DetailRow
-                  label="Country"
-                  value={order.billing_address?.country}
-                />
-                <DetailRow
-                  label="Address"
-                  value={order.billing_address?.line1}
-                />
-                <DetailRow
-                  label="Address 2"
-                  value={order.billing_address?.line2}
-                />
-                <DetailRow
-                  label="Postal Code"
-                  value={order.billing_address?.postal_code}
-                />
-                <DetailRow label="City" value={order.billing_address?.city} />
-                <DetailRow label="State" value={order.billing_address?.state} />
+                {order.billing_name ? (
+                  <DetailRow label="Billing Name" value={order.billing_name} />
+                ) : null}
+                {order.customer.tax_id ? (
+                  <DetailRow
+                    label="Tax ID"
+                    value={
+                      <span className="flex flex-row items-center gap-1.5">
+                        <span>{order.customer.tax_id[0]}</span>
+                        <span className="font-mono text-xs opacity-70">
+                          {order.customer.tax_id[1]
+                            .toLocaleUpperCase()
+                            .replace('_', ' ')}
+                        </span>
+                      </span>
+                    }
+                  />
+                ) : null}
+                {order.billing_address ? (
+                  <>
+                    <DetailRow
+                      label="Address"
+                      value={order.billing_address.line1}
+                    />
+                    <DetailRow
+                      label="Address 2"
+                      value={order.billing_address.line2}
+                    />
+                    <DetailRow
+                      label="Postal Code"
+                      value={order.billing_address.postal_code}
+                    />
+                    <DetailRow
+                      label="City"
+                      value={order.billing_address.city}
+                    />
+                    <DetailRow
+                      label="State"
+                      value={order.billing_address.state}
+                    />
+                    <DetailRow
+                      label="Country"
+                      value={formatCountry(order.billing_address.country)}
+                    />
+                  </>
+                ) : null}
               </>
             ) : null}
           </div>

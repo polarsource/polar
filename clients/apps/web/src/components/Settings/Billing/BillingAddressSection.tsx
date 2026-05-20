@@ -1,13 +1,12 @@
 'use client'
 
 import { useOrganizationBillingDetails } from '@/hooks/queries/billing'
+import { formatCountry } from '@/utils/formatters'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { LoadingBox } from '../../Shared/LoadingBox'
 import { SectionDescription } from '../Section'
-
-const regionName = new Intl.DisplayNames(['en'], { type: 'region' })
 
 const formatAddress = (
   details: ReturnType<typeof useOrganizationBillingDetails>['data'],
@@ -21,7 +20,7 @@ const formatAddress = (
   if (a.line2) lines.push(a.line2)
   const cityLine = [a.postal_code, a.city].filter(Boolean).join(' ')
   if (cityLine) lines.push(cityLine)
-  const regionLine = [a.state, regionName.of(a.country)]
+  const regionLine = [a.state, formatCountry(a.country)]
     .filter(Boolean)
     .join(', ')
   lines.push(regionLine)

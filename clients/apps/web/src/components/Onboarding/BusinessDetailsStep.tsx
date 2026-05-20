@@ -2,6 +2,7 @@
 
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { api } from '@/utils/client'
+import { formatCountry } from '@/utils/formatters'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -129,7 +130,7 @@ function CurrencyAndCountryFields() {
 
   const countryDisplayName = useMemo(() => {
     if (!country) return ''
-    return new Intl.DisplayNames([], { type: 'region' }).of(country) ?? country
+    return formatCountry(country)
   }, [country])
 
   return (

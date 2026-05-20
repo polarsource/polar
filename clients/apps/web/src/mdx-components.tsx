@@ -1,6 +1,7 @@
 import { BlogHero } from '@/components/Blog/BlogHero'
 import { StaticImage } from '@/components/Image/StaticImage'
 import ProseWrapper from '@/components/MDX/ProseWrapper'
+import { Table } from '@polar-sh/ui/components/ui/table'
 import type { MDXComponents } from 'mdx/types'
 import { twMerge } from 'tailwind-merge'
 
@@ -48,6 +49,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         </div>
       )
     },
+    table: (props) => <Table {...props} />,
     img: (props) => {
       /* If the `src` is a string, it's an absolute path we render as an `img` */
       if (typeof props.src === 'string') {

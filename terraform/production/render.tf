@@ -240,21 +240,71 @@ module "production" {
   }
 
   backend_config = {
-    base_url                      = "https://api.polar.sh"
-    backoffice_host               = "backoffice.polar.sh"
-    checkout_link_host            = "buy.polar.sh"
-    user_session_cookie_domain    = "polar.sh"
-    debug                         = "0"
-    email_sender                  = "resend"
-    email_from_name               = "Polar"
-    email_from_domain             = "notifications.polar.sh"
-    frontend_base_url             = "https://polar.sh"
-    checkout_base_url             = "https://buy.polar.sh/{client_secret}"
-    jwks_path                     = "/etc/secrets/jwks.json"
-    log_level                     = "INFO"
-    testing                       = "0"
-    auth_cookie_domain            = "polar.sh"
-    invoices_additional_info      = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    base_url                   = "https://api.polar.sh"
+    backoffice_host            = "backoffice.polar.sh"
+    checkout_link_host         = "buy.polar.sh"
+    user_session_cookie_domain = "polar.sh"
+    debug                      = "0"
+    email_sender               = "resend"
+    email_from_name            = "Polar"
+    email_from_domain          = "notifications.polar.sh"
+    frontend_base_url          = "https://polar.sh"
+    checkout_base_url          = "https://buy.polar.sh/{client_secret}"
+    jwks_path                  = "/etc/secrets/jwks.json"
+    log_level                  = "INFO"
+    testing                    = "0"
+    auth_cookie_domain         = "polar.sh"
+    invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)"
+    invoices_vat_numbers = jsonencode({
+      # EU One Stop Shop (OSS) registration
+      AT = "EU372061545"
+      BE = "EU372061545"
+      BG = "EU372061545"
+      CY = "EU372061545"
+      CZ = "EU372061545"
+      DE = "EU372061545"
+      DK = "EU372061545"
+      EE = "EU372061545"
+      ES = "EU372061545"
+      FI = "EU372061545"
+      FR = "EU372061545"
+      GR = "EU372061545"
+      HR = "EU372061545"
+      HU = "EU372061545"
+      IE = "EU372061545"
+      IT = "EU372061545"
+      LT = "EU372061545"
+      LU = "EU372061545"
+      LV = "EU372061545"
+      MT = "EU372061545"
+      NL = "EU372061545"
+      PL = "EU372061545"
+      PT = "EU372061545"
+      RO = "EU372061545"
+      SE = "EU372061545"
+      SI = "EU372061545"
+      SK = "EU372061545"
+      # United Kingdom
+      GB = "GB458254961"
+      # Vietnam
+      VN = "9000020281"
+      # Chile
+      CL = "59.259.480-3"
+      # New Zealand
+      NZ = "148-410-224"
+      # Norway
+      NO = "VOEC3039846"
+      # Turkey
+      TR = "7300889760"
+      # Switzerland
+      CH = "CHE-401.265.595 MWST"
+      # South Korea
+      KR = "111-80-05229"
+      # Kenya
+      KE = "P052518030C"
+      # Canada (GST/HST)
+      CA = "720474766 RT9999"
+    })
     tax_processors                = "[\"stripe\"]"
     tax_record_processor          = "stripe"
     customer_portal_url_overrides = var.customer_portal_url_overrides

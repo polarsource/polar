@@ -125,7 +125,8 @@ variable "backend_config" {
     testing                       = string               # "0"
     auth_cookie_domain            = string               # "polar.sh"
     auth_cookie_key               = optional(string, "") # "polar.sh"
-    invoices_additional_info      = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    invoices_additional_info      = optional(string, "")
+    invoices_vat_numbers          = optional(string, "{}") # JSON dict of country code -> VAT number
     tax_processors                = optional(string, "[\"stripe\"]")
     tax_record_processor          = optional(string, "stripe")
     customer_portal_url_overrides = optional(string, "{}")

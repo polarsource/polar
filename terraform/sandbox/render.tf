@@ -184,7 +184,6 @@ module "sandbox" {
     testing                       = "0"
     auth_cookie_domain            = "polar.sh"
     auth_cookie_key               = "polar_sandbox_session"
-    invoices_additional_info      = ""
     tax_processors                = "[\"numeral\",\"stripe\"]"
     tax_record_processor          = "numeral"
     customer_portal_url_overrides = var.customer_portal_url_overrides

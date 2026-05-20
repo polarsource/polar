@@ -188,22 +188,23 @@ module "test" {
   }
 
   backend_config = {
-    environment                = "test"
-    base_url                   = "https://test-api.polar.sh"
-    user_session_cookie_domain = "polar.sh"
-    user_session_cookie_key    = "polar_test_session"
-    debug                      = "0"
-    email_sender               = "logger"
-    email_from_name            = "[TEST] Polar"
-    email_from_domain          = "notifications.test.polar.sh"
-    frontend_base_url          = "https://test.polar.sh"
-    checkout_base_url          = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
-    jwks_path                  = "/etc/secrets/jwks.json"
-    log_level                  = "INFO"
-    testing                    = "0"
-    auth_cookie_domain         = "test.polar.sh"
-    tax_processors             = "[\"numeral\",\"stripe\"]"
-    tax_record_processor       = "numeral"
+    environment                    = "test"
+    base_url                       = "https://test-api.polar.sh"
+    user_session_cookie_domain     = "polar.sh"
+    user_session_cookie_key        = "polar_test_session"
+    debug                          = "0"
+    email_sender                   = "logger"
+    email_from_name                = "[TEST] Polar"
+    email_from_domain              = "notifications.test.polar.sh"
+    frontend_base_url              = "https://test.polar.sh"
+    checkout_base_url              = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
+    jwks_path                      = "/etc/secrets/jwks.json"
+    log_level                      = "INFO"
+    testing                        = "0"
+    auth_cookie_domain             = "test.polar.sh"
+    tax_processors                 = "[\"numeral\",\"stripe\"]"
+    tax_record_processor           = "numeral"
+    plain_default_tier_external_id = var.plain_default_tier_external_id
   }
 
   backend_secrets = {

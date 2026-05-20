@@ -296,3 +296,11 @@ resource "tfe_variable" "tinybird_read_token_test" {
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "plain_default_tier_external_id_test" {
+  key             = "plain_default_tier_external_id"
+  category        = "terraform"
+  description     = "Default Plain tier external ID used as a fallback for the polar-self support benefit for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+}

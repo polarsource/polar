@@ -305,9 +305,10 @@ module "production" {
       # Canada (GST/HST)
       CA = "720474766 RT9999"
     })
-    tax_processors                = "[\"stripe\"]"
-    tax_record_processor          = "stripe"
-    customer_portal_url_overrides = var.customer_portal_url_overrides
+    tax_processors                 = "[\"stripe\"]"
+    tax_record_processor           = "stripe"
+    customer_portal_url_overrides  = var.customer_portal_url_overrides
+    plain_default_tier_external_id = var.plain_default_tier_external_id
   }
 
   backend_secrets = {

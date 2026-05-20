@@ -68,6 +68,9 @@ resource "render_env_group" "backend" {
       POLAR_NUMERAL_API_KEY               = { value = var.backend_secrets.numeral_api_key }
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES = { value = var.backend_config.customer_portal_url_overrides }
     },
+    var.backend_config.plain_default_tier_external_id != "" ? {
+      POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID = { value = var.backend_config.plain_default_tier_external_id }
+    } : {},
     var.backend_config.user_session_cookie_key != "" ? {
       POLAR_USER_SESSION_COOKIE_KEY = { value = var.backend_config.user_session_cookie_key }
     } : {},

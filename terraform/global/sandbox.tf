@@ -353,3 +353,11 @@ resource "tfe_variable" "customer_portal_url_overrides_sandbox" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "plain_default_tier_external_id_sandbox" {
+  key             = "plain_default_tier_external_id"
+  category        = "terraform"
+  description     = "Default Plain tier external ID used as a fallback for the polar-self support benefit for sandbox"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.sandbox.id
+}

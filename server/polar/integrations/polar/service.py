@@ -764,6 +764,10 @@ class PolarSelfService:
                 grant.benefit.metadata or {}, grant.benefit_id
             )
 
+        effective_tier_external_id = (
+            plain_tier_external_id or settings.PLAIN_DEFAULT_TIER_EXTERNAL_ID
+        )
+
         with logfire.span(
             "polar_self.webhook.support.applied",
             organization_id=str(organization_id),
@@ -771,10 +775,11 @@ class PolarSelfService:
             slack=slack,
             prioritized=prioritized,
             plain_tier_external_id=plain_tier_external_id,
+            effective_tier_external_id=effective_tier_external_id,
         ):
             await plain_service.update_tenant_tier(
                 tenant_external_id=str(organization_id),
-                tier_external_id=plain_tier_external_id,
+                tier_external_id=effective_tier_external_id,
             )
 
     async def _fetch_active_grant(

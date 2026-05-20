@@ -573,6 +573,58 @@ class TestApplySupport:
             tenant_external_id=str(ORG_A), tier_external_id=None
         )
 
+    async def test_no_grant_falls_back_to_default_tier(
+        self,
+        session_mock: AsyncSession,
+        plain_update_tenant_tier_mock: AsyncMock,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "PLAIN_DEFAULT_TIER_EXTERNAL_ID", "free")
+
+        await polar_self._apply_support(session_mock, ORG_A, None)
+
+        plain_update_tenant_tier_mock.assert_awaited_once_with(
+            tenant_external_id=str(ORG_A), tier_external_id="free"
+        )
+
+    async def test_grant_without_tier_falls_back_to_default(
+        self,
+        session_mock: AsyncSession,
+        plain_update_tenant_tier_mock: AsyncMock,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "PLAIN_DEFAULT_TIER_EXTERNAL_ID", "free")
+        grant = _make_support_grant()
+
+        await polar_self._apply_support(session_mock, ORG_A, grant)
+
+        plain_update_tenant_tier_mock.assert_awaited_once_with(
+            tenant_external_id=str(ORG_A), tier_external_id="free"
+        )
+
+    async def test_grant_tier_overrides_default(
+        self,
+        session_mock: AsyncSession,
+        plain_update_tenant_tier_mock: AsyncMock,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "PLAIN_DEFAULT_TIER_EXTERNAL_ID", "free")
+        grant = _make_grant(
+            metadata={
+                "type": "support",
+                "level": "2",
+                "slack": "true",
+                "prioritized": "true",
+                "plain_tier_external_id": "pro",
+            }
+        )
+
+        await polar_self._apply_support(session_mock, ORG_A, grant)
+
+        plain_update_tenant_tier_mock.assert_awaited_once_with(
+            tenant_external_id=str(ORG_A), tier_external_id="pro"
+        )
+
     async def test_invalid_metadata_raises(self, session_mock: AsyncSession) -> None:
         grant = _make_support_grant(level="two")
 

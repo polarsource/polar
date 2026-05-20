@@ -1451,6 +1451,142 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/auth/start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Start */
+    post: operations['auth:start']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Status */
+    get: operations['auth:status']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/complete': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Complete */
+    get: operations['auth:complete']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/email-otp/request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Email Otp Request */
+    post: operations['auth:email_otp_request']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/email-otp/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Email Otp Verify */
+    post: operations['auth:email_otp_verify']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/totp/enroll': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Totp Enroll */
+    post: operations['auth:totp_enroll']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/totp/enable': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Totp Enable */
+    post: operations['auth:totp_enable']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/totp/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Totp Verify */
+    post: operations['auth:totp_verify']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/oauth2/': {
     parameters: {
       query?: never
@@ -6532,6 +6668,18 @@ export interface components {
        * @description Whether the value is required for this custom field.
        */
       required: boolean
+    }
+    /** AuthenticationSession */
+    AuthenticationSession: {
+      /** Identity Id */
+      identity_id: string | null
+      /** Available Factors */
+      available_factors: components['schemas']['Factor'][]
+    }
+    /** AuthenticationSessionStart */
+    AuthenticationSessionStart: {
+      /** Return To */
+      return_to?: string | null
     }
     /** AuthorizeOrganization */
     AuthorizeOrganization: {
@@ -18399,6 +18547,16 @@ export interface components {
       benefit_id: string
       file: components['schemas']['FileDownload']
     }
+    /** EmailOTPRequest */
+    EmailOTPRequest: {
+      /** Email */
+      email: string
+    }
+    /** EmailOTPVerify */
+    EmailOTPVerify: {
+      /** Code */
+      code: string
+    }
     /** EmailUpdateRequest */
     EmailUpdateRequest: {
       /**
@@ -18843,6 +19001,8 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** @enum {string} */
+    Factor: 'email_otp' | 'totp'
     /** Feedback */
     Feedback: {
       /**
@@ -19207,6 +19367,17 @@ export interface components {
       exp: number
       /** Iat */
       iat: number
+    }
+    /** InvalidAuthenticationSession */
+    InvalidAuthenticationSession: {
+      /**
+       * Error
+       * @example InvalidAuthenticationSession
+       * @constant
+       */
+      error: 'InvalidAuthenticationSession'
+      /** Detail */
+      detail: string
     }
     /** LLMMetadata */
     LLMMetadata: {
@@ -29791,6 +29962,24 @@ export interface components {
       | components['schemas']['BalanceRefundReversalEvent']
       | components['schemas']['BalanceDisputeEvent']
       | components['schemas']['BalanceDisputeReversalEvent']
+    /** TOTPEnable */
+    TOTPEnable: {
+      /** Code */
+      code: string
+    }
+    /** TOTPEnrollment */
+    TOTPEnrollment: {
+      /** Secret */
+      secret: string
+      /** Algorithm */
+      algorithm: string
+      /** Digits */
+      digits: number
+      /** Period */
+      period: number
+      /** Provisioning Uri */
+      provisioning_uri: string
+    }
     /**
      * TaxBehavior
      * @enum {string}
@@ -35022,6 +35211,249 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+    }
+  }
+  'auth:start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AuthenticationSessionStart']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthenticationSession']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'auth:status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthenticationSession']
+        }
+      }
+      /** @description No active authentication session */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['InvalidAuthenticationSession']
+        }
+      }
+    }
+  }
+  'auth:complete': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+    }
+  }
+  'auth:email_otp_request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EmailOTPRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'auth:email_otp_verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EmailOTPVerify']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthenticationSession']
+        }
+      }
+      /** @description Invalid or expired OTP */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'auth:totp_enroll': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TOTPEnrollment']
+        }
+      }
+    }
+  }
+  'auth:totp_enable': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TOTPEnable']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'auth:totp_verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TOTPEnable']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthenticationSession']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }
@@ -54926,6 +55358,9 @@ export const eventTypesSortPropertyValues: ReadonlyArray<
   'last_seen',
   '-last_seen',
 ]
+export const factorValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['Factor']
+> = ['email_otp', 'totp']
 export const feedbackStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FeedbackStatus']
 > = ['new', 'triaged']

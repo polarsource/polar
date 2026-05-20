@@ -1,7 +1,5 @@
-import { usePayoutAccount } from '@/hooks/queries/payout_accounts'
 import { useTransactionsSummary } from '@/hooks/queries'
-import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
-import { Modal } from '@/components/Modal'
+import { usePayoutAccountSetup } from '@/hooks/usePayoutAccountSetup'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
@@ -12,7 +10,6 @@ import React, { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellFooter, WellHeader } from '../Shared/Well'
 import { FeeCreditGrantsModal } from './FeeCreditGrantsModal'
-import ManagePayoutAccountModal from './ManagePayoutAccountModal'
 import WithdrawModal from './WithdrawModal'
 
 interface AccountBalanceProps {
@@ -32,8 +29,15 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     isLoading,
   } = useTransactionsSummary(account.id)
 
-  const { data: payoutAccount } = usePayoutAccount(
-    organization.payout_account_id ?? undefined,
+  const {
+    payoutAccount,
+    hasReusableAccounts,
+    openCreate,
+    openManage,
+    modals: payoutAccountModals,
+  } = usePayoutAccountSetup(
+    organization,
+    `/dashboard/${organization.slug}/finance/payouts`,
   )
 
   const {
@@ -46,16 +50,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     show: showCreditGrantsModal,
     hide: hideCreditGrantsModal,
   } = useModal(false)
-  const {
-    isShown: isCreatePayoutAccountModalShown,
-    show: showCreatePayoutAccountModal,
-    hide: hideCreatePayoutAccountModal,
-  } = useModal(false)
-  const {
-    isShown: isManagePayoutAccountModalShown,
-    show: showManagePayoutAccountModal,
-    hide: hideManagePayoutAccountModal,
-  } = useModal(false)
 
   const onWithdrawSuccess = useCallback(
     (payoutId: string) => {
@@ -67,11 +61,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     },
     [_onWithdrawSuccess, refetchBalance, hidePayoutConfirmModal],
   )
-
-  const handleCreateNew = useCallback(() => {
-    hideManagePayoutAccountModal()
-    showCreatePayoutAccountModal()
-  }, [hideManagePayoutAccountModal, showCreatePayoutAccountModal])
 
   const availableBalance = summary
     ? formatCurrency('accounting')(
@@ -139,19 +128,16 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           <Text variant="heading-xxs" as="h2">
             Payout Account
           </Text>
-          {payoutAccount ? (
+          {payoutAccount || hasReusableAccounts ? (
             <Button
               className="self-start"
               variant="secondary"
-              onClick={showManagePayoutAccountModal}
+              onClick={openManage}
             >
               Manage
             </Button>
           ) : (
-            <Button
-              className="self-start"
-              onClick={showCreatePayoutAccountModal}
-            >
+            <Button className="self-start" onClick={openCreate}>
               Create
             </Button>
           )}
@@ -210,30 +196,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
         isShown={isCreditGrantsModalShown}
         hide={hideCreditGrantsModal}
       />
-      <Modal
-        title="Create Payout Account"
-        isShown={isCreatePayoutAccountModalShown}
-        className="min-w-100"
-        hide={hideCreatePayoutAccountModal}
-        modalContent={
-          <AccountCreateModal
-            forOrganizationId={organization.id}
-            returnPath={`/dashboard/${organization.slug}/finance/payouts`}
-          />
-        }
-      />
-      <Modal
-        title="Manage Payout Accounts"
-        isShown={isManagePayoutAccountModalShown}
-        className="min-w-[560px]"
-        hide={hideManagePayoutAccountModal}
-        modalContent={
-          <ManagePayoutAccountModal
-            organization={organization}
-            onCreateNew={handleCreateNew}
-          />
-        }
-      />
+      {payoutAccountModals}
     </Box>
   )
 }

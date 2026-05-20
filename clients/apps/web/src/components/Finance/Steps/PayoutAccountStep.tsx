@@ -1,35 +1,32 @@
 'use client'
 
+import { usePayoutAccountSetup } from '@/hooks/usePayoutAccountSetup'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ArrowRight, CheckIcon, ExternalLink } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import { Modal } from '@/components/Modal'
-import { useModal } from '@/components/Modal/useModal'
-import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 
 interface PayoutAccountStepProps {
   organization: schemas['Organization']
-  payoutAccount?: schemas['PayoutAccount']
 }
 
 export default function PayoutAccountStep({
   organization,
-  payoutAccount,
 }: PayoutAccountStepProps) {
+  const returnPath = `/dashboard/${organization.slug}/finance/account`
+  const { payoutAccount, openPrimary, modals } = usePayoutAccountSetup(
+    organization,
+    returnPath,
+  )
+
   const isAccountSetupComplete = payoutAccount && payoutAccount.is_payout_ready
-  const {
-    isShown: isShownSetupModal,
-    show: showSetupModal,
-    hide: hideSetupModal,
-  } = useModal()
 
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false)
 
   const handleStartAccountSetup = useCallback(async () => {
     if (!payoutAccount) {
-      showSetupModal()
+      openPrimary()
     } else {
       const link = await unwrap(
         api.POST('/v1/payout-accounts/{id}/onboarding-link', {
@@ -38,14 +35,14 @@ export default function PayoutAccountStep({
               id: payoutAccount.id,
             },
             query: {
-              return_path: `/dashboard/${organization.slug}/finance/account`,
+              return_path: returnPath,
             },
           },
         }),
       )
       window.location.href = link.url
     }
-  }, [organization.slug, payoutAccount, showSetupModal])
+  }, [payoutAccount, returnPath, openPrimary])
 
   const handleOpenStripeDashboard = useCallback(async () => {
     if (!payoutAccount) return
@@ -118,18 +115,7 @@ export default function PayoutAccountStep({
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
-      <Modal
-        title="Create Payout Account"
-        isShown={isShownSetupModal}
-        className="min-w-100"
-        hide={hideSetupModal}
-        modalContent={
-          <AccountCreateModal
-            forOrganizationId={organization.id}
-            returnPath={`/dashboard/${organization.slug}/finance/account`}
-          />
-        }
-      />
+      {modals}
     </>
   )
 }

@@ -82,6 +82,7 @@ class AccountService:
                 admin=admin,
                 _platform_fee_percent=settings.PLATFORM_FEE_BASIS_POINTS,
                 _platform_fee_fixed=settings.PLATFORM_FEE_FIXED,
+                _platform_subscription_fee_percent=settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS,
             )
         )
 
@@ -100,6 +101,7 @@ class AccountService:
         *,
         fee_percent: int | None,
         fee_fixed: int | None,
+        subscription_fee_percent: int | None,
     ) -> Account:
         repository = AccountRepository.from_session(session)
         return await repository.update(
@@ -107,6 +109,7 @@ class AccountService:
             update_dict={
                 "_platform_fee_percent": fee_percent,
                 "_platform_fee_fixed": fee_fixed,
+                "_platform_subscription_fee_percent": subscription_fee_percent,
             },
         )
 

@@ -56,6 +56,7 @@ BENEFITS: list[dict[str, object]] = [
             "type": "transaction_fee",
             "fee_percent": 500,
             "fee_fixed": 50,
+            "subscription_fee_percent": 0,
         },
     },
     {
@@ -64,6 +65,7 @@ BENEFITS: list[dict[str, object]] = [
             "type": "transaction_fee",
             "fee_percent": 380,
             "fee_fixed": 40,
+            "subscription_fee_percent": 0,
         },
     },
     {
@@ -72,6 +74,7 @@ BENEFITS: list[dict[str, object]] = [
             "type": "transaction_fee",
             "fee_percent": 360,
             "fee_fixed": 35,
+            "subscription_fee_percent": 0,
         },
     },
     {
@@ -80,6 +83,7 @@ BENEFITS: list[dict[str, object]] = [
             "type": "transaction_fee",
             "fee_percent": 340,
             "fee_fixed": 30,
+            "subscription_fee_percent": 0,
         },
     },
     {
@@ -88,6 +92,7 @@ BENEFITS: list[dict[str, object]] = [
             "type": "transaction_fee",
             "fee_percent": 400,
             "fee_fixed": 40,
+            "subscription_fee_percent": 50,
         },
     },
     {

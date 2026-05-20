@@ -15,8 +15,6 @@ from polar.transaction.fees.stripe import (
     get_reverse_stripe_payout_fees,
     get_stripe_account_fee,
     get_stripe_international_fee,
-    get_stripe_invoice_fee,
-    get_stripe_subscription_fee,
 )
 
 from .balance import balance_transaction as balance_transaction_service
@@ -161,15 +159,16 @@ class PlatformFeeTransactionService(BaseTransactionService):
 
         # Payment fee
         fee_amount = account.calculate_fee_in_cents(total_amount)
-        fee_balances = await balance_transaction_service.create_reversal_balance(
-            session,
-            balance_transactions=balance_transactions,
-            amount=fee_amount,
-            platform_fee_type=PlatformFeeType.payment,
-            outgoing_incurred_by=incoming,
-            incoming_incurred_by=outgoing,
-        )
-        fees_balances.append(fee_balances)
+        if fee_amount > 0:
+            fee_balances = await balance_transaction_service.create_reversal_balance(
+                session,
+                balance_transactions=balance_transactions,
+                amount=fee_amount,
+                platform_fee_type=PlatformFeeType.payment,
+                outgoing_incurred_by=incoming,
+                incoming_incurred_by=outgoing,
+            )
+            fees_balances.append(fee_balances)
 
         # International fee
         if await self._is_international_payment_transaction(payment_transaction):
@@ -189,32 +188,21 @@ class PlatformFeeTransactionService(BaseTransactionService):
             await session.refresh(incoming, {"order"})
             assert incoming.order is not None
             if incoming.order.subscription_id is not None:
-                subscription_fee_amount = get_stripe_subscription_fee(total_amount)
-                fee_balances = (
-                    await balance_transaction_service.create_reversal_balance(
-                        session,
-                        balance_transactions=balance_transactions,
-                        amount=subscription_fee_amount,
-                        platform_fee_type=PlatformFeeType.subscription,
-                        outgoing_incurred_by=incoming,
-                        incoming_incurred_by=outgoing,
-                    )
+                subscription_fee_amount = account.calculate_subscription_fee_in_cents(
+                    total_amount
                 )
-                fees_balances.append(fee_balances)
-
-        # Invoice fee
-        pledge = incoming.pledge
-        if pledge is not None and pledge.invoice_id is not None:
-            invoice_fee_amount = get_stripe_invoice_fee(total_amount)
-            fee_balances = await balance_transaction_service.create_reversal_balance(
-                session,
-                balance_transactions=balance_transactions,
-                amount=invoice_fee_amount,
-                platform_fee_type=PlatformFeeType.invoice,
-                outgoing_incurred_by=incoming,
-                incoming_incurred_by=outgoing,
-            )
-            fees_balances.append(fee_balances)
+                if subscription_fee_amount > 0:
+                    fee_balances = (
+                        await balance_transaction_service.create_reversal_balance(
+                            session,
+                            balance_transactions=balance_transactions,
+                            amount=subscription_fee_amount,
+                            platform_fee_type=PlatformFeeType.subscription,
+                            outgoing_incurred_by=incoming,
+                            incoming_incurred_by=outgoing,
+                        )
+                    )
+                    fees_balances.append(fee_balances)
 
         if account.credit_balance <= 0:
             return fees_balances

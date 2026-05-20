@@ -201,6 +201,7 @@ class PolarSelfService:
             if account is not None and account.platform_fee == (
                 settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,
                 settings.PLATFORM_FEE_FIXED_EARLY_ACCESS,
+                settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS_EARLY_ACCESS,
             ):
                 return OrganizationPlan.early_member(
                     fee_percent=settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,
@@ -614,10 +615,11 @@ class PolarSelfService:
 
     def _extract_transaction_fee(
         self, metadata: dict[str, Any], benefit_id: str
-    ) -> tuple[int, int]:
+    ) -> tuple[int, int, int]:
         return (
             self._parse_int_metadata(metadata, "fee_percent", benefit_id),
             self._parse_int_metadata(metadata, "fee_fixed", benefit_id),
+            self._parse_int_metadata(metadata, "subscription_fee_percent", benefit_id),
         )
 
     def _parse_int_metadata(
@@ -655,10 +657,16 @@ class PolarSelfService:
             return
 
         if grant is None:
-            fee_percent, fee_fixed = None, None
+            fee_percent, fee_fixed, subscription_fee_percent = (
+                settings.PLATFORM_FEE_BASIS_POINTS,
+                settings.PLATFORM_FEE_FIXED,
+                settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS,
+            )
         else:
-            fee_percent, fee_fixed = self._extract_transaction_fee(
-                grant.benefit.metadata or {}, grant.benefit_id
+            fee_percent, fee_fixed, subscription_fee_percent = (
+                self._extract_transaction_fee(
+                    grant.benefit.metadata or {}, grant.benefit_id
+                )
             )
 
         # Inline: account.service → user_organization.service → this module.
@@ -669,12 +677,14 @@ class PolarSelfService:
             organization_id=str(organization_id),
             fee_percent=fee_percent,
             fee_fixed=fee_fixed,
+            subscription_fee_percent=subscription_fee_percent,
         ):
             await account_service.set_platform_fee(
                 session,
                 account,
                 fee_percent=fee_percent,
                 fee_fixed=fee_fixed,
+                subscription_fee_percent=subscription_fee_percent,
             )
 
     def _extract_support(

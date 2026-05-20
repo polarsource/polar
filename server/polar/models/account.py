@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 
 type FeeBasisPoints = int
 type FeeFixedCents = int
-type Fees = tuple[FeeBasisPoints, FeeFixedCents]
+type SubscriptionFeeBasisPoints = int
+type Fees = tuple[FeeBasisPoints, FeeFixedCents, SubscriptionFeeBasisPoints]
 
 
 class Account(RecordModel):
@@ -34,6 +35,9 @@ class Account(RecordModel):
     )
     _platform_fee_fixed: Mapped[int | None] = mapped_column(
         Integer, name="platform_fee_fixed", nullable=True, default=None
+    )
+    _platform_subscription_fee_percent: Mapped[int | None] = mapped_column(
+        Integer, name="platform_subscription_fee_percent", nullable=True, default=None
     )
     payout_transaction_delay: Mapped[timedelta] = mapped_column(
         Interval, nullable=False, default=timedelta(days=7)
@@ -108,11 +112,23 @@ class Account(RecordModel):
         if fixed is None:
             fixed = settings.PLATFORM_FEE_FIXED
 
-        return (basis_points, fixed)
+        subscription_fee_basis_points = self._platform_subscription_fee_percent
+        if subscription_fee_basis_points is None:
+            subscription_fee_basis_points = (
+                settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS
+            )
+
+        return (basis_points, fixed, subscription_fee_basis_points)
 
     def calculate_fee_in_cents(self, amount_in_cents: int) -> int:
-        basis_points, fixed = self.platform_fee
+        basis_points, fixed, _ = self.platform_fee
         fee_in_cents = (amount_in_cents * (basis_points / 10_000)) + fixed
+        # Apply same logic as Stripe fee rounding
+        return polar_round(fee_in_cents)
+
+    def calculate_subscription_fee_in_cents(self, amount_in_cents: int) -> int:
+        _, _, subscription_fee_basis_points = self.platform_fee
+        fee_in_cents = amount_in_cents * (subscription_fee_basis_points / 10_000)
         # Apply same logic as Stripe fee rounding
         return polar_round(fee_in_cents)
 

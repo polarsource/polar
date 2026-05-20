@@ -55,8 +55,7 @@ export const DashboardSidebar = ({
   const [searchOpen, setSearchOpen] = useState(false)
 
   const subscriptionPlan = useOrganizationSubscription(organization?.id ?? '')
-  const isOnFreePlan =
-    !subscriptionPlan.isLoading && subscriptionPlan.data === undefined
+  const isOnFreePlan = subscriptionPlan.data?.subscription_id === null
 
   const navigateToOrganization = (org: schemas['Organization']) => {
     router.push(`/dashboard/${org.slug}`)

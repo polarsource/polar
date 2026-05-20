@@ -30,7 +30,7 @@ export const PricingPage = () => {
         <div className="flex flex-col gap-4">
           <p>
             Polar offers a free Starter plan plus three optional paid plans
-            &mdash; Pro, Growth, and Scale &mdash; that lower your variable rate
+            &ndash; Pro, Growth, and Scale &ndash; that lower your variable rate
             and prioritize your support inquiries. You can switch between plans
             anytime, and your rate adjusts immediately.
           </p>
@@ -85,7 +85,7 @@ export const PricingPage = () => {
           <p>
             The paid plans replace the per-transaction Merchant of Record
             premium with a fixed monthly fee and a lower variable rate. As your
-            sales grow, the economics flip &mdash; Merchant of Record stops
+            sales grow, the economics flip &ndash; Merchant of Record stops
             being a premium and becomes the cheaper option, with international
             tax compliance, fraud and dispute prevention, and global coverage
             handled for you.
@@ -133,7 +133,7 @@ export const PricingPage = () => {
 
           <p>
             Below your plan&apos;s threshold, a lower tier is the better deal.
-            Above it, the paid plan saves money &mdash; and you get faster
+            Above it, the paid plan saves money &ndash; and you get faster
             support on top.
           </p>
         </div>

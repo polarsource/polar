@@ -8,6 +8,7 @@ from dramatiq import Retry
 from polar_sdk.models.resourcenotfound import ResourceNotFound, ResourceNotFoundData
 from pytest_mock import MockerFixture
 
+from polar.config import settings
 from polar.integrations.polar.client import PolarSelfClient
 from polar.integrations.polar.tasks import (
     add_member,
@@ -23,6 +24,7 @@ from polar.integrations.polar.tasks import (
 def plain_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock()
     mock.upsert_tenant = AsyncMock()
+    mock.update_tenant_tier = AsyncMock()
     mock.upsert_customer = AsyncMock()
     mock.add_customer_to_tenant = AsyncMock()
     mock.remove_customer_from_tenant = AsyncMock()
@@ -56,7 +58,33 @@ class TestCreateCustomer:
             owner_name="Owner",
         )
         plain_service_mock.upsert_tenant.assert_awaited_once_with(
-            external_id="org-123", name="Acme Inc"
+            external_id="org-123",
+            name="Acme Inc",
+            default_tier_external_id=settings.PLAIN_DEFAULT_TIER_EXTERNAL_ID,
+        )
+
+    async def test_forwards_default_plain_tier_when_configured(
+        self,
+        mocker: MockerFixture,
+        plain_service_mock: MagicMock,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "PLAIN_DEFAULT_TIER_EXTERNAL_ID", "free")
+        client = AsyncMock(spec=PolarSelfClient)
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await create_customer(
+            external_id="org-123",
+            name="Acme Inc",
+            owner_external_id="user-123",
+            owner_email="owner@example.com",
+            owner_name="Owner",
+        )
+
+        plain_service_mock.upsert_tenant.assert_awaited_once_with(
+            external_id="org-123",
+            name="Acme Inc",
+            default_tier_external_id="free",
         )
 
 

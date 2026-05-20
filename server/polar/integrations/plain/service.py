@@ -1457,7 +1457,13 @@ class PlainService:
                 cursor = page.page_info.end_cursor
         return external_ids
 
-    async def upsert_tenant(self, *, external_id: str, name: str) -> None:
+    async def upsert_tenant(
+        self,
+        *,
+        external_id: str,
+        name: str,
+        default_tier_external_id: str | None = None,
+    ) -> None:
         if not self.enabled:
             return
 
@@ -1471,6 +1477,28 @@ class PlainService:
             )
             if result.error is not None:
                 raise TenantOperationError(external_id, "upsert", result.error.message)
+
+            # Only seed the default tier on tenants that are currently untiered,
+            # so re-upserts don't clobber a paid tier set elsewhere.
+            if (
+                default_tier_external_id is not None
+                and result.tenant is not None
+                and result.tenant.tier is None
+            ):
+                tier_result = await plain.update_tenant_tier(
+                    UpdateTenantTierInput(
+                        tenant_identifier=TenantIdentifierInput(
+                            external_id=external_id
+                        ),
+                        tier_identifier=TierIdentifierInput(
+                            external_id=default_tier_external_id
+                        ),
+                    )
+                )
+                if tier_result.error is not None:
+                    raise TenantOperationError(
+                        external_id, "update_tier", tier_result.error.message
+                    )
 
     async def add_customer_to_tenant(
         self, *, customer_external_id: str, tenant_external_id: str

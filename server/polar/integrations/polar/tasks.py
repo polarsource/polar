@@ -45,7 +45,11 @@ async def create_customer(
         owner_email=owner_email,
         owner_name=owner_name,
     )
-    await plain_service.upsert_tenant(external_id=external_id, name=name)
+    await plain_service.upsert_tenant(
+        external_id=external_id,
+        name=name,
+        default_tier_external_id=settings.PLAIN_DEFAULT_TIER_EXTERNAL_ID,
+    )
     await plain_service.upsert_customer(
         external_id=owner_external_id,
         email=owner_email,

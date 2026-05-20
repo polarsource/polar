@@ -23138,6 +23138,8 @@ export interface components {
       product_id: string
       /** Success Url */
       success_url?: string | null
+      /** Return Url */
+      return_url?: string | null
       /** Embed Origin */
       embed_origin?: string | null
     }

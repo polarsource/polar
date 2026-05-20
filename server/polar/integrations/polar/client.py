@@ -315,6 +315,7 @@ class PolarSelfClient:
         subscription_id: str | None = None,
         customer_ip_address: str | None = None,
         success_url: str | None = None,
+        return_url: str | None = None,
         embed_origin: str | None = None,
     ) -> Checkout:
         with logfire.span(
@@ -331,6 +332,7 @@ class PolarSelfClient:
                         subscription_id=subscription_id,
                         customer_ip_address=customer_ip_address,
                         success_url=success_url,
+                        return_url=return_url,
                         embed_origin=embed_origin,
                     )
                 )

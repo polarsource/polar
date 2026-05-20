@@ -215,7 +215,8 @@ class OrganizationSubscription(Schema):
 
 class OrganizationCheckoutRequest(Schema):
     product_id: str = Field(description="Polar product ID to subscribe to.")
-    success_url: str | None = None
+    success_url: Annotated[str, AfterValidator(get_safe_return_url)] | None = None
+    return_url: Annotated[str, AfterValidator(get_safe_return_url)] | None = None
     embed_origin: str | None = None
 
 

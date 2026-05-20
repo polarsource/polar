@@ -110,6 +110,7 @@ export default function ChangePlanPage({
       const result = await startCheckout.mutateAsync({
         product_id: selectedPlan.product_id,
         success_url: `${window.location.origin}${billingHref}`,
+        return_url: window.location.href,
       })
       if (result.error || !result.data) {
         toast({

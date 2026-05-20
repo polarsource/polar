@@ -62,7 +62,7 @@ dependencies = [
   "trafilatura>=2.0.0",
   "polar-sdk==0.31.5",
   "anyio>=4.13.0",
-  "markdown-it-py>=4.0.0",
+  "markdown-it-py>=4.2.0",
   "tzdata>=2025.3",
   "reauth==0.1.4",
 ]

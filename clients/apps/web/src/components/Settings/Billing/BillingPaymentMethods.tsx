@@ -30,10 +30,12 @@ const PaymentMethodRow = ({
   organizationId,
   paymentMethod,
   deletable,
+  canSetDefault,
 }: {
   organizationId: string
   paymentMethod: OrganizationPaymentMethod
   deletable: boolean
+  canSetDefault: boolean
 }) => {
   const deletePaymentMethod = useDeleteOrganizationPaymentMethod(organizationId)
   const setDefaultPaymentMethod =
@@ -111,15 +113,17 @@ const PaymentMethodRow = ({
             className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
           />
         ) : (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onSetDefault}
-            loading={setDefaultPaymentMethod.isPending}
-            disabled={setDefaultPaymentMethod.isPending}
-          >
-            Make default
-          </Button>
+          canSetDefault && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onSetDefault}
+              loading={setDefaultPaymentMethod.isPending}
+              disabled={setDefaultPaymentMethod.isPending}
+            >
+              Make default
+            </Button>
+          )
         )}
         {deletable && (
           <Button
@@ -185,6 +189,7 @@ export const BillingPaymentMethods = ({
               organizationId={organizationId}
               paymentMethod={pm}
               deletable={paymentMethods.length > 1}
+              canSetDefault={paymentMethods.length > 1}
             />
           ))
         )}

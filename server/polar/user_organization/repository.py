@@ -24,25 +24,6 @@ class UserOrganizationRepository:
     def from_session(cls, session: AsyncReadSession) -> Self:
         return cls(session)
 
-    async def get_roles_by_org_ids(
-        self, user_id: UUID, organization_ids: Sequence[UUID]
-    ) -> dict[UUID, OrganizationRole]:
-        """Return a `{organization_id: role}` map for the user's memberships
-        in the given organizations. Organizations the user isn't a member of
-        are absent from the result.
-        """
-        if not organization_ids:
-            return {}
-        statement = select(
-            UserOrganization.organization_id, UserOrganization.role
-        ).where(
-            UserOrganization.user_id == user_id,
-            UserOrganization.organization_id.in_(organization_ids),
-            UserOrganization.is_deleted.is_(False),
-        )
-        result = await self.session.execute(statement)
-        return {row.organization_id: row.role for row in result}
-
     async def get_organizations_with_role(
         self, user_id: UUID
     ) -> Sequence[tuple[Organization, OrganizationRole]]:

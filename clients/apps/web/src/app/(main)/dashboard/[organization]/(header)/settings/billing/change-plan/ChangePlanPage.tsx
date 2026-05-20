@@ -1,10 +1,12 @@
 'use client'
 
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
+import { useHasPermission } from '@/hooks/permissions'
 import {
   useCancelSubscription,
   useChangeSubscriptionPlan,
@@ -33,8 +35,13 @@ export default function ChangePlanPage({
   organization: schemas['Organization']
 }) {
   const router = useRouter()
-  const subscriptionQuery = useOrganizationSubscription(organization.id)
-  const plansQuery = useOrganizationPlans(organization.id)
+  const canManageBilling = useHasPermission(
+    organization.id,
+    'organization:manage',
+  )
+  const gatedOrgId = canManageBilling ? organization.id : undefined
+  const subscriptionQuery = useOrganizationSubscription(gatedOrgId)
+  const plansQuery = useOrganizationPlans(gatedOrgId)
   const changePlan = useChangeSubscriptionPlan(organization.id)
   const cancelSubscription = useCancelSubscription(organization.id)
   const startCheckout = useStartSubscriptionCheckout(organization.id)
@@ -172,6 +179,14 @@ export default function ChangePlanPage({
         : changeKind === 'downgrade'
           ? 'Downgrade plan'
           : 'Confirm'
+
+  if (canManageBilling === false) {
+    return (
+      <DashboardBody title={null} wide>
+        <AccessRestricted message="You don't have permission to manage billing for this organization. Ask an admin if you need access." />
+      </DashboardBody>
+    )
+  }
 
   return (
     <DashboardBody title={null} wide>

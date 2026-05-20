@@ -1,3 +1,4 @@
+import { useHasPermission } from '@/hooks/permissions'
 import { PolarHog, usePostHog } from '@/hooks/posthog'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
@@ -126,11 +127,26 @@ const useResolveRoutes = (
   }, [org, path, allowAll, routesResolver, posthog])
 }
 
+type RouteOptions = {
+  canManageBilling: boolean
+}
+
+const useRouteOptions = (org?: schemas['Organization']): RouteOptions => {
+  const canManageBilling =
+    useHasPermission(org?.id, 'organization:manage') === true
+  return { canManageBilling }
+}
+
 export const useDashboardRoutes = (
   org?: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  return useResolveRoutes((org) => dashboardRoutesList(org), org, allowAll)
+  const options = useRouteOptions(org)
+  return useResolveRoutes(
+    (org) => dashboardRoutesList(org, options),
+    org,
+    allowAll,
+  )
 }
 
 export const useGeneralRoutes = (
@@ -144,7 +160,12 @@ export const useOrganizationRoutes = (
   org?: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  return useResolveRoutes(organizationRoutesList, org, allowAll)
+  const options = useRouteOptions(org)
+  return useResolveRoutes(
+    (org) => organizationRoutesList(org, options),
+    org,
+    allowAll,
+  )
 }
 
 export const useAccountRoutes = (): RouteWithActive[] => {
@@ -263,10 +284,13 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   },
 ]
 
-const dashboardRoutesList = (org?: schemas['Organization']): Route[] => [
+const dashboardRoutesList = (
+  org: schemas['Organization'] | undefined,
+  options: RouteOptions,
+): Route[] => [
   ...accountRoutesList(),
   ...generalRoutesList(org),
-  ...organizationRoutesList(org),
+  ...organizationRoutesList(org, options),
 ]
 
 const accountRoutesList = (): Route[] => [
@@ -302,7 +326,10 @@ const orgFinanceSubRoutesList = (org?: schemas['Organization']): SubRoute[] => [
   },
 ]
 
-const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
+const organizationRoutesList = (
+  org: schemas['Organization'] | undefined,
+  options: RouteOptions,
+): Route[] => [
   {
     id: 'finance',
     title: 'Finance',
@@ -326,8 +353,9 @@ const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
         title: 'Billing',
         link: `/dashboard/${org?.slug}/settings/billing`,
         if:
-          CONFIG.ENVIRONMENT === 'production' ||
-          (org?.feature_settings?.billing_enabled ?? false),
+          options.canManageBilling &&
+          (CONFIG.ENVIRONMENT === 'production' ||
+            (org?.feature_settings?.billing_enabled ?? false)),
       },
       {
         title: 'Members',

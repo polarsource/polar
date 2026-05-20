@@ -322,9 +322,7 @@ class OrganizationService:
                     customer_invoice_prefix=create_schema.slug.upper(),
                 )
             )
-            organization.account = await account_service.create(
-                session, auth_subject.subject
-            )
+            organization.account = await account_service.create(session)
             await session.flush()
         except IntegrityError as e:
             await nested.rollback()

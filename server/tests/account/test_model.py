@@ -8,7 +8,6 @@ def generate_account(
     fee_fixed: int | None = None,
 ) -> Account:
     account = Account(
-        admin_id=user.id,
         currency="usd",
         _platform_fee_percent=fee_basis_points,
         _platform_fee_fixed=fee_fixed,

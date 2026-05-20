@@ -58,12 +58,11 @@ class AccountService:
         repository = AccountRepository.from_session(session)
         return await repository.get_by_organization(organization_id)
 
-    async def create(self, session: AsyncSession, admin: User) -> Account:
+    async def create(self, session: AsyncSession) -> Account:
         repository = AccountRepository.from_session(session)
         return await repository.create(
             Account(
                 currency="usd",  # FIXME: main Polar currency
-                admin=admin,
                 _platform_fee_percent=settings.PLATFORM_FEE_BASIS_POINTS,
                 _platform_fee_fixed=settings.PLATFORM_FEE_FIXED,
                 _platform_subscription_fee_percent=settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS,

@@ -152,7 +152,6 @@ async def create_account(
     billing_address: Address | None = None,
 ) -> Account:
     account = Account(
-        admin_id=user.id,
         currency=currency,
         processor_fees_applicable=processor_fees_applicable,
         _platform_fee_percent=fee_basis_points,

@@ -107,7 +107,11 @@ class OrganizationPlan(Schema):
         return cls(
             product_id=product.id,
             name=product.name,
-            description=product.description,
+            description=(
+                str(metadata["description"])
+                if "description" in metadata
+                else product.description
+            ),
             recurring_interval=(
                 product.recurring_interval.value
                 if product.recurring_interval is not None

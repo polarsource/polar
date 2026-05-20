@@ -239,6 +239,11 @@ class PayoutAccountService:
         organization.payout_account = payout_account
         await organization_repository.update(organization)
 
+        # Late import: organization.service imports payout_account.service.
+        from polar.organization.service import organization as organization_service
+
+        await organization_service.maybe_activate(session, organization)
+
         return payout_account
 
     async def _create_stripe_account(

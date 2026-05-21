@@ -559,7 +559,7 @@ class CheckoutService:
         )
 
         if checkout.customer is not None:
-            prefill_attributes = (
+            prefill_attributes: tuple[str, ...] = (
                 "email",
                 "billing_name",
                 "billing_address",

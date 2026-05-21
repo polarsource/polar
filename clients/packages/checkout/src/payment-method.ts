@@ -155,10 +155,17 @@ interface EmbedPaymentMethodCreateInlineOptions {
 }
 
 const resolveEmbedBaseURL = (): string => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore - Defined at build time by tsup
-  const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string
-  return origins.split(',')[0]
+  const origins = // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - Defined at build time by tsup
+    (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string).split(',')
+
+  if (
+    typeof window !== 'undefined' &&
+    origins.includes(window.location.origin)
+  ) {
+    return window.location.origin
+  }
+  return origins[0]
 }
 
 const buildIframeAllow = (): string => {

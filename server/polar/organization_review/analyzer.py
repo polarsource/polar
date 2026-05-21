@@ -650,11 +650,14 @@ class ReviewAnalyzer:
         model_instance, model_provider, model_name = (
             settings.get_pydantic_gateway_model(model)
         )
+        # gpt-5.5+ reasoning models reject any non-default temperature.
         self.agent = Agent(
             model_instance,
             output_type=ReviewAgentReport,
             system_prompt=SYSTEM_PROMPT,
-            model_settings={"temperature": 0},
+            model_settings=(
+                {} if model_name.startswith("gpt-5.5") else {"temperature": 0}
+            ),
         )
         self.model_provider = model_provider
         self.model_name = model_name
@@ -668,14 +671,17 @@ class ReviewAnalyzer:
     ) -> tuple[ReviewAgentReport, UsageInfo]:
         policy_content = policy_override or fetch_policy_content()
 
-        prompt = self._build_prompt(snapshot, policy_content)
+        prompt = self._build_prompt(snapshot)
 
-        instructions = {
+        preamble = {
             ReviewContext.SUBMISSION: SUBMISSION_PREAMBLE,
             ReviewContext.THRESHOLD: THRESHOLD_PREAMBLE,
             ReviewContext.MANUAL: MANUAL_PREAMBLE,
             ReviewContext.APPEAL: APPEAL_PREAMBLE,
         }.get(context)
+
+        policy_block = f"## Acceptable Use Policy\n\n{policy_content}"
+        instructions = f"{preamble}\n\n{policy_block}" if preamble else policy_block
 
         try:
             result = await asyncio.wait_for(
@@ -701,7 +707,7 @@ class ReviewAnalyzer:
             )
             return _error_report(str(e)), UsageInfo()
 
-    def _build_prompt(self, snapshot: DataSnapshot, policy_content: str) -> str:
+    def _build_prompt(self, snapshot: DataSnapshot) -> str:
         org = snapshot.organization
         products = snapshot.products
         identity = snapshot.identity
@@ -1072,10 +1078,6 @@ class ReviewAnalyzer:
                         )
                 if entry.reason:
                     parts.append(f"- Reviewer Reason: {entry.reason}")
-
-        # Policy
-        parts.append("\n## Acceptable Use Policy")
-        parts.append(policy_content)
 
         parts.append(
             "\n## Instructions"

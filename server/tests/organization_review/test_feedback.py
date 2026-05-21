@@ -317,7 +317,7 @@ class TestBuildPromptPriorFeedback:
         from polar.organization_review.analyzer import ReviewAnalyzer
 
         analyzer = ReviewAnalyzer.__new__(ReviewAnalyzer)
-        return analyzer._build_prompt(snapshot, policy_content="(policy omitted)")
+        return analyzer._build_prompt(snapshot)
 
     def test_no_feedback_omits_section(self) -> None:
         prompt = self._build(_make_snapshot())

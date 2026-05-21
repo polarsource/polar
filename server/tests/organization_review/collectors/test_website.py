@@ -357,7 +357,11 @@ class TestCollectWebsiteData:
 
             result = await collect_website_data("example.com")
 
-            mock_run.assert_called_once_with("https://example.com")
+            mock_run.assert_called_once_with(
+                "https://example.com",
+                organization_id=None,
+                organization_slug=None,
+            )
             assert result.base_url == "https://example.com"
 
     @pytest.mark.asyncio
@@ -370,7 +374,11 @@ class TestCollectWebsiteData:
 
             await collect_website_data("https://example.com/")
 
-            mock_run.assert_called_once_with("https://example.com")
+            mock_run.assert_called_once_with(
+                "https://example.com",
+                organization_id=None,
+                organization_slug=None,
+            )
 
     @pytest.mark.asyncio
     async def test_timeout_returns_error_data(self) -> None:

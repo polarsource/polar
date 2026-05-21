@@ -7,6 +7,7 @@ import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
+import { StartupProgramCallout } from './StartupProgramCallout'
 import { Upsell } from './Upsell'
 import { Usage } from './Usage'
 import { Vision } from './Vision'
@@ -56,6 +57,7 @@ const PageContent = () => {
       <Section>
         <Upsell />
         <Pricing />
+        <StartupProgramCallout />
       </Section>
     </>
   )

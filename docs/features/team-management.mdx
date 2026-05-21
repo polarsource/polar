@@ -1,0 +1,113 @@
+---
+title: "Team Management"
+sidebarTitle: "Team Management"
+description: "Invite teammates to your organization, manage their roles, and control what they can access in the Polar dashboard."
+---
+
+Polar organizations support multiple users. You can invite teammates to collaborate on products, orders, customers, and other parts of your business — each with a role that determines what they're allowed to do.
+
+Team management lives under **Settings → Members** in your dashboard.
+
+## Roles
+
+Every member of an organization has one of three roles:
+
+| Role | Description |
+| --- | --- |
+| **Owner** | There is always exactly one owner per organization. Has the same permissions as an admin. |
+| **Admin** | Full access to the organization — including managing members, finances, and organization settings. |
+| **Member** | Operational access to day-to-day work (products, customers, orders, analytics) but cannot manage other members, finances, or organization settings. |
+
+### Permissions
+
+The exact permissions granted by each role:
+
+| Permission | Member | Admin | Owner |
+| --- | :---: | :---: | :---: |
+| View & manage products | ✓ | ✓ | ✓ |
+| View & manage customers | ✓ | ✓ | ✓ |
+| View & manage custom fields | ✓ | ✓ | ✓ |
+| View & manage sales (orders, subscriptions, refunds) | ✓ | ✓ | ✓ |
+| View & manage analytics | ✓ | ✓ | ✓ |
+| Ingest events | ✓ | ✓ | ✓ |
+| View other members | ✓ | ✓ | ✓ |
+| Invite, remove & change member roles | | ✓ | ✓ |
+| View & manage finances (balance, payouts) | | ✓ | ✓ |
+| Manage organization settings | | ✓ | ✓ |
+
+`owner` and `admin` carry the same permissions — the owner is distinguished by the fact that every organization always has exactly one, not by additional capabilities.
+
+## Inviting a member
+
+1. Go to **Settings → Members** in your organization's dashboard.
+2. Click **Invite**.
+3. Enter the email address of the person you want to add.
+4. Click **Send Invite**.
+
+The invitee receives an email with a link to join your organization. If they don't already have a Polar account, one is created for them when they accept the invitation.
+
+New members join with the **Member** role by default. To grant additional access, change their role after they've been added.
+
+<Note>
+**Already a member?** If you invite an email that's already part of your organization, no new invite is sent — the existing membership is shown instead.
+</Note>
+
+## Changing a member's role
+
+Only **admins** and **owners** can change roles.
+
+1. Go to **Settings → Members**.
+2. Click the **⋯** menu on the member's row.
+3. Choose **Change role**.
+4. Select **Admin** or **Member** and click **Save**.
+
+The role picker shows a side-by-side permissions matrix so you can confirm what each role grants before saving.
+
+<Note>
+**The owner's role can't be changed from this menu.** Every organization has exactly one owner at all times. Ownership can only be transferred to another member of the organization who has completed identity verification — please [contact support](/support) to initiate the transfer.
+</Note>
+
+## Removing a member
+
+Only **admins** and **owners** can remove other members.
+
+1. Go to **Settings → Members**.
+2. Click the **⋯** menu on the member's row.
+3. Choose **Remove from organization**.
+4. Confirm the removal.
+
+The removed member immediately loses access to the organization. They keep their Polar account and any other organizations they're a member of.
+
+<Warning>
+**You can't remove the owner.** Every organization always has exactly one owner — to remove the current owner, ownership must first be transferred to another member who has completed identity verification.
+</Warning>
+
+## Leaving an organization
+
+If you want to leave an organization yourself:
+
+1. Go to **Settings → Members**.
+2. Click the **⋯** menu on your own row.
+3. Choose **Leave organization** and confirm.
+
+You can't leave an organization if you are:
+
+- The **owner** — ownership must be transferred first.
+- The **only remaining member** of the organization.
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Do invited users need an existing Polar account?">
+    No. If the invited email doesn't have a Polar account yet, one is created automatically. The user signs in to claim it when they accept the invitation.
+  </Accordion>
+  <Accordion title="Can a user belong to more than one organization?">
+    Yes. A user can be a member of any number of organizations and may have different roles in each one. You can switch between them from the organization picker in the dashboard.
+  </Accordion>
+  <Accordion title="How do I transfer ownership of an organization?">
+    Ownership can only be transferred to another member of the organization who has completed identity verification. Every organization always has exactly one owner — the previous owner becomes an admin once the transfer completes.
+  </Accordion>
+  <Accordion title="What happens to a member's API tokens if they're removed?">
+    Personal access tokens belong to the user, not the organization. Once a user is removed, their tokens lose access to the organization's resources. For long-lived, organization-scoped automation, use an [Organization Access Token](/integrate/authentication) instead.
+  </Accordion>
+</AccordionGroup>

@@ -108,6 +108,7 @@
               "features/refunds",
               "features/analytics",
               "features/customer-management",
+              "features/team-management",
               {
                 "group": "Customer Portal",
                 "pages": [

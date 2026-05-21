@@ -85,7 +85,7 @@ All events are dispatched as cancelable `CustomEvent`s on the `embed` instance. 
 | `close`     | —                             | Tears down the iframe (unless locked by a pending `confirmed`).       |
 | `confirmed` | —                             | Marks the modal as non-closable while Stripe is processing.           |
 | `success`   | `{ paymentMethodId: string }` | **Auto-closes the modal.** Call `preventDefault()` to keep it open.   |
-| `error`     | `{ code: ErrorCode }`         | None. `ErrorCode = 'invalid_request' \| 'unauthorized' \| 'unknown'`. |
+| `error`     | `{ code: ErrorCode }`         | None. `ErrorCode = 'invalid_request' \| 'unauthorized' \| 'processing_failed' \| 'unknown'`. |
 
 #### Instance methods
 
@@ -173,7 +173,7 @@ return (
 | `onLoaded`     | `() => void`                        | —       | Fires once when the iframe finishes loading and the form becomes interactive.     |
 | `onConfirmed`  | `() => void`                        | —       | Fires when the customer submits and Stripe processing starts.                     |
 | `onSuccess`    | `(paymentMethodId: string) => void` | —       | Fires after the card has been attached to the customer.                           |
-| `onError`      | `(code: ErrorCode) => void`         | —       | Fires when the iframe can't render (token missing/expired). `ErrorCode` as above. |
+| `onError`      | `(code: ErrorCode) => void`         | —       | Fires when the iframe can't render or the payment-method flow fails. `ErrorCode` as above. |
 | `className`    | `string`                            | —       | Applied to the wrapping `<div>`. Use it to size or position the embed.            |
 | `style`        | `React.CSSProperties`               | —       | Inline style on the wrapping `<div>`.                                             |
 

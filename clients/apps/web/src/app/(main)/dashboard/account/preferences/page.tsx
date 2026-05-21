@@ -1,5 +1,6 @@
 import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
 import GeneralSettings from '@/components/Settings/GeneralSettings'
+import IdentityVerificationSettings from '@/components/Settings/IdentityVerificationSettings'
 import { NotificationRecipientsSettings } from '@/components/Settings/NotificationRecipientsSettings'
 import PersonalInformationSettings from '@/components/Settings/PersonalInformationSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -17,6 +18,13 @@ export default function Page() {
       <Section>
         <SectionDescription title="Personal Information" />
         <PersonalInformationSettings />
+      </Section>
+      <Section>
+        <SectionDescription
+          title="Identity Verification"
+          description="Confirm your identity with a government-issued ID."
+        />
+        <IdentityVerificationSettings />
       </Section>
       <Section>
         <SectionDescription title="General" />

@@ -189,7 +189,10 @@ async def run_review_agent(
 
             # A re-submission is a fresh review: overwrite any existing row
             # (grandfathered or otherwise) so the canonical verdict reflects
-            # the latest agent run rather than a stale prior result.
+            # the latest agent run rather than a stale prior result. Any
+            # appeal state was tied to the previous verdict — clear it so a
+            # new FAIL gets a new appeal opportunity, and a new PASS doesn't
+            # collide with an in-flight appeal task.
             details_snapshot = {
                 "name": organization.name,
                 "website": organization.website,
@@ -204,6 +207,10 @@ async def run_review_agent(
                 existing.timed_out = result.timed_out
                 existing.organization_details_snapshot = details_snapshot
                 existing.model_used = result.model_used
+                existing.appeal_submitted_at = None
+                existing.appeal_reason = None
+                existing.appeal_reviewed_at = None
+                existing.appeal_decision = None
                 session.add(existing)
             else:
                 session.add(

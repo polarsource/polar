@@ -27,7 +27,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
-from polar.models import Checkout, Order, Organization, OrganizationReview
+from polar.models import Organization
 from polar.models.organization import OrganizationStatus
 from polar.postgres import create_async_engine
 from scripts.helper import (
@@ -56,25 +56,10 @@ def _flag_filter() -> list[ColumnElement[bool]]:
 
 
 def _reset_filter() -> list[ColumnElement[bool]]:
-    has_pass_review = (
-        select(1)
-        .where(
-            OrganizationReview.organization_id == Organization.id,
-            OrganizationReview.deleted_at.is_(None),
-            OrganizationReview.verdict == OrganizationReview.Verdict.PASS,
-            OrganizationReview.reason != "Grandfathered organization",
-        )
-        .exists()
-    )
-    has_checkout = select(1).where(Checkout.organization_id == Organization.id).exists()
-    has_order = select(1).where(Order.organization_id == Organization.id).exists()
     return [
         Organization.deleted_at.is_(None),
         Organization.status == OrganizationStatus.CREATED,
         Organization.details_submitted_at.isnot(None),
-        has_pass_review,
-        ~has_checkout,
-        ~has_order,
     ]
 
 

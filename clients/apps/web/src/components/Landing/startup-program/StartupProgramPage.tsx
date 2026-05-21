@@ -7,8 +7,6 @@ import { Section } from '../Section'
 import { StartupProgramFAQ } from './StartupProgramFAQ'
 import { StartupProgramForm } from './StartupProgramForm'
 import { StartupProgramHero } from './StartupProgramHero'
-import { StartupLogo } from './StartupLogo'
-import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { VolumetricSlices } from '../graphics/VolumetricSlices'
 
 export const StartupProgramPage = () => {

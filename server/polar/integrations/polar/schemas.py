@@ -2,8 +2,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from polar_sdk.models import (
-    CustomerPaymentMethodCreateRequiresActionResponse,
-    CustomerPaymentMethodCreateSucceededResponse,
     LegacyRecurringProductPriceFixed,
     PaymentMethodCard,
     ProductPriceFixed,
@@ -364,66 +362,6 @@ class OrganizationCustomerSession(Schema):
             "`/v1/customer-portal/customers/me/*` for the duration of its TTL."
         ),
     )
-
-
-class OrganizationPaymentMethodCreate(Schema):
-    confirmation_token_id: str = Field(
-        description="Stripe ConfirmationToken collected by Stripe Elements.",
-    )
-    set_default: bool = Field(
-        default=True,
-        description="Whether to set the new payment method as default.",
-    )
-    return_url: Annotated[str, AfterValidator(get_safe_return_url)] = Field(
-        description="URL Stripe redirects to after handling next actions (3DS).",
-    )
-
-
-class OrganizationPaymentMethodConfirm(Schema):
-    setup_intent_id: str = Field(
-        description="Stripe SetupIntent ID returned from the requires_action flow.",
-    )
-    set_default: bool = Field(
-        default=True,
-        description="Whether to set the confirmed payment method as default.",
-    )
-
-
-class OrganizationPaymentMethodAddSucceeded(Schema):
-    status: Literal["succeeded"] = "succeeded"
-
-
-class OrganizationPaymentMethodAddRequiresAction(Schema):
-    status: Literal["requires_action"] = "requires_action"
-    client_secret: str = Field(
-        description="SetupIntent client_secret to drive stripe.handleNextAction.",
-    )
-
-
-def _add_response_discriminator(value: Any) -> str:
-    status_value = (
-        value.get("status")
-        if isinstance(value, dict)
-        else getattr(value, "status", None)
-    )
-    return "requires_action" if status_value == "requires_action" else "succeeded"
-
-
-OrganizationPaymentMethodAddResponse = Annotated[
-    Annotated[OrganizationPaymentMethodAddSucceeded, Tag("succeeded")]
-    | Annotated[OrganizationPaymentMethodAddRequiresAction, Tag("requires_action")],
-    Discriminator(_add_response_discriminator),
-]
-
-
-def organization_payment_method_add_response_from_sdk(
-    response: "CustomerPaymentMethodCreateRequiresActionResponse | CustomerPaymentMethodCreateSucceededResponse",
-) -> OrganizationPaymentMethodAddResponse:
-    if isinstance(response, CustomerPaymentMethodCreateRequiresActionResponse):
-        return OrganizationPaymentMethodAddRequiresAction(
-            client_secret=response.client_secret,
-        )
-    return OrganizationPaymentMethodAddSucceeded()
 
 
 def organization_payment_method_from_sdk(

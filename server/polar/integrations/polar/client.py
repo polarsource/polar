@@ -14,12 +14,7 @@ from polar_sdk.models import (
     CostMetadataInput,
     Customer,
     CustomerPaymentMethod,
-    CustomerPaymentMethodConfirm,
-    CustomerPaymentMethodCreate,
-    CustomerPaymentMethodCreateResponse,
     CustomerPortalCustomer,
-    CustomerPortalCustomersAddPaymentMethodSecurity,
-    CustomerPortalCustomersConfirmPaymentMethodSecurity,
     CustomerPortalCustomersDeletePaymentMethodSecurity,
     CustomerPortalCustomersGetSecurity,
     CustomerPortalCustomersListPaymentMethodsSecurity,
@@ -680,86 +675,6 @@ class PolarSelfClient:
                 _raise_error(span, e, "polar.portal.delete_payment_method")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "polar.portal.delete_payment_method")
-
-    async def portal_add_payment_method(
-        self,
-        *,
-        external_customer_id: str,
-        confirmation_token_id: str,
-        set_default: bool,
-        return_url: str,
-        external_member_id: str | None = None,
-    ) -> CustomerPaymentMethodCreateResponse:
-        with logfire.span(
-            "polar.portal.add_payment_method",
-            external_customer_id=external_customer_id,
-            external_member_id=external_member_id,
-        ) as span:
-            try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
-                    )
-                )
-                return (
-                    await self._sdk.customer_portal.customers.add_payment_method_async(
-                        security=CustomerPortalCustomersAddPaymentMethodSecurity(
-                            customer_session=session.token,
-                        ),
-                        request=CustomerPaymentMethodCreate(
-                            confirmation_token_id=confirmation_token_id,
-                            set_default=set_default,
-                            return_url=return_url,
-                        ),
-                    )
-                )
-            except PolarError as e:
-                if e.status_code == 422:
-                    span.set_attribute("http.status_code", 422)
-                    span.set_attribute("error.body", str(e.body))
-                    raise PolarSelfClientValidationError(e.body) from e
-                _raise_error(span, e, "polar.portal.add_payment_method")
-            except httpx.RequestError as e:
-                _raise_network_error(span, e, "polar.portal.add_payment_method")
-
-    async def portal_confirm_payment_method(
-        self,
-        *,
-        external_customer_id: str,
-        setup_intent_id: str,
-        set_default: bool,
-        external_member_id: str | None = None,
-    ) -> CustomerPaymentMethodCreateResponse:
-        with logfire.span(
-            "polar.portal.confirm_payment_method",
-            external_customer_id=external_customer_id,
-            external_member_id=external_member_id,
-        ) as span:
-            try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
-                    )
-                )
-                return await self._sdk.customer_portal.customers.confirm_payment_method_async(
-                    security=CustomerPortalCustomersConfirmPaymentMethodSecurity(
-                        customer_session=session.token,
-                    ),
-                    request=CustomerPaymentMethodConfirm(
-                        setup_intent_id=setup_intent_id,
-                        set_default=set_default,
-                    ),
-                )
-            except PolarError as e:
-                if e.status_code == 422:
-                    span.set_attribute("http.status_code", 422)
-                    span.set_attribute("error.body", str(e.body))
-                    raise PolarSelfClientValidationError(e.body) from e
-                _raise_error(span, e, "polar.portal.confirm_payment_method")
-            except httpx.RequestError as e:
-                _raise_network_error(span, e, "polar.portal.confirm_payment_method")
 
     async def portal_create_customer_session(
         self,

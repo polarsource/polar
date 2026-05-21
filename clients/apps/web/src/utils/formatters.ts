@@ -30,3 +30,9 @@ export const formatPercentage = (() => {
 
   return (value: number): string => stripTrailingZeros(formatter.format(value))
 })()
+
+export const formatCountry = (() => {
+  const regionName = new Intl.DisplayNames(['en'], { type: 'region' })
+
+  return (country: string): string => regionName.of(country) ?? country
+})()

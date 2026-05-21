@@ -17,7 +17,7 @@ import {
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { useMemberModelEnabled } from '@/hooks/useMemberModelEnabled'
-import { formatPercentage } from '@/utils/formatters'
+import { formatCountry, formatPercentage } from '@/utils/formatters'
 import { getPreviousDateRange } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -39,8 +39,6 @@ import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerTrendStatBox } from './CustomerTrendStatBox'
-
-const regionName = new Intl.DisplayNames(['en'], { type: 'region' })
 
 interface CustomerPageProps {
   organization: schemas['Organization']
@@ -551,7 +549,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 label="Country"
                 value={
                   customer.billing_address?.country
-                    ? regionName.of(customer.billing_address?.country)
+                    ? formatCountry(customer.billing_address.country)
                     : undefined
                 }
               />

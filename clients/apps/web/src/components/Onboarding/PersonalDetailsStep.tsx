@@ -25,6 +25,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useMonthDigitTypeahead } from '@/hooks/useMonthDigitTypeahead'
+import { formatCountry } from '@/utils/formatters'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -151,7 +152,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
     !(enums.stripeAccountCountryValues as readonly string[]).includes(country)
   const countryDisplayName = useMemo(() => {
     if (!country) return ''
-    return new Intl.DisplayNames([], { type: 'region' }).of(country) ?? country
+    return formatCountry(country)
   }, [country])
 
   const currentYear = new Date().getFullYear()

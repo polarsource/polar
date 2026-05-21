@@ -25,6 +25,7 @@ const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
   '/settings',
   '/oauth2',
   '/checkout',
+  '/embed',
   '/verify-email',
   '/api',
   /^\/favicon[\w-]*\.\w+$/, // /favicon.png, /favicon-dark.png, etc.

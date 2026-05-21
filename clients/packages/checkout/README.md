@@ -79,12 +79,12 @@ embed.addEventListener('success', (event) => {
 
 All events are dispatched as cancelable `CustomEvent`s on the `embed` instance. Call `event.preventDefault()` to opt out of the SDK's default action.
 
-| Event       | Detail                        | Default action                                                        |
-| ----------- | ----------------------------- | --------------------------------------------------------------------- |
-| `loaded`    | —                             | Removes the loader spinner once the iframe is ready.                  |
-| `close`     | —                             | Tears down the iframe (unless locked by a pending `confirmed`).       |
-| `confirmed` | —                             | Marks the modal as non-closable while Stripe is processing.           |
-| `success`   | `{ paymentMethodId: string }` | **Auto-closes the modal.** Call `preventDefault()` to keep it open.   |
+| Event       | Detail                        | Default action                                                                               |
+| ----------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
+| `loaded`    | —                             | Removes the loader spinner once the iframe is ready.                                         |
+| `close`     | —                             | Tears down the iframe (unless locked by a pending `confirmed`).                              |
+| `confirmed` | —                             | Marks the modal as non-closable while Stripe is processing.                                  |
+| `success`   | `{ paymentMethodId: string }` | **Auto-closes the modal.** Call `preventDefault()` to keep it open.                          |
 | `error`     | `{ code: ErrorCode }`         | None. `ErrorCode = 'invalid_request' \| 'unauthorized' \| 'processing_failed' \| 'unknown'`. |
 
 #### Instance methods
@@ -164,18 +164,18 @@ return (
 
 #### Props
 
-| Prop           | Type                                | Default | Description                                                                       |
-| -------------- | ----------------------------------- | ------- | --------------------------------------------------------------------------------- |
-| `sessionToken` | `string`                            | —       | **Required.** Session token from `POST /v1/customer-sessions`.                    |
-| `theme`        | `'light' \| 'dark'`                 | `light` | Colour scheme.                                                                    |
-| `setAsDefault` | `boolean`                           | `true`  | Whether the new card should become the customer's default payment method.         |
-| `locale`       | `string`                            | `'en'`  | BCP47 locale (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.  |
-| `onLoaded`     | `() => void`                        | —       | Fires once when the iframe finishes loading and the form becomes interactive.     |
-| `onConfirmed`  | `() => void`                        | —       | Fires when the customer submits and Stripe processing starts.                     |
-| `onSuccess`    | `(paymentMethodId: string) => void` | —       | Fires after the card has been attached to the customer.                           |
+| Prop           | Type                                | Default | Description                                                                                |
+| -------------- | ----------------------------------- | ------- | ------------------------------------------------------------------------------------------ |
+| `sessionToken` | `string`                            | —       | **Required.** Session token from `POST /v1/customer-sessions`.                             |
+| `theme`        | `'light' \| 'dark'`                 | `light` | Colour scheme.                                                                             |
+| `setAsDefault` | `boolean`                           | `true`  | Whether the new card should become the customer's default payment method.                  |
+| `locale`       | `string`                            | `'en'`  | BCP47 locale (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.          |
+| `onLoaded`     | `() => void`                        | —       | Fires once when the iframe finishes loading and the form becomes interactive.              |
+| `onConfirmed`  | `() => void`                        | —       | Fires when the customer submits and Stripe processing starts.                              |
+| `onSuccess`    | `(paymentMethodId: string) => void` | —       | Fires after the card has been attached to the customer.                                    |
 | `onError`      | `(code: ErrorCode) => void`         | —       | Fires when the iframe can't render or the payment-method flow fails. `ErrorCode` as above. |
-| `className`    | `string`                            | —       | Applied to the wrapping `<div>`. Use it to size or position the embed.            |
-| `style`        | `React.CSSProperties`               | —       | Inline style on the wrapping `<div>`.                                             |
+| `className`    | `string`                            | —       | Applied to the wrapping `<div>`. Use it to size or position the embed.                     |
+| `style`        | `React.CSSProperties`               | —       | Inline style on the wrapping `<div>`.                                                      |
 
 #### Redirect re-entry
 

@@ -21,11 +21,6 @@ const JOBS = [
         experience: '7+ Years',
         link: 'https://jobs.ashbyhq.com/polar/955c6935-6d03-46e5-b649-a8b958a52962',
       },
-      {
-        role: 'Part-time Support Engineer',
-        location: 'Remote, Europe',
-        link: 'https://jobs.ashbyhq.com/polar/a47a0dc9-078f-4f80-9bce-29d74bab329b',
-      },
     ],
   },
 ]

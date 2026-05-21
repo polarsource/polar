@@ -20,17 +20,15 @@ depends_on: tuple[str] | None = None
 
 def upgrade() -> None:
     op.execute("SET LOCAL lock_timeout = '2s'")
+    op.drop_constraint(op.f("accounts_admin_id_fkey"), "accounts", type_="foreignkey")
     op.drop_column("accounts", "admin_id")
 
 
 def downgrade() -> None:
     op.add_column(
         "accounts",
-        sa.Column("admin_id", sa.Uuid(), nullable=True),
+        sa.Column("admin_id", sa.UUID(), autoincrement=False, nullable=True),
     )
-    # Backfill from `user_organizations` to preserve the previous invariant
-    # "Account.admin_id matches the user holding `owner` on at least one of
-    # the account's organizations".
     op.execute(
         """
         UPDATE accounts AS a
@@ -45,10 +43,5 @@ def downgrade() -> None:
         """
     )
     op.create_foreign_key(
-        "accounts_admin_id_fkey",
-        "accounts",
-        "users",
-        ["admin_id"],
-        ["id"],
-        use_alter=True,
+        op.f("accounts_admin_id_fkey"), "accounts", "users", ["admin_id"], ["id"]
     )

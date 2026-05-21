@@ -18,11 +18,9 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    # Guards the invariant "at most one owner per organization" once
-    # `Account.admin_id` is no longer the source of truth.
     with op.get_context().autocommit_block():
         op.create_index(
-            op.f("ix_user_organizations_owner_per_org"),
+            "ix_user_organizations_owner_per_org",
             "user_organizations",
             ["organization_id"],
             unique=True,
@@ -34,7 +32,8 @@ def upgrade() -> None:
 def downgrade() -> None:
     with op.get_context().autocommit_block():
         op.drop_index(
-            op.f("ix_user_organizations_owner_per_org"),
+            "ix_user_organizations_owner_per_org",
             table_name="user_organizations",
             postgresql_concurrently=True,
+            postgresql_where="role = 'owner' AND deleted_at IS NULL",
         )

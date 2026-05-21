@@ -67,6 +67,7 @@ from polar.models import (
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
+from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.organization import OrganizationStatus
@@ -1575,6 +1576,45 @@ class TestCreate:
             checkout.payment_processor_metadata["customer_session_client_secret"]
             == "STRIPE_CUSTOMER_SESSION_SECRET"
         )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_team_customer_skips_name_prefill(
+        self,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        stripe_service_mock.create_customer_session.return_value = SimpleNamespace(
+            client_secret="STRIPE_CUSTOMER_SESSION_SECRET",
+        )
+
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+                customer_id=customer.id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer == customer
+        assert checkout.customer_email == customer.email
+        assert checkout.customer_name is None
+        assert checkout.customer_billing_address == customer.billing_address
+        assert checkout.customer_tax_id == customer.tax_id
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

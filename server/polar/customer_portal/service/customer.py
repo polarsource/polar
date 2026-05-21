@@ -9,6 +9,7 @@ from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.http import add_query_parameters
 from polar.kit.pagination import PaginationParams
 from polar.models import Customer as CustomerModel
 from polar.models import PaymentMethod
@@ -226,18 +227,24 @@ class CustomerService:
 
         setup_intent = await stripe_service.create_setup_intent(
             automatic_payment_methods={"enabled": True},
-            confirm=True,
-            confirmation_token=payment_method_create.confirmation_token_id,
             customer=customer.stripe_customer_id,
             metadata={
                 "organization_id": str(customer.organization_id),
                 "customer_id": str(customer.id),
             },
-            return_url=payment_method_create.return_url,
-            expand=["payment_method"],
             payment_method_options={
                 "klarna": {"currency": "usd"},
             },
+        )
+        return_url = add_query_parameters(
+            payment_method_create.return_url,
+            polar_setup_intent=setup_intent.id,
+        )
+        setup_intent = await stripe_service.confirm_setup_intent(
+            setup_intent.id,
+            confirmation_token=payment_method_create.confirmation_token_id,
+            return_url=return_url,
+            expand=["payment_method"],
         )
 
         return await self._save_payment_method(

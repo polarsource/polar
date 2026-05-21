@@ -145,9 +145,11 @@ const PaymentMethodRow = ({
 export const BillingPaymentMethods = ({
   organizationId,
   onAddPaymentMethod,
+  error,
 }: {
   organizationId: string
   onAddPaymentMethod: () => void
+  error?: string | null
 }) => {
   const { data, isLoading } = useOrganizationPaymentMethods(organizationId)
   const paymentMethods = data?.items ?? []
@@ -194,6 +196,11 @@ export const BillingPaymentMethods = ({
           ))
         )}
       </Box>
+      {error && (
+        <Box borderRadius="m" backgroundColor="background-danger" padding="l">
+          <Text color="danger">{error}</Text>
+        </Box>
+      )}
     </Box>
   )
 }

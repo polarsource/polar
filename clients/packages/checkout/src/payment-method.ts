@@ -1,6 +1,8 @@
 const POLAR_PAYMENT_METHOD_EVENT = 'POLAR_PAYMENT_METHOD'
 const EMBED_PATH = '/embed/payment-method'
 
+const REDIRECT_STATUS_PARAM = 'polar_payment_method_status'
+
 /**
  * Message sent to the parent window when the embedded payment method
  * iframe is fully loaded and ready for input.
@@ -38,18 +40,44 @@ interface EmbedPaymentMethodMessageSuccess {
 }
 
 /**
+ * Failure modes the embed surfaces via the `error` event.
+ *
+ * - `invalid_request`: required URL params missing or malformed.
+ * - `unauthorized`: session token missing, expired, or rejected.
+ * - `processing_failed`: card declined, 3DS challenge failed, or
+ *   the customer-portal API rejected the new payment method.
+ * - `unknown`: catch-all for unexpected server errors.
+ */
+export type EmbedPaymentMethodErrorCode =
+  | 'invalid_request'
+  | 'unauthorized'
+  | 'processing_failed'
+  | 'unknown'
+
+/**
+ * Outcome of a redirect-based payment method flow, surfaced on the
+ * merchant's page once the customer is returned from the provider.
+ */
+export interface EmbedPaymentMethodRedirectResult {
+  status: 'succeeded' | 'failed'
+}
+
+/**
  * Message sent to the parent window when the iframe can't render the
- * form (e.g. token missing, expired, or rejected by the server).
+ * form or the payment-method flow fails.
+ *
+ * After a failure during the flow, the SDK re-enables closing the modal
+ * so the customer can dismiss it and try again.
  */
 interface EmbedPaymentMethodMessageError {
   event: 'error'
-  code: 'invalid_request' | 'unauthorized' | 'unknown'
+  code: EmbedPaymentMethodErrorCode
 }
 
 /**
  * Internal: iframe announces its current content height. Consumed by
- * inline-mode embeds (the React component) to keep the iframe sized to
- * its content. Not exposed to consumers.
+ * inline embeds to keep the iframe sized to its content. Not exposed to
+ * consumers.
  */
 interface EmbedPaymentMethodMessageResize {
   event: 'resize'
@@ -89,6 +117,38 @@ interface EmbedPaymentMethodCreateOptions {
    */
   setAsDefault?: boolean
   /**
+   * Where to return the customer after a redirect-based payment method
+   */
+  returnUrl?: string
+  /**
+   * Convenience callback fired once when the embed has loaded.
+   */
+  onLoaded?: (event: CustomEvent<EmbedPaymentMethodMessageLoaded>) => void
+}
+
+interface EmbedPaymentMethodCreateInlineOptions {
+  /**
+   * A short-lived session token returned by
+   * `POST /v1/customer-sessions`. Pass whatever the API returned —
+   * the SDK detects the prefix (`polar_cst_` vs `polar_mst_`) and
+   * routes the request to the right endpoint internally.
+   */
+  sessionToken: string
+  /**
+   * The element the chrome-less embed iframe is mounted into. Any
+   * existing children of the element are replaced.
+   */
+  element: HTMLElement
+  /**
+   * Color scheme for the embed. Defaults to `light`.
+   */
+  theme?: 'light' | 'dark'
+  /**
+   * Whether the new card should be marked as the customer's default
+   * payment method. Defaults to `true`.
+   */
+  setAsDefault?: boolean
+  /**
    * Convenience callback fired once when the embed has loaded.
    */
   onLoaded?: (event: CustomEvent<EmbedPaymentMethodMessageLoaded>) => void
@@ -101,23 +161,37 @@ const resolveEmbedBaseURL = (): string => {
   return origins.split(',')[0]
 }
 
+const buildIframeAllow = (): string => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore - Defined at build time by tsup
+  const origins = (__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ as string)
+    .split(',')
+    .join(' ')
+  return `payment 'self' ${origins}; publickey-credentials-get 'self' ${origins};`
+}
+
 /**
- * Represents an embedded payment method instance rendered as a
- * full-screen modal overlay on the merchant's page.
+ * An embedded payment method instance.
  *
- * For an inline, chrome-less embed that can be composed into a custom
- * UI, use the React component at `@polar-sh/checkout/react/payment-method`.
+ * Create one as a full-screen modal overlay with `create()`, or mounted
+ * inline into an element you control with `createInline()`.
  */
 class EmbedPaymentMethod {
   private iframe: HTMLIFrameElement
-  private loader: HTMLDivElement
+  private mode: 'modal' | 'inline'
+  private loader: HTMLDivElement | null
   private loaded: boolean
   private closable: boolean
   private eventTarget: EventTarget
   private windowMessageListener: (event: MessageEvent) => void
 
-  public constructor(iframe: HTMLIFrameElement, loader: HTMLDivElement) {
+  public constructor(
+    iframe: HTMLIFrameElement,
+    mode: 'modal' | 'inline',
+    loader: HTMLDivElement | null,
+  ) {
     this.iframe = iframe
+    this.mode = mode
     this.loader = loader
     this.loaded = false
     this.closable = true
@@ -160,7 +234,7 @@ class EmbedPaymentMethod {
   public static create(
     options: EmbedPaymentMethodCreateOptions,
   ): Promise<EmbedPaymentMethod> {
-    const { sessionToken, theme, setAsDefault, onLoaded } = options
+    const { sessionToken, theme, setAsDefault, returnUrl, onLoaded } = options
 
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
@@ -201,6 +275,10 @@ class EmbedPaymentMethod {
     embedURL.searchParams.set('embed', 'true')
     embedURL.searchParams.set('embed_origin', window.location.origin)
     embedURL.searchParams.set('mode', 'modal')
+    embedURL.searchParams.set(
+      'embed_return_url',
+      returnUrl ?? window.location.href,
+    )
     if (theme) {
       embedURL.searchParams.set('theme', theme)
     }
@@ -220,16 +298,11 @@ class EmbedPaymentMethod {
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
     iframe.style.colorScheme = 'auto'
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore - Defined at build time by tsup
-    const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
-      .split(',')
-      .join(' ')
-    iframe.allow = `payment 'self' ${origins}; publickey-credentials-get 'self' ${origins};`
+    iframe.allow = buildIframeAllow()
 
     document.body.appendChild(iframe)
 
-    const embed = new EmbedPaymentMethod(iframe, loader)
+    const embed = new EmbedPaymentMethod(iframe, 'modal', loader)
 
     if (onLoaded) {
       embed.addEventListener('loaded', onLoaded, { once: true })
@@ -238,6 +311,46 @@ class EmbedPaymentMethod {
     return new Promise((resolve) => {
       embed.addEventListener('loaded', () => resolve(embed), { once: true })
     })
+  }
+
+  /**
+   * Mount a chrome-less embed inline, inside an element you control.
+   */
+  public static createInline(
+    options: EmbedPaymentMethodCreateInlineOptions,
+  ): EmbedPaymentMethod {
+    const { sessionToken, element, theme, setAsDefault, onLoaded } = options
+
+    const embedURL = new URL(EMBED_PATH, resolveEmbedBaseURL())
+    embedURL.searchParams.set('session_token', sessionToken)
+    embedURL.searchParams.set('embed', 'true')
+    embedURL.searchParams.set('embed_origin', window.location.origin)
+    embedURL.searchParams.set('mode', 'inline')
+    if (theme) {
+      embedURL.searchParams.set('theme', theme)
+    }
+    if (setAsDefault === false) {
+      embedURL.searchParams.set('set_default', 'false')
+    }
+
+    const iframe = document.createElement('iframe')
+    iframe.src = embedURL.toString()
+    iframe.style.display = 'block'
+    iframe.style.width = '100%'
+    iframe.style.height = '0'
+    iframe.style.border = 'none'
+    iframe.style.colorScheme = 'auto'
+    iframe.allow = buildIframeAllow()
+
+    element.replaceChildren(iframe)
+
+    const embed = new EmbedPaymentMethod(iframe, 'inline', null)
+
+    if (onLoaded) {
+      embed.addEventListener('loaded', onLoaded, { once: true })
+    }
+
+    return embed
   }
 
   /**
@@ -267,14 +380,34 @@ class EmbedPaymentMethod {
     })
   }
 
+  public static getRedirectResult(): EmbedPaymentMethodRedirectResult | null {
+    if (typeof window === 'undefined') {
+      return null
+    }
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get(REDIRECT_STATUS_PARAM)
+    if (status !== 'succeeded' && status !== 'failed') {
+      return null
+    }
+    params.delete(REDIRECT_STATUS_PARAM)
+    const query = params.toString()
+    window.history.replaceState(
+      {},
+      '',
+      `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`,
+    )
+    return { status }
+  }
+
   /**
    * Close the embed and remove it from the DOM.
    */
   public close(): void {
     window.removeEventListener('message', this.windowMessageListener)
-    if (document.body.contains(this.iframe))
-      document.body.removeChild(this.iframe)
-    document.body.classList.remove('polar-no-scroll')
+    this.iframe.remove()
+    if (this.mode === 'modal') {
+      document.body.classList.remove('polar-no-scroll')
+    }
   }
 
   public addEventListener(
@@ -358,11 +491,15 @@ class EmbedPaymentMethod {
     const setAsDefaultAttr = element.getAttribute(
       'data-polar-payment-method-set-as-default',
     )
+    const returnUrl = element.getAttribute(
+      'data-polar-payment-method-return-url',
+    )
     EmbedPaymentMethod.create({
       sessionToken: token,
       theme: theme ?? undefined,
       setAsDefault:
         setAsDefaultAttr === null ? undefined : setAsDefaultAttr !== 'false',
+      returnUrl: returnUrl ?? undefined,
     })
   }
 
@@ -370,7 +507,10 @@ class EmbedPaymentMethod {
     if (this.loaded) {
       return
     }
-    document.body.removeChild(this.loader)
+    // Inline embeds have no loader overlay; only the modal does.
+    if (this.loader && document.body.contains(this.loader)) {
+      document.body.removeChild(this.loader)
+    }
     this.loaded = true
   }
 
@@ -385,8 +525,16 @@ class EmbedPaymentMethod {
   }
 
   private handleSuccess(): void {
+    // Inline embeds stay mounted — the host page decides what's next.
+    if (this.mode === 'inline') {
+      return
+    }
     this.closable = true
     this.close()
+  }
+
+  private handleError(): void {
+    this.closable = true
   }
 
   /**
@@ -408,9 +556,13 @@ class EmbedPaymentMethod {
       return
     }
 
-    // `resize` is an internal protocol message used by inline embeds —
-    // never relevant for modal mode, so silently drop it.
+    // `resize` is an internal protocol message: inline embeds use it to
+    // keep the iframe sized to its content; modal embeds ignore it. It's
+    // never surfaced as a public event.
     if (data.event === 'resize') {
+      if (this.mode === 'inline') {
+        this.iframe.style.height = `${Math.max(0, Math.ceil(data.height))}px`
+      }
       return
     }
 
@@ -434,6 +586,9 @@ class EmbedPaymentMethod {
         break
       case 'success':
         this.handleSuccess()
+        break
+      case 'error':
+        this.handleError()
         break
     }
   }
@@ -464,4 +619,7 @@ if (typeof document !== 'undefined') {
   }
 }
 
-export { EmbedPaymentMethod as PolarEmbedPaymentMethod }
+export {
+  EmbedPaymentMethod as PolarEmbedPaymentMethod,
+  REDIRECT_STATUS_PARAM as EMBED_PAYMENT_METHOD_REDIRECT_STATUS_PARAM,
+}

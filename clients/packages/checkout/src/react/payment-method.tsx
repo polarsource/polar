@@ -1,17 +1,20 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import {
+  PolarEmbedPaymentMethod,
+  type EmbedPaymentMethodErrorCode,
+  type EmbedPaymentMethodRedirectResult,
+} from '../payment-method'
 
 const POLAR_PAYMENT_METHOD_EVENT = 'POLAR_PAYMENT_METHOD'
 const EMBED_PATH = '/embed/payment-method'
-
-type ErrorCode = 'invalid_request' | 'unauthorized' | 'unknown'
 
 type IncomingMessage =
   | { event: 'loaded' }
   | { event: 'confirmed' }
   | { event: 'success'; paymentMethodId: string }
-  | { event: 'error'; code: ErrorCode }
+  | { event: 'error'; code: EmbedPaymentMethodErrorCode }
   | { event: 'resize'; height: number }
 
 const isPolarMessage = (
@@ -84,7 +87,7 @@ interface PolarPaymentMethodBaseProps {
    * Fires when the iframe could not render the form (token missing,
    * expired, or rejected).
    */
-  onError?: (code: ErrorCode) => void
+  onError?: (code: EmbedPaymentMethodErrorCode) => void
   /**
    * Optional class name applied to the wrapping `div`. Use this to size
    * or position the embed.
@@ -198,4 +201,41 @@ export const PolarPaymentMethod = ({
   }, [sessionToken, theme, setAsDefault])
 
   return <div ref={containerRef} className={className} style={style} />
+}
+
+export interface UsePaymentMethodRedirectResultOptions {
+  /**
+   * Called when the customer successfully added a payment method via a
+   * redirect-based flow (Amazon Pay etc).
+   */
+  onSuccess?: () => void
+  /**
+   * Called when a redirect-based payment method flow failed.
+   */
+  onError?: () => void
+  /**
+   * Called with the raw result for either outcome — an alternative to
+   * `onSuccess`/`onError` when a single handler is preferred.
+   */
+  onResult?: (result: EmbedPaymentMethodRedirectResult) => void
+}
+
+export const usePaymentMethodRedirectResult = ({
+  onSuccess,
+  onError,
+  onResult,
+}: UsePaymentMethodRedirectResultOptions): void => {
+  const handledRef = useRef(false)
+  useEffect(() => {
+    if (handledRef.current) return
+    handledRef.current = true
+    const result = PolarEmbedPaymentMethod.getRedirectResult()
+    if (!result) return
+    onResult?.(result)
+    if (result.status === 'succeeded') {
+      onSuccess?.()
+    } else {
+      onError?.()
+    }
+  }, [onSuccess, onError, onResult])
 }

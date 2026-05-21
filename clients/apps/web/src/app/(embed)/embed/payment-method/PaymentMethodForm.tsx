@@ -18,21 +18,18 @@ export interface CustomerBillingDetails {
   address: schemas['Address'] | null
 }
 
-export interface SetupIntent {
-  clientSecret: string
-  id: string
-}
-
 interface Props {
   api: Client
   themePreset: ThemingPresetProps
   setAsDefault: boolean
   customerBillingDetails: CustomerBillingDetails
   onProcessingStart?: () => void
+  onProcessingError?: () => void
   onPaymentMethodAdded?: (
     paymentMethod: schemas['CustomerPaymentMethod'],
   ) => void
-  setupIntent?: SetupIntent
+  redirectStatus?: string
+  setupIntentId?: string
 }
 
 const FALLBACK_ERROR = 'Something went wrong. Please try again.'
@@ -57,18 +54,26 @@ export const PaymentMethodForm = ({
   setAsDefault,
   customerBillingDetails,
   onProcessingStart,
+  onProcessingError,
   onPaymentMethodAdded,
-  setupIntent,
+  redirectStatus,
+  setupIntentId,
 }: Props) => {
   const stripePromise = useMemo(
     () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
     [],
   )
   const [error, setError] = useState<string | null>(null)
-  // Start loading if we're re-entering from a 3DS redirect — the confirm
-  // call below will flip it back to false. Avoids a flash of the
-  // submittable form before the in-flight confirm resolves.
-  const [loading, setLoading] = useState(!!setupIntent)
+  const [loading, setLoading] = useState(!!redirectStatus)
+
+  const reportError = useCallback(
+    (message: string) => {
+      setError(message)
+      setLoading(false)
+      onProcessingError?.()
+    },
+    [onProcessingError],
+  )
 
   const confirmSetupIntent = useCallback(
     async (setupIntentId: string) => {
@@ -80,19 +85,18 @@ export const PaymentMethodForm = ({
           }),
         )
       } catch {
-        setError(FALLBACK_ERROR)
-        setLoading(false)
+        reportError(FALLBACK_ERROR)
         return
       }
 
-      setLoading(false)
       if (confirmed.status === 'succeeded') {
+        setLoading(false)
         onPaymentMethodAdded?.(confirmed.payment_method)
       } else {
-        setError(FALLBACK_ERROR)
+        reportError(FALLBACK_ERROR)
       }
     },
-    [api, onPaymentMethodAdded, setAsDefault],
+    [api, onPaymentMethodAdded, reportError, setAsDefault],
   )
 
   // 3DS re-entry: if Stripe redirected the customer back with setup intent
@@ -101,16 +105,20 @@ export const PaymentMethodForm = ({
   const reentryConfirmedRef = useRef(false)
   const router = useRouter()
   useEffect(() => {
-    if (!setupIntent || reentryConfirmedRef.current) return
+    if (!redirectStatus || reentryConfirmedRef.current) return
     reentryConfirmedRef.current = true
     ;(async () => {
-      await confirmSetupIntent(setupIntent.id)
+      if (redirectStatus === 'failed' || !setupIntentId) {
+        reportError(FALLBACK_ERROR)
+      } else {
+        await confirmSetupIntent(setupIntentId)
+      }
       const search = new URLSearchParams(window.location.search)
-      search.delete('setup_intent_client_secret')
-      search.delete('setup_intent')
+      search.delete('redirect_status')
+      search.delete('polar_setup_intent')
       router.replace(`${window.location.pathname}?${search.toString()}`)
     })()
-  }, [setupIntent, confirmSetupIntent, router])
+  }, [redirectStatus, setupIntentId, confirmSetupIntent, reportError, router])
 
   const handleSubmit = useCallback(
     async (
@@ -126,8 +134,7 @@ export const PaymentMethodForm = ({
 
       const { error: submitError } = await elements.submit()
       if (submitError) {
-        setError(submitError.message ?? FALLBACK_ERROR)
-        setLoading(false)
+        reportError(submitError.message ?? FALLBACK_ERROR)
         return
       }
 
@@ -142,8 +149,7 @@ export const PaymentMethodForm = ({
         })
 
       if (tokenError || !confirmationToken) {
-        setError(tokenError?.message ?? FALLBACK_ERROR)
-        setLoading(false)
+        reportError(tokenError?.message ?? FALLBACK_ERROR)
         return
       }
 
@@ -161,8 +167,7 @@ export const PaymentMethodForm = ({
           }),
         )
       } catch {
-        setError(FALLBACK_ERROR)
-        setLoading(false)
+        reportError(FALLBACK_ERROR)
         return
       }
 
@@ -176,8 +181,7 @@ export const PaymentMethodForm = ({
         await stripe.handleNextAction({ clientSecret: created.client_secret })
 
       if (actionError || !nextActionIntent) {
-        setError(actionError?.message ?? FALLBACK_ERROR)
-        setLoading(false)
+        reportError(actionError?.message ?? FALLBACK_ERROR)
         return
       }
 
@@ -189,9 +193,25 @@ export const PaymentMethodForm = ({
       customerBillingDetails,
       onPaymentMethodAdded,
       onProcessingStart,
+      reportError,
       setAsDefault,
     ],
   )
+
+  if (redirectStatus) {
+    return (
+      <div
+        className="flex flex-col items-center gap-3"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900 dark:border-gray-700 dark:border-t-white" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Adding payment method…
+        </p>
+      </div>
+    )
+  }
 
   return (
     <Elements

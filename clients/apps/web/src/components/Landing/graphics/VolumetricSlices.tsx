@@ -103,7 +103,7 @@ void main() {
   vec3 p = vec3(v_world, u_sliceZ);
 
   float metaSdf = 1.0 - metaSum(p);                       // < 0 inside blob
-  float boxS    = boxSdf(p, vec3(0.55, 0.55, 0.7), 0.06);  // < 0 inside box (rounded)
+  float boxS    = boxSdf(p, vec3(0.55, 0.55, 0.95), 0.06); // < 0 inside box (rounded)
 
   // Outside the intersection → no color, no depth
   if (max(metaSdf, boxS) > 0.0) discard;
@@ -242,7 +242,7 @@ export const VolumetricSlices = () => {
     )
     // world extent ±0.62 xy, ±0.78 z; scaled down to leave margin inside
     // the container, matching the CPU version's visual footprint
-    gl.uniform1f(uViewScale, 0.9)
+    gl.uniform1f(uViewScale, 0.8)
     gl.uniform1f(uDepthScale, 0.5)
     gl.uniform2f(uHalfXY, 0.62, 0.62)
     const lineValue = isDark ? 1.0 : 0.0
@@ -256,8 +256,8 @@ export const VolumetricSlices = () => {
 
     // Slice stack
     const sliceCount = 16
-    const zMin = -0.78
-    const zMax = 0.78
+    const zMin = -1.05
+    const zMax = 1.05
 
     let time = 0
     let lastTime: number | null = null

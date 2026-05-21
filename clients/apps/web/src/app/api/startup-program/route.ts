@@ -9,6 +9,8 @@ const requestSchema = z.object({
   website: z.string().max(500).optional().default(''),
   foundedAt: z.string().max(50).optional().default(''),
   funding: z.string().max(100).optional().default(''),
+  partner: z.string().max(100).optional().default(''),
+  partnerOther: z.string().max(200).optional().default(''),
   paymentVolume: z.string().max(200).optional().default(''),
   teamSize: z.string().max(50).optional().default(''),
   location: z.string().max(200).optional().default(''),
@@ -27,6 +29,9 @@ const buildCompanyDescription = (
   if (data.industry) lines.push(`Industry: ${data.industry}`)
   if (data.foundedAt) lines.push(`Founded: ${data.foundedAt}`)
   if (data.funding) lines.push(`Funding raised: ${data.funding}`)
+  const partner =
+    data.partner === 'Other' ? data.partnerOther : data.partner
+  if (partner) lines.push(`Partner / Investor: ${partner}`)
   if (data.teamSize) lines.push(`Team size: ${data.teamSize}`)
   if (data.location) lines.push(`Location: ${data.location}`)
   if (data.paymentVolume) lines.push(`Payment volume: ${data.paymentVolume}`)

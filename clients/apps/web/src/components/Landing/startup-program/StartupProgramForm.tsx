@@ -24,6 +24,24 @@ const FUNDING_OPTIONS = [
 
 const TEAM_SIZE_OPTIONS = ['1', '2 to 5', '6 to 15', '16 to 50', '50+']
 
+const PARTNER_OPTIONS = [
+  'Accel',
+  'Andreessen Horowitz (a16z)',
+  'Benchmark',
+  'Bessemer Venture Partners',
+  'First Round Capital',
+  'Founders Fund',
+  'General Catalyst',
+  'Greylock',
+  'Index Ventures',
+  'Kleiner Perkins',
+  'Lightspeed',
+  'Sequoia Capital',
+  'Tiger Global',
+  'Y Combinator',
+  'Other',
+]
+
 interface FieldProps {
   label: string
   htmlFor: string
@@ -45,6 +63,8 @@ interface FormState {
   website: string
   foundedAt: string
   funding: string
+  partner: string
+  partnerOther: string
   paymentVolume: string
   teamSize: string
   location: string
@@ -61,6 +81,8 @@ const INITIAL: FormState = {
   website: '',
   foundedAt: '',
   funding: '',
+  partner: '',
+  partnerOther: '',
   paymentVolume: '',
   teamSize: '',
   location: '',
@@ -158,6 +180,28 @@ export const StartupProgramForm = () => {
             ))}
           </SelectContent>
         </Select>
+      </Field>
+
+      <Field label="Partner / Investor" htmlFor="partner">
+        <Select value={form.partner} onValueChange={set('partner')}>
+          <SelectTrigger id="partner">
+            <SelectValue placeholder="Select..." />
+          </SelectTrigger>
+          <SelectContent>
+            {PARTNER_OPTIONS.map((opt) => (
+              <SelectItem key={opt} value={opt}>
+                {opt}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {form.partner === 'Other' && (
+          <Input
+            value={form.partnerOther}
+            onChange={(e) => set('partnerOther')(e.target.value)}
+            placeholder="Which partner?"
+          />
+        )}
       </Field>
 
       <Field label="Payment Volume (even if zero)" htmlFor="paymentVolume">

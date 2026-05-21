@@ -13,7 +13,7 @@ import { VolumetricSlices } from '../graphics/VolumetricSlices'
 
 export const StartupProgramPage = () => {
   return (
-    <Box display="flex" flexDirection="column">
+    <Box display="flex" flexDirection="column" alignItems="center">
       <Box
         display="flex"
         alignItems="center"
@@ -31,6 +31,14 @@ export const StartupProgramPage = () => {
           An entire year on our most generous plan. For free.
         </Text>
       </Box>
+
+      <Box
+        width="4rem"
+        borderColor="border-primary"
+        borderTopWidth={2}
+        marginTop="2xl"
+        display="flex"
+      />
 
       <Section>
         <Box

@@ -26,9 +26,9 @@ class AccountServiceError(PolarError):
     pass
 
 
-class CannotChangeAdminError(AccountServiceError):
+class CannotChangeOwnerError(AccountServiceError):
     def __init__(self, reason: str) -> None:
-        super().__init__(f"Cannot change account admin: {reason}")
+        super().__init__(f"Cannot change account owner: {reason}")
 
 
 class AccountService:
@@ -101,7 +101,7 @@ class AccountService:
         session: AsyncSession,
         *,
         organization_id: uuid.UUID,
-        new_admin_user: User,
+        new_owner_user: User,
     ) -> None:
         if not settings.POLAR_SELF_ENABLED:
             return
@@ -115,17 +115,17 @@ class AccountService:
             str(organization_id), polar_organization_id
         )
         if customer is None:
-            raise CannotChangeAdminError(
+            raise CannotChangeOwnerError(
                 f"Polar self customer not found for organization {organization_id}"
             )
 
         member_repository = MemberRepository.from_session(session)
         target_member = await member_repository.get_by_customer_id_and_external_id(
-            customer.id, str(new_admin_user.id)
+            customer.id, str(new_owner_user.id)
         )
         if target_member is None:
-            raise CannotChangeAdminError(
-                f"Polar self member not found for user {new_admin_user.id}"
+            raise CannotChangeOwnerError(
+                f"Polar self member not found for user {new_owner_user.id}"
             )
 
         if target_member.role != MemberRole.owner:
@@ -136,23 +136,23 @@ class AccountService:
                 allow_ownership_transfer=True,
             )
 
-    async def change_admin(
+    async def change_owner(
         self,
         session: AsyncSession,
         account: Account,
-        new_admin_id: uuid.UUID,
+        new_owner_id: uuid.UUID,
         organization_id: uuid.UUID,
     ) -> Account:
-        new_admin_user = await user_organization_service.transfer_ownership(
+        new_owner_user = await user_organization_service.transfer_ownership(
             session,
-            new_owner_user_id=new_admin_id,
+            new_owner_user_id=new_owner_id,
             organization_id=organization_id,
         )
 
         await self._sync_polar_self_customer_owner(
             session,
             organization_id=organization_id,
-            new_admin_user=new_admin_user,
+            new_owner_user=new_owner_user,
         )
 
         return account

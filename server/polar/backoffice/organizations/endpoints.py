@@ -901,12 +901,12 @@ async def create_plain_thread(
         if not organization:
             raise HTTPException(status_code=404)
 
-        admin_user = await org_repo.get_admin_user(organization)
-        if not admin_user:
-            raise HTTPException(status_code=404, detail="No admin user found")
+        owner_user = await org_repo.get_owner_user(organization)
+        if not owner_user:
+            raise HTTPException(status_code=404, detail="No owner user found")
 
         thread_id = await plain_service.create_manual_organization_thread(
-            session, organization, admin_user, title
+            session, organization, owner_user, title
         )
         logger.info(
             f"Created Plain thread {thread_id} for organization {organization.id}"
@@ -1273,7 +1273,7 @@ async def get(
                             with tag.h2(classes="card-title"):
                                 text(f"Team Members ({len(users)})")
 
-                        admin_user = await repository.get_admin_user(organization)
+                        owner_user = await repository.get_owner_user(organization)
 
                         if users:
                             # Users table
@@ -1294,8 +1294,8 @@ async def get(
                                     # Table body
                                     with tag.tbody():
                                         for user in users:
-                                            is_admin = (
-                                                admin_user and user.id == admin_user.id
+                                            is_owner = (
+                                                owner_user and user.id == owner_user.id
                                             )
                                             with tag.tr():
                                                 # User info
@@ -1318,11 +1318,11 @@ async def get(
 
                                                 # Role
                                                 with tag.td():
-                                                    if is_admin:
+                                                    if is_owner:
                                                         with tag.span(
                                                             classes="badge badge-primary"
                                                         ):
-                                                            text("Admin")
+                                                            text("Owner")
                                                     else:
                                                         with tag.span(
                                                             classes="badge badge-ghost"
@@ -1546,11 +1546,11 @@ async def get_plain_search_url(
     if not organization:
         raise HTTPException(status_code=404)
 
-    admin_user = await org_repo.get_admin_user(organization)
-    if not admin_user:
-        raise HTTPException(status_code=404, detail="No admin user found")
+    owner_user = await org_repo.get_owner_user(organization)
+    if not owner_user:
+        raise HTTPException(status_code=404, detail="No owner user found")
 
-    search_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={admin_user.email}"
+    search_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={owner_user.email}"
 
     return RedirectResponse(url=search_url, status_code=302)
 

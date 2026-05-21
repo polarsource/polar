@@ -209,7 +209,7 @@ class OrganizationRepository(
             Organization.status != OrganizationStatus.BLOCKED,
         )
 
-    async def get_admin_user(self, organization: Organization) -> User | None:
+    async def get_owner_user(self, organization: Organization) -> User | None:
         """Get the owner of the organization."""
         statement = (
             select(User)

@@ -89,7 +89,6 @@ from polar.organization_review.schemas import (
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
-from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
@@ -633,12 +632,12 @@ async def get_organization_detail(
         parsed = agent_review.parsed_report
         ai_verdict = parsed.report.verdict.value
 
-    # Fetch admin user email for Plain search
-    admin_user = await repository.get_admin_user(organization)
-    admin_email = admin_user.email if admin_user else None
+    # Fetch owner user email for Plain search
+    owner_user = await repository.get_owner_user(organization)
+    owner_email = owner_user.email if owner_user else None
 
-    # Determine impersonation target: admin, or first member as fallback
-    impersonate_user = admin_user
+    # Determine impersonation target: owner, or first member as fallback
+    impersonate_user = owner_user
     if not impersonate_user and members:
         impersonate_user = members[0].user
 
@@ -646,7 +645,7 @@ async def get_organization_detail(
     detail_view = OrganizationDetailView(
         organization,
         ai_verdict=ai_verdict,
-        admin_email=admin_email,
+        owner_email=owner_email,
         impersonate_user=impersonate_user,
     )
 
@@ -811,12 +810,12 @@ async def get_organization_detail(
                     pass
             elif section == "team":
                 identity_country = None
-                if admin_user:
+                if owner_user:
                     identity_country = await user_service.get_identity_verified_country(
-                        admin_user
+                        owner_user
                     )
                 team_section = TeamSection(
-                    organization, admin_user, identity_country=identity_country
+                    organization, owner_user, identity_country=identity_country
                 )
                 with team_section.render(request):
                     pass
@@ -1963,9 +1962,9 @@ async def create_review_ticket(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    admin_user = await repository.get_admin_user(organization)
-    if not admin_user:
-        await add_toast(request, "No admin user found for this organization.", "error")
+    owner_user = await repository.get_owner_user(organization)
+    if not owner_user:
+        await add_toast(request, "No owner user found for this organization.", "error")
         return
 
     default_title = _default_review_ticket_title(organization)
@@ -1982,7 +1981,7 @@ async def create_review_ticket(
 
         try:
             thread_id = await plain_service.create_manual_organization_thread(
-                session, organization, admin_user, title
+                session, organization, owner_user, title
             )
         except AccountReviewThreadCreationError as e:
             logger.error(
@@ -3168,16 +3167,16 @@ async def impersonate_user(
 
 
 @router.post(
-    "/{organization_id}/make-admin/{user_id}",
-    name="organizations:make_admin",
+    "/{organization_id}/make-owner/{user_id}",
+    name="organizations:make_owner",
 )
-async def make_admin(
+async def make_owner(
     request: Request,
     organization_id: UUID4,
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse:
-    """Make a user an admin of the organization."""
+    """Make a user the owner of the organization."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(
@@ -3188,13 +3187,12 @@ async def make_admin(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Change the admin user
     try:
-        await account_service.change_admin(
+        await account_service.change_owner(
             session, organization.account, user_id, organization_id
         )
     except Exception as e:
-        logger.error("Failed to make user admin", error=str(e))
+        logger.error("Failed to make user owner", error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
     redirect_url = (
@@ -3332,15 +3330,12 @@ async def setup_account(
         data = await request.form()
         country = str(data.get("country", "US")).upper()
 
-        user_repository = UserRepository.from_session(session)
-        users = await user_repository.get_all_by_organization(organization.id)
-        if not users:
-            raise HTTPException(status_code=400, detail="Organization has no users")
-
-        admin_user = users[0]
+        owner_user = await repository.get_owner_user(organization)
+        if owner_user is None:
+            raise HTTPException(status_code=400, detail="Organization has no owner")
 
         await payout_account_service.create_manual_account(
-            session, organization, admin_user, country=country, currency="usd"
+            session, organization, owner_user, country=country, currency="usd"
         )
 
         await add_toast(

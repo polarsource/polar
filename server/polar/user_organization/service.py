@@ -178,7 +178,7 @@ class UserOrganizationService:
         Set a user's role on an organization, with validation.
 
         - `role == owner` is rejected. Ownership transfers flow through
-          a dedicated path (today: backoffice `change_admin`), which
+          a dedicated path (today: backoffice `change_owner`), which
           atomically demotes the previous owner.
         - A user that currently carries `owner` cannot be moved off it
           directly; ownership transfer must promote a replacement.

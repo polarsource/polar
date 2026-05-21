@@ -188,29 +188,29 @@ async def _send_email(
     organization = await organization_repository.get_by_id(organization_id)
     if organization is None:
         raise PlainScriptError("Organization not found")
-    admin = await organization_repository.get_admin_user(organization)
-    if admin is None:
+    owner = await organization_repository.get_owner_user(organization)
+    if owner is None:
         user_repository = UserRepository.from_session(session)
         users = await user_repository.get_all_by_organization(organization_id)
         if not users:
-            raise PlainScriptError("Admin user not found")
-        admin = users[0]
+            raise PlainScriptError("Owner user not found")
+        owner = users[0]
 
     async with _get_plain_client() as plain:
         # By email
         customer_result = await plain.upsert_customer(
             pl.UpsertCustomerInput(
-                identifier=pl.UpsertCustomerIdentifierInput(email_address=admin.email),
+                identifier=pl.UpsertCustomerIdentifierInput(email_address=owner.email),
                 on_create=pl.UpsertCustomerOnCreateInput(
-                    external_id=str(admin.id),
-                    full_name=admin.email,
+                    external_id=str(owner.id),
+                    full_name=owner.email,
                     email=pl.EmailAddressInput(
-                        email=admin.email, is_verified=admin.email_verified
+                        email=owner.email, is_verified=owner.email_verified
                     ),
                 ),
                 on_update=pl.UpsertCustomerOnUpdateInput(
                     email=pl.EmailAddressInput(
-                        email=admin.email, is_verified=admin.email_verified
+                        email=owner.email, is_verified=owner.email_verified
                     ),
                 ),
             )
@@ -220,18 +220,18 @@ async def _send_email(
             customer_result = await plain.upsert_customer(
                 pl.UpsertCustomerInput(
                     identifier=pl.UpsertCustomerIdentifierInput(
-                        external_id=str(admin.id)
+                        external_id=str(owner.id)
                     ),
                     on_create=pl.UpsertCustomerOnCreateInput(
-                        external_id=str(admin.id),
-                        full_name=admin.email,
+                        external_id=str(owner.id),
+                        full_name=owner.email,
                         email=pl.EmailAddressInput(
-                            email=admin.email, is_verified=admin.email_verified
+                            email=owner.email, is_verified=owner.email_verified
                         ),
                     ),
                     on_update=pl.UpsertCustomerOnUpdateInput(
                         email=pl.EmailAddressInput(
-                            email=admin.email, is_verified=admin.email_verified
+                            email=owner.email, is_verified=owner.email_verified
                         ),
                     ),
                 )

@@ -1346,7 +1346,7 @@ class OrganizationService:
             )
 
         organization_repository = OrganizationRepository.from_session(session)
-        admin_user = await organization_repository.get_admin_user(organization)
+        owner_user = await organization_repository.get_owner_user(organization)
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
@@ -1367,7 +1367,7 @@ class OrganizationService:
             self._build_product_description_check(organization),
             product_configuration_check,
             setup_readiness_check,
-            self._build_identity_verification_check(admin_user),
+            self._build_identity_verification_check(owner_user),
             self._build_payout_account_check(payout_account),
             self._build_socials_check(organization),
             await product_url_task,
@@ -1487,13 +1487,13 @@ class OrganizationService:
         return self._passed_check(key)
 
     def _build_identity_verification_check(
-        self, admin_user: User | None
+        self, owner_user: User | None
     ) -> OrganizationReviewCheck:
         key = OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION
-        if admin_user is None:
+        if owner_user is None:
             return self._not_started_check(key)
 
-        status = admin_user.identity_verification_status
+        status = owner_user.identity_verification_status
         match status:
             case IdentityVerificationStatus.verified:
                 return self._passed_check(key)

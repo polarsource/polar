@@ -1373,7 +1373,7 @@ async def _setup_passing_org(
     user.identity_verification_status = IdentityVerificationStatus.verified
     await save_fixture(user)
 
-    # `get_admin_user` returns the user holding `owner` on the org.
+    # `get_owner_user` returns the user holding `owner` on the org.
     await save_fixture(
         UserOrganization(
             user_id=user.id,

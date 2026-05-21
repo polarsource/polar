@@ -40,12 +40,12 @@ class OrganizationDetailView:
         self,
         organization: Organization,
         ai_verdict: str = "",
-        admin_email: str | None = None,
+        owner_email: str | None = None,
         impersonate_user: User | None = None,
     ):
         self.org = organization
         self.ai_verdict = ai_verdict
-        self.admin_email = admin_email
+        self.owner_email = owner_email
         self.impersonate_user = impersonate_user
 
     @contextlib.contextmanager
@@ -678,7 +678,7 @@ class OrganizationDetailView:
                                     text("Run Review Agent")
                             with tag.li():
                                 with tag.a(
-                                    href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.admin_email or self.org.slug}",
+                                    href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.owner_email or self.org.slug}",
                                     target="_blank",
                                 ):
                                     text("Search in Plain")

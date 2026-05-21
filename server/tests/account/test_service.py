@@ -13,15 +13,15 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
-class TestChangeAdminRoleSwap:
+class TestChangeOwnerRoleSwap:
     """
-    `change_admin` swaps `UserOrganization.role`: the previous `owner` is
-    demoted to `admin`, and the new admin is promoted to `owner`. The flow
+    `change_owner` swaps `UserOrganization.role`: the previous `owner` is
+    demoted to `admin`, and the new owner is promoted to `owner`. The flow
     no longer touches `Account.admin_id`; ownership is driven entirely
     by `UserOrganization.role`.
     """
 
-    async def test_swaps_owner_role_on_admin_change(
+    async def test_swaps_owner_role_on_owner_change(
         self,
         save_fixture: SaveFixture,
         session: Any,
@@ -35,21 +35,21 @@ class TestChangeAdminRoleSwap:
             organization_id=organization.id,
             role=OrganizationRole.owner,
         )
-        new_admin_uo = UserOrganization(
+        new_owner_uo = UserOrganization(
             user_id=user_second.id,
             organization_id=organization.id,
             role=OrganizationRole.member,
         )
         await save_fixture(previous_owner_uo)
-        await save_fixture(new_admin_uo)
+        await save_fixture(new_owner_uo)
 
         user_second.identity_verification_status = IdentityVerificationStatus.verified
         await save_fixture(user_second)
 
-        await account_service.change_admin(
+        await account_service.change_owner(
             session,
             account=account,
-            new_admin_id=user_second.id,
+            new_owner_id=user_second.id,
             organization_id=organization.id,
         )
 
@@ -64,7 +64,7 @@ class TestChangeAdminRoleSwap:
         assert previous.role == OrganizationRole.admin
         assert new.role == OrganizationRole.owner
 
-    async def test_no_previous_owner_promotes_new_admin(
+    async def test_no_previous_owner_promotes_new_owner(
         self,
         save_fixture: SaveFixture,
         session: Any,
@@ -75,27 +75,27 @@ class TestChangeAdminRoleSwap:
     ) -> None:
         # Edge case: org has no current `owner` (shouldn't happen in
         # production post-backfill, but the swap should still promote
-        # the new admin rather than blow up).
+        # the new owner rather than blow up).
         previous_member_uo = UserOrganization(
             user_id=user.id,
             organization_id=organization.id,
             role=OrganizationRole.member,
         )
-        new_admin_uo = UserOrganization(
+        new_owner_uo = UserOrganization(
             user_id=user_second.id,
             organization_id=organization.id,
             role=OrganizationRole.member,
         )
         await save_fixture(previous_member_uo)
-        await save_fixture(new_admin_uo)
+        await save_fixture(new_owner_uo)
 
         user_second.identity_verification_status = IdentityVerificationStatus.verified
         await save_fixture(user_second)
 
-        await account_service.change_admin(
+        await account_service.change_owner(
             session,
             account=account,
-            new_admin_id=user_second.id,
+            new_owner_id=user_second.id,
             organization_id=organization.id,
         )
 

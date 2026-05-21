@@ -1,4 +1,4 @@
-"""Tests for organization_review.tasks – specifically the grandfathered org override path."""
+"""Tests for organization_review.tasks – SUBMISSION re-run + appeal review paths."""
 
 import contextlib
 from collections.abc import AsyncIterator
@@ -91,9 +91,9 @@ async def _mock_session_maker(
 
 
 @pytest.mark.asyncio
-class TestRunReviewAgentGrandfathered:
-    """Test that a grandfathered OrganizationReview is updated in-place
-    when the org goes through a new submission review."""
+class TestRunReviewAgentSubmission:
+    """SUBMISSION re-run overwrites the existing canonical OrganizationReview
+    row (grandfathered or otherwise) and clears any prior appeal state."""
 
     async def test_grandfathered_review_is_overwritten(
         self,
@@ -154,13 +154,15 @@ class TestRunReviewAgentGrandfathered:
         assert updated.timed_out is False
         assert updated.organization_details_snapshot["name"] == organization.name
 
-    async def test_non_grandfathered_existing_review_is_not_overwritten(
+    async def test_non_grandfathered_existing_review_is_overwritten(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Create a non-grandfathered review (real agent review, not "Grandfathered organization")
+        # Re-submission of an already-reviewed (non-grandfathered) org must
+        # overwrite the canonical row so the new agent verdict — not the
+        # stale one — becomes the source of truth.
         org_review = OrganizationReview(
             organization_id=organization.id,
             verdict=OrganizationReview.Verdict.PASS,
@@ -199,14 +201,138 @@ class TestRunReviewAgentGrandfathered:
 
         await session.flush()
 
-        # Existing non-grandfathered review should NOT be overwritten
         repo = OrgReviewRepository.from_session(session)
-        review = await repo.get_by_organization(organization.id)
+        updated = await repo.get_by_organization(organization.id)
 
-        assert review is not None
-        assert review.id == original_id
-        assert review.reason == "Legitimate business"  # Unchanged
-        assert review.model_used == "claude-original"  # Unchanged
+        assert updated is not None
+        assert updated.id == original_id  # Same row, updated in place
+        assert updated.reason == "New review"
+        assert updated.model_used == "claude-new"
+        assert updated.organization_details_snapshot["name"] == organization.name
+
+    async def test_resubmit_clears_appeal_state(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Appeal fields were tied to the previous verdict. A re-submission
+        # is a fresh review; the old appeal must not leak into the new state
+        # (otherwise a new DENY can collide with an APPROVED appeal and the
+        # org ends up DENIED while review.is_approved is still True).
+        org_review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=70.0,
+            violated_sections=["policy"],
+            reason="Initial denial",
+            timed_out=False,
+            model_used="claude-original",
+            organization_details_snapshot={"name": "Original"},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="We sell digital templates, not consultancy.",
+            appeal_reviewed_at=datetime.now(UTC),
+            appeal_decision=OrganizationReview.AppealDecision.APPROVED,
+        )
+        await save_fixture(org_review)
+
+        agent_result = _make_agent_result(
+            verdict=ReviewVerdict.DENY,
+            risk_level=RiskLevel.HIGH,
+            merchant_summary="New violations detected",
+            violated_sections=["Prohibited Products"],
+            model_used="claude-new",
+        )
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=agent_result,
+            ),
+        ):
+            await _run_review_agent(
+                organization.id,
+                context=ReviewContext.SUBMISSION,
+            )
+
+        await session.flush()
+
+        repo = OrgReviewRepository.from_session(session)
+        updated = await repo.get_by_organization(organization.id)
+
+        assert updated is not None
+        assert updated.verdict == OrganizationReview.Verdict.FAIL
+        assert updated.appeal_submitted_at is None
+        assert updated.appeal_reason is None
+        assert updated.appeal_reviewed_at is None
+        assert updated.appeal_decision is None
+        # is_approved must reflect just the new verdict, not the stale appeal
+        assert updated.is_approved is False
+
+        await session.refresh(organization)
+        assert organization.status == OrganizationStatus.DENIED
+
+    async def test_non_grandfathered_fail_resubmit_flips_org_to_denied(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # If a previously-PASS org re-submits and the agent now returns DENY,
+        # both the canonical review row AND the org status update consistently.
+        org_review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=20.0,
+            violated_sections=[],
+            reason="Previously legitimate",
+            timed_out=False,
+            model_used="claude-original",
+            organization_details_snapshot={"name": "Original"},
+        )
+        await save_fixture(org_review)
+
+        agent_result = _make_agent_result(
+            verdict=ReviewVerdict.DENY,
+            risk_level=RiskLevel.HIGH,
+            merchant_summary="Now violates AUP",
+            violated_sections=["Prohibited Products"],
+            model_used="claude-new",
+        )
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=agent_result,
+            ),
+        ):
+            await _run_review_agent(
+                organization.id,
+                context=ReviewContext.SUBMISSION,
+            )
+
+        await session.flush()
+
+        repo = OrgReviewRepository.from_session(session)
+        updated = await repo.get_by_organization(organization.id)
+
+        assert updated is not None
+        assert updated.verdict == OrganizationReview.Verdict.FAIL
+        assert updated.reason == "Now violates AUP"
+        assert updated.violated_sections == ["Prohibited Products"]
+
+        await session.refresh(organization)
+        assert organization.status == OrganizationStatus.DENIED
 
     async def test_no_existing_review_creates_new(
         self,

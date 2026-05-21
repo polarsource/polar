@@ -187,44 +187,37 @@ async def run_review_agent(
             org_review_repository = OrgReviewRepository.from_session(session)
             existing = await org_review_repository.get_by_organization(organization_id)
 
-            is_grandfathered = (
-                existing is not None
-                and existing.verdict == OrganizationReview.Verdict.PASS
-                and existing.reason == "Grandfathered organization"
-            )
-
-            if is_grandfathered:
-                assert existing is not None
+            # A re-submission is a fresh review: overwrite any existing row
+            # (grandfathered or otherwise) so the canonical verdict reflects
+            # the latest agent run rather than a stale prior result.
+            details_snapshot = {
+                "name": organization.name,
+                "website": organization.website,
+                "details": organization.details,
+                "socials": organization.socials,
+            }
+            if existing is not None:
                 existing.verdict = OrganizationReview.Verdict(mapped_verdict)
                 existing.risk_score = report.overall_risk_score
                 existing.violated_sections = report.violated_sections
                 existing.reason = report.merchant_summary
                 existing.timed_out = result.timed_out
-                existing.organization_details_snapshot = {
-                    "name": organization.name,
-                    "website": organization.website,
-                    "details": organization.details,
-                    "socials": organization.socials,
-                }
+                existing.organization_details_snapshot = details_snapshot
                 existing.model_used = result.model_used
                 session.add(existing)
-            elif existing is None:
-                org_review = OrganizationReview(
-                    organization_id=organization_id,
-                    verdict=mapped_verdict,
-                    risk_score=report.overall_risk_score,
-                    violated_sections=report.violated_sections,
-                    reason=report.merchant_summary,
-                    timed_out=result.timed_out,
-                    organization_details_snapshot={
-                        "name": organization.name,
-                        "website": organization.website,
-                        "details": organization.details,
-                        "socials": organization.socials,
-                    },
-                    model_used=result.model_used,
+            else:
+                session.add(
+                    OrganizationReview(
+                        organization_id=organization_id,
+                        verdict=mapped_verdict,
+                        risk_score=report.overall_risk_score,
+                        violated_sections=report.violated_sections,
+                        reason=report.merchant_summary,
+                        timed_out=result.timed_out,
+                        organization_details_snapshot=details_snapshot,
+                        model_used=result.model_used,
+                    )
                 )
-                session.add(org_review)
 
             # Auto-deny on DENY — human will review the denial
             if report.verdict == ReviewVerdict.DENY:

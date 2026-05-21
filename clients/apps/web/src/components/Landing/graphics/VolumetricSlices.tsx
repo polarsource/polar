@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useTheme } from 'next-themes'
 import { useInView } from '@/hooks/useInView'
 
 /**
@@ -102,7 +103,7 @@ void main() {
   vec3 p = vec3(v_world, u_sliceZ);
 
   float metaSdf = 1.0 - metaSum(p);                       // < 0 inside blob
-  float boxS    = boxSdf(p, vec3(0.55, 0.55, 0.7), 0.06);  // < 0 inside box (rounded)
+  float boxS    = boxSdf(p, vec3(0.55, 0.55, 0.95), 0.06); // < 0 inside box (rounded)
 
   // Outside the intersection → no color, no depth
   if (max(metaSdf, boxS) > 0.0) discard;
@@ -114,11 +115,11 @@ void main() {
   // is smooth, giving a soft curve. Both are combined with max().
   vec2 gm = vec2(dFdx(metaSdf), dFdy(metaSdf));
   float metaPx = abs(metaSdf) / max(length(gm), 1e-4);
-  float metaLine = 1.0 - smoothstep(1.2, 2.2, metaPx);
+  float metaLine = 1.0 - smoothstep(1.6, 2.8, metaPx);
 
   vec2 gb = vec2(dFdx(boxS), dFdy(boxS));
   float boxPx = abs(boxS) / max(length(gb), 1e-4);
-  float boxLine = 1.0 - smoothstep(1.2, 2.2, boxPx);
+  float boxLine = 1.0 - smoothstep(1.6, 2.8, boxPx);
 
   float line = max(metaLine, boxLine);
 
@@ -156,6 +157,8 @@ const link = (gl: WebGLRenderingContext, vs: string, fs: string) => {
 
 export const VolumetricSlices = () => {
   const { ref: wrapperRef, inView } = useInView()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
 
@@ -239,10 +242,11 @@ export const VolumetricSlices = () => {
     )
     // world extent ±0.62 xy, ±0.78 z; scaled down to leave margin inside
     // the container, matching the CPU version's visual footprint
-    gl.uniform1f(uViewScale, 0.9)
+    gl.uniform1f(uViewScale, 0.8)
     gl.uniform1f(uDepthScale, 0.5)
     gl.uniform2f(uHalfXY, 0.62, 0.62)
-    gl.uniform3f(uLineColor, 190 / 255, 190 / 255, 190 / 255)
+    const lineValue = isDark ? 1.0 : 0.0
+    gl.uniform3f(uLineColor, lineValue, lineValue, lineValue)
 
     // Blending: standard alpha with premultiplied off; depth test enabled
     gl.enable(gl.BLEND)
@@ -251,9 +255,9 @@ export const VolumetricSlices = () => {
     gl.depthFunc(gl.LEQUAL)
 
     // Slice stack
-    const sliceCount = 24
-    const zMin = -0.78
-    const zMax = 0.78
+    const sliceCount = 16
+    const zMin = -1.05
+    const zMax = 1.05
 
     let time = 0
     let lastTime: number | null = null
@@ -290,7 +294,7 @@ export const VolumetricSlices = () => {
       gl.deleteBuffer(quadBuf)
       gl.deleteProgram(prog)
     }
-  }, [inView])
+  }, [inView, isDark])
 
   return (
     <div ref={wrapperRef}>

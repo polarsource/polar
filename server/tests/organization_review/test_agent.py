@@ -18,6 +18,7 @@ from polar.organization_review.schemas import (
 def _make_org(website: str | None) -> MagicMock:
     org = MagicMock()
     org.id = uuid4()
+    org.slug = "test-org"
     org.website = website
     return org
 
@@ -151,7 +152,11 @@ class TestCollectWebhookHost:
         ) as fetch:
             result = await _collect_webhook_host(org, setup)
         assert result is data
-        fetch.assert_awaited_once_with("https://api.different.com/")
+        fetch.assert_awaited_once_with(
+            "https://api.different.com/",
+            organization_id=str(org.id),
+            organization_slug=org.slug,
+        )
 
     @pytest.mark.asyncio
     async def test_swallows_fetch_exception(self) -> None:

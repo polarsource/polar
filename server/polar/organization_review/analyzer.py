@@ -4,6 +4,7 @@ import structlog
 from pydantic_ai import Agent
 
 from polar.config import settings
+from polar.observability.baggage import organization_baggage
 
 from .known_domains import known_domains_for_prompt, match_known_domain
 from .policy import fetch_policy_content
@@ -678,10 +679,14 @@ class ReviewAnalyzer:
         }.get(context)
 
         try:
-            result = await asyncio.wait_for(
-                self.agent.run(prompt, instructions=instructions),
-                timeout=timeout_seconds,
-            )
+            with organization_baggage(
+                organization_id=snapshot.organization.id,
+                organization_slug=snapshot.organization.slug,
+            ):
+                result = await asyncio.wait_for(
+                    self.agent.run(prompt, instructions=instructions),
+                    timeout=timeout_seconds,
+                )
             usage = UsageInfo.from_agent_usage(
                 result.usage(), self.model_provider, self.model_name
             )

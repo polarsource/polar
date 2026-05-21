@@ -6,6 +6,7 @@ from ..schemas import OrganizationData
 def collect_organization_data(organization: Organization) -> OrganizationData:
     details = organization.details or {}
     return OrganizationData(
+        id=str(organization.id),
         name=organization.name,
         slug=organization.slug,
         website=organization.website,

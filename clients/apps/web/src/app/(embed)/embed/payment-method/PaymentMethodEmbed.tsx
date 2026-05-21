@@ -1,6 +1,9 @@
 'use client'
 
-import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
+import {
+  EMBED_PAYMENT_METHOD_REDIRECT_STATUS_PARAM,
+  PolarEmbedPaymentMethod,
+} from '@polar-sh/checkout/payment-method'
 import { createClient, schemas } from '@polar-sh/client'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { X } from 'lucide-react'
@@ -8,29 +11,32 @@ import { useCallback, useEffect, useMemo } from 'react'
 import {
   PaymentMethodForm,
   type CustomerBillingDetails,
-  type SetupIntent,
 } from './PaymentMethodForm'
 
 interface Props {
   sessionToken: string
   embedOrigin: string
+  embedReturnUrl: string
   theme?: 'light' | 'dark'
   mode: 'modal' | 'inline'
   setAsDefault: boolean
   serverURL: string
   customerBillingDetails: CustomerBillingDetails
-  setupIntent?: SetupIntent
+  redirectStatus?: string
+  setupIntentId?: string
 }
 
 export const PaymentMethodEmbed = ({
   sessionToken,
   embedOrigin,
+  embedReturnUrl,
   theme = 'light',
   mode,
   setAsDefault,
   serverURL,
   customerBillingDetails,
-  setupIntent,
+  redirectStatus,
+  setupIntentId,
 }: Props) => {
   const themePreset = useMemo(() => getThemePreset(theme), [theme])
   const api = useMemo(
@@ -64,14 +70,25 @@ export const PaymentMethodEmbed = ({
     PolarEmbedPaymentMethod.postMessage({ event: 'confirmed' }, embedOrigin)
   }, [embedOrigin])
 
+  const navigateBackIfStandalone = useCallback(
+    (status: 'succeeded' | 'failed') => {
+      if (window.parent !== window) return
+      const url = new URL(embedReturnUrl)
+      url.searchParams.set(EMBED_PAYMENT_METHOD_REDIRECT_STATUS_PARAM, status)
+      window.location.href = url.toString()
+    },
+    [embedReturnUrl],
+  )
+
   const handleSuccess = useCallback(
     (paymentMethod: schemas['CustomerPaymentMethod']) => {
       PolarEmbedPaymentMethod.postMessage(
         { event: 'success', paymentMethodId: paymentMethod.id },
         embedOrigin,
       )
+      navigateBackIfStandalone('succeeded')
     },
-    [embedOrigin],
+    [embedOrigin, navigateBackIfStandalone],
   )
 
   const handleProcessingError = useCallback(() => {
@@ -79,7 +96,8 @@ export const PaymentMethodEmbed = ({
       { event: 'error', code: 'processing_failed' },
       embedOrigin,
     )
-  }, [embedOrigin])
+    navigateBackIfStandalone('failed')
+  }, [embedOrigin, navigateBackIfStandalone])
 
   useEffect(() => {
     if (mode !== 'modal') return
@@ -104,9 +122,20 @@ export const PaymentMethodEmbed = ({
       onProcessingStart={handleProcessingStart}
       onPaymentMethodAdded={handleSuccess}
       onProcessingError={handleProcessingError}
-      setupIntent={setupIntent}
+      redirectStatus={redirectStatus}
+      setupIntentId={setupIntentId}
     />
   )
+
+  if (redirectStatus) {
+    return (
+      <div className={theme === 'dark' ? 'dark' : 'light'}>
+        <div className="flex h-screen w-full items-center justify-center dark:text-white">
+          {form}
+        </div>
+      </div>
+    )
+  }
 
   if (mode === 'inline') {
     return <div className={theme === 'dark' ? 'dark' : 'light'}>{form}</div>

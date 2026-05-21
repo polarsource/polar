@@ -13,11 +13,12 @@ export const metadata: Metadata = {
 interface SearchParams {
   session_token?: string
   embed_origin?: string
+  embed_return_url?: string
   theme?: 'light' | 'dark'
   mode?: 'modal' | 'inline'
   set_default?: string
-  setup_intent_client_secret?: string
-  setup_intent?: string
+  redirect_status?: string
+  polar_setup_intent?: string
 }
 
 const isValidEmbedOrigin = (origin: string): boolean => {
@@ -34,17 +35,32 @@ const isValidEmbedOrigin = (origin: string): boolean => {
   }
 }
 
+const resolveEmbedReturnUrl = (
+  returnUrl: string | undefined,
+  embedOrigin: string,
+): string => {
+  if (returnUrl) {
+    try {
+      if (new URL(returnUrl).origin === embedOrigin) return returnUrl
+    } catch {
+      // do nothing
+    }
+  }
+  return embedOrigin
+}
+
 export default async function Page(props: {
   searchParams: Promise<SearchParams>
 }) {
   const {
     session_token: sessionToken,
     embed_origin,
+    embed_return_url,
     theme,
     mode,
     set_default,
-    setup_intent_client_secret,
-    setup_intent,
+    redirect_status,
+    polar_setup_intent,
   } = await props.searchParams
 
   const embedOrigin =
@@ -53,6 +69,8 @@ export default async function Page(props: {
   if (!sessionToken || !embedOrigin) {
     return <EmbedError code="invalid_request" embedOrigin={embedOrigin} />
   }
+
+  const embedReturnUrl = resolveEmbedReturnUrl(embed_return_url, embedOrigin)
 
   const api = await getServerSideAPI(sessionToken)
   let customer
@@ -77,6 +95,7 @@ export default async function Page(props: {
     <PaymentMethodEmbed
       sessionToken={sessionToken}
       embedOrigin={embedOrigin}
+      embedReturnUrl={embedReturnUrl}
       theme={theme}
       mode={mode === 'modal' ? 'modal' : 'inline'}
       setAsDefault={set_default !== 'false'}
@@ -86,11 +105,8 @@ export default async function Page(props: {
         email: customer.email ?? null,
         address: customer.billing_address ?? null,
       }}
-      setupIntent={
-        setup_intent_client_secret && setup_intent
-          ? { clientSecret: setup_intent_client_secret, id: setup_intent }
-          : undefined
-      }
+      redirectStatus={redirect_status}
+      setupIntentId={polar_setup_intent}
     />
   )
 }

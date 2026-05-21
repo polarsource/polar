@@ -21,12 +21,13 @@ import {
 } from '@/hooks/queries/billing'
 
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
+import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function BillingPage({
   organization,
@@ -50,6 +51,10 @@ export default function BillingPage({
 
   const customerSessionQuery = useOrganizationCustomerSession(organization.id)
 
+  const [addPaymentMethodError, setAddPaymentMethodError] = useState<
+    string | null
+  >(null)
+
   useEffect(() => {
     if (searchParams.get('checkout_success') !== 'true') return
     queryClient.invalidateQueries({
@@ -58,6 +63,14 @@ export default function BillingPage({
     router.replace(`/dashboard/${organization.slug}/settings/billing`)
   }, [searchParams, queryClient, organization.id, organization.slug, router])
 
+  usePaymentMethodRedirectResult({
+    onSuccess: () => toast({ title: 'Payment method added' }),
+    onError: () =>
+      setAddPaymentMethodError(
+        'Could not add payment method. Please try again.',
+      ),
+  })
+
   const {
     isShown: isBillingAddressOpen,
     show: showBillingAddress,
@@ -65,6 +78,7 @@ export default function BillingPage({
   } = useModal()
 
   const onAddPaymentMethod = async () => {
+    setAddPaymentMethodError(null)
     const session = customerSessionQuery.data
     if (!session) {
       toast({
@@ -122,6 +136,7 @@ export default function BillingPage({
           <BillingPaymentMethods
             organizationId={organization.id}
             onAddPaymentMethod={onAddPaymentMethod}
+            error={addPaymentMethodError}
           />
         </Section>
 

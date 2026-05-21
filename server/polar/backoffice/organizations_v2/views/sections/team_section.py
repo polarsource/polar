@@ -137,7 +137,14 @@ class TeamSection:
                                                 self.owner_user
                                                 and member.user_id == self.owner_user.id
                                             )
-                                            if not member_is_owner:
+                                            member_is_verified = (
+                                                member.user.identity_verification_status
+                                                == IdentityVerificationStatus.verified
+                                            )
+                                            if (
+                                                not member_is_owner
+                                                and member_is_verified
+                                            ):
                                                 with tag.li():
                                                     with tag.a(
                                                         hx_post=str(

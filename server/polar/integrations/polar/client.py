@@ -74,7 +74,7 @@ def _raise_error(span: Any, error: Any, operation: str) -> NoReturn:
     span.set_attribute("http.status_code", error.status_code)
     span.set_attribute("error.body", str(error.body))
     message = f"{operation} failed with status {error.status_code}"
-    if error.status_code == 429 or error.status_code >= 500:
+    if error.status_code in (403, 429) or error.status_code >= 500:
         raise PolarSelfClientOperationalError(message) from error
     raise PolarSelfClientError(message) from error
 

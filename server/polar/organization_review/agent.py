@@ -243,7 +243,11 @@ async def _collect_website(organization: Organization) -> WebsiteData | None:
         website_url=organization.website,
     )
     try:
-        website_data = await collect_website_data(organization.website)
+        website_data = await collect_website_data(
+            organization.website,
+            organization_id=str(organization.id),
+            organization_slug=organization.slug,
+        )
         log.debug(
             "organization_review.website_collector.complete",
             organization_id=str(organization.id),
@@ -312,7 +316,11 @@ async def _collect_webhook_host(
         webhook_host=host,
     )
     try:
-        data = await collect_website_data(f"https://{host}/")
+        data = await collect_website_data(
+            f"https://{host}/",
+            organization_id=str(organization.id),
+            organization_slug=organization.slug,
+        )
         log.debug(
             "organization_review.webhook_host_collector.complete",
             organization_id=str(organization.id),

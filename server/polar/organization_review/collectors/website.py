@@ -13,6 +13,7 @@ from pydantic_ai import Agent, RunContext
 
 from polar.config import settings
 from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
+from polar.observability.baggage import organization_baggage
 
 from ..schemas import UsageInfo, WebsiteData, WebsitePage
 
@@ -466,7 +467,12 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
 # ---------------------------------------------------------------------------
 
 
-async def collect_website_data(website_url: str) -> WebsiteData:
+async def collect_website_data(
+    website_url: str,
+    *,
+    organization_id: str | None = None,
+    organization_slug: str | None = None,
+) -> WebsiteData:
     """Explore and summarize a website using an AI agent.
 
     The agent has two tools: a fast HTTP fetcher (default) and a headless
@@ -479,7 +485,11 @@ async def collect_website_data(website_url: str) -> WebsiteData:
 
     try:
         return await asyncio.wait_for(
-            _run_website_agent(base_url),
+            _run_website_agent(
+                base_url,
+                organization_id=organization_id,
+                organization_slug=organization_slug,
+            ),
             timeout=OVERALL_TIMEOUT_S,
         )
     except TimeoutError:
@@ -502,7 +512,12 @@ async def collect_website_data(website_url: str) -> WebsiteData:
 # ---------------------------------------------------------------------------
 
 
-async def _run_website_agent(base_url: str) -> WebsiteData:
+async def _run_website_agent(
+    base_url: str,
+    *,
+    organization_id: str | None = None,
+    organization_slug: str | None = None,
+) -> WebsiteData:
     """Run the AI agent with both HTTP and browser tools available."""
     allowed_domain = urlparse(base_url).hostname or ""
     # Strip www. so redirects between www and non-www are both allowed
@@ -516,10 +531,14 @@ async def _run_website_agent(base_url: str) -> WebsiteData:
     ) as client:
         deps = WebsiteDeps(client=client, allowed_domain=allowed_domain)
         try:
-            result = await _website_agent.run(
-                f"Analyze the website at: {base_url}",
-                deps=deps,
-            )
+            with organization_baggage(
+                organization_id=organization_id,
+                organization_slug=organization_slug,
+            ):
+                result = await _website_agent.run(
+                    f"Analyze the website at: {base_url}",
+                    deps=deps,
+                )
 
             return WebsiteData(
                 base_url=base_url,

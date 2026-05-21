@@ -79,6 +79,7 @@ class UsageInfo(Schema):
 
 
 class OrganizationData(Schema):
+    id: str | None = None
     name: str
     slug: str
     website: str | None = None

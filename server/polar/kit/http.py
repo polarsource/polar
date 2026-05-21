@@ -6,7 +6,7 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import anyio
 import httpx
-from fastapi import Depends, Query
+from fastapi import Depends, Query, Request
 from pydantic import AfterValidator, HttpUrl, PlainSerializer, ValidationError
 from safe_redirect_url import url_has_allowed_host_and_scheme
 
@@ -171,3 +171,7 @@ def add_query_parameters(url: str, **kwargs: str | list[str]) -> str:
             fragment,
         )
     )
+
+
+def is_localhost(request: Request) -> bool:
+    return request.url.hostname in {"127.0.0.1", "localhost"}

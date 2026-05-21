@@ -29,8 +29,7 @@ const buildCompanyDescription = (
   if (data.industry) lines.push(`Industry: ${data.industry}`)
   if (data.foundedAt) lines.push(`Founded: ${data.foundedAt}`)
   if (data.funding) lines.push(`Funding raised: ${data.funding}`)
-  const partner =
-    data.partner === 'Other' ? data.partnerOther : data.partner
+  const partner = data.partner === 'Other' ? data.partnerOther : data.partner
   if (partner) lines.push(`Partner / Investor: ${partner}`)
   if (data.teamSize) lines.push(`Team size: ${data.teamSize}`)
   if (data.location) lines.push(`Location: ${data.location}`)

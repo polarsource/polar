@@ -8,8 +8,8 @@ import Link from 'next/link'
 
 const STATS = [
   { value: 'Free', label: 'Scale tier' },
-  { value: '<1hr', label: 'Response time' },
-  { value: '12mo', label: 'Program length' },
+
+  { value: '12 months', label: 'Program length' },
 ]
 
 const SCALE_FEATURES = ['Slack Channel', 'Prioritized Ticket support']
@@ -18,13 +18,13 @@ export const StartupProgramHero = () => {
   return (
     <Box display="flex" flexDirection="column" rowGap="3xl">
       <Box display="flex" flexDirection="column" rowGap="2xl">
-        <Text as="h1" variant="heading-l" wrap="balance">
-          Startup Program
+        <Text as="h3" variant="heading-l" wrap="pretty">
+          The new standard for AI & SaaS startups.
         </Text>
-        <Text variant="body" color="muted" wrap="balance">
-          The new standard for AI and SaaS startups. Handle usage-based billing,
-          global tax compliance and real-time cost analytics in one platform, so
-          you can scale your business without the operational drag.
+        <Text variant="heading-xs" wrap="balance">
+          Handle usage-based billing, global tax compliance and real-time cost
+          analytics in one platform, so you can scale your business without the
+          operational drag.
         </Text>
       </Box>
 

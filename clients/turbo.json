@@ -46,6 +46,7 @@
     "MCP_OAUTH2_CLIENT_ID",
     "MCP_OAUTH2_CLIENT_SECRET",
     "MINTLIFY_ASSISTANT_API_KEY",
+    "ATTIO_API_KEY",
     "CI"
   ],
   "tasks": {

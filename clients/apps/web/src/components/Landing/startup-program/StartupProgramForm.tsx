@@ -71,8 +71,11 @@ const INITIAL: FormState = {
   email: '',
 }
 
+type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
+
 export const StartupProgramForm = () => {
   const [form, setForm] = useState<FormState>(INITIAL)
+  const [status, setStatus] = useState<SubmitStatus>('idle')
 
   const set =
     <K extends keyof FormState>(key: K) =>
@@ -87,9 +90,22 @@ export const StartupProgramForm = () => {
       rowGap="l"
       padding="3xl"
       backgroundColor="background-secondary"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault()
-        console.log('Startup program application:', form)
+        setStatus('submitting')
+        try {
+          const res = await fetch('/api/startup-program', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(form),
+          })
+          if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+          setStatus('success')
+          setForm(INITIAL)
+        } catch (err) {
+          console.error('Startup program submission failed:', err)
+          setStatus('error')
+        }
       }}
     >
       <Field label="Startup Name" htmlFor="startupName">
@@ -235,9 +251,20 @@ export const StartupProgramForm = () => {
         />
       </Field>
 
-      <Button type="submit" size="lg" fullWidth>
-        Apply Now
+      <Button
+        type="submit"
+        size="lg"
+        fullWidth
+        loading={status === 'submitting'}
+        disabled={status === 'submitting' || status === 'success'}
+      >
+        {status === 'success' ? 'Application Sent' : 'Apply Now'}
       </Button>
+      {status === 'error' && (
+        <Text variant="caption" color="danger">
+          Something went wrong. Please try again or email us directly.
+        </Text>
+      )}
     </Box>
   )
 }

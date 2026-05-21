@@ -4,25 +4,45 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Logotypes } from '../Logotypes'
 import { Section } from '../Section'
+import { StartupProgramFAQ } from './StartupProgramFAQ'
 import { StartupProgramForm } from './StartupProgramForm'
 import { StartupProgramHero } from './StartupProgramHero'
-
-const FEATURES = [
-  {
-    title: 'Payments & Usage-based Billing',
-    description:
-      'Charge for usage, subscriptions, seats and credits from one platform. Polar handles invoicing, dunning and global tax compliance.',
-  },
-  {
-    title: 'Cost Insights',
-    description:
-      'Real-time profit, LTV, and per-customer margin. Understand which customers and products actually make money as you scale.',
-  },
-]
+import { StartupLogo } from './StartupLogo'
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
+import { VolumetricSlices } from '../graphics/VolumetricSlices'
 
 export const StartupProgramPage = () => {
   return (
     <Box display="flex" flexDirection="column">
+      <Box
+        display="flex"
+        alignItems="center"
+        flexDirection="column"
+        paddingVertical="2xl"
+        rowGap="2xl"
+      >
+        <Box width="16rem" display="flex" aspectRatio="1 / 1">
+          <VolumetricSlices />
+        </Box>
+        <Text as="h1" variant="heading-xl">
+          Startup Program
+        </Text>
+        <Text as="p" variant="heading-xxs">
+          An entire year on our most generous plan. For free.
+        </Text>
+      </Box>
+
+      <Section>
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          rowGap="xl"
+        >
+          <Logotypes />
+        </Box>
+      </Section>
+
       <Section>
         <Box
           display="grid"
@@ -35,17 +55,7 @@ export const StartupProgramPage = () => {
       </Section>
 
       <Section>
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          rowGap="xl"
-        >
-          <Text variant="heading-xxs">
-            Join a community of startups shaping what&apos;s next
-          </Text>
-          <Logotypes />
-        </Box>
+        <StartupProgramFAQ />
       </Section>
     </Box>
   )

@@ -561,15 +561,14 @@ class CheckoutService:
         if checkout.customer is not None:
             prefill_attributes = (
                 "email",
-                "name",
                 "billing_name",
                 "billing_address",
                 "tax_id",
             )
+            # A team customer's name refers to the team, not the purchaser.
+            if checkout.customer.type != CustomerType.team:
+                prefill_attributes += ("name",)
             for attribute in prefill_attributes:
-                # A team customer's name refers to the team, not the purchaser.
-                if attribute == "name" and checkout.customer.type == CustomerType.team:
-                    continue
                 checkout_attribute = f"customer_{attribute}"
                 if getattr(checkout, checkout_attribute) is None:
                     setattr(

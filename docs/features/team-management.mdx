@@ -29,11 +29,10 @@ The exact permissions granted by each role:
 | View & manage custom fields | ✓ | ✓ | ✓ |
 | View & manage sales (orders, subscriptions, refunds) | ✓ | ✓ | ✓ |
 | View & manage analytics | ✓ | ✓ | ✓ |
-| Ingest events | ✓ | ✓ | ✓ |
 | View other members | ✓ | ✓ | ✓ |
 | Invite, remove & change member roles | | ✓ | ✓ |
 | View & manage finances (balance, payouts) | | ✓ | ✓ |
-| Manage organization settings | | ✓ | ✓ |
+| Manage organization settings (including webhooks & API keys) | | ✓ | ✓ |
 
 `owner` and `admin` carry the same permissions — the owner is distinguished by the fact that every organization always has exactly one, not by additional capabilities.
 
@@ -64,7 +63,7 @@ Only **admins** and **owners** can change roles.
 The role picker shows a side-by-side permissions matrix so you can confirm what each role grants before saving.
 
 <Note>
-**The owner's role can't be changed from this menu.** Every organization has exactly one owner at all times. Ownership can only be transferred to another member of the organization who has completed identity verification — please [contact support](/support) to initiate the transfer.
+**The owner's role can't be changed from this menu.** Every organization has exactly one owner at all times. Ownership can only be transferred to another member of the organization who has completed identity verification — please [contact support](/support) to request an ownership transfer.
 </Note>
 
 ## Removing a member
@@ -79,7 +78,7 @@ Only **admins** and **owners** can remove other members.
 The removed member immediately loses access to the organization. They keep their Polar account and any other organizations they're a member of.
 
 <Warning>
-**You can't remove the owner.** Every organization always has exactly one owner — to remove the current owner, ownership must first be transferred to another member who has completed identity verification.
+**You can't remove the owner.** Every organization always has exactly one owner — to remove the current owner, ownership must first be transferred to another member who has completed identity verification. Please [contact support](/support) to request an ownership transfer.
 </Warning>
 
 ## Leaving an organization
@@ -106,8 +105,6 @@ You can't leave an organization if you are:
   </Accordion>
   <Accordion title="How do I transfer ownership of an organization?">
     Ownership can only be transferred to another member of the organization who has completed identity verification. Every organization always has exactly one owner — the previous owner becomes an admin once the transfer completes.
-  </Accordion>
-  <Accordion title="What happens to a member's API tokens if they're removed?">
-    Personal access tokens belong to the user, not the organization. Once a user is removed, their tokens lose access to the organization's resources. For long-lived, organization-scoped automation, use an [Organization Access Token](/integrate/authentication) instead.
+    Please [contact support](/support) to request an ownership transfer.
   </Accordion>
 </AccordionGroup>

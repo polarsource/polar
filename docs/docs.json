@@ -418,6 +418,7 @@
             "group": "Customer Portal API",
             "pages": [
               "api-reference/customer-portal/get-customer",
+              "api-reference/customer-portal/update-customer",
               "api-reference/customer-portal/get-organization",
               {
                 "group": "Sessions",
@@ -468,6 +469,13 @@
                   "api-reference/customer-portal/seats/revoke",
                   "api-reference/customer-portal/seats/resend",
                   "api-reference/customer-portal/seats/list-subscriptions"
+                ]
+              },
+              {
+                "group": "Payment Methods",
+                "pages": [
+                  "api-reference/customer-portal/payment-methods/list",
+                  "api-reference/customer-portal/payment-methods/delete"
                 ]
               }
             ]

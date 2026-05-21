@@ -116,7 +116,9 @@ export const createPerson = async (
     values.job_title = input.jobTitle
   }
   if (input.companyRecordId) {
-    values.company = [{ target_record_id: input.companyRecordId }]
+    values.company = [
+      { target_object: 'companies', target_record_id: input.companyRecordId },
+    ]
   }
 
   const result = await request<AttioResponse<AttioRecord>>(

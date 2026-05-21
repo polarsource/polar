@@ -57,18 +57,8 @@ def _candidate_filter() -> list[ColumnElement[bool]]:
     ]
 
 
-async def _count_candidates(session: AsyncSession) -> int:
-    result = await session.execute(
-        select(func.count()).select_from(Organization).where(*_candidate_filter())
-    )
-    return result.scalar_one()
-
-
 _SHAPE_EXPR = case(
-    (
-        Organization.details_submitted_at.isnot(None),
-        "submitted (UI no-op today)",
-    ),
+    (Organization.details_submitted_at.isnot(None), "submitted"),
     (Organization.details == cast({}, JSONB), "empty, unsubmitted"),
     (
         and_(
@@ -89,6 +79,7 @@ _SHAPE_EXPR = case(
 
 
 async def _breakdown_candidates(session: AsyncSession) -> list[Row[Any]]:
+    """Per-shape candidate counts. Sum of `n` is the total candidate count."""
     result = await session.execute(
         select(_SHAPE_EXPR, func.count().label("n"))
         .where(*_candidate_filter())
@@ -164,10 +155,10 @@ async def backfill(
             console.rule(f"[bold]Executing: enable {_FLAG} on CREATED orgs")
 
         async with sessionmaker() as session:
-            total = await _count_candidates(session)
             breakdown = await _breakdown_candidates(session)
             sample = await _sample_candidates(session, limit=SAMPLE_LIMIT)
 
+        total = sum(row.n for row in breakdown)
         console.print(f"[cyan]CREATED orgs missing {_FLAG}=true: [bold]{total}")
         if total == 0:
             console.print("[green]Nothing to do.")

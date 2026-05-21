@@ -43,7 +43,7 @@ class OrganizationDoesNotExist(OrganizationReviewTaskError):
 
 
 # Mapping from agent verdict to OrganizationReview verdict
-_VERDICT_MAP: dict[ReviewVerdict, str] = {
+_VERDICT_MAP: dict[ReviewVerdict, OrganizationReview.Verdict] = {
     ReviewVerdict.APPROVE: OrganizationReview.Verdict.PASS,
     ReviewVerdict.DENY: OrganizationReview.Verdict.FAIL,
 }
@@ -188,11 +188,7 @@ async def run_review_agent(
             existing = await org_review_repository.get_by_organization(organization_id)
 
             # A re-submission is a fresh review: overwrite any existing row
-            # (grandfathered or otherwise) so the canonical verdict reflects
-            # the latest agent run rather than a stale prior result. Any
-            # appeal state was tied to the previous verdict — clear it so a
-            # new FAIL gets a new appeal opportunity, and a new PASS doesn't
-            # collide with an in-flight appeal task.
+            # so the canonical verdict reflects the latest agent run.
             details_snapshot = {
                 "name": organization.name,
                 "website": organization.website,
@@ -200,17 +196,14 @@ async def run_review_agent(
                 "socials": organization.socials,
             }
             if existing is not None:
-                existing.verdict = OrganizationReview.Verdict(mapped_verdict)
+                existing.verdict = mapped_verdict
                 existing.risk_score = report.overall_risk_score
                 existing.violated_sections = report.violated_sections
                 existing.reason = report.merchant_summary
                 existing.timed_out = result.timed_out
                 existing.organization_details_snapshot = details_snapshot
                 existing.model_used = result.model_used
-                existing.appeal_submitted_at = None
-                existing.appeal_reason = None
-                existing.appeal_reviewed_at = None
-                existing.appeal_decision = None
+                existing.clear_appeal_state()
                 session.add(existing)
             else:
                 session.add(

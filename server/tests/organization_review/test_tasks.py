@@ -1,4 +1,4 @@
-"""Tests for organization_review.tasks – specifically the grandfathered org override path."""
+"""Tests for organization_review.tasks – SUBMISSION re-run + appeal review paths."""
 
 import contextlib
 from collections.abc import AsyncIterator
@@ -91,9 +91,9 @@ async def _mock_session_maker(
 
 
 @pytest.mark.asyncio
-class TestRunReviewAgentGrandfathered:
-    """Test that a grandfathered OrganizationReview is updated in-place
-    when the org goes through a new submission review."""
+class TestRunReviewAgentSubmission:
+    """SUBMISSION re-run overwrites the existing canonical OrganizationReview
+    row (grandfathered or otherwise) and clears any prior appeal state."""
 
     async def test_grandfathered_review_is_overwritten(
         self,

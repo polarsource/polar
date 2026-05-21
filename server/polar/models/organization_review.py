@@ -69,6 +69,14 @@ class OrganizationReview(RecordModel):
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise", back_populates="review")
 
+    def clear_appeal_state(self) -> None:
+        """Reset all appeal fields. Called when the review is overwritten by
+        a fresh agent run — the prior appeal was tied to the prior verdict."""
+        self.appeal_submitted_at = None
+        self.appeal_reason = None
+        self.appeal_reviewed_at = None
+        self.appeal_decision = None
+
     @property
     def is_approved(self) -> bool:
         """Whether the review clears the merchant to operate.

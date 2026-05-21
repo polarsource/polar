@@ -55,8 +55,12 @@ export async function POST(req: Request) {
   const data = parsed.data
 
   if (!process.env.ATTIO_API_KEY) {
-    console.warn('[startup-program] ATTIO_API_KEY not set; skipping forward.')
-    return NextResponse.json({ ok: true, forwarded: false })
+    console.error('[startup-program] ATTIO_API_KEY is not configured.')
+    Sentry.captureMessage('startup-program: ATTIO_API_KEY missing', 'error')
+    return NextResponse.json(
+      { error: 'Submission service is not configured' },
+      { status: 500 },
+    )
   }
 
   try {

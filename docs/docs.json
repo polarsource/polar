@@ -469,6 +469,13 @@
                   "api-reference/customer-portal/seats/resend",
                   "api-reference/customer-portal/seats/list-subscriptions"
                 ]
+              },
+              {
+                "group": "Payment Methods",
+                "pages": [
+                  "api-reference/customer-portal/payment-methods/list",
+                  "api-reference/customer-portal/payment-methods/delete"
+                ]
               }
             ]
           },

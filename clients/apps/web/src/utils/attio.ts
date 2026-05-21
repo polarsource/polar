@@ -116,7 +116,9 @@ export const createPerson = async (
     values.job_title = input.jobTitle
   }
   if (input.companyRecordId) {
-    values.company = [{ target_record_id: input.companyRecordId }]
+    values.company = [
+      { target_object: 'companies', target_record_id: input.companyRecordId },
+    ]
   }
 
   const result = await request<AttioResponse<AttioRecord>>(
@@ -124,6 +126,32 @@ export const createPerson = async (
     {
       method: 'PUT',
       body: JSON.stringify({ data: { values } }),
+    },
+  )
+  return result.data
+}
+
+interface AddToListInput {
+  listId: string
+  parentRecordId: string
+  parentObject?: 'companies' | 'people'
+  entryValues?: Record<string, unknown>
+}
+
+export const addToList = async (
+  input: AddToListInput,
+): Promise<AttioRecord> => {
+  const result = await request<AttioResponse<AttioRecord>>(
+    `/lists/${input.listId}/entries`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          parent_record_id: input.parentRecordId,
+          parent_object: input.parentObject ?? 'companies',
+          entry_values: input.entryValues ?? {},
+        },
+      }),
     },
   )
   return result.data

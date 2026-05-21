@@ -1,4 +1,4 @@
-import { createPerson, upsertCompany } from '@/utils/attio'
+import { addToList, createPerson, upsertCompany } from '@/utils/attio'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -21,20 +21,41 @@ const requestSchema = z.object({
   email: z.email().max(200),
 })
 
-const buildCompanyDescription = (
+// Attio's select-type attributes expect `[{ option: '<title>' }]` — the
+// option value is the option title string, not a wrapped object.
+const selectValue = (title: string) => [{ option: title }]
+
+const buildEntryValues = (
   data: z.infer<typeof requestSchema>,
-): string => {
-  const lines: string[] = []
-  if (data.pitch) lines.push(data.pitch, '')
-  if (data.industry) lines.push(`Industry: ${data.industry}`)
-  if (data.foundedAt) lines.push(`Founded: ${data.foundedAt}`)
-  if (data.funding) lines.push(`Funding raised: ${data.funding}`)
-  const partner = data.partner === 'Other' ? data.partnerOther : data.partner
-  if (partner) lines.push(`Partner / Investor: ${partner}`)
-  if (data.teamSize) lines.push(`Team size: ${data.teamSize}`)
-  if (data.location) lines.push(`Location: ${data.location}`)
-  if (data.paymentVolume) lines.push(`Payment volume: ${data.paymentVolume}`)
-  return lines.join('\n')
+  personRecordId: string,
+): Record<string, unknown> => {
+  const values: Record<string, unknown> = {}
+
+  // Text attributes — Attio accepts the bare string for text shorthand.
+  if (data.industry) values.industry = data.industry
+  if (data.foundedAt) values.founded = data.foundedAt
+  if (data.paymentVolume) values.payment_volume = data.paymentVolume
+  if (data.location) values.location = data.location
+  if (data.pitch) values.pitch = data.pitch
+
+  // Select attributes — option titles must match the choices configured on
+  // the Attio list (mirrors FUNDING_OPTIONS / PARTNER_OPTIONS / TEAM_SIZE_OPTIONS
+  // in StartupProgramForm.tsx).
+  if (data.funding) values.funding_raised = selectValue(data.funding)
+  if (data.partner) values.partner = selectValue(data.partner)
+  if (data.teamSize) values.team_size = selectValue(data.teamSize)
+
+  // Free-text used only when the partner picker is set to "Other".
+  if (data.partner === 'Other' && data.partnerOther) {
+    values.partner_other = data.partnerOther
+  }
+
+  // Record reference to the applicant Person on the list entry.
+  values.applicant = [
+    { target_object: 'people', target_record_id: personRecordId },
+  ]
+
+  return values
 }
 
 export async function POST(req: Request) {
@@ -63,20 +84,55 @@ export async function POST(req: Request) {
     )
   }
 
+  const listId = process.env.ATTIO_STARTUP_LIST_ID
+  if (!listId) {
+    console.error('[startup-program] ATTIO_STARTUP_LIST_ID is not configured.')
+    Sentry.captureMessage(
+      'startup-program: ATTIO_STARTUP_LIST_ID missing',
+      'error',
+    )
+    return NextResponse.json(
+      { error: 'Submission service is not configured' },
+      { status: 500 },
+    )
+  }
+
   try {
     const company = await upsertCompany({
       name: data.startupName,
       website: data.website,
-      description: buildCompanyDescription(data),
     })
+    console.log(
+      '[startup-program] upserted Company:',
+      company.id.record_id,
+      'name:',
+      data.startupName,
+    )
 
-    await createPerson({
+    const person = await createPerson({
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
       jobTitle: data.role,
       companyRecordId: company.id.record_id,
     })
+    console.log(
+      '[startup-program] upserted Person:',
+      person.id.record_id,
+      'email:',
+      data.email,
+    )
+
+    const entry = await addToList({
+      listId,
+      parentRecordId: company.id.record_id,
+      parentObject: 'companies',
+      entryValues: buildEntryValues(data, person.id.record_id),
+    })
+    console.log(
+      '[startup-program] added list entry:',
+      entry.id.record_id ?? entry.id,
+    )
 
     return NextResponse.json({ ok: true, forwarded: true })
   } catch (error) {

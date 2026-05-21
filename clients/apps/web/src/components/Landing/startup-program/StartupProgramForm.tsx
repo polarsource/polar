@@ -16,7 +16,7 @@ import { useState } from 'react'
 
 const FUNDING_OPTIONS = [
   'Bootstrapped',
-  'Pre-seed (<$1M)',
+  'Pre-seed',
   '$1M to $5M',
   '$5M to $15M',
   '$15M+',
@@ -26,16 +26,20 @@ const TEAM_SIZE_OPTIONS = ['1', '2 to 5', '6 to 15', '16 to 50', '50+']
 
 const PARTNER_OPTIONS = [
   'Accel',
-  'Andreessen Horowitz (a16z)',
+  'Andreessen Horowitz',
+  'Atomico',
+  'Balderton',
   'Benchmark',
   'Bessemer Venture Partners',
+  'Creandum',
   'First Round Capital',
   'Founders Fund',
   'General Catalyst',
   'Greylock',
   'Index Ventures',
   'Kleiner Perkins',
-  'Lightspeed',
+  'Lightspeed Venture Partners',
+  'NEA',
   'Sequoia Capital',
   'Tiger Global',
   'Y Combinator',

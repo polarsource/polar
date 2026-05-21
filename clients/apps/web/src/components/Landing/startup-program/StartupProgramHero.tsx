@@ -19,7 +19,7 @@ export const StartupProgramHero = () => {
     <Box display="flex" flexDirection="column" rowGap="3xl">
       <Box display="flex" flexDirection="column" rowGap="2xl">
         <Text as="h3" variant="heading-l" wrap="pretty">
-          The new standard for AI & SaaS startups.
+          Polar for Startups
         </Text>
         <Text variant="heading-xs" wrap="balance">
           Handle usage-based billing, global tax compliance and real-time cost

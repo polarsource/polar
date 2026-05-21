@@ -130,7 +130,7 @@ export const FinancePage = () => {
           {
             title: 'Subscription payments',
             description:
-              '+0.5% on recurring charges for Early Member accounts. No subscription surcharge on Starter, Pro, Growth, or Scale.',
+              'No surcharge on recurring charges. Subscription payments are billed at the same rate as one-off payments.',
           },
           {
             title: 'Refunds',

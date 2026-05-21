@@ -201,11 +201,11 @@ export const WhyPolarPage = () => {
       <ResourceSection id="pricing" title="Pricing">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <h3>Transparent, published pricing</h3>
+            <h3>Transparent pricing</h3>
             <p className="dark:text-polar-300 text-gray-500">
-              Polar posts every rate publicly. Start free on Starter (5% + 50¢),
-              or upgrade to Pro, Growth, or Scale for lower fees and prioritized
-              support. No sales process required.
+              Start free on Starter (5% + 50¢), or upgrade to Pro, Growth, or
+              Scale for lower fees and prioritized support. No sales process
+              required.
             </p>
           </div>
           <div className="flex flex-col gap-2">

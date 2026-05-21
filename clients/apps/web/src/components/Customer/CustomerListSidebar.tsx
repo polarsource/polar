@@ -198,11 +198,13 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
                   />
                   <div className="flex min-w-0 flex-col">
                     <div className="w-full truncate text-sm">
-                      {customer.name ?? '—'}
+                      {customer.name ?? customer.email ?? '—'}
                     </div>
-                    <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
-                      {customer.email ?? '—'}
-                    </div>
+                    {(customer.email || customer.type === 'individual') && (
+                      <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
+                        {customer.email ?? '—'}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Link>

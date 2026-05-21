@@ -170,22 +170,29 @@ class TeamSection:
             # Ownership transfer requirements (if applicable)
             with card(bordered=True):
                 with tag.h3(classes="text-md font-bold mb-3"):
-                    text("Ownership Transfer Requirements")
+                    text("Ownership Transfer")
 
                 with tag.ul(classes="space-y-2 text-sm"):
                     with tag.li(classes="flex items-start gap-2"):
                         with tag.span(classes="text-base-content/60"):
                             text(
-                                "• No Stripe account connected (restriction for alpha)"
+                                "• The new owner must already be a member "
+                                "of the organization"
                             )
 
                     with tag.li(classes="flex items-start gap-2"):
                         with tag.span(classes="text-base-content/60"):
-                            text("• New owner must be verified")
+                            text(
+                                "• The new owner must have completed Stripe "
+                                "identity verification"
+                            )
 
                     with tag.li(classes="flex items-start gap-2"):
                         with tag.span(classes="text-base-content/60"):
-                            text("• At least 2 team members required")
+                            text(
+                                "• The current owner is demoted to admin "
+                                "(they keep access to the org)"
+                            )
 
             yield
 

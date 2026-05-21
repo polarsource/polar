@@ -13,6 +13,8 @@ from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 
+from .repository import UserOrganizationRepository
+
 
 class UserOrganizationError(PolarError): ...
 
@@ -240,23 +242,10 @@ class UserOrganizationService:
                 new_owner_user_id, new_owner_user.identity_verification_status
             )
 
-        await session.execute(
-            sql.update(UserOrganization)
-            .where(
-                UserOrganization.organization_id == organization_id,
-                UserOrganization.role == OrganizationRole.owner,
-            )
-            .values(role=OrganizationRole.admin)
-        )
+        repository = UserOrganizationRepository.from_session(session)
+        await repository.demote_current_owner(organization_id)
         try:
-            await session.execute(
-                sql.update(UserOrganization)
-                .where(
-                    UserOrganization.organization_id == organization_id,
-                    UserOrganization.user_id == new_owner_user_id,
-                )
-                .values(role=OrganizationRole.owner)
-            )
+            await repository.promote_to_owner(organization_id, new_owner_user_id)
             await session.flush()
         except IntegrityError as e:
             # Partial unique index `ix_user_organizations_owner_per_org`

@@ -2,11 +2,11 @@ from collections.abc import Sequence
 from typing import Self
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from polar.models import Organization, UserOrganization
 from polar.models.user_organization import OrganizationRole
-from polar.postgres import AsyncReadSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 
 class UserOrganizationRepository:
@@ -17,11 +17,11 @@ class UserOrganizationRepository:
     don't already live on `UserOrganizationService`.
     """
 
-    def __init__(self, session: AsyncReadSession) -> None:
+    def __init__(self, session: AsyncSession | AsyncReadSession) -> None:
         self.session = session
 
     @classmethod
-    def from_session(cls, session: AsyncReadSession) -> Self:
+    def from_session(cls, session: AsyncSession | AsyncReadSession) -> Self:
         return cls(session)
 
     async def get_organizations_with_role(
@@ -45,3 +45,25 @@ class UserOrganizationRepository:
         )
         result = await self.session.execute(statement)
         return [(row[0], row[1]) for row in result.all()]
+
+    async def demote_current_owner(self, organization_id: UUID) -> None:
+        """Demote whoever currently holds `owner` on the org to `admin`."""
+        await self.session.execute(
+            update(UserOrganization)
+            .where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.role == OrganizationRole.owner,
+            )
+            .values(role=OrganizationRole.admin)
+        )
+
+    async def promote_to_owner(self, organization_id: UUID, user_id: UUID) -> None:
+        """Promote `user_id` on the org to `owner`."""
+        await self.session.execute(
+            update(UserOrganization)
+            .where(
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.user_id == user_id,
+            )
+            .values(role=OrganizationRole.owner)
+        )

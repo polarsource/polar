@@ -3179,17 +3179,13 @@ async def make_owner(
     """Make a user the owner of the organization."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(
-        organization_id,
-        include_blocked=True,
-        options=(joinedload(Organization.account),),
-    )
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
     try:
         await account_service.change_owner(
-            session, organization.account, user_id, organization_id
+            session, new_owner_id=user_id, organization_id=organization_id
         )
     except Exception as e:
         logger.error("Failed to make user owner", error=str(e))

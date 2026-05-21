@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarError
@@ -11,7 +12,6 @@ from polar.models import User, UserOrganization
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession, AsyncSession, sql
-from polar.user.repository import UserRepository
 
 
 class UserOrganizationError(PolarError): ...
@@ -221,16 +221,13 @@ class UserOrganizationService:
         Fires the `IdentityVerificationStatus.verified` gate on the new
         owner, since payouts route through whoever holds `owner`.
         """
-        user_repository = UserRepository.from_session(session)
-        new_owner_user = await user_repository.get_by_id(new_owner_user_id)
-        if new_owner_user is None:
-            raise UserNotMemberOfOrganization(new_owner_user_id, organization_id)
-
         new_owner_user_org = await self.get_by_user_and_org(
             session, new_owner_user_id, organization_id
         )
         if new_owner_user_org is None:
             raise UserNotMemberOfOrganization(new_owner_user_id, organization_id)
+
+        new_owner_user = new_owner_user_org.user
 
         if new_owner_user_org.role == OrganizationRole.owner:
             raise AlreadyOwner(new_owner_user_id, organization_id)
@@ -251,14 +248,22 @@ class UserOrganizationService:
             )
             .values(role=OrganizationRole.admin)
         )
-        await session.execute(
-            sql.update(UserOrganization)
-            .where(
-                UserOrganization.organization_id == organization_id,
-                UserOrganization.user_id == new_owner_user_id,
+        try:
+            await session.execute(
+                sql.update(UserOrganization)
+                .where(
+                    UserOrganization.organization_id == organization_id,
+                    UserOrganization.user_id == new_owner_user_id,
+                )
+                .values(role=OrganizationRole.owner)
             )
-            .values(role=OrganizationRole.owner)
-        )
+            await session.flush()
+        except IntegrityError as e:
+            # Partial unique index `ix_user_organizations_owner_per_org`
+            # rejected a concurrent transfer that beat us to setting a
+            # different user as owner. Surface as `AlreadyOwner` so the
+            # caller can refresh state and retry.
+            raise AlreadyOwner(new_owner_user_id, organization_id) from e
         return new_owner_user
 
     async def remove_member(

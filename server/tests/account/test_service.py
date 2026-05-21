@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 
 from polar.account.service import account as account_service
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import Organization, User, UserOrganization
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.user_organization.service import (
@@ -25,7 +25,6 @@ class TestChangeOwnerRoleSwap:
         self,
         save_fixture: SaveFixture,
         session: Any,
-        account: Account,
         organization: Organization,
         user: User,
         user_second: User,
@@ -48,7 +47,6 @@ class TestChangeOwnerRoleSwap:
 
         await account_service.change_owner(
             session,
-            account=account,
             new_owner_id=user_second.id,
             organization_id=organization.id,
         )
@@ -68,7 +66,6 @@ class TestChangeOwnerRoleSwap:
         self,
         save_fixture: SaveFixture,
         session: Any,
-        account: Account,
         organization: Organization,
         user: User,
         user_second: User,
@@ -94,7 +91,6 @@ class TestChangeOwnerRoleSwap:
 
         await account_service.change_owner(
             session,
-            account=account,
             new_owner_id=user_second.id,
             organization_id=organization.id,
         )

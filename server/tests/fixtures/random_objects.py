@@ -320,11 +320,10 @@ async def user_organization(
     organization: Organization,
     user: User,
 ) -> UserOrganization:
-    # `user` is `account.admin_id` by virtue of the fixture chain (the
-    # `account` fixture creates an Account with `user` as admin), so the
-    # owner-validity invariant says they carry `owner` on the membership.
-    # Tests that need a non-admin user should either downgrade the role
-    # explicitly or use `user_second` / `user_organization_second`.
+    # `user` carries the `owner` role on the org by convention here,
+    # matching the production invariant that every org has exactly one
+    # owner. Tests that need a non-owner user should either downgrade
+    # the role explicitly or use `user_second` / `user_organization_second`.
     user_organization = UserOrganization(
         user=user, organization=organization, role=OrganizationRole.owner
     )

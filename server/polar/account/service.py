@@ -139,10 +139,10 @@ class AccountService:
     async def change_owner(
         self,
         session: AsyncSession,
-        account: Account,
+        *,
         new_owner_id: uuid.UUID,
         organization_id: uuid.UUID,
-    ) -> Account:
+    ) -> None:
         new_owner_user = await user_organization_service.transfer_ownership(
             session,
             new_owner_user_id=new_owner_id,
@@ -154,8 +154,6 @@ class AccountService:
             organization_id=organization_id,
             new_owner_user=new_owner_user,
         )
-
-        return account
 
     async def _get_unrestricted(
         self,

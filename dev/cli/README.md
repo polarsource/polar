@@ -65,6 +65,23 @@ Uses your `gh` CLI auth to trigger the `deploy-lock.yml` / `deploy-unlock.yml`
 workflows, which toggle a GitHub ruleset. The `/emergency` PR command still
 works because its identity is on the ruleset's bypass list.
 
+### Honk
+
+```bash
+dev honk                # Install your listener (first run), or show who's online
+dev honk <name>         # Send a honk to a teammate
+dev honk --list         # Show who you can honk right now
+dev honk --remove       # Stop and uninstall your listener
+```
+
+Plays a sound on a teammate's machine. Honks travel directly over the Polar
+Tailscale network — no server, no Slack. `dev honk` installs a small launchd
+agent (`sh.polar.honk`) that listens for honks and only accepts them from
+tailnet peers, so it works for the team and nobody else. Opting in is one
+prompt; `dev honk --remove` backs it all out.
+
+The honk sound is `dev/cli/honk.mp3` — drop in your own `honk.*` audio file
+there to change it (`.mp3`, `.wav`, `.aiff`, `.m4a`, `.aac`). macOS only for now.
 
 ## Docker dev environment
 

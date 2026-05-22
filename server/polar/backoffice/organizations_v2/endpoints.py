@@ -815,7 +815,7 @@ async def get_organization_detail(
                         owner_user
                     )
                 team_section = TeamSection(
-                    organization, owner_user, identity_country=identity_country
+                    organization, identity_country=identity_country
                 )
                 with team_section.render(request):
                     pass

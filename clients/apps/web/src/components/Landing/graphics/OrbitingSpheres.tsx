@@ -95,8 +95,8 @@ export const OrbitingSpheres = () => {
       const satY = cy + dy * orbitR
       ctx.beginPath()
       ctx.arc(satX, satY, satR, 0, Math.PI * 2)
-      ctx.strokeStyle = strokeColor
-      ctx.stroke()
+      ctx.fillStyle = strokeColor
+      ctx.fill()
 
       animRef.current = requestAnimationFrame(draw)
     }

@@ -3,6 +3,9 @@
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
+import ArrowForward from '@mui/icons-material/ArrowForward'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Sidebar,
@@ -15,7 +18,7 @@ import {
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ComponentProps, PropsWithChildren } from 'react'
+import { ComponentProps, PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import GetStartedButton from '../Auth/GetStartedButton'
@@ -23,21 +26,48 @@ import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { NavPopover, NavPopoverSection } from './NavPopover'
 
+const StartupProgramBanner = () => (
+  <Link href="/startup-program" prefetch>
+    <Box
+      display={{
+        base: 'none',
+        md: 'flex',
+      }}
+      flexDirection="row"
+      alignItems="center"
+      justifyContent="center"
+      columnGap="s"
+      paddingHorizontal="xl"
+      paddingVertical="m"
+      backgroundColor="background-secondary"
+      color="text-primary"
+    >
+      <Text color="inherit">Introducing the Polar Startup Program</Text>
+      <ArrowForward fontSize="inherit" />
+    </Box>
+  </Link>
+)
+
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="dark:bg-polar-950 relative flex flex-col overflow-x-clip bg-white px-0 md:w-full md:flex-1 md:items-center md:px-4">
-      <div className="flex flex-col gap-y-2 md:w-full">
+    <>
+      <div className="sticky top-0 z-30 flex w-full flex-col">
+        <StartupProgramBanner />
         <LandingPageDesktopNavigation />
-        <SidebarProvider className="absolute inset-0 flex flex-col items-start md:hidden">
-          <LandingPageTopbar />
-          <LandingPageMobileNavigation />
-        </SidebarProvider>
-        <div className="dark:bg-polar-950 relative flex flex-col px-4 pt-32 md:w-full md:px-0 md:pt-0">
-          {children}
-        </div>
-        <LandingPageFooter />
       </div>
-    </div>
+      <div className="dark:bg-polar-950 relative flex flex-col overflow-x-clip bg-white px-0 md:w-full md:flex-1 md:items-center md:px-4">
+        <div className="flex flex-col gap-y-2 md:w-full">
+          <SidebarProvider className="absolute inset-0 flex flex-col items-start md:hidden">
+            <LandingPageTopbar />
+            <LandingPageMobileNavigation />
+          </SidebarProvider>
+          <div className="dark:bg-polar-950 relative flex flex-col px-4 pt-32 md:w-full md:px-0 md:pt-0">
+            {children}
+          </div>
+          <LandingPageFooter />
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -173,6 +203,14 @@ const LandingPageDesktopNavigation = () => {
   const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
   const pathname = usePathname()
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 0)
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const onLoginClick = () => {
     posthog.capture('global:user:login:click')
@@ -304,10 +342,15 @@ const LandingPageDesktopNavigation = () => {
   ]
 
   return (
-    <div className="dark:text-polar-50 dark:bg-polar-950 sticky top-0 z-10 hidden w-full flex-col items-center gap-12 bg-white py-8 md:flex">
+    <div
+      className={twMerge(
+        'dark:text-polar-50 dark:bg-polar-950 hidden w-full flex-col items-center gap-12 border-b border-transparent bg-white py-6 transition-colors md:flex',
+        isScrolled && 'dark:border-polar-800 border-gray-200',
+      )}
+    >
       <div className="relative flex w-full flex-row items-center justify-between lg:max-w-7xl">
         <Link href="/">
-          <PolarLogotype logoVariant="logotype" size={120} />
+          <PolarLogotype logoVariant="logotype" size={100} />
         </Link>
 
         <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">

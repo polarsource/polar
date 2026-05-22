@@ -608,7 +608,6 @@
             "group": "Guides",
             "pages": [
               "guides/introduction",
-              "guides/automate-post-purchase-link-sharing",
               "guides/grant-meter-credits-after-purchase",
               "guides/grant-meter-credits-before-purchase",
               "guides/seat-based-pricing"

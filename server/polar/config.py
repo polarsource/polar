@@ -234,7 +234,7 @@ class Settings(BaseSettings):
 
     # Pydantic AI Gateway
     PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
-    PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.2-2025-12-11"
+    PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.5"
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""

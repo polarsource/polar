@@ -20,7 +20,7 @@ depends_on: tuple[str] | None = None
 
 def upgrade() -> None:
     op.execute("SET LOCAL lock_timeout = '10s'")
-    # op.drop_constraint(op.f("accounts_admin_id_fkey"), "accounts", type_="foreignkey")
+    op.drop_constraint(op.f("accounts_admin_id_fkey"), "accounts", type_="foreignkey")
     op.drop_column("accounts", "admin_id")
 
 

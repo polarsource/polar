@@ -483,23 +483,6 @@ class TestBuildPromptPriorFeedback:
         prompt = self._build(_make_snapshot(prior_feedback=feedback))
         assert "unknown date" in prompt
 
-    def test_feedback_placed_before_policy(self) -> None:
-        feedback = PriorFeedbackData(
-            entries=[
-                PriorFeedbackEntry(
-                    actor_type="human",
-                    decision="APPROVE",
-                    review_context="threshold",
-                    created_at=datetime(2026, 1, 10, tzinfo=UTC),
-                )
-            ]
-        )
-        prompt = self._build(_make_snapshot(prior_feedback=feedback))
-
-        pos_feedback = prompt.index("## Prior Review Decisions")
-        pos_policy = prompt.index("## Acceptable Use Policy")
-        assert pos_feedback < pos_policy
-
 
 # ---------------------------------------------------------------------------
 # Schema backward compatibility

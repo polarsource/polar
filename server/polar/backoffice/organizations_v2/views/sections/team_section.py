@@ -18,11 +18,11 @@ class TeamSection:
     def __init__(
         self,
         organization: Organization,
-        admin_user: User | None = None,
+        owner_user: User | None = None,
         identity_country: str | None = None,
     ):
         self.org = organization
-        self.admin_user = admin_user
+        self.owner_user = owner_user
         self.identity_country = identity_country
 
     @contextlib.contextmanager
@@ -93,12 +93,12 @@ class TeamSection:
                                         with tag.div(
                                             classes="text-sm text-base-content/60"
                                         ):
-                                            is_admin = (
-                                                self.admin_user
-                                                and member.user_id == self.admin_user.id
+                                            is_owner = (
+                                                self.owner_user
+                                                and member.user_id == self.owner_user.id
                                             )
                                             role_text = (
-                                                "Admin" if is_admin else "Member"
+                                                "Owner" if is_owner else "Member"
                                             )
                                             text(
                                                 f"{role_text} · Joined {member.created_at.strftime('%Y-%m-%d')}"
@@ -133,23 +133,30 @@ class TeamSection:
                                             classes="dropdown-content menu shadow bg-base-100 rounded-box w-52 z-10",
                                             **{"tabindex": "0"},
                                         ):
-                                            member_is_admin = (
-                                                self.admin_user
-                                                and member.user_id == self.admin_user.id
+                                            member_is_owner = (
+                                                self.owner_user
+                                                and member.user_id == self.owner_user.id
                                             )
-                                            if not member_is_admin:
+                                            member_is_verified = (
+                                                member.user.identity_verification_status
+                                                == IdentityVerificationStatus.verified
+                                            )
+                                            if (
+                                                not member_is_owner
+                                                and member_is_verified
+                                            ):
                                                 with tag.li():
                                                     with tag.a(
                                                         hx_post=str(
                                                             request.url_for(
-                                                                "organizations:make_admin",
+                                                                "organizations:make_owner",
                                                                 organization_id=self.org.id,
                                                                 user_id=member.user_id,
                                                             )
                                                         ),
-                                                        hx_confirm="Make this user an admin?",
+                                                        hx_confirm="Transfer ownership to this user?",
                                                     ):
-                                                        text("Make Admin")
+                                                        text("Make Owner")
                                             with tag.li():
                                                 with tag.a(
                                                     hx_delete=str(
@@ -167,25 +174,32 @@ class TeamSection:
                     with tag.div(classes="text-center py-8 text-base-content/60"):
                         text("No team members found")
 
-            # Admin change requirements (if applicable)
+            # Ownership transfer requirements (if applicable)
             with card(bordered=True):
                 with tag.h3(classes="text-md font-bold mb-3"):
-                    text("Admin Change Requirements")
+                    text("Ownership Transfer")
 
                 with tag.ul(classes="space-y-2 text-sm"):
                     with tag.li(classes="flex items-start gap-2"):
                         with tag.span(classes="text-base-content/60"):
                             text(
-                                "• No Stripe account connected (restriction for alpha)"
+                                "• The new owner must already be a member "
+                                "of the organization"
                             )
 
                     with tag.li(classes="flex items-start gap-2"):
                         with tag.span(classes="text-base-content/60"):
-                            text("• New admin must be verified")
+                            text(
+                                "• The new owner must have completed Stripe "
+                                "identity verification"
+                            )
 
                     with tag.li(classes="flex items-start gap-2"):
                         with tag.span(classes="text-base-content/60"):
-                            text("• At least 2 team members required")
+                            text(
+                                "• The current owner is demoted to admin "
+                                "(they keep access to the org)"
+                            )
 
             yield
 

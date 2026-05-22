@@ -362,7 +362,7 @@ async def get_payment_status(
     organization = await organization_service.get_anonymous(
         session,
         id,
-        options=(joinedload(Organization.account).joinedload(Account.admin),),
+        options=(joinedload(Organization.account),),
     )
 
     if organization is None:
@@ -586,8 +586,8 @@ async def set_member_role(
     """Change a member's role on an organization.
 
     Only `admin` and `member` are accepted; ownership transfers go through
-    a separate flow (`Account.admin_id` mutation, today the backoffice
-    `change_admin` endpoint).
+    a separate flow (today the backoffice `change_owner` endpoint, which
+    calls `user_organization_service.transfer_ownership`).
     """
     try:
         return await user_organization_service.set_role(

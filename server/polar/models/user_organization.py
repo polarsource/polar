@@ -1,7 +1,7 @@
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Uuid
+from sqlalchemy import ForeignKey, Index, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
@@ -18,6 +18,14 @@ class OrganizationRole(StrEnum):
 
 class UserOrganization(TimestampedModel):
     __tablename__ = "user_organizations"
+    __table_args__ = (
+        Index(
+            "ix_user_organizations_owner_per_org",
+            "organization_id",
+            unique=True,
+            postgresql_where="role = 'owner' AND deleted_at IS NULL",
+        ),
+    )
 
     user_id: Mapped[UUID] = mapped_column(
         Uuid,

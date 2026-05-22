@@ -61,12 +61,6 @@ class Account(RecordModel):
 
     credit_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", use_alter=True))
-
-    @declared_attr
-    def admin(cls) -> Mapped["User"]:
-        return relationship("User", lazy="raise", foreign_keys="[Account.admin_id]")
-
     @declared_attr
     def users(cls) -> Mapped[list["User"]]:
         return relationship(

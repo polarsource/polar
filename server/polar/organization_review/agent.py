@@ -199,19 +199,19 @@ async def _collect_history(organization: Organization) -> HistoryData:
         org_repository = OrganizationRepository.from_session(session)
         review_repository = OrganizationReviewRepository.from_session(session)
 
-        admin_user = await org_repository.get_admin_user(organization)
-        admin_user_id = admin_user.id if admin_user else None
+        owner_user = await org_repository.get_owner_user(organization)
+        owner_user_id = owner_user.id if owner_user else None
 
         user = (
-            await review_repository.get_user_by_id(admin_user_id)
-            if admin_user_id
+            await review_repository.get_user_by_id(owner_user_id)
+            if owner_user_id
             else None
         )
         other_orgs = (
             await review_repository.get_other_organizations_for_user(
-                admin_user_id, organization.id
+                owner_user_id, organization.id
             )
-            if admin_user_id
+            if owner_user_id
             else []
         )
         return collect_history_data(user, other_orgs)

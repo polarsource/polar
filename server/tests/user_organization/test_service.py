@@ -5,10 +5,13 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.user_organization.service import (
+    AlreadyOwner,
     CannotRemoveOrganizationOwner,
     InvalidOwnerRoleAssignment,
+    NewOwnerNotVerified,
     OrganizationNotFound,
     OrganizationWouldHaveNoAdmins,
     OwnerRoleCannotBeRemoved,
@@ -321,16 +324,15 @@ class TestSetRole:
 
         assert result.role == OrganizationRole.admin
 
-    async def test_owner_role_rejected_for_non_admin_user(
+    async def test_owner_role_rejected(
         self,
         save_fixture: SaveFixture,
         session: Any,
-        account: Account,
         organization: Organization,
         user_second: User,
     ) -> None:
-        # `account` fixture sets `account.admin_id = user`, so user_second is
-        # not the Account.admin_id user — assigning `owner` to them must fail.
+        # `set_role` no longer accepts `owner` for any user — ownership
+        # transfers flow through `transfer_ownership`.
         relation = UserOrganization(
             user_id=user_second.id, organization_id=organization.id
         )
@@ -343,28 +345,6 @@ class TestSetRole:
                 organization_id=organization.id,
                 role=OrganizationRole.owner,
             )
-
-    async def test_owner_role_allowed_for_admin_user(
-        self,
-        save_fixture: SaveFixture,
-        session: Any,
-        account: Account,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        # `account.admin_id == user.id` from the fixture; assigning `owner`
-        # to the matching user is allowed.
-        relation = UserOrganization(user_id=user.id, organization_id=organization.id)
-        await save_fixture(relation)
-
-        result = await user_organization_service.set_role(
-            session,
-            user_id=user.id,
-            organization_id=organization.id,
-            role=OrganizationRole.owner,
-        )
-
-        assert result.role == OrganizationRole.owner
 
     async def test_owner_cannot_be_demoted_directly(
         self,
@@ -401,4 +381,109 @@ class TestSetRole:
                 user_id=user_second.id,
                 organization_id=organization.id,
                 role=OrganizationRole.member,
+            )
+
+
+@pytest.mark.asyncio
+class TestTransferOwnership:
+    async def test_promotes_new_owner_and_demotes_previous(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        organization: Organization,
+        user: User,
+        user_second: User,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
+        await save_fixture(
+            UserOrganization(
+                user_id=user_second.id,
+                organization_id=organization.id,
+                role=OrganizationRole.member,
+            )
+        )
+        user_second.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user_second)
+
+        await user_organization_service.transfer_ownership(
+            session,
+            new_owner_user_id=user_second.id,
+            organization_id=organization.id,
+        )
+
+        previous = await user_organization_service.get_by_user_and_org(
+            session, user.id, organization.id
+        )
+        new = await user_organization_service.get_by_user_and_org(
+            session, user_second.id, organization.id
+        )
+        assert previous is not None
+        assert previous.role == OrganizationRole.admin
+        assert new is not None
+        assert new.role == OrganizationRole.owner
+
+    async def test_rejects_unverified_user(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user_id=user_second.id,
+                organization_id=organization.id,
+                role=OrganizationRole.member,
+            )
+        )
+        # user_second left at the default unverified status
+
+        with pytest.raises(NewOwnerNotVerified):
+            await user_organization_service.transfer_ownership(
+                session,
+                new_owner_user_id=user_second.id,
+                organization_id=organization.id,
+            )
+
+    async def test_rejects_non_member(
+        self,
+        session: Any,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        with pytest.raises(UserNotMemberOfOrganization):
+            await user_organization_service.transfer_ownership(
+                session,
+                new_owner_user_id=user_second.id,
+                organization_id=organization.id,
+            )
+
+    async def test_rejects_existing_owner(
+        self,
+        save_fixture: SaveFixture,
+        session: Any,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        with pytest.raises(AlreadyOwner):
+            await user_organization_service.transfer_ownership(
+                session,
+                new_owner_user_id=user.id,
+                organization_id=organization.id,
             )

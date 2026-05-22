@@ -1372,6 +1372,16 @@ async def _setup_passing_org(
 
     user.identity_verification_status = IdentityVerificationStatus.verified
     await save_fixture(user)
+
+    # `get_owner_user` returns the user holding `owner` on the org.
+    await save_fixture(
+        UserOrganization(
+            user_id=user.id,
+            organization_id=organization.id,
+            role=OrganizationRole.owner,
+        )
+    )
+
     await create_payout_account(save_fixture, organization, user)
 
     # Product configuration + setup readiness: a product with a license-key
@@ -1593,6 +1603,7 @@ class TestGetReviewState:
         session: AsyncSession,
         organization: Organization,
         user: User,
+        user_organization: UserOrganization,
         identity_status: IdentityVerificationStatus,
         expected_status: OrganizationReviewCheckStatus,
         expected_reason: OrganizationReviewCheckReason | None,

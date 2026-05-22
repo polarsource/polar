@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+import structlog
 from sqlalchemy import Select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -14,6 +15,8 @@ from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 
 from .repository import UserOrganizationRepository
+
+log = structlog.get_logger()
 
 
 class UserOrganizationError(PolarError): ...
@@ -198,6 +201,7 @@ class UserOrganizationService:
         if user_org.role == role:
             return user_org
 
+        previous_role = user_org.role
         await session.execute(
             sql.update(UserOrganization)
             .where(
@@ -207,6 +211,13 @@ class UserOrganizationService:
             .values(role=role)
         )
         user_org.role = role
+        log.info(
+            "organization.member.role_changed",
+            organization_id=organization_id,
+            user_id=user_id,
+            previous_role=previous_role,
+            role=role,
+        )
         return user_org
 
     async def transfer_ownership(
@@ -243,7 +254,7 @@ class UserOrganizationService:
             )
 
         repository = UserOrganizationRepository.from_session(session)
-        await repository.demote_current_owner(organization_id)
+        previous_owner_user_id = await repository.demote_current_owner(organization_id)
         try:
             await repository.promote_to_owner(organization_id, new_owner_user_id)
             await session.flush()
@@ -253,6 +264,12 @@ class UserOrganizationService:
             # different user as owner. Surface as `AlreadyOwner` so the
             # caller can refresh state and retry.
             raise AlreadyOwner(new_owner_user_id, organization_id) from e
+        log.info(
+            "organization.ownership.transferred",
+            organization_id=organization_id,
+            new_owner_user_id=new_owner_user_id,
+            previous_owner_user_id=previous_owner_user_id,
+        )
         return new_owner_user
 
     async def remove_member(
@@ -265,6 +282,8 @@ class UserOrganizationService:
         await self._assert_admin_capability_after_removal(
             session, user_id=user_id, organization_id=organization_id
         )
+
+        existing = await self.get_by_user_and_org(session, user_id, organization_id)
 
         stmt = (
             sql.update(UserOrganization)
@@ -279,6 +298,12 @@ class UserOrganizationService:
         result = await session.execute(stmt)
         removed_user_id = result.scalar_one_or_none()
         if removed_user_id is not None:
+            log.info(
+                "organization.member.removed",
+                organization_id=organization_id,
+                user_id=user_id,
+                role=existing.role if existing is not None else None,
+            )
             polar_self_service.enqueue_remove_member(
                 external_customer_id=str(organization_id),
                 external_id=str(user_id),

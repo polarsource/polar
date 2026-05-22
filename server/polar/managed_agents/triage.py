@@ -35,32 +35,32 @@ from typing import Any
 import asyncpg
 from anthropic import AsyncAnthropic
 
-# Tools the orchestrator will never confirm, even if asked. This is
-# defense-in-depth: the agent.yaml allowlist already omits them, but the
-# orchestrator is the last line if the agent config drifts.
-DENY_TOOLS = {
-    "replyToThread",
-    "createThread",
-    "upsertCustomer",
-    "upsertTenant",
-    "deleteThreadFieldSchema",
-}
+# Allowlist of Plain MCP tools the orchestrator considers safe to
+# approve. Anything not listed below is denied. This is the inverse of
+# the original denylist — defaulting to deny means new Plain tools
+# (e.g. addGeneratedReply, future replyToThread variants) cannot
+# silently slip through if someone widens the agent.yaml allowlist.
+AUTO_APPROVE_READS = frozenset(
+    {
+        "getThreadDetails",
+        "getCustomerDetails",
+        "getUserByEmail",
+        "searchThreads",
+        "searchCustomers",
+        "getCustomerThreads",
+        "getLabels",
+        "getTenantDetails",
+    }
+)
 
-# Read-only Plain tools — auto-approve at the orchestrator level if a
-# confirmation prompt reaches us (e.g. because the per-tool
-# `permission_policy: always_allow` overrides in agent.yaml aren't
-# honored on `mcp_toolset` and the entire toolset defaults to
-# `always_ask`).
-AUTO_APPROVE_READS = {
-    "getThreadDetails",
-    "getCustomerDetails",
-    "getUserByEmail",
-    "searchThreads",
-    "searchCustomers",
-    "getCustomerThreads",
-    "getLabels",
-    "getTenantDetails",
-}
+ALLOWED_WRITES = frozenset(
+    {
+        "createNote",
+        "addLabels",
+        "assignThread",
+        "changeThreadPriority",
+    }
+)
 
 # Custom tools the agent can call. The handlers are bound at module
 # import time; each takes the parsed `input` object plus the asyncpg
@@ -71,6 +71,9 @@ CustomToolHandler = Any  # async def(input: dict, pool: asyncpg.Pool) -> dict
 async def _lookup_customer_by_email(
     input: dict, pool: asyncpg.Pool
 ) -> dict:
+    # Polar's `customers` table holds the END-USERS of Polar merchants
+    # (e.g. a developer paying for a SaaS that's built on Polar). For
+    # the merchant themselves, use polar_lookup_user_by_email.
     rows = await pool.fetch(
         """
         SELECT
@@ -87,11 +90,43 @@ async def _lookup_customer_by_email(
         WHERE LOWER(c.email) = LOWER($1)
           AND c.deleted_at IS NULL
         ORDER BY c.created_at DESC
-        LIMIT 5
+        LIMIT 20
         """,
         input["email"],
     )
     return {"matches": [dict(r) for r in rows]}
+
+
+async def _lookup_user_by_email(input: dict, pool: asyncpg.Pool) -> dict:
+    # Polar's `users` table holds Polar merchants / account owners —
+    # the people who actually email support most of the time. Returns
+    # the user plus the organizations they belong to (via
+    # user_organizations).
+    user = await pool.fetchrow(
+        """
+        SELECT u.id::text AS id, u.email, u.created_at
+        FROM users u
+        WHERE LOWER(u.email) = LOWER($1)
+          AND u.deleted_at IS NULL
+        LIMIT 1
+        """,
+        input["email"],
+    )
+    if user is None:
+        return {"user": None, "organizations": []}
+    orgs = await pool.fetch(
+        """
+        SELECT o.id::text AS id, o.slug, o.name, o.created_at
+        FROM user_organizations uo
+        JOIN organizations o ON uo.organization_id = o.id
+        WHERE uo.user_id = $1::uuid
+          AND o.deleted_at IS NULL
+        ORDER BY o.created_at DESC
+        LIMIT 50
+        """,
+        user["id"],
+    )
+    return {"user": dict(user), "organizations": [dict(r) for r in orgs]}
 
 
 async def _lookup_organization(input: dict, pool: asyncpg.Pool) -> dict:
@@ -136,18 +171,21 @@ async def _recent_orders(input: dict, pool: asyncpg.Pool) -> dict:
             ord.id::text AS id,
             ord.status,
             ord.subtotal_amount,
-            ord.total_amount,
+            ord.net_amount,
+            ord.tax_amount,
+            (ord.net_amount + ord.tax_amount) AS total_amount,
             ord.currency,
             ord.created_at,
             p.name AS product_name
         FROM orders ord
         LEFT JOIN products p ON ord.product_id = p.id
         WHERE ord.customer_id = $1::uuid
+          AND ord.deleted_at IS NULL
         ORDER BY ord.created_at DESC
         LIMIT $2
         """,
         input["customer_id"],
-        input.get("limit", 10),
+        max(1, min(int(input.get("limit", 10)), 50)),
     )
     return {"orders": [dict(r) for r in rows]}
 
@@ -161,12 +199,13 @@ async def _recent_subscriptions(input: dict, pool: asyncpg.Pool) -> dict:
             s.current_period_start,
             s.current_period_end,
             s.started_at,
-            s.cancelled_at,
+            s.canceled_at,
             s.ended_at,
             p.name AS product_name
         FROM subscriptions s
         LEFT JOIN products p ON s.product_id = p.id
         WHERE s.customer_id = $1::uuid
+          AND s.deleted_at IS NULL
         ORDER BY s.created_at DESC
         LIMIT 20
         """,
@@ -177,6 +216,7 @@ async def _recent_subscriptions(input: dict, pool: asyncpg.Pool) -> dict:
 
 HANDLERS: dict[str, CustomToolHandler] = {
     "polar_lookup_customer_by_email": _lookup_customer_by_email,
+    "polar_lookup_user_by_email": _lookup_user_by_email,
     "polar_lookup_organization": _lookup_organization,
     "polar_recent_orders": _recent_orders,
     "polar_recent_subscriptions": _recent_subscriptions,
@@ -266,36 +306,57 @@ async def run(thread_id: str) -> None:
                     ],
                 )
 
-            elif (
-                etype == "agent.mcp_tool_use"
-                and getattr(event, "evaluated_permission", None) == "ask"
-            ):
+            elif etype == "agent.mcp_tool_use":
                 tool_name = getattr(event, "name", "")
-                if tool_name in DENY_TOOLS:
-                    print(f"\n[deny] {tool_name} is on the orchestrator denylist")
-                    await client.beta.sessions.events.send(
-                        session.id,
-                        events=[
-                            {
-                                "type": "user.tool_confirmation",
-                                "tool_use_id": event.id,
-                                "result": "deny",
-                                "deny_message": (
-                                    "This tool is disallowed by the "
-                                    "orchestrator. Use createNote with "
-                                    "the draft inline instead."
-                                ),
-                            }
-                        ],
-                    )
+                evaluated = getattr(event, "evaluated_permission", None)
+                allowlisted = (
+                    tool_name in AUTO_APPROVE_READS
+                    or tool_name in ALLOWED_WRITES
+                )
+
+                # Tool already dispatched by the platform (evaluated to
+                # `allow`). The orchestrator can't undo it, but if it's
+                # NOT in our allowlist, that means agent.yaml drifted —
+                # alert loudly and interrupt the session so nothing else
+                # runs while a human investigates.
+                if evaluated != "ask":
+                    if not allowlisted:
+                        print(
+                            f"\n[CRITICAL] tool {tool_name!r} was "
+                            f"auto-allowed by the platform but is not in "
+                            f"the orchestrator allowlist — interrupting "
+                            f"session and bailing. Check agent.yaml drift."
+                        )
+                        await client.beta.sessions.events.send(
+                            session.id,
+                            events=[{"type": "user.interrupt"}],
+                        )
+                        break
                     continue
 
+                # evaluated == "ask" — orchestrator owns the decision.
                 if tool_name in AUTO_APPROVE_READS:
                     decision, deny_message = "allow", None
-                else:
+                elif tool_name in ALLOWED_WRITES:
                     decision, deny_message = _prompt_confirmation(
                         tool_name, getattr(event, "input", None)
                     )
+                else:
+                    # Not in allowlist — deny. Tells the model why so it
+                    # can pivot (e.g. use createNote with the draft
+                    # inline instead of a reply tool).
+                    print(
+                        f"\n[deny] {tool_name!r} is not in the "
+                        f"orchestrator allowlist"
+                    )
+                    decision = "deny"
+                    deny_message = (
+                        f"The tool {tool_name!r} is not permitted by "
+                        f"the orchestrator. If you intended to draft a "
+                        f"reply for the human handler, call createNote "
+                        f"with the draft text inline."
+                    )
+
                 payload: dict[str, Any] = {
                     "type": "user.tool_confirmation",
                     "tool_use_id": event.id,

@@ -30,11 +30,19 @@ system: |
   Your job is to triage a single Plain support thread:
 
   1. Read the full thread (use `getThreadDetails`).
-  2. Identify the customer and look them up in Polar's internal Postgres
-     using the host-side tools `polar_lookup_customer_by_email`,
-     `polar_lookup_organization`, `polar_recent_orders`, and
-     `polar_recent_subscriptions`. Use the read-only Postgres role —
-     these tools are the ONLY way you can see Polar's DB.
+  2. Identify who is emailing and look them up in Polar's internal
+     Postgres. Polar has TWO email-keyed tables:
+       - `polar_lookup_user_by_email` — Polar merchants / account owners
+         (the people who sign up to sell on Polar). MOST support emails
+         are from these users. ALWAYS try this first.
+       - `polar_lookup_customer_by_email` — end-users of a Polar
+         merchant (e.g. a developer paying for someone's SaaS that is
+         built on Polar). Use this when the user lookup returns nothing
+         OR when the thread is clearly from an end-user (e.g. the
+         thread mentions "I bought a subscription from X").
+     Follow up with `polar_lookup_organization`, `polar_recent_orders`,
+     and `polar_recent_subscriptions` as needed. These tools are the
+     ONLY way you can see Polar's DB.
   3. Post an internal note (`createNote`) with:
        - One-line summary of the customer's issue.
        - Relevant Polar context (org slug, plan, recent failed payments,
@@ -140,12 +148,32 @@ tools:
   # Postgres role (read-only). The DB password never enters the agent
   # container.
   - type: custom
+    name: polar_lookup_user_by_email
+    description: >
+      Look up a Polar user (merchant / account owner) by email. Returns
+      the user record plus the organizations they belong to. This is
+      the right tool for most support emails — Polar merchants
+      typically email support from their account email. Empty result
+      means no Polar user account; try polar_lookup_customer_by_email
+      next in case they are an end-user of a Polar merchant.
+    input_schema:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to look up (case-insensitive match).
+
+  - type: custom
     name: polar_lookup_customer_by_email
     description: >
-      Look up a Polar customer by email. Returns customer id, the
-      organization(s) they belong to, account creation date, and basic
-      profile fields. Empty result means no Polar account with that
-      email — say so in the note rather than guessing.
+      Look up a Polar "customer" — an end-user of a Polar merchant
+      (e.g. a developer paying for someone's SaaS that is built on
+      Polar). Returns customer id, the merchant's organization, and
+      basic profile fields. NOT the right tool for Polar merchants
+      themselves — for those, use polar_lookup_user_by_email.
     input_schema:
       type: object
       additionalProperties: false

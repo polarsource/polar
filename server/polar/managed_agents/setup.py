@@ -87,8 +87,7 @@ async def main() -> None:
 
     # 3. Vault + Plain MCP credential.
     vault = await client.beta.vaults.create(
-        name="polar-plain-triage",
-        description="Plain MCP OAuth credential for the triage agent.",
+        display_name="polar-plain-triage",
     )
 
     access_token = os.environ.get("PLAIN_MCP_ACCESS_TOKEN")

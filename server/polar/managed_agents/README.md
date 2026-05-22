@@ -122,8 +122,11 @@ POLAR_MANAGED_AGENT_ID=$(ant beta:agents create < agent.yaml \
   --transform id -r)
 
 # Create the vault and add the Plain credential.
+# Note: the vault API takes `display_name`, not `name` — `ant` should
+# accept --display-name; check `ant beta:vaults create --help` if your
+# CLI version differs.
 POLAR_MANAGED_VAULT_ID=$(ant beta:vaults create \
-  --name polar-plain-triage \
+  --display-name polar-plain-triage \
   --transform id -r)
 
 ant beta:vaults:credentials create \

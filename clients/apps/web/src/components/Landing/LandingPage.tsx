@@ -43,6 +43,7 @@ const PageContent = () => {
             </Button>
           </Link>
         </Hero>
+        <Logotypes />
         <Usage />
       </Section>
       <Features />
@@ -51,7 +52,6 @@ const PageContent = () => {
       </Section>
       <UseCases />
       <Section>
-        <Logotypes />
         <Testimonials />
       </Section>
       <Section>

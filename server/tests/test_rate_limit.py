@@ -1,12 +1,16 @@
-from collections.abc import AsyncIterator
+import re
+from collections.abc import AsyncIterator, Sequence
 
 import pytest
 import pytest_asyncio
 from fakeredis import FakeAsyncRedis
+from ratelimit import Rule
 
 from polar.config import settings
 from polar.enums import RateLimitGroup
 from polar.rate_limit import (
+    _PRODUCTION_RULES,
+    _SANDBOX_RULES,
     _authenticate,
     _bearer_token,
     _identity_cache_key,
@@ -215,3 +219,60 @@ class TestAuthenticate:
 
         assert ident_a == ("user:a", RateLimitGroup.default)
         assert ident_b == ("organization:b", RateLimitGroup.elevated)
+
+
+def _select_rule(
+    rules: dict[str, Sequence[Rule]], path: str, group: RateLimitGroup
+) -> Rule | None:
+    """Mirror the rule selection in ratelimit/core.py for GET requests."""
+    for pattern, pattern_rules in rules.items():
+        if not re.compile(pattern).match(path):
+            continue
+        for rule in pattern_rules:
+            if rule.group == group and rule.method.lower() in ("get", "*"):
+                return rule
+    return None
+
+
+_SENSITIVE_PATHS: list[tuple[str, str]] = [
+    ("/v1/login-code/request", "login-code"),
+    ("/v1/customer-portal/customer-session/request", "customer-session-login"),
+    ("/v1/customer-portal/customer-session/authenticate", "customer-session-login"),
+    (
+        "/v1/customer-portal/customers/me/email-update/request",
+        "customer-email-update",
+    ),
+    ("/v1/customer-portal/license-keys/validate", "customer-license-key"),
+    ("/v1/customer-seats/claim/abc-123/stream", "seat-claim-stream"),
+    ("/v1/checkouts/xyz-789/confirm", "checkout-confirm"),
+    ("/v1/feedbacks/", "feedback-submit"),
+]
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize(("path", "expected_zone"), _SENSITIVE_PATHS)
+@pytest.mark.parametrize(
+    "group", [RateLimitGroup.default, RateLimitGroup.pending_auth]
+)
+class TestSensitiveEndpointZoneIsolation:
+    """Pending-auth requests (unvalidated bearer/cookie) must use the
+    endpoint's own zone, not fall through to the shared "api" zone.
+
+    Regression coverage for https://github.com/polarsource/polar/issues/11704.
+    """
+
+    def test_resolves_to_endpoint_zone(
+        self,
+        rules: dict[str, Sequence[Rule]],
+        path: str,
+        expected_zone: str,
+        group: RateLimitGroup,
+    ) -> None:
+        rule = _select_rule(rules, path, group)
+        assert rule is not None, (
+            f"No rule selected for path={path!r} group={group.value!r}"
+        )
+        assert rule.zone == expected_zone, (
+            f"Path {path!r} for group {group.value!r} resolved to "
+            f"zone {rule.zone!r}, expected {expected_zone!r}"
+        )

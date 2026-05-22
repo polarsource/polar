@@ -251,9 +251,7 @@ _SENSITIVE_PATHS: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
 @pytest.mark.parametrize(("path", "expected_zone"), _SENSITIVE_PATHS)
-@pytest.mark.parametrize(
-    "group", [RateLimitGroup.default, RateLimitGroup.pending_auth]
-)
+@pytest.mark.parametrize("group", [RateLimitGroup.default, RateLimitGroup.pending_auth])
 class TestSensitiveEndpointZoneIsolation:
     """Pending-auth requests (unvalidated bearer/cookie) must use the
     endpoint's own zone, not fall through to the shared "api" zone.

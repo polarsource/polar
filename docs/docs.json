@@ -601,21 +601,6 @@
         ]
       },
       {
-        "tab": "Guides",
-        "icon": "book-open",
-        "groups": [
-          {
-            "group": "Guides",
-            "pages": [
-              "guides/introduction",
-              "guides/grant-meter-credits-after-purchase",
-              "guides/grant-meter-credits-before-purchase",
-              "guides/seat-based-pricing"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "Changelog",
         "icon": "signal-stream",
         "pages": ["changelog/recent", "changelog/api"]

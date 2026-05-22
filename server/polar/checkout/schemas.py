@@ -200,7 +200,11 @@ class CheckoutCreateBase(
         default=None,
         ge=1,
         le=1000,
-        description="Predefined number of seats (works with seat-based pricing only)",
+        description=(
+            "Predefined number of seats (works with seat-based pricing only). "
+            "To hide the seat picker on the checkout page and lock the quantity, "
+            "set `seats`, `min_seats`, and `max_seats` to the same value."
+        ),
     )
     min_seats: int | None = Field(
         default=None,

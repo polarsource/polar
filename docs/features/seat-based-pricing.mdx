@@ -122,6 +122,22 @@ When the seat count on a subscription changes mid-billing cycle, charges are pro
 Proration ensures billing managers only pay for seats during the time they are active. Encourage customers to adjust their seat count rather than leaving unused seats idle.
 </Tip>
 
+## Hiding the seat counter on checkout
+
+When creating a checkout session over the API for a seat-based product, the checkout page displays a seat counter that lets the customer pick how many seats they're buying. If you want to lock the seat count and hide the picker — for example, when you've already decided the quantity in your own UI — set `seats`, `min_seats`, and `max_seats` to the same value when creating the checkout session.
+
+```typescript
+const checkout = await polar.checkouts.create({
+  products: ["prod_123"],
+  seats: 5,
+  min_seats: 5,
+  max_seats: 5,
+  success_url: "https://your-app.com/success"
+});
+```
+
+With the minimum and maximum pinned to the same number, the customer can no longer change the seat quantity on the checkout page.
+
 ## Limitations
 
 - Seats must be assigned individually (no bulk import via dashboard, use API instead)

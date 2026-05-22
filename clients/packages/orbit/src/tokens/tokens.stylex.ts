@@ -63,7 +63,7 @@ export const backgroundColors = stylex.defineVars({
 
 export const textColors = stylex.defineVars({
   'text-primary': {
-    default: 'oklch(0.21 0.034 264.665)',
+    default: '#000000',
     [DARK]: '#ffffff',
   },
   'text-secondary': {

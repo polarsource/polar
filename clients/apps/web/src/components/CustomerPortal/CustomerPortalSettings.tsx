@@ -1,22 +1,22 @@
 'use client'
 
 import revalidate from '@/app/actions'
+import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerPaymentMethods,
   useCustomerPortalCustomer,
 } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
+import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
+import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
-import { AddPaymentMethodModal } from './AddPaymentMethodModal'
 import ChangeEmailForm from './ChangeEmailForm'
 import { CustomerPortalTeamSection } from './CustomerPortalTeam'
 import EditBillingDetails from './EditBillingDetails'
@@ -25,32 +25,49 @@ import PaymentMethod from './PaymentMethod'
 interface CustomerPortalSettingsProps {
   customerSessionToken?: string
   organization: schemas['CustomerOrganization']
-  setupIntentParams?: {
-    setup_intent_client_secret: string
-    setup_intent: string
-  }
 }
 
 export const CustomerPortalSettings = ({
   customerSessionToken,
   organization,
-  setupIntentParams,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
   const router = useRouter()
-
   const theme = useTheme()
-  const themePreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
+  const queryClient = useQueryClient()
 
-  const {
-    isShown: isAddPaymentMethodModalOpen,
-    hide: hideAddPaymentMethodModal,
-    show: showAddPaymentMethodModal,
-  } = useModal(setupIntentParams !== undefined)
   const { data: customer } = useCustomerPortalCustomer()
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
   const [isExporting, setIsExporting] = useState(false)
+
+  const onPaymentMethodAdded = () => {
+    queryClient.invalidateQueries({ queryKey: ['customer_payment_methods'] })
+    revalidate('customer_portal')
+    router.refresh()
+  }
+
+  usePaymentMethodRedirectResult({
+    onSuccess: () => {
+      toast({ title: 'Payment method added' })
+      onPaymentMethodAdded()
+    },
+    onError: () =>
+      toast({
+        title: 'Could not add payment method',
+        description: 'Please try again.',
+        variant: 'error',
+      }),
+  })
+
+  const onAddPaymentMethod = async () => {
+    if (!customerSessionToken) return
+    const embed = await PolarEmbedPaymentMethod.create({
+      sessionToken: customerSessionToken,
+      theme: theme.resolvedTheme === 'dark' ? 'dark' : 'light',
+    })
+    embed.addEventListener('success', onPaymentMethodAdded)
+  }
 
   const handleExportData = useCallback(async () => {
     setIsExporting(true)
@@ -95,9 +112,7 @@ export const CustomerPortalSettings = ({
               Methods used for subscriptions & one-time purchases
             </p>
           </div>
-          <Button onClick={showAddPaymentMethodModal}>
-            Add Payment Method
-          </Button>
+          <Button onClick={onAddPaymentMethod}>Add Payment Method</Button>
         </WellHeader>
         <WellContent className="gap-y-4">
           {paymentMethods?.items.map((pm) => (
@@ -187,25 +202,6 @@ export const CustomerPortalSettings = ({
           </Button>
         </WellHeader>
       </Well>
-
-      <Modal
-        title="Add Payment Method"
-        isShown={isAddPaymentMethodModalOpen}
-        hide={hideAddPaymentMethodModal}
-        modalContent={
-          <AddPaymentMethodModal
-            api={api}
-            onPaymentMethodAdded={() => {
-              revalidate(`customer_portal`)
-              router.refresh()
-              hideAddPaymentMethodModal()
-            }}
-            setupIntentParams={setupIntentParams}
-            hide={hideAddPaymentMethodModal}
-            themePreset={themePreset}
-          />
-        }
-      />
     </div>
   )
 }

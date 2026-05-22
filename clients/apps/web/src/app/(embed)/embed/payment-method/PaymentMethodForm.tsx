@@ -242,7 +242,6 @@ export const PaymentMethodForm = ({
                     address: 'never',
                   },
                 },
-                wallets: { link: 'never' },
               }}
             />
             {error && (

@@ -185,38 +185,6 @@ export const useCustomerPaymentMethods = (api: Client) =>
     retry: defaultRetry,
   })
 
-export const useAddCustomerPaymentMethod = (api: Client) =>
-  useMutation({
-    mutationFn: async (body: schemas['CustomerPaymentMethodCreate']) =>
-      api.POST('/v1/customer-portal/customers/me/payment-methods', {
-        body,
-      }),
-    onSuccess: async (result) => {
-      if (result.error) {
-        return
-      }
-      getQueryClient().invalidateQueries({
-        queryKey: ['customer_payment_methods'],
-      })
-    },
-  })
-
-export const useConfirmCustomerPaymentMethod = (api: Client) =>
-  useMutation({
-    mutationFn: async (body: schemas['CustomerPaymentMethodConfirm']) =>
-      api.POST('/v1/customer-portal/customers/me/payment-methods/confirm', {
-        body,
-      }),
-    onSuccess: async (result) => {
-      if (result.error) {
-        return
-      }
-      getQueryClient().invalidateQueries({
-        queryKey: ['customer_payment_methods'],
-      })
-    },
-  })
-
 export const useDeleteCustomerPaymentMethod = (api: Client) =>
   useMutation({
     mutationFn: async (id: string) => {

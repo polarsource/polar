@@ -50,8 +50,6 @@ export default async function Page(props: {
   searchParams: Promise<{
     customer_session_token?: string
     member_session_token?: string
-    setup_intent_client_secret?: string
-    setup_intent?: string
   }>
 }) {
   const { customer_session_token, member_session_token, ...searchParams } =
@@ -81,15 +79,6 @@ export default async function Page(props: {
     <CustomerPortalSettings
       customerSessionToken={token}
       organization={organization}
-      setupIntentParams={
-        searchParams.setup_intent_client_secret && searchParams.setup_intent
-          ? {
-              setup_intent_client_secret:
-                searchParams.setup_intent_client_secret,
-              setup_intent: searchParams.setup_intent,
-            }
-          : undefined
-      }
     />
   )
 }

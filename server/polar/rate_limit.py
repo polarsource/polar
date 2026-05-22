@@ -121,24 +121,77 @@ async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGr
         return _ANONYMOUS_IDENTITY, RateLimitGroup.default
 
 
+# Each sensitive endpoint gets a `pending_auth` twin so requests with an
+# unvalidated bearer token / cookie are counted in the endpoint's own zone
+# instead of falling through to the catch-all `api` zone on `^/v1`.
 _BASE_RULES: dict[str, Sequence[Rule]] = {
-    "^/v1/login-code": [Rule(minute=6, hour=12, block_time=900, zone="login-code")],
+    "^/v1/login-code": [
+        Rule(minute=6, hour=12, block_time=900, zone="login-code"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="login-code",
+        ),
+    ],
     "^/v1/customer-portal/customer-session/(request|authenticate)": [
-        Rule(minute=6, hour=12, block_time=900, zone="customer-session-login")
+        Rule(minute=6, hour=12, block_time=900, zone="customer-session-login"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="customer-session-login",
+        ),
     ],
     "^/v1/customer-portal/customers/me/email-update/(request|check|verify)": [
-        Rule(minute=6, hour=12, block_time=900, zone="customer-email-update")
+        Rule(minute=6, hour=12, block_time=900, zone="customer-email-update"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="customer-email-update",
+        ),
     ],
     "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
-        Rule(second=3, block_time=60, zone="customer-license-key")
+        Rule(second=3, block_time=60, zone="customer-license-key"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            second=3,
+            block_time=60,
+            zone="customer-license-key",
+        ),
     ],
     "^/v1/customer-seats/claim/.+/stream": [
-        Rule(minute=10, block_time=300, zone="seat-claim-stream")
+        Rule(minute=10, block_time=300, zone="seat-claim-stream"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=10,
+            block_time=300,
+            zone="seat-claim-stream",
+        ),
     ],
     "^/v1/checkouts/.+/confirm": [
-        Rule(minute=6, hour=20, block_time=1800, zone="checkout-confirm")
+        Rule(minute=6, hour=20, block_time=1800, zone="checkout-confirm"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=6,
+            hour=20,
+            block_time=1800,
+            zone="checkout-confirm",
+        ),
     ],
-    "^/v1/feedbacks/": [Rule(hour=5, block_time=3600, zone="feedback-submit")],
+    "^/v1/feedbacks/": [
+        Rule(hour=5, block_time=3600, zone="feedback-submit"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            hour=5,
+            block_time=3600,
+            zone="feedback-submit",
+        ),
+    ],
 }
 
 _SANDBOX_RULES: dict[str, Sequence[Rule]] = {

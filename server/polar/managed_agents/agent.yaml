@@ -1,0 +1,214 @@
+# Agent definition for Polar's Plain ticket triage.
+#
+# Apply with:  ant beta:agents create < agent.yaml
+# Update with: ant beta:agents update --agent-id $AGENT_ID --version $V < agent.yaml
+#
+# Safety model:
+#   1. The Plain MCP toolset is allowlisted — replyToThread is intentionally
+#      NOT in `configs`, so the agent literally cannot emit that tool call.
+#   2. All write tools require explicit human confirmation (`always_ask`).
+#   3. The orchestrator (server/polar/managed_agents/triage.py) rejects any
+#      tool_confirmation for replyToThread even if it somehow surfaces.
+#   4. Recommended: bind the Plain MCP vault credential to a Plain Machine
+#      User with the `note:create`, `thread:read`, `customer:read`,
+#      `customer:read:email`, `thread:search`, `label:create`, etc. scopes
+#      and NO `thread:reply`/`thread:edit` scope, so the server enforces the
+#      same boundary regardless of what the model attempts.
+
+name: polar-plain-triage
+model: claude-opus-4-7
+description: >
+  Triages Plain support threads for Polar. Reads thread history, looks
+  up customer context in Polar's internal Postgres (via host-side tool),
+  posts an internal note with a summary and a suggested reply. Never
+  replies to customers directly.
+
+system: |
+  You are a senior customer-support engineer for Polar (https://polar.sh),
+  the open-source payments platform for developers.
+
+  Your job is to triage a single Plain support thread:
+
+  1. Read the full thread (use `getThreadDetails`).
+  2. Identify the customer and look them up in Polar's internal Postgres
+     using the host-side tools `polar_lookup_customer_by_email`,
+     `polar_lookup_organization`, `polar_recent_orders`, and
+     `polar_recent_subscriptions`. Use the read-only Postgres role —
+     these tools are the ONLY way you can see Polar's DB.
+  3. Post an internal note (`createNote`) with:
+       - One-line summary of the customer's issue.
+       - Relevant Polar context (org slug, plan, recent failed payments,
+         active subscriptions, anything else that helps the human handler).
+       - A "Draft reply:" section containing the reply you'd send if you
+         were authorized to. This is what the human handler will edit and
+         actually send.
+     The note is the deliverable — it is the suggested answer.
+  4. If the issue is high-priority (revenue impact, security, prolonged
+     outage), call `changeThreadPriority`.
+  5. If a Polar handler is the obvious owner (e.g. a specific engineer
+     who shipped the feature), call `assignThread`.
+
+  Hard rules:
+  - You MUST NOT reply to the customer directly. There is no tool for
+    that. Do not ask for one.
+  - You MUST cite a Polar DB lookup or a Plain thread excerpt for every
+    factual claim about the customer. Speculation goes in the note as
+    "hypothesis:", clearly labeled.
+  - If you cannot find the customer in Polar's DB, say so in the note
+    and stop — do not invent context.
+  - Stop after one internal note per thread. The human takes it from
+    there.
+
+  Tone for the suggested reply: friendly, concise, technical-peer level.
+  Match Polar's voice — direct, no fluff, link to docs.polar.sh when
+  relevant.
+
+tools:
+  # Core file/bash toolset — used for reasoning scratch and to format
+  # the suggested reply Markdown. Web tools are disabled; the agent
+  # should not browse the public internet during triage.
+  - type: agent_toolset_20260401
+    default_config:
+      enabled: true
+      permission_policy:
+        type: always_allow
+    configs:
+      - name: web_search
+        enabled: false
+      - name: web_fetch
+        enabled: false
+
+  # Plain MCP — strict allowlist. replyToThread is NOT enabled.
+  # `default_config.enabled: false` + per-tool opt-in means any tool not
+  # listed below is unreachable. The toolset-level permission_policy is
+  # always_ask as a safety net: if per-tool enable filtering is silently
+  # ignored by the API (the allowlist pattern on mcp_toolset is
+  # empirical, see managed-agents-tools.md), every MCP call still routes
+  # through the orchestrator, which auto-approves reads and denies
+  # replyToThread by name.
+  - type: mcp_toolset
+    mcp_server_name: plain
+    default_config:
+      enabled: false
+      permission_policy: { type: always_ask }
+    configs:
+      # Reads — auto-approved.
+      - name: getThreadDetails
+        enabled: true
+        permission_policy: { type: always_allow }
+      - name: getCustomerDetails
+        enabled: true
+        permission_policy: { type: always_allow }
+      - name: getUserByEmail
+        enabled: true
+        permission_policy: { type: always_allow }
+      - name: searchThreads
+        enabled: true
+        permission_policy: { type: always_allow }
+      - name: searchCustomers
+        enabled: true
+        permission_policy: { type: always_allow }
+      - name: getCustomerThreads
+        enabled: true
+        permission_policy: { type: always_allow }
+      - name: getLabels
+        enabled: true
+        permission_policy: { type: always_allow }
+      - name: getTenantDetails
+        enabled: true
+        permission_policy: { type: always_allow }
+      # Writes — require human confirmation. The orchestrator surfaces
+      # these as a CLI prompt (or Slack approval if you wire one up).
+      - name: createNote
+        enabled: true
+        permission_policy: { type: always_ask }
+      - name: addLabels
+        enabled: true
+        permission_policy: { type: always_ask }
+      - name: assignThread
+        enabled: true
+        permission_policy: { type: always_ask }
+      - name: changeThreadPriority
+        enabled: true
+        permission_policy: { type: always_ask }
+      # replyToThread, snoozeThread, markThreadAsDone, createThread,
+      # upsertCustomer, *FieldSchema mutations, etc. are deliberately
+      # omitted — they're unreachable.
+
+  # Host-side DB lookups. The agent emits agent.custom_tool_use; the
+  # orchestrator in Polar's VPC executes these against the polar_read
+  # Postgres role (read-only). The DB password never enters the agent
+  # container.
+  - type: custom
+    name: polar_lookup_customer_by_email
+    description: >
+      Look up a Polar customer by email. Returns customer id, the
+      organization(s) they belong to, account creation date, and basic
+      profile fields. Empty result means no Polar account with that
+      email — say so in the note rather than guessing.
+    input_schema:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to look up (case-insensitive match).
+
+  - type: custom
+    name: polar_lookup_organization
+    description: >
+      Look up a Polar organization by id or slug. Returns id, slug, name,
+      created_at, the active subscription tier, and counts of recent
+      successful and failed payments.
+    input_schema:
+      type: object
+      additionalProperties: false
+      required: [identifier, identifier_type]
+      properties:
+        identifier: { type: string }
+        identifier_type:
+          type: string
+          enum: [id, slug]
+
+  - type: custom
+    name: polar_recent_orders
+    description: >
+      Last N orders for a customer (default 10, max 50). Returns
+      product, amount, status, created_at. Use to diagnose billing
+      complaints.
+    input_schema:
+      type: object
+      additionalProperties: false
+      required: [customer_id]
+      properties:
+        customer_id: { type: string, format: uuid }
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+
+  - type: custom
+    name: polar_recent_subscriptions
+    description: >
+      Active and recently-cancelled subscriptions for a customer.
+      Returns product, status, current period bounds, started_at, and
+      cancelled_at. Use to diagnose plan/access complaints.
+    input_schema:
+      type: object
+      additionalProperties: false
+      required: [customer_id]
+      properties:
+        customer_id: { type: string, format: uuid }
+
+mcp_servers:
+  - type: url
+    name: plain
+    url: https://mcp.plain.com/mcp
+
+metadata:
+  team: support-eng
+  use_case: ticket-triage
+  repo: polarsource/polar

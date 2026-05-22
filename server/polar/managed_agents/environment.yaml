@@ -1,0 +1,30 @@
+# Cloud sandbox environment for Polar's Plain triage agent.
+#
+# Apply with:  ant beta:environments create < environment.yaml
+#
+# Networking is `limited` because the agent doesn't need general internet
+# access during triage — it only needs to reach:
+#   - api.anthropic.com (model traffic — handled by the platform, not via
+#     this allowlist)
+#   - mcp.plain.com    (Plain's MCP server)
+# Postgres access does NOT come through this environment — DB calls are
+# routed through the host-side custom tools the orchestrator handles.
+
+name: polar-plain-triage
+description: >
+  Cloud sandbox for Polar's Plain support triage agent. Limited egress;
+  no Postgres access from within the sandbox. DB calls go through the
+  host-side custom tools.
+
+config:
+  type: cloud
+  networking:
+    type: limited
+    allow_mcp_servers: true
+    allow_package_managers: false
+    allowed_hosts:
+      - mcp.plain.com
+
+metadata:
+  team: support-eng
+  repo: polarsource/polar

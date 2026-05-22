@@ -3,10 +3,12 @@ import uuid
 from datetime import datetime
 from typing import cast
 
+import dramatiq
 import structlog
 import typer
 from sqlalchemy import select
 
+from polar import tasks  # noqa: F401
 from polar.event.service import event as event_service
 from polar.event.system import (
     BalanceCreditOrderMetadata,
@@ -16,6 +18,8 @@ from polar.event.system import (
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Customer, Event, Organization
 from polar.postgres import create_async_engine
+from polar.redis import create_redis
+from polar.worker import JobQueueManager
 from scripts.helper import typer_async
 
 log = structlog.get_logger()
@@ -25,9 +29,9 @@ cli = typer.Typer()
 @cli.command()
 @typer_async
 async def write(
-    organization_id: uuid.UUID,
-    customer_id: uuid.UUID,
-    timestamp: datetime,
+    organization_id: uuid.UUID = typer.Option(..., help="Organization UUID"),
+    customer_id: uuid.UUID = typer.Option(..., help="Customer UUID"),
+    timestamp: str = typer.Option(..., help="Event timestamp in ISO 8601 format"),
     metadata: str = typer.Option(
         ...,
         help='JSON string of user_metadata, e.g. \'{"fee": 0, "amount": -1500, '
@@ -38,10 +42,15 @@ async def write(
 ) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
+    redis = create_redis("app")
 
     user_metadata = json.loads(metadata)
+    parsed_timestamp = datetime.fromisoformat(timestamp)
 
-    async with sessionmaker() as session:
+    async with (
+        JobQueueManager.open(dramatiq.get_broker(), redis),
+        sessionmaker() as session,
+    ):
         organization = await session.get(Organization, organization_id)
         if organization is None:
             typer.echo(f"Organization {organization_id} not found")
@@ -73,7 +82,7 @@ async def write(
 
         typer.echo(f"Organization: {organization.slug} ({organization.id})")
         typer.echo(f"Customer:     {customer.id}")
-        typer.echo(f"Timestamp:    {timestamp.isoformat()}")
+        typer.echo(f"Timestamp:    {parsed_timestamp.isoformat()}")
         typer.echo(f"Metadata:     {json.dumps(user_metadata, indent=2)}")
 
         if dry_run:
@@ -86,7 +95,7 @@ async def write(
             organization=organization,
             metadata=cast(BalanceCreditOrderMetadata, user_metadata),
         )
-        event.timestamp = timestamp
+        event.timestamp = parsed_timestamp
         await event_service.create_event(session, event)
         await session.commit()
         typer.echo(f"\nCreated balance.credit_order event {event.id}")

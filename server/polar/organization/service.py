@@ -33,6 +33,8 @@ from polar.kit.http import check_url_reachable
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
+from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.models import (
     Customer,
     Organization,
@@ -41,6 +43,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.member import MemberRole
 from polar.models.organization import (
     FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
@@ -73,6 +76,9 @@ from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -194,6 +200,11 @@ class AccountAlreadySet(OrganizationError):
         self.organization_slug = organization_slug
         message = f"The account for organization '{organization_slug}' has already been set up by the owner. Contact support to change the owner of the account."
         super().__init__(message, 403)
+
+
+class CannotChangeOwnerError(OrganizationError):
+    def __init__(self, reason: str) -> None:
+        super().__init__(f"Cannot change organization owner: {reason}")
 
 
 class OrganizationService:
@@ -841,6 +852,65 @@ class OrganizationService:
                     external_id=str(user.id),
                     delay=polar_self_member_delay,
                 )
+
+    async def change_owner(
+        self,
+        session: AsyncSession,
+        *,
+        new_owner_id: uuid.UUID,
+        organization_id: uuid.UUID,
+    ) -> None:
+        new_owner_user = await user_organization_service.transfer_ownership(
+            session,
+            new_owner_user_id=new_owner_id,
+            organization_id=organization_id,
+        )
+
+        await self._sync_polar_self_customer_owner(
+            session,
+            organization_id=organization_id,
+            new_owner_user=new_owner_user,
+        )
+
+    async def _sync_polar_self_customer_owner(
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: uuid.UUID,
+        new_owner_user: User,
+    ) -> None:
+        if not settings.POLAR_SELF_ENABLED:
+            return
+
+        polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+        if organization_id == polar_organization_id:
+            return
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_external_id_and_organization(
+            str(organization_id), polar_organization_id
+        )
+        if customer is None:
+            raise CannotChangeOwnerError(
+                f"Polar self customer not found for organization {organization_id}"
+            )
+
+        member_repository = MemberRepository.from_session(session)
+        target_member = await member_repository.get_by_customer_id_and_external_id(
+            customer.id, str(new_owner_user.id)
+        )
+        if target_member is None:
+            raise CannotChangeOwnerError(
+                f"Polar self member not found for user {new_owner_user.id}"
+            )
+
+        if target_member.role != MemberRole.owner:
+            await member_service.update(
+                session,
+                target_member,
+                role=MemberRole.owner,
+                allow_ownership_transfer=True,
+            )
 
     async def get_next_invoice_number(
         self,

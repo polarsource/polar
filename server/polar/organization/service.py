@@ -802,18 +802,20 @@ class OrganizationService:
             session.add(relation)
             await session.flush()
             log.info(
-                "organization.add_user.created",
+                "organization.member.added",
                 user_id=user.id,
                 organization_id=organization.id,
+                role=role,
             )
         except IntegrityError:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive
             # installations we need to change this.
             log.info(
-                "organization.add_user.already_exists",
+                "organization.member.re_added",
                 organization_id=organization.id,
                 user_id=user.id,
+                role=role,
             )
             await nested.rollback()
             # Update

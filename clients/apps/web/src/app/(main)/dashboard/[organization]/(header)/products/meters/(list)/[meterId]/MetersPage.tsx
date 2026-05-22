@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -126,6 +127,20 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
                 align="end"
                 className="dark:bg-polar-800 bg-gray-50 shadow-lg"
               >
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined') {
+                      navigator.clipboard.writeText(meter.id)
+                      toast({
+                        title: 'Meter ID Copied',
+                        description: 'Meter ID copied to clipboard',
+                      })
+                    }
+                  }}
+                >
+                  Copy Meter ID
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   destructive={!meter.archived_at}
                   onClick={handleArchiveMeter}

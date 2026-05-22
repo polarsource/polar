@@ -2915,6 +2915,51 @@ class TestUpdateProduct:
         assert subscription_update.new_cycle_start == current_period_start
         assert subscription_update.new_cycle_end == current_period_end
 
+    async def test_next_period_behavior_existing_seats_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # #11129: a scheduled seat change must merge with — not be
+        # overwritten by — a subsequent scheduled product change.
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2500, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product_a, customer=customer, seats=5
+        )
+
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=8,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_b.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        repo = SubscriptionUpdateRepository.from_session(session)
+        pending = await repo.get_unapplied_by_subscription_id(subscription.id)
+        assert pending is not None
+        assert pending.product_id == product_b.id
+        assert pending.seats == 8
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:
@@ -4392,6 +4437,306 @@ class TestUpdateSeats:
             )
         )
         assert updated_subscription_update is None
+
+    async def test_next_period_behavior_existing_product_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # #11129: scheduling a seat change on top of an already-scheduled
+        # product change must merge into one pending row, not overwrite
+        # the scheduled product.
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2500, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product_a, customer=customer, seats=5
+        )
+
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_b.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=8,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        repo = SubscriptionUpdateRepository.from_session(session)
+        pending = await repo.get_unapplied_by_subscription_id(subscription.id)
+        assert pending is not None
+        assert pending.product_id == product_b.id
+        assert pending.seats == 8
+
+    async def test_proration_behavior_preserves_existing_product_update(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # #11129 headline: an immediate seat change with a pending product
+        # change must preserve the product change (not soft-delete it).
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new=AsyncMock(),
+        )
+
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2500, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product_a, customer=customer, seats=5
+        )
+
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_b.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=8,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Subscription stays on A with seats applied immediately.
+        assert updated.product_id == product_a.id
+        assert updated.seats == 8
+        assert updated.amount == 8 * 1500
+
+        # Pending product change preserved; stale seats cleared.
+        repo = SubscriptionUpdateRepository.from_session(session)
+        pending = await repo.get_unapplied_by_subscription_id(subscription.id)
+        assert pending is not None, "scheduled product change was soft-deleted"
+        assert pending.product_id == product_b.id
+        assert pending.seats is None
+
+        be_repo = BillingEntryRepository.from_session(session)
+        entries = await be_repo.get_pending_by_subscription(subscription.id)
+        increase_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_increase
+        ]
+        assert len(increase_entries) == 1
+        assert increase_entries[0].direction == BillingEntryDirection.debit
+
+    async def test_proration_behavior_clears_seats_on_merged_pending(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Pending row already merged ({product=B, seats=8}). An immediate
+        # seat update must clear the old `seats` on the pending row AND
+        # apply the new live seat count; otherwise the cycle would reset
+        # the live count to the value still sitting on the pending row.
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new=AsyncMock(),
+        )
+
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2500, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product_a, customer=customer, seats=5
+        )
+
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_b.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=8,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        repo = SubscriptionUpdateRepository.from_session(session)
+        pending = await repo.get_unapplied_by_subscription_id(subscription.id)
+        assert pending is not None
+        merged_pending_id = pending.id
+        assert pending.seats == 8
+
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        assert updated.seats == 10
+        assert updated.amount == 10 * 1500
+
+        pending = await repo.get_unapplied_by_subscription_id(subscription.id)
+        assert pending is not None
+        assert pending.id == merged_pending_id  # same row, not a new one
+        assert pending.product_id == product_b.id
+        assert pending.seats is None
+
+    async def test_noop_with_existing_product_update(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # No-op seat call when the pending row has only a product change
+        # must leave the pending row untouched.
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new=AsyncMock(),
+        )
+
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2500, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product_a, customer=customer, seats=5
+        )
+
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_b.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=5,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        repo = SubscriptionUpdateRepository.from_session(session)
+        pending = await repo.get_unapplied_by_subscription_id(subscription.id)
+        assert pending is not None
+        assert pending.product_id == product_b.id
+        assert pending.seats is None
+
+    async def test_noop_with_merged_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # No-op seat call on a merged pending must keep the product side
+        # and clear only the stale seats field — not soft-delete the row.
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2500, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product_a, customer=customer, seats=5
+        )
+
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_b.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=8,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        repo = SubscriptionUpdateRepository.from_session(session)
+        pending = await repo.get_unapplied_by_subscription_id(subscription.id)
+        assert pending is not None
+        pending_id = pending.id
+        assert pending.product_id == product_b.id
+        assert pending.seats == 8
+
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=5,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        pending = await repo.get_unapplied_by_subscription_id(subscription.id)
+        assert pending is not None, (
+            "no-op seats call deleted the scheduled product change"
+        )
+        assert pending.id == pending_id  # same row
+        assert pending.product_id == product_b.id
+        assert pending.seats is None
 
     async def test_next_period_revert_to_current_clears_pending_update(
         self,

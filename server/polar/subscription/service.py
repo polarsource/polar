@@ -1476,13 +1476,16 @@ class SubscriptionService:
         )
 
         if old_seats == seats:
-            # No-op for the seat count itself, but a stale next-period
-            # SubscriptionUpdate would otherwise survive — clear it so the
-            # subscription doesn't change at the next billing cycle.
+            # Re-asserting the current seat count cancels a pending seat
+            # change. Drop the row if nothing else is scheduled on it.
             pending = subscription.pending_update
             if pending is not None and pending.seats is not None:
-                await subscription_update_repository.soft_delete(pending)
-                subscription.pending_update = None
+                if pending.product_id is None:
+                    await subscription_update_repository.soft_delete(pending)
+                    subscription.pending_update = None
+                else:
+                    pending.seats = None
+                    await subscription_update_repository.update(pending)
             return subscription
 
         event = await event_service.create_event(
@@ -1512,12 +1515,21 @@ class SubscriptionService:
                 subscription_update
             )
         else:
-            await (
-                subscription_update_repository.soft_delete_unapplied_by_subscription_id(
+            existing_pending = subscription.pending_update
+            if existing_pending is not None and existing_pending.product_id is not None:
+                # Preserve the scheduled product change. `apply_update`
+                # will read the updated `subscription.seats` at cycle
+                # time, so the new count applies to the new product.
+                # The pending row's own seats field is cleared; otherwise
+                # the cycle would reset the live count to that value.
+                if existing_pending.seats is not None:
+                    existing_pending.seats = None
+                    await subscription_update_repository.update(existing_pending)
+            else:
+                await subscription_update_repository.soft_delete_unapplied_by_subscription_id(
                     subscription.id
                 )
-            )
-            subscription.pending_update = None
+                subscription.pending_update = None
 
             # Skip proration for trialing subscriptions - no billing during trial
             if not subscription.trialing:

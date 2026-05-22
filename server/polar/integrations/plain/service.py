@@ -421,6 +421,7 @@ class PlainService:
                 or_(
                     func.lower(User.email) == email.lower(),
                     func.lower(OAuthAccount.account_email) == email.lower(),
+                    func.lower(Organization.email) == email.lower(),
                 )
             )
         )

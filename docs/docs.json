@@ -609,7 +609,6 @@
             "pages": [
               "guides/introduction",
               "guides/automate-post-purchase-link-sharing",
-              "guides/change-email-as-merchant",
               "guides/create-checkout-session",
               "guides/create-multiple-organizations",
               "guides/create-variants",

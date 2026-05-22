@@ -32,6 +32,7 @@ from polar.integrations.github_repository_benefit.endpoints import (
 )
 from polar.integrations.google.endpoints import router as google_router
 from polar.integrations.plain.endpoints import router as plain_router
+from polar.managed_agents.webhook import router as managed_agents_router
 from polar.integrations.polar.endpoints import router as polar_self_router
 from polar.integrations.resend.endpoints import router as resend_router
 from polar.integrations.stripe.endpoints import router as stripe_router
@@ -139,6 +140,8 @@ router.include_router(email_update_router)
 router.include_router(customer_session_router)
 # /integrations/plain
 router.include_router(plain_router)
+# /managed_agents
+router.include_router(managed_agents_router)
 # /events
 router.include_router(event_router)
 # /event-types

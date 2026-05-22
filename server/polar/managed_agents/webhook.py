@@ -10,12 +10,9 @@ There is no Dramatiq job, no streaming loop, no in-process orchestrator.
 The webhook returns 202 the moment the session is queued; the worker
 picks up the tool-execution work asynchronously.
 
-To wire this router into the FastAPI app, add:
-
-    from polar.managed_agents.webhook import router as managed_agents_router
-    router.include_router(managed_agents_router)
-
-to `server/polar/api.py` next to the other integration routers.
+The header name and signing format match Plain's existing
+`/integrations/plain/cards` endpoint (raw hex digest in
+`plain-request-signature`, NOT `sha256=`-prefixed).
 """
 
 from __future__ import annotations
@@ -26,7 +23,7 @@ import logging
 from typing import Any
 
 from anthropic import AsyncAnthropic
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Header, HTTPException, Request, status
 
 from polar.config import settings
 
@@ -40,33 +37,50 @@ router = APIRouter(prefix="/managed_agents", tags=["managed_agents"])
 # re-triage on every customer reply.
 TRIGGER_EVENT_TYPES = frozenset({"thread.thread_created"})
 
-# One module-level client. AsyncAnthropic is safe to share across
-# requests; it manages its own httpx pool.
-_client = AsyncAnthropic()
+# Lazy client — constructing AsyncAnthropic at import time would crash
+# the FastAPI app on hosts that don't have ANTHROPIC_API_KEY set
+# (notably the worker host and CI). Build per-request instead.
+_client: AsyncAnthropic | None = None
 
 
-def _verify_signature(body: bytes, signature: str | None) -> bool:
-    secret = settings.PLAIN_REQUEST_SIGNING_SECRET
+def _get_client() -> AsyncAnthropic:
+    global _client
+    if _client is None:
+        _client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+    return _client
+
+
+def _verify_signature(body: bytes, signature: str) -> bool:
+    secret = settings.POLAR_PLAIN_WEBHOOK_SECRET
     if not secret:
         log.warning(
-            "PLAIN_REQUEST_SIGNING_SECRET is not configured; "
-            "rejecting webhook"
+            "POLAR_PLAIN_WEBHOOK_SECRET is not configured; rejecting "
+            "managed-agents webhook"
         )
-        return False
-    if not signature:
         return False
     expected = hmac.new(
         secret.encode("utf-8"), body, hashlib.sha256
     ).hexdigest()
-    candidate = signature.removeprefix("sha256=")
-    return hmac.compare_digest(expected, candidate)
+    return hmac.compare_digest(expected, signature)
+
+
+def _safe_get(payload: Any, *keys: str) -> Any:
+    """Walk a JSON payload defensively — return None at the first
+    non-dict intermediate. Plain occasionally sends nulls for parts of
+    the envelope we don't care about."""
+    current = payload
+    for key in keys:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current
 
 
 def _extract_thread_id(payload: dict[str, Any]) -> str | None:
     return (
-        payload.get("payload", {}).get("thread", {}).get("id")
-        or payload.get("thread", {}).get("id")
-        or payload.get("data", {}).get("thread", {}).get("id")
+        _safe_get(payload, "payload", "thread", "id")
+        or _safe_get(payload, "thread", "id")
+        or _safe_get(payload, "data", "thread", "id")
     )
 
 
@@ -75,16 +89,13 @@ def _extract_thread_id(payload: dict[str, Any]) -> str | None:
     status_code=status.HTTP_202_ACCEPTED,
     include_in_schema=False,
 )
-async def plain_webhook(request: Request) -> dict[str, str]:
+async def plain_webhook(
+    request: Request,
+    plain_request_signature: str = Header(...),
+) -> dict[str, str]:
     body = await request.body()
-    signature = request.headers.get(
-        "plain-signature"
-    ) or request.headers.get("x-plain-signature")
-    if not _verify_signature(body, signature):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="invalid signature",
-        )
+    if not _verify_signature(body, plain_request_signature):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     try:
         payload = await request.json()
@@ -94,9 +105,12 @@ async def plain_webhook(request: Request) -> dict[str, str]:
             detail="invalid json",
         ) from exc
 
+    if not isinstance(payload, dict):
+        return {"status": "ignored", "reason": "non-dict payload"}
+
     event_type = payload.get("type") or payload.get("eventType")
     if event_type not in TRIGGER_EVENT_TYPES:
-        return {"status": "ignored", "type": event_type or ""}
+        return {"status": "ignored", "type": str(event_type or "")}
 
     thread_id = _extract_thread_id(payload)
     if not thread_id:
@@ -107,7 +121,8 @@ async def plain_webhook(request: Request) -> dict[str, str]:
         return {"status": "ignored", "reason": "no thread id"}
 
     if not (
-        settings.POLAR_MANAGED_AGENT_ID
+        settings.ANTHROPIC_API_KEY
+        and settings.POLAR_MANAGED_AGENT_ID
         and settings.POLAR_MANAGED_ENV_ID
         and settings.POLAR_MANAGED_VAULT_ID
     ):
@@ -117,17 +132,29 @@ async def plain_webhook(request: Request) -> dict[str, str]:
             detail="managed-agents not configured",
         )
 
-    session = await _client.beta.sessions.create(
+    session_id = await trigger_triage(thread_id)
+    return {
+        "status": "queued",
+        "session_id": session_id,
+        "thread_id": thread_id,
+    }
+
+
+async def trigger_triage(thread_id: str) -> str:
+    """Create a Managed Agent session and send the kickoff message.
+
+    Exposed as a standalone function so the local CLI (trigger.py) can
+    invoke it without forging a webhook.
+    """
+    client = _get_client()
+    session = await client.beta.sessions.create(
         agent=settings.POLAR_MANAGED_AGENT_ID,
         environment_id=settings.POLAR_MANAGED_ENV_ID,
         vault_ids=[settings.POLAR_MANAGED_VAULT_ID],
         title=f"Triage {thread_id}",
         metadata={"thread_id": thread_id, "source": "plain.webhook"},
     )
-
-    # Kick off the agent with one user message — no streaming on our
-    # side. The self-hosted worker picks up the tool-execution work.
-    await _client.beta.sessions.events.send(
+    await client.beta.sessions.events.send(
         session.id,
         events=[
             {
@@ -147,9 +174,4 @@ async def plain_webhook(request: Request) -> dict[str, str]:
             }
         ],
     )
-
-    return {
-        "status": "queued",
-        "session_id": session.id,
-        "thread_id": thread_id,
-    }
+    return session.id

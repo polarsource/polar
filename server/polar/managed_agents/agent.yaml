@@ -3,17 +3,19 @@
 # Apply with:  ant beta:agents create < agent.yaml
 # Update with: ant beta:agents update --agent-id $AGENT_ID --version $V < agent.yaml
 #
-# Safety model:
-#   1. The Plain MCP toolset is allowlisted — replyToThread is intentionally
-#      NOT in `configs`, so the agent literally cannot emit that tool call.
-#   2. All write tools require explicit human confirmation (`always_ask`).
-#   3. The orchestrator (server/polar/managed_agents/triage.py) rejects any
-#      tool_confirmation for replyToThread even if it somehow surfaces.
-#   4. Recommended: bind the Plain MCP vault credential to a Plain Machine
-#      User with the `note:create`, `thread:read`, `customer:read`,
-#      `customer:read:email`, `thread:search`, `label:create`, etc. scopes
-#      and NO `thread:reply`/`thread:edit` scope, so the server enforces the
-#      same boundary regardless of what the model attempts.
+# Safety model (B3+C3 — autonomous; no orchestrator-side confirmation
+# handler):
+#   1. STRONGEST: bind the Plain MCP vault credential to a Plain Machine
+#      User with `note:create`, `thread:read`, `customer:read`,
+#      `customer:read:email`, `thread:search`, `label:create` scopes and
+#      NO `thread:reply`/`thread:edit` scope. Plain enforces this
+#      server-side regardless of what the model attempts.
+#   2. Config: the Plain mcp_toolset uses `default_config.enabled: false`
+#      plus a per-tool allowlist. replyToThread is NOT in `configs`,
+#      so the agent never sees its schema.
+#   Write tools are set to `always_allow` here — `always_ask` would
+#   deadlock the session because nothing on Polar's side answers
+#   `user.tool_confirmation` events under B3+C3.
 
 name: polar-plain-triage
 model: claude-opus-4-7
@@ -93,17 +95,15 @@ tools:
 
   # Plain MCP — strict allowlist. replyToThread is NOT enabled.
   # `default_config.enabled: false` + per-tool opt-in means any tool not
-  # listed below is unreachable. The toolset-level permission_policy is
-  # always_ask as a safety net: if per-tool enable filtering is silently
-  # ignored by the API (the allowlist pattern on mcp_toolset is
-  # empirical, see managed-agents-tools.md), every MCP call still routes
-  # through the orchestrator, which auto-approves reads and denies
-  # replyToThread by name.
+  # listed below is unreachable. Writes use `always_allow` because
+  # the B3+C3 design has no Polar-side confirmation handler — defense
+  # is the Plain Machine User scope (server-enforced) plus this
+  # allowlist (config-enforced).
   - type: mcp_toolset
     mcp_server_name: plain
     default_config:
       enabled: false
-      permission_policy: { type: always_ask }
+      permission_policy: { type: always_allow }
     configs:
       # Reads — auto-approved.
       - name: getThreadDetails
@@ -130,20 +130,21 @@ tools:
       - name: getTenantDetails
         enabled: true
         permission_policy: { type: always_allow }
-      # Writes — require human confirmation. The orchestrator surfaces
-      # these as a CLI prompt (or Slack approval if you wire one up).
+      # Writes — auto-allowed. Defense is the Plain Machine User scope
+      # (server-enforced — no `thread:reply`/`thread:edit`) plus this
+      # allowlist (replyToThread not in `configs`).
       - name: createNote
         enabled: true
-        permission_policy: { type: always_ask }
+        permission_policy: { type: always_allow }
       - name: addLabels
         enabled: true
-        permission_policy: { type: always_ask }
+        permission_policy: { type: always_allow }
       - name: assignThread
         enabled: true
-        permission_policy: { type: always_ask }
+        permission_policy: { type: always_allow }
       - name: changeThreadPriority
         enabled: true
-        permission_policy: { type: always_ask }
+        permission_policy: { type: always_allow }
       # replyToThread, snoozeThread, markThreadAsDone, createThread,
       # upsertCustomer, *FieldSchema mutations, etc. are deliberately
       # omitted — they're unreachable.

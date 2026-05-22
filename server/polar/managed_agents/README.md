@@ -84,7 +84,133 @@ reviewing the thread).
 | `webhook.py` | FastAPI router — receives Plain webhooks, fires `sessions.create()`. |
 | `worker.py` | Long-running `EnvironmentWorker` — polls Anthropic for tool-execution work and runs DB queries against `polar_read`. |
 
-## Setup
+## Running it locally without Plain webhooks
+
+Plain webhooks aren't required for development. You can drive the
+agent end-to-end from your laptop by:
+
+1. running the worker against a local Postgres,
+2. provisioning the Anthropic resources once (agent + env + vault),
+3. kicking off a session via `python -m polar.managed_agents.trigger`
+   (or `ant beta:sessions create`).
+
+### Step 1 — local DB
+
+```sh
+cd server
+docker compose up -d
+./dev/setup-environment
+
+# Sanity-check the read-only role docker-compose ships with.
+docker compose exec db psql -U polar_read -d polar_development -c "SELECT 1"
+
+# DSN for the worker (points at the local DB):
+export POLAR_MANAGED_READ_DSN="postgresql://polar_read:polar@127.0.0.1:5432/polar_development"
+```
+
+### Step 2 — install Anthropic CLI + sync deps
+
+```sh
+brew install anthropics/tap/ant
+xattr -d com.apple.quarantine "$(brew --prefix)/bin/ant"
+export ANTHROPIC_API_KEY=sk-ant-...   # console.anthropic.com → API keys
+
+cd server
+uv sync   # picks up the new anthropic dep
+```
+
+### Step 3 — provision agent + environment (one-time)
+
+```sh
+cd server/polar/managed_agents
+
+# Self-hosted environment.
+export POLAR_MANAGED_ENV_ID=$(ant beta:environments create < environment.yaml \
+  --transform id -r)
+
+# Agent — if you don't want to OAuth Plain right now, comment out the
+# `mcp_servers` and the `mcp_toolset` block in agent.yaml before this
+# call (local testing without Plain is fine; the DB tools still work).
+export POLAR_MANAGED_AGENT_ID=$(ant beta:agents create < agent.yaml \
+  --transform id -r)
+
+# Vault — REQUIRED on the session even if you stripped Plain MCP. Create
+# an empty one for now; add credentials later when you wire Plain.
+export POLAR_MANAGED_VAULT_ID=$(ant beta:vaults create \
+  --display-name polar-plain-triage-local \
+  --transform id -r)
+
+echo "POLAR_MANAGED_AGENT_ID=$POLAR_MANAGED_AGENT_ID"
+echo "POLAR_MANAGED_ENV_ID=$POLAR_MANAGED_ENV_ID"
+echo "POLAR_MANAGED_VAULT_ID=$POLAR_MANAGED_VAULT_ID"
+```
+
+### Step 4 — get the environment key
+
+Open the [Anthropic Console](https://platform.claude.com), find the
+`polar-plain-triage` environment, click **Generate environment key**,
+copy the `sk-ant-oat01-...` value.
+
+```sh
+export ANTHROPIC_ENVIRONMENT_KEY=sk-ant-oat01-...
+```
+
+### Step 5 — run the worker
+
+```sh
+cd server
+uv run python -m polar.managed_agents.worker
+# expect: "DB pool ready..." then "starting EnvironmentWorker..."
+```
+
+The worker stays long-polling. Leave it running in this terminal.
+
+### Step 6 — trigger a session (from another terminal)
+
+```sh
+cd server
+# Use any value for thread_id when Plain MCP is stripped — the
+# agent will fail getThreadDetails but the DB tools still run.
+uv run python -m polar.managed_agents.trigger thr_local_test_123
+```
+
+The script prints a Console URL — open it to watch tool calls land,
+events stream, and the agent reason in real time. Worker logs in
+terminal 5 should show each `polar_*` DB tool being executed.
+
+### Optional — exercise the webhook path with ngrok
+
+If you want to test the FastAPI webhook handler itself (not just the
+worker), expose your local API via ngrok:
+
+```sh
+# Terminal 1
+cd server && uv run task api          # 127.0.0.1:8000
+
+# Terminal 2
+ngrok http 8000                       # → https://abc123.ngrok-free.app
+
+# In Plain → Settings → Webhooks, point at
+# https://abc123.ngrok-free.app/v1/managed_agents/plain/webhook
+# Subscribe to thread.thread_created only.
+# Copy the secret Plain shows you into POLAR_PLAIN_WEBHOOK_SECRET.
+
+export POLAR_PLAIN_WEBHOOK_SECRET=plain_whsec_...
+```
+
+You can also forge a webhook locally without Plain:
+
+```sh
+BODY='{"type":"thread.thread_created","payload":{"thread":{"id":"thr_test"}}}'
+SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$POLAR_PLAIN_WEBHOOK_SECRET" | awk '{print $2}')
+curl -X POST http://127.0.0.1:8000/v1/managed_agents/plain/webhook \
+  -H "Content-Type: application/json" \
+  -H "plain-request-signature: $SIG" \
+  -d "$BODY"
+# → {"status":"queued","session_id":"sesn_...","thread_id":"thr_test"}
+```
+
+## Production setup
 
 ### 1. Install the Anthropic CLI
 

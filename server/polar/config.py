@@ -307,10 +307,16 @@ class Settings(BaseSettings):
     PLAIN_DEFAULT_TIER_EXTERNAL_ID: str | None = None
 
     # Managed Agents (see polar/managed_agents/README.md)
+    ANTHROPIC_API_KEY: str | None = None
     POLAR_MANAGED_AGENT_ID: str | None = None
     POLAR_MANAGED_ENV_ID: str | None = None
     POLAR_MANAGED_VAULT_ID: str | None = None
     POLAR_MANAGED_READ_DSN: str | None = None
+    # Plain webhooks targeting the managed-agents triage flow use a
+    # distinct shared secret from PLAIN_REQUEST_SIGNING_SECRET (which is
+    # already bound to the /integrations/plain/cards endpoint). Keeping
+    # them separate avoids breaking /cards when you rotate one.
+    POLAR_PLAIN_WEBHOOK_SECRET: str | None = None
 
     # AWS (File Downloads)
     AWS_ACCESS_KEY_ID: str = "polar-development"

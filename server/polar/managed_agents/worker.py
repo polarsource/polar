@@ -9,36 +9,21 @@ Run:
 
     uv run python -m polar.managed_agents.worker
 
-Required env (read from polar.config.settings; falls back to bare env
-vars for ANTHROPIC_ENVIRONMENT_KEY since it is environment-scoped, not
-the org API key):
+Required env:
 
     ANTHROPIC_ENVIRONMENT_KEY  -- sk-ant-oat01-... from the Anthropic
                                   Console (Environments → Generate key).
-                                  Distinct from ANTHROPIC_API_KEY — do
-                                  NOT set ANTHROPIC_API_KEY in this
-                                  worker; the env key is what scopes
-                                  the worker to one environment.
+                                  Distinct from ANTHROPIC_API_KEY — the
+                                  env key scopes the worker to one
+                                  environment.
     POLAR_MANAGED_ENV_ID       -- env_... for the self_hosted env.
     POLAR_MANAGED_READ_DSN     -- postgresql://polar_read:...@...
-                                  Reaches prod via Tailscale; in dev
-                                  point at the local docker DB.
 
-The Plain MCP dispatch still happens on Anthropic's side (the vault
-credential is injected after the request leaves the sandbox boundary
-on their orchestration layer), so the worker only needs DB access.
+Optional:
 
-NOTE on the SDK surface: this file uses the `EnvironmentWorker`
-helper and the `@beta_tool` decorator from anthropic.lib. The exact
-import paths and the way custom tools compose with `beta_agent_toolset`
-have shifted across SDK releases — if your installed version exposes
-a different shape, follow `shared/managed-agents-self-hosted-sandboxes.md`
-and the SDK's environments README. The conceptual structure here is:
-
-    1. Build the built-in toolset (bash/read/write/edit/glob/grep) via
-       `beta_agent_toolset(AgentToolContext(...))`.
-    2. Concat our custom @beta_tool functions onto that list.
-    3. Run `EnvironmentWorker` against the work queue with `tools=`.
+    POLAR_MANAGED_WORKDIR      -- defaults to /tmp/polar-managed-agents-workspace.
+                                  Created automatically; used by the
+                                  built-in bash/read/write tools.
 """
 
 from __future__ import annotations
@@ -46,24 +31,24 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import uuid
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any
 
 import asyncpg
 from anthropic import AsyncAnthropic
-from anthropic.lib.environments import (
+from anthropic.lib.environments import EnvironmentWorker
+from anthropic.lib.tools import beta_async_tool
+from anthropic.lib.tools.agent_toolset import (
     AgentToolContext,
-    EnvironmentWorker,
-    beta_agent_toolset,
+    beta_agent_toolset_20260401,
 )
-from anthropic.lib.tools import beta_tool
 
 from polar.config import settings
 
 log = logging.getLogger(__name__)
 
-# Module-level pool. Initialized once in main() before EnvironmentWorker
-# starts dispatching work. Bounded so a runaway agent can't open
-# hundreds of connections.
 _pool: asyncpg.Pool | None = None
 
 
@@ -75,16 +60,52 @@ def _pool_required() -> asyncpg.Pool:
     return _pool
 
 
-@beta_tool
-async def polar_lookup_user_by_email(email: str) -> dict[str, Any]:
-    """Look up a Polar user (merchant / account owner) by email.
+def _jsonable(value: Any) -> Any:
+    """Coerce asyncpg row values into JSON-native shapes.
 
-    Returns the user record plus the organizations they belong to.
-    This is the right tool for most support emails — Polar merchants
-    typically email support from their account email. Empty result
-    means no Polar user account; try polar_lookup_customer_by_email
-    next in case they are an end-user of a Polar merchant.
+    asyncpg returns datetime/date/UUID/Decimal/etc. as Python types,
+    and the SDK serializes tool returns with stdlib json — which
+    refuses those types. We narrow them here at the boundary instead
+    of relying on a serializer kwarg the SDK may or may not expose.
     """
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, uuid.UUID):
+        return str(value)
+    if isinstance(value, Decimal):
+        # Strings round-trip exactly; the model can parse them as needed.
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    return value
+
+
+def _row(record: asyncpg.Record | None) -> dict[str, Any] | None:
+    return _jsonable(dict(record)) if record is not None else None
+
+
+def _rows(records: list[asyncpg.Record]) -> list[dict[str, Any]]:
+    return [_jsonable(dict(r)) for r in records]
+
+
+async def _safe(fn: Any, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Run a DB handler and return either its dict result, or a
+    `{error, detail}` dict on exception. We never let an exception
+    escape the @beta_async_tool — that would crash the worker for
+    every session, not just this tool call."""
+    try:
+        return await fn(*args, **kwargs)
+    except Exception as exc:
+        log.exception("custom tool failed: %s", fn.__name__)
+        return {"error": type(exc).__name__, "detail": str(exc)}
+
+
+# ---- DB tool implementations -----------------------------------------------
+
+
+async def _impl_lookup_user_by_email(email: str) -> dict[str, Any]:
     pool = _pool_required()
     user = await pool.fetchrow(
         """
@@ -110,17 +131,10 @@ async def polar_lookup_user_by_email(email: str) -> dict[str, Any]:
         """,
         user["id"],
     )
-    return {"user": dict(user), "organizations": [dict(r) for r in orgs]}
+    return {"user": _row(user), "organizations": _rows(orgs)}
 
 
-@beta_tool
-async def polar_lookup_customer_by_email(email: str) -> dict[str, Any]:
-    """Look up a Polar "customer" — an end-user of a Polar merchant.
-
-    Returns customer id, the merchant's organization, and basic
-    profile fields. NOT the right tool for Polar merchants themselves —
-    for those, use polar_lookup_user_by_email.
-    """
+async def _impl_lookup_customer_by_email(email: str) -> dict[str, Any]:
     pool = _pool_required()
     rows = await pool.fetch(
         """
@@ -142,28 +156,16 @@ async def polar_lookup_customer_by_email(email: str) -> dict[str, Any]:
         """,
         email,
     )
-    return {"matches": [dict(r) for r in rows]}
+    return {"matches": _rows(rows)}
 
 
-@beta_tool
-async def polar_lookup_organization(
+async def _impl_lookup_organization(
     identifier: str, identifier_type: str
 ) -> dict[str, Any]:
-    """Look up a Polar organization by id or slug.
-
-    identifier_type must be one of "id" (UUID) or "slug" (string).
-    Returns id, slug, name, created_at, and counts of recent paid
-    and non-paid orders.
-    """
     if identifier_type not in {"id", "slug"}:
         return {"error": "identifier_type must be 'id' or 'slug'"}
-    pool = _pool_required()
 
     if identifier_type == "id":
-        # Validate the UUID client-side so a bad input gets a clear
-        # error instead of an opaque InvalidTextRepresentation.
-        import uuid
-
         try:
             uuid.UUID(identifier)
         except ValueError:
@@ -175,6 +177,7 @@ async def polar_lookup_organization(
     else:
         where_clause = "o.slug = $1"
 
+    pool = _pool_required()
     row = await pool.fetchrow(
         f"""
         SELECT
@@ -192,10 +195,10 @@ async def polar_lookup_organization(
             (
                 SELECT COUNT(*) FROM orders ord
                 WHERE ord.organization_id = o.id
-                  AND ord.status NOT IN ('paid', 'pending')
+                  AND ord.status IN ('refunded', 'partially_refunded')
                   AND ord.created_at > NOW() - INTERVAL '30 days'
                   AND ord.deleted_at IS NULL
-            ) AS non_paid_orders_30d
+            ) AS refunded_orders_30d
         FROM organizations o
         WHERE {where_clause}
           AND o.deleted_at IS NULL
@@ -203,18 +206,16 @@ async def polar_lookup_organization(
         """,
         identifier,
     )
-    return {"organization": dict(row) if row else None}
+    return {"organization": _row(row)}
 
 
-@beta_tool
-async def polar_recent_orders(
+async def _impl_recent_orders(
     customer_id: str, limit: int = 10
 ) -> dict[str, Any]:
-    """Last N orders for a Polar customer (default 10, max 50).
-
-    Returns product, amount, status, currency, and created_at. Use to
-    diagnose billing complaints.
-    """
+    try:
+        uuid.UUID(customer_id)
+    except ValueError:
+        return {"error": "customer_id must be a UUID"}
     pool = _pool_required()
     capped = max(1, min(int(limit), 50))
     rows = await pool.fetch(
@@ -239,16 +240,14 @@ async def polar_recent_orders(
         customer_id,
         capped,
     )
-    return {"orders": [dict(r) for r in rows]}
+    return {"orders": _rows(rows)}
 
 
-@beta_tool
-async def polar_recent_subscriptions(customer_id: str) -> dict[str, Any]:
-    """Active and recently-cancelled subscriptions for a Polar customer.
-
-    Returns product, status, current period bounds, started_at, and
-    canceled_at. Use to diagnose plan/access complaints.
-    """
+async def _impl_recent_subscriptions(customer_id: str) -> dict[str, Any]:
+    try:
+        uuid.UUID(customer_id)
+    except ValueError:
+        return {"error": "customer_id must be a UUID"}
     pool = _pool_required()
     rows = await pool.fetch(
         """
@@ -262,7 +261,7 @@ async def polar_recent_subscriptions(customer_id: str) -> dict[str, Any]:
             s.ended_at,
             p.name AS product_name
         FROM subscriptions s
-        LEFT JOIN products p ON s.product_id = p.id
+        JOIN products p ON s.product_id = p.id
         WHERE s.customer_id = $1::uuid
           AND s.deleted_at IS NULL
         ORDER BY s.created_at DESC
@@ -270,7 +269,74 @@ async def polar_recent_subscriptions(customer_id: str) -> dict[str, Any]:
         """,
         customer_id,
     )
-    return {"subscriptions": [dict(r) for r in rows]}
+    return {"subscriptions": _rows(rows)}
+
+
+# ---- @beta_async_tool wrappers ---------------------------------------------
+#
+# We wrap each impl in `_safe(...)` to convert exceptions into
+# `{error, detail}` results — the agent sees an opaque error rather
+# than the worker crashing. Note: @beta_async_tool decorates async
+# functions; using @beta_tool here would raise at first invocation.
+
+
+@beta_async_tool
+async def polar_lookup_user_by_email(email: str) -> dict[str, Any]:
+    """Look up a Polar user (merchant / account owner) by email.
+
+    Returns the user record plus the organizations they belong to.
+    This is the right tool for most support emails — Polar merchants
+    typically email support from their account email. Empty result
+    means no Polar user account; try polar_lookup_customer_by_email
+    next in case they are an end-user of a Polar merchant.
+    """
+    return await _safe(_impl_lookup_user_by_email, email)
+
+
+@beta_async_tool
+async def polar_lookup_customer_by_email(email: str) -> dict[str, Any]:
+    """Look up a Polar "customer" — an end-user of a Polar merchant.
+
+    Returns customer id, the merchant's organization, and basic
+    profile fields. NOT the right tool for Polar merchants themselves —
+    for those, use polar_lookup_user_by_email.
+    """
+    return await _safe(_impl_lookup_customer_by_email, email)
+
+
+@beta_async_tool
+async def polar_lookup_organization(
+    identifier: str, identifier_type: str
+) -> dict[str, Any]:
+    """Look up a Polar organization by id or slug.
+
+    identifier_type must be one of "id" (UUID) or "slug" (string).
+    Returns id, slug, name, created_at, paid_orders_30d, and
+    refunded_orders_30d.
+    """
+    return await _safe(_impl_lookup_organization, identifier, identifier_type)
+
+
+@beta_async_tool
+async def polar_recent_orders(
+    customer_id: str, limit: int = 10
+) -> dict[str, Any]:
+    """Last N orders for a Polar customer (default 10, max 50).
+
+    Returns product, amount, status, currency, and created_at. Use to
+    diagnose billing complaints.
+    """
+    return await _safe(_impl_recent_orders, customer_id, limit)
+
+
+@beta_async_tool
+async def polar_recent_subscriptions(customer_id: str) -> dict[str, Any]:
+    """Active and recently-cancelled subscriptions for a Polar customer.
+
+    Returns product, status, current period bounds, started_at, and
+    canceled_at. Use to diagnose plan/access complaints.
+    """
+    return await _safe(_impl_recent_subscriptions, customer_id)
 
 
 POLAR_TOOLS = [
@@ -280,6 +346,14 @@ POLAR_TOOLS = [
     polar_recent_orders,
     polar_recent_subscriptions,
 ]
+
+
+def _build_tools(env: AgentToolContext) -> list[Any]:
+    """Factory form — EnvironmentWorker calls this per session, so the
+    per-session AgentToolContext (with session_id, skills dir) flows
+    through to the built-in toolset properly.
+    """
+    return list(beta_agent_toolset_20260401(env)) + POLAR_TOOLS
 
 
 async def main() -> None:
@@ -299,6 +373,11 @@ async def main() -> None:
     if not dsn:
         raise SystemExit("POLAR_MANAGED_READ_DSN is required")
 
+    workdir = os.environ.get(
+        "POLAR_MANAGED_WORKDIR", "/tmp/polar-managed-agents-workspace"
+    )
+    os.makedirs(workdir, exist_ok=True)
+
     _pool = await asyncpg.create_pool(
         dsn=dsn,
         min_size=1,
@@ -309,32 +388,28 @@ async def main() -> None:
     log.info("DB pool ready against polar_read role")
 
     async with AsyncAnthropic(auth_token=environment_key) as client:
-        # AgentToolContext fetches per-session details (skills, etc.)
-        # for the built-in toolset. session_id is set per work item by
-        # EnvironmentWorker — passing None here means "let the worker
-        # supply it as work arrives".
-        ctx = AgentToolContext(workdir="/workspace", client=client)
-        builtin = list(beta_agent_toolset(ctx))
-        tools = builtin + POLAR_TOOLS
-
         log.info(
-            "starting EnvironmentWorker against %s with %d tools",
+            "starting EnvironmentWorker against %s workdir=%s",
             environment_id,
-            len(tools),
+            workdir,
         )
         try:
             await EnvironmentWorker(
                 client,
                 environment_id=environment_id,
                 environment_key=environment_key,
-                workdir="/workspace",
-                tools=tools,
+                workdir=workdir,
+                tools=_build_tools,
             ).run()
         finally:
             assert _pool is not None
             await _pool.close()
+            _pool = None
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
     asyncio.run(main())

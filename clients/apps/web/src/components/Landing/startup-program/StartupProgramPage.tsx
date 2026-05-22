@@ -25,7 +25,7 @@ export const StartupProgramPage = () => {
         <Text as="h1" variant="heading-xl">
           Startup Program
         </Text>
-        <Text as="p" variant="heading-xxs">
+        <Text as="p" variant="heading-xxs" align="center">
           An entire year on our most generous plan. For free.
         </Text>
       </Box>

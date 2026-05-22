@@ -206,7 +206,7 @@ export function ProductDetailsStep() {
       return
     }
 
-    if (result.verdict === 'DENY' || result.verdict === 'CLARIFY') return
+    if (result.verdict !== 'APPROVE') return
 
     setLoading('submitting')
     const success = await submitOrg(formData)
@@ -287,7 +287,9 @@ export function ProductDetailsStep() {
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                 {aup.verdict === 'CLARIFY'
                   ? 'Please clarify your use case'
-                  : 'Use case not supported'}
+                  : aup.verdict === 'INSUFFICIENT'
+                    ? 'Tell us more about your product'
+                    : 'Use case not supported'}
               </p>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 {aup.message}

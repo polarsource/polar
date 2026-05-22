@@ -83,7 +83,7 @@ const classifierResponseSchema = z.object({
   triggers: z
     .array(z.enum(FOLLOW_UP_TRIGGERS))
     .describe(
-      'Topics that apply to the description. Drives which questions are rendered. Empty for APPROVE/DENY where no follow-ups are needed.',
+      'Topics that apply to the description. Drives which questions are rendered. Empty for APPROVE/DENY/INSUFFICIENT where no follow-ups are needed.',
     ),
   answer_evaluations: z
     .array(answerEvaluationSchema)

@@ -41,7 +41,9 @@ interface Options {
 export const useAupValidation = ({ followUpEnabled = false }: Options = {}) => {
   const [conversationId] = useState(() => nanoid())
   const [history, setHistory] = useState<AupHistoryEntry[]>([])
-  const [verdict, setVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
+  const [verdict, setVerdict] = useState<
+    'DENY' | 'CLARIFY' | 'INSUFFICIENT' | null
+  >(null)
   const [message, setMessage] = useState<string | null>(null)
   const [questions, setQuestions] = useState<FollowUpQuestion[]>([])
   const [answers, setAnswersState] = useState<Record<string, string>>({})
@@ -122,13 +124,30 @@ export const useAupValidation = ({ followUpEnabled = false }: Options = {}) => {
       }
       setEvaluations(nextEvaluations)
 
-      if (data.verdict === 'DENY' || data.verdict === 'CLARIFY') {
-        const nextQuestions = followUpEnabled ? (data.questions ?? []) : []
+      const nextQuestions = followUpEnabled ? (data.questions ?? []) : []
+
+      // Defensive: the classifier occasionally emits a CLARIFY with no
+      // triggers/questions — a verdict that contradicts its own rules. In the
+      // follow-up flow CLARIFY is rendered purely as question fields, so a
+      // question-less CLARIFY is a silent dead-end: nothing shows, yet the save
+      // stays blocked. Treat it as APPROVE so the merchant can proceed.
+      const effectiveVerdict: AupVerdict =
+        followUpEnabled &&
+        data.verdict === 'CLARIFY' &&
+        nextQuestions.length === 0
+          ? 'APPROVE'
+          : data.verdict
+
+      if (
+        effectiveVerdict === 'DENY' ||
+        effectiveVerdict === 'CLARIFY' ||
+        effectiveVerdict === 'INSUFFICIENT'
+      ) {
         setHistory((prev) => [
           ...prev,
           {
             product_description,
-            verdict: data.verdict,
+            verdict: effectiveVerdict,
             message: data.message,
             ...(followUpEnabled
               ? {
@@ -139,7 +158,7 @@ export const useAupValidation = ({ followUpEnabled = false }: Options = {}) => {
               : {}),
           },
         ])
-        setVerdict(data.verdict)
+        setVerdict(effectiveVerdict)
         setMessage(data.message ?? null)
         setQuestions(nextQuestions)
       } else {
@@ -148,7 +167,7 @@ export const useAupValidation = ({ followUpEnabled = false }: Options = {}) => {
       }
 
       setIsValidating(false)
-      return { ok: true, verdict: data.verdict }
+      return { ok: true, verdict: effectiveVerdict }
     },
     [conversationId, history, followUpEnabled, answers],
   )

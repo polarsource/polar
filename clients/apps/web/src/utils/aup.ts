@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
-export const AUP_VERDICTS = ['APPROVE', 'DENY', 'CLARIFY'] as const
+export const AUP_VERDICTS = [
+  'APPROVE',
+  'DENY',
+  'CLARIFY',
+  'INSUFFICIENT',
+] as const
 export type AupVerdict = (typeof AUP_VERDICTS)[number]
 
 export const answerEvaluationSchema = z.object({

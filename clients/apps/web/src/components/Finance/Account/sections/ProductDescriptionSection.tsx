@@ -170,7 +170,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
       return
     }
 
-    if (result.verdict === 'DENY' || result.verdict === 'CLARIFY') return
+    if (result.verdict !== 'APPROVE') return
 
     const finalDescription = buildFinalDescription(
       values.product_description,
@@ -309,6 +309,32 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
                 </Box>
               )}
             />
+
+            {aup.verdict === 'INSUFFICIENT' && aup.message && (
+              <Box
+                display="flex"
+                flexDirection="column"
+                rowGap="xs"
+                borderRadius="m"
+                backgroundColor="background-warning"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-warning"
+                padding="l"
+              >
+                <Box display="flex" alignItems="center" columnGap="xs">
+                  <Box color="text-warning" display="inline-flex">
+                    <AlertTriangleIcon className="h-3.5 w-3.5" />
+                  </Box>
+                  <Text variant="label" color="warning">
+                    More detail needed
+                  </Text>
+                </Box>
+                <Text variant="caption" color="muted">
+                  {aup.message}
+                </Text>
+              </Box>
+            )}
 
             {aup.questions.length > 0 && (
               <Box

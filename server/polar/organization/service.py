@@ -336,12 +336,14 @@ class OrganizationService:
                     }
                 ]
             ) from e
+        owner = auth_subject.subject
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
             name=organization.name,
-            owner_external_id=str(auth_subject.subject.id),
-            owner_email=auth_subject.subject.email,
-            owner_name=auth_subject.subject.public_name,
+            slug=organization.slug,
+            owner_external_id=str(owner.id),
+            owner_email=owner.email,
+            owner_name=owner.full_name or owner.email.split("@", 1)[0],
         )
         await self.add_user(
             session,
@@ -837,7 +839,7 @@ class OrganizationService:
                 polar_self_service.enqueue_add_member(
                     external_customer_id=str(organization.id),
                     email=user.email,
-                    name=user.public_name,
+                    name=user.full_name or user.email.split("@", 1)[0],
                     external_id=str(user.id),
                     delay=polar_self_member_delay,
                 )

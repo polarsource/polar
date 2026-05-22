@@ -33,6 +33,7 @@ from .service import polar_self
 async def create_customer(
     external_id: str,
     name: str,
+    slug: str,
     owner_external_id: str,
     owner_email: str,
     owner_name: str,
@@ -41,6 +42,7 @@ async def create_customer(
     await client.create_customer(
         external_id=external_id,
         name=name,
+        slug=slug,
         owner_external_id=owner_external_id,
         owner_email=owner_email,
         owner_name=owner_name,

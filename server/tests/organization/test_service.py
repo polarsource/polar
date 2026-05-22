@@ -188,12 +188,14 @@ class TestCreate:
             auth_subject,
         )
 
+        owner = auth_subject.subject
         create_customer_mock.assert_called_once_with(
             organization_id=organization.id,
             name=organization.name,
-            owner_external_id=str(auth_subject.subject.id),
-            owner_email=auth_subject.subject.email,
-            owner_name=auth_subject.subject.public_name,
+            slug=organization.slug,
+            owner_external_id=str(owner.id),
+            owner_email=owner.email,
+            owner_name=owner.full_name or owner.email.split("@", 1)[0],
         )
         add_member_mock.assert_not_called()
 

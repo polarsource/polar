@@ -95,6 +95,7 @@ class PolarSelfClient:
         *,
         external_id: str,
         name: str,
+        slug: str,
         owner_external_id: str,
         owner_email: str,
         owner_name: str,
@@ -106,6 +107,7 @@ class PolarSelfClient:
                         email=None,
                         name=name,
                         external_id=external_id,
+                        metadata={"slug": slug},
                         owner=MemberOwnerCreate(
                             email=owner_email,
                             name=owner_name,

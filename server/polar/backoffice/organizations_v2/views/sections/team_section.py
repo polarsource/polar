@@ -6,8 +6,9 @@ from collections.abc import Generator
 from fastapi import Request
 from tagflow import classes, tag, text
 
-from polar.models import Organization, User
+from polar.models import Organization
 from polar.models.user import IdentityVerificationStatus
+from polar.models.user_organization import OrganizationRole
 
 from ....components import action_bar, button, card
 
@@ -18,11 +19,9 @@ class TeamSection:
     def __init__(
         self,
         organization: Organization,
-        owner_user: User | None = None,
         identity_country: str | None = None,
     ):
         self.org = organization
-        self.owner_user = owner_user
         self.identity_country = identity_country
 
     @contextlib.contextmanager
@@ -93,13 +92,7 @@ class TeamSection:
                                         with tag.div(
                                             classes="text-sm text-base-content/60"
                                         ):
-                                            is_owner = (
-                                                self.owner_user
-                                                and member.user_id == self.owner_user.id
-                                            )
-                                            role_text = (
-                                                "Owner" if is_owner else "Member"
-                                            )
+                                            role_text = member.role.value.capitalize()
                                             text(
                                                 f"{role_text} · Joined {member.created_at.strftime('%Y-%m-%d')}"
                                             )
@@ -134,8 +127,7 @@ class TeamSection:
                                             **{"tabindex": "0"},
                                         ):
                                             member_is_owner = (
-                                                self.owner_user
-                                                and member.user_id == self.owner_user.id
+                                                member.role == OrganizationRole.owner
                                             )
                                             member_is_verified = (
                                                 member.user.identity_verification_status

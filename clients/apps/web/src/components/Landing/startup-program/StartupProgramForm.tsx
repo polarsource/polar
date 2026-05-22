@@ -114,7 +114,10 @@ export const StartupProgramForm = () => {
       display="flex"
       flexDirection="column"
       rowGap="l"
-      padding="3xl"
+      padding={{
+        base: 'xl',
+        md: '3xl',
+      }}
       backgroundColor="background-secondary"
       onSubmit={async (e) => {
         e.preventDefault()
@@ -305,6 +308,7 @@ export const StartupProgramForm = () => {
         fullWidth
         loading={status === 'submitting'}
         disabled={status === 'submitting' || status === 'success'}
+        className="my-8"
       >
         {status === 'success' ? 'Application Sent' : 'Apply Now'}
       </Button>

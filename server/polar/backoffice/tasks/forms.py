@@ -36,8 +36,13 @@ def _get_function_arguments(
         if get_origin(type_hint) is Unpack:
             type_hints_args = get_args(type_hint)
             if is_typeddict(type_hints_args[0]):
-                for k, v in get_type_hints(type_hints_args[0]).items():
-                    yield k, v, inspect.Parameter.empty
+                typeddict_class = type_hints_args[0]
+                optional_keys = typeddict_class.__optional_keys__
+                for k, v in get_type_hints(typeddict_class).items():
+                    if k in optional_keys:
+                        yield k, v, None
+                    else:
+                        yield k, v, inspect.Parameter.empty
                 return
             elif issubclass(type_hints_args[0], dict):
                 yield from _get_function_arguments(type_hints_args[0].__init__)

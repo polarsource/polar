@@ -1,4 +1,13 @@
-import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { enums, schemas } from '@polar-sh/client'
 import {
   Accordion,
@@ -27,6 +36,7 @@ import {
 import React from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import CustomFieldTypeLabel from './CustomFieldTypeLabel'
+import SortableOptionRow from './SortableOptionRow'
 
 const CustomFieldTextProperties = () => {
   const { control } = useFormContext<
@@ -191,64 +201,56 @@ const CustomFieldSelectProperties = () => {
       type: 'select'
     }
   >()
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     control,
     name: 'properties.options',
     rules: {
       minLength: 1,
     },
   })
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    }),
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) {
+      return
+    }
+    const oldIndex = fields.findIndex((f) => f.id === active.id)
+    const newIndex = fields.findIndex((f) => f.id === over.id)
+    if (oldIndex !== -1 && newIndex !== -1) {
+      move(oldIndex, newIndex)
+    }
+  }
+
   return (
     <FormItem>
       <FormLabel>Select options</FormLabel>
       <div className="flex flex-col gap-2">
-        {fields.map((field, index) => (
-          <div key={field.id} className="flex flex-row items-center gap-2">
-            <FormField
-              control={control}
-              name={`properties.options.${index}.value`}
-              render={({ field }) => (
-                <div className="flex flex-col">
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value || ''}
-                      placeholder="Value"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </div>
-              )}
-            />
-            <FormField
-              control={control}
-              name={`properties.options.${index}.label`}
-              render={({ field }) => (
-                <div className="flex flex-col">
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value || ''}
-                      placeholder="Label"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </div>
-              )}
-            />
-            <Button
-              className={
-                'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-              }
-              size="icon"
-              variant="secondary"
-              type="button"
-              onClick={() => remove(index)}
-            >
-              <ClearOutlined fontSize="inherit" />
-            </Button>
-          </div>
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={fields.map((f) => f.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {fields.map((field, index) => (
+              <SortableOptionRow
+                key={field.id}
+                id={field.id}
+                index={index}
+                onRemove={() => remove(index)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
         <Button
           size="sm"
           variant="secondary"

@@ -1,6 +1,7 @@
 """Team section with member management."""
 
 import contextlib
+import uuid
 from collections.abc import Generator
 
 from fastapi import Request
@@ -19,10 +20,10 @@ class TeamSection:
     def __init__(
         self,
         organization: Organization,
-        identity_country: str | None = None,
+        member_countries: dict[uuid.UUID, str] | None = None,
     ):
         self.org = organization
-        self.identity_country = identity_country
+        self.member_countries = member_countries or {}
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
@@ -84,11 +85,14 @@ class TeamSection:
                                                     else:
                                                         classes("badge-neutral")
                                                     text(status.get_display_name())
-                                            if self.identity_country:
+                                            member_country = self.member_countries.get(
+                                                member.user_id
+                                            )
+                                            if member_country:
                                                 with tag.span(
                                                     classes="text-sm text-base-content/60"
                                                 ):
-                                                    text(self.identity_country)
+                                                    text(member_country)
                                         with tag.div(
                                             classes="text-sm text-base-content/60"
                                         ):

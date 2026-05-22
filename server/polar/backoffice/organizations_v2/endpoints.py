@@ -809,13 +809,15 @@ async def get_organization_detail(
                 ):
                     pass
             elif section == "team":
-                identity_country = None
-                if owner_user:
-                    identity_country = await user_service.get_identity_verified_country(
-                        owner_user
+                member_countries: dict[uuid.UUID, str] = {}
+                for member in organization.members:  # type: ignore[attr-defined]
+                    country = await user_service.get_identity_verified_country(
+                        member.user
                     )
+                    if country:
+                        member_countries[member.user_id] = country
                 team_section = TeamSection(
-                    organization, identity_country=identity_country
+                    organization, member_countries=member_countries
                 )
                 with team_section.render(request):
                     pass

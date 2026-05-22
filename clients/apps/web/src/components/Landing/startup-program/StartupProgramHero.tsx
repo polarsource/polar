@@ -53,7 +53,10 @@ export const StartupProgramHero = () => {
         display="flex"
         flexDirection="column"
         rowGap="xl"
-        padding="3xl"
+        padding={{
+          base: 'xl',
+          md: '3xl',
+        }}
         backgroundColor="background-secondary"
       >
         <Box display="flex" flexDirection="column" rowGap="m">

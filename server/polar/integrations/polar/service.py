@@ -44,8 +44,6 @@ from .exceptions import (
 )
 from .schemas import (
     OrganizationBillingDetailsUpdate,
-    OrganizationPaymentMethodConfirm,
-    OrganizationPaymentMethodCreate,
     OrganizationPlan,
 )
 
@@ -55,8 +53,6 @@ if TYPE_CHECKING:
         Checkout,
         Customer,
         CustomerPaymentMethod,
-        CustomerPaymentMethodCreateRequiresActionResponse,
-        CustomerPaymentMethodCreateSucceededResponse,
         CustomerPortalCustomer,
         Order,
         Product,
@@ -366,37 +362,6 @@ class PolarSelfService:
         )
         default_id = customer.default_payment_method_id
         return methods, default_id if isinstance(default_id, str) else None
-
-    async def add_payment_method(
-        self,
-        organization_id: uuid.UUID,
-        *,
-        create: OrganizationPaymentMethodCreate,
-        external_member_id: str | None = None,
-    ) -> "CustomerPaymentMethodCreateRequiresActionResponse | CustomerPaymentMethodCreateSucceededResponse":
-        await self._ensure_polar_customer(organization_id)
-        return await get_client().portal_add_payment_method(
-            external_customer_id=str(organization_id),
-            confirmation_token_id=create.confirmation_token_id,
-            set_default=create.set_default,
-            return_url=create.return_url,
-            external_member_id=external_member_id,
-        )
-
-    async def confirm_payment_method(
-        self,
-        organization_id: uuid.UUID,
-        *,
-        confirm: OrganizationPaymentMethodConfirm,
-        external_member_id: str | None = None,
-    ) -> "CustomerPaymentMethodCreateRequiresActionResponse | CustomerPaymentMethodCreateSucceededResponse":
-        await self._ensure_polar_customer(organization_id)
-        return await get_client().portal_confirm_payment_method(
-            external_customer_id=str(organization_id),
-            setup_intent_id=confirm.setup_intent_id,
-            set_default=confirm.set_default,
-            external_member_id=external_member_id,
-        )
 
     async def delete_payment_method(
         self,

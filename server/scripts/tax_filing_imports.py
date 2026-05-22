@@ -2,19 +2,25 @@ import asyncio
 import csv
 import logging.config
 import pathlib
+import tempfile
 from collections import defaultdict
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from decimal import Decimal
 from functools import wraps
 from itertools import batched
 from typing import Annotated, Any
+from urllib.parse import urlparse
 from uuid import UUID
 
+import httpx
 import structlog
 import typer
 from rich.progress import Progress
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import contains_eager
 
+from polar.kit.currency import _get_currency_decimal_factor
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Order, Refund, Transaction
 from polar.models.transaction import TransactionType
@@ -25,6 +31,47 @@ cli = typer.Typer()
 # Batch size - tune this based on your needs
 # 500 is a good balance between query size and number of queries
 BATCH_SIZE = 1000
+
+
+def is_url(path: str) -> bool:
+    """Check if the given path is a valid HTTP/HTTPS URL."""
+    try:
+        result = urlparse(path)
+        return all([result.scheme in ("http", "https"), result.netloc])
+    except ValueError:
+        return False
+
+
+@asynccontextmanager
+async def resolve_file_path(file_input: str) -> AsyncIterator[pathlib.Path]:
+    """Context manager that yields a local file path, downloading from URL if necessary."""
+    if not is_url(file_input):
+        path = pathlib.Path(file_input)
+        if not path.exists():
+            raise typer.BadParameter(f"File {file_input} does not exist")
+        yield path
+        return
+
+    # Download URL to temp file
+    temp_dir = tempfile.mkdtemp()
+    temp_path = pathlib.Path(temp_dir) / "tax_filing_import.csv"
+
+    try:
+        async with httpx.AsyncClient() as client:
+            async with client.stream("GET", file_input) as response:
+                response.raise_for_status()
+                with open(temp_path, "wb") as f:
+                    async for chunk in response.aiter_bytes():
+                        f.write(chunk)
+        yield temp_path
+    finally:
+        # Cleanup temp file and directory
+        if temp_path.exists():
+            temp_path.unlink()
+        try:
+            pathlib.Path(temp_dir).rmdir()
+        except OSError:
+            pass
 
 
 def drop_all(*args: Any, **kwargs: Any) -> Any:
@@ -49,8 +96,8 @@ def typer_async(f):  # type: ignore
     return wrapper
 
 
-def to_cents(amount: str) -> int:
-    return int(Decimal(amount) * 100)
+def normalize(amount: str, currency: str) -> int:
+    return int(Decimal(amount) * _get_currency_decimal_factor(currency))
 
 
 async def load_transactions_batch(
@@ -143,8 +190,9 @@ def process_row(
     transaction.tax_processor_id = row["tax_transaction_id"]
     transaction.tax_filing_currency = row["filing_currency"]
     transaction.tax_filing_amount = sum(
-        to_cents(t["filing_tax_amount"]) for t in pending_transactions[reference_id]
-    ) + to_cents(row["filing_tax_amount"])
+        normalize(t["filing_tax_amount"], row["filing_currency"])
+        for t in pending_transactions[reference_id]
+    ) + normalize(row["filing_tax_amount"], row["filing_currency"])
     if transaction.tax_country is None:
         transaction.tax_country = row["country_code"]
     if transaction.tax_state is None:
@@ -169,104 +217,109 @@ def process_row(
 @typer_async
 async def tax_filing_import(
     file: Annotated[
-        pathlib.Path,
-        typer.Argument(
-            exists=True,
-            file_okay=True,
-            dir_okay=False,
-            writable=False,
-            readable=True,
-            resolve_path=True,
-        ),
+        str,
+        typer.Argument(),
     ],
 ) -> None:
-    engine = create_async_engine("script")
-    sessionmaker = create_async_sessionmaker(engine)
-    async with sessionmaker() as session:
-        unmatching_transactions: set[str] = set()
-        pending_transactions: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    async with resolve_file_path(file) as local_path:
+        engine = create_async_engine("script")
+        sessionmaker = create_async_sessionmaker(engine)
+        async with sessionmaker() as session:
+            unmatching_transactions: set[str] = set()
+            pending_transactions: dict[str, list[dict[str, Any]]] = defaultdict(list)
+            handled_transactions: set[str] = set()
 
-        with Progress() as progress:
-            # Step 1: Count rows
-            count_task = progress.add_task("[cyan]Counting rows...", total=None)
-            with file.open("rb") as f:
-                total_rows = sum(1 for _ in f) - 1
-            progress.update(count_task, completed=1, total=1)
+            with Progress() as progress:
+                # Step 1: Count rows
+                count_task = progress.add_task("[cyan]Counting rows...", total=None)
+                with local_path.open("rb") as f:
+                    total_rows = sum(1 for _ in f) - 1
+                progress.update(count_task, completed=1, total=1)
 
-            # Step 2: Load CSV
-            load_task = progress.add_task("[cyan]Loading CSV...", total=None)
-            with file.open("r") as f:
-                reader = csv.DictReader(f)
-                batches = list(batched(reader, BATCH_SIZE))
-            progress.update(load_task, completed=1, total=1)
+                # Step 2: Load CSV
+                load_task = progress.add_task("[cyan]Loading CSV...", total=None)
+                with local_path.open("r") as f:
+                    reader = csv.DictReader(f)
+                    batches = list(batched(reader, BATCH_SIZE))
+                progress.update(load_task, completed=1, total=1)
 
-            # Step 3: Process batches
-            process_task = progress.add_task(
-                "[green]Processing tax amounts...", total=total_rows
-            )
+                # Step 3: Process batches
+                process_task = progress.add_task(
+                    "[green]Processing tax amounts...", total=total_rows
+                )
 
-            for batch in batches:
-                # Extract reference IDs from batch
-                reference_ids = {row["id"] for row in batch}
+                for batch in batches:
+                    # Extract reference IDs from batch
+                    reference_ids = {row["id"] for row in batch}
 
-                # Load transactions for this batch
-                transactions = await load_transactions_batch(session, reference_ids)
+                    # Load transactions for this batch
+                    transactions = await load_transactions_batch(session, reference_ids)
 
-                # Build lookups
-                (
-                    by_order_id,
-                    by_stripe_invoice,
-                    by_refund_id,
-                ) = build_transaction_lookups(transactions)
+                    # Build lookups
+                    (
+                        by_order_id,
+                        by_stripe_invoice,
+                        by_refund_id,
+                    ) = build_transaction_lookups(transactions)
 
-                # Process each row in the batch
-                for batch_row in batch:
-                    reference_id = batch_row["id"]
+                    # Process each row in the batch
+                    for batch_row in batch:
+                        reference_id = batch_row["id"]
 
-                    total = to_cents(batch_row["total"])
-                    if total == 0:
-                        # No tax to import
-                        continue
+                        # Case of zero tax amount transactions that are paired with a non-zero tax amount transaction in another row
+                        # The transaction is already handled since the full amount is reconciled, since zero does not impact the tax amount, we can skip it
+                        if reference_id in handled_transactions:
+                            continue
 
-                    # Look up transaction
-                    transaction = (
-                        by_order_id.get(reference_id)
-                        or by_stripe_invoice.get(reference_id)
-                        or by_refund_id.get(reference_id)
-                    )
+                        total = normalize(batch_row["total"], batch_row["currency"])
+                        if total == 0:
+                            # No tax to import
+                            continue
 
-                    if transaction is None:
-                        unmatching_transactions.add(reference_id)
-                        continue
+                        # Look up transaction
+                        transaction = (
+                            by_order_id.get(reference_id)
+                            or by_stripe_invoice.get(reference_id)
+                            or by_refund_id.get(reference_id)
+                        )
 
-                    row_tax_amount = to_cents(batch_row["tax_amount"]) + sum(
-                        to_cents(t["tax_amount"])
-                        for t in pending_transactions[reference_id]
-                    )
-                    if row_tax_amount != 0 and transaction.tax_amount != row_tax_amount:
-                        pending_transactions[reference_id].append(batch_row)
-                        continue
+                        if transaction is None:
+                            unmatching_transactions.add(reference_id)
+                            continue
 
-                    process_row(batch_row, transaction, pending_transactions, session)
+                        row_tax_amount = normalize(
+                            batch_row["tax_amount"], batch_row["currency"]
+                        ) + sum(
+                            normalize(t["tax_amount"], batch_row["currency"])
+                            for t in pending_transactions[reference_id]
+                        )
+                        if transaction.presentment_tax_amount != row_tax_amount:
+                            pending_transactions[reference_id].append(batch_row)
+                            continue
 
-                await session.commit()
-                progress.update(process_task, advance=len(batch))
+                        process_row(
+                            batch_row, transaction, pending_transactions, session
+                        )
+                        handled_transactions.add(reference_id)
 
-        if unmatching_transactions:
-            print(
-                f"\n⚠️  {len(unmatching_transactions)} transactions could not be matched:"
-            )
-            for transaction_id in sorted(unmatching_transactions):
-                print(f"   - {transaction_id}")
+                    await session.commit()
+                    progress.update(process_task, advance=len(batch))
 
-        if pending_transactions:
-            print(
-                f"\n⚠️  {len(pending_transactions)} transactions have mismatching tax amounts:"
-            )
-            for transaction_id in sorted(pending_transactions.keys()):
-                print(f"   - {transaction_id}")
+            if unmatching_transactions:
+                print(
+                    f"\n⚠️  {len(unmatching_transactions)} transactions could not be matched:"
+                )
+                for transaction_id in sorted(unmatching_transactions):
+                    print(f"   - {transaction_id}")
 
-        await session.commit()
+            if pending_transactions:
+                print(
+                    f"\n⚠️  {len(pending_transactions)} transactions have mismatching tax amounts:"
+                )
+                for transaction_id in sorted(pending_transactions.keys()):
+                    print(f"   - {transaction_id}")
+
+            await session.commit()
 
 
 if __name__ == "__main__":

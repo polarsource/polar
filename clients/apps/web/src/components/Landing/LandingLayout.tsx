@@ -1,12 +1,12 @@
-"use client";
+'use client'
 
-import { PolarLogotype } from "@/components/Layout/Public/PolarLogotype";
-import Footer from "@/components/Organization/Footer";
-import { usePostHog } from "@/hooks/posthog";
-import ArrowForward from "@mui/icons-material/ArrowForward";
-import { Text } from "@polar-sh/orbit";
-import { Box } from "@polar-sh/orbit/Box";
-import Button from "@polar-sh/ui/components/atoms/Button";
+import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
+import Footer from '@/components/Organization/Footer'
+import { usePostHog } from '@/hooks/posthog'
+import ArrowForward from '@mui/icons-material/ArrowForward'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Sidebar,
   SidebarContent,
@@ -14,24 +14,24 @@ import {
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
-} from "@polar-sh/ui/components/atoms/Sidebar";
-import { motion } from "framer-motion";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ComponentProps, PropsWithChildren, useEffect, useState } from "react";
-import { twMerge } from "tailwind-merge";
-import { AuthModal } from "../Auth/AuthModal";
-import GetStartedButton from "../Auth/GetStartedButton";
-import { Modal } from "../Modal";
-import { useModal } from "../Modal/useModal";
-import { NavPopover, NavPopoverSection } from "./NavPopover";
+} from '@polar-sh/ui/components/atoms/Sidebar'
+import { motion } from 'framer-motion'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { ComponentProps, PropsWithChildren, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { AuthModal } from '../Auth/AuthModal'
+import GetStartedButton from '../Auth/GetStartedButton'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
+import { NavPopover, NavPopoverSection } from './NavPopover'
 
 const StartupProgramBanner = () => (
   <Link href="/startup-program" prefetch>
     <Box
       display={{
-        base: "none",
-        md: "flex",
+        base: 'none',
+        md: 'flex',
       }}
       flexDirection="row"
       alignItems="center"
@@ -46,7 +46,7 @@ const StartupProgramBanner = () => (
       <ArrowForward fontSize="inherit" />
     </Box>
   </Link>
-);
+)
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
@@ -68,7 +68,7 @@ export default function Layout({ children }: PropsWithChildren) {
         </div>
       </div>
     </>
-  );
+  )
 }
 
 const NavLink = ({
@@ -79,84 +79,80 @@ const NavLink = ({
   target,
   ...props
 }: ComponentProps<typeof Link> & {
-  isActive?: (pathname: string) => boolean;
+  isActive?: (pathname: string) => boolean
 }) => {
-  const pathname = usePathname();
+  const pathname = usePathname()
   const isActive = _isActive
     ? _isActive(pathname)
-    : pathname.startsWith(href.toString());
-  const isExternal = href.toString().startsWith("http");
+    : pathname.startsWith(href.toString())
+  const isExternal = href.toString().startsWith('http')
 
   return (
     <Link
       href={href}
-      target={isExternal ? "_blank" : target}
+      target={isExternal ? '_blank' : target}
       prefetch
       className={twMerge(
-        "dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black dark:hover:text-white",
-        isActive && "text-black dark:text-white",
+        'dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black dark:hover:text-white',
+        isActive && 'text-black dark:text-white',
         className,
       )}
       {...props}
     >
       {children}
     </Link>
-  );
-};
+  )
+}
 
 interface NavigationItem {
-  title: string;
-  href: string;
-  isActive?: (pathname: string) => boolean;
-  target?: "_blank";
+  title: string
+  href: string
+  isActive?: (pathname: string) => boolean
+  target?: '_blank'
 }
 
 const mobileNavigationItems: NavigationItem[] = [
   {
-    title: "Overview",
-    href: "/",
-    isActive: (pathname) => pathname === "/",
+    title: 'Overview',
+    href: '/',
+    isActive: (pathname) => pathname === '/',
   },
   {
-    title: "Documentation",
-    href: "https://polar.sh/docs",
-    target: "_blank",
+    title: 'Documentation',
+    href: 'https://polar.sh/docs',
+    target: '_blank',
   },
   {
-    title: "Blog",
-    href: "/blog",
+    title: 'Blog',
+    href: '/blog',
   },
   {
-    title: "Company",
-    href: "/company",
+    title: 'Company',
+    href: '/company',
   },
   {
-    title: "Open Source",
-    href: "https://github.com/polarsource",
-    target: "_blank",
+    title: 'Open Source',
+    href: 'https://github.com/polarsource',
+    target: '_blank',
   },
   {
-    title: "Polar on X",
-    href: "https://x.com/polar_sh",
-    target: "_blank",
+    title: 'Polar on X',
+    href: 'https://x.com/polar_sh',
+    target: '_blank',
   },
-];
+]
 
 const LandingPageMobileNavigation = () => {
-  const sidebar = useSidebar();
+  const sidebar = useSidebar()
 
-  const posthog = usePostHog();
-  const {
-    isShown: isModalShown,
-    hide: hideModal,
-    show: showModal,
-  } = useModal();
+  const posthog = usePostHog()
+  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
   const onLoginClick = () => {
-    posthog.capture("global:user:login:click");
-    sidebar.toggleSidebar();
-    showModal();
-  };
+    posthog.capture('global:user:login:click')
+    sidebar.toggleSidebar()
+    showModal()
+  }
 
   return (
     <>
@@ -180,7 +176,7 @@ const LandingPageMobileNavigation = () => {
                 >
                   {item.title}
                 </NavLink>
-              );
+              )
             })}
           </div>
           <NavLink
@@ -200,160 +196,156 @@ const LandingPageMobileNavigation = () => {
         className="lg:w-full lg:max-w-[480px]"
       />
     </>
-  );
-};
+  )
+}
 
 const LandingPageDesktopNavigation = () => {
-  const posthog = usePostHog();
-  const {
-    isShown: isModalShown,
-    hide: hideModal,
-    show: showModal,
-  } = useModal();
-  const pathname = usePathname();
-  const [isScrolled, setIsScrolled] = useState(false);
+  const posthog = usePostHog()
+  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+  const pathname = usePathname()
+  const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 0);
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    const handleScroll = () => setIsScrolled(window.scrollY > 0)
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const onLoginClick = () => {
-    posthog.capture("global:user:login:click");
-    showModal();
-  };
+    posthog.capture('global:user:login:click')
+    showModal()
+  }
 
   const featuresSections: NavPopoverSection[] = [
     {
       items: [
         {
-          href: "/features/usage-billing",
-          label: "Usage Billing",
-          subtitle: "Meter and bill any event",
+          href: '/features/usage-billing',
+          label: 'Usage Billing',
+          subtitle: 'Meter and bill any event',
         },
         {
-          href: "/features/subscriptions",
-          label: "Subscriptions",
-          subtitle: "Recurring revenue on autopilot",
+          href: '/features/subscriptions',
+          label: 'Subscriptions',
+          subtitle: 'Recurring revenue on autopilot',
         },
         {
-          href: "/features/seats",
-          label: "Seats",
-          subtitle: "Pricing that scales with teams",
+          href: '/features/seats',
+          label: 'Seats',
+          subtitle: 'Pricing that scales with teams',
         },
         {
-          href: "/features/credits",
-          label: "Credits",
-          subtitle: "Prepay and draw down over time",
+          href: '/features/credits',
+          label: 'Credits',
+          subtitle: 'Prepay and draw down over time',
         },
         {
-          href: "/features/trials",
-          label: "Trials",
-          subtitle: "Trials that convert themselves",
+          href: '/features/trials',
+          label: 'Trials',
+          subtitle: 'Trials that convert themselves',
         },
         {
-          href: "/features/discounts",
-          label: "Discounts",
-          subtitle: "Promo codes & recurring deals",
+          href: '/features/discounts',
+          label: 'Discounts',
+          subtitle: 'Promo codes & recurring deals',
         },
         {
-          href: "/features/cost-insights",
-          label: "Cost Insights",
-          subtitle: "Cost, profit, and LTV per customer",
+          href: '/features/cost-insights',
+          label: 'Cost Insights',
+          subtitle: 'Cost, profit, and LTV per customer',
         },
         {
-          href: "/features/finance",
-          label: "Finance",
-          subtitle: "Balance, ledger, fees, payouts",
+          href: '/features/finance',
+          label: 'Finance',
+          subtitle: 'Balance, ledger, fees, payouts',
         },
         {
-          href: "/features/merchant-of-record",
-          label: "Merchant of Record",
-          subtitle: "Global tax compliance, on us",
+          href: '/features/merchant-of-record',
+          label: 'Merchant of Record',
+          subtitle: 'Global tax compliance, on us',
         },
       ],
     },
-  ];
+  ]
 
   const docsSections: NavPopoverSection[] = [
     {
-      title: "Integrate",
+      title: 'Integrate',
       items: [
         {
-          href: "/docs/integrate/sdk/adapters/nextjs",
-          label: "Next.js",
-          target: "_blank",
+          href: '/docs/integrate/sdk/adapters/nextjs',
+          label: 'Next.js',
+          target: '_blank',
         },
         {
-          href: "/docs/integrate/sdk/adapters/better-auth",
-          label: "Better Auth",
-          target: "_blank",
+          href: '/docs/integrate/sdk/adapters/better-auth',
+          label: 'Better Auth',
+          target: '_blank',
         },
         {
-          href: "/docs/integrate/sdk/adapters/hono",
-          label: "Hono",
-          target: "_blank",
+          href: '/docs/integrate/sdk/adapters/hono',
+          label: 'Hono',
+          target: '_blank',
         },
         {
-          href: "/docs/integrate/sdk/adapters/laravel",
-          label: "Laravel",
-          target: "_blank",
+          href: '/docs/integrate/sdk/adapters/laravel',
+          label: 'Laravel',
+          target: '_blank',
         },
         {
-          href: "/docs/integrate/sdk/adapters/hono",
-          target: "_blank",
-          label: "All 13 Adapters",
+          href: '/docs/integrate/sdk/adapters/hono',
+          target: '_blank',
+          label: 'All 13 Adapters',
         },
       ],
     },
     {
-      title: "Features",
+      title: 'Features',
       items: [
         {
-          href: "/docs/features/products",
-          label: "Documentation Portal",
-          target: "_blank",
-          subtitle: "Get started with Polar",
+          href: '/docs/features/products',
+          label: 'Documentation Portal',
+          target: '_blank',
+          subtitle: 'Get started with Polar',
         },
         {
-          href: "/docs/features/products",
-          label: "Products & Subscriptions",
-          target: "_blank",
-          subtitle: "Flexible pricing models",
+          href: '/docs/features/products',
+          label: 'Products & Subscriptions',
+          target: '_blank',
+          subtitle: 'Flexible pricing models',
         },
         {
-          href: "/docs/features/checkout/links",
-          target: "_blank",
-          label: "Checkouts",
-          subtitle: "Checkout Links & Embeds",
+          href: '/docs/features/checkout/links',
+          target: '_blank',
+          label: 'Checkouts',
+          subtitle: 'Checkout Links & Embeds',
         },
         {
-          href: "/docs/features/usage-based-billing/introduction",
-          label: "Usage Billing",
-          subtitle: "Ingestion-based Billing",
+          href: '/docs/features/usage-based-billing/introduction',
+          label: 'Usage Billing',
+          subtitle: 'Ingestion-based Billing',
         },
         {
-          href: "/docs/features/benefits",
-          label: "Benefits",
-          subtitle: "Entitlement Automation",
+          href: '/docs/features/benefits',
+          label: 'Benefits',
+          subtitle: 'Entitlement Automation',
         },
         {
-          href: "/docs/features/finance/payouts",
-          label: "Finance & Payouts",
-          subtitle: "Detailed financial insights",
-          target: "_blank",
+          href: '/docs/features/finance/payouts',
+          label: 'Finance & Payouts',
+          subtitle: 'Detailed financial insights',
+          target: '_blank',
         },
       ],
     },
-  ];
+  ]
 
   return (
     <div
       className={twMerge(
-        "dark:text-polar-50 dark:bg-polar-950 hidden w-full flex-col items-center gap-12 border-b border-transparent bg-white py-6 transition-colors md:flex",
-        isScrolled && "dark:border-polar-800 border-gray-200",
+        'dark:text-polar-50 dark:bg-polar-950 hidden w-full flex-col items-center gap-12 border-b border-transparent bg-white py-6 transition-colors md:flex',
+        isScrolled && 'dark:border-polar-800 border-gray-200',
       )}
     >
       <div className="relative flex w-full flex-row items-center justify-between lg:max-w-7xl">
@@ -366,7 +358,7 @@ const LandingPageDesktopNavigation = () => {
             <NavPopover
               trigger="Features"
               sections={featuresSections}
-              isActive={pathname.startsWith("/features")}
+              isActive={pathname.startsWith('/features')}
             />
           </li>
           <li>
@@ -399,8 +391,8 @@ const LandingPageDesktopNavigation = () => {
         className="lg:w-full lg:max-w-[480px]"
       />
     </div>
-  );
-};
+  )
+}
 
 const LandingPageTopbar = () => {
   return (
@@ -412,8 +404,8 @@ const LandingPageTopbar = () => {
       />
       <SidebarTrigger className="md:hidden" />
     </div>
-  );
-};
+  )
+}
 
 const LandingPageFooter = () => {
   return (
@@ -421,11 +413,11 @@ const LandingPageFooter = () => {
       initial="initial"
       className="relative flex w-full flex-col items-center"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
-      transition={{ duration: 0.5, ease: "easeInOut" }}
+      transition={{ duration: 0.5, ease: 'easeInOut' }}
       whileInView="animate"
       viewport={{ once: true }}
     >
       <Footer />
     </motion.div>
-  );
-};
+  )
+}

@@ -80,9 +80,9 @@ export const UseCases = () => {
 
   return (
     <SyntaxHighlighterProvider>
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 py-32 md:gap-y-24">
-        <div className="flex flex-col gap-y-8 px-4 md:px-0">
-          <h1 className="font-display max-w-4xl text-4xl leading-snug md:text-7xl">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 py-32 md:flex-row md:gap-24">
+        <div className="flex flex-1 flex-col gap-y-8 px-4 md:px-0">
+          <h1 className="font-display max-w-4xl text-4xl leading-snug text-pretty md:text-6xl">
             Built for the shape of AI.
           </h1>
           <div className="dark:bg-polar-600 h-[2px] w-10 bg-gray-200" />
@@ -92,7 +92,7 @@ export const UseCases = () => {
           </p>
         </div>
 
-        <div className="dark:border-polar-700 dark:bg-polar-900 mx-4 flex flex-col overflow-hidden rounded-sm border border-gray-200 bg-gray-50 md:mx-0">
+        <div className="dark:border-polar-700 dark:bg-polar-900 mx-4 flex flex-1 flex-col overflow-hidden rounded-sm border border-gray-200 bg-gray-50 md:mx-0">
           <div className="dark:border-polar-700 flex overflow-x-auto border-b border-gray-200 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {CASES.map((c) => {
               const isActive = c.id === activeId
@@ -114,9 +114,9 @@ export const UseCases = () => {
             })}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2">
+          <div className="flex flex-col">
             <div className="dark:border-polar-700 flex flex-col gap-y-6 border-b border-gray-200 p-8 md:border-r md:border-b-0">
-              <span className="font-display text-3xl text-gray-900 dark:text-white">
+              <span className="font-display text-3xl text-balance text-gray-900 dark:text-white">
                 {active.title}
               </span>
               <div className="dark:bg-polar-600 h-[2px] w-10 bg-gray-200" />

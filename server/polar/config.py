@@ -306,6 +306,12 @@ class Settings(BaseSettings):
     PLAIN_CHAT_SECRET: str | None = None
     PLAIN_DEFAULT_TIER_EXTERNAL_ID: str | None = None
 
+    # Managed Agents (see polar/managed_agents/README.md)
+    POLAR_MANAGED_AGENT_ID: str | None = None
+    POLAR_MANAGED_ENV_ID: str | None = None
+    POLAR_MANAGED_VAULT_ID: str | None = None
+    POLAR_MANAGED_READ_DSN: str | None = None
+
     # AWS (File Downloads)
     AWS_ACCESS_KEY_ID: str = "polar-development"
     AWS_SECRET_ACCESS_KEY: str = "polar123456789"

@@ -1,84 +1,88 @@
-# Plain triage with Claude Managed Agents
+# Plain triage with Claude Managed Agents — self-hosted sandbox
 
 A Claude Managed Agent that triages Plain support threads by adding an
 **internal note** containing a summary and a **suggested reply**. It
 does not — and structurally cannot — reply to customers directly.
 
-## Architecture
+## Architecture (A1 + B3 + C3)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Anthropic — managed-agents control plane                       │
-│  - hosts the agent loop (model + tool dispatch)                 │
-│  - serves the cloud sandbox container (file ops, scratch)       │
+│  Anthropic — agent loop only                                    │
+│  - hosts the model + tool-dispatch loop                         │
 │  - proxies MCP calls to mcp.plain.com using the vault cred      │
-└──────────────────┬──────────────────────────────────────────────┘
-                   │  SSE event stream + events.send()
-                   ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  Orchestrator — server/polar/managed_agents/triage.py           │
-│  Runs inside Polar's infra (already on Tailscale to prod DB).   │
-│  - kicks the session off with one user.message                  │
-│  - answers agent.custom_tool_use (DB lookups) via asyncpg       │
-│    against the polar_read Postgres role                         │
-│  - approves/denies agent.mcp_tool_use confirmations             │
-│  - the denylist refuses replyToThread even if it slipped in     │
-└─────────────────────────────────────────────────────────────────┘
+│  - dispatches built-in + custom tool calls to OUR worker        │
+│    (no Anthropic-hosted sandbox container)                      │
+└──────────────────┬────────────────────────────┬─────────────────┘
+                   │ POST /v1/sessions (fire-   │ outbound long-
+                   │ and-forget on webhook)     │ poll from worker
+                   ▼                            ▼
+┌─────────────────────────────────────┐  ┌──────────────────────┐
+│ Polar API                           │  │ Self-hosted sandbox  │
+│ webhook.py — verifies Plain HMAC,   │  │ worker.py — long-    │
+│ creates the session, returns 202.   │  │ running EnvironmentWorker
+│ ~120 LoC.                           │  │ process in Polar's   │
+│                                     │  │ VPC. Holds the DB    │
+│                                     │  │ pool against the     │
+│                                     │  │ polar_read role over │
+│                                     │  │ Tailscale.           │
+└─────────────────────────────────────┘  └──────────┬───────────┘
+                                                    │ SELECT only
+                                                    ▼
+                                            Polar Postgres
+                                            (polar_read)
 ```
 
 Why this shape:
 
-1. **DB credential never leaves Polar's VPC.** The agent's sandbox has
-   no Postgres access; it asks the orchestrator (which is already on
-   Tailscale) via custom tool calls. The DB password lives in the
-   orchestrator's env, exactly where it lives today.
-2. **Cloud sandbox, not self-hosted.** Self-hosted sandboxes would run
-   the worker in Polar's infra, but they add a long-running poller and
-   require operating an additional service. The custom-tool pattern
-   keeps the same DB-isolation property without the extra moving piece.
-   MCP Tunnels would be cleaner long-term but are still in research
-   preview at time of writing.
-3. **Plain MCP via vault.** Plain ships an official MCP server at
-   `https://mcp.plain.com/mcp`. Anthropic injects the OAuth credential
-   from the vault after the request leaves the sandbox, so the Plain
-   token also never sits inside the agent container.
+1. **Webhook stays small.** The FastAPI endpoint does HMAC verify +
+   `sessions.create()` + return 202. No streaming, no Dramatiq job, no
+   in-process orchestrator. If the worker is down the session just
+   queues until the worker reconnects.
+2. **DB credential never enters Anthropic's infra.** The
+   `EnvironmentWorker` runs in Polar's VPC, holds the asyncpg pool
+   against the read-only role, and answers tool calls locally.
+3. **Plain MCP stays cloud-routed.** Anthropic still dials
+   `mcp.plain.com` from their orchestration layer with the vault
+   credential. The Plain token also never enters our worker.
+4. **Tool execution is in our trust boundary.** The `bash`/`read`/
+   `write`/`edit`/`glob`/`grep` tools that the agent uses for scratch
+   reasoning run inside our worker container, not an Anthropic
+   sandbox — anything the agent writes to disk stays here.
 
-## Safety — why the agent can't reply directly
-
-Three layers, in order of strength:
+## Safety — three layers that prevent direct replies
 
 1. **Plain Machine User scope (server-enforced, strongest).** Bind the
-   vault credential to a Plain Machine User whose scopes include
-   `note:create`, `thread:read`, `customer:read`, `customer:read:email`,
-   `thread:search`, `label:create` — and explicitly NOT
+   vault credential to a Plain Machine User with `note:create`,
+   `thread:read`, `customer:read`, `customer:read:email`,
+   `thread:search`, `label:create` scopes — and explicitly NOT
    `thread:reply` / `thread:edit`. Plain rejects the call at the API
    regardless of what the model attempts.
 2. **`mcp_toolset` allowlist (config-enforced).** `agent.yaml` sets
    `default_config.enabled: false` on the Plain MCP toolset and opts in
-   only to the tools triage needs (`getThreadDetails`, `createNote`,
-   etc.). `replyToThread` is unreachable — the agent never sees the
-   tool's schema. Writes (`createNote`, `addLabels`, `assignThread`,
-   `changeThreadPriority`) require human confirmation via
+   only to the tools triage needs. `replyToThread` is unreachable —
+   the agent never sees the tool's schema. Writes get
    `permission_policy: always_ask`.
-3. **Orchestrator denylist (runtime-enforced).** `triage.py`'s
-   `DENY_TOOLS` set rejects any `tool_confirmation` for
-   `replyToThread`, `createThread`, `upsertCustomer`, `upsertTenant`, or
-   schema mutations — even if a future agent.yaml edit accidentally
-   enables one.
+3. **No orchestrator-side denylist needed.** With the agent running
+   autonomously (no `tool_confirmation` round-trip on Polar's side),
+   defense relies on layers 1 and 2. If you want a hard runtime block,
+   add a permission-policy intercept on the Anthropic side via a
+   `user.tool_confirmation` webhook handler — see "Open questions"
+   below.
 
-The "suggested reply" is therefore always shaped as the body of an
-internal note (Plain doesn't have a separate suggested-reply mutation,
-and `createNote` is the right surface anyway — humans see it inline
-when reviewing the thread).
+The "suggested reply" is shaped as the body of an internal note
+(Plain doesn't have a separate suggested-reply mutation, and
+`createNote` is the right surface anyway — humans see it inline when
+reviewing the thread).
 
 ## Files
 
-| File | What it is |
+| File | Role |
 |---|---|
 | `agent.yaml` | Agent definition. Apply with `ant beta:agents create < agent.yaml`. |
-| `environment.yaml` | Cloud sandbox config. Apply with `ant beta:environments create < environment.yaml`. |
-| `setup.py` | One-time programmatic alternative — creates env + agent + vault using the SDK. |
-| `triage.py` | The orchestrator. Run once per thread to triage. |
+| `environment.yaml` | Self-hosted env config (`config.type: self_hosted`). Apply with `ant beta:environments create < environment.yaml`. |
+| `webhook.py` | FastAPI router — receives Plain webhooks, fires `sessions.create()`. |
+| `worker.py` | Long-running `EnvironmentWorker` — polls Anthropic for tool-execution work and runs DB queries against `polar_read`. |
 
 ## Setup
 
@@ -89,29 +93,20 @@ brew install anthropics/tap/ant
 xattr -d com.apple.quarantine "$(brew --prefix)/bin/ant"
 ```
 
-Linux/WSL: see the install instructions at
-<https://platform.claude.com/docs/en/api/sdks/cli>.
-
 ### 2. Create a Plain Machine User and OAuth-connect
 
 In Plain → Settings → API → Machine users, create
-`polar-triage-agent` with the scopes listed above (no `thread:reply`).
-
-Then connect via OAuth. The simplest one-time path uses
-`mcp-remote`:
+`polar-triage-agent` with the scopes listed under "Safety" above (no
+`thread:reply`). OAuth-connect via:
 
 ```sh
 npx -y mcp-remote https://mcp.plain.com/mcp
 ```
 
-This opens a browser, prompts you to log in as the Machine User, and
-caches the OAuth tokens to `~/.mcp-auth/`. Read the `access_token`,
-`refresh_token`, `expires_at`, and `client_id` out of that file (or
-inspect the browser dev tools network tab during the flow).
+Browser opens, log in as the Machine User, then read the tokens out of
+`~/.mcp-auth/` for the vault credential payload.
 
-### 3. Apply the agent and environment
-
-Preferred — version-controlled YAML via `ant`:
+### 3. Apply environment + agent + vault
 
 ```sh
 export ANTHROPIC_API_KEY=...
@@ -121,10 +116,6 @@ POLAR_MANAGED_ENV_ID=$(ant beta:environments create < environment.yaml \
 POLAR_MANAGED_AGENT_ID=$(ant beta:agents create < agent.yaml \
   --transform id -r)
 
-# Create the vault and add the Plain credential.
-# Note: the vault API takes `display_name`, not `name` — `ant` should
-# accept --display-name; check `ant beta:vaults create --help` if your
-# CLI version differs.
 POLAR_MANAGED_VAULT_ID=$(ant beta:vaults create \
   --display-name polar-plain-triage \
   --transform id -r)
@@ -145,212 +136,149 @@ ant beta:vaults:credentials create \
     }
   }'
 
-# Persist the three IDs in your env (1Password, Render env, .envrc, etc.).
 echo "POLAR_MANAGED_ENV_ID=$POLAR_MANAGED_ENV_ID"
 echo "POLAR_MANAGED_AGENT_ID=$POLAR_MANAGED_AGENT_ID"
 echo "POLAR_MANAGED_VAULT_ID=$POLAR_MANAGED_VAULT_ID"
 ```
 
-Alternative — programmatic setup via the SDK:
+### 4. Generate an environment key
 
-```sh
-uv add anthropic asyncpg pyyaml
-PLAIN_MCP_ACCESS_TOKEN=... \
-PLAIN_MCP_REFRESH_TOKEN=... \
-PLAIN_MCP_TOKEN_EXPIRES_AT=... \
-PLAIN_MCP_CLIENT_ID=... \
-uv run python -m polar.managed_agents.setup
-```
+In the Anthropic Console open the `polar-plain-triage` environment and
+click "Generate environment key" — this returns an
+`sk-ant-oat01-...` token scoped to that environment's work queue.
+Store as `ANTHROPIC_ENVIRONMENT_KEY` in the worker's env. **This is
+NOT the same as `ANTHROPIC_API_KEY`** — don't set both on the worker
+host. The env key intentionally has less reach (one environment's
+queue) so a leak doesn't compromise the whole workspace.
 
-### 4. Wire up the read-only DB DSN
+### 5. Configure env vars
 
-In **development** point `POLAR_MANAGED_READ_DSN` at the local docker
-DB's `polar_read` user:
-
-```sh
-export POLAR_MANAGED_READ_DSN=postgresql://polar_read:polar@127.0.0.1:5432/polar_development
-```
-
-In **production** point it at the prod DB through Tailscale, using a
-dedicated read-only role (NOT `polar`/`polar_read` from
-docker-compose — provision a real prod role with the same shape). The
-orchestrator should be deployed inside Polar's infra so the Tailscale
-route is available.
-
-### 5. Run
-
-```sh
-export ANTHROPIC_API_KEY=...
-export POLAR_MANAGED_AGENT_ID=agent_...
-export POLAR_MANAGED_ENV_ID=env_...
-export POLAR_MANAGED_VAULT_ID=vlt_...
-export POLAR_MANAGED_READ_DSN=postgresql://...
-
-uv run python -m polar.managed_agents.triage <plain_thread_id>
-```
-
-The orchestrator prints a Console URL on session start —
-follow along visually instead of parsing the event stream:
+In Polar's `config.py` the new entries are:
 
 ```
-session: https://platform.claude.com/workspaces/default/sessions/sesn_...
+POLAR_MANAGED_AGENT_ID
+POLAR_MANAGED_ENV_ID
+POLAR_MANAGED_VAULT_ID
+POLAR_MANAGED_READ_DSN
 ```
 
-When the agent reaches a write tool (`createNote`, `addLabels`,
-`assignThread`, `changeThreadPriority`) the CLI prompts for approval.
-Type `y` to allow, blank or `n` to deny silently, or free-text to deny
-with that text as the reason fed back to the model.
-
-## Iterating on the agent
-
-The agent is a versioned resource. To tweak the system prompt or
-tool surface:
-
-```sh
-# Get the current version.
-ant beta:agents retrieve --agent-id "$POLAR_MANAGED_AGENT_ID" \
-  --transform '{version}' --format yaml
-
-# Edit agent.yaml, then push as the next version.
-ant beta:agents update --agent-id "$POLAR_MANAGED_AGENT_ID" \
-  --version <current_version> < agent.yaml
-```
-
-Sessions in flight keep their pinned version; new sessions pick up the
-latest. Roll back by starting sessions with an explicit `version`.
-
-## Trigger via Plain webhooks
-
-The default trigger is now Plain webhooks, not the CLI. Flow:
+Plus on the worker host only:
 
 ```
-Plain (thread.thread_created)
-  → POST https://api.polar.sh/v1/managed_agents/plain/webhook   (webhook.py)
-  → enqueue_job("managed_agents.plain_triage", thread_id=...)   (Dramatiq)
-  → tasks.plain_triage(thread_id)
-  → triage.run(thread_id, interactive=False)                    (unattended)
+ANTHROPIC_ENVIRONMENT_KEY    # from step 4
+POLAR_MANAGED_READ_DSN       # postgresql://polar_read:...@... over Tailscale
 ```
 
-Wire-up:
+Plus on the API host only:
 
-1. Add the router to `server/polar/api.py`:
-   ```python
-   from polar.managed_agents.webhook import router as managed_agents_router
-   ...
-   router.include_router(managed_agents_router)
-   ```
-2. In Plain → Settings → Webhooks, point at
-   `https://api.polar.sh/v1/managed_agents/plain/webhook` and copy the
-   secret into the existing `PLAIN_REQUEST_SIGNING_SECRET` env (this
-   reuses the secret Plain already validates against for the other
-   Plain integrations).
-3. Subscribe to `thread.thread_created` only. The handler ignores
-   every other event type by default — extend `TRIGGER_EVENT_TYPES`
-   in `webhook.py` if you want to re-triage on every customer reply.
+```
+ANTHROPIC_API_KEY            # for the webhook to call sessions.create()
+PLAIN_REQUEST_SIGNING_SECRET # already exists; used by other Plain integrations too
+```
 
-Manual CLI runs (`python -m polar.managed_agents.triage <id>`) still
-work — they enter interactive mode (CLI prompts on writes). Webhook
-runs are unattended; defense is the three-layer allowlist (Machine
-User scope + agent.yaml allowlist + orchestrator allowlist).
+### 6. Wire the webhook route into FastAPI
+
+Add to `server/polar/api.py` next to the other integration routers:
+
+```python
+from polar.managed_agents.webhook import router as managed_agents_router
+...
+router.include_router(managed_agents_router)
+```
+
+### 7. Subscribe the webhook in Plain
+
+Plain → Settings → Webhooks → add
+`https://api.polar.sh/v1/managed_agents/plain/webhook`, subscribe to
+`thread.thread_created` only, and copy the shared secret into
+`PLAIN_REQUEST_SIGNING_SECRET`.
+
+### 8. Deploy the worker
+
+Run `polar.managed_agents.worker` as a separate long-running process —
+the Render equivalent is a "Background Worker" service distinct from
+the existing Dramatiq worker. Do not bolt it onto the Dramatiq worker:
+the `EnvironmentWorker` owns its asyncio loop, and mixing it with
+Dramatiq's loop ownership is fragile.
+
+Minimal Render config: same image as the API/worker, with
+`startCommand: uv run python -m polar.managed_agents.worker`.
 
 ## Reference the Support SOP
 
-Polar's support SOP (the Google Doc) plugs in as a Custom Skill —
-Claude auto-loads it when the task calls for it, instead of bloating
-the system prompt with the full document.
+The Google Doc support SOP plugs in as a Custom Skill — Claude
+auto-loads it when relevant, instead of bloating the system prompt.
 
 One-time setup:
 
-1. Export the Google Doc as Markdown
-   (File → Download → Markdown (.md), or via the Google Docs API).
-   Save as `polar-support-sop/SKILL.md`. The first paragraph of
-   `SKILL.md` becomes the description Claude sees in context by
-   default — keep it under ~200 chars and write it as a short pitch
-   ("Polar's support SOP: refund policy, severity tiers, escalation
-   paths, things the AI is NOT allowed to do unilaterally"). Put the
-   full SOP body below.
+1. Export the Google Doc as Markdown (File → Download → Markdown). The
+   first paragraph becomes the description Claude sees by default —
+   keep it under ~200 chars and write it as a short pitch ("Polar's
+   support SOP: refund policy, severity tiers, escalation paths,
+   things the AI is NOT allowed to do unilaterally").
 
 2. Create the skill:
+
    ```sh
    ant beta:skills create \
      --display-name "polar-support-sop" \
      --source-dir ./polar-support-sop \
      --transform id -r
-   # → skill_XXXXXXXX
    ```
 
-3. Paste the returned skill_id into the commented-out `skills:` block
-   in `agent.yaml` and push the agent update:
+3. Paste the returned skill_id into the commented `skills:` block in
+   `agent.yaml`, then push the agent update:
+
    ```sh
    ant beta:agents update --agent-id "$POLAR_MANAGED_AGENT_ID" \
      --version <current_version> < agent.yaml
    ```
 
-Re-publishing after the doc changes is the same flow — re-export,
-`ant beta:skills create --version` to create a new version, then
-update the agent (pinning to `version: latest` keeps the agent on the
-newest version automatically).
+## Where the orchestrator lives — revisited
 
-If you want this to stay in sync without manual exports, add a daily
-cron that fetches the doc via the Google Docs API, converts to
-Markdown, and runs `ant beta:skills create --version` — see the
-"Open questions" section for the sketch.
+What's on Polar's side under B3+C3:
 
-## Where does the orchestrator live? Why not on Anthropic?
-
-Three things have to stay on Polar's side no matter what:
-
-1. The Plain webhook receiver (Plain delivers to *your* URL).
-2. Whatever speaks to the DB (the credential and Tailscale path).
-3. The Anthropic API key (workspace-scoped).
-
-What's running today:
-
-| Component | Location | Why |
+| Component | Where | Why |
 |---|---|---|
-| `webhook.py` | Polar API | (1) above |
-| `tasks.plain_triage` (Dramatiq) | Polar worker | drives session lifecycle + custom DB tools |
-| Custom DB tools | Polar worker | (2) above — DB connection lives here |
-| Cloud sandbox + agent loop | **Anthropic** | this *is* the "agent on Anthropic" |
-| Plain MCP connection | **Anthropic** | Anthropic dials Plain MCP with the vault credential |
+| `webhook.py` | Polar API | Plain delivers to our URL; we translate the payload into `sessions.create()` |
+| `worker.py` | new background-worker container | self-hosted sandbox needs an `EnvironmentWorker` poller in our VPC |
+| DB pool | inside `worker.py` | DB credential stays in our VPC |
+| Plain OAuth credential | Anthropic vault | injected after the sandbox boundary; never enters our worker |
+| Agent loop | Anthropic | runs the model + dispatches tool calls |
 
-What could move to Anthropic with MCP Tunnels (research preview):
-
-- The custom-DB-tool path becomes a Postgres MCP server you host
-  *inside* the VPC but expose to Anthropic via an MCP Tunnel. Anthropic
-  dials it directly; the worker no longer needs to broker SQL.
-- The Dramatiq orchestration shrinks to just `sessions.create()` +
-  return. No streaming loop, no custom tool handler. The agent runs
-  fully autonomously; you get notified via an Anthropic webhook when
-  the session goes idle.
-
-That's the lean shape. Whether it's worth the migration depends on
-whether you actually get MCP Tunnels access and whether the
-"orchestrator as Dramatiq job" footprint is bothering you. Right now
-that footprint is `tasks.py` (12 lines) + `triage.py` (~370 lines,
-most of it DB queries) — small enough to leave alone until something
-forces a change.
+The webhook handler is ~120 lines; the worker is ~270 lines (most of
+which is the SQL for the four DB tools). If you want it smaller, the
+next step is **MCP Tunnels** when out of research preview: replace
+`worker.py`'s @beta_tool functions with a Postgres MCP server in the
+VPC, tunneled to Anthropic. Then the worker disappears entirely and
+the DB tools become a third MCP server alongside Plain.
 
 ## Open questions / follow-ups
 
-- **Slack approvals.** For high-stakes writes you might still want a
-  human in the loop. Replace the auto-allow branch with a Slack
-  block-kit message that emits the `user.tool_confirmation` via a
-  callback. The skeleton hook is in `triage.py:run` where unattended
-  mode short-circuits to allow.
-- **Tighten the DB tools.** The queries assume the schema shapes in
-  `server/polar/models/`. If those drift, tools return errors — re-check
-  column names whenever an order/subscription migration lands. Consider
-  pointing the orchestrator at a read replica with `statement_timeout`
-  so a runaway query can't affect prod.
-- **Tier 2 review findings** from `/code-review` that aren't fixed yet:
-  blocking `input()` in async loop; no `session.error` handling on the
-  stream loop; custom-tool error path doesn't set `is_error: true`;
-  asyncpg pool isn't pinned read-only at the driver level.
-- **Google Docs → Skill sync.** Add a Dramatiq cron actor that fetches
-  the SOP via the Google Docs API, converts to Markdown, and runs
-  `ant beta:skills create --version` daily. Until then, exports are
-  manual and the skill goes stale between updates.
-- **MCP Tunnels.** When out of research preview, consider switching
-  the DB access path from "custom tool" to "private Postgres MCP
-  server tunneled in" — see the orchestrator section above.
+- **Custom-tool API drift.** `worker.py` uses what we believe is the
+  correct shape for composing `beta_agent_toolset` + `@beta_tool`
+  custom tools into `EnvironmentWorker`. If the installed Anthropic
+  SDK version exposes a different signature (e.g.
+  `tool_runner()`-based composition), adjust the imports and the
+  `EnvironmentWorker(tools=…)` call accordingly — follow
+  `shared/managed-agents-self-hosted-sandboxes.md` in the
+  Anthropic docs.
+- **Pre-flight smoke test.** The first time you deploy, the worker
+  has to reach Anthropic's work queue AND the Postgres DB. A
+  `--smoke-test` mode that does both connection checks and exits 0
+  would catch misconfigs at deploy time instead of during the first
+  webhook.
+- **Slack approvals (optional).** If the team wants a human-in-the-
+  loop on createNote, swap the per-tool `permission_policy` from
+  `always_ask` (which currently has no orchestrator to answer it) to
+  a Slack block-kit message via an Anthropic webhook that listens for
+  `session.status_idled` with `requires_action`.
+- **MCP Tunnels.** When out of research preview, switch the DB
+  tools from `@beta_tool` in `worker.py` to a Postgres MCP server
+  tunneled in. `worker.py` disappears, the agent calls SQL through
+  MCP directly, and Polar runs only the webhook + the MCP server.
+- **Tier 2 review findings from `/code-review`** still applicable:
+  custom-tool errors should set `is_error: true` on the result; no
+  driver-level read-only enforcement (the
+  `default_transaction_read_only=on` server_setting now in `worker.py`
+  closes this for Postgres).

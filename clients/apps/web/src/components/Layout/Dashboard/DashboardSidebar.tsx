@@ -162,7 +162,7 @@ export const DashboardSidebar = ({
             </p>
             <Link
               className="text-sm text-indigo-500"
-              href={`https://polar.sh/dashboard/${organization?.slug}/settings/billing`}
+              href={`/dashboard/${organization?.slug}/settings/billing/change-plan`}
             >
               Upgrade
             </Link>

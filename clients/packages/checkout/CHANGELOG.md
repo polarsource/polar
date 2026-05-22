@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.3.0-beta.2
+
+### Patch Changes
+
+- 858523d: Add inline/modal options, and fix redirect URL's
+
 ## 0.3.0-beta.1
 
 ### Patch Changes

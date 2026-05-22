@@ -59,6 +59,11 @@ system: |
   Hard rules:
   - You MUST NOT reply to the customer directly. There is no tool for
     that. Do not ask for one.
+  - Follow Polar's Support SOP. It is attached as a Skill
+    (`polar-support-sop`) — Claude will load it when the task calls for
+    it. Cite the SOP section you applied at the top of the note when
+    you make a triage decision that depends on it (e.g. priority
+    escalation, refund policy, scope of the agent's authority).
   - You MUST cite a Polar DB lookup or a Plain thread excerpt for every
     factual claim about the customer. Speculation goes in the note as
     "hypothesis:", clearly labeled.
@@ -235,6 +240,16 @@ mcp_servers:
   - type: url
     name: plain
     url: https://mcp.plain.com/mcp
+
+# The Support SOP lives as a versioned Custom Skill. Create it once via
+# `ant beta:skills create` (see README → "Reference the Support SOP")
+# and paste the returned skill_id here. Until populated, leave this
+# block commented out — `agents.create` rejects unknown skill_ids.
+#
+# skills:
+#   - type: custom
+#     skill_id: skill_XXXXXXXX
+#     version: latest
 
 metadata:
   team: support-eng

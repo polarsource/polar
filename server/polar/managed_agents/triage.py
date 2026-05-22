@@ -236,7 +236,15 @@ def _prompt_confirmation(tool_name: str, tool_input: Any) -> tuple[str, str | No
     return "deny", answer
 
 
-async def run(thread_id: str) -> None:
+async def run(thread_id: str, *, interactive: bool = True) -> None:
+    """Run one triage session for a Plain thread.
+
+    When `interactive=True` (CLI default), writes pause for human
+    confirmation via stdin. When `interactive=False` (webhook / cron
+    default), writes on the allowlist auto-approve — the Plain Machine
+    User scope + agent.yaml allowlist + orchestrator allowlist form the
+    safety boundary instead of a per-tool prompt.
+    """
     import os
 
     agent_id = os.environ["POLAR_MANAGED_AGENT_ID"]
@@ -338,9 +346,13 @@ async def run(thread_id: str) -> None:
                 if tool_name in AUTO_APPROVE_READS:
                     decision, deny_message = "allow", None
                 elif tool_name in ALLOWED_WRITES:
-                    decision, deny_message = _prompt_confirmation(
-                        tool_name, getattr(event, "input", None)
-                    )
+                    if interactive:
+                        decision, deny_message = _prompt_confirmation(
+                            tool_name, getattr(event, "input", None)
+                        )
+                    else:
+                        print(f"\n[auto-allow] {tool_name}")
+                        decision, deny_message = "allow", None
                 else:
                     # Not in allowlist — deny. Tells the model why so it
                     # can pivot (e.g. use createNote with the draft

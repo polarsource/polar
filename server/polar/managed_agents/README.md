@@ -219,22 +219,138 @@ ant beta:agents update --agent-id "$POLAR_MANAGED_AGENT_ID" \
 Sessions in flight keep their pinned version; new sessions pick up the
 latest. Roll back by starting sessions with an explicit `version`.
 
+## Trigger via Plain webhooks
+
+The default trigger is now Plain webhooks, not the CLI. Flow:
+
+```
+Plain (thread.thread_created)
+  → POST https://api.polar.sh/v1/managed_agents/plain/webhook   (webhook.py)
+  → enqueue_job("managed_agents.plain_triage", thread_id=...)   (Dramatiq)
+  → tasks.plain_triage(thread_id)
+  → triage.run(thread_id, interactive=False)                    (unattended)
+```
+
+Wire-up:
+
+1. Add the router to `server/polar/api.py`:
+   ```python
+   from polar.managed_agents.webhook import router as managed_agents_router
+   ...
+   router.include_router(managed_agents_router)
+   ```
+2. In Plain → Settings → Webhooks, point at
+   `https://api.polar.sh/v1/managed_agents/plain/webhook` and copy the
+   secret into the existing `PLAIN_REQUEST_SIGNING_SECRET` env (this
+   reuses the secret Plain already validates against for the other
+   Plain integrations).
+3. Subscribe to `thread.thread_created` only. The handler ignores
+   every other event type by default — extend `TRIGGER_EVENT_TYPES`
+   in `webhook.py` if you want to re-triage on every customer reply.
+
+Manual CLI runs (`python -m polar.managed_agents.triage <id>`) still
+work — they enter interactive mode (CLI prompts on writes). Webhook
+runs are unattended; defense is the three-layer allowlist (Machine
+User scope + agent.yaml allowlist + orchestrator allowlist).
+
+## Reference the Support SOP
+
+Polar's support SOP (the Google Doc) plugs in as a Custom Skill —
+Claude auto-loads it when the task calls for it, instead of bloating
+the system prompt with the full document.
+
+One-time setup:
+
+1. Export the Google Doc as Markdown
+   (File → Download → Markdown (.md), or via the Google Docs API).
+   Save as `polar-support-sop/SKILL.md`. The first paragraph of
+   `SKILL.md` becomes the description Claude sees in context by
+   default — keep it under ~200 chars and write it as a short pitch
+   ("Polar's support SOP: refund policy, severity tiers, escalation
+   paths, things the AI is NOT allowed to do unilaterally"). Put the
+   full SOP body below.
+
+2. Create the skill:
+   ```sh
+   ant beta:skills create \
+     --display-name "polar-support-sop" \
+     --source-dir ./polar-support-sop \
+     --transform id -r
+   # → skill_XXXXXXXX
+   ```
+
+3. Paste the returned skill_id into the commented-out `skills:` block
+   in `agent.yaml` and push the agent update:
+   ```sh
+   ant beta:agents update --agent-id "$POLAR_MANAGED_AGENT_ID" \
+     --version <current_version> < agent.yaml
+   ```
+
+Re-publishing after the doc changes is the same flow — re-export,
+`ant beta:skills create --version` to create a new version, then
+update the agent (pinning to `version: latest` keeps the agent on the
+newest version automatically).
+
+If you want this to stay in sync without manual exports, add a daily
+cron that fetches the doc via the Google Docs API, converts to
+Markdown, and runs `ant beta:skills create --version` — see the
+"Open questions" section for the sketch.
+
+## Where does the orchestrator live? Why not on Anthropic?
+
+Three things have to stay on Polar's side no matter what:
+
+1. The Plain webhook receiver (Plain delivers to *your* URL).
+2. Whatever speaks to the DB (the credential and Tailscale path).
+3. The Anthropic API key (workspace-scoped).
+
+What's running today:
+
+| Component | Location | Why |
+|---|---|---|
+| `webhook.py` | Polar API | (1) above |
+| `tasks.plain_triage` (Dramatiq) | Polar worker | drives session lifecycle + custom DB tools |
+| Custom DB tools | Polar worker | (2) above — DB connection lives here |
+| Cloud sandbox + agent loop | **Anthropic** | this *is* the "agent on Anthropic" |
+| Plain MCP connection | **Anthropic** | Anthropic dials Plain MCP with the vault credential |
+
+What could move to Anthropic with MCP Tunnels (research preview):
+
+- The custom-DB-tool path becomes a Postgres MCP server you host
+  *inside* the VPC but expose to Anthropic via an MCP Tunnel. Anthropic
+  dials it directly; the worker no longer needs to broker SQL.
+- The Dramatiq orchestration shrinks to just `sessions.create()` +
+  return. No streaming loop, no custom tool handler. The agent runs
+  fully autonomously; you get notified via an Anthropic webhook when
+  the session goes idle.
+
+That's the lean shape. Whether it's worth the migration depends on
+whether you actually get MCP Tunnels access and whether the
+"orchestrator as Dramatiq job" footprint is bothering you. Right now
+that footprint is `tasks.py` (12 lines) + `triage.py` (~370 lines,
+most of it DB queries) — small enough to leave alone until something
+forces a change.
+
 ## Open questions / follow-ups
 
-- **Automate the trigger.** Today this is a CLI driven manually. To run
-  on every new Plain thread, set up Plain → Webhooks pointing at a new
-  FastAPI route in `server/polar/integrations/plain/endpoints.py` that
-  invokes `triage.run(thread_id)` as a background task (Dramatiq).
-- **Slack approvals.** Replace `_prompt_confirmation` with a Slack
-  block-kit interactive message if you want unattended operation
-  outside engineering hours.
-- **Tighten the DB tools.** The current queries assume the schema
-  shapes in `server/polar/models/`. If those drift, the tools start
-  returning errors — re-check column names whenever an order/
-  subscription migration lands. Consider pointing the orchestrator at
-  a read replica with `statement_timeout=15s` so a runaway query can't
-  affect prod.
-- **MCP Tunnels.** When MCP Tunnels exit research preview, consider
-  switching the DB access path from "custom tool" to "private Postgres
-  MCP server tunneled in" — that lets Claude write Postgres-flavoured
-  queries directly while keeping the DB private.
+- **Slack approvals.** For high-stakes writes you might still want a
+  human in the loop. Replace the auto-allow branch with a Slack
+  block-kit message that emits the `user.tool_confirmation` via a
+  callback. The skeleton hook is in `triage.py:run` where unattended
+  mode short-circuits to allow.
+- **Tighten the DB tools.** The queries assume the schema shapes in
+  `server/polar/models/`. If those drift, tools return errors — re-check
+  column names whenever an order/subscription migration lands. Consider
+  pointing the orchestrator at a read replica with `statement_timeout`
+  so a runaway query can't affect prod.
+- **Tier 2 review findings** from `/code-review` that aren't fixed yet:
+  blocking `input()` in async loop; no `session.error` handling on the
+  stream loop; custom-tool error path doesn't set `is_error: true`;
+  asyncpg pool isn't pinned read-only at the driver level.
+- **Google Docs → Skill sync.** Add a Dramatiq cron actor that fetches
+  the SOP via the Google Docs API, converts to Markdown, and runs
+  `ant beta:skills create --version` daily. Until then, exports are
+  manual and the skill goes stale between updates.
+- **MCP Tunnels.** When out of research preview, consider switching
+  the DB access path from "custom tool" to "private Postgres MCP
+  server tunneled in" — see the orchestrator section above.

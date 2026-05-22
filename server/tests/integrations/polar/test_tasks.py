@@ -45,6 +45,7 @@ class TestCreateCustomer:
         await create_customer(
             external_id="org-123",
             name="Acme Inc",
+            slug="acme",
             owner_external_id="user-123",
             owner_email="owner@example.com",
             owner_name="Owner",
@@ -53,6 +54,7 @@ class TestCreateCustomer:
         client.create_customer.assert_called_once_with(
             external_id="org-123",
             name="Acme Inc",
+            slug="acme",
             owner_external_id="user-123",
             owner_email="owner@example.com",
             owner_name="Owner",
@@ -76,6 +78,7 @@ class TestCreateCustomer:
         await create_customer(
             external_id="org-123",
             name="Acme Inc",
+            slug="acme",
             owner_external_id="user-123",
             owner_email="owner@example.com",
             owner_name="Owner",

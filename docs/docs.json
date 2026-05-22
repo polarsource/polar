@@ -608,7 +608,6 @@
             "group": "Guides",
             "pages": [
               "guides/introduction",
-              "guides/allow-multiple-subscriptions-per-customer",
               "guides/automate-post-purchase-link-sharing",
               "guides/change-email-as-merchant",
               "guides/create-checkout-session",

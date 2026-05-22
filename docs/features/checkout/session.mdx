@@ -12,6 +12,10 @@ You can retrieve your Product ID from Products in your dashboard, click on "cont
 
 The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.
 
+<Tip>
+  You can force the checkout page theme by appending `?theme=dark` or `?theme=light` to the session URL. Without it, the theme follows the customer's system preference.
+</Tip>
+
 ## Multiple products
 
 You can create a checkout session with multiple products. This is useful if you want to allow your customers to choose between different products before they checkout. Products are shown in the order you pass them in the `products` array.

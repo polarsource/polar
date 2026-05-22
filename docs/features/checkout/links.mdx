@@ -107,6 +107,11 @@ When a link is configured with several products, point the customer directly to 
   Prefill custom field data, where `{slug}` is the slug of the custom field.
 </ParamField>
 
+<ParamField path="theme" type="string">
+  Force the checkout page theme. Accepts `light` or `dark`. If omitted, the
+  theme follows the customer's system preference.
+</ParamField>
+
 ### Attribution and reference metadata
 
 These parameters are automatically attached to the generated Checkout Session [`metadata`](/api-reference/checkouts/get-session#response-metadata).

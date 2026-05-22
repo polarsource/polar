@@ -25519,6 +25519,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** PaymentMethodSetupFailed */
+    PaymentMethodSetupFailed: {
+      /**
+       * Error
+       * @example PaymentMethodSetupFailed
+       * @constant
+       */
+      error: 'PaymentMethodSetupFailed'
+      /** Detail */
+      detail: string
+    }
     /** PaymentNotReady */
     PaymentNotReady: {
       /**
@@ -41283,6 +41294,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CustomerPaymentMethodCreateResponse']
+        }
+      }
+      /** @description The card was declined while setting up the payment method. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PaymentMethodSetupFailed']
         }
       }
       /** @description Validation Error */

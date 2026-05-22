@@ -33,7 +33,7 @@ from ..schemas.customer import (
     CustomerPortalCustomer,
     CustomerPortalCustomerUpdate,
 )
-from ..service.customer import CustomerNotReady
+from ..service.customer import CustomerNotReady, PaymentMethodSetupFailed
 from ..service.customer import customer as customer_service
 from ..utils import get_audit_context, get_customer, get_customer_id
 
@@ -136,6 +136,10 @@ async def list_payment_methods(
     status_code=201,
     responses={
         201: {"description": "Payment method created or setup initiated."},
+        400: {
+            "description": "The card was declined while setting up the payment method.",
+            "model": PaymentMethodSetupFailed.schema(),
+        },
     },
     response_model=CustomerPaymentMethodCreateResponse,
 )

@@ -43,6 +43,16 @@ class CustomerNotReady(CustomerError):
         super().__init__("Customer is not ready for this operation.", 403)
 
 
+class PaymentMethodSetupFailed(CustomerError):
+    def __init__(self, error_message: str | None) -> None:
+        self.error_message = error_message
+        detail = (
+            f"Could not add this payment method{f': {error_message}' if error_message else '.'} "
+            "Please try again with a different card."
+        )
+        super().__init__(detail, 400)
+
+
 class CustomerService:
     async def update(
         self,
@@ -225,27 +235,30 @@ class CustomerService:
             )
             assert customer.stripe_customer_id is not None
 
-        setup_intent = await stripe_service.create_setup_intent(
-            automatic_payment_methods={"enabled": True},
-            customer=customer.stripe_customer_id,
-            metadata={
-                "organization_id": str(customer.organization_id),
-                "customer_id": str(customer.id),
-            },
-            payment_method_options={
-                "klarna": {"currency": "usd"},
-            },
-        )
-        return_url = add_query_parameters(
-            payment_method_create.return_url,
-            polar_setup_intent=setup_intent.id,
-        )
-        setup_intent = await stripe_service.confirm_setup_intent(
-            setup_intent.id,
-            confirmation_token=payment_method_create.confirmation_token_id,
-            return_url=return_url,
-            expand=["payment_method"],
-        )
+        try:
+            setup_intent = await stripe_service.create_setup_intent(
+                automatic_payment_methods={"enabled": True},
+                customer=customer.stripe_customer_id,
+                metadata={
+                    "organization_id": str(customer.organization_id),
+                    "customer_id": str(customer.id),
+                },
+                payment_method_options={
+                    "klarna": {"currency": "usd"},
+                },
+            )
+            return_url = add_query_parameters(
+                payment_method_create.return_url,
+                polar_setup_intent=setup_intent.id,
+            )
+            setup_intent = await stripe_service.confirm_setup_intent(
+                setup_intent.id,
+                confirmation_token=payment_method_create.confirmation_token_id,
+                return_url=return_url,
+                expand=["payment_method"],
+            )
+        except stripe_lib.CardError as e:
+            raise PaymentMethodSetupFailed(e.user_message) from e
 
         return await self._save_payment_method(
             session,

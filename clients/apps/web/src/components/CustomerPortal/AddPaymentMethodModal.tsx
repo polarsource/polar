@@ -2,6 +2,7 @@ import {
   useAddCustomerPaymentMethod,
   useConfirmCustomerPaymentMethod,
 } from '@/hooks/queries/customerPortal'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { type Client } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
@@ -134,7 +135,12 @@ export const AddPaymentMethodModal = ({
         })
 
       if (validationError) {
-        setError('Failed to add payment method, please try again later.')
+        setError(
+          extractApiErrorMessage(
+            validationError,
+            'Failed to add payment method, please try again later.',
+          ),
+        )
         setLoading(false)
         return
       }

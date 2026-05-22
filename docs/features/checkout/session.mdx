@@ -112,6 +112,10 @@ Quite often, you'll have your own users management system in your application, w
 
 After a successful checkout, we'll create a Customer on Polar with the external ID you provided. It'll be provided through the `customer.external_id` property in webhooks you may have configured.
 
+<Note>
+  When `customer_id` or `external_customer_id` is set, the customer's email is pre-filled and the email field is **disabled** on the checkout page. This ensures the order is always linked to the authenticated customer in your system.
+</Note>
+
 ## Customer IP address
 
 When you create a checkout session, Polar uses the IP address of the request to detect the customer's country. This drives features like:

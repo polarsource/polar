@@ -17,6 +17,7 @@ from polar.integrations.polar.tasks import (
     remove_member,
     track_event_ingestion,
     track_organization_review_usage,
+    update_customer_slug,
 )
 
 
@@ -255,6 +256,56 @@ class TestRemoveMember:
         )
 
         client.remove_member.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestUpdateCustomerSlug:
+    async def test_merges_slug_into_existing_metadata(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        fake_customer = MagicMock()
+        fake_customer.metadata = {"slug": "old-slug", "other": "keep"}
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_customer_by_external_id_or_none.return_value = fake_customer
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await update_customer_slug(external_id="org-123", slug="new-slug")
+
+        client.get_customer_by_external_id_or_none.assert_called_once_with("org-123")
+        client.update_customer_metadata.assert_called_once_with(
+            external_id="org-123",
+            metadata={"slug": "new-slug", "other": "keep"},
+        )
+
+    async def test_sets_slug_when_metadata_empty(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        fake_customer = MagicMock()
+        fake_customer.metadata = None
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_customer_by_external_id_or_none.return_value = fake_customer
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await update_customer_slug(external_id="org-123", slug="new-slug")
+
+        client.update_customer_metadata.assert_called_once_with(
+            external_id="org-123",
+            metadata={"slug": "new-slug"},
+        )
+
+    async def test_noops_when_customer_not_found(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_customer_by_external_id_or_none.return_value = None
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await update_customer_slug(external_id="org-123", slug="new-slug")
+
+        client.update_customer_metadata.assert_not_called()
 
 
 @pytest.mark.asyncio

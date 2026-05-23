@@ -20,6 +20,7 @@ from polar.file.repository import FileRepository
 from polar.file.service import file as file_service
 from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import plain as plain_service
+from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.currency import format_currency
 from polar.kit.pagination import PaginationParams
@@ -530,6 +531,7 @@ async def update(
                 **checkout_settings,
             }
 
+            previous_slug = organization.slug
             # Update organization with basic fields, feature_settings, and checkout_settings
             organization = await org_repo.update(
                 organization,
@@ -539,6 +541,11 @@ async def update(
                     "checkout_settings": updated_checkout_settings,
                 },
             )
+            if organization.slug != previous_slug:
+                polar_self_service.enqueue_update_customer_slug(
+                    organization_id=organization.id,
+                    slug=organization.slug,
+                )
             return HXRedirectResponse(
                 request, str(request.url_for("organizations-classic:get", id=id)), 303
             )

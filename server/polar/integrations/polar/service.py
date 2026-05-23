@@ -117,6 +117,17 @@ class PolarSelfService:
             external_id=external_id,
         )
 
+    def enqueue_update_customer_slug(
+        self, *, organization_id: uuid.UUID, slug: str
+    ) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job(
+            "polar_self.update_customer_slug",
+            external_id=str(organization_id),
+            slug=slug,
+        )
+
     def enqueue_remove_member(
         self, *, external_customer_id: str, external_id: str
     ) -> None:

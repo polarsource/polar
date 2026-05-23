@@ -22,6 +22,7 @@ from polar_sdk.models import (
     CustomerPortalCustomerUpdate,
     CustomerSessionCustomerExternalIDCreate,
     CustomerTeamCreate,
+    CustomerUpdateExternalID,
     EventCreateCustomer,
     EventCreateExternalCustomer,
     EventsIngest,
@@ -416,6 +417,29 @@ class PolarSelfClient:
                 _raise_error(span, e, "add_member")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "add_member")
+
+    async def update_customer_metadata(
+        self, *, external_id: str, metadata: dict[str, Any]
+    ) -> None:
+        # The Polar API replaces metadata wholesale on update; callers must
+        # merge any existing keys they want to preserve before passing them in.
+        with logfire.span(
+            "polar.update_customer_metadata", external_id=external_id
+        ) as span:
+            try:
+                await self._sdk.customers.update_external_async(
+                    external_id=external_id,
+                    customer_update_external_id=CustomerUpdateExternalID(
+                        metadata=metadata,
+                    ),
+                )
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    return
+                _raise_error(span, e, "update_customer_metadata")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "update_customer_metadata")
 
     async def remove_member(
         self, *, external_customer_id: str, external_id: str

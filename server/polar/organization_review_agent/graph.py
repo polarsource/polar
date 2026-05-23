@@ -40,6 +40,7 @@ from .schemas import (
     RaisedSignal,
     ReviewState,
     Severity,
+    SignalKind,
 )
 from .signal_history_repository import (
     OrganizationReviewSignalHistoryRepository,
@@ -200,13 +201,27 @@ class InvestigateNode:
 class DecideNode:
     """Produce a :class:`FinalReport` from collected signals + facts.
 
-    Slice 0/1 ships a deterministic heuristic: any HIGH-severity signal
-    forces DENY; a MEDIUM-severity signal forces NEEDS_HUMAN; LOW-only
-    or no signals = APPROVE. This is a stopgap so v2 produces real
-    verdicts to compare against v1 immediately. Slice 2 replaces this
-    body with an LLM Decide call (pydantic-ai Agent with
-    ``output_type=FinalReport``) and proper prompt construction over
-    the rendered lane facts + signal memory.
+    Slice 0/1 ships a deterministic heuristic with memory weighting:
+
+    1. Look up the per-org memory summary
+       ({kind: {approved, discarded}}) from
+       ``organization_review_signal_history``.
+    2. For each raised signal, adjust its effective severity:
+       * If the org has discarded this kind ≥2 times → suppress (the
+         kind is consistently a false positive for this org).
+       * If the org has discarded this kind exactly 1 time and the
+         raised severity is LOW or MEDIUM → downshift (LOW becomes
+         suppressed; MEDIUM becomes LOW).
+       * If the org has approved this kind → keep raised severity.
+       * If no memory → keep raised severity.
+    3. Apply the verdict rule on the adjusted severities: any HIGH →
+       DENY; any MEDIUM → NEEDS_HUMAN; LOW-only or empty → APPROVE.
+
+    This is a stopgap so v2 produces real verdicts with calibration-
+    relevant memory weighting today. Slice 2 part 6 replaces the body
+    with an LLM Decide call (pydantic-ai Agent with
+    ``output_type=FinalReport``) over the rendered lane facts +
+    memory summary.
     """
 
     name = "decide"
@@ -214,13 +229,15 @@ class DecideNode:
     async def run(
         self, state: ReviewState, deps: GraphDeps
     ) -> str | None:
-        signals = state.raised_signals
-        verdict, reasoning = self._heuristic_verdict(signals)
-        merchant_summary = self._heuristic_merchant_summary(verdict, signals)
-        decisive = sorted(
-            {self._effective_severity(s): s.kind for s in signals}.values(),
-            key=lambda k: k.value,
+        memory = await self._load_memory(deps)
+        adjusted = self._apply_memory_weights(state.raised_signals, memory)
+        verdict, reasoning = self._heuristic_verdict_from_adjusted(
+            adjusted, memory_applied=bool(memory)
         )
+        merchant_summary = self._heuristic_merchant_summary(
+            verdict, adjusted
+        )
+        decisive = self._decisive_kinds_from_adjusted(adjusted)
 
         report = FinalReport(
             verdict=verdict,
@@ -234,9 +251,171 @@ class DecideNode:
             "organization_review_agent.decide.completed",
             run_id=str(deps.run.id),
             verdict=verdict.value,
-            signal_count=len(signals),
+            signal_count=len(state.raised_signals),
+            memory_kinds=sorted(memory.keys()),
         )
         return None  # Terminal — driver finalises.
+
+    async def _load_memory(
+        self, deps: GraphDeps
+    ) -> dict[str, dict[str, int]]:
+        """Read the per-org memory summary used for signal weighting.
+
+        Best-effort: a memory-fetch failure must not bubble out of
+        Decide (the org might be brand-new with no history table
+        entries). Empty dict is the safe default.
+        """
+
+        from .signal_history_repository import (
+            OrganizationReviewSignalHistoryRepository,
+        )
+
+        try:
+            repo = OrganizationReviewSignalHistoryRepository.from_session(
+                deps.session
+            )
+            return await repo.memory_summary_for_organization(
+                deps.run.organization_id
+            )
+        except Exception:
+            log.exception(
+                "organization_review_agent.decide.memory_load_failed",
+                run_id=str(deps.run.id),
+            )
+            return {}
+
+    @staticmethod
+    def _effective_severity(signal: RaisedSignal) -> Severity:
+        if signal.severity is not None:
+            return signal.severity
+        return spec_for(signal.kind).default_severity
+
+    @classmethod
+    def _apply_memory_weights(
+        cls,
+        signals: list[RaisedSignal],
+        memory: dict[str, dict[str, int]],
+    ) -> list[tuple[RaisedSignal, Severity | None]]:
+        """Pair each signal with its memory-adjusted severity.
+
+        ``None`` in the second slot means the signal is suppressed
+        outright (e.g. the org has discarded this kind ≥2 times).
+        Callers iterate the list and skip None-severity entries.
+        """
+
+        adjusted: list[tuple[RaisedSignal, Severity | None]] = []
+        for signal in signals:
+            raw_severity = cls._effective_severity(signal)
+            kind_memory = memory.get(signal.kind.value, {})
+            discarded = kind_memory.get("discarded", 0)
+            approved = kind_memory.get("approved", 0)
+
+            # Strong false-positive history: suppress.
+            if discarded >= 2 and approved == 0:
+                adjusted.append((signal, None))
+                continue
+            # Mild false-positive history: downshift.
+            if discarded == 1 and approved == 0:
+                if raw_severity == Severity.LOW:
+                    adjusted.append((signal, None))
+                    continue
+                if raw_severity == Severity.MEDIUM:
+                    adjusted.append((signal, Severity.LOW))
+                    continue
+                # HIGH stays HIGH even with one discard — too risky to
+                # downshift a HIGH on a single counter-example.
+                adjusted.append((signal, raw_severity))
+                continue
+            adjusted.append((signal, raw_severity))
+        return adjusted
+
+    @staticmethod
+    def _decisive_kinds_from_adjusted(
+        adjusted: list[tuple[RaisedSignal, Severity | None]],
+    ) -> list[SignalKind]:
+        # Dedupe by kind, preserving signals whose adjusted severity is
+        # not None (suppressed signals aren't "decisive").
+        seen: list[SignalKind] = []
+        for signal, severity in adjusted:
+            if severity is None:
+                continue
+            if signal.kind not in seen:
+                seen.append(signal.kind)
+        return seen
+
+    def _heuristic_verdict_from_adjusted(
+        self,
+        adjusted: list[tuple[RaisedSignal, Severity | None]],
+        *,
+        memory_applied: bool,
+    ) -> tuple[AgentVerdict, str]:
+        live = [(s, sev) for s, sev in adjusted if sev is not None]
+        suppressed = [s for s, sev in adjusted if sev is None]
+        memory_note = (
+            " (with prior-memory weighting)" if memory_applied else ""
+        )
+
+        if not live and not suppressed:
+            return (
+                AgentVerdict.APPROVE,
+                f"No concerning signals across enabled lanes{memory_note}.",
+            )
+        if not live and suppressed:
+            kinds = sorted({s.kind.value for s in suppressed})
+            return (
+                AgentVerdict.APPROVE,
+                "All raised signals were suppressed by prior-memory "
+                f"weighting (discarded ≥2x for this org): {', '.join(kinds)}.",
+            )
+
+        severities = [sev for _, sev in live]
+        if Severity.HIGH in severities:
+            high_kinds = sorted(
+                {
+                    s.kind.value
+                    for s, sev in live
+                    if sev == Severity.HIGH
+                }
+            )
+            return (
+                AgentVerdict.DENY,
+                f"High-severity signals raised{memory_note}: "
+                + ", ".join(high_kinds),
+            )
+        if Severity.MEDIUM in severities:
+            medium_kinds = sorted(
+                {
+                    s.kind.value
+                    for s, sev in live
+                    if sev == Severity.MEDIUM
+                }
+            )
+            return (
+                AgentVerdict.NEEDS_HUMAN,
+                f"Medium-severity signals raised{memory_note}: "
+                + ", ".join(medium_kinds),
+            )
+        return (
+            AgentVerdict.APPROVE,
+            f"Only low-severity signals raised{memory_note}; safe to proceed.",
+        )
+
+    def _heuristic_verdict(
+        self, signals: list[RaisedSignal]
+    ) -> tuple[AgentVerdict, str]:
+        """Legacy memory-free entry point.
+
+        Kept for the Slice 2 unit tests pinning the heuristic
+        boundaries in isolation. Production code goes through
+        :meth:`_heuristic_verdict_from_adjusted` via :meth:`run`.
+        """
+
+        adjusted = [
+            (s, self._effective_severity(s)) for s in signals
+        ]
+        return self._heuristic_verdict_from_adjusted(
+            adjusted, memory_applied=False
+        )
 
     @staticmethod
     def _effective_severity(signal: RaisedSignal) -> Severity:
@@ -285,8 +464,12 @@ class DecideNode:
 
     @staticmethod
     def _heuristic_merchant_summary(
-        verdict: AgentVerdict, signals: list[RaisedSignal]
+        verdict: AgentVerdict,
+        adjusted: list[tuple[RaisedSignal, Severity | None]] | list[RaisedSignal],
     ) -> str:
+        # Accept either the adjusted-tuple form (from run()) or the
+        # legacy bare-signal form (from the unit-test entry point); the
+        # merchant_summary content does not depend on signals today.
         if verdict == AgentVerdict.APPROVE:
             return ""
         if verdict == AgentVerdict.DENY:

@@ -107,6 +107,134 @@ class TestDecideHeuristic:
         assert verdict == AgentVerdict.DENY
 
 
+class TestDecideMemoryWeighting:
+    """The memory adjustment table:
+
+    * 0 prior history → use raised severity.
+    * 1 discard, 0 approvals → LOW suppressed; MEDIUM → LOW;
+      HIGH stays HIGH (too risky to downshift on 1 counter-example).
+    * ≥2 discards, 0 approvals → suppress entirely.
+    * any approvals → keep raised severity.
+    """
+
+    def _apply(
+        self,
+        signals: list[RaisedSignal],
+        memory: dict[str, dict[str, int]],
+    ) -> list[tuple[RaisedSignal, Severity | None]]:
+        return DecideNode._apply_memory_weights(signals, memory)
+
+    def test_no_memory_passes_through(self) -> None:
+        signal = RaisedSignal(
+            kind=SignalKind.PRIOR_DENIALS_PRESENT,
+            severity=Severity.MEDIUM,
+            summary="x",
+        )
+        adjusted = self._apply([signal], {})
+        assert adjusted[0][1] == Severity.MEDIUM
+
+    def test_two_discards_suppresses(self) -> None:
+        signal = RaisedSignal(
+            kind=SignalKind.PRIOR_DENIALS_PRESENT,
+            severity=Severity.MEDIUM,
+            summary="x",
+        )
+        memory = {"prior_denials_present": {"approved": 0, "discarded": 2}}
+        adjusted = self._apply([signal], memory)
+        assert adjusted[0][1] is None  # suppressed
+
+    def test_one_discard_downshifts_medium_to_low(self) -> None:
+        signal = RaisedSignal(
+            kind=SignalKind.PRIOR_DENIALS_PRESENT,
+            severity=Severity.MEDIUM,
+            summary="x",
+        )
+        memory = {"prior_denials_present": {"approved": 0, "discarded": 1}}
+        adjusted = self._apply([signal], memory)
+        assert adjusted[0][1] == Severity.LOW
+
+    def test_one_discard_keeps_high(self) -> None:
+        """A single counter-example is not enough to downshift HIGH —
+        too risky during shadow. ≥2 discards are needed before HIGH
+        suppresses (and even then, only if no approvals).
+        """
+
+        signal = RaisedSignal(
+            kind=SignalKind.USER_BLOCKED,
+            severity=Severity.HIGH,
+            summary="x",
+        )
+        memory = {"user_blocked": {"approved": 0, "discarded": 1}}
+        adjusted = self._apply([signal], memory)
+        assert adjusted[0][1] == Severity.HIGH
+
+    def test_one_discard_suppresses_low(self) -> None:
+        signal = RaisedSignal(
+            kind=SignalKind.HUMAN_OVERRIDE_HISTORY,
+            severity=Severity.LOW,
+            summary="x",
+        )
+        memory = {
+            "human_override_history": {"approved": 0, "discarded": 1}
+        }
+        adjusted = self._apply([signal], memory)
+        assert adjusted[0][1] is None
+
+    def test_any_approval_preserves_severity_even_with_discards(self) -> None:
+        """The "discarded ≥2 → suppress" rule requires zero prior
+        approvals — a kind that's been both confirmed-real AND
+        discarded should stay at the raised severity. The mixed
+        signal is what humans look at; suppression would hide it.
+        """
+
+        signal = RaisedSignal(
+            kind=SignalKind.PRIOR_DENIALS_PRESENT,
+            severity=Severity.MEDIUM,
+            summary="x",
+        )
+        memory = {"prior_denials_present": {"approved": 1, "discarded": 3}}
+        adjusted = self._apply([signal], memory)
+        assert adjusted[0][1] == Severity.MEDIUM
+
+
+class TestDecideHeuristicWithMemory:
+    """Verdict assembly takes the memory-adjusted severities."""
+
+    def test_suppressed_all_yields_approve(self) -> None:
+        signal = RaisedSignal(
+            kind=SignalKind.PRIOR_DENIALS_PRESENT,
+            severity=Severity.MEDIUM,
+            summary="2 denials",
+        )
+        node = DecideNode()
+        adjusted = node._apply_memory_weights(
+            [signal],
+            {"prior_denials_present": {"approved": 0, "discarded": 2}},
+        )
+        verdict, reasoning = node._heuristic_verdict_from_adjusted(
+            adjusted, memory_applied=True
+        )
+        assert verdict == AgentVerdict.APPROVE
+        assert "suppressed" in reasoning.lower()
+
+    def test_downshifted_medium_to_low_yields_approve(self) -> None:
+        signal = RaisedSignal(
+            kind=SignalKind.PRIOR_DENIALS_PRESENT,
+            severity=Severity.MEDIUM,
+            summary="2 denials",
+        )
+        node = DecideNode()
+        adjusted = node._apply_memory_weights(
+            [signal],
+            {"prior_denials_present": {"approved": 0, "discarded": 1}},
+        )
+        verdict, _ = node._heuristic_verdict_from_adjusted(
+            adjusted, memory_applied=True
+        )
+        # Adjusted to LOW → APPROVE (low-only outcome).
+        assert verdict == AgentVerdict.APPROVE
+
+
 class TestDecisiveSignalKinds:
     """The FinalReport's ``decisive_signal_kinds`` field carries the
     ranked list of signal kinds Decide flagged as load-bearing in the

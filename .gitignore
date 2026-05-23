@@ -164,3 +164,7 @@ server/cases_schema.json
 # AUP files generated at build time — do not commit
 clients/apps/web/src/app/(main)/onboarding/validate-description/acceptable-use-policy.mdx
 server/polar/organization_review/acceptable-use-policy.mdx
+
+# Redis dump (local dev runtime artifact)
+server/dump.rdb
+*.rdb

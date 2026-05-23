@@ -87,6 +87,30 @@ async def _persist_agent_result(
         report=typed_report,
         reviewed_at=datetime.now(UTC),
     )
+
+    # Shadow trigger for the v2 agent. Failures here must not affect the
+    # legacy decision path — wrap in try/except and log only. The shadow
+    # row is created inline (cheap insert + Dramatiq enqueue) but the
+    # actual graph runs in the worker so a slow v2 cannot extend v1
+    # latency. Remove this block once v2 is promoted to authoritative.
+    try:
+        from polar.organization_review_agent.service import (
+            organization_review_agent_service,
+        )
+
+        await organization_review_agent_service.start_shadow_run(
+            session,
+            organization,
+            context=review_context.value,
+        )
+    except Exception:
+        log.exception(
+            "organization_review.shadow_trigger_failed",
+            organization_id=str(organization.id),
+            slug=organization.slug,
+            context=review_context.value,
+        )
+
     return agent_review.id
 
 

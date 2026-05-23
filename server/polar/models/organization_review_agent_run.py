@@ -238,6 +238,30 @@ class OrganizationReviewAgentRun(RecordModel):
         ),
     )
 
+    due_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
+        index=True,
+        doc=(
+            "Slice 5: SLA deadline for runs parked at "
+            "AwaitMerchantNode. The cron-driven SLA scanner fires "
+            "the configured ``on_timeout`` action when due_at passes "
+            "without a merchant reply landing."
+        ),
+    )
+
+    on_timeout: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+        default=None,
+        doc=(
+            "Slice 5: action to take on due_at breach: "
+            "'auto_deny' | 'auto_close_approve' | 'escalate'. NULL "
+            "when not parked under an SLA contract."
+        ),
+    )
+
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship(

@@ -655,6 +655,103 @@ def _render_final_report_card(
                 and run.status == AgentRunStatus.AWAITING_HUMAN
             ):
                 _render_commit_decision_form(request, run, verdict)
+                _render_await_merchant_card(request, run)
+
+
+def _render_await_merchant_card(
+    request: Request, run: OrganizationReviewAgentRun
+) -> None:
+    """Park-for-merchant form: arm an SLA contract on this run.
+
+    Operator picks ``days`` + ``on_timeout``; service sets ``due_at``
+    and the per-minute SLA scanner fires the action on breach. The
+    outbound Plain message send + ``plain_thread_id`` capture lands in
+    Slice 5 part 2; for now reviewers paste a thread id if they sent
+    a message manually.
+    """
+
+    if run.due_at is not None:
+        with tag.div(
+            classes="mt-4 pt-4 border-t border-base-200 text-sm"
+        ):
+            with tag.div(classes="font-semibold mb-1"):
+                text("Awaiting merchant reply")
+            with tag.div(classes="text-base-content/70"):
+                text(
+                    f"due: {run.due_at.isoformat(timespec='seconds')} "
+                    f"— on_timeout: {run.on_timeout or '—'}"
+                )
+        return
+
+    action_url = str(
+        request.url_for("agent_runs:park_for_merchant", id=run.id)
+    )
+    with tag.div(
+        classes="mt-4 pt-4 border-t border-base-200 flex flex-col gap-3"
+    ):
+        with tag.div(classes="text-xs text-base-content/70"):
+            text(
+                "Park for merchant reply (SLA contract — the per-minute "
+                "scanner fires the configured action on breach)."
+            )
+        with tag.form(
+            method="post",
+            action=action_url,
+            classes="flex flex-wrap gap-2 items-center",
+        ):
+            with tag.label(classes="form-control"):
+                with tag.span(classes="text-xs"):
+                    text("Days")
+                with tag.input(
+                    type="number",
+                    name="days",
+                    value="7",
+                    min="1",
+                    max="90",
+                    classes="input input-bordered input-sm w-20",
+                    required=True,
+                ):
+                    pass
+            with tag.label(classes="form-control"):
+                with tag.span(classes="text-xs"):
+                    text("On timeout")
+                with tag.select(
+                    name="on_timeout",
+                    classes="select select-bordered select-sm",
+                ):
+                    for label, value in (
+                        ("Escalate to lead", "escalate"),
+                        ("Auto-close APPROVE", "auto_close_approve"),
+                        ("Auto-deny", "auto_deny"),
+                    ):
+                        with tag.option(value=value):
+                            text(label)
+            with tag.label(classes="form-control flex-1 min-w-48"):
+                with tag.span(classes="text-xs"):
+                    text("Plain thread id (optional)")
+                with tag.input(
+                    type="text",
+                    name="plain_thread_id",
+                    placeholder="thr_…",
+                    classes="input input-bordered input-sm",
+                ):
+                    pass
+            with tag.label(classes="form-control flex-1 min-w-64"):
+                with tag.span(classes="text-xs"):
+                    text("Reason (≥3 chars)")
+                with tag.input(
+                    type="text",
+                    name="reason",
+                    placeholder="e.g. asked merchant to confirm payouts setup",
+                    classes="input input-bordered input-sm",
+                    required=True,
+                    minlength="3",
+                ):
+                    pass
+            with tag.button(
+                type="submit", classes="btn btn-sm btn-warning self-end"
+            ):
+                text("Park")
 
 
 def _render_commit_decision_form(
@@ -920,6 +1017,72 @@ async def resolve_signal(
     return HXRedirectResponse(
         request,
         str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
+    )
+
+
+@router.post("/{id}/park-for-merchant", name="agent_runs:park_for_merchant")
+async def park_for_merchant(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> Any:
+    """Arm an SLA contract on an AWAITING_HUMAN run.
+
+    Form: ``days`` (1-90) + ``on_timeout`` (escalate /
+    auto_close_approve / auto_deny) + ``reason`` (≥3 chars) +
+    optional ``plain_thread_id``.
+    """
+
+    run = await _get_or_404(session, id)
+
+    if run.status != AgentRunStatus.AWAITING_HUMAN:
+        await add_toast(
+            request,
+            "Park only available on AWAITING_HUMAN runs.",
+            "error",
+        )
+        return HXRedirectResponse(
+            request, str(request.url_for("agent_runs:get", id=run.id))
+        )
+
+    form = await request.form()
+    try:
+        days = int(str(form.get("days", "")).strip())
+    except ValueError:
+        await add_toast(request, "Days must be a number.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("agent_runs:get", id=run.id))
+        )
+    on_timeout = str(form.get("on_timeout", "")).strip()
+    reason = str(form.get("reason", "")).strip()
+    plain_thread_id = (
+        str(form.get("plain_thread_id", "")).strip() or None
+    )
+
+    try:
+        await organization_review_agent_service.park_for_merchant(
+            session,
+            run,
+            days=days,
+            on_timeout=on_timeout,
+            reviewer_user_id=user_session.user.id,
+            reviewer_reason=reason,
+            plain_thread_id=plain_thread_id,
+        )
+    except ValueError as exc:
+        await add_toast(request, str(exc), "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("agent_runs:get", id=run.id))
+        )
+
+    await add_toast(
+        request,
+        f"Parked for {days}d (on_timeout={on_timeout}).",
+        "success",
+    )
+    return HXRedirectResponse(
+        request, str(request.url_for("agent_runs:get", id=run.id))
     )
 
 

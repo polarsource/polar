@@ -224,6 +224,95 @@ class OrganizationReviewAgentService:
             "unassigned": unassigned,
         }
 
+    async def park_for_merchant(
+        self,
+        session: AsyncSession,
+        run: OrganizationReviewAgentRun,
+        *,
+        days: int,
+        on_timeout: str,
+        reviewer_user_id: UUID,
+        reviewer_reason: str,
+        plain_thread_id: str | None = None,
+    ) -> None:
+        """Reviewer parks a run waiting for a merchant reply.
+
+        Sets ``due_at`` to ``now + days`` and ``on_timeout`` to one of
+        ``auto_deny`` / ``auto_close_approve`` / ``escalate``.
+        Optionally stores the ``plain_thread_id`` if the outbound
+        merchant message landed in a fresh Plain thread.
+
+        The actual outbound message send is Slice 5 part 2 — this
+        method records the SLA contract; the message send happens in
+        the caller (a backoffice button that hits Plain via
+        :mod:`polar.integrations.plain`).
+        """
+
+        if on_timeout not in ("auto_deny", "auto_close_approve", "escalate"):
+            raise ValueError(
+                f"Unknown on_timeout {on_timeout!r}; expected one of "
+                "auto_deny / auto_close_approve / escalate."
+            )
+        if days <= 0 or days > 90:
+            raise ValueError(
+                "days must be in (0, 90]; longer windows aren't "
+                "operationally supported."
+            )
+        if len(reviewer_reason.strip()) < 3:
+            raise ValueError(
+                "reviewer_reason must be ≥3 chars for the audit event."
+            )
+
+        import datetime
+
+        due_at = utc_now() + datetime.timedelta(days=days)
+        run.due_at = due_at
+        run.on_timeout = on_timeout
+        if plain_thread_id is not None:
+            run.plain_thread_id = plain_thread_id
+        # Run stays AWAITING_HUMAN; reviewer's parking action sets the
+        # contract but doesn't change status (the run was already
+        # AWAITING_HUMAN before).
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+        await repository.append_event(
+            run,
+            {
+                "kind": "await_merchant_armed",
+                "at": utc_now().isoformat(),
+                "due_at": due_at.isoformat(),
+                "on_timeout": on_timeout,
+                "days": days,
+                "reviewer_user_id": str(reviewer_user_id),
+                "reviewer_reason": reviewer_reason.strip(),
+                "plain_thread_id": plain_thread_id,
+            },
+        )
+        log.info(
+            "organization_review_agent.await_merchant.armed",
+            run_id=str(run.id),
+            due_at=due_at.isoformat(),
+            on_timeout=on_timeout,
+        )
+
+    async def list_sla_breaches(
+        self,
+        session: AsyncReadSession,
+        *,
+        limit: int = 50,
+    ) -> Sequence[OrganizationReviewAgentRun]:
+        """Runs whose ``due_at`` has passed without a resolution.
+
+        Picked up by the cron scanner each minute; the scanner fires
+        the row's ``on_timeout`` action and clears ``due_at``.
+        """
+
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+        return await repository.list_sla_breached(limit=limit)
+
     async def commit_human_decision(
         self,
         session: AsyncSession,

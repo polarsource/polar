@@ -161,6 +161,32 @@ class OrganizationReviewAgentRunRepository(
         run.owner_user_id = None
         await self.session.flush()
 
+    async def list_sla_breached(
+        self,
+        *,
+        limit: int = 50,
+    ) -> Sequence[OrganizationReviewAgentRun]:
+        """AWAITING_HUMAN runs whose ``due_at`` has passed.
+
+        The cron scanner reads this list each minute, fires the row's
+        configured ``on_timeout`` action, and clears ``due_at`` /
+        ``on_timeout``. Bounded by ``limit`` so a backlog can't blow
+        the cron's time budget — the next tick picks up the rest.
+        """
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationReviewAgentRun.status
+                == AgentRunStatus.AWAITING_HUMAN,
+                OrganizationReviewAgentRun.due_at.is_not(None),
+                OrganizationReviewAgentRun.due_at < utc_now(),
+            )
+            .order_by(OrganizationReviewAgentRun.due_at)
+            .limit(limit)
+        )
+        return await self.get_all(statement)
+
     async def list_stale_running(
         self, *, heartbeat_older_than: datetime
     ) -> Sequence[OrganizationReviewAgentRun]:

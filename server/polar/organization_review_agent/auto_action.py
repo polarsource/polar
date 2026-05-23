@@ -24,6 +24,7 @@ mature.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from uuid import UUID
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -130,10 +131,36 @@ class OutcomeReport:
     reasons: list[str] = field(default_factory=list)
 
 
+def _mean_metrics(
+    runs: Sequence[OrganizationReviewAgentRun],
+    outcomes: dict[UUID, OutcomeMetric] | None,
+) -> OutcomeMetric:
+    """Cohort-mean outcome over the per-org outcome map.
+
+    When ``outcomes`` is None (no DB pass), returns zeros — the
+    sample-size + PSI guards still gate promotion. When provided
+    (Slice 6 part 2 real computation), averages the per-org metrics.
+    """
+
+    if not outcomes or not runs:
+        return OutcomeMetric(0.0, 0.0, 0.0, 0.0)
+    rows = [outcomes[r.organization_id] for r in runs if r.organization_id in outcomes]
+    if not rows:
+        return OutcomeMetric(0.0, 0.0, 0.0, 0.0)
+    n = len(rows)
+    return OutcomeMetric(
+        chargeback_rate=sum(m.chargeback_rate for m in rows) / n,
+        refund_rate=sum(m.refund_rate for m in rows) / n,
+        offboard_rate=sum(m.offboard_rate for m in rows) / n,
+        complaint_rate=sum(m.complaint_rate for m in rows) / n,
+    )
+
+
 def evaluate_retroactive(
     rule: AutoActionRule,
     runs: Sequence[OrganizationReviewAgentRun],
     *,
+    outcomes: dict[UUID, OutcomeMetric] | None = None,
     tolerance_absolute: float = 0.02,
     tolerance_relative: float = 0.25,
     min_sample_size: int = 25,
@@ -141,15 +168,16 @@ def evaluate_retroactive(
 ) -> OutcomeReport:
     """Score a rule against a historical cohort.
 
-    Slice 6 part 1 ships the structural shape: cohort partitioning +
-    sample-size guard + promotion-eligible flag derivation. The
-    actual outcome computation (joining downstream Payment / Refund /
-    Dispute / Plain-complaint events) is a TODO — current metrics
-    are zero-filled. The flag fires only when both cohorts meet the
-    sample-size floor.
+    Partitions ``runs`` into matched (predicate True) vs control,
+    then compares their forward outcomes. ``outcomes`` is the per-org
+    OutcomeMetric map produced by
+    :func:`polar.organization_review_agent.outcomes.cohort_outcomes`
+    (real Payment/Refund/Dispute computation); when omitted the metric
+    deltas are zero and only the sample-size + PSI guards gate
+    promotion.
 
-    The caller passes ``runs`` already-filtered to the relevant
-    window so this helper stays pure / database-free.
+    ``runs`` is pre-filtered by the caller; this helper stays sync /
+    DB-free (the DB pass happens in ``cohort_outcomes``).
     """
 
     now = utc_now()
@@ -165,11 +193,9 @@ def evaluate_retroactive(
         else:
             control.append(run)
 
-    # TODO Slice 6 part 2: join Payment / Refund / Dispute / Plain
-    # complaints over the 60d forward window for each cohort.
-    matched_metrics = OutcomeMetric(0.0, 0.0, 0.0, 0.0)
-    control_metrics = OutcomeMetric(0.0, 0.0, 0.0, 0.0)
-    psi = 0.0  # TODO compute over contributing kinds/facets.
+    matched_metrics = _mean_metrics(matched, outcomes)
+    control_metrics = _mean_metrics(control, outcomes)
+    psi = 0.0  # PSI over contributing kinds/facets — future refinement.
 
     reasons: list[str] = []
     eligible = True

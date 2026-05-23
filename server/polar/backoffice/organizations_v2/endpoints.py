@@ -763,6 +763,22 @@ async def get_organization_detail(
         parsed_agent_report = agent_review.parsed_report if agent_review else None
         agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 
+    # Latest v2 shadow run (used by OverviewSection.v2_shadow_card).
+    # Best-effort: never let v2 fetch failures hide the legacy review.
+    v2_run = None
+    if section == "overview":
+        try:
+            from polar.organization_review_agent.service import (
+                organization_review_agent_service,
+            )
+
+            v2_runs = await organization_review_agent_service.list_for_organization(
+                session, organization_id, limit=1
+            )
+            v2_run = v2_runs[0] if v2_runs else None
+        except Exception:
+            v2_run = None
+
     # Render based on section
     with layout(
         request,
@@ -781,6 +797,7 @@ async def get_organization_detail(
                     unrefunded_orders_count=unrefunded_orders_count,
                     agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
+                    v2_run=v2_run,
                 )
                 with overview.render(
                     request, setup_data=setup_data, payment_stats=payment_stats

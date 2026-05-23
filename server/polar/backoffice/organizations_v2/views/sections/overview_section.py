@@ -9,6 +9,10 @@ from fastapi import Request
 from tagflow import tag, text
 
 from polar.models import Organization
+from polar.models.organization_review_agent_run import (
+    AgentRunStatus,
+    OrganizationReviewAgentRun,
+)
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
 from polar.organization_review.thresholds import (
@@ -40,12 +44,14 @@ class OverviewSection(ChecklistMixin):
         unrefunded_orders_count: int = 0,
         agent_report: AnyAgentReport | None = None,
         agent_reviewed_at: datetime | None = None,
+        v2_run: OrganizationReviewAgentRun | None = None,
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
         self.unrefunded_orders_count = unrefunded_orders_count
         self.agent_report = agent_report
         self.agent_reviewed_at = agent_reviewed_at
+        self.v2_run = v2_run
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -709,6 +715,196 @@ class OverviewSection(ChecklistMixin):
                         )
 
     # ------------------------------------------------------------------
+    # v2 shadow agent comparison strip
+    # ------------------------------------------------------------------
+
+    @contextlib.contextmanager
+    def v2_shadow_card(self, request: Request) -> Generator[None]:
+        """Compact comparison strip showing the v2 shadow agent's verdict.
+
+        Renders only when a v2 run exists for this org. Surfaces:
+
+        * v2 status badge (PENDING / RUNNING / AWAITING_HUMAN / COMPLETED /
+          FAILED / CANCELLED).
+        * v1 vs v2 verdict comparison with a DISAGREEMENT marker when
+          they don't match. This is the operator-facing "second opinion"
+          while calibration closes — Slice 1 click-feedback chips and
+          Slice 1 APPROVE auto-take both layer on the same data.
+        * v2's internal summary text (not the merchant_summary —
+          internal-only audience here).
+        * "View full run →" link to /backoffice/agent-runs/{id} for the
+          per-call cost breakdown, event log, and org snapshot.
+
+        Visually subdued (outline + small text) so the v1 review card
+        stays the primary decision content until v2 is promoted.
+        """
+
+        if self.v2_run is None:
+            yield
+            return
+
+        run = self.v2_run
+        with tag.div(
+            classes=(
+                "card card-border w-full mt-4 border-base-300 "
+                "bg-base-100 shadow-sm"
+            )
+        ):
+            with tag.div(classes="card-body py-4"):
+                # Header row
+                with tag.div(classes="flex items-center justify-between mb-2"):
+                    with tag.div(classes="flex items-center gap-2"):
+                        with tag.span(classes="text-sm font-semibold"):
+                            text("v2 Shadow Agent")
+                        self._render_v2_status_badge(run.status)
+                        with tag.span(
+                            classes="badge badge-ghost badge-sm badge-outline"
+                        ):
+                            text(run.context)
+                    with tag.a(
+                        href=str(
+                            request.url_for("agent_runs:get", id=run.id)
+                        ),
+                        classes="text-xs link link-hover",
+                    ):
+                        text("View full run →")
+
+                # Verdict comparison
+                self._render_v2_disagreement_strip(run)
+
+                # v2 summary (internal)
+                v2_summary = self._extract_v2_summary(run)
+                if v2_summary:
+                    with tag.p(
+                        classes="text-xs text-base-content/70 mt-2"
+                    ):
+                        text(v2_summary)
+
+                # Footer with run id + timestamps
+                with tag.div(
+                    classes=(
+                        "flex flex-wrap gap-3 text-xs text-base-content/50 "
+                        "pt-2 mt-2 border-t border-base-200"
+                    )
+                ):
+                    with tag.span(classes="font-mono"):
+                        text(f"run_id: {run.id}")
+                    with tag.span():
+                        text(
+                            f"created: {run.created_at.strftime('%Y-%m-%d %H:%M UTC')}"
+                        )
+                    if run.completed_at is not None:
+                        with tag.span():
+                            text(
+                                f"completed: {run.completed_at.strftime('%Y-%m-%d %H:%M UTC')}"
+                            )
+
+        yield
+
+    @staticmethod
+    def _render_v2_status_badge(status: AgentRunStatus) -> None:
+        variant = {
+            AgentRunStatus.PENDING: "badge-ghost",
+            AgentRunStatus.RUNNING: "badge-info",
+            AgentRunStatus.AWAITING_HUMAN: "badge-warning",
+            AgentRunStatus.COMPLETED: "badge-success",
+            AgentRunStatus.FAILED: "badge-error",
+            AgentRunStatus.CANCELLED: "badge-neutral",
+        }.get(status, "badge-ghost")
+        with tag.div(classes=f"badge {variant} badge-sm"):
+            text(status.value)
+
+    def _render_v2_disagreement_strip(
+        self, run: OrganizationReviewAgentRun
+    ) -> None:
+        """Inline v1 vs v2 verdict row with DISAGREEMENT marker."""
+
+        v1_verdict: str | None = None
+        if self.agent_report is not None:
+            v1_verdict = self.agent_report.report.verdict.value
+        v2_verdict = (
+            run.final_report.get("verdict") if run.final_report else None
+        )
+
+        # While v2 is in the stub state ("needs_human": graph not yet
+        # wired) there's no meaningful comparison. Surface as informational
+        # rather than as a disagreement.
+        is_stub = v2_verdict == "needs_human" and (
+            run.current_node is None
+            and run.status == AgentRunStatus.COMPLETED
+        )
+
+        with tag.div(classes="flex items-center gap-3 text-sm"):
+            with tag.div(classes="flex items-center gap-1"):
+                with tag.span(classes="text-base-content/60"):
+                    text("v1:")
+                with tag.span(classes="font-semibold"):
+                    text(v1_verdict or "—")
+            with tag.div(classes="flex items-center gap-1"):
+                with tag.span(classes="text-base-content/60"):
+                    text("v2:")
+                with tag.span(classes="font-semibold"):
+                    text(v2_verdict or "—")
+
+            if is_stub:
+                with tag.div(
+                    classes="badge badge-ghost badge-sm",
+                    title=(
+                        "Stub verdict — graph not yet wired. Real "
+                        "comparison opens once Slice 2 lands the lane "
+                        "registry + Decide node."
+                    ),
+                ):
+                    text("stub")
+            elif (
+                v1_verdict is not None
+                and v2_verdict is not None
+                and self._verdicts_disagree(v1_verdict, v2_verdict)
+            ):
+                with tag.div(
+                    classes="badge badge-warning badge-sm",
+                    title=(
+                        "v2 disagrees with v1. Click 'View full run' for "
+                        "v2's reasoning + signal-level evidence."
+                    ),
+                ):
+                    text("DISAGREEMENT")
+            elif (
+                v1_verdict is not None
+                and v2_verdict is not None
+                and v2_verdict != "needs_human"
+            ):
+                with tag.div(classes="badge badge-success badge-sm"):
+                    text("agree")
+
+    @staticmethod
+    def _verdicts_disagree(v1: str, v2: str) -> bool:
+        """Compare v1's ``ReviewVerdict`` to v2's ``AgentVerdict``.
+
+        Both vocabularies use APPROVE / DENY; v1 also has
+        NEEDS_HUMAN_REVIEW and v2 has NEEDS_HUMAN. Treat the human-
+        review verdicts as non-comparable (no disagreement, no
+        agreement) — only APPROVE vs DENY mismatches count.
+        """
+
+        v1_lower = v1.lower()
+        v2_lower = v2.lower()
+        if "human" in v1_lower or "human" in v2_lower:
+            return False
+        return v1_lower != v2_lower
+
+    @staticmethod
+    def _extract_v2_summary(
+        run: OrganizationReviewAgentRun,
+    ) -> str | None:
+        if run.final_report is None:
+            return None
+        summary = run.final_report.get("summary")
+        if not summary:
+            return None
+        return str(summary)
+
+    # ------------------------------------------------------------------
     # Main render: AI review first, then supporting evidence
     # ------------------------------------------------------------------
 
@@ -726,6 +922,11 @@ class OverviewSection(ChecklistMixin):
             # Left: AI Organization Review (~60%)
             with tag.div(classes="lg:w-3/5 min-w-0"):
                 with self.organization_review_card(request):
+                    pass
+                # v2 shadow agent comparison strip sits directly under
+                # the primary review card so a reviewer sees both
+                # opinions without scrolling.
+                with self.v2_shadow_card(request):
                     pass
 
             # Right: supporting evidence stacked (~40%)

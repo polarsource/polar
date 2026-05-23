@@ -126,6 +126,36 @@ class OrganizationReviewAgentRunRepository(
             )
         return await self.get_all(statement)
 
+    async def next_awaiting_human_for_user(
+        self,
+        user_id: UUID,
+        *,
+        exclude_run_id: UUID | None = None,
+    ) -> OrganizationReviewAgentRun | None:
+        """Oldest AWAITING_HUMAN run owned by the user (Slice 10 auto-advance).
+
+        After a reviewer commits a run, the backoffice redirects here so
+        they flow straight to their next item without bouncing through
+        the inbox. ``exclude_run_id`` drops the just-committed run in
+        case its status hasn't flushed yet.
+        """
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationReviewAgentRun.owner_user_id == user_id,
+                OrganizationReviewAgentRun.status
+                == AgentRunStatus.AWAITING_HUMAN,
+            )
+            .order_by(OrganizationReviewAgentRun.created_at)  # oldest first
+            .limit(1)
+        )
+        if exclude_run_id is not None:
+            statement = statement.where(
+                OrganizationReviewAgentRun.id != exclude_run_id
+            )
+        return await self.get_one_or_none(statement)
+
     async def list_unowned_awaiting_human(
         self,
         *,

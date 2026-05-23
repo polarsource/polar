@@ -37,7 +37,7 @@ from polar.models.organization import OrganizationStatus
 from polar.models.organization_review_agent_run import AgentRunStatus
 from polar.models.organization_review_signal_history import SignalResolution
 
-ADMIN_EMAIL = "e2e-admin@polar.test"
+ADMIN_EMAIL = "e2e-admin@polar-e2e.com"
 ORG_SLUG = "e2e-merchant"
 
 
@@ -97,8 +97,8 @@ async def main() -> None:
                 name="E2E Merchant",
                 slug=ORG_SLUG,
                 status=OrganizationStatus.REVIEW,
-                website="https://e2e-merchant.test",
-                email="contact@e2e-merchant.test",
+                website="https://e2e-merchant.example.org",
+                email="contact@polar-e2e.com",
                 account_id=account.id,
                 customer_invoice_prefix="E2EMERCHANT",
                 avatar_url=None,

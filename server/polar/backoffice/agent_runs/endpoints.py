@@ -25,6 +25,9 @@ from polar.models.organization_review_signal_history import (
     OrganizationReviewSignalHistory,
     SignalResolution,
 )
+from polar.organization_review_agent.repository import (
+    OrganizationReviewAgentRunRepository,
+)
 from polar.organization_review_agent.service import (
     organization_review_agent_service,
 )
@@ -1167,12 +1170,32 @@ async def commit_human_decision(
         await add_toast(request, str(exc), "error")
         return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
+    # Slice 10 auto-advance: send the reviewer straight to their next
+    # AWAITING_HUMAN run, or back to the inbox when their queue is clear.
+    repository = OrganizationReviewAgentRunRepository.from_session(session)
+    next_run = await repository.next_awaiting_human_for_user(
+        user_session.user.id, exclude_run_id=run.id
+    )
+    if next_run is not None:
+        await add_toast(
+            request,
+            f"Run committed: {committed_verdict}. Advanced to next.",
+            "success",
+        )
+        return HXRedirectResponse(
+            request,
+            str(request.url_for("agent_runs:get", id=next_run.id)),
+            303,
+        )
+
     await add_toast(
         request,
-        f"Run committed: {committed_verdict}.",
+        f"Run committed: {committed_verdict}. Queue clear.",
         "success",
     )
-    return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
+    return HXRedirectResponse(
+        request, str(request.url_for("agent_runs:inbox")), 303
+    )
 
 
 @router.post("/signals/{id}/retire", name="agent_runs:retire_signal")

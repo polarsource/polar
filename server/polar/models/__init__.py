@@ -50,6 +50,7 @@ from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
 from .organization_review import OrganizationReview
+from .organization_facet import FacetSource, OrganizationFacet
 from .organization_review_agent_run import (
     AgentRunStatus,
     OrganizationReviewAgentRun,
@@ -157,7 +158,9 @@ __all__ = [
     "OrderItem",
     "Organization",
     "OrganizationAccessToken",
+    "FacetSource",
     "OrganizationAgentReview",
+    "OrganizationFacet",
     "OrganizationReview",
     "OrganizationReviewAgentRun",
     "OrganizationReviewFeedback",

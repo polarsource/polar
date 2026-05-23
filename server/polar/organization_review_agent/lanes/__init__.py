@@ -17,12 +17,34 @@ from .history import HistoryLane, history_lane
 from .identity import IdentityLane, identity_lane
 from .payments import PaymentsLane, payments_lane
 from .payout_account import PayoutAccountLane, payout_account_lane
+from .products import ProductsLane, products_lane
 
 _REGISTRY: dict[str, Lane] = {
     HistoryLane.name: history_lane,
     IdentityLane.name: identity_lane,
     PayoutAccountLane.name: payout_account_lane,
     PaymentsLane.name: payments_lane,
+    ProductsLane.name: products_lane,
+}
+
+
+# Slice 7: per-context lane filters. Each entry is a set of lane names
+# enabled for that context; lanes not in the set skip entirely. An
+# absent context falls back to "every lane" (legacy SUBMISSION
+# behaviour). is_enabled() on the lane is still consulted afterward —
+# this is the coarse-grained filter; per-lane runtime predicates fine-
+# tune.
+_CONTEXT_LANE_GATES: dict[str, frozenset[str]] = {
+    "chargeback_risk": frozenset(
+        {"history", "payments", "payout_account"}
+    ),
+    "payout_review": frozenset(
+        {"history", "payout_account", "payments", "identity"}
+    ),
+    "appeal": frozenset(
+        {"history", "identity", "payout_account", "products"}
+    ),
+    "pattern_match": frozenset({"history"}),  # parent-only minimal pass
 }
 
 
@@ -35,13 +57,17 @@ def all_lanes() -> dict[str, Lane]:
 def lanes_for_context(context: str) -> list[Lane]:
     """Return lanes to fan out to for a given review context.
 
-    Slice 7 specialises this per-context (CHARGEBACK_RISK skips
-    website + identity; APPEAL adds the appeal_context lane; etc.).
-    Today every lane runs for every context — the per-lane
-    :meth:`Lane.is_enabled` predicate handles cheap skips.
+    Coarse-grained dispatch: contexts in ``_CONTEXT_LANE_GATES`` skip
+    lanes not in their set. Contexts without an entry (SUBMISSION,
+    THRESHOLD, MANUAL, SETUP_COMPLETE) get every lane. Per-lane
+    :meth:`Lane.is_enabled` predicates still apply afterward for fine-
+    grained skips that depend on runtime state.
     """
 
-    return list(_REGISTRY.values())
+    gate = _CONTEXT_LANE_GATES.get(context)
+    if gate is None:
+        return list(_REGISTRY.values())
+    return [lane for name, lane in _REGISTRY.items() if name in gate]
 
 
 def get_lane(name: str) -> Lane:
@@ -59,6 +85,7 @@ __all__ = [
     "LaneRunResult",
     "PaymentsLane",
     "PayoutAccountLane",
+    "ProductsLane",
     "all_lanes",
     "get_lane",
     "history_lane",
@@ -66,4 +93,5 @@ __all__ = [
     "lanes_for_context",
     "payments_lane",
     "payout_account_lane",
+    "products_lane",
 ]

@@ -106,6 +106,71 @@ async def main() -> int:
         # exercised; assert the card path renders regardless).
         print("   ✓ detail renders commit + signals + facets cards")
 
+        # 2b) Blast-radius two-person banner (Slice 11).
+        print("2b) blast-radius two-person banner")
+        br_id = seed.get("RUN_BLAST_RADIUS")
+        if br_id:
+            await page.goto(
+                f"{API}/backoffice/agent-runs/{br_id}",
+                wait_until="domcontentloaded",
+            )
+            assert (
+                await page.get_by_test_id("two-person-banner").count() == 1
+            ), "expected two-person banner on high-blast-radius DENY"
+            print("   ✓ two-person banner shown (Slice 11)")
+
+        # 2c) Park a run for merchant (Slice 5).
+        print("2c) park for merchant")
+        needs_id = seed.get("RUN_AWAITING_NEEDS_HUMAN")
+        if needs_id:
+            await page.goto(
+                f"{API}/backoffice/agent-runs/{needs_id}",
+                wait_until="domcontentloaded",
+            )
+            await page.locator('input[name="days"]').first.fill("5")
+            await page.locator(
+                'form[action*="/park-for-merchant"] input[name="reason"]'
+            ).first.fill("Need payout details from merchant.")
+            async with page.expect_navigation(
+                wait_until="domcontentloaded"
+            ):
+                await page.locator(
+                    'form[action*="/park-for-merchant"] button:has-text("Park")'
+                ).first.click()
+            assert "Awaiting merchant reply" in await _text(page)
+            print("   ✓ parked + SLA armed (Slice 5)")
+
+        # 2d) Context badge on a threshold-context run (Slice 7).
+        print("2d) context dispatch surface")
+        if needs_id:
+            body = await _text(page)
+            assert "threshold" in body  # context badge rendered
+            print("   ✓ context badge rendered (Slice 7)")
+
+        # 2e) Merchant-facing frontend, same session (Slice 4).
+        print("2e) merchant frontend")
+        try:
+            r4 = await page.goto(
+                "http://127.0.0.1:3000/dashboard/e2e-merchant/review",
+                wait_until="domcontentloaded",
+                timeout=45000,
+            )
+            if r4 and r4.status < 400:
+                assert (
+                    await page.get_by_test_id("review-page").count() >= 1
+                )
+                print("   ✓ merchant review page (Slice 4)")
+            else:
+                print(f"   ⚠ merchant frontend status {r4.status if r4 else '?'} (web server down?)")
+        except Exception as e:
+            print(f"   ⚠ merchant frontend skipped ({type(e).__name__})")
+
+        # Back to the operator detail to continue the commit flow.
+        await page.goto(
+            f"{API}/backoffice/agent-runs/{deny_id}",
+            wait_until="domcontentloaded",
+        )
+
         # 3) Resolve the first pending signal "Real concern".
         print("3) resolve pending signal")
         await page.locator(

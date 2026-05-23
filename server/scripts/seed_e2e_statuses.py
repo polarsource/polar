@@ -140,6 +140,8 @@ async def main() -> None:
             owner: bool = False,
             due_at=None,
             on_timeout: str | None = None,
+            org_age_days_ago: int = 15,
+            gmv_cents: int = 0,
         ) -> OrganizationReviewAgentRun:
             run = OrganizationReviewAgentRun(
                 organization_id=organization.id,
@@ -157,7 +159,26 @@ async def main() -> None:
                     "slug": organization.slug,
                     "website": organization.website,
                     "status": "review",
-                    "created_at": (now - timedelta(days=15)).isoformat(),
+                    "created_at": (
+                        now - timedelta(days=org_age_days_ago)
+                    ).isoformat(),
+                },
+                state_snapshot={
+                    "organization_id": str(organization.id),
+                    "context": context,
+                    "triggered_by": triggered_by,
+                    "lanes_enabled": [],
+                    "findings": {
+                        "payments": {
+                            "name": "payments",
+                            "payload": {"total_amount_cents": gmv_cents},
+                        }
+                    },
+                    "raised_signals": [],
+                    "resolved_signals": [],
+                    "reader_cues": [],
+                    "tentative_report": None,
+                    "merchant_replies": [],
                 },
                 started_at=now if status != AgentRunStatus.PENDING else None,
                 completed_at=(
@@ -265,6 +286,22 @@ async def main() -> None:
             owner=True,
             due_at=now + timedelta(days=5),
             on_timeout="escalate",
+        )
+        # AWAITING_HUMAN + DENY on a high-blast-radius org (200d old +
+        # $50k GMV) so the Slice 11 two-person banner renders.
+        add_run(
+            "BLAST_RADIUS",
+            status=AgentRunStatus.AWAITING_HUMAN,
+            triggered_by="shadow",
+            current_node="await_deny_confirm",
+            final_report=_report(
+                "deny",
+                "High-severity signals on an established, high-volume org.",
+                "We weren't able to approve your account at this time.",
+            ),
+            owner=True,
+            org_age_days_ago=200,
+            gmv_cents=5_000_000,  # $50k
         )
         # FAILED
         add_run(

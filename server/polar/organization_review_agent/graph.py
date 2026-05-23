@@ -608,15 +608,9 @@ async def execute_graph(
         await session.flush()
         return
 
-    run.final_report = state.tentative_report.model_dump(mode="json")
-    run.status = AgentRunStatus.COMPLETED
-    run.completed_at = utc_now()
-    run.current_node = None
-
-    # Persist emitted signals to cross-run memory. Reviewers later flip
-    # rows to APPROVED/DISCARDED via the agent-run page; subsequent
-    # Decide invocations on the same org use the per-kind counts to
-    # weight new signals.
+    # Persist emitted signals to cross-run memory regardless of verdict
+    # — reviewers can adjudicate signals on AWAITING_HUMAN runs too,
+    # and the future Decide weighting depends on the rows existing.
     if state.raised_signals:
         history_repo = OrganizationReviewSignalHistoryRepository.from_session(
             session
@@ -625,6 +619,25 @@ async def execute_graph(
             organization_id=run.organization_id,
             agent_run_id=run.id,
             signals=state.raised_signals,
+        )
+
+    # Decide terminal: pick the run-level status based on verdict.
+    # APPROVE completes outright. DENY and NEEDS_HUMAN park at
+    # AWAITING_HUMAN — Slice 1 part 6 wires the "Commit DENY" /
+    # "Approve anyway" / "Park for await_merchant" reviewer actions.
+    run.final_report = state.tentative_report.model_dump(mode="json")
+
+    verdict = state.tentative_report.verdict
+    if verdict == AgentVerdict.APPROVE:
+        run.status = AgentRunStatus.COMPLETED
+        run.completed_at = utc_now()
+        run.current_node = None
+    else:
+        run.status = AgentRunStatus.AWAITING_HUMAN
+        run.current_node = (
+            "await_deny_confirm"
+            if verdict == AgentVerdict.DENY
+            else "await_human_review"
         )
 
     await session.flush()

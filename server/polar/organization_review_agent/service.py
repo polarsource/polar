@@ -133,6 +133,65 @@ class OrganizationReviewAgentService:
         repository = OrganizationReviewAgentRunRepository.from_session(session)
         return await repository.get_by_id(run_id)
 
+    async def commit_human_decision(
+        self,
+        session: AsyncSession,
+        run: OrganizationReviewAgentRun,
+        *,
+        committed_verdict: str,
+        reviewer_user_id: UUID,
+        reviewer_reason: str,
+    ) -> None:
+        """Reviewer committed an AWAITING_HUMAN run to a terminal verdict.
+
+        Flips status to COMPLETED + appends a structured
+        ``human_committed`` event with the reviewer's id + reason. The
+        v2 run's verdict is recorded; *no org-status mutation happens
+        here* — v2 stays a strict shadow of the legacy decision flow
+        until promotion. Slice 2's exit gate is when this method also
+        calls ``Organization.set_status``.
+
+        ``committed_verdict`` is free-form here (typically the verdict
+        the reviewer agreed with — same as the FinalReport's verdict;
+        sometimes overridden during deny-confirm) so the audit row
+        carries the actual human decision, not just the v2 verdict.
+        """
+
+        if run.status != AgentRunStatus.AWAITING_HUMAN:
+            log.info(
+                "organization_review_agent.commit.non_awaiting_noop",
+                run_id=str(run.id),
+                status=run.status.value,
+            )
+            return
+        if len(reviewer_reason.strip()) < 3:
+            raise ValueError(
+                "reviewer_reason must be ≥3 chars for human-commit audit."
+            )
+
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+        run.status = AgentRunStatus.COMPLETED
+        run.completed_at = utc_now()
+        run.current_node = None
+        await repository.append_event(
+            run,
+            {
+                "kind": "human_committed",
+                "at": utc_now().isoformat(),
+                "committed_verdict": committed_verdict,
+                "reviewer_user_id": str(reviewer_user_id),
+                "reviewer_reason": reviewer_reason.strip(),
+            },
+        )
+        log.info(
+            "organization_review_agent.committed",
+            run_id=str(run.id),
+            committed_verdict=committed_verdict,
+            reviewer_user_id=str(reviewer_user_id),
+        )
+
     async def cancel_run(
         self,
         session: AsyncSession,

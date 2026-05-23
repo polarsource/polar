@@ -240,7 +240,7 @@ async def get(
             _render_signals_card(request, run, signals)
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with tag.div(classes="flex flex-col gap-4"):
-                    _render_final_report_card(run)
+                    _render_final_report_card(run, request)
                     _render_org_snapshot_card(run)
                 with tag.div(classes="flex flex-col gap-4"):
                     _render_events_card(run)
@@ -476,7 +476,10 @@ def _render_signal_retire_form(
             text("Retire memory")
 
 
-def _render_final_report_card(run: OrganizationReviewAgentRun) -> None:
+def _render_final_report_card(
+    run: OrganizationReviewAgentRun,
+    request: Request | None = None,
+) -> None:
     with tag.div(classes="card bg-base-100 shadow"):
         with tag.div(classes="card-body"):
             with tag.h2(classes="card-title text-lg"):
@@ -505,6 +508,87 @@ def _render_final_report_card(run: OrganizationReviewAgentRun) -> None:
                         text(field_label)
                     with tag.p(classes="text-sm"):
                         text(value)
+
+            # Reviewer commit form for AWAITING_HUMAN runs.
+            if (
+                request is not None
+                and run.status == AgentRunStatus.AWAITING_HUMAN
+            ):
+                _render_commit_decision_form(request, run, verdict)
+
+
+def _render_commit_decision_form(
+    request: Request,
+    run: OrganizationReviewAgentRun,
+    verdict: str,
+) -> None:
+    """Reviewer commit form on AWAITING_HUMAN runs.
+
+    Three actions: confirm v2's verdict, approve anyway (overrides
+    DENY/NEEDS_HUMAN), or deny anyway (overrides NEEDS_HUMAN). A
+    ≥3-char reviewer reason is required for any override. v2 stays
+    shadow-only — clicking "Confirm" or "Override" does NOT touch
+    Organization.status (the legacy review path remains
+    authoritative). Slice 2's exit gate flips this to actually call
+    set_status once calibration parity is reached.
+    """
+
+    action_url = str(
+        request.url_for("agent_runs:commit_human_decision", id=run.id)
+    )
+    with tag.div(
+        classes="mt-4 pt-4 border-t border-base-200 flex flex-col gap-3"
+    ):
+        with tag.div(classes="text-xs text-base-content/70"):
+            text(
+                "Reviewer commit (audit-only — v2 stays shadow; "
+                "legacy flow still drives Organization.status until "
+                "promotion)."
+            )
+        with tag.form(
+            method="post",
+            action=action_url,
+            classes="flex flex-col gap-2",
+        ):
+            with tag.textarea(
+                name="reason",
+                classes="textarea textarea-bordered textarea-sm",
+                placeholder=(
+                    "Reviewer reason (≥3 chars; required for any "
+                    "override)"
+                ),
+                required=True,
+                minlength="3",
+                rows="2",
+            ):
+                pass
+            with tag.div(classes="flex flex-wrap gap-2"):
+                # Confirm the agent's verdict.
+                with tag.button(
+                    type="submit",
+                    name="committed_verdict",
+                    value=verdict,
+                    classes="btn btn-sm btn-primary",
+                ):
+                    text(f"Confirm {verdict}")
+                # Override to APPROVE.
+                if verdict != "approve":
+                    with tag.button(
+                        type="submit",
+                        name="committed_verdict",
+                        value="approve",
+                        classes="btn btn-sm btn-success btn-outline",
+                    ):
+                        text("Override → APPROVE")
+                # Override to DENY.
+                if verdict != "deny":
+                    with tag.button(
+                        type="submit",
+                        name="committed_verdict",
+                        value="deny",
+                        classes="btn btn-sm btn-error btn-outline",
+                    ):
+                        text("Override → DENY")
 
 
 def _render_org_snapshot_card(run: OrganizationReviewAgentRun) -> None:
@@ -696,6 +780,72 @@ async def resolve_signal(
     return HXRedirectResponse(
         request,
         str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
+    )
+
+
+@router.post(
+    "/{id}/commit", name="agent_runs:commit_human_decision"
+)
+async def commit_human_decision(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> Any:
+    """Reviewer committed an AWAITING_HUMAN run.
+
+    Form: ``committed_verdict`` (the verdict the reviewer chose —
+    usually matches v2's, sometimes overrides) + ``reason`` (≥3
+    chars). On success redirect back to the detail page.
+    """
+
+    run = await _get_or_404(session, id)
+
+    if run.status != AgentRunStatus.AWAITING_HUMAN:
+        await add_toast(
+            request,
+            f"Run is in status {run.status.value}; nothing to commit.",
+            "error",
+        )
+        return HXRedirectResponse(
+            request, str(request.url_for("agent_runs:get", id=run.id))
+        )
+
+    form = await request.form()
+    committed_verdict = str(form.get("committed_verdict", "")).strip()
+    reason = str(form.get("reason", "")).strip()
+
+    if committed_verdict not in ("approve", "deny", "needs_human"):
+        await add_toast(
+            request,
+            f"Unknown committed_verdict {committed_verdict!r}.",
+            "error",
+        )
+        return HXRedirectResponse(
+            request, str(request.url_for("agent_runs:get", id=run.id))
+        )
+
+    try:
+        await organization_review_agent_service.commit_human_decision(
+            session,
+            run,
+            committed_verdict=committed_verdict,
+            reviewer_user_id=user_session.user.id,
+            reviewer_reason=reason,
+        )
+    except ValueError as exc:
+        await add_toast(request, str(exc), "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("agent_runs:get", id=run.id))
+        )
+
+    await add_toast(
+        request,
+        f"Run committed: {committed_verdict}.",
+        "success",
+    )
+    return HXRedirectResponse(
+        request, str(request.url_for("agent_runs:get", id=run.id))
     )
 
 

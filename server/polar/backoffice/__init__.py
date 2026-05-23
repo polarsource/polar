@@ -5,6 +5,7 @@ from tagflow import tag, text
 
 from polar.observability.http_metrics import exclude_app_from_metrics
 
+from .agent_runs.endpoints import router as agent_runs_router
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
@@ -62,6 +63,7 @@ app.include_router(payouts_router, prefix="/payouts")
 app.include_router(impersonation_router, prefix="/impersonation")
 app.include_router(webhooks_router, prefix="/webhooks")
 app.include_router(feedbacks_router, prefix="/feedbacks")
+app.include_router(agent_runs_router, prefix="/agent-runs")
 
 
 @app.get("/", name="index")

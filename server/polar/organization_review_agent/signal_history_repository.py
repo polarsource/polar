@@ -127,6 +127,33 @@ class OrganizationReviewSignalHistoryRepository(
             row.reviewed_by_user_id = reviewer_user_id
         await self.session.flush()
 
+    async def list_for_run(
+        self,
+        agent_run_id: UUID,
+        *,
+        include_retired: bool = True,
+    ) -> Sequence[OrganizationReviewSignalHistory]:
+        """All signals emitted by a specific run.
+
+        Used by the backoffice agent-run detail page to render
+        agree/discard chips per signal. ``include_retired=True`` by
+        default — the agent-run page shows the full lifecycle of every
+        emission, including ones the org has since retired.
+        """
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationReviewSignalHistory.agent_run_id == agent_run_id
+            )
+            .order_by(OrganizationReviewSignalHistory.created_at)
+        )
+        if not include_retired:
+            statement = statement.where(
+                OrganizationReviewSignalHistory.retired_at.is_(None)
+            )
+        return await self.get_all(statement)
+
     async def list_for_organization(
         self,
         organization_id: UUID,

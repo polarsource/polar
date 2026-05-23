@@ -95,6 +95,72 @@ class OrganizationReviewAgentRunRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def list_for_owner(
+        self,
+        user_id: UUID,
+        *,
+        statuses: Sequence[AgentRunStatus] | None = None,
+        limit: int = 100,
+    ) -> Sequence[OrganizationReviewAgentRun]:
+        """Runs owned by a specific reviewer.
+
+        Powers the operator inbox's "Action required" section
+        (statuses=AWAITING_HUMAN) and "Waiting" section (status=…
+        with parking node names, in later slices).
+        """
+
+        statement = (
+            self.get_base_statement()
+            .where(OrganizationReviewAgentRun.owner_user_id == user_id)
+            .order_by(desc(OrganizationReviewAgentRun.created_at))
+            .limit(limit)
+        )
+        if statuses is not None:
+            statement = statement.where(
+                OrganizationReviewAgentRun.status.in_(statuses)
+            )
+        return await self.get_all(statement)
+
+    async def list_unowned_awaiting_human(
+        self,
+        *,
+        limit: int = 100,
+    ) -> Sequence[OrganizationReviewAgentRun]:
+        """AWAITING_HUMAN runs that no reviewer has claimed yet.
+
+        The inbox "Unassigned" section pulls from here so reviewers
+        can pick up runs without waiting for auto-routing to land
+        (Slice 3 part 2).
+        """
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationReviewAgentRun.status
+                == AgentRunStatus.AWAITING_HUMAN,
+                OrganizationReviewAgentRun.owner_user_id.is_(None),
+            )
+            .order_by(OrganizationReviewAgentRun.created_at)  # oldest first
+            .limit(limit)
+        )
+        return await self.get_all(statement)
+
+    async def assign_owner(
+        self, run: OrganizationReviewAgentRun, user_id: UUID
+    ) -> None:
+        """Claim a run for the given reviewer."""
+
+        run.owner_user_id = user_id
+        await self.session.flush()
+
+    async def release_owner(
+        self, run: OrganizationReviewAgentRun
+    ) -> None:
+        """Clear the owner (e.g. reviewer reassigned themselves OOO)."""
+
+        run.owner_user_id = None
+        await self.session.flush()
+
     async def list_stale_running(
         self, *, heartbeat_older_than: datetime
     ) -> Sequence[OrganizationReviewAgentRun]:

@@ -44,6 +44,11 @@ NAVIGATION = [
         "Feedback", "feedbacks:list", active_route_name_prefix="feedbacks:"
     ),
     navigation.NavigationItem(
+        "Agent Inbox",
+        "agent_runs:inbox",
+        active_route_name_prefix="agent_runs:inbox",
+    ),
+    navigation.NavigationItem(
         "Agent Runs",
         "agent_runs:list",
         active_route_name_prefix="agent_runs:",

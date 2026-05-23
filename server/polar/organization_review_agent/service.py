@@ -133,6 +133,97 @@ class OrganizationReviewAgentService:
         repository = OrganizationReviewAgentRunRepository.from_session(session)
         return await repository.get_by_id(run_id)
 
+    async def assign_owner(
+        self,
+        session: AsyncSession,
+        run: OrganizationReviewAgentRun,
+        user_id: UUID,
+    ) -> None:
+        """Reviewer claims a run.
+
+        Idempotent: claiming a run already owned by the same user is a
+        no-op. Claiming one owned by a different user overwrites — the
+        UI should warn before re-assigning, but the service does not.
+        """
+
+        if run.owner_user_id == user_id:
+            return
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+        previous = run.owner_user_id
+        await repository.assign_owner(run, user_id)
+        await repository.append_event(
+            run,
+            {
+                "kind": "owner_assigned",
+                "at": utc_now().isoformat(),
+                "owner_user_id": str(user_id),
+                "previous_owner_user_id": (
+                    str(previous) if previous else None
+                ),
+            },
+        )
+
+    async def release_owner(
+        self,
+        session: AsyncSession,
+        run: OrganizationReviewAgentRun,
+        *,
+        released_by_user_id: UUID,
+    ) -> None:
+        """Clear the owner."""
+
+        if run.owner_user_id is None:
+            return
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+        previous = run.owner_user_id
+        await repository.release_owner(run)
+        await repository.append_event(
+            run,
+            {
+                "kind": "owner_released",
+                "at": utc_now().isoformat(),
+                "previous_owner_user_id": str(previous),
+                "released_by_user_id": str(released_by_user_id),
+            },
+        )
+
+    async def list_inbox_for_user(
+        self,
+        session: AsyncReadSession,
+        user_id: UUID,
+        *,
+        limit: int = 100,
+    ) -> dict[str, Sequence[OrganizationReviewAgentRun]]:
+        """Operator inbox bundle: action_required + unassigned.
+
+        Returns a dict the backoffice template can iterate over:
+        - ``action_required`` — my AWAITING_HUMAN runs.
+        - ``unassigned`` — AWAITING_HUMAN runs nobody owns yet.
+
+        Slice 3 part 2 adds ``waiting`` (parked runs the user owns)
+        and ``sla_breaches`` (any owner, past due_at).
+        """
+
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+        action_required = await repository.list_for_owner(
+            user_id,
+            statuses=[AgentRunStatus.AWAITING_HUMAN],
+            limit=limit,
+        )
+        unassigned = await repository.list_unowned_awaiting_human(
+            limit=limit
+        )
+        return {
+            "action_required": action_required,
+            "unassigned": unassigned,
+        }
+
     async def commit_human_decision(
         self,
         session: AsyncSession,

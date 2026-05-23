@@ -100,6 +100,69 @@ def _verdict_badge(verdict: str | None) -> None:
 # ---------------------------------------------------------------------------
 
 
+@router.get("/inbox", name="agent_runs:inbox")
+async def inbox(
+    request: Request,
+    session: AsyncReadSession = Depends(get_db_read_session),
+    user_session: UserSession = Depends(get_admin),
+) -> None:
+    """Operator inbox: my AWAITING_HUMAN runs + the unassigned queue.
+
+    Slice 3 part 2 adds per-context tabs + SLA-breach section. For
+    now this is two sections so the operator-first value lands
+    without waiting for the routing predicate library.
+    """
+
+    bundle = await organization_review_agent_service.list_inbox_for_user(
+        session, user_session.user.id
+    )
+    with layout(
+        request,
+        [("Agent Runs Inbox", str(request.url))],
+        "agent_runs:inbox",
+    ):
+        with tag.div(classes="flex flex-col gap-6"):
+            with tag.h1(classes="text-4xl"):
+                text("Inbox")
+            with tag.p(classes="text-sm text-base-content/70 max-w-3xl"):
+                text(
+                    "v2 agent runs in AWAITING_HUMAN. Claim a row to "
+                    "appear as the owner everywhere else; commit on the "
+                    "detail page."
+                )
+            _render_inbox_section(
+                request,
+                "Action required (yours)",
+                bundle["action_required"],
+                empty_message="Nothing assigned to you right now.",
+            )
+            _render_inbox_section(
+                request,
+                "Unassigned",
+                bundle["unassigned"],
+                empty_message="No unclaimed runs.",
+            )
+
+
+def _render_inbox_section(
+    request: Request,
+    heading: str,
+    runs: Sequence[OrganizationReviewAgentRun],
+    *,
+    empty_message: str,
+) -> None:
+    with tag.div(classes="flex flex-col gap-2"):
+        with tag.h2(classes="text-xl font-bold"):
+            text(f"{heading} ({len(runs)})")
+        if not runs:
+            with tag.div(
+                classes="text-base-content/60 text-sm py-2"
+            ):
+                text(empty_message)
+            return
+        _render_list_table(request, runs)
+
+
 @router.get("/", name="agent_runs:list")
 async def list_recent(
     request: Request,
@@ -152,6 +215,7 @@ def _render_list_table(
                         "Trigger",
                         "Status",
                         "Verdict",
+                        "Owner",
                         "Node",
                     ):
                         with tag.th():
@@ -191,6 +255,12 @@ def _render_list_row(
             )
             _verdict_badge(verdict)
         with tag.td(classes="font-mono text-xs"):
+            text(
+                str(run.owner_user_id)[:8] + "…"
+                if run.owner_user_id
+                else "—"
+            )
+        with tag.td(classes="font-mono text-xs"):
             text(run.current_node or "—")
 
 
@@ -213,6 +283,7 @@ async def get(
     request: Request,
     id: UUID4,
     session: AsyncReadSession = Depends(get_db_read_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> None:
     run = await _get_or_404(session, id)
 
@@ -234,7 +305,7 @@ async def get(
         "agent_runs:get",
     ):
         with tag.div(classes="flex flex-col gap-4"):
-            _render_header(run, org_slug)
+            _render_header(run, org_slug, request, user_session)
             # Signals card spans both columns at the top: it's the
             # actionable content. Reviewers click chips inline.
             _render_signals_card(request, run, signals)
@@ -248,7 +319,10 @@ async def get(
 
 
 def _render_header(
-    run: OrganizationReviewAgentRun, org_slug: str
+    run: OrganizationReviewAgentRun,
+    org_slug: str,
+    request: Request | None = None,
+    user_session: UserSession | None = None,
 ) -> None:
     with tag.div(classes="flex items-center gap-3"):
         with tag.h1(classes="text-3xl"):
@@ -256,6 +330,8 @@ def _render_header(
         _context_badge(run.context)
         _triggered_by_badge(run.triggered_by)
         _status_badge(run.status)
+        if request is not None and user_session is not None:
+            _render_owner_controls(request, run, user_session)
     with tag.div(
         classes="text-sm text-base-content/70 font-mono flex gap-4"
     ):
@@ -265,6 +341,70 @@ def _render_header(
             text(
                 f"completed: {run.completed_at.isoformat(timespec='seconds')}"
             )
+
+
+def _render_owner_controls(
+    request: Request,
+    run: OrganizationReviewAgentRun,
+    user_session: UserSession,
+) -> None:
+    """Inline owner badge + assign/release controls.
+
+    Only renders for AWAITING_HUMAN runs — owning a COMPLETED row
+    serves no purpose. Shows the owner's id (truncated) when present,
+    "unassigned" badge otherwise.
+    """
+
+    if run.status != AgentRunStatus.AWAITING_HUMAN:
+        return
+
+    is_owner = run.owner_user_id == user_session.user.id
+    has_owner = run.owner_user_id is not None
+
+    with tag.div(classes="flex items-center gap-2 ml-auto"):
+        if not has_owner:
+            with tag.div(classes="badge badge-ghost badge-sm"):
+                text("unassigned")
+            _assign_to_me_button(request, run)
+        elif is_owner:
+            with tag.div(classes="badge badge-primary badge-sm"):
+                text("mine")
+            _release_button(request, run)
+        else:
+            with tag.div(
+                classes="badge badge-warning badge-sm font-mono",
+                title=f"owner: {run.owner_user_id}",
+            ):
+                text(f"owned by {str(run.owner_user_id)[:8]}…")
+            # Allow reassignment — claim-stealing is sometimes
+            # needed when the original owner is OOO.
+            _assign_to_me_button(request, run, label="Take over")
+
+
+def _assign_to_me_button(
+    request: Request,
+    run: OrganizationReviewAgentRun,
+    label: str = "Assign to me",
+) -> None:
+    action_url = str(request.url_for("agent_runs:assign_owner", id=run.id))
+    with tag.form(method="post", action=action_url):
+        with tag.button(
+            type="submit", classes="btn btn-xs btn-primary btn-outline"
+        ):
+            text(label)
+
+
+def _release_button(
+    request: Request, run: OrganizationReviewAgentRun
+) -> None:
+    action_url = str(
+        request.url_for("agent_runs:release_owner", id=run.id)
+    )
+    with tag.form(method="post", action=action_url):
+        with tag.button(
+            type="submit", classes="btn btn-xs btn-ghost"
+        ):
+            text("Release")
 
 
 def _render_signals_card(
@@ -780,6 +920,44 @@ async def resolve_signal(
     return HXRedirectResponse(
         request,
         str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
+    )
+
+
+@router.post("/{id}/assign", name="agent_runs:assign_owner")
+async def assign_owner(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> Any:
+    """Reviewer claims a run (or takes over from another owner)."""
+
+    run = await _get_or_404(session, id)
+    await organization_review_agent_service.assign_owner(
+        session, run, user_session.user.id
+    )
+    await add_toast(request, "Assigned to you.", "success")
+    return HXRedirectResponse(
+        request, str(request.url_for("agent_runs:get", id=run.id))
+    )
+
+
+@router.post("/{id}/release", name="agent_runs:release_owner")
+async def release_owner(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> Any:
+    """Reviewer releases their claim on a run."""
+
+    run = await _get_or_404(session, id)
+    await organization_review_agent_service.release_owner(
+        session, run, released_by_user_id=user_session.user.id
+    )
+    await add_toast(request, "Released.", "success")
+    return HXRedirectResponse(
+        request, str(request.url_for("agent_runs:get", id=run.id))
     )
 
 

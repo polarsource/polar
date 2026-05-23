@@ -31,6 +31,7 @@ from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
+    from polar.models.user import User
 
 
 class AgentRunStatus(StrEnum):
@@ -223,12 +224,34 @@ class OrganizationReviewAgentRun(RecordModel):
         ),
     )
 
+    owner_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("users.id", ondelete="set null"),
+        nullable=True,
+        default=None,
+        index=True,
+        doc=(
+            "Slice 3: per-run ownership for the operator inbox. NULL "
+            "for shadow runs or until a reviewer claims the run via "
+            "'Assign to me'. ``ondelete=SET NULL`` so user-deletion "
+            "doesn't cascade into runs."
+        ),
+    )
+
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship(
             "Organization",
             lazy="raise",
             foreign_keys=[cls.organization_id],
+        )
+
+    @declared_attr
+    def owner(cls) -> Mapped["User | None"]:
+        return relationship(
+            "User",
+            lazy="raise",
+            foreign_keys=[cls.owner_user_id],
         )
 
     def __repr__(self) -> str:

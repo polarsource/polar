@@ -224,6 +224,82 @@ class OrganizationReviewAgentService:
             "unassigned": unassigned,
         }
 
+    async def open_pattern_match(
+        self,
+        session: AsyncSession,
+        *,
+        signature_kind: str,
+        triggering_org_ids: Sequence[UUID],
+        notes: str,
+    ) -> OrganizationReviewAgentRun:
+        """Open a PATTERN_MATCH parent run linking N child orgs.
+
+        Called by the pattern_detector cron when ≥N distinct orgs
+        share the same signature in a window. The parent's
+        ``triggered_by`` is ``"pattern_detector"``; the per-org child
+        runs (created via :meth:`start_shadow_run` with
+        ``context="pattern_match"``) carry ``parent_agent_run_id``
+        pointing back here.
+
+        Hard-capped at 200 children — the detector's repository helper
+        enforces this; this method assumes the caller already pruned.
+        """
+
+        if len(triggering_org_ids) > 200:
+            raise ValueError(
+                "Pattern match fan-out hard-capped at 200 orgs; "
+                f"caller passed {len(triggering_org_ids)}."
+            )
+        if len(triggering_org_ids) < 1:
+            raise ValueError(
+                "open_pattern_match requires at least one triggering "
+                "org id."
+            )
+        if len(notes.strip()) < 10:
+            raise ValueError(
+                "Pattern match notes must be ≥10 chars (audit signal)."
+            )
+
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+        # The parent run is org-anchored to the first triggering org —
+        # arbitrary but useful for the backoffice listing. Child links
+        # carry the full graph via parent_agent_run_id.
+        parent = OrganizationReviewAgentRun(
+            organization_id=triggering_org_ids[0],
+            context="pattern_match",
+            triggered_by="pattern_detector",
+            status=AgentRunStatus.AWAITING_HUMAN,
+            org_snapshot={
+                "pattern_kind": signature_kind,
+                "triggering_org_count": len(triggering_org_ids),
+                "triggering_org_ids": [
+                    str(oid) for oid in triggering_org_ids
+                ],
+                "notes": notes.strip(),
+            },
+            final_report=None,
+        )
+        await repository.create(parent, flush=True)
+        await repository.append_event(
+            parent,
+            {
+                "kind": "pattern_opened",
+                "at": utc_now().isoformat(),
+                "signature_kind": signature_kind,
+                "triggering_org_count": len(triggering_org_ids),
+                "notes": notes.strip(),
+            },
+        )
+        log.info(
+            "organization_review_agent.pattern.opened",
+            parent_run_id=str(parent.id),
+            signature_kind=signature_kind,
+            triggering_org_count=len(triggering_org_ids),
+        )
+        return parent
+
     async def park_for_merchant(
         self,
         session: AsyncSession,

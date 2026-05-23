@@ -161,6 +161,113 @@ class OrganizationReviewAgentRunRepository(
         run.owner_user_id = None
         await self.session.flush()
 
+    async def list_recent_signals_by_kind_across_orgs(
+        self,
+        *,
+        kind: str,
+        window_days: int = 14,
+        min_orgs: int = 3,
+        limit: int = 200,
+    ) -> Sequence[OrganizationReviewAgentRun]:
+        """Find runs that emitted the same ``kind`` across N+ distinct orgs.
+
+        Pattern-detector substrate (Slice 9). Returns the most recent
+        run per matching org — ``min_orgs`` distinct organizations
+        having raised the same kind in the past ``window_days`` is the
+        threshold that opens a PATTERN_MATCH parent run. The caller
+        (the pattern_detector cron) is responsible for the actual
+        parent-run creation + child-link wiring.
+
+        Hard-capped at ``limit`` so the detector can't fan out to
+        thousands of orgs on a runaway signal.
+        """
+
+        import datetime
+        from sqlalchemy import func, select
+
+        from polar.models.organization_review_signal_history import (
+            OrganizationReviewSignalHistory,
+        )
+
+        cutoff = utc_now() - datetime.timedelta(days=window_days)
+
+        # Step 1: distinct organization_ids matching kind + window.
+        org_subq = (
+            select(
+                OrganizationReviewSignalHistory.organization_id,
+                func.max(
+                    OrganizationReviewSignalHistory.created_at
+                ).label("latest_at"),
+            )
+            .where(
+                OrganizationReviewSignalHistory.kind == kind,
+                OrganizationReviewSignalHistory.created_at >= cutoff,
+                OrganizationReviewSignalHistory.retired_at.is_(None),
+                OrganizationReviewSignalHistory.deleted_at.is_(None),
+            )
+            .group_by(OrganizationReviewSignalHistory.organization_id)
+        ).subquery()
+
+        # Step 2: require at least min_orgs distinct orgs.
+        distinct_count = (
+            await self.session.execute(
+                select(func.count()).select_from(org_subq)
+            )
+        ).scalar_one()
+        if distinct_count < min_orgs:
+            return []
+
+        # Step 3: latest run per matching org (a simple JOIN keeps it
+        # cheap; the detector's downstream logic refines per-pattern).
+        latest_run_subq = (
+            select(
+                OrganizationReviewAgentRun.organization_id,
+                func.max(
+                    OrganizationReviewAgentRun.created_at
+                ).label("run_at"),
+            )
+            .where(
+                OrganizationReviewAgentRun.organization_id.in_(
+                    select(org_subq.c.organization_id)
+                ),
+                OrganizationReviewAgentRun.context != "pattern_match",
+            )
+            .group_by(OrganizationReviewAgentRun.organization_id)
+            .limit(limit)
+        ).subquery()
+
+        statement = (
+            self.get_base_statement()
+            .join(
+                latest_run_subq,
+                (
+                    OrganizationReviewAgentRun.organization_id
+                    == latest_run_subq.c.organization_id
+                )
+                & (
+                    OrganizationReviewAgentRun.created_at
+                    == latest_run_subq.c.run_at
+                ),
+            )
+            .order_by(OrganizationReviewAgentRun.created_at)
+        )
+        return await self.get_all(statement)
+
+    async def list_pattern_children(
+        self, parent_agent_run_id: UUID
+    ) -> Sequence[OrganizationReviewAgentRun]:
+        """All child runs linked to a PATTERN_MATCH parent."""
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationReviewAgentRun.parent_agent_run_id
+                == parent_agent_run_id
+            )
+            .order_by(OrganizationReviewAgentRun.created_at)
+        )
+        return await self.get_all(statement)
+
     async def list_sla_breached(
         self,
         *,

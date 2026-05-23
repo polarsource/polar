@@ -250,4 +250,96 @@ def _sla_system_user_id():  # type: ignore[no-untyped-def]
     return UUID("00000000-0000-0000-0000-000000000000")
 
 
-__all__ = ["execute_run", "sla_scanner"]
+@actor(
+    actor_name="organization_review_agent.pattern_detector",
+    priority=TaskPriority.LOW,
+    time_limit=120_000,
+    max_retries=0,
+    # Hourly tick — pattern detection on 14d windows is not latency-
+    # sensitive. The granularity is "catch coordinated rings before
+    # they grow", which hours-of-delay is fine for.
+    cron_trigger=CronTrigger.from_crontab("0 * * * *"),
+)
+async def pattern_detector() -> None:
+    """Cron tick: detect cross-org signature clusters → open PATTERN_MATCH.
+
+    For each high-severity SignalKind, check how many distinct orgs
+    have raised it in the past 14 days. If ≥ N (default 3), open a
+    parent PATTERN_MATCH run linking them. Idempotency: today's
+    detector is a stub that simply doesn't re-open if a parent run
+    with the same signature exists in the past 24h. Slice 9 part 2
+    formalises the dedupe key.
+
+    The actual cross-org tracing logic is intentionally narrow to
+    start with — only the strongest HIGH-severity signals (USER_BLOCKED,
+    PRIOR_BLOCKS_PRESENT, REDIRECT_TO_OTHER_DOMAIN once the website
+    lane lands) participate. False-positive parent runs are louder
+    than missed patterns, so the gate stays conservative.
+    """
+
+    if settings.ENV == Environment.sandbox:
+        return
+
+    # Signature kinds that warrant pattern detection. Keep narrow to
+    # start — the detector's value is "catch coordinated rings", not
+    # "open a parent run every time two orgs share a generic signal".
+    PATTERN_KINDS = (
+        "user_blocked",
+        "prior_blocks_present",
+    )
+
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+        from polar.organization_review_agent.service import (
+            organization_review_agent_service,
+        )
+
+        for kind in PATTERN_KINDS:
+            matching_runs = (
+                await repository.list_recent_signals_by_kind_across_orgs(
+                    kind=kind, window_days=14, min_orgs=3, limit=200
+                )
+            )
+            if not matching_runs:
+                continue
+
+            # Dedupe: skip if a PATTERN_MATCH parent for this kind has
+            # opened in the last 24h. Repository helper TBD; for now do
+            # a quick scan on recent runs.
+            recent_patterns = await repository.list_recent(
+                limit=50, triggered_by="pattern_detector"
+            )
+            duplicate = False
+            for parent in recent_patterns:
+                snapshot = parent.org_snapshot or {}
+                if snapshot.get("pattern_kind") == kind:
+                    duplicate = True
+                    break
+            if duplicate:
+                log.info(
+                    "organization_review_agent.pattern.dedup_skipped",
+                    kind=kind,
+                    matching_org_count=len(matching_runs),
+                )
+                continue
+
+            org_ids = list({r.organization_id for r in matching_runs})
+            await organization_review_agent_service.open_pattern_match(
+                session,
+                signature_kind=kind,
+                triggering_org_ids=org_ids,
+                notes=(
+                    f"Pattern detected: {len(org_ids)} distinct orgs "
+                    f"raised {kind} in the past 14d."
+                ),
+            )
+            log.info(
+                "organization_review_agent.pattern.opened",
+                kind=kind,
+                triggering_org_count=len(org_ids),
+            )
+
+
+__all__ = ["execute_run", "pattern_detector", "sla_scanner"]

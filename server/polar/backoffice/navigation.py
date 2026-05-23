@@ -53,4 +53,9 @@ NAVIGATION = [
         "agent_runs:list",
         active_route_name_prefix="agent_runs:",
     ),
+    navigation.NavigationItem(
+        "Agent Dashboard",
+        "agent_runs:dashboard",
+        active_route_name_prefix="agent_runs:dashboard",
+    ),
 ]

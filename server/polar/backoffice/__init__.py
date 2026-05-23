@@ -5,7 +5,7 @@ from tagflow import tag, text
 
 from polar.observability.http_metrics import exclude_app_from_metrics
 
-from .agent_runs.endpoints import router as agent_runs_router
+from .agent_runs import router as agent_runs_router
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
 from .dependencies import get_admin

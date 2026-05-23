@@ -17,7 +17,11 @@ from sqlalchemy import desc, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import cast
 
-from polar.kit.repository.base import RepositoryBase, RepositorySoftDeletionIDMixin
+from polar.kit.repository.base import (
+    RepositoryBase,
+    RepositorySoftDeletionIDMixin,
+    RepositorySoftDeletionMixin,
+)
 from polar.kit.utils import utc_now
 from polar.models.organization_review_agent_run import (
     AgentRunStatus,
@@ -27,6 +31,7 @@ from polar.models.organization_review_agent_run import (
 
 class OrganizationReviewAgentRunRepository(
     RepositorySoftDeletionIDMixin[OrganizationReviewAgentRun, UUID],
+    RepositorySoftDeletionMixin[OrganizationReviewAgentRun],
     RepositoryBase[OrganizationReviewAgentRun],
 ):
     model = OrganizationReviewAgentRun

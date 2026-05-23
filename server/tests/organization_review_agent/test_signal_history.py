@@ -9,6 +9,7 @@ import pytest
 
 from polar.models.organization import Organization
 from polar.models.organization_review_signal_history import SignalResolution
+from polar.models.user import User
 from polar.organization_review_agent.schemas import (
     RaisedSignal,
     Severity,
@@ -65,11 +66,6 @@ class TestPersistSignalsFromRun:
     async def test_uses_registry_default_when_severity_omitted(
         self, session: AsyncSession, organization: Organization
     ) -> None:
-        """A signal that omits ``severity`` falls back to the
-        registry default. The persisted row carries the resolved
-        severity, not None.
-        """
-
         with patch(
             "polar.organization_review_agent.service.enqueue_job"
         ):
@@ -122,32 +118,35 @@ class TestResolveSignal:
         return rows[0]
 
     async def test_flips_pending_to_approved(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
     ) -> None:
         row = await self._seed(session, organization)
-        reviewer_id = uuid4()
         await organization_review_agent_service.resolve_signal(
             session,
             row,
             resolution=SignalResolution.APPROVED,
             reviewer_reason="confirmed manually with payouts team",
-            reviewer_user_id=reviewer_id,
+            reviewer_user_id=user.id,
         )
         assert row.resolution == SignalResolution.APPROVED
         assert row.reviewer_reason == "confirmed manually with payouts team"
-        assert row.reviewed_by_user_id == reviewer_id
+        assert row.reviewed_by_user_id == user.id
         assert row.reviewed_at is not None
 
     async def test_rejects_short_reason(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         row = await self._seed(session, organization)
+        # ValueError raised before FK check, so uuid4() is fine here.
         with pytest.raises(ValueError, match="≥3 chars"):
             await organization_review_agent_service.resolve_signal(
                 session,
                 row,
                 resolution=SignalResolution.APPROVED,
-                reviewer_reason="ok",  # 2 chars
+                reviewer_reason="ok",
                 reviewer_user_id=uuid4(),
             )
 
@@ -168,7 +167,10 @@ class TestResolveSignal:
 @pytest.mark.asyncio
 class TestRetireSignal:
     async def test_retire_marks_row_and_appends_to_reason(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
     ) -> None:
         with patch(
             "polar.organization_review_agent.service.enqueue_job"
@@ -191,21 +193,19 @@ class TestRetireSignal:
             ],
         )
         row = rows[0]
-        reviewer_id = uuid4()
 
-        # First, mark it as APPROVED with a reason.
         await organization_review_agent_service.resolve_signal(
             session,
             row,
             resolution=SignalResolution.APPROVED,
             reviewer_reason="confirmed by payouts",
-            reviewer_user_id=reviewer_id,
+            reviewer_user_id=user.id,
         )
 
         await organization_review_agent_service.retire_signal(
             session,
             row,
-            reviewer_user_id=reviewer_id,
+            reviewer_user_id=user.id,
             reason="merchant changed business model",
         )
 
@@ -215,7 +215,10 @@ class TestRetireSignal:
         )
 
     async def test_retire_is_idempotent(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
     ) -> None:
         with patch(
             "polar.organization_review_agent.service.enqueue_job"
@@ -239,13 +242,12 @@ class TestRetireSignal:
         )
         row = rows[0]
         await organization_review_agent_service.retire_signal(
-            session, row, reviewer_user_id=uuid4(), reason="first"
+            session, row, reviewer_user_id=user.id, reason="first"
         )
         first_retired = row.retired_at
         await organization_review_agent_service.retire_signal(
-            session, row, reviewer_user_id=uuid4(), reason="second"
+            session, row, reviewer_user_id=user.id, reason="second"
         )
-        # No-op on second call.
         assert row.retired_at == first_retired
         assert "second" not in (row.reviewer_reason or "")
 
@@ -253,7 +255,10 @@ class TestRetireSignal:
 @pytest.mark.asyncio
 class TestMemorySummary:
     async def test_aggregates_per_kind(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
     ) -> None:
         with patch(
             "polar.organization_review_agent.service.enqueue_job"
@@ -285,27 +290,26 @@ class TestMemorySummary:
                 ),
             ],
         )
-        reviewer = uuid4()
         await organization_review_agent_service.resolve_signal(
             session,
             rows[0],
             resolution=SignalResolution.APPROVED,
             reviewer_reason="confirmed",
-            reviewer_user_id=reviewer,
+            reviewer_user_id=user.id,
         )
         await organization_review_agent_service.resolve_signal(
             session,
             rows[1],
             resolution=SignalResolution.DISCARDED,
             reviewer_reason="false positive — appeals already won",
-            reviewer_user_id=reviewer,
+            reviewer_user_id=user.id,
         )
         await organization_review_agent_service.resolve_signal(
             session,
             rows[2],
             resolution=SignalResolution.APPROVED,
             reviewer_reason="confirmed via payouts ticket",
-            reviewer_user_id=reviewer,
+            reviewer_user_id=user.id,
         )
 
         summary = await organization_review_agent_service.get_signal_memory_for_organization(
@@ -317,7 +321,10 @@ class TestMemorySummary:
         }
 
     async def test_retired_rows_excluded(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
     ) -> None:
         with patch(
             "polar.organization_review_agent.service.enqueue_job"
@@ -339,18 +346,17 @@ class TestMemorySummary:
                 )
             ],
         )
-        reviewer = uuid4()
         await organization_review_agent_service.resolve_signal(
             session,
             rows[0],
             resolution=SignalResolution.APPROVED,
             reviewer_reason="confirmed",
-            reviewer_user_id=reviewer,
+            reviewer_user_id=user.id,
         )
         await organization_review_agent_service.retire_signal(
             session,
             rows[0],
-            reviewer_user_id=reviewer,
+            reviewer_user_id=user.id,
             reason="org changed",
         )
 

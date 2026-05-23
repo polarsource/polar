@@ -28,6 +28,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy import StringEnum
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
@@ -108,7 +109,7 @@ class OrganizationReviewSignalHistory(RecordModel):
     )
 
     resolution: Mapped[SignalResolution] = mapped_column(
-        String(16),
+        StringEnum(SignalResolution, length=16),
         nullable=False,
         default=SignalResolution.PENDING,
         index=True,

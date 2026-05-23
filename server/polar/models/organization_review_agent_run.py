@@ -28,6 +28,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy import StringEnum
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
@@ -106,7 +107,7 @@ class OrganizationReviewAgentRun(RecordModel):
     )
 
     status: Mapped[AgentRunStatus] = mapped_column(
-        String(32),
+        StringEnum(AgentRunStatus, length=32),
         nullable=False,
         default=AgentRunStatus.PENDING,
         index=True,

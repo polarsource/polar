@@ -241,49 +241,36 @@ class TestDecisiveSignalKinds:
     verdict — used by Slice 1 auto-take and Slice 4 merchant disclosure.
     """
 
-    @pytest.mark.asyncio
-    async def test_decisive_kinds_populated_from_signals(self) -> None:
-        from polar.organization_review_agent.graph import (
-            DecideNode,
-            GraphDeps,
-        )
+    def test_decisive_kinds_excludes_suppressed(self) -> None:
+        """Suppressed signals (memory-driven) are not "decisive"."""
 
-        # We don't actually need real deps for Decide — it only reads
-        # state.raised_signals.
+        signals = [
+            RaisedSignal(
+                kind=SignalKind.PRIOR_DENIALS_PRESENT,
+                severity=Severity.MEDIUM,
+                summary="2 denials",
+            ),
+            RaisedSignal(
+                kind=SignalKind.USER_BLOCKED,
+                severity=Severity.HIGH,
+                summary="admin blocked",
+            ),
+        ]
         node = DecideNode()
-        state = ReviewState(
-            organization_id=_dummy_org_id(),
-            context="submission",
-            raised_signals=[
-                RaisedSignal(
-                    kind=SignalKind.PRIOR_DENIALS_PRESENT,
-                    severity=Severity.MEDIUM,
-                    summary="2 denials",
-                ),
-                RaisedSignal(
-                    kind=SignalKind.USER_BLOCKED,
-                    severity=Severity.HIGH,
-                    summary="admin blocked",
-                ),
-            ],
-        )
-        # Construct a deps object with None handles — DecideNode does
-        # not touch them.
-        deps = GraphDeps(
-            organization=None,  # type: ignore[arg-type]
-            session=None,  # type: ignore[arg-type]
-            run=None,  # type: ignore[arg-type]
-        )
-        result = await node.run(state, deps)
+        # No memory weighting → both kinds decisive.
+        adjusted = node._apply_memory_weights(signals, {})
+        decisive = node._decisive_kinds_from_adjusted(adjusted)
+        assert SignalKind.USER_BLOCKED in decisive
+        assert SignalKind.PRIOR_DENIALS_PRESENT in decisive
 
-        assert result is None  # Decide terminates the graph.
-        assert state.tentative_report is not None
-        assert state.tentative_report.verdict == AgentVerdict.DENY
-        # Decisive kinds: HIGH ranked first (the heuristic dedupes by
-        # severity, so we expect the unique kinds).
-        kinds = state.tentative_report.decisive_signal_kinds
-        assert SignalKind.USER_BLOCKED in kinds
-        assert SignalKind.PRIOR_DENIALS_PRESENT in kinds
+        # Suppress PRIOR_DENIALS_PRESENT via memory.
+        adjusted = node._apply_memory_weights(
+            signals,
+            {"prior_denials_present": {"approved": 0, "discarded": 2}},
+        )
+        decisive = node._decisive_kinds_from_adjusted(adjusted)
+        assert SignalKind.USER_BLOCKED in decisive
+        assert SignalKind.PRIOR_DENIALS_PRESENT not in decisive
 
 
 def _dummy_org_id():  # type: ignore[no-untyped-def]

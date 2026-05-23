@@ -18,7 +18,11 @@ from uuid import UUID
 
 from sqlalchemy import desc, select
 
-from polar.kit.repository.base import RepositoryBase, RepositorySoftDeletionIDMixin
+from polar.kit.repository.base import (
+    RepositoryBase,
+    RepositorySoftDeletionIDMixin,
+    RepositorySoftDeletionMixin,
+)
 from polar.kit.utils import utc_now
 from polar.models.organization_review_signal_history import (
     OrganizationReviewSignalHistory,
@@ -31,6 +35,7 @@ from .taxonomy import spec_for
 
 class OrganizationReviewSignalHistoryRepository(
     RepositorySoftDeletionIDMixin[OrganizationReviewSignalHistory, UUID],
+    RepositorySoftDeletionMixin[OrganizationReviewSignalHistory],
     RepositoryBase[OrganizationReviewSignalHistory],
 ):
     model = OrganizationReviewSignalHistory

@@ -51,17 +51,20 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 
-def _status_badge(status: AgentRunStatus) -> None:
+def _status_badge(status: AgentRunStatus | str) -> None:
+    # SQLAlchemy may rehydrate the column as a plain string depending on
+    # type adapters; accept either and coerce.
+    value = status.value if isinstance(status, AgentRunStatus) else str(status)
     variant = {
-        AgentRunStatus.PENDING: "badge-ghost",
-        AgentRunStatus.RUNNING: "badge-info",
-        AgentRunStatus.AWAITING_HUMAN: "badge-warning",
-        AgentRunStatus.COMPLETED: "badge-success",
-        AgentRunStatus.FAILED: "badge-error",
-        AgentRunStatus.CANCELLED: "badge-neutral",
-    }.get(status, "badge-ghost")
+        AgentRunStatus.PENDING.value: "badge-ghost",
+        AgentRunStatus.RUNNING.value: "badge-info",
+        AgentRunStatus.AWAITING_HUMAN.value: "badge-warning",
+        AgentRunStatus.COMPLETED.value: "badge-success",
+        AgentRunStatus.FAILED.value: "badge-error",
+        AgentRunStatus.CANCELLED.value: "badge-neutral",
+    }.get(value, "badge-ghost")
     with tag.div(classes=f"badge {variant}"):
-        text(status.value)
+        text(value)
 
 
 def _triggered_by_badge(triggered_by: str) -> None:
@@ -978,10 +981,7 @@ async def resolve_signal(
             f"Unknown resolution {raw_resolution!r}.",
             "error",
         )
-        return HXRedirectResponse(
-            request,
-            str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=signal.agent_run_id)), 303)
 
     if resolution == SignalResolution.PENDING:
         await add_toast(
@@ -989,10 +989,7 @@ async def resolve_signal(
             "Can't set a signal back to pending; retire instead.",
             "error",
         )
-        return HXRedirectResponse(
-            request,
-            str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=signal.agent_run_id)), 303)
 
     try:
         await organization_review_agent_service.resolve_signal(
@@ -1004,20 +1001,14 @@ async def resolve_signal(
         )
     except ValueError as exc:
         await add_toast(request, str(exc), "error")
-        return HXRedirectResponse(
-            request,
-            str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=signal.agent_run_id)), 303)
 
     await add_toast(
         request,
         f"Signal {signal.kind} marked {resolution.value}.",
         "success",
     )
-    return HXRedirectResponse(
-        request,
-        str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
-    )
+    return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=signal.agent_run_id)), 303)
 
 
 @router.post("/{id}/park-for-merchant", name="agent_runs:park_for_merchant")
@@ -1042,18 +1033,14 @@ async def park_for_merchant(
             "Park only available on AWAITING_HUMAN runs.",
             "error",
         )
-        return HXRedirectResponse(
-            request, str(request.url_for("agent_runs:get", id=run.id))
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
     form = await request.form()
     try:
         days = int(str(form.get("days", "")).strip())
     except ValueError:
         await add_toast(request, "Days must be a number.", "error")
-        return HXRedirectResponse(
-            request, str(request.url_for("agent_runs:get", id=run.id))
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
     on_timeout = str(form.get("on_timeout", "")).strip()
     reason = str(form.get("reason", "")).strip()
     plain_thread_id = (
@@ -1072,18 +1059,14 @@ async def park_for_merchant(
         )
     except ValueError as exc:
         await add_toast(request, str(exc), "error")
-        return HXRedirectResponse(
-            request, str(request.url_for("agent_runs:get", id=run.id))
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
     await add_toast(
         request,
         f"Parked for {days}d (on_timeout={on_timeout}).",
         "success",
     )
-    return HXRedirectResponse(
-        request, str(request.url_for("agent_runs:get", id=run.id))
-    )
+    return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
 
 @router.post("/{id}/assign", name="agent_runs:assign_owner")
@@ -1100,9 +1083,7 @@ async def assign_owner(
         session, run, user_session.user.id
     )
     await add_toast(request, "Assigned to you.", "success")
-    return HXRedirectResponse(
-        request, str(request.url_for("agent_runs:get", id=run.id))
-    )
+    return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
 
 @router.post("/{id}/release", name="agent_runs:release_owner")
@@ -1119,9 +1100,7 @@ async def release_owner(
         session, run, released_by_user_id=user_session.user.id
     )
     await add_toast(request, "Released.", "success")
-    return HXRedirectResponse(
-        request, str(request.url_for("agent_runs:get", id=run.id))
-    )
+    return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
 
 @router.post(
@@ -1143,14 +1122,17 @@ async def commit_human_decision(
     run = await _get_or_404(session, id)
 
     if run.status != AgentRunStatus.AWAITING_HUMAN:
+        status_str = (
+            run.status.value
+            if isinstance(run.status, AgentRunStatus)
+            else str(run.status)
+        )
         await add_toast(
             request,
-            f"Run is in status {run.status.value}; nothing to commit.",
+            f"Run is in status {status_str}; nothing to commit.",
             "error",
         )
-        return HXRedirectResponse(
-            request, str(request.url_for("agent_runs:get", id=run.id))
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
     form = await request.form()
     committed_verdict = str(form.get("committed_verdict", "")).strip()
@@ -1162,9 +1144,7 @@ async def commit_human_decision(
             f"Unknown committed_verdict {committed_verdict!r}.",
             "error",
         )
-        return HXRedirectResponse(
-            request, str(request.url_for("agent_runs:get", id=run.id))
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
     try:
         await organization_review_agent_service.commit_human_decision(
@@ -1176,18 +1156,14 @@ async def commit_human_decision(
         )
     except ValueError as exc:
         await add_toast(request, str(exc), "error")
-        return HXRedirectResponse(
-            request, str(request.url_for("agent_runs:get", id=run.id))
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
     await add_toast(
         request,
         f"Run committed: {committed_verdict}.",
         "success",
     )
-    return HXRedirectResponse(
-        request, str(request.url_for("agent_runs:get", id=run.id))
-    )
+    return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=run.id)), 303)
 
 
 @router.post("/signals/{id}/retire", name="agent_runs:retire_signal")
@@ -1212,10 +1188,7 @@ async def retire_signal(
             "Provide at least a 3-character retire reason.",
             "error",
         )
-        return HXRedirectResponse(
-            request,
-            str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
-        )
+        return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=signal.agent_run_id)), 303)
 
     await organization_review_agent_service.retire_signal(
         session,
@@ -1228,7 +1201,4 @@ async def retire_signal(
         f"Signal {signal.kind} memory retired.",
         "success",
     )
-    return HXRedirectResponse(
-        request,
-        str(request.url_for("agent_runs:get", id=signal.agent_run_id)),
-    )
+    return HXRedirectResponse(request, str(request.url_for("agent_runs:get", id=signal.agent_run_id)), 303)

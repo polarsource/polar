@@ -11,6 +11,7 @@ import pytest
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization
 from polar.models.organization_review_agent_run import AgentRunStatus
+from polar.models.user import User
 from polar.organization_review_agent.repository import (
     OrganizationReviewAgentRunRepository,
 )
@@ -118,14 +119,16 @@ class TestSlaScannerAction:
         return run
 
     async def test_escalate_clears_owner_and_emits_event(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
     ) -> None:
-        previous_owner = uuid4()
         run = await self._seed_breached(
             session,
             organization,
             on_timeout="escalate",
-            owner_user_id=previous_owner,
+            owner_user_id=user.id,
         )
         repository = OrganizationReviewAgentRunRepository.from_session(
             session

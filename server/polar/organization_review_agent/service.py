@@ -34,6 +34,7 @@ from polar.models.organization_review_signal_history import (
     SignalResolution,
 )
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import OrganizationReviewAgentRunRepository
 from .signal_history_repository import (
@@ -90,8 +91,6 @@ class OrganizationReviewAgentService:
 
         # Enqueue execution late — *after* the row is flushed so the
         # actor can look it up. The actor itself opens a fresh session.
-        from polar.worker import enqueue_job
-
         enqueue_job(
             "organization_review_agent.execute_run",
             run_id=run.id,

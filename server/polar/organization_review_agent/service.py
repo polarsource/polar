@@ -389,6 +389,7 @@ class OrganizationReviewAgentService:
         run: OrganizationReviewAgentRun,
         *,
         raw_message: str,
+        message_id: str | None = None,
         reader_model: object | None = None,
     ) -> None:
         """Process an inbound merchant reply on a parked run.
@@ -458,12 +459,14 @@ class OrganizationReviewAgentService:
             {
                 "kind": "merchant_replied",
                 "at": utc_now().isoformat(),
+                "message_id": message_id,
                 "cues": cues_payload,
             },
         )
         log.info(
             "organization_review_agent.merchant_reply.recorded",
             run_id=str(run.id),
+            message_id=message_id,
             had_cues=cues_payload is not None,
         )
 

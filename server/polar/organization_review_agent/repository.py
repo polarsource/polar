@@ -273,6 +273,27 @@ class OrganizationReviewAgentRunRepository(
         )
         return await self.get_all(statement)
 
+    async def get_latest_by_plain_thread_id(
+        self, plain_thread_id: str
+    ) -> OrganizationReviewAgentRun | None:
+        """Most-recent run tied to a Plain thread.
+
+        Used by the inbound Plain webhook to route a merchant reply to
+        the run that sent the outbound message. Newest-first so a reply
+        lands on the live (latest) run for that thread.
+        """
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationReviewAgentRun.plain_thread_id
+                == plain_thread_id
+            )
+            .order_by(desc(OrganizationReviewAgentRun.created_at))
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
     async def list_sla_breached(
         self,
         *,

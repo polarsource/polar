@@ -632,6 +632,13 @@ async def execute_graph(
         run.status = AgentRunStatus.COMPLETED
         run.completed_at = utc_now()
         run.current_node = None
+        # Log auto-take eligibility for Slice 1's APPROVE auto-take.
+        # Today this is informational — auto-take requires per-kind
+        # ``allowed_for_auto_action=True`` in the taxonomy, which is
+        # opt-in. The Slice 2 audit flips safe kinds; until then this
+        # event records "would have auto-taken IF eligible" for the
+        # backoffice signal.
+        await _record_auto_take_eligibility(session, run, state, repository)
     else:
         run.status = AgentRunStatus.AWAITING_HUMAN
         run.current_node = (
@@ -641,6 +648,57 @@ async def execute_graph(
         )
 
     await session.flush()
+
+
+async def _record_auto_take_eligibility(
+    session: AsyncSession,
+    run: OrganizationReviewAgentRun,
+    state: ReviewState,
+    repository: OrganizationReviewAgentRunRepository,
+) -> None:
+    """Append a ``would_auto_take`` audit event when eligible.
+
+    Eligibility requires:
+
+    1. Verdict is APPROVE (already established by caller).
+    2. Every emitted signal kind is ``allowed_for_auto_action=True``
+       in the registry (no opt-out kinds blocked the path).
+    3. Every emitted signal's effective severity is LOW (any MEDIUM
+       or HIGH on an APPROVE row is suspicious — flag for human).
+
+    The event captures the rationale + decisive kinds so a lead can
+    audit what would have auto-taken before flipping the
+    ``allow_auto_take`` feature flag on.
+    """
+
+    signals = state.raised_signals
+    blocker_kinds = sorted(
+        {
+            s.kind.value
+            for s in signals
+            if not spec_for(s.kind).allowed_for_auto_action
+        }
+    )
+    elevated_kinds = sorted(
+        {
+            s.kind.value
+            for s in signals
+            if DecideNode._effective_severity(s) != Severity.LOW
+        }
+    )
+    eligible = not blocker_kinds and not elevated_kinds
+
+    await repository.append_event(
+        run,
+        {
+            "kind": "would_auto_take" if eligible else "auto_take_blocked",
+            "at": utc_now().isoformat(),
+            "verdict": AgentVerdict.APPROVE.value,
+            "blocker_kinds": blocker_kinds,
+            "elevated_kinds": elevated_kinds,
+            "signal_count": len(signals),
+        },
+    )
 
 
 def _hydrate_state(

@@ -34,7 +34,9 @@ from polar.models.organization import OrganizationStatus
 from polar.models.organization_review_agent_run import AgentRunStatus
 
 
-ADMIN_EMAIL = "e2e-admin@polar.test"
+# Use a non-reserved domain: email-validator rejects .test / .example
+# (RFC 2606), which would make /v1/users/me fail response validation.
+ADMIN_EMAIL = "e2e-admin@polar-e2e.com"
 ORG_SLUG = "e2e-merchant"
 
 
@@ -79,8 +81,8 @@ async def main() -> None:
                 name="E2E Merchant",
                 slug=ORG_SLUG,
                 status=OrganizationStatus.REVIEW,
-                website="https://e2e-merchant.test",
-                email="contact@e2e-merchant.test",
+                website="https://e2e-merchant.example.org",
+                email="contact@polar-e2e.com",
                 details_submitted_at=None,
                 account_id=account.id,
                 customer_invoice_prefix="E2EMERCHANT",
@@ -89,12 +91,24 @@ async def main() -> None:
             session.add(organization)
             await session.flush()
 
-            # Link admin user to org.
-            uo = UserOrganization(
-                organization_id=organization.id,
-                user_id=user.id,
+        # Ensure the admin user is a member of the org (idempotent —
+        # the org may pre-date this admin user, e.g. after an email
+        # domain change).
+        membership = (
+            await session.execute(
+                select(UserOrganization).where(
+                    UserOrganization.organization_id == organization.id,
+                    UserOrganization.user_id == user.id,
+                )
             )
-            session.add(uo)
+        ).unique().scalar_one_or_none()
+        if membership is None:
+            session.add(
+                UserOrganization(
+                    organization_id=organization.id,
+                    user_id=user.id,
+                )
+            )
             await session.flush()
 
         # A v2 agent run in AWAITING_HUMAN with a DENY verdict so the

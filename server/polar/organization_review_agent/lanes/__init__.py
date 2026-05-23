@@ -14,9 +14,13 @@ from __future__ import annotations
 
 from .base import Lane, LaneRunContext, LaneRunResult, assert_known_lane_name
 from .history import HistoryLane, history_lane
+from .payments import PaymentsLane, payments_lane
+from .payout_account import PayoutAccountLane, payout_account_lane
 
 _REGISTRY: dict[str, Lane] = {
     HistoryLane.name: history_lane,
+    PayoutAccountLane.name: payout_account_lane,
+    PaymentsLane.name: payments_lane,
 }
 
 
@@ -50,8 +54,12 @@ __all__ = [
     "Lane",
     "LaneRunContext",
     "LaneRunResult",
+    "PaymentsLane",
+    "PayoutAccountLane",
     "all_lanes",
     "get_lane",
     "history_lane",
     "lanes_for_context",
+    "payments_lane",
+    "payout_account_lane",
 ]

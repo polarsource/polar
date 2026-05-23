@@ -50,6 +50,10 @@ from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
 from .organization_review import OrganizationReview
+from .organization_review_agent_run import (
+    AgentRunStatus,
+    OrganizationReviewAgentRun,
+)
 from .organization_review_feedback import OrganizationReviewFeedback
 from .payment import Payment
 from .payment_method import PaymentMethod
@@ -95,6 +99,7 @@ from .webhook_event import WebhookEvent
 __all__ = [
     "Account",
     "AccountCredit",
+    "AgentRunStatus",
     "Benefit",
     "BenefitGrant",
     "BillingEntry",
@@ -151,6 +156,7 @@ __all__ = [
     "OrganizationAccessToken",
     "OrganizationAgentReview",
     "OrganizationReview",
+    "OrganizationReviewAgentRun",
     "OrganizationReviewFeedback",
     "Payment",
     "PaymentMethod",

@@ -357,6 +357,15 @@ class OrganizationReviewAgentService:
         run.on_timeout = on_timeout
         if plain_thread_id is not None:
             run.plain_thread_id = plain_thread_id
+        elif run.plain_thread_id is None:
+            # No thread supplied — send an outbound Plain message and
+            # capture its thread id. Best-effort: a Plain outage (or
+            # Plain not configured) must not block the park.
+            sent_thread_id = await self._send_outbound_merchant_message(
+                session, run
+            )
+            if sent_thread_id:
+                run.plain_thread_id = sent_thread_id
         # Run stays AWAITING_HUMAN; reviewer's parking action sets the
         # contract but doesn't change status (the run was already
         # AWAITING_HUMAN before).
@@ -382,6 +391,56 @@ class OrganizationReviewAgentService:
             due_at=due_at.isoformat(),
             on_timeout=on_timeout,
         )
+
+    async def _send_outbound_merchant_message(
+        self,
+        session: AsyncSession,
+        run: OrganizationReviewAgentRun,
+    ) -> str | None:
+        """Send the outbound merchant message for a parked run.
+
+        Creates a Plain thread carrying the run's ``merchant_summary``
+        and returns its thread id. Returns None (no raise) when Plain
+        is not configured (the singleton's ``enabled`` is False → it
+        returns "") or on any error — so parking always succeeds. The
+        live network call is the only credential-gated piece; the
+        wiring + capture is exercised by tests via a patched service.
+        """
+
+        from polar.integrations.plain.service import plain as plain_service
+        from polar.organization.repository import OrganizationRepository
+
+        org_repo = OrganizationRepository.from_session(session)
+        organization = await org_repo.get_by_id(
+            run.organization_id, include_blocked=True
+        )
+        if organization is None:
+            return None
+        admin = await org_repo.get_admin_user(organization)
+        if admin is None:
+            return None
+
+        merchant_summary = ""
+        if run.final_report:
+            merchant_summary = run.final_report.get("merchant_summary") or ""
+        title = (
+            f"Account review: {merchant_summary}"
+            if merchant_summary
+            else "Account review: we need a few more details"
+        )[:200]
+
+        try:
+            thread_id = await plain_service.create_manual_organization_thread(
+                session, organization, admin, title
+            )
+        except Exception:
+            log.warning(
+                "organization_review_agent.await_merchant.outbound_failed",
+                run_id=str(run.id),
+                exc_info=True,
+            )
+            return None
+        return thread_id or None
 
     async def record_merchant_reply(
         self,

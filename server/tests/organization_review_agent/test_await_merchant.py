@@ -77,6 +77,69 @@ class TestParkForMerchant:
                 reviewer_reason="x" * 5,
             )
 
+    async def test_outbound_send_captures_thread_id(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        """Parking without a thread id sends an outbound Plain message
+        and captures the returned thread id onto the run."""
+
+        run = await self._seed_awaiting(session, organization)
+        run.final_report = {
+            "verdict": "deny",
+            "summary": "x",
+            "merchant_summary": "We need your payout details.",
+            "violated_sections": [],
+            "decisive_signal_kinds": [],
+            "recommended_action": "await",
+        }
+        await session.flush()
+
+        from unittest.mock import AsyncMock, patch
+
+        with patch(
+            "polar.integrations.plain.service.plain.create_manual_organization_thread",
+            new=AsyncMock(return_value="thr_outbound_123"),
+        ) as send_mock:
+            await organization_review_agent_service.park_for_merchant(
+                session,
+                run,
+                days=7,
+                on_timeout="escalate",
+                reviewer_user_id=uuid4(),
+                reviewer_reason="asked merchant for payout details",
+                # no plain_thread_id → triggers outbound send
+            )
+
+        send_mock.assert_awaited_once()
+        assert run.plain_thread_id == "thr_outbound_123"
+
+    async def test_outbound_send_graceful_when_plain_disabled(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        """When Plain is not configured the send returns "" → the run
+        is parked with no thread id, no error."""
+
+        run = await self._seed_awaiting(session, organization)
+        await session.flush()
+
+        from unittest.mock import AsyncMock, patch
+
+        with patch(
+            "polar.integrations.plain.service.plain.create_manual_organization_thread",
+            new=AsyncMock(return_value=""),  # Plain disabled → ""
+        ):
+            await organization_review_agent_service.park_for_merchant(
+                session,
+                run,
+                days=7,
+                on_timeout="escalate",
+                reviewer_user_id=uuid4(),
+                reviewer_reason="asked merchant for details",
+            )
+
+        assert run.plain_thread_id is None
+        assert run.due_at is not None  # park still succeeded
+
     async def test_rejects_out_of_range_days(
         self, session: AsyncSession, organization: Organization
     ) -> None:

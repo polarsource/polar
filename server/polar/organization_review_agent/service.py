@@ -383,6 +383,90 @@ class OrganizationReviewAgentService:
             on_timeout=on_timeout,
         )
 
+    async def record_merchant_reply(
+        self,
+        session: AsyncSession,
+        run: OrganizationReviewAgentRun,
+        *,
+        raw_message: str,
+        reader_model: object | None = None,
+    ) -> None:
+        """Process an inbound merchant reply on a parked run.
+
+        Reads the UNTRUSTED message through MerchantMessageReader (raw
+        text never persisted beyond short redacted excerpts), appends
+        the cues to ``state_snapshot.merchant_replies`` + a
+        ``merchant_replied`` event, and clears the SLA contract
+        (``due_at`` / ``on_timeout``) so the breach scanner no longer
+        fires. The run stays AWAITING_HUMAN — a reviewer still commits
+        — but now has the merchant's structured response in state for
+        Decide on re-investigation.
+
+        ``reader_model`` is injectable for tests; prod uses the gateway.
+        """
+
+        from .readers.merchant_message import MerchantMessageReader
+        from .schemas import ReviewState
+
+        repository = OrganizationReviewAgentRunRepository.from_session(
+            session
+        )
+
+        open_kinds: list[str] = []
+        if run.final_report:
+            open_kinds = list(
+                run.final_report.get("decisive_signal_kinds") or []
+            )
+
+        reader = MerchantMessageReader(
+            model=reader_model, open_signal_kinds=open_kinds
+        )
+        try:
+            cues = await reader.read(raw_message)
+            cues_payload = cues.model_dump(mode="json")
+        except Exception:
+            log.warning(
+                "organization_review_agent.merchant_reply.reader_failed",
+                run_id=str(run.id),
+                exc_info=True,
+            )
+            cues_payload = None
+
+        # Append cues to state.merchant_replies (rehydrate → mutate →
+        # persist) so Decide sees them on re-investigation.
+        if cues_payload is not None and run.state_snapshot is not None:
+            try:
+                state = ReviewState.model_validate(run.state_snapshot)
+                state.merchant_replies = [
+                    *state.merchant_replies,
+                    cues,  # type: ignore[list-item]
+                ]
+                run.state_snapshot = state.model_dump(mode="json")
+            except Exception:
+                log.warning(
+                    "organization_review_agent.merchant_reply.state_update_failed",
+                    run_id=str(run.id),
+                    exc_info=True,
+                )
+
+        # Clear the SLA contract — the merchant replied.
+        run.due_at = None
+        run.on_timeout = None
+
+        await repository.append_event(
+            run,
+            {
+                "kind": "merchant_replied",
+                "at": utc_now().isoformat(),
+                "cues": cues_payload,
+            },
+        )
+        log.info(
+            "organization_review_agent.merchant_reply.recorded",
+            run_id=str(run.id),
+            had_cues=cues_payload is not None,
+        )
+
     async def list_sla_breaches(
         self,
         session: AsyncReadSession,

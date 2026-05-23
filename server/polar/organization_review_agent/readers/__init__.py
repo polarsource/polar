@@ -6,6 +6,14 @@ subsequent slices.
 """
 
 from .base import Reader, ReaderError
+from .merchant_message import MerchantMessageReader, MerchantReplyCues
 from .website import WebsiteCues, WebsiteReader
 
-__all__ = ["Reader", "ReaderError", "WebsiteCues", "WebsiteReader"]
+__all__ = [
+    "MerchantMessageReader",
+    "MerchantReplyCues",
+    "Reader",
+    "ReaderError",
+    "WebsiteCues",
+    "WebsiteReader",
+]

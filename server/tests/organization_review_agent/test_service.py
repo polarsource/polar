@@ -177,19 +177,21 @@ class TestCancellation:
 
 
 @pytest.mark.asyncio
-class TestExecuteRunStub:
-    """The Slice 0+1 executor stub: marks a PENDING row COMPLETED with a
-    NEEDS_HUMAN placeholder. Real graph (lanes + Decide) lands in a
-    later slice and replaces the body of this actor.
+class TestExecuteRunGraph:
+    """``execute_run`` drives the Triage → Investigate → Decide graph.
+
+    With no concerning signals (the default for a fresh test
+    organization with no prior denials / blocks / admin block), the
+    heuristic Decide returns APPROVE. Slice 2 replaces the heuristic
+    with an LLM call; this test will need updating then.
     """
 
-    async def test_pending_run_completes_with_needs_human_stub(
+    async def test_pending_run_completes_with_approve_when_no_signals(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Force the actor to bypass the sandbox short-circuit.
         with patch(
             "polar.organization_review_agent.tasks.settings"
         ) as settings_mock, patch(
@@ -221,10 +223,11 @@ class TestExecuteRunStub:
         assert run.started_at is not None
         assert run.completed_at is not None
         assert run.final_report is not None
-        assert run.final_report["verdict"] == AgentVerdict.NEEDS_HUMAN.value
+        assert run.final_report["verdict"] == AgentVerdict.APPROVE.value
         kinds = [e["kind"] for e in run.events]
-        assert "node_entered" in kinds
-        assert "node_completed" in kinds
+        # Triage, Investigate, Decide each emit node_entered + node_completed.
+        assert kinds.count("node_entered") == 3
+        assert kinds.count("node_completed") == 3
 
     async def test_non_pending_run_is_skipped(
         self,

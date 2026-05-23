@@ -22,6 +22,7 @@ from uuid import UUID
 
 import structlog
 
+from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization
 from polar.models.organization_review_agent_run import (
@@ -67,6 +68,14 @@ class GraphDeps:
     organization: Organization
     session: AsyncSession
     run: OrganizationReviewAgentRun
+    use_llm_decide: bool = True
+    """When True, DecideNode runs the pydantic-ai agent (falling back
+    to the heuristic on error). When False, goes straight to the
+    heuristic — used by unit tests that pin heuristic boundaries."""
+
+    decide_model: object | None = None
+    """Optional pydantic-ai Model injected for verification (e.g.
+    FunctionModel/TestModel). None → the configured gateway model."""
 
 
 @runtime_checkable
@@ -230,31 +239,110 @@ class DecideNode:
         self, state: ReviewState, deps: GraphDeps
     ) -> str | None:
         memory = await self._load_memory(deps)
-        adjusted = self._apply_memory_weights(state.raised_signals, memory)
-        verdict, reasoning = self._heuristic_verdict_from_adjusted(
-            adjusted, memory_applied=bool(memory)
-        )
-        merchant_summary = self._heuristic_merchant_summary(
-            verdict, adjusted
-        )
-        decisive = self._decisive_kinds_from_adjusted(adjusted)
 
-        report = FinalReport(
-            verdict=verdict,
-            summary=reasoning,
-            merchant_summary=merchant_summary,
-            decisive_signal_kinds=decisive,
-            recommended_action=self._heuristic_recommended_action(verdict),
-        )
+        report: FinalReport | None = None
+        decided_by = "heuristic"
+        if deps.use_llm_decide:
+            report = await self._llm_decide(state, deps, memory)
+            if report is not None:
+                decided_by = "llm"
+
+        if report is None:
+            # Deterministic fallback (also the unit-test path).
+            adjusted = self._apply_memory_weights(
+                state.raised_signals, memory
+            )
+            verdict, reasoning = self._heuristic_verdict_from_adjusted(
+                adjusted, memory_applied=bool(memory)
+            )
+            report = FinalReport(
+                verdict=verdict,
+                summary=reasoning,
+                merchant_summary=self._heuristic_merchant_summary(
+                    verdict, adjusted
+                ),
+                decisive_signal_kinds=self._decisive_kinds_from_adjusted(
+                    adjusted
+                ),
+                recommended_action=self._heuristic_recommended_action(
+                    verdict
+                ),
+            )
+
         state.tentative_report = report
         log.info(
             "organization_review_agent.decide.completed",
             run_id=str(deps.run.id),
-            verdict=verdict.value,
+            verdict=report.verdict.value,
             signal_count=len(state.raised_signals),
             memory_kinds=sorted(memory.keys()),
+            decided_by=decided_by,
         )
         return None  # Terminal — driver finalises.
+
+    async def _llm_decide(
+        self,
+        state: ReviewState,
+        deps: GraphDeps,
+        memory: dict[str, dict[str, int]],
+    ) -> FinalReport | None:
+        """Run the pydantic-ai Decide agent.
+
+        Returns the produced FinalReport, or None on any failure
+        (missing gateway creds, timeout, provider error) so the caller
+        falls back to the heuristic. Records an llm_call entry on the
+        run for cost/telemetry parity with the legacy analyzer.
+        """
+
+        import time
+
+        from .agents import build_decide_agent, render_decide_prompt
+
+        try:
+            agent = build_decide_agent(deps.decide_model)
+            prompt = render_decide_prompt(state, memory=memory)
+            started = time.monotonic()
+            result = await agent.run(prompt)
+            duration_ms = int((time.monotonic() - started) * 1000)
+        except Exception:
+            log.warning(
+                "organization_review_agent.decide.llm_failed_fallback",
+                run_id=str(deps.run.id),
+                exc_info=True,
+            )
+            return None
+
+        # Record the LLM call for the agent-run cost breakdown.
+        # pydantic-ai exposes usage as a property on this version;
+        # access it directly (calling it is deprecated).
+        try:
+            usage = result.usage
+            input_tokens = getattr(usage, "input_tokens", None) or getattr(
+                usage, "request_tokens", 0
+            )
+            output_tokens = getattr(usage, "output_tokens", None) or getattr(
+                usage, "response_tokens", 0
+            )
+        except Exception:
+            input_tokens = output_tokens = 0
+
+        from .repository import OrganizationReviewAgentRunRepository
+
+        repo = OrganizationReviewAgentRunRepository.from_session(deps.session)
+        deps.run.llm_calls = [
+            *deps.run.llm_calls,
+            {
+                "agent": "decide",
+                "model": str(getattr(deps.decide_model, "model_name", None))
+                or settings.PYDANTIC_AI_GATEWAY_MODEL,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "duration_ms": duration_ms,
+            },
+        ]
+        await repo.touch_heartbeat(deps.run)
+
+        return result.output
 
     async def _load_memory(
         self, deps: GraphDeps

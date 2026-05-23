@@ -19,6 +19,7 @@ from .identity import IdentityLane, identity_lane
 from .payments import PaymentsLane, payments_lane
 from .payout_account import PayoutAccountLane, payout_account_lane
 from .products import ProductsLane, products_lane
+from .website import WebsiteLane, website_lane
 
 _REGISTRY: dict[str, Lane] = {
     HistoryLane.name: history_lane,
@@ -27,6 +28,7 @@ _REGISTRY: dict[str, Lane] = {
     PaymentsLane.name: payments_lane,
     ProductsLane.name: products_lane,
     CategorisationLane.name: categorisation_lane,
+    WebsiteLane.name: website_lane,
 }
 
 
@@ -89,6 +91,7 @@ __all__ = [
     "PaymentsLane",
     "PayoutAccountLane",
     "ProductsLane",
+    "WebsiteLane",
     "all_lanes",
     "categorisation_lane",
     "get_lane",
@@ -98,4 +101,5 @@ __all__ = [
     "payments_lane",
     "payout_account_lane",
     "products_lane",
+    "website_lane",
 ]

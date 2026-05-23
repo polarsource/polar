@@ -93,6 +93,15 @@ async def add_member(
     )
 
 
+@actor(actor_name="polar_self.update_member", priority=TaskPriority.LOW)
+async def update_member(external_customer_id: str, external_id: str, name: str) -> None:
+    await get_client().update_member(
+        external_customer_id=external_customer_id,
+        external_id=external_id,
+        name=name,
+    )
+
+
 @actor(actor_name="polar_self.update_customer_slug", priority=TaskPriority.LOW)
 async def update_customer_slug(external_id: str, slug: str) -> None:
     client = get_client()

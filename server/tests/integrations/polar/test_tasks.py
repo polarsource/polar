@@ -18,6 +18,7 @@ from polar.integrations.polar.tasks import (
     track_event_ingestion,
     track_organization_review_usage,
     update_customer_slug,
+    update_member,
 )
 
 
@@ -256,6 +257,28 @@ class TestRemoveMember:
         )
 
         client.remove_member.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestUpdateMember:
+    async def test_updates_member_name(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await update_member(
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Updated Name",
+        )
+
+        client.update_member.assert_called_once_with(
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Updated Name",
+        )
 
 
 @pytest.mark.asyncio

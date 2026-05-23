@@ -168,3 +168,42 @@ class TestPayoutAccountLaneIsEnabled:
 
         for context in ("submission", "threshold", "manual", "appeal"):
             assert (await lane.is_enabled(_Ctx(context))) is True
+
+
+@pytest.mark.asyncio
+class TestLanesRunAgainstRealSession:
+    """Every registered lane must execute against a real DB session
+    without raising.
+
+    Regression guard: the payout_account lane once imported the wrong
+    ``OrganizationReviewRepository`` (the one in polar.organization
+    rather than polar.organization_review), so its repo call raised
+    AttributeError at runtime. InvestigateNode isolates lane failures,
+    so the graph still "completed" and the bug hid behind a degraded
+    verdict. This test calls each lane's run() directly so any such
+    wrong-import / missing-method breaks the build instead.
+    """
+
+    async def test_every_lane_runs_clean(
+        self,
+        session,  # AsyncSession fixture
+        organization,  # Organization fixture
+    ) -> None:
+        from polar.organization_review_agent.lanes import all_lanes
+        from polar.organization_review_agent.lanes.base import (
+            LaneRunContext,
+        )
+
+        ctx = LaneRunContext(
+            organization=organization,
+            session=session,
+            review_context="manual",  # enables every lane
+        )
+        for name, lane in all_lanes().items():
+            if not await lane.is_enabled(ctx):
+                continue
+            # Must not raise — this is the regression assertion.
+            result = await lane.run(ctx)
+            assert result.facts.name == name
+            # Signals list is always present (may be empty).
+            assert isinstance(result.signals, list)

@@ -336,14 +336,23 @@ def _render_header(
         if request is not None and user_session is not None:
             _render_owner_controls(request, run, user_session)
     with tag.div(
-        classes="text-sm text-base-content/70 font-mono flex gap-4"
+        classes="text-sm text-base-content/70 font-mono flex flex-wrap gap-4"
     ):
-        text(f"run_id: {run.id}")
-        text(f"created: {run.created_at.isoformat(timespec='seconds')}")
-        if run.completed_at is not None:
+        with tag.span():
+            text(f"run_id: {run.id}")
+        with tag.span():
             text(
-                f"completed: {run.completed_at.isoformat(timespec='seconds')}"
+                f"created: {run.created_at.isoformat(timespec='seconds')}"
             )
+        if run.current_node is not None:
+            with tag.span():
+                text(f"node: {run.current_node}")
+        if run.completed_at is not None:
+            with tag.span():
+                text(
+                    "completed: "
+                    f"{run.completed_at.isoformat(timespec='seconds')}"
+                )
 
 
 def _render_owner_controls(

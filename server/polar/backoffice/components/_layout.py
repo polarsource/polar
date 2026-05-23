@@ -34,9 +34,21 @@ def menu(
     navigation: list[NavigationItem],
     active_route_name: str,
 ) -> Generator[None]:
+    # Break prefix ties: when multiple top-level items match the active
+    # route via overlapping prefixes (e.g. "agent_runs:" also matches
+    # "agent_runs:dashboard"), only the most specific one stays
+    # highlighted. The winner is the single highest-specificity match.
+    specificities = [
+        item.active_match_specificity(active_route_name)
+        for item in navigation
+    ]
+    best = max(specificities, default=-1)
     with tag.ul(classes="menu w-full", id="menu", hx_swap_oob="true"):
-        for item in navigation:
-            with item.render(request, active_route_name):
+        for item, specificity in zip(navigation, specificities):
+            # Only override when this item matches but isn't the winner,
+            # so non-matching items and the winner keep default behavior.
+            override = False if (specificity >= 0 and specificity < best) else None
+            with item.render(request, active_route_name, override):
                 pass
     yield
 

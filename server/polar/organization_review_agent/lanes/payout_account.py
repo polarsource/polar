@@ -10,9 +10,11 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from polar.organization.repository import OrganizationReviewRepository
 from polar.organization_review.collectors.payout_account import (
     collect_payout_account_data,
+)
+from polar.organization_review.repository import (
+    OrganizationReviewRepository,
 )
 
 from ..schemas import LaneFacts, RaisedSignal, Severity, SignalKind

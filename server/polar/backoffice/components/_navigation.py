@@ -70,7 +70,12 @@ class NavigationItem:
         self.active_route_name_prefix = active_route_name_prefix
 
     @contextlib.contextmanager
-    def render(self, request: Request, active_route_name: str) -> Generator[None]:
+    def render(
+        self,
+        request: Request,
+        active_route_name: str,
+        active_override: bool | None = None,
+    ) -> Generator[None]:
         """Render the navigation item as HTML.
 
         Generates either a simple link item or an expandable details/summary
@@ -82,11 +87,20 @@ class NavigationItem:
             request: The FastAPI request object used for URL generation.
             active_route_name: The name of the currently active route, used
                 for highlighting and auto-expansion.
+            active_override: When provided, overrides the computed
+                active state. The sibling renderer (``menu``) uses this
+                to break prefix ties — when several items match the
+                active route via overlapping prefixes, only the most
+                specific (longest-prefix) one stays highlighted.
 
         Yields:
             None: Context manager yields control for the navigation item.
         """
-        is_active = self._is_active(active_route_name)
+        is_active = (
+            active_override
+            if active_override is not None
+            else self._is_active(active_route_name)
+        )
         with tag.li():
             if self.route_name is not None:
                 with tag.a(href=str(request.url_for(self.route_name))):
@@ -123,6 +137,25 @@ class NavigationItem:
             return self.route_name == active_route_name
         else:
             return any(child._is_active(active_route_name) for child in self.children)
+
+    def active_match_specificity(self, active_route_name: str) -> int:
+        """How specifically this item matches the active route.
+
+        Higher = more specific. Used by ``menu`` to break ties when
+        several sibling items match the same route via overlapping
+        prefixes (e.g. ``agent_runs:`` vs ``agent_runs:dashboard``):
+        only the longest-prefix match stays highlighted. Returns -1
+        when the item does not match at all.
+        """
+
+        if not self._is_active(active_route_name):
+            return -1
+        if self.active_route_name_prefix is not None:
+            return len(self.active_route_name_prefix)
+        if self.route_name is not None:
+            # An exact route-name match is maximally specific.
+            return len(active_route_name) + 1
+        return 0
 
 
 __all__ = ["NavigationItem"]

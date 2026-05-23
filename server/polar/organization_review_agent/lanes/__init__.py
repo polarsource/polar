@@ -13,6 +13,7 @@ enabled at the per-lane level.
 from __future__ import annotations
 
 from .base import Lane, LaneRunContext, LaneRunResult, assert_known_lane_name
+from .categorisation import CategorisationLane, categorisation_lane
 from .history import HistoryLane, history_lane
 from .identity import IdentityLane, identity_lane
 from .payments import PaymentsLane, payments_lane
@@ -25,6 +26,7 @@ _REGISTRY: dict[str, Lane] = {
     PayoutAccountLane.name: payout_account_lane,
     PaymentsLane.name: payments_lane,
     ProductsLane.name: products_lane,
+    CategorisationLane.name: categorisation_lane,
 }
 
 
@@ -78,6 +80,7 @@ def get_lane(name: str) -> Lane:
 
 
 __all__ = [
+    "CategorisationLane",
     "HistoryLane",
     "IdentityLane",
     "Lane",
@@ -87,6 +90,7 @@ __all__ = [
     "PayoutAccountLane",
     "ProductsLane",
     "all_lanes",
+    "categorisation_lane",
     "get_lane",
     "history_lane",
     "identity_lane",

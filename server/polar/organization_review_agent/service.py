@@ -25,6 +25,7 @@ import structlog
 
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization
+from polar.models.organization_facet import FacetSource, OrganizationFacet
 from polar.models.organization_review_agent_run import (
     AgentRunStatus,
     OrganizationReviewAgentRun,
@@ -36,10 +37,21 @@ from polar.models.organization_review_signal_history import (
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.worker import enqueue_job
 
+from .facet_repository import OrganizationFacetRepository
+from .lanes.categorisation import _normalise as _normalise_facet
 from .repository import OrganizationReviewAgentRunRepository
 from .signal_history_repository import (
     OrganizationReviewSignalHistoryRepository,
 )
+
+
+# OrganizationDetails key -> facet namespace, mirroring the
+# categorisation lane's mapping so backfill + lane proposals agree.
+_DETAIL_TO_NAMESPACE: dict[str, str] = {
+    "selling_categories": "product_category",
+    "pricing_models": "pricing_model",
+    "customer_acquisition": "customer_acquisition",
+}
 
 log = structlog.get_logger(__name__)
 
@@ -566,6 +578,75 @@ class OrganizationReviewAgentService:
         )
         return await history_repo.memory_summary_for_organization(
             organization_id
+        )
+
+    async def backfill_facets_from_details(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> list[OrganizationFacet]:
+        """Day-1 backfill: merchant-declared facets from OrganizationDetails.
+
+        Reads ``organization.details`` (selling_categories,
+        pricing_models, customer_acquisition) and idempotently upserts
+        ``merchant_declared`` facet rows. Safe to run repeatedly — the
+        upsert key is (org, namespace, value), and existing reviewer-
+        confirmed rows are never downgraded.
+        """
+
+        details = organization.details or {}
+        repo = OrganizationFacetRepository.from_session(session)
+        created: list[OrganizationFacet] = []
+        for detail_key, namespace in _DETAIL_TO_NAMESPACE.items():
+            values = details.get(detail_key) or []
+            if isinstance(values, str):
+                values = [values]
+            for raw in values:
+                value = _normalise_facet(raw)
+                if not value:
+                    continue
+                facet = await repo.upsert(
+                    organization_id=organization.id,
+                    namespace=namespace,
+                    value=value,
+                    source=FacetSource.MERCHANT_DECLARED,
+                )
+                created.append(facet)
+        log.info(
+            "organization_review_agent.facets.backfilled",
+            organization_id=str(organization.id),
+            facet_count=len(created),
+        )
+        return created
+
+    async def list_facets(
+        self,
+        session: AsyncReadSession,
+        organization_id: UUID,
+        *,
+        namespace: str | None = None,
+    ) -> Sequence[OrganizationFacet]:
+        repo = OrganizationFacetRepository.from_session(session)
+        return await repo.list_for_organization(
+            organization_id, namespace=namespace
+        )
+
+    async def confirm_facet(
+        self,
+        session: AsyncSession,
+        facet: OrganizationFacet,
+        *,
+        reviewer_user_id: UUID,
+    ) -> None:
+        """Reviewer confirms an AI-proposed facet."""
+
+        repo = OrganizationFacetRepository.from_session(session)
+        await repo.confirm(facet, reviewer_user_id=reviewer_user_id)
+        log.info(
+            "organization_review_agent.facet.confirmed",
+            facet_id=str(facet.id),
+            namespace=facet.namespace,
+            value=facet.value,
         )
 
     @staticmethod

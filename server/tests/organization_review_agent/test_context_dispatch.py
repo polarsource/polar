@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from polar.organization_review_agent.lanes import (
+    CategorisationLane,
     HistoryLane,
     IdentityLane,
     PaymentsLane,
     PayoutAccountLane,
     ProductsLane,
+    all_lanes,
     lanes_for_context,
 )
 
@@ -15,17 +17,14 @@ from polar.organization_review_agent.lanes import (
 class TestLanesForContext:
     def test_default_context_runs_every_lane(self) -> None:
         """SUBMISSION / THRESHOLD / MANUAL / SETUP_COMPLETE fall back
-        to the legacy 'every lane' behaviour."""
+        to the legacy 'every lane' behaviour. Derive the expected set
+        from the registry so adding a lane doesn't make this stale."""
 
+        every_lane = set(all_lanes().keys())
+        assert CategorisationLane.name in every_lane  # sanity
         for ctx in ("submission", "threshold", "manual", "setup_complete"):
             names = {l.name for l in lanes_for_context(ctx)}
-            assert names == {
-                HistoryLane.name,
-                IdentityLane.name,
-                PayoutAccountLane.name,
-                PaymentsLane.name,
-                ProductsLane.name,
-            }, f"context={ctx} returned {names}"
+            assert names == every_lane, f"context={ctx} returned {names}"
 
     def test_chargeback_risk_skips_irrelevant_lanes(self) -> None:
         names = {l.name for l in lanes_for_context("chargeback_risk")}

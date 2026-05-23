@@ -58,4 +58,9 @@ NAVIGATION = [
         "agent_runs:dashboard",
         active_route_name_prefix="agent_runs:dashboard",
     ),
+    navigation.NavigationItem(
+        "Agent Rules",
+        "agent_runs:rules",
+        active_route_name_prefix="agent_runs:rules",
+    ),
 ]

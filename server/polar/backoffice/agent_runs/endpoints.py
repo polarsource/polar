@@ -106,6 +106,80 @@ def _verdict_badge(verdict: str | None) -> None:
 # ---------------------------------------------------------------------------
 
 
+@router.get("/rules", name="agent_runs:rules")
+async def rules(
+    request: Request,
+    user_session: UserSession = Depends(get_admin),
+) -> None:
+    """Slice 6: auto-action rule registry (read-only).
+
+    Lists the registered AutoActionRules with their action + rollout
+    state. The promotion gate (retroactive outcome eval) runs offline;
+    this surfaces what rules exist and their lifecycle stage so a lead
+    can see what's draft/shadow/live/paused.
+    """
+
+    from polar.organization_review_agent.auto_action import REGISTRY
+
+    with layout(
+        request,
+        [("Agent Rules", str(request.url))],
+        "agent_runs:rules",
+    ):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.h1(classes="text-4xl"):
+                text("Auto-action Rules")
+            with tag.p(classes="text-sm text-base-content/70 max-w-3xl"):
+                text(
+                    "Outcome-anchored auto-action rules. Each must pass "
+                    "the retroactive outcome gate (chargeback / refund / "
+                    "offboard within tolerance of control) + ≥7d shadow "
+                    "before going live. block / offboard / deny-appeal "
+                    "are permanently excluded."
+                )
+            with tag.div(
+                classes="overflow-x-auto", data_testid="rules-table"
+            ):
+                with tag.table(classes="table table-zebra table-sm"):
+                    with tag.thead():
+                        with tag.tr():
+                            for h in (
+                                "Rule",
+                                "Action",
+                                "Rollout",
+                                "Daily cap",
+                                "Description",
+                            ):
+                                with tag.th():
+                                    text(h)
+                    with tag.tbody():
+                        for rule in REGISTRY.values():
+                            with tag.tr():
+                                with tag.td(classes="font-mono"):
+                                    text(rule.id)
+                                with tag.td():
+                                    with tag.div(
+                                        classes="badge badge-outline badge-sm"
+                                    ):
+                                        text(rule.action.value)
+                                with tag.td():
+                                    state = rule.rollout_state.value
+                                    variant = {
+                                        "draft": "badge-ghost",
+                                        "shadow": "badge-info",
+                                        "live": "badge-success",
+                                        "paused": "badge-warning",
+                                    }.get(state, "badge-ghost")
+                                    with tag.div(
+                                        classes=f"badge badge-sm {variant}"
+                                    ):
+                                        text(state)
+                                with tag.td(classes="text-right"):
+                                    text(str(rule.daily_cap))
+                                with tag.td(classes="text-xs max-w-md"):
+                                    text(rule.description)
+
+
 @router.get("/inbox", name="agent_runs:inbox")
 async def inbox(
     request: Request,
@@ -298,6 +372,11 @@ async def get(
     )
     signals = await history_repo.list_for_run(run.id)
 
+    # Slice 8: org facets for the detail page card.
+    facets = await organization_review_agent_service.list_facets(
+        session, run.organization_id
+    )
+
     org_slug = (
         run.org_snapshot.get("slug", "—") if run.org_snapshot else "—"
     )
@@ -322,6 +401,7 @@ async def get(
                 with tag.div(classes="flex flex-col gap-4"):
                     _render_events_card(run)
                     _render_llm_calls_card(run)
+                    _render_facets_card(facets)
 
 
 def _render_header(
@@ -797,6 +877,22 @@ def _render_commit_decision_form(
                 "legacy flow still drives Organization.status until "
                 "promotion)."
             )
+        # Slice 11: blast-radius two-person banner. A DENY on a
+        # high-blast-radius org requires a second reviewer.
+        from polar.organization_review_agent.blast_radius import (
+            requires_two_person,
+        )
+
+        two_person, reasons = requires_two_person(run, "deny")
+        if two_person:
+            with tag.div(
+                classes="alert alert-warning text-xs py-2",
+                data_testid="two-person-banner",
+            ):
+                text(
+                    "Two-person rule: a DENY here needs a second "
+                    "reviewer (" + "; ".join(reasons) + ")."
+                )
         with tag.form(
             method="post",
             action=action_url,
@@ -841,6 +937,50 @@ def _render_commit_decision_form(
                         classes="btn btn-sm btn-error btn-outline",
                     ):
                         text("Override → DENY")
+
+
+def _render_facets_card(facets) -> None:  # type: ignore[no-untyped-def]
+    """Slice 8: organization facets (namespace → value, source)."""
+
+    with tag.div(classes="card bg-base-100 shadow", data_testid="facets-card"):
+        with tag.div(classes="card-body"):
+            with tag.h2(classes="card-title text-lg"):
+                text(f"Facets ({len(facets)})")
+            if not facets:
+                with tag.div(classes="text-base-content/60 text-sm"):
+                    text(
+                        "No facets yet (backfilled from merchant details "
+                        "or proposed by the categorisation lane)."
+                    )
+                return
+            with tag.table(classes="table table-xs"):
+                with tag.thead():
+                    with tag.tr():
+                        for h in ("Namespace", "Value", "Source"):
+                            with tag.th():
+                                text(h)
+                with tag.tbody():
+                    for f in facets:
+                        with tag.tr():
+                            with tag.td(classes="font-mono text-xs"):
+                                text(f.namespace)
+                            with tag.td(classes="text-xs"):
+                                text(f.value)
+                            with tag.td():
+                                source = (
+                                    f.source.value
+                                    if hasattr(f.source, "value")
+                                    else str(f.source)
+                                )
+                                variant = (
+                                    "badge-success"
+                                    if source == "reviewer_confirmed"
+                                    else "badge-ghost"
+                                )
+                                with tag.div(
+                                    classes=f"badge badge-sm {variant}"
+                                ):
+                                    text(source)
 
 
 def _render_org_snapshot_card(run: OrganizationReviewAgentRun) -> None:

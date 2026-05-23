@@ -112,6 +112,20 @@ async def main() -> None:
             )
             await session.flush()
 
+        # Set merchant details + backfill facets (Slice 8) so the
+        # facets card has data.
+        organization.details = {
+            "selling_categories": ["Software / SaaS", "Education"],
+            "pricing_models": ["Subscription", "Usage-based"],
+            "product_description": "Analytics tooling for teams.",
+        }
+        await session.flush()
+        from polar.organization_review_agent.service import (
+            organization_review_agent_service as _svc,
+        )
+
+        await _svc.backfill_facets_from_details(session, organization)
+
         now = utc_now()
         seeded: dict[str, str] = {}
 

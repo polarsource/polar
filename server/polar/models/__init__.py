@@ -55,6 +55,9 @@ from .organization_review_agent_run import (
     OrganizationReviewAgentRun,
 )
 from .organization_review_feedback import OrganizationReviewFeedback
+from .organization_review_signal_history import (
+    OrganizationReviewSignalHistory,
+)
 from .payment import Payment
 from .payment_method import PaymentMethod
 from .payout import Payout
@@ -158,6 +161,7 @@ __all__ = [
     "OrganizationReview",
     "OrganizationReviewAgentRun",
     "OrganizationReviewFeedback",
+    "OrganizationReviewSignalHistory",
     "Payment",
     "PaymentMethod",
     "Payout",

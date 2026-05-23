@@ -29,9 +29,16 @@ from polar.models.organization_review_agent_run import (
     AgentRunStatus,
     OrganizationReviewAgentRun,
 )
+from polar.models.organization_review_signal_history import (
+    OrganizationReviewSignalHistory,
+    SignalResolution,
+)
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import OrganizationReviewAgentRunRepository
+from .signal_history_repository import (
+    OrganizationReviewSignalHistoryRepository,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -169,6 +176,82 @@ class OrganizationReviewAgentService:
             "organization_review_agent.cancelled",
             run_id=str(run.id),
             reason=reason,
+        )
+
+    async def resolve_signal(
+        self,
+        session: AsyncSession,
+        signal: OrganizationReviewSignalHistory,
+        *,
+        resolution: SignalResolution,
+        reviewer_reason: str,
+        reviewer_user_id: UUID,
+    ) -> None:
+        """Reviewer clicked agree/discard on a signal chip.
+
+        Writes the verdict + reason to the signal history row. Memory
+        weighting picks this up automatically on the next run for the
+        same organization.
+        """
+
+        history_repo = (
+            OrganizationReviewSignalHistoryRepository.from_session(session)
+        )
+        await history_repo.resolve(
+            signal,
+            resolution=resolution,
+            reviewer_reason=reviewer_reason,
+            reviewer_user_id=reviewer_user_id,
+        )
+
+        log.info(
+            "organization_review_agent.signal.resolved",
+            signal_id=str(signal.id),
+            run_id=str(signal.agent_run_id),
+            organization_id=str(signal.organization_id),
+            kind=signal.kind,
+            resolution=resolution.value,
+        )
+
+    async def retire_signal(
+        self,
+        session: AsyncSession,
+        signal: OrganizationReviewSignalHistory,
+        *,
+        reviewer_user_id: UUID,
+        reason: str,
+    ) -> None:
+        """Mark a signal history row no-longer-representative.
+
+        Used when a merchant has demonstrably changed behaviour and a
+        past adjudication would unfairly bias future runs. Excluded
+        from memory queries but retained for audit.
+        """
+
+        history_repo = (
+            OrganizationReviewSignalHistoryRepository.from_session(session)
+        )
+        await history_repo.retire(
+            signal, reviewer_user_id=reviewer_user_id, reason=reason
+        )
+        log.info(
+            "organization_review_agent.signal.retired",
+            signal_id=str(signal.id),
+            kind=signal.kind,
+        )
+
+    async def get_signal_memory_for_organization(
+        self,
+        session: AsyncReadSession,
+        organization_id: UUID,
+    ) -> dict[str, dict[str, int]]:
+        """Per-kind APPROVED/DISCARDED counts used by Decide weighting."""
+
+        history_repo = (
+            OrganizationReviewSignalHistoryRepository.from_session(session)
+        )
+        return await history_repo.memory_summary_for_organization(
+            organization_id
         )
 
     @staticmethod

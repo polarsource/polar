@@ -41,6 +41,9 @@ from .schemas import (
     ReviewState,
     Severity,
 )
+from .signal_history_repository import (
+    OrganizationReviewSignalHistoryRepository,
+)
 from .taxonomy import spec_for
 
 log = structlog.get_logger(__name__)
@@ -426,6 +429,21 @@ async def execute_graph(
     run.status = AgentRunStatus.COMPLETED
     run.completed_at = utc_now()
     run.current_node = None
+
+    # Persist emitted signals to cross-run memory. Reviewers later flip
+    # rows to APPROVED/DISCARDED via the agent-run page; subsequent
+    # Decide invocations on the same org use the per-kind counts to
+    # weight new signals.
+    if state.raised_signals:
+        history_repo = OrganizationReviewSignalHistoryRepository.from_session(
+            session
+        )
+        await history_repo.persist_signals_from_run(
+            organization_id=run.organization_id,
+            agent_run_id=run.id,
+            signals=state.raised_signals,
+        )
+
     await session.flush()
 
 

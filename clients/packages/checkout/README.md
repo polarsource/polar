@@ -38,6 +38,7 @@ embed.addEventListener('success', (event) => {
 | `theme`        | `'light' \| 'dark'`            | `light`     | Colour scheme for the embed.                                                                                                                                          |
 | `setAsDefault` | `boolean`                      | `true`      | Whether the new card should become the customer's default payment method.                                                                                             |
 | `returnUrl`    | `string`                       | current URL | Where to return the customer after a redirect-based payment method (Amazon Pay etc). Defaults to `window.location.href`. See [Redirect re-entry](#redirect-re-entry). |
+| `locale`       | `string`                       | `'en'`      | BCP47 locale for the embed UI and Stripe Elements (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.                                                 |
 | `onLoaded`     | `(event: CustomEvent) => void` | —           | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`.                                                                     |
 
 #### Inline
@@ -71,6 +72,7 @@ embed.addEventListener('success', (event) => {
 | `element`      | `HTMLElement`                  | —       | **Required.** The element to mount the embed into. Any existing children are replaced.            |
 | `theme`        | `'light' \| 'dark'`            | `light` | Colour scheme for the embed.                                                                      |
 | `setAsDefault` | `boolean`                      | `true`  | Whether the new card should become the customer's default payment method.                         |
+| `locale`       | `string`                       | `'en'`  | BCP47 locale for the embed UI and Stripe Elements. Unsupported locales fall back to English.      |
 | `onLoaded`     | `(event: CustomEvent) => void` | —       | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`. |
 
 #### Events
@@ -167,6 +169,7 @@ return (
 | `sessionToken` | `string`                            | —       | **Required.** Session token from `POST /v1/customer-sessions`.                    |
 | `theme`        | `'light' \| 'dark'`                 | `light` | Colour scheme.                                                                    |
 | `setAsDefault` | `boolean`                           | `true`  | Whether the new card should become the customer's default payment method.         |
+| `locale`       | `string`                            | `'en'`  | BCP47 locale (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.  |
 | `onLoaded`     | `() => void`                        | —       | Fires once when the iframe finishes loading and the form becomes interactive.     |
 | `onConfirmed`  | `() => void`                        | —       | Fires when the customer submits and Stripe processing starts.                     |
 | `onSuccess`    | `(paymentMethodId: string) => void` | —       | Fires after the card has been attached to the customer.                           |
@@ -221,3 +224,4 @@ The same script also powers `PolarEmbedCheckout` triggers — one tag covers eve
 | `data-polar-payment-method-theme`          | `light \| dark` | Optional theme override.                                                                           |
 | `data-polar-payment-method-set-as-default` | `true \| false` | Optional. Default `true`. Passing `"false"` adds the card without overriding the existing default. |
 | `data-polar-payment-method-return-url`     | `string`        | Optional. Return URL for redirect-based payment methods. Defaults to the current page.             |
+| `data-polar-payment-method-locale`         | `string`        | Optional. BCP47 locale (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.         |

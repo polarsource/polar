@@ -67,6 +67,7 @@ embed.addEventListener("success", (event) => {
 | `theme`        | `'light' \| 'dark'` | `light`     | Colour scheme.                                                                                                               |
 | `setAsDefault` | `boolean`           | `true`      | Whether the new card should become the customer's default payment method.                                                    |
 | `returnUrl`    | `string`            | current URL | Where to return the customer after a redirect-based payment method (Amazon Pay, Klarna). Defaults to `window.location.href`. |
+| `locale`       | `string`            | `'en'`      | BCP47 locale for the embed UI and Stripe Elements (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.        |
 | `onLoaded`     | `(event: CustomEvent) => void` | —           | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`. |
 
 ### Modal in React
@@ -149,6 +150,20 @@ The same script also powers embedded checkout triggers — one tag covers every 
 | `data-polar-payment-method-theme`          | `light \| dark` | Optional theme override.                                                                          |
 | `data-polar-payment-method-set-as-default` | `true \| false` | Optional. Default `true`. Pass `"false"` to add the card without overriding the existing default. |
 | `data-polar-payment-method-return-url`     | `string`        | Optional. Return URL for redirect-based payment methods. Defaults to the current page.            |
+| `data-polar-payment-method-locale`         | `string`        | Optional. BCP47 locale (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.        |
+
+## Localization
+
+The embed is fully localized, pass a BCP47 code via the `locale` option (or `data-polar-payment-method-locale` attribute):
+
+```ts
+const embed = await PolarEmbedPaymentMethod.create({
+  sessionToken: session.token,
+  locale: "fr-FR",
+});
+```
+
+When omitted, the embed defaults to English. Unsupported locales also fall back to English. See [Localization](/features/checkout/localization) for the full list of supported languages.
 
 ## Events
 

@@ -1,6 +1,7 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from typing import Any
 
 from dramatiq import Retry
 from polar_sdk.models import (
@@ -90,6 +91,26 @@ async def add_member(
         customer_external_id=external_id,
         tenant_external_id=external_customer_id,
     )
+
+
+@actor(actor_name="polar_self.update_member", priority=TaskPriority.LOW)
+async def update_member(external_customer_id: str, external_id: str, name: str) -> None:
+    await get_client().update_member(
+        external_customer_id=external_customer_id,
+        external_id=external_id,
+        name=name,
+    )
+
+
+@actor(actor_name="polar_self.update_customer_slug", priority=TaskPriority.LOW)
+async def update_customer_slug(external_id: str, slug: str) -> None:
+    client = get_client()
+    customer = await client.get_customer_by_external_id_or_none(external_id)
+    if customer is None:
+        return
+    metadata: dict[str, Any] = dict(customer.metadata) if customer.metadata else {}
+    metadata["slug"] = slug
+    await client.update_customer_metadata(external_id=external_id, metadata=metadata)
 
 
 @actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)

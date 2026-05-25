@@ -7,6 +7,7 @@ import structlog
 from sqlalchemy import func, update
 
 from polar.exceptions import PolarError
+from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.anonymization import anonymize_email_for_deletion
 from polar.models import NotificationRecipient, User
@@ -117,8 +118,26 @@ class UserService:
                 update_dict["accepted_terms_of_service_at"] = datetime.now(UTC)
                 update_dict["accepted_terms_of_service_ip"] = ip_address
 
+        previous_full_name = user.full_name
         repository = UserRepository.from_session(session)
-        return await repository.update(user, update_dict=update_dict)
+        updated_user = await repository.update(user, update_dict=update_dict)
+
+        if (
+            updated_user.full_name is not None
+            and updated_user.full_name != previous_full_name
+        ):
+            organization_repository = OrganizationRepository.from_session(session)
+            organizations = await organization_repository.get_all_by_user(
+                updated_user.id
+            )
+            for organization in organizations:
+                polar_self_service.enqueue_update_member(
+                    external_customer_id=str(organization.id),
+                    external_id=str(updated_user.id),
+                    name=updated_user.full_name,
+                )
+
+        return updated_user
 
     async def create_identity_verification(
         self, session: AsyncSession, user: User

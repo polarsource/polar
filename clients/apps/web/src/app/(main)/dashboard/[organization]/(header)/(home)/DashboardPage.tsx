@@ -2,7 +2,7 @@
 
 import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { IOSAppBanner } from '@/components/Upsell/IOSAppBanner'
+import { PlanUpsell } from '@/components/Upsell/PlanUpsell'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
@@ -19,10 +19,10 @@ interface OverviewPageProps {
 export default function OverviewPage({ organization }: OverviewPageProps) {
   return (
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-12" title={null}>
-      <IOSAppBanner />
       <OrganizationStatusBanner organization={organization} />
       <OverviewSection organization={organization} />
 
+      <PlanUpsell organization={organization} />
       <div className="dark:border-polar-700 overflow-hidden rounded-xl border border-gray-200">
         <div className="grid grid-cols-1 [clip-path:inset(1px_1px_1px_1px)] lg:grid-cols-3">
           <RevenueWidget className={cellClassName} />

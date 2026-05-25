@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.3.0-beta.3
+
+### Minor Changes
+
+- 9b59a1d: Add payment method flow to the SDK
+
 ## 0.3.0-beta.2
 
 ### Patch Changes

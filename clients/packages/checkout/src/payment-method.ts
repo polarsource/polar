@@ -121,6 +121,11 @@ interface EmbedPaymentMethodCreateOptions {
    */
   returnUrl?: string
   /**
+   * Locale for the embed UI and Stripe Elements (e.g. `'en'`,
+   * `'fr-FR'`). Unsupported locales fall back to English.
+   */
+  locale?: string
+  /**
    * Convenience callback fired once when the embed has loaded.
    */
   onLoaded?: (event: CustomEvent<EmbedPaymentMethodMessageLoaded>) => void
@@ -148,6 +153,12 @@ interface EmbedPaymentMethodCreateInlineOptions {
    * payment method. Defaults to `true`.
    */
   setAsDefault?: boolean
+  /**
+   * BCP47 locale for the embed UI and Stripe Elements (e.g. `'en'`,
+   * `'fr-FR'`). Unsupported locales fall back to English. Defaults to
+   * the merchant's English copy.
+   */
+  locale?: string
   /**
    * Convenience callback fired once when the embed has loaded.
    */
@@ -241,7 +252,8 @@ class EmbedPaymentMethod {
   public static create(
     options: EmbedPaymentMethodCreateOptions,
   ): Promise<EmbedPaymentMethod> {
-    const { sessionToken, theme, setAsDefault, returnUrl, onLoaded } = options
+    const { sessionToken, theme, setAsDefault, returnUrl, locale, onLoaded } =
+      options
 
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
@@ -292,6 +304,9 @@ class EmbedPaymentMethod {
     if (setAsDefault === false) {
       embedURL.searchParams.set('set_default', 'false')
     }
+    if (locale) {
+      embedURL.searchParams.set('locale', locale)
+    }
 
     const iframe = document.createElement('iframe')
     iframe.src = embedURL.toString()
@@ -326,7 +341,8 @@ class EmbedPaymentMethod {
   public static createInline(
     options: EmbedPaymentMethodCreateInlineOptions,
   ): EmbedPaymentMethod {
-    const { sessionToken, element, theme, setAsDefault, onLoaded } = options
+    const { sessionToken, element, theme, setAsDefault, locale, onLoaded } =
+      options
 
     const embedURL = new URL(EMBED_PATH, resolveEmbedBaseURL())
     embedURL.searchParams.set('session_token', sessionToken)
@@ -338,6 +354,9 @@ class EmbedPaymentMethod {
     }
     if (setAsDefault === false) {
       embedURL.searchParams.set('set_default', 'false')
+    }
+    if (locale) {
+      embedURL.searchParams.set('locale', locale)
     }
 
     const iframe = document.createElement('iframe')
@@ -501,12 +520,14 @@ class EmbedPaymentMethod {
     const returnUrl = element.getAttribute(
       'data-polar-payment-method-return-url',
     )
+    const locale = element.getAttribute('data-polar-payment-method-locale')
     EmbedPaymentMethod.create({
       sessionToken: token,
       theme: theme ?? undefined,
       setAsDefault:
         setAsDefaultAttr === null ? undefined : setAsDefaultAttr !== 'false',
       returnUrl: returnUrl ?? undefined,
+      locale: locale ?? undefined,
     })
   }
 

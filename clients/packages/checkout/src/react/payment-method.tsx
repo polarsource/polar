@@ -70,6 +70,11 @@ interface PolarPaymentMethodBaseProps {
    */
   setAsDefault?: boolean
   /**
+   * Locale for the embed UI and Stripe Elements (e.g. `'en'`,
+   * `'fr-FR'`). Unsupported locales fall back to English.
+   */
+  locale?: string
+  /**
    * Fires once when the iframe has loaded and the form is interactive.
    */
   onLoaded?: () => void
@@ -127,6 +132,7 @@ export const PolarPaymentMethod = ({
   sessionToken,
   theme,
   setAsDefault,
+  locale,
   onLoaded,
   onConfirmed,
   onSuccess,
@@ -156,6 +162,9 @@ export const PolarPaymentMethod = ({
     }
     if (setAsDefault === false) {
       embedURL.searchParams.set('set_default', 'false')
+    }
+    if (locale) {
+      embedURL.searchParams.set('locale', locale)
     }
 
     const iframe = document.createElement('iframe')
@@ -198,7 +207,7 @@ export const PolarPaymentMethod = ({
       window.removeEventListener('message', messageListener)
       iframe.remove()
     }
-  }, [sessionToken, theme, setAsDefault])
+  }, [sessionToken, theme, setAsDefault, locale])
 
   return <div ref={containerRef} className={className} style={style} />
 }

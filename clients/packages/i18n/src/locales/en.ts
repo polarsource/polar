@@ -351,4 +351,22 @@ export default {
         'Ordinal suffix for the "other" (default/fallback) category of Intl.PluralRules (type: ordinal). Appended to a number to form ordinals (e.g. 4th, 5th, 11th in English). Provide the suffix only — the number is prepended automatically.',
     },
   },
+  embedPaymentMethod: {
+    title: 'Add payment method',
+    close: {
+      value: 'Close',
+      _llmContext:
+        'aria-label for the close (X) button on the embedded payment method modal.',
+    },
+    submit: 'Add payment method',
+    processing: 'Adding payment method…',
+    fallbackError: 'Something went wrong. Please try again.',
+    errors: {
+      invalidRequest: 'Missing required parameters.',
+      unauthorized: 'Session expired.',
+      processingFailed:
+        'Could not process the payment method. Please try again.',
+      unknown: 'Something went wrong.',
+    },
+  },
 } as const

@@ -1,5 +1,10 @@
 import { getPublicServerURL } from '@/utils/api'
 import { getServerSideAPI } from '@/utils/client/serverside'
+import {
+  DEFAULT_LOCALE,
+  isAcceptedLocale,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { unwrap, UnauthorizedResponseError } from '@polar-sh/client'
 import type { Metadata } from 'next'
 import { EmbedError } from './EmbedError'
@@ -17,9 +22,13 @@ interface SearchParams {
   theme?: 'light' | 'dark'
   mode?: 'modal' | 'inline'
   set_default?: string
+  locale?: string
   redirect_status?: string
   polar_setup_intent?: string
 }
+
+const resolveLocale = (locale: string | undefined): AcceptedLocale =>
+  locale && isAcceptedLocale(locale) ? locale : DEFAULT_LOCALE
 
 const isValidEmbedOrigin = (origin: string): boolean => {
   try {
@@ -59,15 +68,24 @@ export default async function Page(props: {
     theme,
     mode,
     set_default,
+    locale: localeParam,
     redirect_status,
     polar_setup_intent,
   } = await props.searchParams
+
+  const locale = resolveLocale(localeParam)
 
   const embedOrigin =
     embed_origin && isValidEmbedOrigin(embed_origin) ? embed_origin : undefined
 
   if (!sessionToken || !embedOrigin) {
-    return <EmbedError code="invalid_request" embedOrigin={embedOrigin} />
+    return (
+      <EmbedError
+        code="invalid_request"
+        embedOrigin={embedOrigin}
+        locale={locale}
+      />
+    )
   }
 
   const embedReturnUrl = resolveEmbedReturnUrl(embed_return_url, embedOrigin)
@@ -87,6 +105,7 @@ export default async function Page(props: {
             : 'unknown'
         }
         embedOrigin={embedOrigin}
+        locale={locale}
       />
     )
   }
@@ -99,6 +118,7 @@ export default async function Page(props: {
       theme={theme}
       mode={mode === 'modal' ? 'modal' : 'inline'}
       setAsDefault={set_default !== 'false'}
+      locale={locale}
       serverURL={getPublicServerURL()}
       customerBillingDetails={{
         name: customer.name ?? null,

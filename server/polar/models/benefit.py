@@ -34,6 +34,7 @@ class BenefitType(StrEnum):
     license_keys = "license_keys"
     meter_credit = "meter_credit"
     feature_flag = "feature_flag"
+    slack_shared_channel = "slack_shared_channel"
 
     def get_display_name(self) -> str:
         return {
@@ -44,6 +45,7 @@ class BenefitType(StrEnum):
             BenefitType.license_keys: "License Keys",
             BenefitType.meter_credit: "Meter Credit",
             BenefitType.feature_flag: "Feature Flag",
+            BenefitType.slack_shared_channel: "Slack Shared Channel",
         }[self]
 
     def is_tax_applicable(self) -> bool:
@@ -56,6 +58,7 @@ class BenefitType(StrEnum):
                 BenefitType.license_keys: True,
                 BenefitType.meter_credit: True,
                 BenefitType.feature_flag: True,
+                BenefitType.slack_shared_channel: True,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:

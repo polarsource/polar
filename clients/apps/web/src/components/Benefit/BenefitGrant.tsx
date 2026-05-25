@@ -1,12 +1,16 @@
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries/customerPortal'
+import { getQueryClient } from '@/utils/api/query'
 import { markdownOptions } from '@/utils/markdown'
 import { Client, schemas } from '@polar-sh/client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
@@ -335,6 +339,120 @@ const BenefitGrantDiscord = ({
   )
 }
 
+const BenefitGrantSlackSharedChannel = ({
+  api,
+  benefitGrant,
+}: {
+  api: Client
+  benefitGrant: schemas['CustomerBenefitGrantSlackSharedChannel']
+}) => {
+  const {
+    benefit: { type: benefitType },
+    customer,
+    properties,
+    error: grantError,
+  } = benefitGrant
+  const updateBenefitGrant = useCustomerBenefitGrantUpdate(api)
+
+  const invitedEmail = properties.invited_email
+  const inviteUrl = properties.invite_url
+  const channelName = properties.channel_name
+
+  const [email, setEmail] = useState(invitedEmail ?? customer.email ?? '')
+
+  const onSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!email) return
+      await updateBenefitGrant.mutateAsync({
+        id: benefitGrant.id,
+        body: {
+          benefit_type: benefitType,
+          properties: { invited_email: email },
+        },
+      })
+    },
+    [email, updateBenefitGrant, benefitGrant.id, benefitType],
+  )
+
+  if (inviteUrl) {
+    return (
+      <Box display="flex" flexDirection="column" rowGap="s">
+        <Text color="muted">
+          Invite sent to {invitedEmail}.
+          {channelName ? ` Channel: ${channelName}.` : ''} Open the link to
+          accept in Slack.
+        </Text>
+        <a href={inviteUrl} target="_blank" rel="noopener noreferrer">
+          <Button asChild fullWidth variant="secondary">
+            Open Slack invite
+          </Button>
+        </a>
+      </Box>
+    )
+  }
+
+  // Email submitted, no invite yet, no error: worker is provisioning.
+  if (invitedEmail && !grantError) {
+    return <ProvisioningState invitedEmail={invitedEmail} />
+  }
+
+  return (
+    <Box
+      as="form"
+      display="flex"
+      flexDirection="column"
+      rowGap="s"
+      onSubmit={onSubmit}
+    >
+      {invitedEmail ? (
+        <Text color="muted">
+          We couldn&apos;t set up your Slack channel with{' '}
+          <strong>{invitedEmail}</strong>. Double-check the email and try again,
+          or reach out to the seller if it keeps failing.
+        </Text>
+      ) : (
+        <Text color="muted">
+          Enter the email of an admin in your Slack workspace. They&apos;ll
+          receive a Slack Connect invite for a private channel.
+        </Text>
+      )}
+      {invitedEmail && grantError?.message && (
+        <Text color="danger" variant="caption">
+          {grantError.message}
+        </Text>
+      )}
+      <Input
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="slack-admin@yourcompany.com"
+      />
+      <Button type="submit" loading={updateBenefitGrant.isPending} fullWidth>
+        {invitedEmail ? 'Try again' : 'Request Slack invite'}
+      </Button>
+    </Box>
+  )
+}
+
+const ProvisioningState = ({ invitedEmail }: { invitedEmail: string }) => {
+  const queryClient = getQueryClient()
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['customer_benefit_grants'] })
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [queryClient])
+
+  return (
+    <Text color="muted">
+      Setting up your Slack channel for <strong>{invitedEmail}</strong>... You
+      should receive an invite in your inbox shortly.
+    </Text>
+  )
+}
+
 export const BenefitGrant = ({
   api,
   benefitGrant,
@@ -394,6 +512,14 @@ export const BenefitGrant = ({
           api={api}
           benefitGrant={benefitGrant as schemas['CustomerBenefitGrantDiscord']}
           locale={locale}
+        />
+      )}
+      {benefit.type === 'slack_shared_channel' && (
+        <BenefitGrantSlackSharedChannel
+          api={api}
+          benefitGrant={
+            benefitGrant as schemas['CustomerBenefitGrantSlackSharedChannel']
+          }
         />
       )}
     </div>

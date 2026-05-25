@@ -87,7 +87,9 @@ class SlackIntegrationManifest(Schema):
 class SlackWorkspaceUser(Schema):
     id: str = Field(description="Slack user ID (e.g. U01234567).")
     name: str = Field(description="Username (handle without @).")
-    real_name: str | None = Field(default=None, description="Display name, if set.")
+    real_name: str | None = Field(
+        default=None, description="Display name, if set."
+    )
     image_url: str | None = Field(
         default=None, description="Avatar URL (image_72), if available."
     )

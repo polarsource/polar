@@ -12,11 +12,14 @@ from polar.integrations.slack.service import (
     SlackIntegrationNotConfigured,
 )
 from polar.models import (
+    Customer,
     Organization,
     OrganizationSlackIntegration,
 )
+from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_benefit, create_benefit_grant
 
 _REDIRECT_URI = "https://api.polar.sh/v1/integrations/slack/callback"
 
@@ -46,9 +49,9 @@ async def _create_integration(
     return integration
 
 
-def _service_with_mock(
-    mocker: MockerFixture, **overrides: object
-) -> tuple[OrganizationSlackIntegrationService, AsyncMock]:
+def _service_with_mock(mocker: MockerFixture, **overrides: object) -> tuple[
+    OrganizationSlackIntegrationService, AsyncMock
+]:
     client = AsyncMock()
     client.oauth_v2_access = AsyncMock(
         return_value=overrides.get(
@@ -353,6 +356,55 @@ class TestHandleEvent:
             api_app_id="A0DOESNOTEXIST",
             event={"type": "tokens_revoked"},
         )
+
+    async def test_channel_shared_records_connected_team(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        from polar.benefit.grant.repository import BenefitGrantRepository
+
+        await _create_integration(save_fixture, organization)
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={
+                "channel_name_template": "x-{customer_name}",
+                "private": True,
+                "welcome_message": None,
+                "archive_on_revoke": True,
+            },
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={
+                "invited_email": "a@example.com",
+                "channel_id": "C123",
+            },
+        )
+        await session.flush()
+        service, _client = _service_with_mock(mocker)
+
+        await service.handle_event(
+            session,
+            api_app_id="A0TESTAPPID",
+            event={
+                "type": "channel_shared",
+                "channel": "C123",
+                "connected_team_id": "TCUST",
+            },
+        )
+
+        repo = BenefitGrantRepository.from_session(session)
+        refreshed = await repo.get_by_id(grant.id)
+        assert refreshed is not None
+        assert (refreshed.properties or {}).get("connected_team_id") == "TCUST"
 
 
 @pytest.mark.asyncio

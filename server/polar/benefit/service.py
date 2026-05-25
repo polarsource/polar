@@ -131,6 +131,21 @@ class BenefitService:
             OrganizationPermission.products_manage,
         )
 
+        if (
+            create_schema.type == BenefitType.slack_shared_channel
+            and not organization.is_slack_benefit_enabled
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "type"),
+                        "msg": "Slack shared channel benefit is not enabled for this organization.",
+                        "input": create_schema.type,
+                    }
+                ]
+            )
+
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")
         except AttributeError:

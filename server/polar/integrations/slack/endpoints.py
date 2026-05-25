@@ -114,7 +114,9 @@ async def list_workspace_users(
     if integration is None or integration.bot_token is None:
         raise ResourceNotFound()
     users = await organization_slack_integration.list_workspace_users(integration)
-    return SlackWorkspaceUsersResponse(users=[SlackWorkspaceUser(**u) for u in users])
+    return SlackWorkspaceUsersResponse(
+        users=[SlackWorkspaceUser(**u) for u in users]
+    )
 
 
 @router.delete(

@@ -1,0 +1,334 @@
+import secrets
+from typing import Any, cast
+from uuid import UUID
+
+import httpx
+import structlog
+
+from polar.auth.models import AuthSubject
+from polar.integrations.slack.client import SlackClient
+from polar.integrations.slack.repository import OrganizationSlackIntegrationRepository
+from polar.kit.db.postgres import AsyncSession
+from polar.logging import Logger
+from polar.models import (
+    Benefit,
+    Customer,
+    Member,
+    Organization,
+    OrganizationSlackIntegration,
+    User,
+)
+from polar.redis import Redis
+
+from ..base.service import (
+    BenefitActionRequiredError,
+    BenefitPropertiesValidationError,
+    BenefitRetriableError,
+    BenefitServiceProtocol,
+)
+from .properties import (
+    BenefitGrantSlackSharedChannelProperties,
+    BenefitSlackSharedChannelProperties,
+)
+from .template import (
+    InvalidTemplateError,
+    TemplateContext,
+    render_channel_name,
+    validate_template,
+)
+
+log: Logger = structlog.get_logger()
+
+
+class BenefitSlackSharedChannelService(
+    BenefitServiceProtocol[
+        BenefitSlackSharedChannelProperties,
+        BenefitGrantSlackSharedChannelProperties,
+    ]
+):
+    def __init__(self, session: AsyncSession, redis: Redis) -> None:
+        super().__init__(session, redis)
+        self._client = SlackClient()
+
+    async def grant(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantSlackSharedChannelProperties,
+        *,
+        update: bool = False,
+        attempt: int = 1,
+        member: Member | None = None,
+    ) -> BenefitGrantSlackSharedChannelProperties:
+        bound_logger = log.bind(
+            benefit_id=str(benefit.id), customer_id=str(customer.id)
+        )
+
+        invited_email = grant_properties.get("invited_email")
+        if not invited_email:
+            raise BenefitActionRequiredError(
+                "Enter the email of an admin in your Slack workspace to "
+                "receive the Slack Connect invite."
+            )
+
+        existing_channel_id = grant_properties.get("channel_id")
+        if update and existing_channel_id:
+            properties = self._get_properties(benefit)
+            team_invitees = properties.get("team_invitees") or []
+            if team_invitees:
+                integration = await self._get_installed_integration(
+                    benefit.organization_id
+                )
+                await self._safe_invite_team(
+                    bot_token=cast(str, integration.bot_token),
+                    channel=existing_channel_id,
+                    users=team_invitees,
+                    bound_logger=bound_logger,
+                )
+            return grant_properties
+
+        # Repeated customer-portal `invited_email` updates each enqueue a
+        # `benefit.update` task. If a previous attempt failed between channel
+        # creation and invite, channel_id isn't persisted and the next attempt
+        # would create another channel + send another Slack invite, fanning
+        # out invites to arbitrary external addresses. Throttle the entry
+        # path; framework retries (attempt > 0) bypass the lock.
+        if attempt == 0:
+            lock_key = f"slack_benefit_grant:{benefit.id}:{customer.id}"
+            acquired = await self.redis.set(lock_key, "1", ex=60, nx=True)
+            if not acquired:
+                raise BenefitActionRequiredError(
+                    "A Slack channel is being provisioned for this benefit. "
+                    "Please wait a minute before retrying."
+                )
+
+        properties = self._get_properties(benefit)
+        integration = await self._get_installed_integration(benefit.organization_id)
+
+        context = self._build_context(customer)
+        bot_token = cast(str, integration.bot_token)
+
+        channel_id, channel_name = await self._create_channel(
+            bot_token=bot_token,
+            template=properties["channel_name_template"],
+            context=context,
+            is_private=properties["private"],
+        )
+
+        team_invitees = properties.get("team_invitees") or []
+        if team_invitees:
+            await self._safe_invite_team(
+                bot_token=bot_token,
+                channel=channel_id,
+                users=team_invitees,
+                bound_logger=bound_logger,
+            )
+
+        welcome_message = properties.get("welcome_message")
+        if welcome_message:
+            await self._safe_post_welcome(
+                bot_token=bot_token,
+                channel=channel_id,
+                text=welcome_message,
+                bound_logger=bound_logger,
+            )
+
+        invite = await self._invite_shared(
+            bot_token=bot_token, channel=channel_id, email=invited_email
+        )
+
+        return {
+            **grant_properties,
+            "channel_id": channel_id,
+            "channel_name": channel_name,
+            "invite_id": invite.get("invite_id", ""),
+            "invite_url": invite.get("url", ""),
+        }
+
+    async def cycle(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantSlackSharedChannelProperties,
+        *,
+        attempt: int = 1,
+        member: Member | None = None,
+    ) -> BenefitGrantSlackSharedChannelProperties:
+        return grant_properties
+
+    async def revoke(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantSlackSharedChannelProperties,
+        *,
+        attempt: int = 1,
+        member: Member | None = None,
+    ) -> BenefitGrantSlackSharedChannelProperties:
+        bound_logger = log.bind(
+            benefit_id=str(benefit.id), customer_id=str(customer.id)
+        )
+
+        properties = self._get_properties(benefit)
+        channel_id = grant_properties.get("channel_id")
+
+        if not properties.get("archive_on_revoke") or not channel_id:
+            return {"invited_email": grant_properties.get("invited_email", "")}
+
+        repository = OrganizationSlackIntegrationRepository.from_session(self.session)
+        integration = await repository.get_by_organization(benefit.organization_id)
+        if integration is None or integration.bot_token is None:
+            bound_logger.info("Slack integration uninstalled; skipping archive")
+            return {"invited_email": grant_properties.get("invited_email", "")}
+
+        try:
+            await self._client.conversations_archive(
+                bot_token=integration.bot_token, channel=channel_id
+            )
+        except httpx.HTTPError as e:
+            bound_logger.warning("Slack archive failed", error=str(e))
+            raise BenefitRetriableError() from e
+
+        return {"invited_email": grant_properties.get("invited_email", "")}
+
+    async def requires_update(
+        self,
+        benefit: Benefit,
+        previous_properties: BenefitSlackSharedChannelProperties,
+    ) -> bool:
+        # Channel name template and welcome message changes affect only
+        # future grants; existing channels are not renamed or re-posted to.
+        # team_invitees changes are additive: new members get invited to
+        # existing channels (Slack treats already-in-channel as a no-op).
+        current = self._get_properties(benefit)
+        return set(current.get("team_invitees") or []) != set(
+            previous_properties.get("team_invitees") or []
+        )
+
+    async def validate_properties(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        properties: dict[str, Any],
+    ) -> BenefitSlackSharedChannelProperties:
+        template = properties.get("channel_name_template", "")
+        try:
+            validate_template(template)
+        except InvalidTemplateError as e:
+            raise BenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "msg": str(e),
+                        "loc": ("channel_name_template",),
+                        "input": template,
+                    }
+                ]
+            ) from e
+
+        return cast(BenefitSlackSharedChannelProperties, properties)
+
+    async def _get_installed_integration(
+        self, organization_id: UUID
+    ) -> OrganizationSlackIntegration:
+        repository = OrganizationSlackIntegrationRepository.from_session(self.session)
+        integration = await repository.get_by_organization(organization_id)
+        if integration is None or integration.bot_token is None:
+            raise BenefitActionRequiredError(
+                "The Slack integration is not installed for this organization."
+            )
+        return integration
+
+    def _build_context(self, customer: Customer) -> TemplateContext:
+        email = customer.email or ""
+        return TemplateContext(
+            customer_name=customer.name or email or "customer",
+            customer_email_local=email.split("@", 1)[0] if email else "customer",
+            metadata=dict(customer.user_metadata or {}),
+        )
+
+    async def _create_channel(
+        self,
+        *,
+        bot_token: str,
+        template: str,
+        context: TemplateContext,
+        is_private: bool,
+    ) -> tuple[str, str]:
+        for attempt in range(2):
+            suffix = secrets.token_hex(2) if attempt > 0 else None
+            try:
+                name = render_channel_name(template, context, suffix=suffix)
+            except InvalidTemplateError as e:
+                raise BenefitActionRequiredError(str(e)) from e
+            try:
+                result = await self._client.conversations_create(
+                    bot_token=bot_token, name=name, is_private=is_private
+                )
+            except httpx.HTTPError as e:
+                raise BenefitRetriableError() from e
+
+            if result.get("ok"):
+                channel = result.get("channel") or {}
+                return channel["id"], channel.get("name", name)
+
+            error = result.get("error", "")
+            if error == "name_taken" and attempt == 0:
+                continue
+            raise BenefitActionRequiredError(f"Slack error: {error}")
+
+        raise AssertionError  # unreachable: loop always returns or raises
+
+    async def _safe_invite_team(
+        self,
+        *,
+        bot_token: str,
+        channel: str,
+        users: list[str],
+        bound_logger: Any,
+    ) -> None:
+        try:
+            result = await self._client.conversations_invite(
+                bot_token=bot_token, channel=channel, users=users
+            )
+        except httpx.HTTPError as e:
+            bound_logger.warning("Slack team invite failed", error=str(e))
+            return
+        if not result.get("ok"):
+            bound_logger.warning(
+                "Slack team invite returned error", error=result.get("error")
+            )
+
+    async def _safe_post_welcome(
+        self,
+        *,
+        bot_token: str,
+        channel: str,
+        text: str,
+        bound_logger: Any,
+    ) -> None:
+        try:
+            await self._client.chat_post_message(
+                bot_token=bot_token, channel=channel, text=text
+            )
+        except httpx.HTTPError as e:
+            bound_logger.warning("Slack welcome post failed", error=str(e))
+
+    async def _invite_shared(
+        self,
+        *,
+        bot_token: str,
+        channel: str,
+        email: str,
+    ) -> dict[str, Any]:
+        try:
+            result = await self._client.conversations_invite_shared(
+                bot_token=bot_token, channel=channel, emails=[email]
+            )
+        except httpx.HTTPError as e:
+            raise BenefitRetriableError() from e
+
+        if not result.get("ok"):
+            error = result.get("error", "")
+            raise BenefitActionRequiredError(f"Slack invite error: {error}")
+
+        return result

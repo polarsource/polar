@@ -318,6 +318,7 @@ export default {
     custom: 'Custom',
     meter_credit: 'Meter credits',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'Slack shared channel',
   },
   ordinal: {
     zero: {

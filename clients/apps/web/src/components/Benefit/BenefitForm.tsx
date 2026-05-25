@@ -31,6 +31,7 @@ import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
+import { SlackSharedChannelBenefitForm } from './SlackSharedChannelBenefitForm'
 import { benefitsDisplayNames } from './utils'
 
 export const NewBenefitForm = ({
@@ -114,7 +115,7 @@ const BenefitForm = ({
         }}
       />
 
-      {!update ? <BenefitTypeSelect /> : null}
+      {!update ? <BenefitTypeSelect organization={organization} /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
@@ -132,6 +133,9 @@ const BenefitForm = ({
         <MeterCreditBenefitForm organization={organization} />
       )}
       {type === 'feature_flag' && <FeatureFlagBenefitForm />}
+      {type === 'slack_shared_channel' && (
+        <SlackSharedChannelBenefitForm organization={organization} />
+      )}
     </>
   )
 }
@@ -393,8 +397,21 @@ const DiscordBenefitForm = () => {
   )
 }
 
-const BenefitTypeSelect = () => {
+const BenefitTypeSelect = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
+  const availableTypes = useMemo(
+    () =>
+      enums.benefitTypeValues.filter(
+        (value) =>
+          value !== 'slack_shared_channel' ||
+          organization.feature_settings?.slack_benefit_enabled,
+      ),
+    [organization.feature_settings?.slack_benefit_enabled],
+  )
 
   return (
     <FormField
@@ -413,7 +430,7 @@ const BenefitTypeSelect = () => {
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {enums.benefitTypeValues.map((value) => (
+                  {availableTypes.map((value) => (
                     <SelectItem key={value} value={value}>
                       {benefitsDisplayNames[value]}
                     </SelectItem>

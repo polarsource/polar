@@ -52,7 +52,9 @@ def _slack_signature(
 ) -> tuple[str, str]:
     ts = timestamp if timestamp is not None else int(time.time())
     basestring = f"v0:{ts}:".encode() + body
-    digest = hmac.new(signing_secret.encode(), basestring, hashlib.sha256).hexdigest()
+    digest = hmac.new(
+        signing_secret.encode(), basestring, hashlib.sha256
+    ).hexdigest()
     return str(ts), f"v0={digest}"
 
 
@@ -379,13 +381,17 @@ class TestCallback:
 
 @pytest.mark.asyncio
 class TestEvents:
-    async def test_missing_signature_returns_401(self, client: AsyncClient) -> None:
+    async def test_missing_signature_returns_401(
+        self, client: AsyncClient
+    ) -> None:
         response = await client.post(
             "/v1/integrations/slack/events", json={"api_app_id": "A0X"}
         )
         assert response.status_code == 401
 
-    async def test_unknown_app_returns_401(self, client: AsyncClient) -> None:
+    async def test_unknown_app_returns_401(
+        self, client: AsyncClient
+    ) -> None:
         body = json.dumps({"api_app_id": "A0DOESNOTEXIST"}).encode()
         ts, sig = _slack_signature(signing_secret="x", body=body)
         response = await client.post(

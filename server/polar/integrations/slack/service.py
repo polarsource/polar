@@ -86,14 +86,12 @@ class OrganizationSlackIntegrationService:
         if update.signing_secret is None and not has_existing_credentials:
             raise SlackIntegrationInvalidCredentials("missing_signing_secret")
 
-        client_secret = (
-            update.client_secret or (existing.client_secret if existing else None) or ""
-        )
-        signing_secret = (
-            update.signing_secret
-            or (existing.signing_secret if existing else None)
-            or ""
-        )
+        client_secret = update.client_secret or (
+            existing.client_secret if existing else None
+        ) or ""
+        signing_secret = update.signing_secret or (
+            existing.signing_secret if existing else None
+        ) or ""
 
         # Only round-trip to Slack when the credentials actually changed,
         # since the validation call costs a request and shouldn't run on
@@ -267,11 +265,7 @@ class OrganizationSlackIntegrationService:
     ) -> OrganizationSlackIntegration:
         repository = OrganizationSlackIntegrationRepository.from_session(session)
         integration = await repository.get_by_organization(organization_id)
-        if (
-            integration is None
-            or integration.client_id is None
-            or integration.client_secret is None
-        ):
+        if integration is None or integration.client_id is None or integration.client_secret is None:
             raise SlackIntegrationNotConfigured()
 
         result = await self._client.oauth_v2_access(
@@ -367,11 +361,7 @@ class OrganizationSlackIntegrationService:
 
         repository = BenefitGrantRepository.from_session(session)
         grant = await repository.get_by_property_and_organization(
-            integration.organization_id,
-            "slack_shared_channel",
-            "channel_id",
-            channel_id,
-            for_update=True,
+            integration.organization_id, "channel_id", channel_id, for_update=True
         )
         if grant is None:
             return

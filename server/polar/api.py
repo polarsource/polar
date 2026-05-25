@@ -4,6 +4,9 @@ from polar.account.endpoints import router as accounts_router
 from polar.auth.endpoints import router as auth_router
 from polar.benefit.endpoints import router as benefits_router
 from polar.benefit.grant.endpoints import router as benefit_grants_router
+from polar.benefit.strategies.slack_shared_channel.endpoints import (
+    router as slack_shared_channel_benefit_router,
+)
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.cli.endpoints import router as cli_router
@@ -91,6 +94,8 @@ router.include_router(auth_router)
 router.include_router(oauth2_router)
 # /benefits
 router.include_router(benefits_router)
+# /benefits/slack
+router.include_router(slack_shared_channel_benefit_router)
 # /benefit-grants
 router.include_router(benefit_grants_router)
 # /webhooks

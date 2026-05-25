@@ -28,6 +28,7 @@ from polar.worker import enqueue_job
 from ..schemas.benefit_grant import (
     CustomerBenefitGrantDiscordUpdate,
     CustomerBenefitGrantGitHubRepositoryUpdate,
+    CustomerBenefitGrantSlackSharedChannelUpdate,
     CustomerBenefitGrantUpdate,
 )
 
@@ -171,9 +172,11 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             )
 
         if isinstance(
-            benefit_grant_update, CustomerBenefitGrantDiscordUpdate
-        ) or isinstance(
-            benefit_grant_update, CustomerBenefitGrantGitHubRepositoryUpdate
+            benefit_grant_update,
+            (
+                CustomerBenefitGrantDiscordUpdate,
+                CustomerBenefitGrantGitHubRepositoryUpdate,
+            ),
         ):
             account_id = benefit_grant_update.properties["account_id"]
             if account_id is not None:
@@ -210,6 +213,14 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                         ]
                     )
 
+        if isinstance(
+            benefit_grant_update,
+            (
+                CustomerBenefitGrantDiscordUpdate,
+                CustomerBenefitGrantGitHubRepositoryUpdate,
+                CustomerBenefitGrantSlackSharedChannelUpdate,
+            ),
+        ):
             benefit_grant.properties = cast(
                 Any,
                 {
@@ -217,7 +228,9 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     **benefit_grant_update.properties,
                 },
             )
-
+            # Clear the stale error from the previous failed attempt so the
+            # response reflects "in progress" while the worker re-runs grant.
+            benefit_grant.error = None
             enqueue_job("benefit.update", benefit_grant.id)
 
         for attr, value in benefit_grant_update.model_dump(

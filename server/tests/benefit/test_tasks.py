@@ -360,12 +360,17 @@ class TestBenefitDeleteGrant:
 
 @pytest.mark.asyncio
 class TestBenefitEnqueueGrants:
-    async def test_resets_meters_for_subscription(
+    async def test_does_not_reset_meters(
         self,
         mocker: MockerFixture,
         subscription: Subscription,
         session: AsyncSession,
     ) -> None:
+        """
+        The benefit grant pipeline must NOT reset meters. Resets are handled
+        by order.service.create_subscription_order for cycle/cancel orders
+        and by meter_credit.cycle() for per-grant renewal. See issue #11427.
+        """
         reset_meters_mock = mocker.patch.object(
             subscription_service,
             "reset_meters",
@@ -378,24 +383,6 @@ class TestBenefitEnqueueGrants:
             subscription.customer_id, [], subscription_id=subscription.id
         )
 
-        reset_meters_mock.assert_called_once()
-
-    async def test_skips_meter_reset_without_subscription(
-        self,
-        mocker: MockerFixture,
-        customer: Customer,
-        session: AsyncSession,
-    ) -> None:
-        reset_meters_mock = mocker.patch.object(
-            subscription_service,
-            "reset_meters",
-            spec=SubscriptionService.reset_meters,
-        )
-
-        session.expunge_all()
-
-        await benefit_enqueue_grants(customer.id, [], order_id=uuid.uuid4())
-
         reset_meters_mock.assert_not_called()
 
     async def test_enqueues_grants(
@@ -406,11 +393,6 @@ class TestBenefitEnqueueGrants:
         benefit_organization_second: Benefit,
         session: AsyncSession,
     ) -> None:
-        mocker.patch.object(
-            subscription_service,
-            "reset_meters",
-            spec=SubscriptionService.reset_meters,
-        )
         enqueue_job_mock = mocker.patch("polar.benefit.tasks.enqueue_job")
 
         benefit_ids = [benefit_organization.id, benefit_organization_second.id]
@@ -445,11 +427,6 @@ class TestBenefitEnqueueGrants:
         subscription: Subscription,
         session: AsyncSession,
     ) -> None:
-        mocker.patch.object(
-            subscription_service,
-            "reset_meters",
-            spec=SubscriptionService.reset_meters,
-        )
         enqueue_job_mock = mocker.patch("polar.benefit.tasks.enqueue_job")
 
         session.expunge_all()
@@ -461,3 +438,16 @@ class TestBenefitEnqueueGrants:
         )
 
         enqueue_job_mock.assert_not_called()
+
+    async def test_deprecated_alias_registered_for_in_flight_messages(self) -> None:
+        """
+        The legacy `benefit.reset_meters_and_enqueue_grants` actor must remain
+        registered on the broker so Dramatiq messages enqueued under the old
+        name (before the rename) can still be picked up by workers.
+        """
+        import dramatiq
+
+        broker = dramatiq.get_broker()
+        actors = broker.get_declared_actors()
+        assert "benefit.enqueue_grants" in actors
+        assert "benefit.reset_meters_and_enqueue_grants" in actors

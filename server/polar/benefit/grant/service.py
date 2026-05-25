@@ -435,11 +435,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         scope_args = scope_to_args(scope)
         broker = dramatiq.get_broker()
-        enqueue_grants_actor = broker.get_actor(
-            "benefit.reset_meters_and_enqueue_grants"
-        )
+        enqueue_grants_actor = broker.get_actor("benefit.enqueue_grants")
 
-        # Pipeline: revoke group → enqueue_grants (resets meters for subs, then grants)
+        # Pipeline: revoke group → enqueue_grants callback (then per-benefit grants)
         if revoke_benefit_ids:
             revoke_actor = broker.get_actor("benefit.revoke")
             revoke_messages = [
@@ -463,7 +461,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             revoke_group.run()
         else:
             enqueue_job(
-                "benefit.reset_meters_and_enqueue_grants",
+                "benefit.enqueue_grants",
                 customer_id=customer.id,
                 grant_benefit_ids=grant_benefit_ids,
                 member_id=member_id,

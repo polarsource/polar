@@ -7,7 +7,7 @@ import type { Client, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { X } from 'lucide-react'
-import CreditCardBrandIcon from '../CreditCardBrandIcon'
+import { PaymentMethodDisplay } from '../PaymentMethodDisplay'
 
 type PaymentMethodType =
   operations['customer_portal:customers:list_payment_methods']['responses']['200']['content']['application/json']['items'][number]
@@ -16,30 +16,6 @@ const isCardPaymentMethod = (
   paymentMethod: PaymentMethodType,
 ): paymentMethod is schemas['PaymentMethodCard'] =>
   paymentMethod.type === 'card'
-
-const PaymentMethodCard = ({
-  paymentMethod,
-}: {
-  paymentMethod: schemas['PaymentMethodCard']
-}) => {
-  const { brand, last4, exp_year, exp_month } = paymentMethod.method_metadata
-
-  return (
-    <div className="flex grow flex-row items-center gap-4">
-      <CreditCardBrandIcon
-        width="4em"
-        brand={brand}
-        className="dark:border-polar-700 rounded-lg border border-gray-200 p-2"
-      />
-      <div className="flex flex-col">
-        <span className="capitalize">{`${brand} •••• ${last4}`}</span>
-        <span className="dark:text-polar-500 text-sm text-gray-500">
-          Expires {exp_month}/{exp_year}
-        </span>
-      </div>
-    </div>
-  )
-}
 
 const PaymentMethod = ({
   api,
@@ -98,11 +74,14 @@ const PaymentMethod = ({
 
   return (
     <div className="flex items-center justify-between gap-2">
-      {isCardPaymentMethod(paymentMethod) ? (
-        <PaymentMethodCard paymentMethod={paymentMethod} />
-      ) : (
-        <div>{paymentMethod.type}</div>
-      )}
+      <PaymentMethodDisplay
+        type={paymentMethod.type}
+        card={
+          isCardPaymentMethod(paymentMethod)
+            ? paymentMethod.method_metadata
+            : null
+        }
+      />
       <div className="flex flex-row items-center gap-x-4">
         {isDefault ? (
           <Status

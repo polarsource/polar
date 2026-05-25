@@ -14,7 +14,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { X } from 'lucide-react'
-import CreditCardBrandIcon from '../../CreditCardBrandIcon'
+import { PaymentMethodDisplay } from '../../PaymentMethodDisplay'
 import { LoadingBox } from '../../Shared/LoadingBox'
 import { SectionDescription } from '../Section'
 
@@ -22,9 +22,6 @@ const isCardPaymentMethod = (
   paymentMethod: OrganizationPaymentMethod,
 ): paymentMethod is OrganizationPaymentMethodCard =>
   paymentMethod.type === 'card'
-
-const capitalize = (value: string) =>
-  value.length === 0 ? value : value[0].toUpperCase() + value.slice(1)
 
 const PaymentMethodRow = ({
   organizationId,
@@ -86,26 +83,14 @@ const PaymentMethodRow = ({
       justifyContent="between"
       columnGap="m"
     >
-      {isCardPaymentMethod(paymentMethod) ? (
-        <Box display="flex" alignItems="center" columnGap="m" flexGrow={1}>
-          <CreditCardBrandIcon
-            width="3.5em"
-            brand={paymentMethod.method_metadata.brand}
-            className="dark:border-polar-700 rounded-lg border border-gray-200"
-          />
-          <Box display="flex" flexDirection="column">
-            <Text>
-              {`${capitalize(paymentMethod.method_metadata.brand)} •••• ${paymentMethod.method_metadata.last4}`}
-            </Text>
-            <Text color="muted" variant="caption">
-              Expires {paymentMethod.method_metadata.exp_month}/
-              {paymentMethod.method_metadata.exp_year}
-            </Text>
-          </Box>
-        </Box>
-      ) : (
-        <Text>{paymentMethod.type}</Text>
-      )}
+      <PaymentMethodDisplay
+        type={paymentMethod.type}
+        card={
+          isCardPaymentMethod(paymentMethod)
+            ? paymentMethod.method_metadata
+            : null
+        }
+      />
       <Box display="flex" alignItems="center" columnGap="m">
         {paymentMethod.default ? (
           <Status

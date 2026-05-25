@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+early_access: false
+
+reviews:
+  # "chill" surfaces only high-signal issues (bugs, security, logic) and stays
+  # quiet on style/naming — better suited to a high-volume repo (~600 PRs/mo).
+  profile: chill
+  # Keep reviews advisory; CodeRabbit comments but does not block merges.
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: true
+  poem: false
+  # Stop spending review cycles on PRs that get closed mid-review.
+  abort_on_close: true
+
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    base_branches:
+      - "^main$"
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+
+  # Style/format is enforced by ruff (Python) and oxfmt/ESLint (TS); don't
+  # re-review generated, vendored, or lock files.
+  path_filters:
+    - "!**/pnpm-lock.yaml"
+    - "!server/uv.lock"
+    - "!flake.lock"
+    - "!server/migrations/versions/**"
+    - "!docs/openapi.yaml"
+    - "!server/emails/src/types/openapi.ts"
+    - "!clients/packages/client/src/**"
+    - "!**/__snapshots__/**"
+    - "!**/*.snap"
+
+  path_instructions:
+    - path: "server/**/*.py"
+      instructions: |
+        Focus on correctness: async/await usage, SQLAlchemy query correctness
+        (N+1, missing awaits, session handling), Pydantic schema validation,
+        and FastAPI endpoint/auth logic. ruff handles linting/formatting and
+        mypy handles types — do not flag style or formatting nits.
+    - path: "clients/**/*.{ts,tsx}"
+      instructions: |
+        Focus on React/Next.js correctness: hooks rules, server vs client
+        component boundaries, data fetching, and type safety. Formatting is
+        handled by oxfmt and linting by ESLint — do not flag formatting nits.
+
+  tools:
+    ruff:
+      enabled: true
+    eslint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+
+chat:
+  auto_reply: true

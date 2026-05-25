@@ -21,19 +21,13 @@
     }
   },
   "contextual": {
-    "options": [
-      "copy",
-      "chatgpt",
-      "claude"
-    ]
+    "options": ["copy", "chatgpt", "claude"]
   },
   "navigation": {
     "groups": [
       {
         "group": "Company",
-        "pages": [
-          "company/about-polar"
-        ]
+        "pages": ["company/about-polar"]
       },
       {
         "group": "Working at Polar",
@@ -91,7 +85,8 @@
               "engineering/design-documents/business-entity",
               "engineering/design-documents/event-storage",
               "engineering/design-documents/platform-api",
-              "engineering/design-documents/rbac"
+              "engineering/design-documents/rbac",
+              "engineering/design-documents/polar-for-polar"
             ]
           },
           "engineering/tech-notes",

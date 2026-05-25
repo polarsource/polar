@@ -100,7 +100,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
     posthog.capture('dashboard:subscriptions:plan_upsell:view', {
       organization_id: organization.id,
       recommended_plan: recommendation.plan.name,
-      recommended_plan_product_id: recommendation.plan.product_id,
+      recommended_plan_product_id: recommendation.plan.product_id ?? null,
       monthly_savings_cents: recommendation.savings,
       monthly_revenue_cents: monthlyRevenue,
     })
@@ -113,7 +113,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
   const trackingProps = {
     organization_id: organization.id,
     recommended_plan: plan.name,
-    recommended_plan_product_id: plan.product_id,
+    recommended_plan_product_id: plan.product_id ?? null,
     monthly_savings_cents: savings,
     monthly_revenue_cents: monthlyRevenue,
   }

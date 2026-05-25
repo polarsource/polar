@@ -39,7 +39,7 @@ class UserOrganizationRepository:
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.is_deleted.is_(False),
-                Organization.deleted_at.is_(None),
+                Organization.can_authenticate,
             )
             .order_by(Organization.name)
         )

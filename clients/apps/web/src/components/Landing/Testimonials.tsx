@@ -1,6 +1,7 @@
+import { Avatar, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { StillaAI } from './Logos'
-import { Avatar } from '@polar-sh/orbit'
 
 export const companyTestimonials = [
   {
@@ -11,12 +12,16 @@ export const companyTestimonials = [
     logo: <StillaAI size={48} />,
     text: (
       <>
-        <p>
+        <Text variant="heading-xxs" as="p">
           Polar&apos;s Python SDK and Webhook infrastructure made our billing
           integration straightforward.
-        </p>
-        <p>It gave us production-ready billing in hours, not weeks.</p>
-        <p>It&apos;s rare to find a vendor that moves this fast.</p>
+        </Text>
+        <Text variant="heading-xxs" as="p">
+          It gave us production-ready billing in hours, not weeks.
+        </Text>
+        <Text variant="heading-xxs" as="p">
+          It&apos;s rare to find a vendor that moves this fast.
+        </Text>
       </>
     ),
   },
@@ -28,10 +33,12 @@ export const companyTestimonials = [
     avatar: '/assets/landing/testamonials/eric.jpg',
     text: (
       <>
-        <p>Polar was a turning point for Repo Prompt.</p>
-        <p>
+        <Text variant="heading-xxs" as="p">
+          Polar was a turning point for Repo Prompt.
+        </Text>
+        <Text variant="heading-xxs" as="p">
           I went from dreading payments to having everything live in a weekend.
-        </p>
+        </Text>
       </>
     ),
   },
@@ -45,10 +52,10 @@ const userTestimonials = [
     verified: true,
     avatar: '/assets/landing/testamonials/rauch.jpg',
     text: (
-      <p>
+      <Text variant="heading-xxs" as="p">
         The speed at which Polar is executing on the financial infrastructure
         primitives the new world needs is very impressive.
-      </p>
+      </Text>
     ),
   },
   {
@@ -59,13 +66,15 @@ const userTestimonials = [
     avatar: '/assets/landing/testamonials/mitchell.jpg',
     text: (
       <>
-        <p>I&apos;ve joined Polar as an advisor!</p>
-        <p>
+        <Text variant="heading-xxs" as="p">
+          I&apos;ve joined Polar as an advisor!
+        </Text>
+        <Text variant="heading-xxs" as="p">
           I think it benefits everyone for devs to have more options to get paid
           to work on their passions, to support upstreams, and for users to have
           more confidence/transparency in the software they&apos;re
           supporting/purchasing.
-        </p>
+        </Text>
       </>
     ),
   },
@@ -75,31 +84,61 @@ const userTestimonials = [
     company: '1042 Studio',
     verified: true,
     avatar: '/assets/landing/testamonials/lee.jpg',
-    text: <p>I switched to Polar a few weeks back. Best decision ever.</p>,
+    text: (
+      <Text variant="heading-xxs" as="p">
+        I switched to Polar a few weeks back. Best decision ever.
+      </Text>
+    ),
   },
 ]
 
 export const Testimonials = () => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-    {userTestimonials.map((t) => (
-      <Link
-        key={t.name}
-        href={t.link}
-        target="_blank"
-        className="dark:bg-polar-900 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-12 bg-gray-50 p-10 transition-colors hover:bg-gray-100"
-      >
-        <Avatar avatar_url={t.avatar} name={t.name} className="size-8" />
-        <div className="flex h-full flex-col gap-y-6 text-xl leading-snug text-gray-900 dark:text-white">
-          {t.text}
-        </div>
-        <div className="dark:bg-polar-600 h-1 w-6 bg-gray-200" />
-        <div>
-          <div className="text-lg text-gray-900 dark:text-white">{t.name}</div>
-          <div className="dark:text-polar-400 text-lg text-gray-400">
-            {t.company}
-          </div>
-        </div>
-      </Link>
-    ))}
-  </div>
+  <Box display="flex" flexDirection="column" rowGap="3xl">
+    <Text variant="heading-xl" as="h2" wrap="balance">
+      What industry leaders
+      <br /> think about Polar.
+    </Text>
+    <Box
+      display="grid"
+      gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+      gap="l"
+    >
+      {userTestimonials.map((t) => (
+        <Link
+          key={t.name}
+          href={t.link}
+          target="_blank"
+          className="dark:bg-polar-900 dark:hover:bg-polar-900 bg-gray-50 transition-colors hover:bg-gray-100"
+        >
+          <Box
+            display="flex"
+            flexDirection="column"
+            justifyContent="between"
+            rowGap="3xl"
+            padding="2xl"
+            height="100%"
+          >
+            <Avatar avatar_url={t.avatar} name={t.name} className="size-10" />
+            <Box display="flex" flexDirection="column" rowGap="m" flexGrow={1}>
+              {t.text}
+            </Box>
+            <Box
+              borderTopWidth={2}
+              borderStyle="solid"
+              borderColor="border-primary"
+              width="1.5rem"
+            />
+            <Box display="flex" flexDirection="column">
+              <Text variant="heading-xxs" as="span">
+                {t.name}
+              </Text>
+              <Text variant="heading-xxs" as="span" color="muted">
+                {t.company}
+              </Text>
+            </Box>
+          </Box>
+        </Link>
+      ))}
+    </Box>
+  </Box>
 )

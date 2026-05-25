@@ -98,7 +98,7 @@ export const borderColors = stylex.defineVars({
     [DARK]: 'hsl(233, 4%, 12%)',
   },
   'border-secondary': {
-    default: 'oklch(0.928 0.006 264.531)',
+    default: '#f6f6f6',
     [DARK]: 'oklch(0.206 0.005 279.9)',
   },
   'border-warning': {

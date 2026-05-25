@@ -1,28 +1,83 @@
 import { StaticImage } from '@/components/Image/StaticImage'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
 export const Dashboard = () => {
   return (
-    <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-16 md:px-0">
-      <div className="flex max-w-3xl flex-col items-center gap-y-6 text-center">
-        <h2 className="font-display text-4xl leading-tight text-gray-900 md:text-6xl dark:text-white">
-          Built for the people building what&apos;s next
-        </h2>
-        <p className="dark:text-polar-400 max-w-2xl text-lg text-gray-500 md:text-xl">
-          A dashboard that gets out of your way. Track revenue, customers, and
-          checkouts in real time, so you can focus on shipping.
-        </p>
-      </div>
-      <div className="dark:bg-polar-900 dark:border-polar-700 relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
-        <StaticImage
-          src="/assets/landing/iso-dash.jpeg"
-          alt="Polar dashboard"
-          width={3840}
-          height={2160}
-          className="block h-auto w-full"
-          sizes="(min-width: 1280px) 1280px, 100vw"
-          priority
-        />
-      </div>
-    </div>
+    <Box
+      position="relative"
+      display="flex"
+      flexDirection="column"
+      rowGap={{ base: '2xl', md: '3xl' }}
+      paddingTop={{ base: 'l', md: '3xl' }}
+      paddingBottom={{ base: '2xl', md: '4xl' }}
+    >
+      <Box
+        display="flex"
+        flexDirection={{ base: 'column', xl: 'row' }}
+        rowGap="2xl"
+      >
+        <Box display="flex" flex={1}>
+          <Text variant="heading-xl" as="h2" wrap="balance">
+            Watch your revenue happen
+          </Text>
+        </Box>
+        <Box
+          display="flex"
+          flex={1}
+          flexDirection="column"
+          rowGap="2xl"
+          justifyContent="between"
+        >
+          <Box
+            borderTopWidth={4}
+            borderColor="border-primary"
+            width="4rem"
+            display={{ base: 'none', xl: 'flex' }}
+          />
+          <Text variant="heading-xs">
+            Orders, subscriptions, and customers the moment they land. Made for
+            teams moving as fast as the models.
+          </Text>
+        </Box>
+      </Box>
+      <Box
+        width="100%"
+        overflow="hidden"
+        borderRadius="l"
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-secondary"
+        padding="m"
+      >
+        <Box
+          width="100%"
+          overflow="hidden"
+          borderRadius="s"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+        >
+          <StaticImage
+            src="/assets/landing/dash-light.jpg"
+            alt="Polar dashboard"
+            width={3840}
+            height={2160}
+            className="block h-auto w-full dark:hidden"
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            priority
+          />
+          <StaticImage
+            src="/assets/landing/dash-dark.jpg"
+            alt="Polar dashboard"
+            width={3840}
+            height={2160}
+            className="hidden h-auto w-full dark:block"
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            priority
+          />
+        </Box>
+      </Box>
+    </Box>
   )
 }

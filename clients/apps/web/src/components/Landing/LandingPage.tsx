@@ -46,14 +46,14 @@ const PageContent = () => {
         </Hero>
         <Logotypes />
         <Usage />
+        <Dashboard />
       </Section>
       <Features />
+
       <Section>
         <Vision />
       </Section>
-      <Section>
-        <Dashboard />
-      </Section>
+
       <UseCases />
       <Section>
         <Testimonials />

@@ -69,7 +69,7 @@ resource "render_postgres" "db" {
   plan           = "pro_64gb"
   region         = "ohio"
   version        = "15"
-  disk_size_gb   = 300
+  disk_size_gb   = 500
 
   high_availability_enabled = true
 
@@ -81,6 +81,7 @@ resource "render_postgres" "db" {
   lifecycle {
     ignore_changes = [
       ip_allow_list,
+      disk_size_gb,
     ]
   }
 

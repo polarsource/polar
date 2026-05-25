@@ -56,6 +56,7 @@ class UserOrganizationRepository:
             .where(
                 UserOrganization.organization_id == organization_id,
                 UserOrganization.role == OrganizationRole.owner,
+                UserOrganization.is_deleted.is_(False),
             )
             .values(role=OrganizationRole.admin)
             .returning(UserOrganization.user_id)

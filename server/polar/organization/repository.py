@@ -217,6 +217,7 @@ class OrganizationRepository(
             .where(
                 UserOrganization.organization_id == organization.id,
                 UserOrganization.role == OrganizationRole.owner,
+                UserOrganization.is_deleted.is_(False),
                 User.is_deleted.is_(False),
             )
         )

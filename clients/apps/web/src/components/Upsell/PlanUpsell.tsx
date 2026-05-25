@@ -23,6 +23,13 @@ import { CycleArrow } from '../Landing/graphics/CycleArrow'
 
 const DISMISSED_KEY = 'plan_upsell_dismissed'
 
+// Early Member orgs (grandfathered, no paid subscription) pay 4% + 40¢ on every
+// transaction PLUS a +0.5% surcharge on subscription-product revenue
+// only. Paid plans drop the surcharge entirely, so it must be added to savings.
+const EARLY_MEMBER_FEE_PERCENT = 400
+const EARLY_MEMBER_FEE_FIXED = 40
+const EARLY_MEMBER_SUBSCRIPTION_SURCHARGE_BPS = 50
+
 interface PlanUpsellProps {
   organization: schemas['Organization']
 }
@@ -31,6 +38,23 @@ interface Recommendation {
   plan: schemas['OrganizationPlan']
   savings: number
 }
+
+interface CurrentContext {
+  fee: schemas['OrganizationPlanFee']
+  // Surcharge (in basis points) applied on top of `fee` to subscription-product
+  // revenue only. Non-zero only for Early Member orgs today.
+  subscriptionSurchargeBps: number
+  // Monthly subscription-product revenue (cents) to apply the surcharge
+  // against. Approximated by MRR (snapshot of active subscriptions).
+  subscriptionRevenue: number
+}
+
+const isEarlyMember = (
+  subscription: schemas['OrganizationSubscription'],
+): boolean =>
+  subscription.subscription_id === null &&
+  subscription.plan.transaction_fee?.percent === EARLY_MEMBER_FEE_PERCENT &&
+  subscription.plan.transaction_fee?.fixed === EARLY_MEMBER_FEE_FIXED
 
 const getIsDismissed = (): boolean => {
   if (typeof window === 'undefined') return false
@@ -48,25 +72,30 @@ const monthlyPlanCost = (plan: schemas['OrganizationPlan']): number | null => {
 const computeSavings = (
   revenue: number,
   orders: number,
-  current: schemas['OrganizationPlanFee'],
+  current: CurrentContext,
   plan: schemas['OrganizationPlan'],
 ): number | null => {
   if (!plan.product_id || !plan.transaction_fee) return null
   const monthlyCost = monthlyPlanCost(plan)
   if (monthlyCost === null) return null
-  const percentDiff = current.percent - plan.transaction_fee.percent
-  const fixedDiff = current.fixed - plan.transaction_fee.fixed
+  const percentDiff = current.fee.percent - plan.transaction_fee.percent
+  const fixedDiff = current.fee.fixed - plan.transaction_fee.fixed
   if (percentDiff <= 0) return null
 
   const variableSavings = Math.round((revenue * percentDiff) / 10000)
   const fixedSavings = orders * fixedDiff
-  return variableSavings + fixedSavings - monthlyCost
+  const subscriptionSurchargeSavings = Math.round(
+    (current.subscriptionRevenue * current.subscriptionSurchargeBps) / 10000,
+  )
+  return (
+    variableSavings + fixedSavings + subscriptionSurchargeSavings - monthlyCost
+  )
 }
 
 const pickBest = (
   revenue: number,
   orders: number,
-  current: schemas['OrganizationPlanFee'],
+  current: CurrentContext,
   plans: schemas['OrganizationPlan'][],
 ): Recommendation | null => {
   let best: Recommendation | null = null
@@ -125,12 +154,15 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
     if (!subscription.plan.transaction_fee) return null
     if (monthlyRevenue <= 0) return null
     const orders = metrics.totals.orders ?? 0
-    return pickBest(
-      monthlyRevenue,
-      orders,
-      subscription.plan.transaction_fee,
-      plans,
-    )
+    const mrr = metrics.totals.monthly_recurring_revenue ?? 0
+    const current: CurrentContext = {
+      fee: subscription.plan.transaction_fee,
+      subscriptionSurchargeBps: isEarlyMember(subscription)
+        ? EARLY_MEMBER_SUBSCRIPTION_SURCHARGE_BPS
+        : 0,
+      subscriptionRevenue: mrr,
+    }
+    return pickBest(monthlyRevenue, orders, current, plans)
   }, [
     subscriptionQuery.data,
     plansQuery.data,
@@ -210,7 +242,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
             Lower your transaction fees
           </Text>
           <Text variant="heading-xxs" as="h3">
-            Save {formatStandard(savings, 'usd')} /month
+            Save {formatStandard(savings, 'usd')} per month
           </Text>
           <Text variant="body" color="muted">
             Based on {formatCompact(monthlyRevenue, 'usd')} in revenue over the

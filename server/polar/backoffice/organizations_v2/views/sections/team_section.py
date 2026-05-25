@@ -19,10 +19,8 @@ class TeamSection:
     def __init__(
         self,
         organization: Organization,
-        identity_country: str | None = None,
     ):
         self.org = organization
-        self.identity_country = identity_country
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
@@ -84,11 +82,6 @@ class TeamSection:
                                                     else:
                                                         classes("badge-neutral")
                                                     text(status.get_display_name())
-                                            if self.identity_country:
-                                                with tag.span(
-                                                    classes="text-sm text-base-content/60"
-                                                ):
-                                                    text(self.identity_country)
                                         with tag.div(
                                             classes="text-sm text-base-content/60"
                                         ):

@@ -98,7 +98,7 @@ async def enqueue_benefits_grants(
         )
 
 
-async def _enqueue_grants(
+def _enqueue_grants(
     customer_id: uuid.UUID,
     grant_benefit_ids: list[uuid.UUID],
     member_id: uuid.UUID | None = None,
@@ -121,9 +121,7 @@ async def benefit_enqueue_grants(
     member_id: uuid.UUID | None = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
-    await _enqueue_grants(
-        customer_id, grant_benefit_ids, member_id=member_id, **scope
-    )
+    _enqueue_grants(customer_id, grant_benefit_ids, member_id=member_id, **scope)
 
 
 # Deprecated alias. Kept registered to drain in-flight Dramatiq messages
@@ -143,9 +141,7 @@ async def benefit_reset_meters_and_enqueue_grants(
     member_id: uuid.UUID | None = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
-    await _enqueue_grants(
-        customer_id, grant_benefit_ids, member_id=member_id, **scope
-    )
+    _enqueue_grants(customer_id, grant_benefit_ids, member_id=member_id, **scope)
 
 
 @actor(actor_name="benefit.grant", priority=TaskPriority.MEDIUM)

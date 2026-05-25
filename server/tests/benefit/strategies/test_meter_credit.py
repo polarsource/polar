@@ -129,3 +129,64 @@ class TestMeterCreditBenefitIntegration:
         assert customer_meter.credited_units == 100
         assert customer_meter.consumed_units == 0
         assert customer_meter.balance == 100
+
+    async def test_upgrade_balance_without_meter_reset(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        subscription: Subscription,
+    ) -> None:
+        """
+        Regression test for issue #11427.
+
+        Revoke-then-grant on a product change must land at the new product's
+        credit total without relying on a `meter_reset` event. Verifies that
+        meter_credit.revoke() emits the matching negative-units event so the
+        balance is symmetric across an upgrade.
+        """
+        meter = await create_meter(save_fixture, organization=organization)
+
+        old_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 100, "rollover": False},
+        )
+        new_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 1000, "rollover": False},
+        )
+
+        customer_meter_repo = CustomerMeterRepository.from_session(session)
+
+        await benefit_grant_service.grant_benefit(
+            session, redis, customer, old_benefit, subscription=subscription
+        )
+        customer_meter = await customer_meter_repo.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.balance == 100
+
+        await benefit_grant_service.revoke_benefit(
+            session, redis, customer, old_benefit, subscription=subscription
+        )
+        customer_meter = await customer_meter_repo.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.balance == 0
+
+        await benefit_grant_service.grant_benefit(
+            session, redis, customer, new_benefit, subscription=subscription
+        )
+        customer_meter = await customer_meter_repo.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.balance == 1000

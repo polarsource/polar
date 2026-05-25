@@ -439,7 +439,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             "benefit.reset_meters_and_enqueue_grants"
         )
 
-        # Pipeline: revoke group → enqueue_grants (resets meters for subs, then grants)
+        # Pipeline: revoke group → enqueue_grants callback (then per-benefit grants)
         if revoke_benefit_ids:
             revoke_actor = broker.get_actor("benefit.revoke")
             revoke_messages = [

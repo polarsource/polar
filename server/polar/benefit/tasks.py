@@ -11,8 +11,6 @@ from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.product.repository import ProductRepository
-from polar.subscription.repository import SubscriptionRepository
-from polar.subscription.service import subscription as subscription_service
 from polar.worker import (
     AsyncSessionMaker,
     RedisMiddleware,
@@ -100,6 +98,11 @@ async def enqueue_benefits_grants(
         )
 
 
+# Actor name kept for backwards compatibility with in-flight Dramatiq messages;
+# this task no longer resets meters. Meter resets happen on
+# subscription_cycle / subscription_cycle_after_trial / subscription_cancel
+# orders (see order.service.create_subscription_order) and via
+# meter_credit.cycle() per benefit grant.
 @actor(
     actor_name="benefit.reset_meters_and_enqueue_grants", priority=TaskPriority.MEDIUM
 )
@@ -109,15 +112,6 @@ async def benefit_enqueue_grants(
     member_id: uuid.UUID | None = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
-    if subscription_id := scope.get("subscription_id"):
-        async with AsyncSessionMaker() as session:
-            repository = SubscriptionRepository.from_session(session)
-            subscription = await repository.get_by_id(
-                subscription_id, options=repository.get_eager_options()
-            )
-            if subscription:
-                await subscription_service.reset_meters(session, subscription)
-
     for benefit_id in grant_benefit_ids:
         enqueue_job(
             "benefit.grant",

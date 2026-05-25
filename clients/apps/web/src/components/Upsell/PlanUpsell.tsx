@@ -8,6 +8,7 @@ import {
   useStartSubscriptionCheckout,
 } from '@/hooks/queries/billing'
 import { useHasPermission } from '@/hooks/permissions'
+import { usePostHog } from '@/hooks/posthog'
 import { useDismissed } from '@/hooks/useDismissed'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
@@ -26,7 +27,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { subDays } from 'date-fns'
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { CycleArrow } from '../Landing/graphics/CycleArrow'
 
 interface PlanUpsellProps {
@@ -34,7 +35,8 @@ interface PlanUpsellProps {
 }
 
 export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
-  const { isDismissed, dismiss } = useDismissed('plan_upsell')
+  const posthog = usePostHog()
+  const { isDismissed, dismiss: rawDismiss } = useDismissed('plan_upsell')
   const canManageBilling = useHasPermission(
     organization.id,
     'organization:manage',
@@ -88,13 +90,45 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
     monthlyRevenue,
   ])
 
-  if (isDismissed || !recommendation) return null
-  if (organization.status !== 'active') return null
+  const isVisible =
+    !!recommendation && !isDismissed && organization.status === 'active'
+
+  const impressionFiredRef = useRef(false)
+  useEffect(() => {
+    if (!isVisible || !recommendation || impressionFiredRef.current) return
+    impressionFiredRef.current = true
+    posthog.capture('dashboard:subscriptions:plan_upsell:view', {
+      organization_id: organization.id,
+      recommended_plan: recommendation.plan.name,
+      recommended_plan_product_id: recommendation.plan.product_id,
+      monthly_savings_cents: recommendation.savings,
+      monthly_revenue_cents: monthlyRevenue,
+    })
+  }, [isVisible, recommendation, monthlyRevenue, organization.id, posthog])
+
+  if (!isVisible || !recommendation) return null
 
   const { plan, savings } = recommendation
 
+  const trackingProps = {
+    organization_id: organization.id,
+    recommended_plan: plan.name,
+    recommended_plan_product_id: plan.product_id,
+    monthly_savings_cents: savings,
+    monthly_revenue_cents: monthlyRevenue,
+  }
+
+  const dismiss = () => {
+    posthog.capture('dashboard:subscriptions:plan_upsell:close', trackingProps)
+    rawDismiss()
+  }
+
   const upgrade = async () => {
     if (!plan.product_id) return
+    posthog.capture('dashboard:subscriptions:plan_upsell:click', {
+      ...trackingProps,
+      variant: 'upgrade',
+    })
     const billingHref = `/dashboard/${organization.slug}/settings/billing?checkout_success=true`
     const result = await startCheckout.mutateAsync({
       product_id: plan.product_id,
@@ -109,6 +143,13 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
       return
     }
     window.location.href = result.data.url
+  }
+
+  const onCompareClick = () => {
+    posthog.capture('dashboard:subscriptions:plan_upsell:click', {
+      ...trackingProps,
+      variant: 'compare',
+    })
   }
   const formatStandard = formatCurrency('standard', 'en-US')
   const formatCompact = formatCurrency('compact', 'en-US')
@@ -185,6 +226,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
           </Button>
           <Link
             href={`/dashboard/${organization.slug}/settings/billing/change-plan`}
+            onClick={onCompareClick}
           >
             <Button variant="ghost">Compare plans</Button>
           </Link>

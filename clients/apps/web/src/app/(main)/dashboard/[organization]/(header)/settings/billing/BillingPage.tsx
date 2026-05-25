@@ -13,6 +13,7 @@ import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
 import { useHasPermission } from '@/hooks/permissions'
+import { usePostHog } from '@/hooks/posthog'
 import {
   useOrganizationCustomerSession,
   useOrganizationOrders,
@@ -38,6 +39,7 @@ export default function BillingPage({
   const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const theme = useTheme()
+  const posthog = usePostHog()
 
   const canManageBilling = useHasPermission(
     organization.id,
@@ -103,6 +105,11 @@ export default function BillingPage({
   }
 
   const onChangePlan = () => {
+    posthog.capture('dashboard:subscriptions:change_plan:click', {
+      organization_id: organization.id,
+      current_plan: subscriptionQuery.data?.plan.name ?? null,
+      current_plan_product_id: subscriptionQuery.data?.product_id ?? null,
+    })
     router.push(`/dashboard/${organization.slug}/settings/billing/change-plan`)
   }
 

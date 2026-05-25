@@ -81,6 +81,7 @@ resource "render_postgres" "db" {
   lifecycle {
     ignore_changes = [
       ip_allow_list,
+      disk_size_gb,
     ]
   }
 

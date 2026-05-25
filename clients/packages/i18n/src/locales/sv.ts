@@ -280,4 +280,18 @@ export default {
     many: ':e',
     other: ':e',
   },
+  embedPaymentMethod: {
+    title: 'Lägg till betalningsmetod',
+    close: 'Stäng',
+    submit: 'Lägg till betalningsmetod',
+    processing: 'Lägger till betalningsmetod…',
+    fallbackError: 'Något gick fel. Försök igen.',
+    errors: {
+      invalidRequest: 'Saknar obligatoriska parametrar.',
+      unauthorized: 'Sessionen har gått ut.',
+      processingFailed:
+        'Det gick inte att behandla betalningsmetoden. Försök igen.',
+      unknown: 'Något gick fel.',
+    },
+  },
 } as const

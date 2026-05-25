@@ -4,21 +4,33 @@ import {
   PolarEmbedPaymentMethod,
   type EmbedPaymentMethodErrorCode,
 } from '@polar-sh/checkout/payment-method'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { useEffect } from 'react'
 
-const MESSAGES: Record<EmbedPaymentMethodErrorCode, string> = {
-  invalid_request: 'Missing required parameters.',
-  unauthorized: 'Session expired.',
-  processing_failed: 'Could not process the payment method. Please try again.',
-  unknown: 'Something went wrong.',
-}
+const ERROR_TRANSLATION_KEYS = {
+  invalid_request: 'embedPaymentMethod.errors.invalidRequest',
+  unauthorized: 'embedPaymentMethod.errors.unauthorized',
+  processing_failed: 'embedPaymentMethod.errors.processingFailed',
+  unknown: 'embedPaymentMethod.errors.unknown',
+} as const satisfies Record<EmbedPaymentMethodErrorCode, string>
 
 interface Props {
   code: EmbedPaymentMethodErrorCode
   embedOrigin?: string
+  locale?: AcceptedLocale
 }
 
-export const EmbedError = ({ code, embedOrigin }: Props) => {
+export const EmbedError = ({
+  code,
+  embedOrigin,
+  locale = DEFAULT_LOCALE,
+}: Props) => {
+  const t = useTranslations(locale)
+
   useEffect(() => {
     if (!embedOrigin) return
     PolarEmbedPaymentMethod.postMessage({ event: 'error', code }, embedOrigin)
@@ -27,7 +39,7 @@ export const EmbedError = ({ code, embedOrigin }: Props) => {
 
   return (
     <p role="alert" className="p-4 text-center text-sm text-red-500">
-      {MESSAGES[code]}
+      {t(ERROR_TRANSLATION_KEYS[code])}
     </p>
   )
 }

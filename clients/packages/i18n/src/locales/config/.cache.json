@@ -172,7 +172,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -347,7 +356,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -522,7 +540,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -697,7 +724,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -872,7 +908,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1039,7 +1084,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1206,7 +1260,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1373,7 +1436,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1540,7 +1612,16 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1707,6 +1788,15 @@
     "checkout.pricing.seats.minimum": "Minimum {min} seats",
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
-    "checkout.pricing.inclTax": "Taxes (included)"
+    "checkout.pricing.inclTax": "Taxes (included)",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   }
 }

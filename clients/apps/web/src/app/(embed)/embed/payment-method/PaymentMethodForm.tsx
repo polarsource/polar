@@ -1,6 +1,14 @@
 'use client'
 
 import { type Client, schemas, unwrap } from '@polar-sh/client'
+import {
+  DEFAULT_LOCALE,
+  getTranslationLocale,
+  isSupportedLocale,
+  useTranslations,
+  type AcceptedLocale,
+  type SupportedLocale,
+} from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import {
@@ -8,9 +16,26 @@ import {
   ElementsConsumer,
   PaymentElement,
 } from '@stripe/react-stripe-js'
-import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js'
+import {
+  loadStripe,
+  type Stripe,
+  type StripeElementLocale,
+  type StripeElements,
+} from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+const toStripeElementLocale = (locale: AcceptedLocale): StripeElementLocale => {
+  const supported: SupportedLocale = isSupportedLocale(locale)
+    ? locale
+    : getTranslationLocale(locale)
+  switch (supported) {
+    case 'pt-PT':
+      return 'pt'
+    default:
+      return supported satisfies StripeElementLocale
+  }
+}
 
 export interface CustomerBillingDetails {
   name: string | null
@@ -22,6 +47,7 @@ interface Props {
   api: Client
   themePreset: ThemingPresetProps
   setAsDefault: boolean
+  locale?: AcceptedLocale
   customerBillingDetails: CustomerBillingDetails
   onProcessingStart?: () => void
   onProcessingError?: () => void
@@ -31,8 +57,6 @@ interface Props {
   redirectStatus?: string
   setupIntentId?: string
 }
-
-const FALLBACK_ERROR = 'Something went wrong. Please try again.'
 
 const toStripeBillingDetails = (customer: CustomerBillingDetails) => ({
   name: customer.name,
@@ -52,6 +76,7 @@ export const PaymentMethodForm = ({
   api,
   themePreset,
   setAsDefault,
+  locale = DEFAULT_LOCALE,
   customerBillingDetails,
   onProcessingStart,
   onProcessingError,
@@ -59,6 +84,12 @@ export const PaymentMethodForm = ({
   redirectStatus,
   setupIntentId,
 }: Props) => {
+  const t = useTranslations(locale)
+  const fallbackError = t('embedPaymentMethod.fallbackError')
+  const stripeElementLocale = useMemo(
+    () => toStripeElementLocale(locale),
+    [locale],
+  )
   const stripePromise = useMemo(
     () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
     [],
@@ -85,7 +116,7 @@ export const PaymentMethodForm = ({
           }),
         )
       } catch {
-        reportError(FALLBACK_ERROR)
+        reportError(fallbackError)
         return
       }
 
@@ -93,10 +124,10 @@ export const PaymentMethodForm = ({
         setLoading(false)
         onPaymentMethodAdded?.(confirmed.payment_method)
       } else {
-        reportError(FALLBACK_ERROR)
+        reportError(fallbackError)
       }
     },
-    [api, onPaymentMethodAdded, reportError, setAsDefault],
+    [api, fallbackError, onPaymentMethodAdded, reportError, setAsDefault],
   )
 
   // 3DS re-entry: if Stripe redirected the customer back with setup intent
@@ -109,7 +140,7 @@ export const PaymentMethodForm = ({
     reentryConfirmedRef.current = true
     ;(async () => {
       if (redirectStatus === 'failed' || !setupIntentId) {
-        reportError(FALLBACK_ERROR)
+        reportError(fallbackError)
       } else {
         await confirmSetupIntent(setupIntentId)
       }
@@ -118,7 +149,14 @@ export const PaymentMethodForm = ({
       search.delete('polar_setup_intent')
       router.replace(`${window.location.pathname}?${search.toString()}`)
     })()
-  }, [redirectStatus, setupIntentId, confirmSetupIntent, reportError, router])
+  }, [
+    redirectStatus,
+    setupIntentId,
+    confirmSetupIntent,
+    fallbackError,
+    reportError,
+    router,
+  ])
 
   const handleSubmit = useCallback(
     async (
@@ -134,7 +172,7 @@ export const PaymentMethodForm = ({
 
       const { error: submitError } = await elements.submit()
       if (submitError) {
-        reportError(submitError.message ?? FALLBACK_ERROR)
+        reportError(submitError.message ?? fallbackError)
         return
       }
 
@@ -149,7 +187,7 @@ export const PaymentMethodForm = ({
         })
 
       if (tokenError || !confirmationToken) {
-        reportError(tokenError?.message ?? FALLBACK_ERROR)
+        reportError(tokenError?.message ?? fallbackError)
         return
       }
 
@@ -167,7 +205,7 @@ export const PaymentMethodForm = ({
           }),
         )
       } catch {
-        reportError(FALLBACK_ERROR)
+        reportError(fallbackError)
         return
       }
 
@@ -181,7 +219,7 @@ export const PaymentMethodForm = ({
         await stripe.handleNextAction({ clientSecret: created.client_secret })
 
       if (actionError || !nextActionIntent) {
-        reportError(actionError?.message ?? FALLBACK_ERROR)
+        reportError(actionError?.message ?? fallbackError)
         return
       }
 
@@ -191,6 +229,7 @@ export const PaymentMethodForm = ({
       api,
       confirmSetupIntent,
       customerBillingDetails,
+      fallbackError,
       onPaymentMethodAdded,
       onProcessingStart,
       reportError,
@@ -207,7 +246,7 @@ export const PaymentMethodForm = ({
       >
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900 dark:border-gray-700 dark:border-t-white" />
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Adding payment method…
+          {t('embedPaymentMethod.processing')}
         </p>
       </div>
     )
@@ -217,7 +256,7 @@ export const PaymentMethodForm = ({
     <Elements
       stripe={stripePromise}
       options={{
-        locale: 'en',
+        locale: stripeElementLocale,
         mode: 'setup',
         paymentMethodCreation: 'manual',
         setupFutureUsage: 'off_session',
@@ -251,11 +290,11 @@ export const PaymentMethodForm = ({
             )}
             <Button
               type="submit"
-              className="self-start"
+              className="self-end"
               disabled={!stripe || loading}
               loading={loading}
             >
-              Add payment method
+              {t('embedPaymentMethod.submit')}
             </Button>
           </form>
         )}

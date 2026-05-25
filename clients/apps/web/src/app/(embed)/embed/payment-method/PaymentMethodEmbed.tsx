@@ -5,6 +5,11 @@ import {
   PolarEmbedPaymentMethod,
 } from '@polar-sh/checkout/payment-method'
 import { createClient, schemas } from '@polar-sh/client'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { X } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
@@ -20,6 +25,7 @@ interface Props {
   theme?: 'light' | 'dark'
   mode: 'modal' | 'inline'
   setAsDefault: boolean
+  locale?: AcceptedLocale
   serverURL: string
   customerBillingDetails: CustomerBillingDetails
   redirectStatus?: string
@@ -33,11 +39,13 @@ export const PaymentMethodEmbed = ({
   theme = 'light',
   mode,
   setAsDefault,
+  locale = DEFAULT_LOCALE,
   serverURL,
   customerBillingDetails,
   redirectStatus,
   setupIntentId,
 }: Props) => {
+  const t = useTranslations(locale)
   const themePreset = useMemo(() => getThemePreset(theme), [theme])
   const api = useMemo(
     () => createClient(serverURL, sessionToken),
@@ -118,6 +126,7 @@ export const PaymentMethodEmbed = ({
       api={api}
       themePreset={themePreset}
       setAsDefault={setAsDefault}
+      locale={locale}
       customerBillingDetails={customerBillingDetails}
       onProcessingStart={handleProcessingStart}
       onPaymentMethodAdded={handleSuccess}
@@ -152,7 +161,9 @@ export const PaymentMethodEmbed = ({
           id="polar-embed-content"
         >
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-lg font-medium">Add payment method</h2>
+            <h2 className="text-lg font-medium">
+              {t('embedPaymentMethod.title')}
+            </h2>
           </div>
           {form}
         </div>
@@ -161,7 +172,7 @@ export const PaymentMethodEmbed = ({
         type="button"
         className="dark:bg-polar-950 fixed top-2 right-2 cursor-pointer rounded-full bg-white p-2 shadow-xl md:top-4 md:right-4 dark:text-white"
         onClick={handleClose}
-        aria-label="Close"
+        aria-label={t('embedPaymentMethod.close')}
       >
         <X className="h-4 w-4 md:h-6 md:w-6" />
       </button>

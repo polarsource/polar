@@ -278,11 +278,11 @@ export default {
     feature_flag: '機能フラグ',
   },
   ordinal: {
-    zero: '番目',
     one: '番目',
     two: '番目',
     few: '番目',
-    many: '番目',
     other: '番目',
+    zero: '番',
+    many: '番',
   },
 } as const

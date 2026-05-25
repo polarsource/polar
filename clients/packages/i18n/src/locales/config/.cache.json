@@ -1982,6 +1982,8 @@
     "ordinal.one": "st",
     "ordinal.two": "nd",
     "ordinal.few": "rd",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "ordinal.zero": "",
+    "ordinal.many": ""
   }
 }

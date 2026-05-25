@@ -47,7 +47,7 @@ const TILES = [
 
 export const Features = () => {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 py-32 md:gap-y-24">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 md:gap-y-24">
       <h1 className="font-display px-4 text-4xl leading-snug! md:px-0 md:text-7xl">
         Any pricing model.
         <br />

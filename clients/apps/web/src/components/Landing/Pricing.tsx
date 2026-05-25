@@ -20,7 +20,7 @@ const TIERS: Tier[] = [
   {
     name: 'Starter',
     free: true,
-    desc: 'Free to start and validate ideas.',
+    desc: 'Free to start validating ideas.',
     fees: ['5.00% + 50¢ per transaction'],
     features: ['All features to sell', 'Standard Support'],
   },
@@ -28,7 +28,7 @@ const TIERS: Tier[] = [
     name: 'Pro',
     price: '$20',
     period: '/month',
-    desc: 'For entrepreneurs & early teams.',
+    desc: 'For builders & early teams.',
     fees: ['3.80% + 40¢ per transaction'],
     features: ['All features on Starter', 'Prioritized Support'],
   },
@@ -58,22 +58,16 @@ export const Pricing = () => (
     flexDirection="column"
     rowGap="5xl"
   >
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      rowGap="xl"
-      textAlign="center"
-    >
-      <Text variant="heading-l" as="h2" align="center">
-        Built to scale with you
+    <Box display="flex" flexDirection="column" rowGap="xl">
+      <Text variant="heading-xl" as="h2" wrap="balance">
+        Built to scale with you.
       </Text>
       <Box maxWidth="56rem">
-        <Text variant="heading-s" wrap="balance" color="muted">
+        <Text variant="heading-xs" wrap="balance" color="muted">
           Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
         </Text>
       </Box>
-      <Box display="flex" alignItems="center" columnGap="l" paddingTop="m">
+      <Box display="flex" alignItems="center" columnGap="m" paddingTop="m">
         <GetStartedButton size="default" />
         <Link href="mailto:support@polar.sh">
           <Button variant="secondary">Contact Sales</Button>
@@ -88,7 +82,7 @@ export const Pricing = () => (
         sm: 'repeat(2, 1fr)',
         xl: 'repeat(4, 1fr)',
       }}
-      gap="s"
+      gap="l"
     >
       {TIERS.map((tier) => (
         <TierCard key={tier.name} tier={tier} />

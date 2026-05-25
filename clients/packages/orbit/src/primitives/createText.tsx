@@ -48,6 +48,9 @@ const textVariants = cva('', {
       error: 'text-red-500 dark:text-red-500',
       warning: 'text-amber-500 dark:text-amber-500',
       success: 'text-emerald-500 dark:text-emerald-500',
+      inverse: 'text-white dark:text-black',
+      white: 'text-white dark:text-white',
+      black: 'text-black dark:text-black',
       inherit: '',
     },
     align: {

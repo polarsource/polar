@@ -130,7 +130,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
       }}
       alignItems="stretch"
       overflow="hidden"
-      borderRadius="xl"
+      borderRadius="l"
       borderWidth={1}
       borderStyle="solid"
       borderColor="border-primary"

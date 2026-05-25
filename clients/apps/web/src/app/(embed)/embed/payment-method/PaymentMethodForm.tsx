@@ -251,7 +251,7 @@ export const PaymentMethodForm = ({
             )}
             <Button
               type="submit"
-              className="self-start"
+              className="self-end"
               disabled={!stripe || loading}
               loading={loading}
             >

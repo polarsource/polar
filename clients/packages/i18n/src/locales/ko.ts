@@ -280,4 +280,17 @@ export default {
     many: '번째',
     other: '번째',
   },
+  embedPaymentMethod: {
+    title: '결제 수단 추가',
+    close: '닫기',
+    submit: '결제 수단 추가',
+    processing: '결제 수단 추가 중…',
+    fallbackError: '문제가 발생했습니다. 다시 시도해 주세요.',
+    errors: {
+      invalidRequest: '필수 매개변수가 없습니다.',
+      unauthorized: '세션이 만료되었습니다.',
+      processingFailed: '결제 수단을 처리할 수 없습니다. 다시 시도해 주세요.',
+      unknown: '문제가 발생했습니다.',
+    },
+  },
 } as const

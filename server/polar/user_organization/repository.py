@@ -27,13 +27,6 @@ class UserOrganizationRepository:
     async def get_organizations_with_role(
         self, user_id: UUID
     ) -> Sequence[tuple[Organization, OrganizationRole]]:
-        """Return the user's active organizations with their role, ordered
-        by organization name.
-
-        Mirrors the `can_authenticate` filter used by `/v1/organizations/`
-        so blocked orgs don't slip into the embedded list on `/v1/users/me`
-        and become 404'ing redirect targets in the dashboard.
-        """
         statement = (
             select(Organization, UserOrganization.role)
             .join(

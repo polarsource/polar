@@ -3,11 +3,12 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
-from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import aliased, joinedload, subqueryload
+from sqlalchemy.orm import joinedload, subqueryload
 
-from polar.auth.permission import OrganizationPermission, roles_with_permission
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
@@ -20,7 +21,6 @@ from polar.models import (
 )
 from polar.models.organization import Organization
 from polar.models.transaction import PlatformFeeType, TransactionType
-from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from ..schemas import (
@@ -273,7 +273,9 @@ class TransactionService(BaseTransactionService):
         return int(result.scalar_one())
 
     def _get_readable_transactions_statement(self, user: User) -> Select[Any]:
-        PaymentUserOrganization = aliased(UserOrganization)
+        readable_org_ids = select_user_org_ids(
+            user.id, permission=OrganizationPermission.finance_read
+        )
         statement = (
             select(Transaction)
             .join(Transaction.account, isouter=True)
@@ -282,36 +284,13 @@ class TransactionService(BaseTransactionService):
                 onclause=Organization.account_id == Account.id,
                 isouter=True,
             )
-            .join(
-                UserOrganization,
-                onclause=Organization.id == UserOrganization.organization_id,
-                isouter=True,
-            )
             .join(User, onclause=User.account_id == Account.id, isouter=True)
-            .join(
-                PaymentUserOrganization,
-                onclause=Transaction.payment_organization_id
-                == PaymentUserOrganization.organization_id,
-                isouter=True,
-            )
             .where(
                 or_(
                     User.id == user.id,
-                    and_(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.is_deleted.is_(False),
-                        UserOrganization.role.in_(
-                            roles_with_permission(OrganizationPermission.finance_read)
-                        ),
-                    ),
+                    Organization.id.in_(readable_org_ids),
                     Transaction.payment_user_id == user.id,
-                    and_(
-                        PaymentUserOrganization.user_id == user.id,
-                        PaymentUserOrganization.is_deleted.is_(False),
-                        PaymentUserOrganization.role.in_(
-                            roles_with_permission(OrganizationPermission.finance_read)
-                        ),
-                    ),
+                    Transaction.payment_organization_id.in_(readable_org_ids),
                 )
             )
         )

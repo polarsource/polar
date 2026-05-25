@@ -438,3 +438,16 @@ class TestBenefitEnqueueGrants:
         )
 
         enqueue_job_mock.assert_not_called()
+
+    async def test_deprecated_alias_registered_for_in_flight_messages(self) -> None:
+        """
+        The legacy `benefit.reset_meters_and_enqueue_grants` actor must remain
+        registered on the broker so Dramatiq messages enqueued under the old
+        name (before the rename) can still be picked up by workers.
+        """
+        import dramatiq
+
+        broker = dramatiq.get_broker()
+        actors = broker.get_declared_actors()
+        assert "benefit.enqueue_grants" in actors
+        assert "benefit.reset_meters_and_enqueue_grants" in actors

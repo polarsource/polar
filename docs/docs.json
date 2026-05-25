@@ -601,31 +601,6 @@
         ]
       },
       {
-        "tab": "Guides",
-        "icon": "book-open",
-        "groups": [
-          {
-            "group": "Guides",
-            "pages": [
-              "guides/introduction",
-              "guides/allow-multiple-subscriptions-per-customer",
-              "guides/automate-post-purchase-link-sharing",
-              "guides/change-email-as-merchant",
-              "guides/create-checkout-session",
-              "guides/create-multiple-organizations",
-              "guides/create-variants",
-              "guides/customize-benefits-order-in-checkouts",
-              "guides/customize-products-order-in-checkouts",
-              "guides/disable-email-editing-in-checkout",
-              "guides/grant-meter-credits-after-purchase",
-              "guides/grant-meter-credits-before-purchase",
-              "guides/seat-based-pricing",
-              "guides/theme-switch-in-checkout"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "Changelog",
         "icon": "signal-stream",
         "pages": ["changelog/recent", "changelog/api"]

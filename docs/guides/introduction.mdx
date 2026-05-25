@@ -1,12 +1,20 @@
 ---
-title: "Introduction"
-description: "A collection of how-tos with Polar in form of step-by-step guides and tutorials."
+title: "Guides"
+description: "Step-by-step walkthroughs for implementing common Polar patterns."
 ---
 
-This section is your starting point for learning how to use Polar with various stacks, environments, etc. Here you will find step-by-step guides and tutorials to help you integrate Polar into your projects, set up your environment, and make the most of our platform.
+These guides go beyond what the feature docs cover — full implementation walkthroughs for patterns that need more than a paragraph.
 
-## Get Started
+## Available guides
 
-Browse the guides in the sidebar to find the right one based on your needs. 
+- **[Implementing seat-based pricing](/guides/seat-based-pricing)** — sell team products where one customer buys seats and assigns them to members. Covers the Customer / Member / CustomerSeat model, checkout, scaling, and webhooks.
+- **[Granting meter credits before purchase](/guides/grant-meter-credits-before-purchase)** — give free credits to customers (trials, promotions, demos) by ingesting negative events against a Sum meter.
+- **[Granting meter credits after purchase](/guides/grant-meter-credits-after-purchase)** — compare the built-in Meter Credits benefit with a webhook-driven approach for custom crediting logic.
 
-If you want to request a new guide, please [create an issue on polarsource/polar](https://github.com/polarsource/polar/issues/new/choose).
+## Framework guides
+
+Looking to wire Polar into a specific stack? See the [Next.js](/guides/nextjs), [Laravel](/guides/laravel), and [Encore](/guides/encore) guides under **Integrate**.
+
+## Requesting a new guide
+
+Missing something? [Open an issue on polarsource/polar](https://github.com/polarsource/polar/issues/new/choose) and tell us what you're trying to build.

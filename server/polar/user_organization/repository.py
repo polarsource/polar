@@ -29,6 +29,10 @@ class UserOrganizationRepository:
     ) -> Sequence[tuple[Organization, OrganizationRole]]:
         """Return the user's active organizations with their role, ordered
         by organization name.
+
+        Mirrors the `can_authenticate` filter used by `/v1/organizations/`
+        so blocked orgs don't slip into the embedded list on `/v1/users/me`
+        and become 404'ing redirect targets in the dashboard.
         """
         statement = (
             select(Organization, UserOrganization.role)
@@ -39,7 +43,7 @@ class UserOrganizationRepository:
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.is_deleted.is_(False),
-                Organization.deleted_at.is_(None),
+                Organization.can_authenticate,
             )
             .order_by(Organization.name)
         )

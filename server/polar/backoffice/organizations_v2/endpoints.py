@@ -89,7 +89,6 @@ from polar.organization_review.schemas import (
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
-from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
 from ..components import button, modal
@@ -809,16 +808,7 @@ async def get_organization_detail(
                 ):
                     pass
             elif section == "team":
-                member_countries: dict[uuid.UUID, str] = {}
-                for member in organization.members:  # type: ignore[attr-defined]
-                    country = await user_service.get_identity_verified_country(
-                        member.user
-                    )
-                    if country:
-                        member_countries[member.user_id] = country
-                team_section = TeamSection(
-                    organization, member_countries=member_countries
-                )
+                team_section = TeamSection(organization)
                 with team_section.render(request):
                     pass
             elif section == "account":

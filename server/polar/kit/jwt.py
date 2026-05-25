@@ -25,6 +25,7 @@ TYPE = Literal[
     "auth",
     "github_repository_benefit_oauth",
     "customer_oauth",
+    "slack_integration_oauth",
 ]
 
 
@@ -62,7 +63,7 @@ def decode(
 
     if res.get("type", "") != type:
         raise Exception(
-            "JWT of unexpected type, expected '%s' got '%s'", type, res.get("type", "")
+            f"JWT of unexpected type, expected '{type}' got '{res.get('type', '')}'"
         )
 
     return res

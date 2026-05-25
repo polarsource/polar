@@ -44,6 +44,29 @@ class BenefitGrantRepository(
         statement = statement.where(Benefit.organization_id.in_(org_ids))
         return statement
 
+    async def get_by_property_and_organization(
+        self,
+        organization_id: UUID,
+        benefit_type: str,
+        key: str,
+        value: str,
+        *,
+        for_update: bool = False,
+    ) -> BenefitGrant | None:
+        statement = (
+            self.get_base_statement()
+            .join(Benefit)
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.type == benefit_type,
+                BenefitGrant.properties[key].as_string() == value,
+                BenefitGrant.is_deleted.is_(False),
+            )
+        )
+        if for_update:
+            statement = statement.with_for_update(of=BenefitGrant)
+        return await self.get_one_or_none(statement)
+
     async def get_by_benefit_and_scope(
         self,
         customer: Customer,

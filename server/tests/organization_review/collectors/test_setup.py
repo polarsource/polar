@@ -511,9 +511,7 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.get("https://slow.com/timeout").mock(
-                side_effect=Exception("timeout")
-            )
+            respx.get("https://slow.com/timeout").mock(side_effect=Exception("timeout"))
             results = await resolve_url_redirects(["https://slow.com/timeout"])
 
         assert len(results) == 1

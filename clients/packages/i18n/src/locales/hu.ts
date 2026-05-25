@@ -272,6 +272,7 @@ export default {
     downloadables: 'Fájlletöltések',
     meter_credit: 'Használat alapú kreditek',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'Slack megosztott csatorna',
   },
   ordinal: {
     zero: '.',
@@ -280,19 +281,5 @@ export default {
     few: '.',
     many: '.',
     other: '.',
-  },
-  embedPaymentMethod: {
-    title: 'Fizetési mód hozzáadása',
-    close: 'Bezárás',
-    submit: 'Fizetési mód hozzáadása',
-    processing: 'Fizetési mód hozzáadása…',
-    fallbackError: 'Valami hiba történt. Próbálja újra.',
-    errors: {
-      invalidRequest: 'Hiányzó kötelező paraméterek.',
-      unauthorized: 'A munkamenet lejárt.',
-      processingFailed:
-        'A fizetési módot nem sikerült feldolgozni. Próbálja újra.',
-      unknown: 'Valami hiba történt.',
-    },
   },
 } as const

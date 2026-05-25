@@ -275,6 +275,7 @@ export default {
     downloadables: 'Fichiers',
     meter_credit: 'Crédits prépayés',
     feature_flag: 'Accès à une fonctionnalité',
+    slack_shared_channel: 'canal partagé Slack',
   },
   ordinal: {
     zero: 'e',
@@ -283,19 +284,5 @@ export default {
     few: 'e',
     many: 'e',
     other: 'e',
-  },
-  embedPaymentMethod: {
-    title: 'Ajouter un moyen de paiement',
-    close: 'Fermer',
-    submit: 'Ajouter un moyen de paiement',
-    processing: 'Ajout du moyen de paiement…',
-    fallbackError: 'Une erreur s’est produite. Veuillez réessayer.',
-    errors: {
-      invalidRequest: 'Paramètres obligatoires manquants.',
-      unauthorized: 'La session a expiré.',
-      processingFailed:
-        'Impossible de traiter le moyen de paiement. Veuillez réessayer.',
-      unknown: 'Une erreur s’est produite.',
-    },
   },
 } as const

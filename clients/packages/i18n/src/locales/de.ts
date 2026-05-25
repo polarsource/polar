@@ -277,6 +277,7 @@ export default {
     downloadables: 'Dateidownloads',
     meter_credit: 'Verbrauchsguthaben',
     feature_flag: 'Feature-Flag',
+    slack_shared_channel: 'Gemeinsamer Slack-Kanal',
   },
   ordinal: {
     zero: '.',
@@ -285,19 +286,5 @@ export default {
     few: '.',
     many: '.',
     other: '.',
-  },
-  embedPaymentMethod: {
-    title: 'Zahlungsmethode hinzufügen',
-    close: 'Schließen',
-    submit: 'Zahlungsmethode hinzufügen',
-    processing: 'Zahlungsmethode wird hinzugefügt…',
-    fallbackError: 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
-    errors: {
-      invalidRequest: 'Erforderliche Parameter fehlen.',
-      unauthorized: 'Sitzung abgelaufen.',
-      processingFailed:
-        'Die Zahlungsmethode konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.',
-      unknown: 'Etwas ist schiefgelaufen.',
-    },
   },
 } as const

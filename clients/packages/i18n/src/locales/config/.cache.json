@@ -173,15 +173,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -357,15 +349,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -541,15 +525,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -725,15 +701,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -909,15 +877,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1085,15 +1045,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1261,15 +1213,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1437,15 +1381,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1613,15 +1549,7 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1789,14 +1717,6 @@
     "checkout.pricing.seats.maximum": "Maximum {max} seats",
     "checkout.pricing.seats.updateFailed": "Failed to update seats",
     "checkout.pricing.inclTax": "Taxes (included)",
-    "embedPaymentMethod.title": "Add payment method",
-    "embedPaymentMethod.close": "Close",
-    "embedPaymentMethod.submit": "Add payment method",
-    "embedPaymentMethod.processing": "Adding payment method…",
-    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
-    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
-    "embedPaymentMethod.errors.unauthorized": "Session expired.",
-    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   }
 }

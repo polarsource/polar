@@ -27,6 +27,9 @@ class UserOrganizationRepository:
     async def get_organizations_with_role(
         self, user_id: UUID
     ) -> Sequence[tuple[Organization, OrganizationRole]]:
+        """Return the user's active organizations with their role, ordered
+        by organization name.
+        """
         statement = (
             select(Organization, UserOrganization.role)
             .join(

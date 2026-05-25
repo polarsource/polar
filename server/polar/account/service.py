@@ -8,27 +8,15 @@ from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
-from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
-from polar.member.repository import MemberRepository
-from polar.member.service import member_service
 from polar.models import Account, Organization, User
-from polar.models.member import MemberRole
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 
 from .schemas import AccountUpdate
 
 
 class AccountServiceError(PolarError):
     pass
-
-
-class CannotChangeOwnerError(AccountServiceError):
-    def __init__(self, reason: str) -> None:
-        super().__init__(f"Cannot change account owner: {reason}")
 
 
 class AccountService:
@@ -94,65 +82,6 @@ class AccountService:
                 "_platform_fee_fixed": fee_fixed,
                 "_platform_subscription_fee_percent": subscription_fee_percent,
             },
-        )
-
-    async def _sync_polar_self_customer_owner(
-        self,
-        session: AsyncSession,
-        *,
-        organization_id: uuid.UUID,
-        new_owner_user: User,
-    ) -> None:
-        if not settings.POLAR_SELF_ENABLED:
-            return
-
-        polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
-        if organization_id == polar_organization_id:
-            return
-
-        customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_external_id_and_organization(
-            str(organization_id), polar_organization_id
-        )
-        if customer is None:
-            raise CannotChangeOwnerError(
-                f"Polar self customer not found for organization {organization_id}"
-            )
-
-        member_repository = MemberRepository.from_session(session)
-        target_member = await member_repository.get_by_customer_id_and_external_id(
-            customer.id, str(new_owner_user.id)
-        )
-        if target_member is None:
-            raise CannotChangeOwnerError(
-                f"Polar self member not found for user {new_owner_user.id}"
-            )
-
-        if target_member.role != MemberRole.owner:
-            await member_service.update(
-                session,
-                target_member,
-                role=MemberRole.owner,
-                allow_ownership_transfer=True,
-            )
-
-    async def change_owner(
-        self,
-        session: AsyncSession,
-        *,
-        new_owner_id: uuid.UUID,
-        organization_id: uuid.UUID,
-    ) -> None:
-        new_owner_user = await user_organization_service.transfer_ownership(
-            session,
-            new_owner_user_id=new_owner_id,
-            organization_id=organization_id,
-        )
-
-        await self._sync_polar_self_customer_owner(
-            session,
-            organization_id=organization_id,
-            new_owner_user=new_owner_user,
         )
 
     async def _get_unrestricted(

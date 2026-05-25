@@ -24,7 +24,6 @@ from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
 
 from polar.account.repository import AccountRepository
-from polar.account.service import account as account_service
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.service import account_credit_service
 from polar.auth.scope import READ_ONLY_SCOPES
@@ -3176,7 +3175,7 @@ async def make_owner(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     try:
-        await account_service.change_owner(
+        await organization_service.change_owner(
             session, new_owner_id=user_id, organization_id=organization_id
         )
     except Exception as e:

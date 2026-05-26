@@ -82,6 +82,9 @@ export const usePostHog = (): PolarHog => {
 
   const capture: PolarHog['capture'] = useCallback(
     (event, properties, options) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(`[posthog] ${event}`, properties ?? {})
+      }
       posthog.capture(event, properties, options)
     },
     [posthog],

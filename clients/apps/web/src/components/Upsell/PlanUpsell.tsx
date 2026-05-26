@@ -9,7 +9,9 @@ import {
 } from '@/hooks/queries/billing'
 import { useHasPermission } from '@/hooks/permissions'
 import { usePostHog } from '@/hooks/posthog'
+import { useBillingPlanTelemetry } from '@/hooks/useBillingPlanTelemetry'
 import { useDismissed } from '@/hooks/useDismissed'
+import { useImpressionEvent } from '@/hooks/useImpressionEvent'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   CurrentPlanContext,
@@ -27,7 +29,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { subDays } from 'date-fns'
 import Link from 'next/link'
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { CycleArrow } from '../Landing/graphics/CycleArrow'
 
 interface PlanUpsellProps {
@@ -45,6 +47,11 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
   const subscriptionQuery = useOrganizationSubscription(gatedOrgId)
   const plansQuery = useOrganizationPlans(gatedOrgId)
   const startCheckout = useStartSubscriptionCheckout(organization.id)
+  const { buildUrls } = useBillingPlanTelemetry({
+    source: 'plan_upsell',
+    organizationId: organization.id,
+    successPath: `/dashboard/${organization.slug}/settings/billing`,
+  })
 
   const { startDate, endDate } = useMemo(() => {
     const now = new Date()
@@ -93,18 +100,17 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
   const isVisible =
     !!recommendation && !isDismissed && organization.status === 'active'
 
-  const impressionFiredRef = useRef(false)
-  useEffect(() => {
-    if (!isVisible || !recommendation || impressionFiredRef.current) return
-    impressionFiredRef.current = true
-    posthog.capture('dashboard:subscriptions:plan_upsell:view', {
+  useImpressionEvent({
+    event: 'dashboard:subscriptions:plan_upsell:view',
+    enabled: isVisible,
+    build: () => ({
       organization_id: organization.id,
-      recommended_plan: recommendation.plan.name,
-      recommended_plan_product_id: recommendation.plan.product_id ?? null,
-      monthly_savings_cents: recommendation.savings,
+      recommended_plan: recommendation?.plan.name ?? null,
+      recommended_plan_product_id: recommendation?.plan.product_id ?? null,
+      monthly_savings_cents: recommendation?.savings ?? null,
       monthly_revenue_cents: monthlyRevenue,
-    })
-  }, [isVisible, recommendation, monthlyRevenue, organization.id, posthog])
+    }),
+  })
 
   if (!isVisible || !recommendation) return null
 
@@ -129,11 +135,19 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
       ...trackingProps,
       variant: 'upgrade',
     })
-    const billingHref = `/dashboard/${organization.slug}/settings/billing?checkout_success=true`
+    const subscription = subscriptionQuery.data
+    const urls = buildUrls({
+      plan_name: plan.name,
+      plan_product_id: plan.product_id,
+      monthly_savings_cents: savings,
+      from_plan_name: subscription?.plan.name ?? null,
+      from_plan_product_id: subscription?.product_id ?? null,
+      from_plan_amount_cents: subscription?.amount ?? null,
+    })
     const result = await startCheckout.mutateAsync({
       product_id: plan.product_id,
-      success_url: `${window.location.origin}${billingHref}`,
-      return_url: window.location.href,
+      success_url: urls.success_url,
+      return_url: urls.return_url,
     })
     if (result.error || !result.data) {
       toast({

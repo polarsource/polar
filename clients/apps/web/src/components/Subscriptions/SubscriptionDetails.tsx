@@ -99,10 +99,12 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
           label="Status"
           value={<SubscriptionStatus subscription={subscription} />}
         />
-        <DetailRow
-          label="Started Date"
-          value={<FormattedDateTime datetime={subscription.created_at} />}
-        />
+        {subscription.started_at && (
+          <DetailRow
+            label="Started Date"
+            value={<FormattedDateTime datetime={subscription.started_at} />}
+          />
+        )}
 
         {subscription.status === 'trialing' && subscription.trial_end && (
           <DetailRow

@@ -6,8 +6,10 @@ _REDIRECT_PATH = "/v1/integrations/slack/callback"
 _EVENTS_PATH = "/v1/integrations/slack/events"
 
 BOT_SCOPES = [
+    "channels:join",
     "channels:manage",
     "channels:read",
+    "groups:read",
     "groups:write",
     "conversations.connect:write",
     "conversations.connect:read",

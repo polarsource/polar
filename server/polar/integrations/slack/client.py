@@ -54,6 +54,43 @@ class SlackClient:
             json={"name": name, "is_private": is_private},
         )
 
+    async def conversations_list(
+        self,
+        *,
+        bot_token: str,
+        cursor: str | None = None,
+        limit: int = 200,
+        types: list[str] | None = None,
+        exclude_archived: bool = True,
+    ) -> dict[str, Any]:
+        params: dict[str, Any] = {
+            "exclude_archived": str(exclude_archived).lower(),
+            "limit": limit,
+        }
+        if cursor:
+            params["cursor"] = cursor
+        if types:
+            params["types"] = ",".join(types)
+        response = await self.client.get(
+            "/conversations.list",
+            params=params,
+            headers={"Authorization": f"Bearer {bot_token}"},
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def conversations_join(
+        self,
+        *,
+        bot_token: str,
+        channel: str,
+    ) -> dict[str, Any]:
+        return await self._post_authed(
+            "/conversations.join",
+            bot_token=bot_token,
+            json={"channel": channel},
+        )
+
     async def conversations_invite_shared(
         self,
         *,

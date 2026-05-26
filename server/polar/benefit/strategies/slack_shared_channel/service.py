@@ -112,7 +112,13 @@ class BenefitSlackSharedChannelService(
             channel_id = existing_channel_id
             channel_name = grant_properties.get("channel_name", "")
         else:
-            channel_id, channel_name = await self._create_channel(
+            channel_id, channel_name = await self._find_channel_by_name(
+                bot_token=bot_token,
+                template=properties["channel_name_template"],
+                context=context,
+                is_private=properties["private"],
+                bound_logger=bound_logger,
+            ) or await self._create_channel(
                 bot_token=bot_token,
                 template=properties["channel_name_template"],
                 context=context,
@@ -263,6 +269,99 @@ class BenefitSlackSharedChannelService(
             metadata=dict(customer.user_metadata or {}),
         )
 
+    def _render_channel_name(
+        self, template: str, context: TemplateContext, *, suffix: str | None = None
+    ) -> str:
+        try:
+            return render_channel_name(template, context, suffix=suffix)
+        except InvalidTemplateError as e:
+            raise BenefitActionRequiredError(str(e)) from e
+
+    async def _find_channel_by_name(
+        self,
+        *,
+        bot_token: str,
+        template: str,
+        context: TemplateContext,
+        is_private: bool,
+        bound_logger: Any,
+    ) -> tuple[str, str] | None:
+        name = self._render_channel_name(template, context)
+        types = ["private_channel"] if is_private else ["public_channel"]
+        cursor: str | None = None
+
+        while True:
+            try:
+                result = await self._client.conversations_list(
+                    bot_token=bot_token, cursor=cursor, types=types
+                )
+            except httpx.HTTPError as e:
+                raise BenefitRetriableError() from e
+
+            if not result.get("ok"):
+                error = result.get("error", "")
+                if error == "missing_scope":
+                    bound_logger.info("Slack channel lookup skipped", error=error)
+                    return None
+                raise BenefitActionRequiredError(f"Slack channel lookup error: {error}")
+
+            for channel in result.get("channels") or []:
+                channel_name = channel.get("name") or channel.get("name_normalized")
+                if not isinstance(channel_name, str) or channel_name != name:
+                    continue
+
+                channel_id = channel.get("id")
+                if not isinstance(channel_id, str):
+                    continue
+
+                if channel.get("is_private"):
+                    if not channel.get("is_member"):
+                        bound_logger.info(
+                            "Slack private channel found but app is not a member",
+                            channel_id=channel_id,
+                        )
+                        return None
+                    return channel_id, channel_name
+
+                if not channel.get("is_member"):
+                    joined = await self._join_public_channel(
+                        bot_token=bot_token,
+                        channel=channel_id,
+                        bound_logger=bound_logger,
+                    )
+                    if not joined:
+                        return None
+
+                return channel_id, channel_name
+
+            cursor = (result.get("response_metadata") or {}).get("next_cursor")
+            if not cursor:
+                return None
+
+    async def _join_public_channel(
+        self,
+        *,
+        bot_token: str,
+        channel: str,
+        bound_logger: Any,
+    ) -> bool:
+        try:
+            result = await self._client.conversations_join(
+                bot_token=bot_token, channel=channel
+            )
+        except httpx.HTTPError as e:
+            raise BenefitRetriableError() from e
+
+        if result.get("ok"):
+            return True
+
+        bound_logger.info(
+            "Slack public channel join skipped",
+            channel_id=channel,
+            error=result.get("error"),
+        )
+        return False
+
     async def _create_channel(
         self,
         *,
@@ -273,10 +372,7 @@ class BenefitSlackSharedChannelService(
     ) -> tuple[str, str]:
         for attempt in range(2):
             suffix = secrets.token_hex(2) if attempt > 0 else None
-            try:
-                name = render_channel_name(template, context, suffix=suffix)
-            except InvalidTemplateError as e:
-                raise BenefitActionRequiredError(str(e)) from e
+            name = self._render_channel_name(template, context, suffix=suffix)
             try:
                 result = await self._client.conversations_create(
                     bot_token=bot_token, name=name, is_private=is_private

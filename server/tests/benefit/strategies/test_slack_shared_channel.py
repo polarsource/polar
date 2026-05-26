@@ -68,6 +68,19 @@ def _mock_client(mocker: MockerFixture, **overrides: Any) -> AsyncMock:
                 "channel": {"id": "C123", "name": "support-acme"},
             }
         ),
+        "conversations_list": AsyncMock(
+            return_value={
+                "ok": True,
+                "channels": [],
+                "response_metadata": {"next_cursor": ""},
+            }
+        ),
+        "conversations_join": AsyncMock(
+            return_value={
+                "ok": True,
+                "channel": {"id": "CEXIST", "name": "support-acme"},
+            }
+        ),
         "chat_post_message": AsyncMock(return_value={"ok": True}),
         "conversations_invite": AsyncMock(return_value={"ok": True}),
         "conversations_invite_shared": AsyncMock(
@@ -106,6 +119,7 @@ class TestSlackSharedChannelGrant:
         organization: Organization,
     ) -> None:
         await _create_integration(save_fixture, organization)
+        customer.name = "Acme"
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
@@ -126,6 +140,213 @@ class TestSlackSharedChannelGrant:
         assert result["invite_id"] == "I123"
         assert result["invite_url"].startswith("https://slack.com/share/")
 
+        client.conversations_create.assert_awaited_once()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="C123",
+            emails=["admin@customer.example"],
+        )
+
+    async def test_grant_reuses_existing_public_channel_by_rendered_name(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await _create_integration(save_fixture, organization)
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        client = _mock_client(
+            mocker,
+            conversations_list=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channels": [
+                        {
+                            "id": "CEXIST",
+                            "name": "support-acme",
+                            "is_private": False,
+                            "is_member": True,
+                        }
+                    ],
+                }
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        assert result["channel_id"] == "CEXIST"
+        assert result["channel_name"] == "support-acme"
+        client.conversations_create.assert_not_awaited()
+        client.conversations_join.assert_not_awaited()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="CEXIST",
+            emails=["admin@customer.example"],
+        )
+
+    async def test_grant_joins_and_reuses_existing_public_channel_by_rendered_name(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await _create_integration(save_fixture, organization)
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        client = _mock_client(
+            mocker,
+            conversations_list=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channels": [
+                        {
+                            "id": "CEXIST",
+                            "name": "support-acme",
+                            "is_private": False,
+                            "is_member": False,
+                        }
+                    ],
+                }
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        assert result["channel_id"] == "CEXIST"
+        client.conversations_join.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="CEXIST"
+        )
+        client.conversations_create.assert_not_awaited()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="CEXIST",
+            emails=["admin@customer.example"],
+        )
+
+    async def test_grant_reuses_existing_private_channel_when_app_is_member(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await _create_integration(save_fixture, organization)
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={**_BASE_PROPERTIES, "private": True},
+        )
+        client = _mock_client(
+            mocker,
+            conversations_list=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channels": [
+                        {
+                            "id": "GEXIST",
+                            "name": "support-acme",
+                            "is_private": True,
+                            "is_member": True,
+                        }
+                    ],
+                }
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        assert result["channel_id"] == "GEXIST"
+        client.conversations_create.assert_not_awaited()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="GEXIST",
+            emails=["admin@customer.example"],
+        )
+
+    async def test_grant_creates_channel_when_existing_public_channel_cannot_be_joined(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await _create_integration(save_fixture, organization)
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        client = _mock_client(
+            mocker,
+            conversations_list=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channels": [
+                        {
+                            "id": "CEXIST",
+                            "name": "support-acme",
+                            "is_private": False,
+                            "is_member": False,
+                        }
+                    ],
+                }
+            ),
+            conversations_join=AsyncMock(
+                return_value={"ok": False, "error": "missing_scope"}
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        assert result["channel_id"] == "C123"
+        client.conversations_join.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="CEXIST"
+        )
         client.conversations_create.assert_awaited_once()
         client.conversations_invite_shared.assert_awaited_once_with(
             bot_token="xoxb-test-token",

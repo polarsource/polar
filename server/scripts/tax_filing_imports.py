@@ -30,7 +30,7 @@ cli = typer.Typer()
 
 # Batch size - tune this based on your needs
 # 500 is a good balance between query size and number of queries
-BATCH_SIZE = 1000
+BATCH_SIZE = 750
 
 
 def is_url(path: str) -> bool:

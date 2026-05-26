@@ -574,11 +574,17 @@ class SubscriptionUpdateRepository(
         if existing is None:
             return await self.create(object, flush=flush)
 
+        # Merge partial updates: a pending product change and a pending
+        # seat change can coexist on one row. We check `object.product`
+        # rather than `object.product_id` because SQLAlchemy doesn't sync
+        # the FK column on a transient instance until flush.
         existing.applies_at = object.applies_at
-        existing.product = object.product
-        existing.new_cycle_start = object.new_cycle_start
-        existing.new_cycle_end = object.new_cycle_end
-        existing.seats = object.seats
+        if object.product is not None:
+            existing.product = object.product
+            existing.new_cycle_start = object.new_cycle_start
+            existing.new_cycle_end = object.new_cycle_end
+        if object.seats is not None:
+            existing.seats = object.seats
         return await self.update(existing, flush=flush)
 
     async def soft_delete_unapplied_by_subscription_id(

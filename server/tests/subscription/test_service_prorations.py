@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
@@ -19,18 +19,21 @@ from polar.models import (
     Organization,
     Subscription,
 )
-from polar.models.billing_entry import BillingEntryDirection
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
     is_free_price,
+    is_seat_price,
 )
+from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_product,
     create_product_price_fixed,
+    create_subscription_with_seats,
 )
 
 # This tests Subscription updates with prorations, where the subscription is
@@ -1129,3 +1132,228 @@ class TestUpdateProductProrations:
             assert billing_entries[1].amount == 20000
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
+
+
+@pytest.mark.asyncio
+class TestImmediateSeatChangeWithPendingProductChange:
+    """End-to-end for #11129: schedule A→B `next_period`, change seats
+    with `prorate`, cycle. Parametrised to pin the proration math and
+    the post-cycle amount across seat/price combinations."""
+
+    @pytest.mark.parametrize(
+        (
+            "old_price_per_seat",
+            "new_price_per_seat",
+            "old_seats",
+            "new_seats",
+            "cycle_start",
+            "time_of_update",
+            "expected_proration_amount",
+            "expected_proration_direction",
+            "expected_post_cycle_amount",
+        ),
+        [
+            pytest.param(
+                # $10/seat -> $25/seat, 5 -> 8 seats, mid-month.
+                # delta = (8-5) * 1000 = 3000 cents on A's seat price.
+                # factor = 15/30 = 0.5
+                # prorated = int(3000 * 0.5) = 1500
+                # post-cycle amount = 8 * 2500 = 20000
+                1000,
+                2500,
+                5,
+                8,
+                datetime(2025, 6, 1, tzinfo=UTC),
+                datetime(2025, 6, 16, tzinfo=UTC),
+                1500,
+                BillingEntryDirection.debit,
+                20000,
+                id="upgrade-and-add-seats-half-month",
+            ),
+            pytest.param(
+                # $15/seat -> $25/seat, 5 -> 10 seats, third-of-month.
+                # delta = (10-5) * 1500 = 7500
+                # factor = 20/30 = 2/3
+                # prorated = int(7500 * 2/3) = 5000
+                # post-cycle amount = 10 * 2500 = 25000
+                1500,
+                2500,
+                5,
+                10,
+                datetime(2025, 6, 1, tzinfo=UTC),
+                datetime(2025, 6, 11, tzinfo=UTC),
+                5000,
+                BillingEntryDirection.debit,
+                25000,
+                id="upgrade-and-double-seats-third-month",
+            ),
+            pytest.param(
+                # Price downgrade ($20 -> $10), seats up (10 -> 12), mid-month.
+                # delta = (12-10) * 2000 = 4000 on A's seat price ($20/seat)
+                # factor = 15/30 = 0.5
+                # prorated = int(4000 * 0.5) = 2000
+                # post-cycle amount = 12 * 1000 = 12000
+                2000,
+                1000,
+                10,
+                12,
+                datetime(2025, 6, 1, tzinfo=UTC),
+                datetime(2025, 6, 16, tzinfo=UTC),
+                2000,
+                BillingEntryDirection.debit,
+                12000,
+                id="price-downgrade-with-seat-increase",
+            ),
+            pytest.param(
+                # Price upgrade ($15 -> $25), seats down (10 -> 7), mid-month.
+                # Decrease produces a *credit* entry.
+                # delta = (10-7) * 1500 = 4500 on A's seat price
+                # factor = 15/30 = 0.5
+                # prorated = int(4500 * 0.5) = 2250 (credit)
+                # post-cycle amount = 7 * 2500 = 17500
+                1500,
+                2500,
+                10,
+                7,
+                datetime(2025, 6, 1, tzinfo=UTC),
+                datetime(2025, 6, 16, tzinfo=UTC),
+                2250,
+                BillingEntryDirection.credit,
+                17500,
+                id="upgrade-and-reduce-seats",
+            ),
+        ],
+    )
+    async def test_e2e_immediate_seats_with_pending_product_change(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        old_price_per_seat: int,
+        new_price_per_seat: int,
+        old_seats: int,
+        new_seats: int,
+        cycle_start: datetime,
+        time_of_update: datetime,
+        expected_proration_amount: int,
+        expected_proration_direction: BillingEntryDirection,
+        expected_post_cycle_amount: int,
+    ) -> None:
+        # Test customer has no payment method; mock the order-creation
+        # call that the prorate path would otherwise drive.
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new=AsyncMock(),
+        )
+
+        with freezegun.freeze_time(cycle_start) as frozen_time:
+            product_a = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[("seat", old_price_per_seat, "usd")],
+            )
+            product_b = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[("seat", new_price_per_seat, "usd")],
+            )
+
+            subscription = await create_subscription_with_seats(
+                save_fixture,
+                product=product_a,
+                customer=customer,
+                seats=old_seats,
+            )
+            assert subscription.current_period_start == cycle_start
+            previous_period_end = subscription.current_period_end
+            assert previous_period_end is not None
+
+            frozen_time.move_to(time_of_update)
+
+            # 1. Schedule A -> B at next_period.
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+            await session.flush()
+
+            sub_update_repo = SubscriptionUpdateRepository.from_session(session)
+            pending = await sub_update_repo.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+            assert pending is not None
+            assert pending.product_id == product_b.id
+            assert pending.seats is None
+
+            # 2. Bump seats with `prorate` — immediate proration entry.
+            updated = await subscription_service.update_seats(
+                session,
+                subscription,
+                seats=new_seats,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+            await session.flush()
+
+            # Subscription stays on A with seats applied immediately.
+            assert updated.product_id == product_a.id
+            assert updated.seats == new_seats
+            assert updated.amount == new_seats * old_price_per_seat
+
+            # Scheduled product change preserved; stale seats cleared.
+            pending = await sub_update_repo.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+            assert pending is not None, "scheduled product change was dropped"
+            assert pending.product_id == product_b.id
+            assert pending.seats is None
+            assert pending.applies_at == previous_period_end
+            assert pending.applied_at is None
+
+            # Proration billing entry priced off A's seat price.
+            billing_entry_repo = BillingEntryRepository.from_session(session)
+            entries = await billing_entry_repo.get_pending_by_subscription(
+                subscription.id
+            )
+            old_price = product_a.prices[0]
+            assert is_seat_price(old_price)
+            seat_entries = [
+                e
+                for e in entries
+                if e.product_price_id == old_price.id
+                and e.type
+                in (
+                    BillingEntryType.subscription_seats_increase,
+                    BillingEntryType.subscription_seats_decrease,
+                )
+            ]
+            assert len(seat_entries) == 1
+            entry = seat_entries[0]
+            assert entry.amount == expected_proration_amount
+            assert entry.direction == expected_proration_direction
+            assert entry.customer_id == customer.id
+            assert entry.start_timestamp == time_of_update
+            assert entry.end_timestamp == previous_period_end
+            assert entry.currency == old_price.price_currency
+
+            # 3. Force cycle past current_period_end so it applies the
+            # pending product change.
+            frozen_time.move_to(previous_period_end + timedelta(seconds=1))
+            cycled = await subscription_service.cycle(session, updated)
+            await session.flush()
+
+            assert cycled.product_id == product_b.id
+            assert cycled.seats == new_seats
+            assert cycled.amount == expected_post_cycle_amount
+            assert cycled.pending_update is None
+
+            applied = await sub_update_repo.get_by_id(pending.id)
+            assert applied is not None
+            assert applied.applied_at is not None

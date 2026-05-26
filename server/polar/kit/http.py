@@ -82,10 +82,11 @@ class UrlReachability:
 async def check_url_reachable(
     url: HttpUrl | str, *, timeout: float = 5.0
 ) -> UrlReachability:
-    """Validate the URL and HEAD it, following redirects.
+    """Validate the URL and GET it, following redirects.
 
     The check rejects URLs that resolve to private/reserved IPs (including any
-    redirect target) and treats HTTP 2xx/3xx as reachable.
+    redirect target) and treats HTTP 2xx/3xx as reachable. We use GET rather
+    than HEAD because some sites block HEAD requests.
     """
     try:
         validated_url = await validate_crawlable_url(url)
@@ -104,7 +105,7 @@ async def check_url_reachable(
             headers={"User-Agent": settings.POLAR_USER_AGENT},
             event_hooks={"response": [_check_redirect]},
         ) as client:
-            response = await client.head(str(validated_url))
+            response = await client.get(str(validated_url))
         return UrlReachability(
             reachable=200 <= response.status_code < 400,
             status=response.status_code,

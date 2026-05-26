@@ -102,10 +102,11 @@ async def _resolve_redirect(
 
     async with semaphore:
         try:
-            # Use manual redirect loop so we can validate each hop
+            # Use manual redirect loop so we can validate each hop.
+            # We use GET rather than HEAD because some sites block HEAD requests.
             current_url = url
             for _ in range(10):  # max redirect hops
-                response = await client.head(current_url)
+                response = await client.get(current_url)
                 if response.is_redirect and response.has_redirect_location:
                     next_url = str(response.headers["location"])
                     # Resolve relative redirects
@@ -240,7 +241,7 @@ async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
     """Follow redirects for a sample of URLs (one per hostname).
 
     Uses a two-pass approach:
-    1. Fast HEAD requests to detect HTTP-level redirects (301/302).
+    1. GET requests to detect HTTP-level redirects (301/302).
     2. For URLs that returned 200 (no HTTP redirect), a headless browser
        check to detect client-side redirects (meta refresh, JS).
     """
@@ -250,7 +251,7 @@ async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
     urls_to_check = _pick_one_per_hostname(urls)[:_MAX_URLS_TO_RESOLVE]
     semaphore = asyncio.Semaphore(_MAX_CONCURRENT)
 
-    # Pass 1: HEAD requests (fast)
+    # Pass 1: GET requests (fast)
     async with httpx.AsyncClient(
         follow_redirects=False,  # We follow manually to validate each hop
         timeout=_REDIRECT_TIMEOUT,

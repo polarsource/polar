@@ -380,7 +380,7 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.head("https://example.com/thanks").respond(200)
+            respx.get("https://example.com/thanks").respond(200)
             results = await resolve_url_redirects(["https://example.com/thanks"])
 
         assert len(results) == 1
@@ -398,10 +398,10 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.head("https://api.legit.com/success").respond(
+            respx.get("https://api.legit.com/success").respond(
                 302, headers={"Location": "https://porn-site.com/landing"}
             )
-            respx.head("https://porn-site.com/landing").respond(200)
+            respx.get("https://porn-site.com/landing").respond(200)
             results = await resolve_url_redirects(["https://api.legit.com/success"])
 
         assert len(results) == 1
@@ -429,10 +429,10 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.head("https://example.com/old").respond(
+            respx.get("https://example.com/old").respond(
                 301, headers={"Location": "https://example.com/new"}
             )
-            respx.head("https://example.com/new").respond(200)
+            respx.get("https://example.com/new").respond(200)
             results = await resolve_url_redirects(["https://example.com/old"])
 
         assert len(results) == 1
@@ -458,10 +458,10 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.head("https://example.com/thanks").respond(
+            respx.get("https://example.com/thanks").respond(
                 301, headers={"Location": "https://www.example.com/thanks"}
             )
-            respx.head("https://www.example.com/thanks").respond(200)
+            respx.get("https://www.example.com/thanks").respond(200)
             results = await resolve_url_redirects(["https://example.com/thanks"])
 
         assert len(results) == 1
@@ -490,10 +490,10 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.head("https://www.example.com/thanks").respond(
+            respx.get("https://www.example.com/thanks").respond(
                 301, headers={"Location": "https://example.com/thanks"}
             )
-            respx.head("https://example.com/thanks").respond(200)
+            respx.get("https://example.com/thanks").respond(200)
             results = await resolve_url_redirects(["https://www.example.com/thanks"])
 
         assert len(results) == 1
@@ -511,9 +511,7 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.head("https://slow.com/timeout").mock(
-                side_effect=Exception("timeout")
-            )
+            respx.get("https://slow.com/timeout").mock(side_effect=Exception("timeout"))
             results = await resolve_url_redirects(["https://slow.com/timeout"])
 
         assert len(results) == 1
@@ -531,7 +529,7 @@ class TestResolveUrlRedirects:
             "polar.organization_review.collectors.setup._validate_url_host",
             return_value=None,
         )
-        # HEAD returns 200 (no HTTP redirect) — browser pass will be triggered
+        # GET returns 200 (no HTTP redirect) — browser pass will be triggered
         # Browser detects the client-side redirect to a different domain
         mocker.patch(
             "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
@@ -544,7 +542,7 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.head("https://legit-api.com/success").respond(200)
+            respx.get("https://legit-api.com/success").respond(200)
             results = await resolve_url_redirects(["https://legit-api.com/success"])
 
         assert len(results) == 1
@@ -570,7 +568,7 @@ class TestResolveUrlRedirects:
         )
 
         with respx.mock:
-            respx.head("https://flaky-site.com/page").respond(200)
+            respx.get("https://flaky-site.com/page").respond(200)
             results = await resolve_url_redirects(["https://flaky-site.com/page"])
 
         assert len(results) == 1

@@ -3,12 +3,8 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
-from alembic_utils.pg_function import PGFunction
-from alembic_utils.pg_trigger import PGTrigger
-from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
-from sqlalchemy.types import Integer
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StrEnumType
@@ -73,16 +69,6 @@ class BillingEntry(RecordModel):
     )
     discount_amount: Mapped[int | None] = mapped_column(
         "discount_amount_v2", BigInteger, nullable=True, default=None
-    )
-    # Legacy int4 columns retained while the dual-column sync trigger is active.
-    # Deferred so they never appear in default SELECTs — once the cleanup
-    # migration drops them, running pods on this model won't issue SQL that
-    # references them.
-    legacy_amount: Mapped[int | None] = mapped_column(
-        "amount", Integer, nullable=True, default=None, deferred=True
-    )
-    legacy_discount_amount: Mapped[int | None] = mapped_column(
-        "discount_amount", Integer, nullable=True, default=None, deferred=True
     )
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True, default=None)
     customer_id: Mapped[UUID] = mapped_column(
@@ -154,48 +140,3 @@ class BillingEntry(RecordModel):
             subscription=subscription_product_price.subscription,
             event=event,
         )
-
-
-billing_entry_sync_v2_amounts_function = PGFunction(
-    schema="public",
-    signature="billing_entry_sync_v2_amounts()",
-    definition="""
-    RETURNS trigger AS $$
-    BEGIN
-        IF TG_OP = 'INSERT' THEN
-            IF NEW.amount_v2 IS NULL AND NEW.amount IS NOT NULL THEN
-                NEW.amount_v2 := NEW.amount;
-            END IF;
-            IF NEW.discount_amount_v2 IS NULL AND NEW.discount_amount IS NOT NULL THEN
-                NEW.discount_amount_v2 := NEW.discount_amount;
-            END IF;
-        ELSIF TG_OP = 'UPDATE' THEN
-            IF NEW.amount IS DISTINCT FROM OLD.amount THEN
-                NEW.amount_v2 := NEW.amount;
-            END IF;
-            IF NEW.discount_amount IS DISTINCT FROM OLD.discount_amount THEN
-                NEW.discount_amount_v2 := NEW.discount_amount;
-            END IF;
-        END IF;
-        RETURN NEW;
-    END
-    $$ LANGUAGE plpgsql;
-    """,
-)
-
-billing_entry_sync_v2_amounts_trigger = PGTrigger(
-    schema="public",
-    signature="billing_entry_sync_v2_amounts_trigger",
-    on_entity="billing_entry",
-    definition="""
-    BEFORE INSERT OR UPDATE ON billing_entry
-    FOR EACH ROW EXECUTE FUNCTION billing_entry_sync_v2_amounts();
-    """,
-)
-
-register_entities(
-    (
-        billing_entry_sync_v2_amounts_function,
-        billing_entry_sync_v2_amounts_trigger,
-    )
-)

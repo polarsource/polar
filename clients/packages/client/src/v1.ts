@@ -1481,23 +1481,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/auth/complete': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Complete */
-    get: operations['auth:complete']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/auth/email-otp/request': {
     parameters: {
       query?: never
@@ -18998,7 +18981,7 @@ export interface components {
       detail: string
     }
     /** @enum {string} */
-    Factor: 'email_otp' | 'totp'
+    Factor: 'email_otp' | 'totp' | 'apple' | 'github' | 'google'
     /** Feedback */
     Feedback: {
       /**
@@ -35176,26 +35159,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['InvalidAuthenticationSession']
-        }
-      }
-    }
-  }
-  'auth:complete': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
         }
       }
     }
@@ -55272,7 +55235,7 @@ export const eventTypesSortPropertyValues: ReadonlyArray<
 ]
 export const factorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Factor']
-> = ['email_otp', 'totp']
+> = ['email_otp', 'totp', 'apple', 'github', 'google']
 export const feedbackStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FeedbackStatus']
 > = ['new', 'triaged']

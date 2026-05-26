@@ -1,3 +1,5 @@
+import hashlib
+import json
 from datetime import datetime
 
 from polar.config import settings
@@ -17,6 +19,11 @@ from .generator import (
 )
 from .render import render_invoice_pdf
 
+INVOICE_TEMPLATE_VERSION = 1
+"""Bump when the invoice template/rendering or seller-side settings
+(e.g. INVOICES_NAME, INVOICES_ADDRESS) change in a way that should
+invalidate previously generated invoices."""
+
 
 class InvoiceError(PolarError): ...
 
@@ -31,6 +38,34 @@ class MissingAccountBillingDetails(InvoiceError):
 
 
 class InvoiceService:
+    def compute_order_checksum(self, order: Order) -> str:
+        """Checksum over the mutable inputs to invoice generation, used to
+        short-circuit regeneration when nothing affecting the rendered invoice
+        has changed since the last generation.
+
+        Caller must ensure ``order.customer`` is loaded (e.g. via
+        ``OrderRepository.get_eager_options()``).
+        """
+        assert "customer" in order.__dict__, (
+            "order.customer must be loaded before computing the invoice checksum"
+        )
+        billing_address = (
+            order.billing_address.model_dump(mode="json")
+            if order.billing_address
+            else None
+        )
+        payload = json.dumps(
+            [
+                INVOICE_TEMPLATE_VERSION,
+                order.billing_name,
+                billing_address,
+                order.tax_id,
+                order.customer.locale,
+            ],
+            sort_keys=True,
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
     async def create_order_invoice(self, order: Order) -> str:
         invoice = Invoice.from_order(order)
         invoice_bytes = await render_invoice_pdf(invoice)

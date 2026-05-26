@@ -27,6 +27,7 @@ from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
+from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import (
     Address,
     AddressDict,
@@ -65,7 +66,9 @@ from polar.order.schemas import OrderUpdate
 from polar.order.service import (
     ManualRetryLimitExceeded,
     MissingCheckoutCustomer,
+    MissingInvoiceBillingDetails,
     NoPendingBillingEntries,
+    NotPaidOrder,
     NotRecurringProduct,
     OrderNotEligibleForRetry,
     OrderNotPending,
@@ -2355,6 +2358,162 @@ class TestSendConfirmationEmail:
         assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
+
+
+@pytest.mark.asyncio
+class TestTriggerInvoiceGeneration:
+    async def test_not_paid(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        with pytest.raises(NotPaidOrder):
+            await order_service.trigger_invoice_generation(session, order)
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_missing_billing(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+
+        with pytest.raises(MissingInvoiceBillingDetails):
+            await order_service.trigger_invoice_generation(session, order)
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_no_existing_invoice(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        await order_service.trigger_invoice_generation(session, order)
+
+        enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
+
+    async def test_existing_invoice_no_checksum(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        order.invoice_path = "invoices/legacy.pdf"
+
+        await order_service.trigger_invoice_generation(session, order)
+
+        enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
+
+    async def test_checksum_mismatch(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        order.invoice_path = "invoices/old.pdf"
+        order.invoice_checksum = "stale"
+
+        await order_service.trigger_invoice_generation(session, order)
+
+        enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
+
+    async def test_checksum_match_skips(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        order.invoice_path = "invoices/current.pdf"
+        order.invoice_checksum = invoice_service.compute_order_checksum(order)
+
+        await order_service.trigger_invoice_generation(session, order)
+
+        enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestGenerateInvoice:
+    async def test_persists_checksum(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+            return_value="invoices/generated.pdf",
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        updated = await order_service.generate_invoice(session, order)
+
+        assert updated.invoice_path == "invoices/generated.pdf"
+        assert updated.invoice_checksum == invoice_service.compute_order_checksum(
+            updated
+        )
 
 
 @pytest.mark.asyncio

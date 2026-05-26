@@ -157,6 +157,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     invoice_path: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
+    invoice_checksum: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
 
     receipt_number: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None

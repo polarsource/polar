@@ -21,90 +21,73 @@ export const spacing = stylex.defineVars({
 })
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
-// Light values are the default. Dark values are applied via prefers-color-scheme.
+// Light values are the unconditional defaults in `defineVars`. The dark
+// palette lives in the `dark*Theme` exports below and activates only when
+// `<OrbitThemeBinder />` (or a caller-applied `stylex.props(...)` className)
+// is in scope — i.e. when next-themes resolves to `dark`.
+//
+// One source of truth per palette; switching is React-driven via
+// next-themes rather than `prefers-color-scheme`, so explicit user choice
+// always wins on the dashboard and the landing pages can lock to dark.
 // ──────────────────────────────────────────────────────────────────────────────
 
-const DARK = '@media (prefers-color-scheme: dark)'
-
 export const backgroundColors = stylex.defineVars({
-  'background-primary': {
-    default: '#ffffff',
-    [DARK]: 'hsl(233, 4%, 3.5%)',
-  },
-  'background-secondary': {
-    default: 'oklch(0.985 0.002 247.839)',
-    [DARK]: 'hsl(233, 4%, 6.5%)',
-  },
-  'background-card': {
-    default: 'oklch(96.7% 0.003 264.54)',
-    [DARK]: 'hsl(233, 4%, 9.5%)',
-  },
-  'background-inverse': {
-    default: 'oklch(0.21 0.034 264.665)',
-    [DARK]: 'oklch(1.000 0.000 263.3)',
-  },
-  'background-warning': {
-    default: 'oklch(0.97 0.026 102.5)',
-    [DARK]: 'oklch(0.445 0.1 82.5 / 0.2)',
-  },
-  'background-success': {
-    default: 'oklch(0.97 0.04 162)',
-    [DARK]: 'oklch(0.696 0.17 162 / 0.2)',
-  },
-  'background-danger': {
-    default: 'oklch(0.97 0.04 25)',
-    [DARK]: 'oklch(0.637 0.237 25 / 0.2)',
-  },
-  'background-pending': {
-    default: 'oklch(0.96 0.005 264)',
-    [DARK]: 'oklch(0.6 0.02 264 / 0.2)',
-  },
+  'background-primary': '#ffffff',
+  'background-secondary': 'oklch(0.985 0.002 247.839)',
+  'background-card': 'oklch(96.7% 0.003 264.54)',
+  'background-inverse': 'oklch(0.21 0.034 264.665)',
+  'background-warning': 'oklch(0.97 0.026 102.5)',
+  'background-success': 'oklch(0.97 0.04 162)',
+  'background-danger': 'oklch(0.97 0.04 25)',
+  'background-pending': 'oklch(0.96 0.005 264)',
 })
 
 export const textColors = stylex.defineVars({
-  'text-primary': {
-    default: '#000000',
-    [DARK]: '#ffffff',
-  },
-  'text-secondary': {
-    default: 'oklch(0.551 0.027 264.364)',
-    [DARK]: 'oklch(0.599 0.020 279.8)',
-  },
-  'text-tertiary': {
-    default: 'oklch(0.707 0.022 261.325)',
-    [DARK]: 'hsl(233, 4%, 46%)',
-  },
-  'text-success': {
-    default: 'oklch(0.696 0.17 162)',
-    [DARK]: 'oklch(0.696 0.17 162)',
-  },
-  'text-danger': {
-    default: 'oklch(0.637 0.237 25)',
-    [DARK]: 'oklch(0.637 0.237 25)',
-  },
-  'text-warning': {
-    default: 'oklch(0.769 0.188 70)',
-    [DARK]: 'oklch(0.769 0.188 70)',
-  },
-  'text-pending': {
-    default: 'oklch(0.65 0.02 264)',
-    [DARK]: 'oklch(0.7 0.02 264)',
-  },
+  'text-primary': '#000000',
+  'text-secondary': 'oklch(0.551 0.027 264.364)',
+  'text-tertiary': 'oklch(0.707 0.022 261.325)',
+  'text-success': 'oklch(0.696 0.17 162)',
+  'text-danger': 'oklch(0.637 0.237 25)',
+  'text-warning': 'oklch(0.769 0.188 70)',
+  'text-pending': 'oklch(0.65 0.02 264)',
 })
 
 export const borderColors = stylex.defineVars({
-  'border-primary': {
-    default: 'oklch(0.928 0.006 264.531)',
-    [DARK]: 'hsl(233, 4%, 12%)',
-  },
-  'border-secondary': {
-    default: '#f6f6f6',
-    [DARK]: 'oklch(0.206 0.005 279.9)',
-  },
-  'border-warning': {
-    default: 'oklch(0.836 0.138 100)',
-    [DARK]: 'oklch(0.572 0.14 91)',
-  },
+  'border-primary': 'oklch(0.928 0.006 264.531)',
+  'border-secondary': '#f6f6f6',
+  'border-warning': 'oklch(0.836 0.138 100)',
+})
+
+// ─── Dark theme overrides ─────────────────────────────────────────────────────
+// Applied by `<OrbitThemeBinder />` when the active theme is `dark`. Keep
+// each theme aligned to its corresponding `defineVars` block (same keys).
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const darkBackgroundTheme = stylex.createTheme(backgroundColors, {
+  'background-primary': 'hsl(233, 4%, 3.5%)',
+  'background-secondary': 'hsl(233, 4%, 6.5%)',
+  'background-card': 'hsl(233, 4%, 9.5%)',
+  'background-inverse': 'oklch(1.000 0.000 263.3)',
+  'background-warning': 'oklch(0.445 0.1 82.5 / 0.2)',
+  'background-success': 'oklch(0.696 0.17 162 / 0.2)',
+  'background-danger': 'oklch(0.637 0.237 25 / 0.2)',
+  'background-pending': 'oklch(0.6 0.02 264 / 0.2)',
+})
+
+export const darkTextTheme = stylex.createTheme(textColors, {
+  'text-primary': '#ffffff',
+  'text-secondary': 'oklch(0.599 0.020 279.8)',
+  'text-tertiary': 'hsl(233, 4%, 46%)',
+  'text-success': 'oklch(0.696 0.17 162)',
+  'text-danger': 'oklch(0.637 0.237 25)',
+  'text-warning': 'oklch(0.769 0.188 70)',
+  'text-pending': 'oklch(0.7 0.02 264)',
+})
+
+export const darkBorderTheme = stylex.createTheme(borderColors, {
+  'border-primary': 'hsl(233, 4%, 12%)',
+  'border-secondary': 'oklch(0.206 0.005 279.9)',
+  'border-warning': 'oklch(0.572 0.14 91)',
 })
 
 // ─── Border Radius ────────────────────────────────────────────────────────────

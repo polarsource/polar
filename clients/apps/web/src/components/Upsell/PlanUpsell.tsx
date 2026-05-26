@@ -13,6 +13,7 @@ import { useBillingPlanTelemetry } from '@/hooks/useBillingPlanTelemetry'
 import { useDismissed } from '@/hooks/useDismissed'
 import { useImpressionEvent } from '@/hooks/useImpressionEvent'
 import { extractApiErrorMessage } from '@/utils/api/errors'
+import { CONFIG } from '@/utils/config'
 import {
   CurrentPlanContext,
   EARLY_MEMBER_SUBSCRIPTION_SURCHARGE_BPS,
@@ -98,7 +99,10 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
   ])
 
   const isVisible =
-    !!recommendation && !isDismissed && organization.status === 'active'
+    !!recommendation &&
+    !isDismissed &&
+    organization.status === 'active' &&
+    !CONFIG.IS_SANDBOX
 
   useImpressionEvent({
     event: 'dashboard:subscriptions:plan_upsell:view',

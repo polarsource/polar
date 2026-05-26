@@ -1,10 +1,10 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.models import Benefit, Customer, Member, Organization, Subscription
+from polar.models import Benefit, Customer, Member, Order, Organization, Subscription
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit_grant
+from tests.fixtures.random_objects import create_benefit_grant, create_order
 
 
 @pytest.mark.asyncio
@@ -100,6 +100,58 @@ class TestListBenefitGrants:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(grant1.id)
         assert json["items"][0]["member_id"] == str(member1.id)
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_subscription_and_order_summary_in_response(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        customer: Customer,
+    ) -> None:
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=subscription.product,
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization_second,
+            granted=True,
+            order=order,
+        )
+
+        response = await client.get("/v1/customer-portal/benefit-grants/")
+
+        assert response.status_code == 200
+        json = response.json()
+
+        items_by_benefit = {item["benefit_id"]: item for item in json["items"]}
+
+        sub_grant = items_by_benefit[str(benefit_organization.id)]
+        assert sub_grant["subscription"] == {
+            "id": str(subscription.id),
+            "product_name": subscription.product.name,
+        }
+        assert sub_grant["order"] is None
+
+        order_grant = items_by_benefit[str(benefit_organization_second.id)]
+        assert order_grant["subscription"] is None
+        assert order_grant["order"] == {
+            "id": str(order.id),
+            "product_name": order.product.name,
+        }
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_member_id_in_response(

@@ -14074,6 +14074,10 @@ export interface components {
       subscription_id: string | null
       /** Order Id */
       order_id: string | null
+      subscription?:
+        | components['schemas']['CustomerBenefitGrantSubscriptionSummary']
+        | null
+      order?: components['schemas']['CustomerBenefitGrantOrderSummary'] | null
       /** Is Granted */
       is_granted: boolean
       /** Is Revoked */
@@ -14130,6 +14134,10 @@ export interface components {
       subscription_id: string | null
       /** Order Id */
       order_id: string | null
+      subscription?:
+        | components['schemas']['CustomerBenefitGrantSubscriptionSummary']
+        | null
+      order?: components['schemas']['CustomerBenefitGrantOrderSummary'] | null
       /** Is Granted */
       is_granted: boolean
       /** Is Revoked */
@@ -14192,6 +14200,10 @@ export interface components {
       subscription_id: string | null
       /** Order Id */
       order_id: string | null
+      subscription?:
+        | components['schemas']['CustomerBenefitGrantSubscriptionSummary']
+        | null
+      order?: components['schemas']['CustomerBenefitGrantOrderSummary'] | null
       /** Is Granted */
       is_granted: boolean
       /** Is Revoked */
@@ -14248,6 +14260,10 @@ export interface components {
       subscription_id: string | null
       /** Order Id */
       order_id: string | null
+      subscription?:
+        | components['schemas']['CustomerBenefitGrantSubscriptionSummary']
+        | null
+      order?: components['schemas']['CustomerBenefitGrantOrderSummary'] | null
       /** Is Granted */
       is_granted: boolean
       /** Is Revoked */
@@ -14304,6 +14320,10 @@ export interface components {
       subscription_id: string | null
       /** Order Id */
       order_id: string | null
+      subscription?:
+        | components['schemas']['CustomerBenefitGrantSubscriptionSummary']
+        | null
+      order?: components['schemas']['CustomerBenefitGrantOrderSummary'] | null
       /** Is Granted */
       is_granted: boolean
       /** Is Revoked */
@@ -14366,6 +14386,10 @@ export interface components {
       subscription_id: string | null
       /** Order Id */
       order_id: string | null
+      subscription?:
+        | components['schemas']['CustomerBenefitGrantSubscriptionSummary']
+        | null
+      order?: components['schemas']['CustomerBenefitGrantOrderSummary'] | null
       /** Is Granted */
       is_granted: boolean
       /** Is Revoked */
@@ -14422,6 +14446,10 @@ export interface components {
       subscription_id: string | null
       /** Order Id */
       order_id: string | null
+      subscription?:
+        | components['schemas']['CustomerBenefitGrantSubscriptionSummary']
+        | null
+      order?: components['schemas']['CustomerBenefitGrantOrderSummary'] | null
       /** Is Granted */
       is_granted: boolean
       /** Is Revoked */
@@ -14439,6 +14467,17 @@ export interface components {
        */
       benefit_type: 'meter_credit'
     }
+    /** CustomerBenefitGrantOrderSummary */
+    CustomerBenefitGrantOrderSummary: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Product Name */
+      product_name: string
+    }
     /**
      * CustomerBenefitGrantSortProperty
      * @enum {string}
@@ -14452,6 +14491,17 @@ export interface components {
       | '-organization'
       | 'product_benefit'
       | '-product_benefit'
+    /** CustomerBenefitGrantSubscriptionSummary */
+    CustomerBenefitGrantSubscriptionSummary: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Product Name */
+      product_name: string
+    }
     CustomerBenefitGrantUpdate:
       | components['schemas']['CustomerBenefitGrantDiscordUpdate']
       | components['schemas']['CustomerBenefitGrantGitHubRepositoryUpdate']

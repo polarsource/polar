@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, Any, Literal, TypedDict
 
-from pydantic import UUID4, Discriminator, TypeAdapter
+from pydantic import UUID4, Discriminator, TypeAdapter, field_validator
 
 from polar.benefit.strategies.custom.properties import BenefitGrantCustomProperties
 from polar.benefit.strategies.custom.schemas import BenefitCustomSubscriber
@@ -48,6 +48,14 @@ from polar.models.customer import CustomerOAuthPlatform
 from .customer import CustomerPortalCustomer
 
 
+class CustomerBenefitGrantSubscriptionSummary(IDSchema):
+    product_name: str
+
+
+class CustomerBenefitGrantOrderSummary(IDSchema):
+    product_name: str
+
+
 class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
     granted_at: datetime | None
     revoked_at: datetime | None
@@ -56,9 +64,25 @@ class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
     benefit_id: UUID4
     subscription_id: UUID4 | None
     order_id: UUID4 | None
+    subscription: CustomerBenefitGrantSubscriptionSummary | None = None
+    order: CustomerBenefitGrantOrderSummary | None = None
     is_granted: bool
     is_revoked: bool
     error: BenefitGrantError | None = None
+
+    @field_validator("subscription", mode="before")
+    @classmethod
+    def _summarize_subscription(cls, value: Any) -> Any:
+        if value is None or isinstance(value, dict):
+            return value
+        return {"id": value.id, "product_name": value.product.name}
+
+    @field_validator("order", mode="before")
+    @classmethod
+    def _summarize_order(cls, value: Any) -> Any:
+        if value is None or isinstance(value, dict):
+            return value
+        return {"id": value.id, "product_name": value.product.name}
 
 
 class CustomerBenefitGrantDiscord(CustomerBenefitGrantBase):

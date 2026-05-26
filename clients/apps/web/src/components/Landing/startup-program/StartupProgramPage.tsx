@@ -2,7 +2,6 @@
 
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Logotypes } from '../Logotypes'
 import { Section } from '../Section'
 import { StartupProgramFAQ } from './StartupProgramFAQ'
 import { StartupProgramForm } from './StartupProgramForm'
@@ -30,24 +29,7 @@ export const StartupProgramPage = () => {
         </Text>
       </Box>
 
-      <Box
-        width="4rem"
-        borderColor="border-primary"
-        borderTopWidth={2}
-        marginTop="2xl"
-        display="flex"
-      />
-
-      <Section>
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          rowGap="xl"
-        >
-          <Logotypes />
-        </Box>
-      </Section>
+      <Box width="4rem" marginTop="2xl" display="flex" />
 
       <Section>
         <Box

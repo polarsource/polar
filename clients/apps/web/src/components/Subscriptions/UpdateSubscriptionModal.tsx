@@ -48,6 +48,30 @@ const validationDiscriminators = [
   'SubscriptionUpdateBillingPeriod',
 ]
 
+const computeTrialEnd = (
+  trialStart: string,
+  product: schemas['Product'],
+): Date | null => {
+  if (!product.trial_interval || !product.trial_interval_count) return null
+  const d = new Date(trialStart)
+  const count = product.trial_interval_count
+  switch (product.trial_interval) {
+    case 'day':
+      d.setUTCDate(d.getUTCDate() + count)
+      break
+    case 'week':
+      d.setUTCDate(d.getUTCDate() + 7 * count)
+      break
+    case 'month':
+      d.setUTCMonth(d.getUTCMonth() + count)
+      break
+    case 'year':
+      d.setUTCFullYear(d.getUTCFullYear() + count)
+      break
+  }
+  return d
+}
+
 const UpdateProduct = ({
   subscription,
   onUpdate,
@@ -81,29 +105,47 @@ const UpdateProduct = ({
     () => subscription.prices.map(({ id }) => id),
     [subscription],
   )
-  const products = useMemo(
-    () =>
-      allProducts
-        ? allProducts.items
-            .filter((product) => !hasLegacyRecurringPrices(product))
-            .filter((product) => {
-              // If it's a different product, include it
-              if (subscription.product_id !== product.id) {
-                return true
-              }
+  const products = useMemo(() => {
+    if (!allProducts) return []
+    const isTrialing = subscription.status === 'trialing'
+    const currentTrialEndMs =
+      isTrialing && subscription.trial_end
+        ? new Date(subscription.trial_end).getTime()
+        : null
 
-              // For the same product, only include if the price sets are different
-              const productPriceIds = product.prices.map(({ id }) => id)
+    return allProducts.items
+      .filter((product) => !hasLegacyRecurringPrices(product))
+      .filter((product) => {
+        // If it's a different product, include it
+        if (subscription.product_id !== product.id) {
+          return true
+        }
 
-              // Check if price sets are identical (same length and same IDs)
-              if (productPriceIds.length !== activePriceIds.length) {
-                return true
-              }
-              return !productPriceIds.every((id) => activePriceIds.includes(id))
-            })
-        : [],
-    [allProducts, activePriceIds, subscription],
-  )
+        // For the same product, only include if the price sets are different
+        const productPriceIds = product.prices.map(({ id }) => id)
+
+        // Check if price sets are identical (same length and same IDs)
+        if (productPriceIds.length !== activePriceIds.length) {
+          return true
+        }
+        return !productPriceIds.every((id) => activePriceIds.includes(id))
+      })
+      .filter((product) => {
+        // During a trial, only allow targets whose trial period is at least
+        // as long as the current trial — anything shorter is rejected by the
+        // backend with a 403.
+        if (
+          !isTrialing ||
+          !subscription.trial_start ||
+          currentTrialEndMs === null
+        ) {
+          return true
+        }
+        const newTrialEnd = computeTrialEnd(subscription.trial_start, product)
+        if (newTrialEnd === null) return false
+        return newTrialEnd.getTime() >= currentTrialEndMs
+      })
+  }, [allProducts, activePriceIds, subscription])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const selectedProductId = watch('product_id')
@@ -193,7 +235,9 @@ const UpdateProduct = ({
                 </FormControl>
                 {subscription.status === 'trialing' && (
                   <FormDescription>
-                    Product changes are not supported during a trial period
+                    Only products with a trial period at least as long as the
+                    current one are shown. To switch to another product, end the
+                    trial first.
                   </FormDescription>
                 )}
                 <FormMessage />
@@ -233,9 +277,7 @@ const UpdateProduct = ({
             type="submit"
             size="lg"
             loading={updateSubscription.isPending}
-            disabled={
-              updateSubscription.isPending || subscription.status === 'trialing'
-            }
+            disabled={updateSubscription.isPending}
           >
             Update Subscription
           </Button>

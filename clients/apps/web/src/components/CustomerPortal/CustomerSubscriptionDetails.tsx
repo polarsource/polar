@@ -219,16 +219,14 @@ const CustomerSubscriptionDetails = ({
           <Button>Manage subscription</Button>
         </Link>
 
-        {showSubscriptionUpdates &&
-          !isCanceled &&
-          subscription.status !== 'trialing' && (
-            <Button
-              onClick={() => setShowChangePlanModal(true)}
-              variant="secondary"
-            >
-              Change plan
-            </Button>
-          )}
+        {showSubscriptionUpdates && !isCanceled && (
+          <Button
+            onClick={() => setShowChangePlanModal(true)}
+            variant="secondary"
+          >
+            Change plan
+          </Button>
+        )}
 
         <CustomerCancellationModal
           isShown={showCancelModal}

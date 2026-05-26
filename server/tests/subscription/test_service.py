@@ -2379,21 +2379,180 @@ class TestList:
 
 @pytest.mark.asyncio
 class TestUpdateProduct:
-    async def test_trialing_subscription(
+    async def test_trial_to_equal_trial_succeeds(
         self,
-        save_fixture: SaveFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         customer: Customer,
+        organization: Organization,
         product: Product,
     ) -> None:
         subscription = await create_trialing_subscription(
-            save_fixture, product=product, customer=customer
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+        original_trial_end = subscription.trial_end
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        updated = await subscription_service.update_product(
+            session, subscription, product_id=new_product.id
+        )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == original_trial_end
+        assert updated.current_period_end == original_trial_end
+
+    async def test_trial_to_longer_trial_extends(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        trial_start = subscription.trial_start
+        assert trial_start is not None
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=14,
+        )
+
+        updated = await subscription_service.update_product(
+            session, subscription, product_id=new_product.id
+        )
+
+        expected_trial_end = TrialInterval.day.get_end(trial_start, 14)
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == expected_trial_end
+        assert updated.current_period_end == expected_trial_end
+
+    async def test_trial_to_shorter_trial_rejected(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
         )
 
         with pytest.raises(TrialingSubscription):
             await subscription_service.update_product(
-                session, subscription, product_id=uuid.uuid4()
+                session, subscription, product_id=new_product.id
             )
+
+    async def test_trial_to_no_trial_product_rejected(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        with pytest.raises(TrialingSubscription):
+            await subscription_service.update_product(
+                session, subscription, product_id=new_product.id
+            )
+
+    async def test_trial_product_change_skips_proration_billing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=2,
+        )
+
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+
+        create_subscription_update_order_mock.assert_not_called()
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        proration_entries = [
+            entry
+            for entry in billing_entries
+            if entry.type == BillingEntryType.proration
+        ]
+        assert proration_entries == []
 
     async def test_meters(
         self,

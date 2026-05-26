@@ -285,4 +285,18 @@ export default {
     zero: '番',
     many: '番',
   },
+  embedPaymentMethod: {
+    title: '支払い方法を追加',
+    close: '閉じる',
+    submit: '支払い方法を追加',
+    processing: '支払い方法を追加しています…',
+    fallbackError: '問題が発生しました。もう一度お試しください。',
+    errors: {
+      invalidRequest: '必要なパラメータが不足しています。',
+      unauthorized: 'セッションの有効期限が切れました。',
+      processingFailed:
+        '支払い方法を処理できませんでした。もう一度お試しください。',
+      unknown: '問題が発生しました。',
+    },
+  },
 } as const

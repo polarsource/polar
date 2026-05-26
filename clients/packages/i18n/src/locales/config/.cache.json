@@ -1984,6 +1984,15 @@
     "ordinal.few": "rd",
     "ordinal.other": "th",
     "ordinal.zero": "",
-    "ordinal.many": ""
+    "ordinal.many": "",
+    "embedPaymentMethod.title": "Add payment method",
+    "embedPaymentMethod.close": "Close",
+    "embedPaymentMethod.submit": "Add payment method",
+    "embedPaymentMethod.processing": "Adding payment method…",
+    "embedPaymentMethod.fallbackError": "Something went wrong. Please try again.",
+    "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
+    "embedPaymentMethod.errors.unauthorized": "Session expired.",
+    "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
+    "embedPaymentMethod.errors.unknown": "Something went wrong."
   }
 }

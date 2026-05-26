@@ -1181,7 +1181,8 @@ class TestCheckSlugAvailability:
             "/v1/organizations/check-slug", json={"slug": "ab"}
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 200
+        assert response.json() == {"available": False}
 
     @pytest.mark.auth
     async def test_too_long(self, client: AsyncClient) -> None:
@@ -1189,7 +1190,8 @@ class TestCheckSlugAvailability:
             "/v1/organizations/check-slug", json={"slug": "a" * 65}
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 200
+        assert response.json() == {"available": False}
 
     @pytest.mark.auth
     async def test_invalid_format(self, client: AsyncClient) -> None:
@@ -1197,7 +1199,8 @@ class TestCheckSlugAvailability:
             "/v1/organizations/check-slug", json={"slug": "Invalid Slug!"}
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 200
+        assert response.json() == {"available": False}
 
     @pytest.mark.auth
     async def test_reserved(self, client: AsyncClient) -> None:
@@ -1205,7 +1208,8 @@ class TestCheckSlugAvailability:
             "/v1/organizations/check-slug", json={"slug": "dashboard"}
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 200
+        assert response.json() == {"available": False}
 
     @pytest.mark.auth
     async def test_blocked_word(self, client: AsyncClient) -> None:
@@ -1213,4 +1217,5 @@ class TestCheckSlugAvailability:
             "/v1/organizations/check-slug", json={"slug": "porn-shop"}
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 200
+        assert response.json() == {"available": False}

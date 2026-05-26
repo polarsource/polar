@@ -88,7 +88,7 @@ SlugInput = Annotated[
 
 
 class OrganizationSlugCheck(Schema):
-    slug: SlugInput = Field(description="The slug to check availability for.")
+    slug: str = Field(description="The slug to check availability for.")
 
 
 class OrganizationSlugAvailability(Schema):

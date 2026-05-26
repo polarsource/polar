@@ -82,7 +82,6 @@ from polar.subscription.service import (
     NotARecurringProduct,
     NotASeatBasedSubscription,
     SeatsAlreadyAssigned,
-    TrialingSubscription,
 )
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.update import generate_subscription_update
@@ -2488,8 +2487,9 @@ class TestUpdateProduct:
         assert updated.trial_end == expected_trial_end
         assert updated.current_period_end == expected_trial_end
 
-    async def test_trial_to_shorter_trial_already_elapsed_rejected(
+    async def test_trial_to_shorter_trial_already_elapsed_ends_trial(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -2514,14 +2514,24 @@ class TestUpdateProduct:
             trial_interval_count=7,
         )
 
-        with freezegun.freeze_time(trial_creation_time + timedelta(days=10)):
-            with pytest.raises(TrialingSubscription):
-                await subscription_service.update_product(
-                    session, subscription, product_id=new_product.id
-                )
+        change_time = trial_creation_time + timedelta(days=10)
+        with freezegun.freeze_time(change_time):
+            updated = await subscription_service.update_product(
+                session, subscription, product_id=new_product.id
+            )
 
-    async def test_trial_to_no_trial_product_rejected(
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.active
+        assert updated.trial_end == change_time
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            updated.id,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
+
+    async def test_trial_to_no_trial_product_ends_trial(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -2542,10 +2552,17 @@ class TestUpdateProduct:
             recurring_interval=SubscriptionRecurringInterval.month,
         )
 
-        with pytest.raises(TrialingSubscription):
-            await subscription_service.update_product(
-                session, subscription, product_id=new_product.id
-            )
+        updated = await subscription_service.update_product(
+            session, subscription, product_id=new_product.id
+        )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.active
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            updated.id,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
 
     async def test_trial_product_change_skips_proration_billing(
         self,

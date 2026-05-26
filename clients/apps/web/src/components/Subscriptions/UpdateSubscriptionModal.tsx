@@ -108,7 +108,6 @@ const UpdateProduct = ({
   )
   const products = useMemo(() => {
     if (!allProducts) return []
-    const isTrialing = subscription.status === 'trialing'
 
     return allProducts.items
       .filter((product) => !hasLegacyRecurringPrices(product))
@@ -127,17 +126,6 @@ const UpdateProduct = ({
         }
         return !productPriceIds.every((id) => activePriceIds.includes(id))
       })
-      .filter((product) => {
-        // During a trial, only allow targets whose trial period still has
-        // time remaining given the current trial usage — anything that would
-        // already be over is rejected by the backend with a 403.
-        if (!isTrialing || !subscription.trial_start) {
-          return true
-        }
-        const newTrialEnd = computeTrialEnd(subscription.trial_start, product)
-        if (newTrialEnd === null) return false
-        return newTrialEnd.getTime() > Date.now()
-      })
   }, [allProducts, activePriceIds, subscription])
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -146,6 +134,26 @@ const UpdateProduct = ({
     () => products.find((product) => product.id === selectedProductId),
     [products, selectedProductId],
   )
+
+  // When changing product during a trial, determine whether the trial
+  // continues with the new product or ends immediately (triggering a charge).
+  const trialOutcome = useMemo<
+    { kind: 'continues'; trialEnd: Date } | { kind: 'ends' } | null
+  >(() => {
+    if (subscription.status !== 'trialing') return null
+    if (!selectedProduct || selectedProduct.id === subscription.product.id)
+      return null
+    if (!subscription.trial_start) return null
+
+    const newTrialEnd = computeTrialEnd(
+      subscription.trial_start,
+      selectedProduct,
+    )
+    if (newTrialEnd && newTrialEnd.getTime() > Date.now()) {
+      return { kind: 'continues', trialEnd: newTrialEnd }
+    }
+    return { kind: 'ends' }
+  }, [subscription, selectedProduct])
 
   const onSubmit = useCallback(
     async (body: schemas['SubscriptionUpdateProduct']) => {
@@ -226,19 +234,6 @@ const UpdateProduct = ({
                     </Select>
                   </div>
                 </FormControl>
-                {subscription.status === 'trialing' && (
-                  <FormDescription>
-                    <Box
-                      padding="m"
-                      borderRadius="m"
-                      backgroundColor="background-secondary"
-                    >
-                      Only products with a trial long enough to carry over the
-                      time already elapsed are shown. End the trial to switch to
-                      any other product.
-                    </Box>
-                  </FormDescription>
-                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -273,7 +268,9 @@ const UpdateProduct = ({
             loading={updateSubscription.isPending}
             disabled={updateSubscription.isPending}
           >
-            Update Subscription
+            {trialOutcome?.kind === 'ends'
+              ? 'Update Subscription & End Trial'
+              : 'Update Subscription'}
           </Button>
           {selectedProduct &&
             selectedProduct.id !== subscription.product.id && (
@@ -281,7 +278,40 @@ const UpdateProduct = ({
                 padding="m"
                 borderRadius="m"
                 backgroundColor="background-warning"
+                display="flex"
+                flexDirection="column"
+                rowGap="s"
               >
+                {trialOutcome?.kind === 'ends' && (
+                  <p className="text-sm text-yellow-700">
+                    This change will end the current trial and{' '}
+                    <strong className="font-medium">
+                      charge the customer immediately
+                    </strong>{' '}
+                    for the first billing period of{' '}
+                    <strong className="font-medium">
+                      {selectedProduct.name}
+                    </strong>
+                    .
+                  </p>
+                )}
+                {trialOutcome?.kind === 'continues' && (
+                  <p className="text-sm text-yellow-700">
+                    The trial will continue until{' '}
+                    <strong className="font-medium">
+                      {trialOutcome.trialEnd.toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year:
+                          trialOutcome.trialEnd.getFullYear() ===
+                          new Date().getFullYear()
+                            ? undefined
+                            : 'numeric',
+                      })}
+                    </strong>
+                    . The customer won&apos;t be charged before then.
+                  </p>
+                )}
                 <p className="text-sm text-yellow-700">
                   By updating this subscription, the customer will get access to{' '}
                   <strong className="font-medium">

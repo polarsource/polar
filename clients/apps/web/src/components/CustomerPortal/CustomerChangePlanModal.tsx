@@ -6,6 +6,7 @@ import {
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
 import { hasLegacyRecurringPrices } from '@/utils/product'
+import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -15,30 +16,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
-
-const computeTrialEnd = (
-  trialStart: string,
-  product: schemas['CustomerProduct'],
-): Date | null => {
-  if (!product.trial_interval || !product.trial_interval_count) return null
-  const d = new Date(trialStart)
-  const count = product.trial_interval_count
-  switch (product.trial_interval) {
-    case 'day':
-      d.setUTCDate(d.getUTCDate() + count)
-      break
-    case 'week':
-      d.setUTCDate(d.getUTCDate() + 7 * count)
-      break
-    case 'month':
-      d.setUTCMonth(d.getUTCMonth() + count)
-      break
-    case 'year':
-      d.setUTCFullYear(d.getUTCFullYear() + count)
-      break
-  }
-  return d
-}
 
 const ProductPriceListItem = ({
   product,
@@ -129,24 +106,7 @@ const CustomerChangePlanModal = ({
     [organization],
   )
 
-  const trialOutcome = useMemo<
-    { kind: 'continues'; trialEnd: Date } | { kind: 'ends' } | null
-  >(() => {
-    if (subscription.status !== 'trialing') return null
-    if (!selectedProduct || selectedProduct.id === subscription.product.id)
-      return null
-    if (!subscription.trial_start) return null
-
-    const newTrialEnd = computeTrialEnd(
-      subscription.trial_start,
-      selectedProduct,
-    )
-    // eslint-disable-next-line react-hooks/purity
-    if (newTrialEnd && newTrialEnd.getTime() > Date.now()) {
-      return { kind: 'continues', trialEnd: newTrialEnd }
-    }
-    return { kind: 'ends' }
-  }, [subscription, selectedProduct])
+  const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
 
   const isTrialing = subscription.status === 'trialing'
 
@@ -182,15 +142,7 @@ const CustomerChangePlanModal = ({
     if (!selectedProduct) return null
 
     if (trialOutcome?.kind === 'continues') {
-      const formatted = trialOutcome.trialEnd.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year:
-          trialOutcome.trialEnd.getFullYear() === new Date().getFullYear()
-            ? undefined
-            : 'numeric',
-      })
-      return `Your trial will continue until ${formatted}. You won't be charged before then.`
+      return `Your trial will continue until ${formatTrialEnd(trialOutcome.trialEnd)}. You won't be charged before then.`
     }
 
     if (trialOutcome?.kind === 'ends') {

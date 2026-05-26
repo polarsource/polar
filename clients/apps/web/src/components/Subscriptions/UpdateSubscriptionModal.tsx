@@ -5,7 +5,9 @@ import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import { hasLegacyRecurringPrices } from '@/utils/product'
+import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { isValidationError, schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
@@ -40,7 +42,6 @@ import { useModal } from '../Modal/useModal'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { ProrationBehavior } from '../Settings/ProrationBehavior'
 import { toast } from '../Toast/use-toast'
-import { Box } from '@polar-sh/orbit/Box'
 
 const validationDiscriminators = [
   'SubscriptionUpdateProduct',
@@ -48,30 +49,6 @@ const validationDiscriminators = [
   'SubscriptionUpdateTrial',
   'SubscriptionUpdateBillingPeriod',
 ]
-
-const computeTrialEnd = (
-  trialStart: string,
-  product: schemas['Product'],
-): Date | null => {
-  if (!product.trial_interval || !product.trial_interval_count) return null
-  const d = new Date(trialStart)
-  const count = product.trial_interval_count
-  switch (product.trial_interval) {
-    case 'day':
-      d.setUTCDate(d.getUTCDate() + count)
-      break
-    case 'week':
-      d.setUTCDate(d.getUTCDate() + 7 * count)
-      break
-    case 'month':
-      d.setUTCMonth(d.getUTCMonth() + count)
-      break
-    case 'year':
-      d.setUTCFullYear(d.getUTCFullYear() + count)
-      break
-  }
-  return d
-}
 
 const UpdateProduct = ({
   subscription,
@@ -135,25 +112,7 @@ const UpdateProduct = ({
     [products, selectedProductId],
   )
 
-  // When changing product during a trial, determine whether the trial
-  // continues with the new product or ends immediately (triggering a charge).
-  const trialOutcome = useMemo<
-    { kind: 'continues'; trialEnd: Date } | { kind: 'ends' } | null
-  >(() => {
-    if (subscription.status !== 'trialing') return null
-    if (!selectedProduct || selectedProduct.id === subscription.product.id)
-      return null
-    if (!subscription.trial_start) return null
-
-    const newTrialEnd = computeTrialEnd(
-      subscription.trial_start,
-      selectedProduct,
-    )
-    if (newTrialEnd && newTrialEnd.getTime() > Date.now()) {
-      return { kind: 'continues', trialEnd: newTrialEnd }
-    }
-    return { kind: 'ends' }
-  }, [subscription, selectedProduct])
+  const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
 
   const onSubmit = useCallback(
     async (body: schemas['SubscriptionUpdateProduct']) => {
@@ -299,15 +258,7 @@ const UpdateProduct = ({
                   <p className="text-sm text-yellow-700">
                     The trial will continue until{' '}
                     <strong className="font-medium">
-                      {trialOutcome.trialEnd.toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year:
-                          trialOutcome.trialEnd.getFullYear() ===
-                          new Date().getFullYear()
-                            ? undefined
-                            : 'numeric',
-                      })}
+                      {formatTrialEnd(trialOutcome.trialEnd)}
                     </strong>
                     . The customer won&apos;t be charged before then.
                   </p>

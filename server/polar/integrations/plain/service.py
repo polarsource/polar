@@ -34,8 +34,10 @@ from plain_client import (
     TenantIdentifierInput,
     ThreadsFilter,
     ThreadStatus,
+    ThreadsThreadsEdgesNode,
     TierIdentifierInput,
     UpdateTenantTierInput,
+    UpdateThreadTenantInput,
     UpsertCustomerIdentifierInput,
     UpsertCustomerInput,
     UpsertCustomerOnCreateInput,
@@ -1565,6 +1567,61 @@ class PlainService:
             if result.error is not None:
                 raise TenantOperationError(
                     tenant_external_id, "update_tier", result.error.message
+                )
+
+    async def iter_threads_without_tenant(
+        self,
+        *,
+        page_size: int = 50,
+        statuses: list[ThreadStatus] | None = None,
+    ) -> AsyncIterator[ThreadsThreadsEdgesNode]:
+        if not self.enabled:
+            return
+
+        filters = ThreadsFilter(statuses=statuses) if statuses else None
+        cursor: str | None = None
+        async with self._get_plain_client() as plain:
+            while True:
+                page = await plain.threads(
+                    filters=filters, first=page_size, after=cursor
+                )
+                for edge in page.edges:
+                    if edge.node.tenant is None:
+                        yield edge.node
+                if not page.page_info.has_next_page:
+                    break
+                cursor = page.page_info.end_cursor
+
+    async def get_customer_email(self, customer_id: str) -> str | None:
+        if not self.enabled:
+            return None
+
+        async with self._get_plain_client() as plain:
+            customer = await plain.customer_by_id(customer_id=customer_id)
+        if customer is None:
+            return None
+        return customer.email.email
+
+    async def update_thread_tenant(
+        self, *, thread_id: str, tenant_external_id: str
+    ) -> None:
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            result = await plain.update_thread_tenant(
+                UpdateThreadTenantInput(
+                    thread_id=thread_id,
+                    tenant_identifier=TenantIdentifierInput(
+                        external_id=tenant_external_id
+                    ),
+                )
+            )
+            if result.error is not None:
+                raise TenantOperationError(
+                    tenant_external_id,
+                    f"update_thread_tenant {thread_id}",
+                    result.error.message,
                 )
 
     @contextlib.asynccontextmanager

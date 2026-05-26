@@ -406,6 +406,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         refunded_tax_amount = abs(
             round((self.tax_amount * total_refund_amount) / self.total_amount)
         )
+        refunded_tax_amount = min(refunded_tax_amount, self.refundable_tax_amount)
         refunded_amount = total_refund_amount - refunded_tax_amount
         return refunded_amount, refunded_tax_amount
 

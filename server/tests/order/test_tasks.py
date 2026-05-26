@@ -360,6 +360,13 @@ class TestProcessDunningOrder:
             trigger=PaymentTrigger.purchase,
             order=order,
         )
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
+            order=order,
+        )
 
         # When: retry attempt fails
         result_order = await order_service.handle_payment_failure(session, order)
@@ -403,8 +410,10 @@ class TestProcessDunningOrder:
         order.next_payment_attempt_at = very_old_time
         await save_fixture(order)
 
-        # Create 4 failed payments to exhaust all retry attempts
-        for _ in range(4):
+        # Initial cycle failure + all DUNNING_RETRY_INTERVALS retries failed
+        from polar.config import settings
+
+        for _ in range(len(settings.DUNNING_RETRY_INTERVALS) + 1):
             await create_payment(
                 save_fixture,
                 organization,

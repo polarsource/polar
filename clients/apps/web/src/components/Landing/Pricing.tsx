@@ -51,44 +51,41 @@ const TIERS: Tier[] = [
 ]
 
 export const Pricing = () => (
-  <Box
-    as="section"
-    id="pricing"
-    display="flex"
-    flexDirection="column"
-    rowGap="5xl"
-  >
-    <Box display="flex" flexDirection="column" rowGap="xl">
-      <Text variant="heading-xl" as="h2" wrap="balance">
-        Built to scale with you.
-      </Text>
-      <Box maxWidth="56rem">
-        <Text variant="heading-xs" wrap="balance" color="muted">
-          Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
+  <>
+    <span id="pricing" className="block scroll-mt-12 md:scroll-mt-28" />
+    <Box as="section" display="flex" flexDirection="column" rowGap="5xl">
+      <Box display="flex" flexDirection="column" rowGap="xl">
+        <Text variant="heading-xl" as="h2" wrap="balance">
+          Built to scale with you.
         </Text>
+        <Box maxWidth="56rem">
+          <Text variant="heading-xs" wrap="balance" color="muted">
+            Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
+          </Text>
+        </Box>
+        <Box display="flex" alignItems="center" columnGap="m" paddingTop="m">
+          <GetStartedButton size="default" />
+          <Link href="mailto:support@polar.sh">
+            <Button variant="secondary">Contact Sales</Button>
+          </Link>
+        </Box>
       </Box>
-      <Box display="flex" alignItems="center" columnGap="m" paddingTop="m">
-        <GetStartedButton size="default" />
-        <Link href="mailto:support@polar.sh">
-          <Button variant="secondary">Contact Sales</Button>
-        </Link>
-      </Box>
-    </Box>
 
-    <Box
-      display="grid"
-      gridTemplateColumns={{
-        base: '1fr',
-        sm: 'repeat(2, 1fr)',
-        xl: 'repeat(4, 1fr)',
-      }}
-      gap="l"
-    >
-      {TIERS.map((tier) => (
-        <TierCard key={tier.name} tier={tier} />
-      ))}
+      <Box
+        display="grid"
+        gridTemplateColumns={{
+          base: '1fr',
+          sm: 'repeat(2, 1fr)',
+          xl: 'repeat(4, 1fr)',
+        }}
+        gap="l"
+      >
+        {TIERS.map((tier) => (
+          <TierCard key={tier.name} tier={tier} />
+        ))}
+      </Box>
     </Box>
-  </Box>
+  </>
 )
 
 const TierCard = ({ tier }: { tier: Tier }) => (

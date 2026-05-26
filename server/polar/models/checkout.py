@@ -138,22 +138,32 @@ class Checkout(
         Boolean, nullable=False, default=False
     )
 
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
-    )
+    amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=True)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     min_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     max_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
-    net_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    net_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    net_amount: Mapped[int] = mapped_column("net_amount_v2", BigInteger, nullable=True)
+    tax_amount: Mapped[int | None] = mapped_column(
+        "tax_amount_v2", BigInteger, nullable=True, default=None
     )
-    tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
-    tax_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+
+    # Legacy int4 columns retained while the dual-column sync trigger is active.
+    # Deferred so they never appear in default SELECTs. No default=None — that
+    # would force SQLAlchemy to include the column in every INSERT, which would
+    # break running pods once the cleanup migration drops the column.
+    # The bidirectional trigger fills these from the v2 columns on INSERT, so
+    # the NOT NULL constraints on legacy_amount and legacy_net_amount are still
+    # satisfied even when ORM code only sets the (v2-backed) amount attribute.
+    legacy_amount: Mapped[int] = mapped_column(
+        "amount", Integer, nullable=False, deferred=True
+    )
+    legacy_net_amount: Mapped[int] = mapped_column(
+        "net_amount", Integer, nullable=False, deferred=True
+    )
+    legacy_tax_amount: Mapped[int | None] = mapped_column(
+        "tax_amount", Integer, nullable=True, deferred=True
     )
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
         StringEnum(TaxProcessor), default=None, nullable=True

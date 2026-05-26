@@ -88,10 +88,7 @@ SlugInput = Annotated[
 
 
 class OrganizationSlugCheck(Schema):
-    slug: str = Field(
-        description="The slug to check availability for.",
-        max_length=SLUG_MAX_LENGTH,
-    )
+    slug: SlugInput = Field(description="The slug to check availability for.")
 
 
 class OrganizationSlugAvailability(Schema):

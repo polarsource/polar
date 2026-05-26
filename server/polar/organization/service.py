@@ -10,7 +10,6 @@ import email_validator
 import structlog
 from pydantic import BaseModel, Field
 from pydantic import ValidationError as PydanticValidationError
-from slugify import slugify
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -85,7 +84,6 @@ from polar.worker import enqueue_job
 
 from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
-    SLUG_MAX_LENGTH,
     OrganizationCreate,
     OrganizationDeletionBlockedReason,
     OrganizationReviewAppeal,
@@ -100,8 +98,6 @@ from .schemas import (
     OrganizationReviewVerdict,
     OrganizationSlugAvailability,
     OrganizationUpdate,
-    validate_blocked_words,
-    validate_reserved_keywords,
 )
 from .sorting import OrganizationSortProperty
 
@@ -271,28 +267,13 @@ class OrganizationService:
     async def check_slug_availability(
         self, session: AsyncReadSession, slug: str
     ) -> OrganizationSlugAvailability:
-        """Check whether a slug is valid and available for a new organization.
+        """Check whether a slug is available for a new organization.
 
-        Mirrors the validation rules of the `SlugInput` type plus a
-        check against existing (and soft-deleted) organizations.
+        Format validation is handled by the `SlugInput` schema; this only
+        checks that no existing (or soft-deleted) organization owns it.
         """
-        normalized = slug.lower()
-
-        if (
-            len(normalized) < 3
-            or len(normalized) > SLUG_MAX_LENGTH
-            or slugify(normalized) != normalized
-        ):
-            return OrganizationSlugAvailability(available=False)
-
-        try:
-            validate_reserved_keywords(normalized)
-            validate_blocked_words(normalized)
-        except ValueError:
-            return OrganizationSlugAvailability(available=False)
-
         repository = OrganizationRepository.from_session(session)
-        if await repository.slug_exists(normalized):
+        if await repository.slug_exists(slug):
             return OrganizationSlugAvailability(available=False)
 
         return OrganizationSlugAvailability(available=True)

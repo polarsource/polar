@@ -1129,10 +1129,10 @@ class SubscriptionService:
             new_trial_end = product.trial_interval.get_end(
                 subscription.trial_start, product.trial_interval_count
             )
-            if new_trial_end < subscription.trial_end:
+            if new_trial_end <= utc_now():
                 raise TrialingSubscription(
                     subscription,
-                    "Can't change to a product with a shorter trial period during a trial.",
+                    "Can't change to a product whose trial period would already be over given the current trial usage.",
                 )
 
         # Add event for the subscription plan change

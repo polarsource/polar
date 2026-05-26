@@ -108,10 +108,6 @@ const UpdateProduct = ({
   const products = useMemo(() => {
     if (!allProducts) return []
     const isTrialing = subscription.status === 'trialing'
-    const currentTrialEndMs =
-      isTrialing && subscription.trial_end
-        ? new Date(subscription.trial_end).getTime()
-        : null
 
     return allProducts.items
       .filter((product) => !hasLegacyRecurringPrices(product))
@@ -131,19 +127,15 @@ const UpdateProduct = ({
         return !productPriceIds.every((id) => activePriceIds.includes(id))
       })
       .filter((product) => {
-        // During a trial, only allow targets whose trial period is at least
-        // as long as the current trial — anything shorter is rejected by the
-        // backend with a 403.
-        if (
-          !isTrialing ||
-          !subscription.trial_start ||
-          currentTrialEndMs === null
-        ) {
+        // During a trial, only allow targets whose trial period still has
+        // time remaining given the current trial usage — anything that would
+        // already be over is rejected by the backend with a 403.
+        if (!isTrialing || !subscription.trial_start) {
           return true
         }
         const newTrialEnd = computeTrialEnd(subscription.trial_start, product)
         if (newTrialEnd === null) return false
-        return newTrialEnd.getTime() >= currentTrialEndMs
+        return newTrialEnd.getTime() > Date.now()
       })
   }, [allProducts, activePriceIds, subscription])
 
@@ -235,9 +227,9 @@ const UpdateProduct = ({
                 </FormControl>
                 {subscription.status === 'trialing' && (
                   <FormDescription>
-                    Only products with a trial period at least as long as the
-                    current one are shown. To switch to another product, end the
-                    trial first.
+                    Only products whose trial period still has remaining time
+                    given your current trial usage are shown. To switch to
+                    another product, end the trial first.
                   </FormDescription>
                 )}
                 <FormMessage />

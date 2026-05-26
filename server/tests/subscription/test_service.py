@@ -2449,7 +2449,7 @@ class TestUpdateProduct:
         assert updated.trial_end == expected_trial_end
         assert updated.current_period_end == expected_trial_end
 
-    async def test_trial_to_shorter_trial_rejected(
+    async def test_trial_to_shorter_trial_with_remaining_time_succeeds(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2457,13 +2457,17 @@ class TestUpdateProduct:
         organization: Organization,
         product: Product,
     ) -> None:
-        subscription = await create_trialing_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            trial_interval=TrialInterval.month,
-            trial_interval_count=1,
-        )
+        trial_creation_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
+        with freezegun.freeze_time(trial_creation_time):
+            subscription = await create_trialing_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                trial_interval=TrialInterval.day,
+                trial_interval_count=30,
+            )
+        trial_start = subscription.trial_start
+        assert trial_start is not None
 
         new_product = await create_product(
             save_fixture,
@@ -2473,10 +2477,48 @@ class TestUpdateProduct:
             trial_interval_count=7,
         )
 
-        with pytest.raises(TrialingSubscription):
-            await subscription_service.update_product(
+        with freezegun.freeze_time(trial_creation_time + timedelta(days=1)):
+            updated = await subscription_service.update_product(
                 session, subscription, product_id=new_product.id
             )
+
+        expected_trial_end = TrialInterval.day.get_end(trial_start, 7)
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == expected_trial_end
+        assert updated.current_period_end == expected_trial_end
+
+    async def test_trial_to_shorter_trial_already_elapsed_rejected(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        trial_creation_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
+        with freezegun.freeze_time(trial_creation_time):
+            subscription = await create_trialing_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                trial_interval=TrialInterval.day,
+                trial_interval_count=30,
+            )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+
+        with freezegun.freeze_time(trial_creation_time + timedelta(days=10)):
+            with pytest.raises(TrialingSubscription):
+                await subscription_service.update_product(
+                    session, subscription, product_id=new_product.id
+                )
 
     async def test_trial_to_no_trial_product_rejected(
         self,

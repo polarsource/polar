@@ -14,7 +14,8 @@ from polar.exceptions import (
 )
 
 
-async def polar_exception_handler(request: Request, exc: PolarError) -> JSONResponse:
+async def polar_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, PolarError)
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": type(exc).__name__, "detail": exc.message},
@@ -23,8 +24,9 @@ async def polar_exception_handler(request: Request, exc: PolarError) -> JSONResp
 
 
 async def request_validation_exception_handler(
-    request: Request, exc: RequestValidationError | PolarRequestValidationError
+    request: Request, exc: Exception
 ) -> JSONResponse:
+    assert isinstance(exc, (RequestValidationError, PolarRequestValidationError))
     return JSONResponse(
         status_code=422,
         content={"error": type(exc).__name__, "detail": jsonable_encoder(exc.errors())},
@@ -32,8 +34,9 @@ async def request_validation_exception_handler(
 
 
 async def polar_redirection_exception_handler(
-    request: Request, exc: PolarRedirectionError
+    request: Request, exc: Exception
 ) -> RedirectResponse:
+    assert isinstance(exc, PolarRedirectionError)
     error_url_params = urlencode(
         {
             "message": exc.message,
@@ -44,28 +47,21 @@ async def polar_redirection_exception_handler(
     return RedirectResponse(error_url, 303)
 
 
-async def polar_not_modified_handler(
-    request: Request, exc: ResourceNotModified
-) -> Response:
+async def polar_not_modified_handler(request: Request, exc: Exception) -> Response:
+    assert isinstance(exc, ResourceNotModified)
     return Response(status_code=exc.status_code)
 
 
 def add_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(
-        PolarRedirectionError,
-        polar_redirection_exception_handler,  # type: ignore
+        PolarRedirectionError, polar_redirection_exception_handler
     )
-    app.add_exception_handler(
-        ResourceNotModified,
-        polar_not_modified_handler,  # type: ignore
-    )
+    app.add_exception_handler(ResourceNotModified, polar_not_modified_handler)
 
     app.add_exception_handler(
-        RequestValidationError,
-        request_validation_exception_handler,  # type: ignore
+        RequestValidationError, request_validation_exception_handler
     )
     app.add_exception_handler(
-        PolarRequestValidationError,
-        request_validation_exception_handler,  # type: ignore
+        PolarRequestValidationError, request_validation_exception_handler
     )
-    app.add_exception_handler(PolarError, polar_exception_handler)  # type: ignore
+    app.add_exception_handler(PolarError, polar_exception_handler)

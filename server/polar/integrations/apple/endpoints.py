@@ -127,7 +127,7 @@ async def apple_callback(
         posthog.user_login(user, "apple")
 
     response = await auth_service.get_login_response(
-        session, request, user, return_to=return_to, login_method="apple"
+        session, request, user, return_to=return_to, factor="apple"
     )
     clear_login_cookie(request, response, cross_site=True)
     return response

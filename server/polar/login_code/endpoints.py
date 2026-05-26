@@ -77,5 +77,5 @@ async def authenticate_login_code(
         posthog.user_login(user, "code")
 
     return await auth_service.get_login_response(
-        session, request, user, return_to=return_to, login_method="email"
+        session, request, user, return_to=return_to, factor="email_otp"
     )

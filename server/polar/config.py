@@ -126,6 +126,11 @@ class Settings(BaseSettings):
     AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_auth_session"
     AUTHENTICATION_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
 
+    # OAuth2 session state
+    OAUTH2_SESSION_STATE_TTL: timedelta = timedelta(minutes=10)
+    OAUTH2_SESSION_STATE_COOKIE_KEY: str = "polar_oauth2_state"
+    OAUTH2_SESSION_STATE_COOKIE_DOMAIN: str = "127.0.0.1"
+
     # User session
     USER_SESSION_TTL: timedelta = timedelta(days=31)
     USER_SESSION_COOKIE_KEY: str = "polar_session"

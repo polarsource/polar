@@ -141,7 +141,7 @@ async def login_callback(
         posthog.user_login(user, "github")
 
     response = await auth_service.get_login_response(
-        session, request, user, return_to=return_to, login_method="github"
+        session, request, user, return_to=return_to, factor="github"
     )
     clear_login_cookie(request, response)
     return response

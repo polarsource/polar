@@ -4,6 +4,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
+from reauth.factors.oauth2.base import OAuth2Enrollment as OAuth2EnrollmentDataclass
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -97,6 +98,19 @@ class OAuthAccount(RecordModel):
         ):
             return True
         return False
+
+    def to_dataclass(self, scope: list[str]) -> OAuth2EnrollmentDataclass:
+        return OAuth2EnrollmentDataclass(
+            id=self.id,
+            provider=self.platform,
+            scope=scope,
+            access_token=self.access_token,
+            expires_at=self.expires_at,
+            refresh_token=self.refresh_token,
+            refresh_token_expires_at=self.refresh_token_expires_at,
+            account_id=self.account_id,
+            identity_id=self.user_id,
+        )
 
 
 class User(RecordModel):

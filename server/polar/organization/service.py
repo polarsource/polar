@@ -85,6 +85,7 @@ from polar.worker import enqueue_job
 
 from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
+    SLUG_MAX_LENGTH,
     OrganizationCreate,
     OrganizationDeletionBlockedReason,
     OrganizationReviewAppeal,
@@ -277,7 +278,11 @@ class OrganizationService:
         """
         normalized = slug.lower()
 
-        if len(normalized) < 3 or slugify(normalized) != normalized:
+        if (
+            len(normalized) < 3
+            or len(normalized) > SLUG_MAX_LENGTH
+            or slugify(normalized) != normalized
+        ):
             return OrganizationSlugAvailability(available=False)
 
         try:

@@ -14,6 +14,7 @@ import {
 import { useEffect } from 'react'
 import { type UseFormReturn, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
+import { ORGANIZATION_SLUG_MAX_LENGTH } from '@/utils/blocked-words'
 import { CurrencySelector } from '../CurrencySelector'
 import { useOnboardingData } from './OnboardingContext'
 
@@ -35,7 +36,13 @@ export function OrgNameSlugSync({ editedSlug }: { editedSlug: boolean }) {
 
   useEffect(() => {
     if (!editedSlug && orgName) {
-      setValue('orgSlug', slugify(orgName, { lower: true, strict: true }))
+      setValue(
+        'orgSlug',
+        slugify(orgName, { lower: true, strict: true }).slice(
+          0,
+          ORGANIZATION_SLUG_MAX_LENGTH,
+        ),
+      )
     }
   }, [orgName, editedSlug, setValue])
 
@@ -70,6 +77,7 @@ function SlugPreview({
       {editingSlug ? (
         <input
           value={orgSlug}
+          maxLength={ORGANIZATION_SLUG_MAX_LENGTH}
           onChange={(e) => {
             setValue(
               'orgSlug',
@@ -77,7 +85,7 @@ function SlugPreview({
                 lower: true,
                 trim: false,
                 strict: true,
-              }),
+              }).slice(0, ORGANIZATION_SLUG_MAX_LENGTH),
             )
             onEditSlug()
           }}

@@ -89,3 +89,15 @@ class TestBlockedWords:
     def test_update_without_name_skips_validation(self) -> None:
         org = OrganizationUpdate(name=None)
         assert org.name is None
+
+
+class TestSlugMaxLength:
+    def test_slug_at_max_length_allowed(self) -> None:
+        slug = "a" * 64
+        org = OrganizationCreate(name="Clean Name", slug=slug)
+        assert org.slug == slug
+
+    def test_slug_too_long_rejected(self) -> None:
+        slug = "a" * 65
+        with pytest.raises(ValidationError, match="at most 64 characters"):
+            OrganizationCreate(name="Clean Name", slug=slug)

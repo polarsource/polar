@@ -22,7 +22,10 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
-import { containsBlockedWord } from '@/utils/blocked-words'
+import {
+  ORGANIZATION_SLUG_MAX_LENGTH,
+  containsBlockedWord,
+} from '@/utils/blocked-words'
 import { CurrencySelector } from '../CurrencySelector'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
@@ -68,7 +71,13 @@ function OrgNameSync({
 
   useEffect(() => {
     if (!editedSlug && name) {
-      setValue('slug', slugify(name, { lower: true, strict: true }))
+      setValue(
+        'slug',
+        slugify(name, { lower: true, strict: true }).slice(
+          0,
+          ORGANIZATION_SLUG_MAX_LENGTH,
+        ),
+      )
     }
   }, [name, editedSlug, setValue])
 
@@ -350,6 +359,10 @@ export function BusinessDetailsStep() {
               name="slug"
               rules={{
                 required: 'Slug is required',
+                maxLength: {
+                  value: ORGANIZATION_SLUG_MAX_LENGTH,
+                  message: `Slug must be ${ORGANIZATION_SLUG_MAX_LENGTH} characters or fewer.`,
+                },
                 validate: async (v) => {
                   if (containsBlockedWord(v)) return 'This slug is not allowed.'
                   const { data: result, error } = await api.POST(
@@ -372,6 +385,7 @@ export function BusinessDetailsStep() {
                     <Input
                       {...field}
                       placeholder="acme-inc"
+                      maxLength={ORGANIZATION_SLUG_MAX_LENGTH}
                       onChange={(e) => {
                         field.onChange(
                           slugify(e.target.value, {

@@ -94,7 +94,8 @@ async def _persist_agent_result(
     actor_name="organization_review.run_agent",
     priority=TaskPriority.LOW,
     time_limit=180_000,  # 3 min timeout
-    max_retries=1,
+    max_retries=4,
+    min_backoff=30_000,
 )
 async def run_review_agent(
     organization_id: uuid.UUID,
@@ -118,20 +119,9 @@ async def run_review_agent(
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        # Run the review agent
-        try:
-            result = await run_organization_review(
-                session, organization, context=review_context
-            )
-        except Exception:
-            if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
-                log.exception(
-                    "organization_review.threshold.agent_failed",
-                    organization_id=str(organization_id),
-                    slug=organization.slug,
-                )
-                return
-            raise
+        result = await run_organization_review(
+            session, organization, context=review_context
+        )
 
         report = result.report
         agent_review_id = await _persist_agent_result(
@@ -247,7 +237,8 @@ async def run_review_agent(
     actor_name="organization_review.appeal_submitted",
     priority=TaskPriority.LOW,
     time_limit=180_000,
-    max_retries=1,
+    max_retries=4,
+    min_backoff=30_000,
 )
 async def review_appeal(organization_id: uuid.UUID) -> None:
     """Auto-review a submitted appeal with the AI agent.

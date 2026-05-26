@@ -697,20 +697,15 @@ class ReviewAnalyzer:
                 result.usage(), self.model_provider, self.model_name
             )
             return result.output, usage
-        except TimeoutError:
-            log.warning(
-                "review_analyzer.timeout",
-                organization=snapshot.organization.slug,
-                timeout_seconds=timeout_seconds,
-            )
-            return _timeout_report(), UsageInfo()
         except Exception as e:
             log.error(
                 "review_analyzer.error",
                 organization=snapshot.organization.slug,
-                error=str(e),
+                error_class=type(e).__name__,
+                status_code=getattr(e, "status_code", None),
+                model_name=self.model_name,
             )
-            return _error_report(str(e)), UsageInfo()
+            raise
 
     def _build_prompt(self, snapshot: DataSnapshot) -> str:
         org = snapshot.organization
@@ -1092,45 +1087,6 @@ class ReviewAnalyzer:
         )
 
         return "\n".join(parts)
-
-
-def _fallback_report(summary: str, finding: str, action: str) -> ReviewAgentReport:
-    from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict, RiskLevel
-
-    return ReviewAgentReport(
-        verdict=ReviewVerdict.DENY,
-        summary=summary,
-        merchant_summary="Error occurred during analysis. Please contact support for assistance.",
-        violated_sections=[],
-        dimensions=[
-            DimensionAssessment(
-                dimension=ReviewDimension.POLICY_COMPLIANCE,
-                risk_level=RiskLevel.MEDIUM,
-                confidence=0.0,
-                findings=[finding],
-                recommendation="Human review required",
-            )
-        ],
-        overall_risk_level=RiskLevel.MEDIUM,
-        recommended_action=action,
-    )
-
-
-def _timeout_report() -> ReviewAgentReport:
-    return _fallback_report(
-        "Analysis timed out. Denied for human review.",
-        "Analysis timed out",
-        "Human review required due to timeout.",
-    )
-
-
-def _error_report(error: str) -> ReviewAgentReport:
-    msg = error[:200]
-    return _fallback_report(
-        f"Analysis failed with error: {msg}. Denied for human review.",
-        f"Analysis error: {msg}",
-        "Human review required due to analysis error.",
-    )
 
 
 # Module-level singleton

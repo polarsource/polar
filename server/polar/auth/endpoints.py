@@ -101,7 +101,7 @@ async def status(
     return await authentication_session_service.to_schema(authentication_session)
 
 
-@router.get("/complete")
+@router.get("/complete", include_in_schema=False)
 async def complete(
     request: Request,
     authentication_session: AuthenticationSession = Depends(get_authentication_session),

@@ -55,7 +55,7 @@ def get_oauth_router(
     *,
     callback_method: typing.Literal["GET", "POST"] = "GET",
 ) -> APIRouter:
-    router = APIRouter(prefix=f"/{identifier}")
+    router = APIRouter(prefix=f"/{identifier}", include_in_schema=False)
 
     @router.get("/authorize", name=f"auth.{identifier}.authorize")
     async def _authorize(

@@ -7,5 +7,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
+    env: {
+      NEXT_PUBLIC_FRONTEND_BASE_URL: 'https://polar.sh',
+      NEXT_PUBLIC_SANDBOX_FRONTEND_BASE_URL: 'https://sandbox.polar.sh',
+    },
   },
 })

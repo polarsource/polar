@@ -5,7 +5,8 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks/auth'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { setLastVisitedOrg } from '@/utils/cookies'
+import { CONFIG } from '@/utils/config'
+import { setLastVisitedEnv, setLastVisitedOrg } from '@/utils/cookies'
 import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -41,6 +42,7 @@ const DashboardLayout = (
   const { organization, organizations } = useContext(OrganizationContext)
 
   useEffect(() => {
+    setLastVisitedEnv(CONFIG.IS_SANDBOX ? 'sandbox' : 'production')
     if (organization) {
       setLastVisitedOrg(organization.slug)
     }

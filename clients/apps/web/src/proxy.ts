@@ -5,6 +5,8 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { COOKIE_MAX_AGE, DISTINCT_ID_COOKIE } from './experiments/constants'
 import { createServerSideAPI } from './utils/client'
+import { CONFIG } from './utils/config'
+import { POLAR_ENV_COOKIE } from './utils/cookies'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -97,6 +99,23 @@ export async function proxy(request: NextRequest) {
   // doesn't appear to be working consistently with Vercel rewrites
   if (isForwardedRoute(request)) {
     return NextResponse.next()
+  }
+
+  if (request.nextUrl.pathname.startsWith('/to/')) {
+    const lastEnv = request.cookies.get(POLAR_ENV_COOKIE)?.value
+    const currentEnv = IS_SANDBOX ? 'sandbox' : 'production'
+    if (
+      (lastEnv === 'sandbox' || lastEnv === 'production') &&
+      lastEnv !== currentEnv
+    ) {
+      const targetBase =
+        lastEnv === 'sandbox'
+          ? CONFIG.SANDBOX_FRONTEND_BASE_URL
+          : CONFIG.FRONTEND_BASE_URL
+      return NextResponse.redirect(
+        `${targetBase}${request.nextUrl.pathname}${request.nextUrl.search}`,
+      )
+    }
   }
 
   // Sandbox: rewrite root to login, block non-app routes

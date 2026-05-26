@@ -297,3 +297,61 @@ describe('middleware function', () => {
     )
   })
 })
+
+describe('the /to/ dance', () => {
+  it('bounces /to/* to the sandbox host when polar_env cookie does not match the current env', async () => {
+    const request = new NextRequest('https://polar.sh/to/dashboard/products')
+    request.cookies.set('polar_env', 'sandbox')
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe(
+      'https://sandbox.polar.sh/to/dashboard/products',
+    )
+  })
+
+  it('preserves query string when bouncing /to/*', async () => {
+    const request = new NextRequest(
+      'https://polar.sh/to/dashboard/products?foo=bar',
+    )
+    request.cookies.set('polar_env', 'sandbox')
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe(
+      'https://sandbox.polar.sh/to/dashboard/products?foo=bar',
+    )
+  })
+
+  it('does not bounce when polar_env cookie matches the current env', async () => {
+    const request = new NextRequest('https://polar.sh/to/dashboard/products')
+    request.cookies.set('polar_env', 'production')
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toContain('/login')
+  })
+
+  it('ignores invalid polar_env cookie values', async () => {
+    const request = new NextRequest('https://polar.sh/to/dashboard/products')
+    request.cookies.set('polar_env', 'narnia')
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toContain('/login')
+  })
+
+  it('does not bounce non-/to/ paths even with a mismatching cookie', async () => {
+    const request = new NextRequest('https://polar.sh/dashboard')
+    request.cookies.set('polar_env', 'sandbox')
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toContain('/login')
+  })
+})

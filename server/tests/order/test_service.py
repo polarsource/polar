@@ -2659,7 +2659,11 @@ class TestHandlePaymentFailure:
         product: Product,
         mocker: MockerFixture,
     ) -> None:
-        """Test that order service schedules first retry after one failed payment"""
+        """Test that the second retry is scheduled after the first retry fails.
+
+        At this point there are 2 failed payments on the order: the initial
+        subscription_cycle failure and the just-failed first retry.
+        """
         # Given
         subscription = await create_active_subscription(
             save_fixture,
@@ -2676,14 +2680,15 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
 
-        # Create one failed payment for this order
-        await create_payment(
-            save_fixture,
-            order.organization,
-            status=PaymentStatus.failed,
-            trigger=PaymentTrigger.purchase,
-            order=order,
-        )
+        # Initial cycle failure + just-failed first retry already recorded
+        for _ in range(2):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
+                order=order,
+            )
 
         mock_mark_past_due = mocker.patch(
             "polar.subscription.service.subscription.mark_past_due"
@@ -2709,7 +2714,11 @@ class TestHandlePaymentFailure:
         product: Product,
         mocker: MockerFixture,
     ) -> None:
-        """Test that order service schedules second retry after two failed payments"""
+        """Test that the third retry is scheduled after the second retry fails.
+
+        At this point there are 3 failed payments on the order: the initial
+        subscription_cycle failure and the two retries that have failed.
+        """
         # Given
         subscription = await create_active_subscription(
             save_fixture,
@@ -2726,21 +2735,15 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
 
-        # Create two failed payments for this order
-        await create_payment(
-            save_fixture,
-            order.organization,
-            status=PaymentStatus.failed,
-            trigger=PaymentTrigger.purchase,
-            order=order,
-        )
-        await create_payment(
-            save_fixture,
-            order.organization,
-            status=PaymentStatus.failed,
-            trigger=PaymentTrigger.purchase,
-            order=order,
-        )
+        # Initial cycle failure + two failed retries already recorded
+        for _ in range(3):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
+                order=order,
+            )
 
         mock_mark_past_due = mocker.patch(
             "polar.subscription.service.subscription.mark_past_due"
@@ -2766,7 +2769,13 @@ class TestHandlePaymentFailure:
         product: Product,
         mocker: MockerFixture,
     ) -> None:
-        """Test that order service cancels subscription after final retry attempt"""
+        """Test that order service cancels subscription after final retry attempt.
+
+        Initial cycle failure + all DUNNING_RETRY_INTERVALS retries have
+        failed, so the configured retry budget is exhausted.
+        """
+        from polar.config import settings
+
         # Given
         subscription = await create_active_subscription(
             save_fixture,
@@ -2783,8 +2792,8 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
 
-        # Create 4 failed payments for this order (equal to DUNNING_RETRY_INTERVALS length)
-        for _ in range(4):
+        # Initial cycle failure + DUNNING_RETRY_INTERVALS retries all failed
+        for _ in range(len(settings.DUNNING_RETRY_INTERVALS) + 1):
             await create_payment(
                 save_fixture,
                 order.organization,
@@ -2816,6 +2825,8 @@ class TestHandlePaymentFailure:
         mocker: MockerFixture,
     ) -> None:
         """Test that order service cancels subscription after final retry attempt"""
+        from polar.config import settings
+
         # Given
         subscription = await create_canceled_subscription(
             save_fixture,
@@ -2833,8 +2844,8 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
 
-        # Create 4 failed payments for this order (equal to DUNNING_RETRY_INTERVALS length)
-        for _ in range(4):
+        # Initial cycle failure + DUNNING_RETRY_INTERVALS retries all failed
+        for _ in range(len(settings.DUNNING_RETRY_INTERVALS) + 1):
             await create_payment(
                 save_fixture,
                 order.organization,
@@ -2882,14 +2893,15 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
 
-        # Create one failed payment and one successful payment for this order
-        await create_payment(
-            save_fixture,
-            order.organization,
-            status=PaymentStatus.failed,
-            trigger=PaymentTrigger.purchase,
-            order=order,
-        )
+        # 2 failed payments (cycle + first retry) and 1 unrelated success
+        for _ in range(2):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
+                order=order,
+            )
         await create_payment(
             save_fixture,
             order.organization,
@@ -2906,7 +2918,7 @@ class TestHandlePaymentFailure:
 
         # Then
         assert result_order.next_payment_attempt_at is not None
-        # Should schedule second retry (5 days) since only 1 failed payment exists
+        # Should schedule second retry (5 days) since 2 failed payments exist
         expected_retry_date = utc_now() + timedelta(days=5)
         assert result_order.next_payment_attempt_at == expected_retry_date
 

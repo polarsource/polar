@@ -99,7 +99,10 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
   ])
 
   const isVisible =
-    !!recommendation && !isDismissed && organization.status === 'active' && !CONFIG.IS_SANDBOX
+    !!recommendation &&
+    !isDismissed &&
+    organization.status === 'active' &&
+    !CONFIG.IS_SANDBOX
 
   useImpressionEvent({
     event: 'dashboard:subscriptions:plan_upsell:view',

@@ -44,6 +44,7 @@ const textVariants = cva('', {
       default: 'text-black dark:text-white',
       muted: 'text-gray-500 dark:text-polar-500',
       disabled: 'text-gray-400 dark:text-polar-600',
+      accent: 'text-indigo-500 dark:text-indigo-500',
       danger: 'text-red-500 dark:text-red-500',
       error: 'text-red-500 dark:text-red-500',
       warning: 'text-amber-500 dark:text-amber-500',

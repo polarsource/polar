@@ -18,11 +18,11 @@ interface OverviewPageProps {
 
 export default function OverviewPage({ organization }: OverviewPageProps) {
   return (
-    <DashboardBody className="gap-y-8 pb-16 md:gap-y-12" title={null}>
+    <DashboardBody className="gap-y-8 pb-16 md:gap-y-16" title={null}>
+      <PlanUpsell organization={organization} />
       <OrganizationStatusBanner organization={organization} />
       <OverviewSection organization={organization} />
 
-      <PlanUpsell organization={organization} />
       <div className="dark:border-polar-700 overflow-hidden rounded-xl border border-gray-200">
         <div className="grid grid-cols-1 [clip-path:inset(1px_1px_1px_1px)] lg:grid-cols-3">
           <RevenueWidget className={cellClassName} />

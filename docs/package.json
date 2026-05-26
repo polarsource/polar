@@ -20,7 +20,7 @@
     "@scalar/openapi-parser": "^0.25.8",
     "@types/node": "^24.12.4",
     "js-yaml": "^4.1.1",
-    "openapi-sampler": "^1.7.2",
+    "openapi-sampler": "^1.7.3",
     "tsx": "^4.21.0"
   }
 }

@@ -477,13 +477,13 @@ class OrderService:
             and order.invoice_checksum == invoice_service.compute_order_checksum(order)
         ):
             log.info(
-                "order.invoice_generation_skipped",
+                "order.invoice_generation.skipped",
                 order_id=order.id,
                 reason="checksum_match",
             )
             return
 
-        log.info("order.invoice_generation_scheduled", order_id=order.id)
+        log.info("order.invoice_generation.scheduled", order_id=order.id)
         enqueue_job("order.invoice", order_id=order.id)
 
     async def generate_invoice(self, session: AsyncSession, order: Order) -> Order:

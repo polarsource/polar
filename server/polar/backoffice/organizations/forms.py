@@ -13,12 +13,7 @@ from pydantic import (
 
 from polar.enums import RateLimitGroup
 from polar.kit.schemas import HttpUrlToStr, Schema
-from polar.organization.schemas import (
-    SLUG_MAX_LENGTH,
-    NameInput,
-    OrganizationFeatureSettings,
-    SlugInput,
-)
+from polar.organization.schemas import NameInput, OrganizationFeatureSettings, SlugInput
 
 from .. import forms
 
@@ -104,7 +99,7 @@ class UpdateOrganizationBasicForm(forms.BaseForm):
     """Form for editing basic organization settings (name, slug, invoice prefix)."""
 
     name: NameInput
-    slug: Annotated[SlugInput, forms.InputField(maxlength=SLUG_MAX_LENGTH)]
+    slug: SlugInput
     customer_invoice_prefix: Annotated[
         str,
         StringConstraints(
@@ -117,7 +112,7 @@ class UpdateOrganizationForm(forms.BaseForm):
     """Form for editing organization settings including feature flags."""
 
     name: NameInput
-    slug: Annotated[SlugInput, forms.InputField(maxlength=SLUG_MAX_LENGTH)]
+    slug: SlugInput
     customer_invoice_prefix: Annotated[
         str,
         StringConstraints(

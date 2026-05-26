@@ -211,7 +211,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
         borderColor="border-primary"
       >
         <Box display="flex" flexDirection="column" rowGap="l">
-          <Text color="success" variant="body">
+          <Text color="accent" variant="body">
             Lower your transaction fees
           </Text>
           <Text variant="heading-xxs" as="h3">
@@ -263,18 +263,22 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
           </Text>
           {plan.description && <Text color="muted">{plan.description}</Text>}
         </Box>
-        <Box display="flex" flexDirection="column" rowGap="xs">
-          <Box display="flex" alignItems="baseline" columnGap="xs">
-            <Text variant="heading-xs" as="span">
+        <Box display="flex" flexDirection="column" rowGap="s">
+          <Box display="flex" alignItems="baseline" columnGap="m">
+            <Text variant="heading-s" as="span">
               {formatStandard(planPrice, planCurrency)}
             </Text>
             {plan.recurring_interval && (
-              <Text color="muted" as="span">
+              <Text color="muted" as="span" variant="body">
                 / {plan.recurring_interval}
               </Text>
             )}
           </Box>
-          {feeLabel && <Text color="muted">{feeLabel}</Text>}
+          {feeLabel && (
+            <Text color="muted" variant="body">
+              {feeLabel}
+            </Text>
+          )}
         </Box>
         {(plan.features?.length ?? 0) > 0 && (
           <Box
@@ -296,7 +300,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
                 columnGap="s"
               >
                 <CheckOutlined
-                  className="mt-0.5 text-blue-500"
+                  className="mt-0.5 text-indigo-500"
                   fontSize="inherit"
                 />
                 <Text as="span">{feature}</Text>
@@ -309,7 +313,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss"
-        className="dark:text-polar-500 dark:hover:text-polar-300 absolute top-8 right-8 cursor-pointer text-gray-400 transition-colors hover:text-gray-600"
+        className="dark:text-polar-500 dark:hover:text-polar-300 absolute top-6 right-6 cursor-pointer text-gray-400 transition-colors hover:text-gray-600"
       >
         <CloseOutlined fontSize="small" />
       </button>

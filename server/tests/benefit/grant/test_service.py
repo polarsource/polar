@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies import BenefitActionRequiredError, BenefitServiceProtocol
+from polar.benefit.strategies.base.properties import BenefitGrantProperties
 from polar.benefit.strategies.base.service import BenefitRetriableError
 from polar.config import settings
 from polar.models import (
@@ -139,6 +140,31 @@ class TestGrantBenefit:
         assert grant.error["message"] == error_message
         assert grant.error["type"] == "BenefitActionRequiredError"
         assert "timestamp" in grant.error
+
+    async def test_action_required_error_with_grant_properties(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        error_message = "Action required error message"
+        grant_properties = cast(BenefitGrantProperties, {"external_id": "abc"})
+        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError(
+            error_message, grant_properties=grant_properties
+        )
+
+        grant = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit_organization, subscription=subscription
+        )
+
+        assert not grant.is_granted
+        assert cast(Any, grant.properties) == {"external_id": "abc"}
+        assert grant.error is not None
+        assert grant.error["message"] == error_message
+        assert grant.error["type"] == "BenefitActionRequiredError"
 
     async def test_revoked_grant_action_required_error(
         self,
@@ -811,6 +837,44 @@ class TestUpdateBenefitGrant:
         assert updated_grant.error["message"] == error_message
         assert updated_grant.error["type"] == "BenefitActionRequiredError"
         assert "timestamp" in updated_grant.error
+
+    async def test_action_required_error_with_grant_properties(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            properties={"external_id": "abc"},
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        error_message = "Update action required error message"
+        grant_properties = cast(BenefitGrantProperties, {"external_id": "xyz"})
+        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError(
+            error_message, grant_properties=grant_properties
+        )
+
+        grant_loaded = await benefit_grant_service.get(session, grant.id, loaded=True)
+        assert grant_loaded
+
+        updated_grant = await benefit_grant_service.update_benefit_grant(
+            session, redis, grant_loaded
+        )
+
+        assert not updated_grant.is_granted
+        assert cast(Any, updated_grant.properties) == {"external_id": "xyz"}
+        assert updated_grant.error is not None
+        assert updated_grant.error["message"] == error_message
+        assert updated_grant.error["type"] == "BenefitActionRequiredError"
 
 
 @pytest.mark.asyncio

@@ -65,9 +65,7 @@ async def preview_channel_name(
         metadata=dict(payload.customer_metadata),
     )
     try:
-        channel_name = render_channel_name(
-            payload.template, context, tolerant=True
-        )
+        channel_name = render_channel_name(payload.template, context, tolerant=True)
     except InvalidTemplateError as e:
         raise PolarRequestValidationError(
             [

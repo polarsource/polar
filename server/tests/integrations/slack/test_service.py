@@ -49,9 +49,9 @@ async def _create_integration(
     return integration
 
 
-def _service_with_mock(mocker: MockerFixture, **overrides: object) -> tuple[
-    OrganizationSlackIntegrationService, AsyncMock
-]:
+def _service_with_mock(
+    mocker: MockerFixture, **overrides: object
+) -> tuple[OrganizationSlackIntegrationService, AsyncMock]:
     client = AsyncMock()
     client.oauth_v2_access = AsyncMock(
         return_value=overrides.get(

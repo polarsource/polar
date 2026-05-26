@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock
 
 import httpx
@@ -180,6 +180,7 @@ class TestSlackSharedChannelGrant:
             "invited_email": "admin@customer.example",
             "channel_id": "CEXIST",
             "channel_name": "support-existing",
+            "invite_url": "https://slack.com/share/I123",
         }
         result = await strategy.grant(benefit, customer, existing, update=True)
 
@@ -240,11 +241,49 @@ class TestSlackSharedChannelGrant:
             "invited_email": "admin@customer.example",
             "channel_id": "CEXIST",
             "channel_name": "support-existing",
+            "invite_url": "https://slack.com/share/I123",
         }
         result = await strategy.grant(benefit, customer, existing, update=True)
 
         assert result == existing
         client.conversations_create.assert_not_awaited()
+        client.conversations_invite_shared.assert_not_awaited()
+
+    async def test_grant_retries_shared_invite_for_existing_channel(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await _create_integration(save_fixture, organization)
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        existing: BenefitGrantSlackSharedChannelProperties = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "CEXIST",
+            "channel_name": "support-existing",
+        }
+        result = await strategy.grant(benefit, customer, existing, update=True)
+
+        assert result["channel_id"] == "CEXIST"
+        assert result["channel_name"] == "support-existing"
+        assert result["invite_id"] == "I123"
+        client.conversations_create.assert_not_awaited()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="CEXIST",
+            emails=["admin@customer.example"],
+        )
 
     async def test_grant_retries_on_name_taken(
         self,
@@ -485,7 +524,7 @@ class TestSlackSharedChannelGrant:
             bot_token="xoxb-test-token", channel="C123", text="Welcome!"
         )
 
-    async def test_grant_invite_http_error_raises_retriable(
+    async def test_grant_invite_error_preserves_channel_properties(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -509,12 +548,20 @@ class TestSlackSharedChannelGrant:
         )
         strategy = _strategy(session, redis, client)
 
-        with pytest.raises(BenefitRetriableError):
+        with pytest.raises(BenefitActionRequiredError) as exc_info:
             await strategy.grant(
                 benefit,
                 customer,
                 {"invited_email": "admin@customer.example"},
             )
+
+        grant_properties = exc_info.value.grant_properties
+        assert grant_properties is not None
+        assert cast(Any, grant_properties) == {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+            "channel_name": "support-acme",
+        }
 
 
 @pytest.mark.asyncio

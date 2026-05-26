@@ -72,7 +72,7 @@ class BenefitSlackSharedChannelService(
             )
 
         existing_channel_id = grant_properties.get("channel_id")
-        if update and existing_channel_id:
+        if update and existing_channel_id and grant_properties.get("invite_url"):
             properties = self._get_properties(benefit)
             team_invitees = properties.get("team_invitees") or []
             if team_invitees:
@@ -108,39 +108,56 @@ class BenefitSlackSharedChannelService(
         context = self._build_context(customer)
         bot_token = cast(str, integration.bot_token)
 
-        channel_id, channel_name = await self._create_channel(
-            bot_token=bot_token,
-            template=properties["channel_name_template"],
-            context=context,
-            is_private=properties["private"],
-        )
-
-        team_invitees = properties.get("team_invitees") or []
-        if team_invitees:
-            await self._safe_invite_team(
+        if existing_channel_id:
+            channel_id = existing_channel_id
+            channel_name = grant_properties.get("channel_name", "")
+        else:
+            channel_id, channel_name = await self._create_channel(
                 bot_token=bot_token,
-                channel=channel_id,
-                users=team_invitees,
-                bound_logger=bound_logger,
+                template=properties["channel_name_template"],
+                context=context,
+                is_private=properties["private"],
             )
 
-        welcome_message = properties.get("welcome_message")
-        if welcome_message:
-            await self._safe_post_welcome(
-                bot_token=bot_token,
-                channel=channel_id,
-                text=welcome_message,
-                bound_logger=bound_logger,
-            )
+            team_invitees = properties.get("team_invitees") or []
+            if team_invitees:
+                await self._safe_invite_team(
+                    bot_token=bot_token,
+                    channel=channel_id,
+                    users=team_invitees,
+                    bound_logger=bound_logger,
+                )
 
-        invite = await self._invite_shared(
-            bot_token=bot_token, channel=channel_id, email=invited_email
-        )
+            welcome_message = properties.get("welcome_message")
+            if welcome_message:
+                await self._safe_post_welcome(
+                    bot_token=bot_token,
+                    channel=channel_id,
+                    text=welcome_message,
+                    bound_logger=bound_logger,
+                )
 
-        return {
+        provisioned_properties: BenefitGrantSlackSharedChannelProperties = {
             **grant_properties,
             "channel_id": channel_id,
             "channel_name": channel_name,
+        }
+
+        try:
+            invite = await self._invite_shared(
+                bot_token=bot_token, channel=channel_id, email=invited_email
+            )
+        except BenefitActionRequiredError as e:
+            raise BenefitActionRequiredError(
+                e.message, grant_properties=provisioned_properties
+            ) from e
+        except BenefitRetriableError as e:
+            raise BenefitActionRequiredError(
+                e.message, grant_properties=provisioned_properties
+            ) from e
+
+        return {
+            **provisioned_properties,
             "invite_id": invite.get("invite_id", ""),
             "invite_url": invite.get("url", ""),
         }

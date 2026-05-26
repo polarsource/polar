@@ -240,6 +240,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 member=member,
             )
         except BenefitActionRequiredError as e:
+            if e.grant_properties is not None:
+                grant.properties = e.grant_properties
             grant.set_grant_failed(e)
         else:
             grant.properties = properties
@@ -521,6 +523,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 member=member,
             )
         except BenefitActionRequiredError as e:
+            if e.grant_properties is not None:
+                grant.properties = e.grant_properties
             grant.set_grant_failed(e)
         else:
             grant.properties = properties

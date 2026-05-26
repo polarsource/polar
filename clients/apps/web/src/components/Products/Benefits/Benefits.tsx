@@ -15,7 +15,7 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { Plus } from 'lucide-react'
 import { parseAsBoolean, useQueryState } from 'nuqs'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import CreateBenefitModalContent from '../../Benefit/CreateBenefitModalContent'
 import { Section } from '../../Layout/Section'
 import { InlineModal } from '../../Modal/InlineModal'
@@ -67,6 +67,15 @@ export const Benefits = ({
 
   const hasSelectedBenefits = selectedBenefits.length > 0
   const isSimplifiedView = totalBenefitCount <= SIMPLIFIED_VIEW_THRESHOLD
+  const slackBenefitEnabled =
+    !!organization.feature_settings?.slack_benefit_enabled
+  const availableBenefitTypes = useMemo(
+    () =>
+      enums.benefitTypeValues.filter(
+        (type) => type !== 'slack_shared_channel' || slackBenefitEnabled,
+      ),
+    [slackBenefitEnabled],
+  )
 
   return (
     <Section
@@ -108,7 +117,7 @@ export const Benefits = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="min-w-[200px]">
-                {enums.benefitTypeValues.map((type) => (
+                {availableBenefitTypes.map((type) => (
                   <DropdownMenuItem
                     key={type}
                     onClick={() => {

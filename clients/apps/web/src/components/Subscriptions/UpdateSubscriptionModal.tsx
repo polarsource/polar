@@ -40,6 +40,7 @@ import { useModal } from '../Modal/useModal'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { ProrationBehavior } from '../Settings/ProrationBehavior'
 import { toast } from '../Toast/use-toast'
+import { Box } from '@polar-sh/orbit/Box'
 
 const validationDiscriminators = [
   'SubscriptionUpdateProduct',
@@ -227,44 +228,45 @@ const UpdateProduct = ({
                 </FormControl>
                 {subscription.status === 'trialing' && (
                   <FormDescription>
-                    Only products whose trial period still has remaining time
-                    given your current trial usage are shown. To switch to
-                    another product, end the trial first.
+                    <Box
+                      padding="m"
+                      borderRadius="m"
+                      backgroundColor="background-secondary"
+                    >
+                      Only products with a trial long enough to carry over the
+                      time already elapsed are shown. End the trial to switch to
+                      any other product.
+                    </Box>
                   </FormDescription>
                 )}
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={control}
-            name="proration_behavior"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Proration behavior</FormLabel>
-                <FormControl>
-                  <div>
-                    {/* We need an extra div or the space-y-2 from FormItem adds spacing between the Radix select button & the hidden select */}
-                    <ProrationBehavior
-                      organization={organization}
-                      value={field.value || defaultProrationBehavior}
-                      onValueChange={field.onChange}
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {subscription.status !== 'trialing' && (
+            <FormField
+              control={control}
+              name="proration_behavior"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Proration behavior</FormLabel>
+                  <FormControl>
+                    <div>
+                      {/* We need an extra div or the space-y-2 from FormItem adds spacing between the Radix select button & the hidden select */}
+                      <ProrationBehavior
+                        organization={organization}
+                        value={field.value || defaultProrationBehavior}
+                        onValueChange={field.onChange}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
         <div className="flex flex-col gap-4">
-          {selectedProduct &&
-            selectedProduct.id !== subscription.product.id && (
-              <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-                The customer will get access to {selectedProduct.name} benefits,
-                and lose access to {subscription.product.name} benefits.
-              </div>
-            )}
           <Button
             type="submit"
             size="lg"
@@ -273,6 +275,26 @@ const UpdateProduct = ({
           >
             Update Subscription
           </Button>
+          {selectedProduct &&
+            selectedProduct.id !== subscription.product.id && (
+              <Box
+                padding="m"
+                borderRadius="m"
+                backgroundColor="background-warning"
+              >
+                <p className="text-sm text-yellow-700">
+                  By updating this subscription, the customer will get access to{' '}
+                  <strong className="font-medium">
+                    {selectedProduct.name}
+                  </strong>{' '}
+                  benefits, and lose access to{' '}
+                  <strong className="font-medium">
+                    {subscription.product.name}
+                  </strong>{' '}
+                  benefits.
+                </p>
+              </Box>
+            )}
         </div>
       </form>
     </Form>

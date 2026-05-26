@@ -6,6 +6,7 @@ import stripe as stripe_lib
 from dramatiq import Retry
 from pytest_mock import MockerFixture
 
+from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Organization, Product
@@ -411,8 +412,6 @@ class TestProcessDunningOrder:
         await save_fixture(order)
 
         # Initial cycle failure + all DUNNING_RETRY_INTERVALS retries failed
-        from polar.config import settings
-
         for _ in range(len(settings.DUNNING_RETRY_INTERVALS) + 1):
             await create_payment(
                 save_fixture,

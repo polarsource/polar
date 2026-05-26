@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
+from polar.config import settings
 from polar.email.schemas import OrderConfirmationEmail
 from polar.enums import (
     InvoiceNumbering,
@@ -2774,8 +2775,6 @@ class TestHandlePaymentFailure:
         Initial cycle failure + all DUNNING_RETRY_INTERVALS retries have
         failed, so the configured retry budget is exhausted.
         """
-        from polar.config import settings
-
         # Given
         subscription = await create_active_subscription(
             save_fixture,
@@ -2825,8 +2824,6 @@ class TestHandlePaymentFailure:
         mocker: MockerFixture,
     ) -> None:
         """Test that order service cancels subscription after final retry attempt"""
-        from polar.config import settings
-
         # Given
         subscription = await create_canceled_subscription(
             save_fixture,

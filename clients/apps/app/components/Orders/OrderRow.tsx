@@ -1,13 +1,9 @@
 import { Box } from '@/components/Shared/Box'
-import { Image } from '@/components/Shared/Image/Image'
 import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
-import { useProduct } from '@/hooks/polar/products'
-import { OrganizationContext } from '@/providers/OrganizationProvider'
-import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
-import React, { useContext } from 'react'
+import React from 'react'
 import { StyleProp, TextStyle } from 'react-native'
 import { Touchable } from '../Shared/Touchable'
 
@@ -25,8 +21,6 @@ export const OrderRow = ({
   loading,
 }: OrderRowProps) => {
   const theme = useTheme()
-  const { organization } = useContext(OrganizationContext)
-  const { data: product } = useProduct(organization?.id, order?.product?.id)
 
   return (
     <Link
@@ -45,36 +39,6 @@ export const OrderRow = ({
       asChild
     >
       <Touchable>
-        <Box
-          width={48}
-          height={48}
-          borderRadius="border-radius-8"
-          overflow="hidden"
-        >
-          {product?.medias?.[0]?.public_url ? (
-            <Image
-              source={{ uri: product?.medias?.[0]?.public_url }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
-          ) : (
-            <Box
-              width="100%"
-              height="100%"
-              justifyContent="center"
-              alignItems="center"
-              borderColor="border"
-              borderWidth={1}
-              borderRadius="border-radius-8"
-            >
-              <MaterialIcons
-                name="texture"
-                size={24}
-                color={theme.colors.subtext}
-              />
-            </Box>
-          )}
-        </Box>
         <Box flex={1} flexDirection="column" gap="spacing-4">
           <Text variant="bodyMedium" loading={loading}>
             {order?.product?.name}
@@ -102,7 +66,7 @@ export const OrderRow = ({
               style={{ flexShrink: 1, flexWrap: 'wrap' }}
               color="subtext"
             >
-              {order?.customer.email}
+              {order?.customer.name || order?.customer.email}
             </Text>
           </Box>
         </Box>

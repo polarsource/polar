@@ -1,9 +1,10 @@
 'use client'
 
-import { usePostHog, type EventName } from '@/hooks/posthog'
+import { type EventName } from '@/hooks/posthog'
+import { useImpressionEvent } from '@/hooks/useImpressionEvent'
 import { schemas } from '@polar-sh/client'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { Fragment, useEffect, useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import LoginCodeForm from '../Auth/LoginCodeForm'
@@ -30,8 +31,6 @@ const Login = ({
   signup?: schemas['UserSignupAttribution']
   lastLoginMethod?: string | null
 }) => {
-  const posthog = usePostHog()
-
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -89,9 +88,10 @@ const Login = ({
     return { returnTo: resolvedReturnTo, ...eventData }
   }, [pathname, resolvedReturnTo, searchParams, signup])
 
-  useEffect(() => {
-    posthog.capture(eventName, loginProps)
-  }, [eventName, loginProps, posthog])
+  useImpressionEvent({
+    event: eventName,
+    build: () => loginProps,
+  })
 
   const primaryOAuthMethod: OAuthMethod = isOAuthMethod(lastLoginMethod)
     ? lastLoginMethod

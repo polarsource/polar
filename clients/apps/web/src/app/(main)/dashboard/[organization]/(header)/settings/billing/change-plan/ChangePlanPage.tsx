@@ -7,6 +7,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
 import { useHasPermission } from '@/hooks/permissions'
+import { usePostHog } from '@/hooks/posthog'
 import {
   useCancelSubscription,
   useChangeSubscriptionPlan,
@@ -14,6 +15,7 @@ import {
   useOrganizationSubscription,
   useStartSubscriptionCheckout,
 } from '@/hooks/queries/billing'
+import { useBillingPlanTelemetry } from '@/hooks/useBillingPlanTelemetry'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
@@ -35,10 +37,16 @@ export default function ChangePlanPage({
   organization: schemas['Organization']
 }) {
   const router = useRouter()
+  const posthog = usePostHog()
   const canManageBilling = useHasPermission(
     organization.id,
     'organization:manage',
   )
+  const { buildUrls } = useBillingPlanTelemetry({
+    source: 'change_plan',
+    organizationId: organization.id,
+    successPath: `/dashboard/${organization.slug}/settings/billing`,
+  })
   const gatedOrgId = canManageBilling ? organization.id : undefined
   const subscriptionQuery = useOrganizationSubscription(gatedOrgId)
   const plansQuery = useOrganizationPlans(gatedOrgId)
@@ -114,10 +122,24 @@ export default function ChangePlanPage({
 
     if (requiresCheckout) {
       if (!selectedPlan.product_id) return
+      posthog.capture('dashboard:subscriptions:checkout:start', {
+        organization_id: organization.id,
+        source: 'change_plan',
+        plan_name: selectedPlan.name,
+        plan_product_id: selectedPlan.product_id,
+        plan_amount_cents: selectedPlan.price?.amount ?? null,
+      })
+      const urls = buildUrls({
+        plan_name: selectedPlan.name,
+        plan_product_id: selectedPlan.product_id,
+        from_plan_name: subscription?.plan.name ?? null,
+        from_plan_product_id: subscription?.product_id ?? null,
+        from_plan_amount_cents: subscription?.amount ?? null,
+      })
       const result = await startCheckout.mutateAsync({
         product_id: selectedPlan.product_id,
-        success_url: `${window.location.origin}${billingHref}`,
-        return_url: window.location.href,
+        success_url: urls.success_url,
+        return_url: urls.return_url,
       })
       if (result.error || !result.data) {
         toast({
@@ -142,6 +164,13 @@ export default function ChangePlanPage({
         })
         return
       }
+      posthog.capture('dashboard:subscriptions:plan:cancel', {
+        organization_id: organization.id,
+        source: 'change_plan',
+        from_plan_name: subscription?.plan.name ?? null,
+        from_plan_product_id: subscription?.product_id ?? null,
+        from_plan_amount_cents: subscription?.amount ?? null,
+      })
       toast({
         title: 'Subscription cancellation scheduled',
         description:
@@ -162,6 +191,17 @@ export default function ChangePlanPage({
       })
       return
     }
+    posthog.capture('dashboard:subscriptions:plan:update', {
+      organization_id: organization.id,
+      source: 'change_plan',
+      change_kind: changeKind ?? null,
+      from_plan_name: subscription?.plan.name ?? null,
+      from_plan_product_id: subscription?.product_id ?? null,
+      from_plan_amount_cents: subscription?.amount ?? null,
+      to_plan_name: selectedPlan.name,
+      to_plan_product_id: selectedPlan.product_id ?? null,
+      to_plan_amount_cents: selectedPlan.price?.amount ?? null,
+    })
     toast({
       title:
         changeKind === 'downgrade' ? 'Plan change scheduled' : 'Plan changed',

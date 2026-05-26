@@ -515,6 +515,9 @@ importers:
       '@stylexjs/postcss-plugin':
         specifier: ^0.18.2
         version: 0.18.2
+      '@testing-library/react':
+        specifier: ^16.3.2
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@types/big.js':
         specifier: ^6.2.2
         version: 6.2.2
@@ -16719,7 +16722,7 @@ snapshots:
 
   '@testing-library/react@16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@babel/runtime': 7.28.6
+      '@babel/runtime': 7.29.2
       '@testing-library/dom': 10.4.1
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
@@ -21227,7 +21230,7 @@ snapshots:
 
   json-schema-to-ts@3.1.1:
     dependencies:
-      '@babel/runtime': 7.28.6
+      '@babel/runtime': 7.29.2
       ts-algebra: 2.0.0
 
   json-schema-traverse@0.4.1: {}
@@ -21955,12 +21958,12 @@ snapshots:
 
   metro-runtime@0.83.2:
     dependencies:
-      '@babel/runtime': 7.28.6
+      '@babel/runtime': 7.29.2
       flow-enums-runtime: 0.0.6
 
   metro-runtime@0.83.3:
     dependencies:
-      '@babel/runtime': 7.28.6
+      '@babel/runtime': 7.29.2
       flow-enums-runtime: 0.0.6
 
   metro-source-map@0.83.2:

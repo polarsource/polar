@@ -14,6 +14,7 @@ import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
 import { useHasPermission } from '@/hooks/permissions'
 import { usePostHog } from '@/hooks/posthog'
+import { useBillingPlanCompleteListener } from '@/hooks/useBillingPlanTelemetry'
 import {
   useOrganizationCustomerSession,
   useOrganizationOrders,
@@ -27,8 +28,8 @@ import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useState } from 'react'
 
 export default function BillingPage({
   organization,
@@ -36,7 +37,6 @@ export default function BillingPage({
   organization: schemas['Organization']
 }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const theme = useTheme()
   const posthog = usePostHog()
@@ -57,13 +57,15 @@ export default function BillingPage({
     string | null
   >(null)
 
-  useEffect(() => {
-    if (searchParams.get('checkout_success') !== 'true') return
-    queryClient.invalidateQueries({
-      queryKey: ['organization-billing', organization.id],
-    })
-    router.replace(`/dashboard/${organization.slug}/settings/billing`)
-  }, [searchParams, queryClient, organization.id, organization.slug, router])
+  useBillingPlanCompleteListener({
+    organizationId: organization.id,
+    redirectPath: `/dashboard/${organization.slug}/settings/billing`,
+    onComplete: useCallback(() => {
+      queryClient.invalidateQueries({
+        queryKey: ['organization-billing', organization.id],
+      })
+    }, [queryClient, organization.id]),
+  })
 
   usePaymentMethodRedirectResult({
     onSuccess: () => toast({ title: 'Payment method added' }),

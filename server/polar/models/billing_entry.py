@@ -68,15 +68,21 @@ class BillingEntry(RecordModel):
     direction: Mapped[BillingEntryDirection] = mapped_column(
         StrEnumType(BillingEntryDirection), nullable=False
     )
-    amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
-    amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    amount: Mapped[int | None] = mapped_column(
+        "amount_v2", BigInteger, nullable=True, default=None
     )
     discount_amount: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=None
+        "discount_amount_v2", BigInteger, nullable=True, default=None
     )
-    discount_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    # Legacy int4 columns retained while the dual-column sync trigger is active.
+    # Deferred so they never appear in default SELECTs — once the cleanup
+    # migration drops them, running pods on this model won't issue SQL that
+    # references them.
+    legacy_amount: Mapped[int | None] = mapped_column(
+        "amount", Integer, nullable=True, default=None, deferred=True
+    )
+    legacy_discount_amount: Mapped[int | None] = mapped_column(
+        "discount_amount", Integer, nullable=True, default=None, deferred=True
     )
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True, default=None)
     customer_id: Mapped[UUID] = mapped_column(

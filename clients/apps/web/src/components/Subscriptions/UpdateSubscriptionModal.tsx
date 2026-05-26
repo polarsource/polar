@@ -157,33 +157,39 @@ const UpdateProduct = ({
               <FormItem>
                 <FormLabel>New product</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={subscription.status === 'trialing'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a new product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          <div className="flex flex-row items-center justify-between gap-1">
-                            {product.name}
-                            {product.id === subscription.product_id && (
-                              <Pill color="green" className="px-3 py-1 text-xs">
-                                New Pricing
-                              </Pill>
-                            )}
-                          </div>
-                          <ProductPriceLabel
-                            product={product}
-                            currency={subscription.currency}
-                          />
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div>
+                    {/* We need an extra div or the space-y-2 from FormItem adds spacing between the Radix select button & the hidden select */}
+
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger className="h-14">
+                        <SelectValue placeholder="Select a new product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            <div className="flex flex-row items-center justify-between gap-1">
+                              {product.name}
+                              {product.id === subscription.product_id && (
+                                <Pill
+                                  color="green"
+                                  className="px-3 py-1 text-xs"
+                                >
+                                  New Pricing
+                                </Pill>
+                              )}
+                            </div>
+                            <ProductPriceLabel
+                              product={product}
+                              currency={subscription.currency}
+                            />
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </FormControl>
                 {subscription.status === 'trialing' && (
                   <FormDescription>
@@ -198,16 +204,17 @@ const UpdateProduct = ({
             control={control}
             name="proration_behavior"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-y-2">
-                <div className="flex flex-col gap-2">
-                  <FormLabel>Proration behavior</FormLabel>
-                </div>
+              <FormItem>
+                <FormLabel>Proration behavior</FormLabel>
                 <FormControl>
-                  <ProrationBehavior
-                    organization={organization}
-                    value={field.value || defaultProrationBehavior}
-                    onValueChange={field.onChange}
-                  />
+                  <div>
+                    {/* We need an extra div or the space-y-2 from FormItem adds spacing between the Radix select button & the hidden select */}
+                    <ProrationBehavior
+                      organization={organization}
+                      value={field.value || defaultProrationBehavior}
+                      onValueChange={field.onChange}
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

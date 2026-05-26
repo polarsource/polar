@@ -16,6 +16,30 @@ import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
 
+const computeTrialEnd = (
+  trialStart: string,
+  product: schemas['CustomerProduct'],
+): Date | null => {
+  if (!product.trial_interval || !product.trial_interval_count) return null
+  const d = new Date(trialStart)
+  const count = product.trial_interval_count
+  switch (product.trial_interval) {
+    case 'day':
+      d.setUTCDate(d.getUTCDate() + count)
+      break
+    case 'week':
+      d.setUTCDate(d.getUTCDate() + 7 * count)
+      break
+    case 'month':
+      d.setUTCMonth(d.getUTCMonth() + count)
+      break
+    case 'year':
+      d.setUTCFullYear(d.getUTCFullYear() + count)
+      break
+  }
+  return d
+}
+
 const ProductPriceListItem = ({
   product,
   currency,
@@ -105,10 +129,32 @@ const CustomerChangePlanModal = ({
     [organization],
   )
 
+  const trialOutcome = useMemo<
+    { kind: 'continues'; trialEnd: Date } | { kind: 'ends' } | null
+  >(() => {
+    if (subscription.status !== 'trialing') return null
+    if (!selectedProduct || selectedProduct.id === subscription.product.id)
+      return null
+    if (!subscription.trial_start) return null
+
+    const newTrialEnd = computeTrialEnd(
+      subscription.trial_start,
+      selectedProduct,
+    )
+    // eslint-disable-next-line react-hooks/purity
+    if (newTrialEnd && newTrialEnd.getTime() > Date.now()) {
+      return { kind: 'continues', trialEnd: newTrialEnd }
+    }
+    return { kind: 'ends' }
+  }, [subscription, selectedProduct])
+
+  const isTrialing = subscription.status === 'trialing'
+
   const [willTriggerImmediateCycle, nextInvoiceType] = useMemo(():
     | [false, null]
     | [true, 'charge' | 'credit'] => {
     if (!selectedProduct) return [false, null]
+    if (isTrialing) return [false, null]
 
     const willTrigger =
       prorationBehavior !== 'next_period' &&
@@ -130,10 +176,26 @@ const CustomerChangePlanModal = ({
     const chargeOrCredit = newPrice > currentPrice ? 'charge' : 'credit'
 
     return [willTrigger, chargeOrCredit]
-  }, [selectedProduct, prorationBehavior, subscription])
+  }, [selectedProduct, prorationBehavior, subscription, isTrialing])
 
   const invoicingMessage = useMemo(() => {
     if (!selectedProduct) return null
+
+    if (trialOutcome?.kind === 'continues') {
+      const formatted = trialOutcome.trialEnd.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year:
+          trialOutcome.trialEnd.getFullYear() === new Date().getFullYear()
+            ? undefined
+            : 'numeric',
+      })
+      return `Your trial will continue until ${formatted}. You won't be charged before then.`
+    }
+
+    if (trialOutcome?.kind === 'ends') {
+      return `This will end my trial and charge me immediately for ${selectedProduct.name}.`
+    }
 
     if (willTriggerImmediateCycle) {
       const newPeriod =
@@ -159,10 +221,13 @@ const CustomerChangePlanModal = ({
     prorationBehavior,
     willTriggerImmediateCycle,
     nextInvoiceType,
+    trialOutcome,
   ])
 
   const willIssueInvoice =
-    willTriggerImmediateCycle || prorationBehavior === 'invoice'
+    trialOutcome?.kind === 'ends' ||
+    willTriggerImmediateCycle ||
+    prorationBehavior === 'invoice'
   const [approveImmediateInvoice, setApproveImmediateInvoice] = useState(false)
 
   const canChangePlan = useMemo(() => {
@@ -305,17 +370,19 @@ const CustomerChangePlanModal = ({
             </div>
           )}
           {invoicingMessage && (
-            <label className="flex flex-row items-center gap-x-2">
+            <label className="flex flex-row items-start gap-x-2">
               {willIssueInvoice && (
-                <Checkbox
-                  checked={approveImmediateInvoice}
-                  onCheckedChange={(checked) =>
-                    setApproveImmediateInvoice(checked === true)
-                  }
-                />
+                <div>
+                  <Checkbox
+                    checked={approveImmediateInvoice}
+                    onCheckedChange={(checked) =>
+                      setApproveImmediateInvoice(checked === true)
+                    }
+                  />
+                </div>
               )}
 
-              <span className="dark:text-polar-500 text-sm text-gray-500">
+              <span className="dark:text-polar-500 text-sm text-pretty text-gray-500">
                 {invoicingMessage}
               </span>
             </label>
@@ -333,7 +400,9 @@ const CustomerChangePlanModal = ({
           onClick={onConfirm}
           size="lg"
         >
-          Change Plan
+          {trialOutcome?.kind === 'ends'
+            ? 'Change Plan & End Trial'
+            : 'Change Plan'}
         </Button>
       </div>
     </div>

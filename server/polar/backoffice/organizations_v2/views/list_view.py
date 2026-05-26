@@ -23,7 +23,6 @@ from ... import formatters
 from ...components import (
     Tab,
     action_bar,
-    button,
     empty_state,
     status_badge,
     tab_nav,
@@ -350,12 +349,6 @@ class OrganizationListView:
                     classes="btn btn-ghost btn-sm",
                 ):
                     text("Switch to Classic View")
-                with button(
-                    variant="primary",
-                    hx_get=str(request.url_for("organizations:list")) + "/new",
-                    hx_target="#modal",
-                ):
-                    text("+ Create Thread")
 
         # Status tabs
         tabs = [

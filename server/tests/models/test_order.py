@@ -53,8 +53,8 @@ from tests.fixtures.random_objects import create_order
             250,
             0,
             1300,
-            1040,
-            260,
+            1050,
+            250,
             id="exclusive refund exceeding original amount",
         ),
         pytest.param(

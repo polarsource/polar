@@ -480,6 +480,7 @@ class OrderService:
                 "order.invoice_generation.skipped",
                 order_id=order.id,
                 reason="checksum_match",
+                stage="trigger",
             )
             return
 
@@ -487,6 +488,18 @@ class OrderService:
         enqueue_job("order.invoice", order_id=order.id)
 
     async def generate_invoice(self, session: AsyncSession, order: Order) -> Order:
+        if (
+            order.invoice_path is not None
+            and order.invoice_checksum == invoice_service.compute_order_checksum(order)
+        ):
+            log.info(
+                "order.invoice_generation.skipped",
+                order_id=order.id,
+                reason="checksum_match",
+                stage="worker",
+            )
+            return order
+
         invoice_path = await invoice_service.create_order_invoice(order)
         repository = OrderRepository.from_session(session)
         order = await repository.update(

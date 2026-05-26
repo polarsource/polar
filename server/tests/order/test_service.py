@@ -2515,6 +2515,33 @@ class TestGenerateInvoice:
             updated
         )
 
+    async def test_skips_when_checksum_matches(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        create_order_invoice_mock = mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        order.invoice_path = "invoices/current.pdf"
+        order.invoice_checksum = invoice_service.compute_order_checksum(order)
+
+        result = await order_service.generate_invoice(session, order)
+
+        assert result is order
+        create_order_invoice_mock.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestHandlePayment:

@@ -4,9 +4,8 @@ from authlib.oauth2 import OAuth2Error
 from fastapi import Request, Response
 
 
-async def oauth2_error_exception_handler(
-    request: Request, exc: OAuth2Error
-) -> Response:
+async def oauth2_error_exception_handler(request: Request, exc: Exception) -> Response:
+    assert isinstance(exc, OAuth2Error)
     status_code, body, headers = exc()
     if isinstance(body, dict):
         body = json.dumps(body)

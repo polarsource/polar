@@ -223,10 +223,9 @@ def create_app() -> FastAPI:
     configure_cors(app)
 
     add_exception_handlers(app)
-    app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)  # pyright: ignore
+    app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)
     app.add_exception_handler(
-        PolarAuthRedirectionError,
-        auth_redirection_error_exception_handler,  # type: ignore[arg-type]
+        PolarAuthRedirectionError, auth_redirection_error_exception_handler
     )
 
     # /.well-known

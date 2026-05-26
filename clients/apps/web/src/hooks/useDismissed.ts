@@ -1,17 +1,12 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { useCallback } from 'react'
 
 const STORAGE_PREFIX = 'dismissed:'
 
-const readStored = (key: string): boolean => {
-  if (typeof window === 'undefined') return false
-  try {
-    return localStorage.getItem(STORAGE_PREFIX + key) === 'true'
-  } catch {
-    return false
-  }
-}
+const serialize = (value: boolean): string => (value ? 'true' : 'false')
+const deserialize = (raw: string): boolean => raw === 'true'
 
 /**
  * Persistently remember a one-shot dismissal in localStorage (e.g. banner /
@@ -21,17 +16,13 @@ const readStored = (key: string): boolean => {
 export const useDismissed = (
   key: string,
 ): { isDismissed: boolean; dismiss: () => void } => {
-  const [isDismissed, setIsDismissed] = useState(() => readStored(key))
+  const [isDismissed, setDismissed] = useLocalStorage<boolean>(
+    STORAGE_PREFIX + key,
+    false,
+    { serialize, deserialize },
+  )
 
-  const dismiss = useCallback(() => {
-    if (typeof window === 'undefined') return
-    try {
-      localStorage.setItem(STORAGE_PREFIX + key, 'true')
-    } catch {
-      // localStorage unavailable (private mode, quota) — fall back to in-memory
-    }
-    setIsDismissed(true)
-  }, [key])
+  const dismiss = useCallback(() => setDismissed(true), [setDismissed])
 
   return { isDismissed, dismiss }
 }

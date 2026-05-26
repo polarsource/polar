@@ -10,7 +10,7 @@ from reauth.factors import FactorBase
 from polar.kit.http import ReturnTo
 from polar.kit.schemas import Schema
 
-type Factor = typing.Literal["email_otp", "totp"]
+type Factor = typing.Literal["email_otp", "totp", "apple", "github", "google"]
 
 
 class AuthenticationSessionStart(Schema):

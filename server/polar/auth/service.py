@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
-from typing import Literal, TypeVar
+from typing import TypeVar
 
 import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, select
 
-from polar.auth.scope import Scope
 from polar.config import settings
 from polar.enums import TokenType
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
@@ -16,9 +15,10 @@ from polar.logging import Logger
 from polar.models import User, UserSession
 from polar.postgres import AsyncSession
 
-log: Logger = structlog.get_logger()
+from .schemas import Factor
+from .scope import Scope
 
-LoginMethod = Literal["github", "google", "apple", "email"]
+log: Logger = structlog.get_logger()
 
 USER_SESSION_TOKEN_PREFIX = "polar_us_"
 
@@ -33,7 +33,7 @@ class AuthService:
         user: User,
         *,
         return_to: str | None = None,
-        login_method: LoginMethod | None = None,
+        factor: Factor | None = None,
     ) -> RedirectResponse:
         token, user_session = await self._create_user_session(
             session=session,
@@ -47,8 +47,8 @@ class AuthService:
         response = self._set_user_session_cookie(
             request, response, token, user_session.expires_at
         )
-        if login_method is not None:
-            self._set_last_login_method_cookie(request, response, login_method)
+        if factor is not None:
+            self._set_last_login_method_cookie(request, response, factor)
         return response
 
     async def get_logout_response(
@@ -161,13 +161,13 @@ class AuthService:
         return response
 
     def _set_last_login_method_cookie(
-        self, request: Request, response: R, login_method: LoginMethod
+        self, request: Request, response: R, factor: Factor
     ) -> R:
         is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
         secure = False if is_localhost else True
         response.set_cookie(
             "polar_last_login_method",
-            value=login_method,
+            value=factor,
             max_age=60 * 60 * 24 * 365,
             path="/",
             domain=settings.USER_SESSION_COOKIE_DOMAIN,

@@ -125,7 +125,7 @@ async def login_callback(
         posthog.user_login(user, "google")
 
     response = await auth_service.get_login_response(
-        session, request, user, return_to=return_to, login_method="google"
+        session, request, user, return_to=return_to, factor="google"
     )
     clear_login_cookie(request, response)
     return response

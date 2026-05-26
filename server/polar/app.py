@@ -8,6 +8,10 @@ from fastapi.routing import APIRoute
 
 from polar import worker  # noqa
 from polar.api import router
+from polar.auth.exception_handlers import (
+    PolarAuthRedirectionError,
+    auth_redirection_error_exception_handler,
+)
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.backoffice import app as backoffice_app
 from polar.checkout import ip_geolocation
@@ -220,6 +224,10 @@ def create_app() -> FastAPI:
 
     add_exception_handlers(app)
     app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)  # pyright: ignore
+    app.add_exception_handler(
+        PolarAuthRedirectionError,
+        auth_redirection_error_exception_handler,  # type: ignore[arg-type]
+    )
 
     # /.well-known
     app.include_router(well_known_router)

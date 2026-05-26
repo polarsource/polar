@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from reauth.crypto import TokenHash
@@ -19,6 +20,7 @@ class OAuth2State(RecordModel):
     redirect_uri: Mapped[str] = mapped_column(String(), nullable=False)
     scope: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
     expires_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    context: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
 
     identity_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=True, index=True
@@ -35,4 +37,5 @@ class OAuth2State(RecordModel):
             scope=self.scope,
             expires_at=self.expires_at,
             identity_id=self.identity_id,
+            context=self.context,
         )

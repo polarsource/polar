@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, Request, Response
+from fastapi import Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from reauth.authentication_session import (
     AuthenticationSession,
@@ -13,6 +13,9 @@ from reauth.factors.totp import (
     NotEnrolledTOTPException,
 )
 
+from polar.auth.exceptions import PolarAuthError, PolarAuthRedirectionError
+from polar.auth.oauth2.github import get_github_factor
+from polar.auth.oauth2.google import get_google_factor
 from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.exceptions import NotPermitted
 from polar.models import UserSession as UserSession
@@ -34,6 +37,8 @@ from .factors import (
     get_email_otp_factor,
     get_totp_factor,
 )
+from .oauth2.apple import get_apple_factor
+from .oauth2.router import get_oauth_router
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 from .schemas import (
     AuthenticationSessionStart,
@@ -45,6 +50,11 @@ from .schemas import (
 from .service import auth as auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth", APITag.private])
+router.include_router(
+    get_oauth_router(get_apple_factor, "apple", callback_method="POST")
+)
+router.include_router(get_oauth_router(get_github_factor, "github"))
+router.include_router(get_oauth_router(get_google_factor, "google"))
 
 
 @router.get("/logout")
@@ -105,12 +115,14 @@ async def complete(
             authentication_session
         )
     except (IdentityNotAttachedException, FactorsRemainingException) as e:
-        raise NotPermitted("Authentication session cannot be completed") from e
+        raise PolarAuthRedirectionError(
+            "Authentication session cannot be completed"
+        ) from e
 
     user_repository = UserRepository.from_session(session)
     user = await user_repository.get_by_id(identity_id)
     if user is None:
-        raise NotPermitted("User not found for authenticated identity")
+        raise PolarAuthRedirectionError("User not found for authenticated identity")
 
     return_to = (
         authentication_session.context.get("return_to")
@@ -141,7 +153,7 @@ async def email_otp_request(
         authentication_session
     )
     if email_otp_factor not in factors:
-        raise NotPermitted("Email OTP factor not available for this session")
+        raise PolarAuthError("Email OTP factor not available for this session")
 
     await email_otp_factor.request(email_otp_request, authentication_session)
 
@@ -165,14 +177,14 @@ async def email_otp_verify(
         authentication_session
     )
     if email_otp_factor not in factors:
-        raise NotPermitted("Email OTP factor not available for this session")
+        raise PolarAuthError("Email OTP factor not available for this session")
 
     try:
         identity_id, email = await email_otp_factor.consume(
             email_otp_verify.code, authentication_session.id
         )
     except (InvalidOTPException, ExpiredOTPException) as e:
-        raise NotPermitted("Invalid or expired OTP") from e
+        raise PolarAuthError("Invalid or expired OTP") from e
 
     # New user
     if identity_id is None:
@@ -197,7 +209,7 @@ async def totp_enroll(
     try:
         enrollment = await totp_factor.enroll(user.id)
     except AlreadyEnrolledTOTPException as e:
-        raise HTTPException(409, "TOTP factor already enrolled") from e
+        raise PolarAuthError("TOTP factor already enrolled", status_code=409) from e
 
     return TOTPEnrollment(
         secret=enrollment.secret,
@@ -218,11 +230,11 @@ async def totp_enable(
     try:
         await totp_factor.enable(user.id, enable.code)
     except NotEnrolledTOTPException as e:
-        raise NotPermitted("TOTP factor not enrolled") from e
+        raise PolarAuthError("TOTP factor not enrolled") from e
     except AlreadyEnabledTOTPException as e:
-        raise NotPermitted("TOTP factor already enabled") from e
+        raise PolarAuthError("TOTP factor already enabled") from e
     except InvalidTOTPCodeException as e:
-        raise NotPermitted("Invalid TOTP code") from e
+        raise PolarAuthError("Invalid TOTP code") from e
     return None
 
 
@@ -239,14 +251,14 @@ async def totp_verify(
         authentication_session
     )
     if totp_factor not in factors:
-        raise NotPermitted("TOTP factor not available for this session")
+        raise PolarAuthError("TOTP factor not available for this session")
 
     try:
         await totp_factor.verify(authentication_session.identity_id, enable.code)
     except NotEnrolledTOTPException as e:
-        raise NotPermitted("TOTP factor not enrolled") from e
+        raise PolarAuthError("TOTP factor not enrolled") from e
     except InvalidTOTPCodeException as e:
-        raise NotPermitted("Invalid TOTP code") from e
+        raise PolarAuthError("Invalid TOTP code") from e
 
     authentication_session = await authentication_session_service.advance(
         authentication_session, authentication_session.identity_id, totp_factor

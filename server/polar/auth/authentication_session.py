@@ -140,16 +140,26 @@ async def get_authentication_session_service(
     return AuthenticationSessionService(session, factors)
 
 
-async def get_authentication_session(
+async def get_optional_authentication_session(
     request: Request,
     authentication_session_service: AuthenticationSessionService = Depends(
         get_authentication_session_service
     ),
-) -> AuthenticationSessionDataclass:
+) -> AuthenticationSessionDataclass | None:
     token = request.cookies.get(settings.AUTHENTICATION_SESSION_COOKIE_KEY)
     if token is None:
-        raise InvalidAuthenticationSession()
+        return None
     try:
         return await authentication_session_service.get_by_token(token)
-    except (InvalidSessionTokenException, ExpiredSessionException) as e:
-        raise InvalidAuthenticationSession() from e
+    except (InvalidSessionTokenException, ExpiredSessionException):
+        return None
+
+
+async def get_authentication_session(
+    authentication_session: AuthenticationSessionDataclass | None = Depends(
+        get_optional_authentication_session
+    ),
+) -> AuthenticationSessionDataclass:
+    if authentication_session is None:
+        raise InvalidAuthenticationSession()
+    return authentication_session

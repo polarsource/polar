@@ -45,6 +45,7 @@ from plain_client import (
     UpsertCustomerUpsertCustomer,
     UpsertTenantInput,
 )
+from plain_client.exceptions import GraphQLClientGraphQLMultiError
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
@@ -1574,17 +1575,34 @@ class PlainService:
         *,
         page_size: int = 50,
         statuses: list[ThreadStatus] | None = None,
+        customer_ids: list[str] | None = None,
     ) -> AsyncIterator[ThreadsThreadsEdgesNode]:
         if not self.enabled:
             return
 
-        filters = ThreadsFilter(statuses=statuses) if statuses else None
+        filters = ThreadsFilter(
+            statuses=statuses
+            or [ThreadStatus.TODO, ThreadStatus.SNOOZED, ThreadStatus.DONE],
+            customer_ids=customer_ids,
+        )
         cursor: str | None = None
         async with self._get_plain_client() as plain:
             while True:
-                page = await plain.threads(
-                    filters=filters, first=page_size, after=cursor
-                )
+                try:
+                    page = await plain.threads(
+                        filters=filters, first=page_size, after=cursor
+                    )
+                except GraphQLClientGraphQLMultiError as exc:
+                    for err in exc.errors:
+                        log.error(
+                            "plain.threads validation error",
+                            message=err.message,
+                            path=err.path,
+                            extensions=err.extensions,
+                            cursor=cursor,
+                            first=page_size,
+                        )
+                    raise
                 for edge in page.edges:
                     if edge.node.tenant is None:
                         yield edge.node

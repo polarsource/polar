@@ -1115,7 +1115,6 @@ class SubscriptionService:
         ends_trial = False
         if was_trialing:
             assert subscription.trial_start is not None
-            assert subscription.trial_end is not None
             if product.trial_interval is None or product.trial_interval_count is None:
                 ends_trial = True
             else:

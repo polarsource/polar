@@ -2,6 +2,8 @@ from datetime import datetime
 from uuid import UUID
 
 from alembic_utils.pg_extension import PGExtension
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
     TIMESTAMP,
@@ -108,4 +110,7 @@ class RateLimitGroupMixin:
 
 uuid_ossp = PGExtension(schema="public", signature="uuid-ossp")
 citext = PGExtension(schema="public", signature="citext")
-register_entities((uuid_ossp, citext))
+register_entities(
+    (uuid_ossp, citext),
+    entity_types=(PGExtension, PGFunction, PGTrigger),
+)

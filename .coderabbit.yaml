@@ -31,7 +31,6 @@ reviews:
     - "!**/pnpm-lock.yaml"
     - "!server/uv.lock"
     - "!flake.lock"
-    - "!server/migrations/versions/**"
     - "!docs/openapi.yaml"
     - "!server/emails/src/types/openapi.ts"
     - "!clients/packages/client/src/v1.ts"

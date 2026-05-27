@@ -5,6 +5,7 @@ from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
+import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pydantic import BaseModel
@@ -63,7 +64,7 @@ from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
-from polar.order.schemas import OrderUpdate
+from polar.order.schemas import OrderCreate, OrderUpdate
 from polar.order.service import (
     ManualRetryLimitExceeded,
     MissingCheckoutCustomer,
@@ -71,8 +72,11 @@ from polar.order.service import (
     NoPendingBillingEntries,
     NotPaidOrder,
     NotRecurringProduct,
+    OffSessionChargesNotEnabled,
+    OrderNotDraft,
     OrderNotEligibleForRetry,
     OrderNotPending,
+    PaymentActionRequired,
     PaymentAlreadyInProgress,
     PaymentFailed,
     RecurringProduct,
@@ -5105,3 +5109,306 @@ class TestVoidPendingOrdersForSubscription:
             assert order.status == OrderStatus.void
             assert order.next_payment_attempt_at is None
             assert order.subscription_id == subscription.id
+
+
+@pytest_asyncio.fixture
+async def off_session_organization(
+    save_fixture: SaveFixture, organization: Organization
+) -> Organization:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "off_session_charges_enabled": True,
+    }
+    await save_fixture(organization)
+    return organization
+
+
+@pytest.mark.asyncio
+class TestCreateDraftOrder:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_feature_flag_disabled(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(OffSessionChargesNotEnabled):
+            await order_service.create_draft_order(session, auth_subject, payload)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_recurring_product_rejected(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(session, auth_subject, payload)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_unknown_customer_rejected(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=uuid.uuid4(),
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(session, auth_subject, payload)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_happy_path(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        order = await order_service.create_draft_order(session, auth_subject, payload)
+
+        assert order.status == OrderStatus.draft
+        assert order.invoice_number is None
+        assert order.customer_id == customer.id
+        assert order.product_id == product_one_time.id
+        assert order.subscription_id is None
+        assert order.checkout_id is None
+        assert order.subtotal_amount > 0
+        assert len(order.items) >= 1
+
+
+@pytest.mark.asyncio
+class TestFinalizeOrder:
+    async def test_order_not_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+        with pytest.raises(OrderNotDraft):
+            await order_service.finalize_order(session, order)
+
+    async def test_feature_flag_revoked_between_create_and_finalize(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Org has no flag set; calling finalize on a draft should refuse.
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        with pytest.raises(OffSessionChargesNotEnabled):
+            await order_service.finalize_order(session, order)
+
+    async def test_missing_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(session, order)
+
+        await session.refresh(order)
+        # Missing payment method is caught before any state mutation —
+        # nothing changes on the order.
+        assert order.status == OrderStatus.draft
+
+    async def test_card_error_reverts_to_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        stripe_service_mock.create_payment_intent.side_effect = stripe_lib.CardError(
+            message="Your card was declined.",
+            param="card",
+            code="card_declined",
+        )
+
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+        assert order.invoice_number is None
+        assert order.payment_lock_acquired_at is None
+
+    async def test_requires_action_reverts_to_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        stripe_service_mock.create_payment_intent.return_value = (
+            build_stripe_payment_intent(status="requires_action")
+        )
+
+        with pytest.raises(PaymentActionRequired):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+        assert order.invoice_number is None
+
+    async def test_explicit_payment_method_must_belong_to_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        other_payment_method = await create_payment_method(
+            save_fixture, customer=customer_second
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(
+                session, order, payment_method_id=other_payment_method.id
+            )
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+
+
+@pytest.mark.asyncio
+class TestUpdateDraftOrderFields:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_seats_rejected_on_non_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+        with pytest.raises(OrderNotDraft):
+            await order_service.update(
+                session,
+                order,
+                OrderUpdate(seats=5),
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_seats_updates_on_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        updated = await order_service.update(
+            session,
+            order,
+            OrderUpdate(seats=4),
+        )
+        assert updated.seats == 4

@@ -1060,12 +1060,16 @@ class OrderService:
                 session, order, payment_method, payment_mode=PaymentMode.sync
             )
         except (PaymentFailed, PaymentActionRequired):
+            # flush=True commits the revert even though the request is
+            # about to bubble up an exception, so a subsequent GET reflects
+            # the rolled-back state.
             await repository.update(
                 order,
                 update_dict={
                     "status": OrderStatus.draft,
                     "invoice_number": None,
                 },
+                flush=True,
             )
             raise
 
@@ -1084,6 +1088,7 @@ class OrderService:
                         "status": OrderStatus.draft,
                         "invoice_number": None,
                     },
+                    flush=True,
                 )
                 raise PaymentFailed(PaymentFailedReason.missing_payment_method)
             return order

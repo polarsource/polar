@@ -7,7 +7,8 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
-from polar.models import Customer, Order, Product, UserOrganization
+from polar.models import Customer, Order, Organization, Product, UserOrganization
+from polar.models.order import OrderStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
@@ -465,3 +466,90 @@ class TestGetOrderReceipt:
 
         assert response.status_code == 200
         assert response.json() == {"url": "https://example.com/signed-url"}
+
+
+@pytest_asyncio.fixture
+async def off_session_organization(
+    save_fixture: SaveFixture, organization: Organization
+) -> Organization:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "off_session_charges_enabled": True,
+    }
+    await save_fixture(organization)
+    return organization
+
+
+@pytest.mark.asyncio
+class TestCreateOrder:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/orders/", json={})
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_feature_flag_disabled(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "customer_id": str(customer.id),
+                "product_id": str(product_one_time.id),
+            },
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "customer_id": str(customer.id),
+                "product_id": str(product_one_time.id),
+            },
+        )
+        assert response.status_code == 201
+        body = response.json()
+        assert body["status"] == OrderStatus.draft
+        assert body["invoice_number"] is None
+        assert body["customer_id"] == str(customer.id)
+        assert body["product_id"] == str(product_one_time.id)
+
+
+@pytest.mark.asyncio
+class TestFinalizeOrderEndpoint:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(f"/v1/orders/{uuid.uuid4()}/finalize", json={})
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_not_found(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(f"/v1/orders/{uuid.uuid4()}/finalize", json={})
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_412_when_not_draft(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        orders: list[Order],
+    ) -> None:
+        # The default `orders` fixture creates orders with status=paid.
+        response = await client.post(f"/v1/orders/{orders[0].id}/finalize", json={})
+        assert response.status_code == 412

@@ -58,7 +58,7 @@ jobs:
         uses: useblacksmith/setup-docker-builder@v1.8.0
 
       - name: Log in to GHCR
-        uses: docker/login-action@v4
+        uses: docker/login-action@v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

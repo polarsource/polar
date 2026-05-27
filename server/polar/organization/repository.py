@@ -29,7 +29,11 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
-from polar.models.organization import OrganizationStatus, SnoozeType
+from polar.models.organization import (
+    OrganizationCapabilities,
+    OrganizationStatus,
+    SnoozeType,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
@@ -275,6 +279,56 @@ class OrganizationRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0
+
+    async def confirm_review_atomic(
+        self,
+        organization_id: UUID,
+        *,
+        next_review_threshold: int | None,
+        min_threshold: int,
+        active_capabilities: OrganizationCapabilities,
+        now: datetime,
+    ) -> Organization | None:
+        """Atomically transition a REVIEW or SNOOZED organization to ACTIVE.
+
+        Returns the updated ``Organization`` (also merged into the session's
+        identity map via ``populate_existing``), or ``None`` if the row was
+        no longer in a confirmable state — typically because another worker
+        already won the race and flipped the org back to ACTIVE.
+
+        When ``next_review_threshold`` is ``None``, the threshold is doubled
+        server-side from the current row (floored at ``min_threshold``) so
+        that N concurrent confirms doubling at once cannot collapse onto a
+        shared stale snapshot.
+        """
+        threshold_expr = (
+            func.greatest(Organization.next_review_threshold * 2, min_threshold)
+            if next_review_threshold is None
+            else next_review_threshold
+        )
+
+        stmt = (
+            update(Organization)
+            .where(
+                Organization.id == organization_id,
+                Organization.status.in_(
+                    [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED]
+                ),
+            )
+            .values(
+                status=OrganizationStatus.ACTIVE,
+                status_updated_at=now,
+                capabilities=active_capabilities,
+                next_review_threshold=threshold_expr,
+                initially_reviewed_at=func.coalesce(
+                    Organization.initially_reviewed_at, now
+                ),
+            )
+            .returning(Organization)
+            .execution_options(populate_existing=True)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def increment_customer_invoice_next_number(
         self, organization_id: UUID

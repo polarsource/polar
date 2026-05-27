@@ -77,7 +77,15 @@ async def organization_unsnooze_expired() -> None:
         await organization_service.unsnooze_expired_organizations(session)
 
 
-@actor(actor_name="organization.check_threshold", priority=TaskPriority.LOW)
+def _check_threshold_debounce_key(account_id: uuid.UUID) -> str:
+    return f"organization.check_threshold:{account_id}"
+
+
+@actor(
+    actor_name="organization.check_threshold",
+    priority=TaskPriority.LOW,
+    debounce_key=_check_threshold_debounce_key,
+)
 async def organization_check_threshold(account_id: uuid.UUID) -> None:
     """Refresh the cached ``total_balance`` for the organization owning
     ``account_id`` and re-evaluate the review threshold.
@@ -85,6 +93,14 @@ async def organization_check_threshold(account_id: uuid.UUID) -> None:
     Enqueued by the transaction layer after balance / reversal-balance rows
     are written, so the transaction service does not need to call into
     organization service logic synchronously.
+
+    Debounced per-account: a single business event writes multiple balance
+    rows (charge + platform fee + reversal fees) and each row enqueues this
+    task, so the bursts collapse to one execution per debounce window. The
+    concrete failure mode without this: when an order pushes ``total_balance``
+    past ``next_review_threshold``, the concurrent check_threshold tasks all
+    race past the unguarded ACTIVE→REVIEW transition and each spawns its own
+    agent run.
     """
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)

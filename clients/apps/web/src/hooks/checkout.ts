@@ -44,15 +44,21 @@ export const useCheckoutConfirmedRedirect = (
         )
       }
 
-      // For external success URL, make sure the checkout is processed before redirecting
-      // It ensures the user will have an up-to-date status when they are redirected,
-      // especially if the external URL doesn't implement proper webhook handling
-      if (!isInternalSuccessURL && listenFulfillment) {
+      // Wait for actual payment fulfillment before declaring success when
+      // either the redirect destination can't observe in flight state
+      // (external success URL) or a merchant is listening on the parent
+      // page (embed_origin). confirm() returning only means the payment
+      // intent was dispatched to Stripe.
+      // Without this gate, embed_origin receives a success postMessage on
+      // a non-terminal state and merchants treat declined payments as
+      // completed purchases.
+      if ((!isInternalSuccessURL || embed) && listenFulfillment) {
         try {
           await listenFulfillment()
         } catch {
-          // The fullfillment listener timed out.
-          // Redirect to confirm page where we'll be able to recover
+          // Fulfillment didn't complete within the timeout. Fall back to
+          // our /confirmation page where the live state is rendered. Don't
+          // emit a `success` postMessage to the merchant.
           router.push(
             `/checkout/${checkout.client_secret}/confirmation?${parsedURL.searchParams}`,
           )

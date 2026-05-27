@@ -9,12 +9,33 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    groups:
+      all:
+        patterns:
+          - "*"
   - package-ecosystem: "uv"
     directory: "/server"
     schedule:
       interval: "weekly"
     cooldown:
       default-days: 7
+    groups:
+      all:
+        patterns:
+          - "*"
+  - package-ecosystem: "npm"
+    directory: "/clients"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      all:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "npm"
     directory: "/server/emails"
     schedule:
@@ -22,16 +43,9 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      react-email:
+      all:
         patterns:
-          - "react-email"
-          - "@react-email/*"
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
+          - "*"
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
@@ -41,6 +55,10 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    groups:
+      all:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
@@ -50,6 +68,10 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    groups:
+      all:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]

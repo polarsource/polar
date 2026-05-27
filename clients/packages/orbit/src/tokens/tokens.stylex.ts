@@ -5,6 +5,25 @@
 
 import * as stylex from '@stylexjs/stylex'
 
+// ─── Type helpers ─────────────────────────────────────────────────────────────
+// Pulled to the top so they can be used by the color palette guards below.
+// ──────────────────────────────────────────────────────────────────────────────
+
+type StyleXTokenKeys<T> = Exclude<
+  keyof T,
+  '__opaqueId' | '__tokens' | symbol | 'toString' | 'valueOf' | 'description'
+>
+
+/**
+ * Shape a dark-theme override must satisfy: exactly the same keys as the
+ * matching light palette, every one declared, no extras. Drift between
+ * the `stylex.defineVars` palette and the `stylex.createTheme` override
+ * becomes a compile-time error rather than a silent visual bug.
+ */
+type DarkOverrideOf<Palette> = {
+  [K in StyleXTokenKeys<Palette>]: string
+}
+
 // ─── Spacing ──────────────────────────────────────────────────────────────────
 
 export const spacing = stylex.defineVars({
@@ -72,7 +91,7 @@ export const darkBackgroundTheme = stylex.createTheme(backgroundColors, {
   'background-success': 'oklch(0.696 0.17 162 / 0.2)',
   'background-danger': 'oklch(0.637 0.237 25 / 0.2)',
   'background-pending': 'oklch(0.6 0.02 264 / 0.2)',
-})
+} satisfies DarkOverrideOf<typeof backgroundColors>)
 
 export const darkTextTheme = stylex.createTheme(textColors, {
   'text-primary': '#ffffff',
@@ -82,13 +101,13 @@ export const darkTextTheme = stylex.createTheme(textColors, {
   'text-danger': 'oklch(0.637 0.237 25)',
   'text-warning': 'oklch(0.769 0.188 70)',
   'text-pending': 'oklch(0.7 0.02 264)',
-})
+} satisfies DarkOverrideOf<typeof textColors>)
 
 export const darkBorderTheme = stylex.createTheme(borderColors, {
   'border-primary': 'hsl(233, 4%, 12%)',
   'border-secondary': 'oklch(0.206 0.005 279.9)',
   'border-warning': 'oklch(0.572 0.14 91)',
-})
+} satisfies DarkOverrideOf<typeof borderColors>)
 
 // ─── Border Radius ────────────────────────────────────────────────────────────
 
@@ -121,11 +140,8 @@ export const breakpoints = stylex.defineConsts({
 })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type StyleXTokenKeys<T> = Exclude<
-  keyof T,
-  '__opaqueId' | '__tokens' | symbol | 'toString' | 'valueOf' | 'description'
->
+// `StyleXTokenKeys` is declared at the top of the file (used by the
+// dark-theme drift guard).
 
 export type SpacingToken = StyleXTokenKeys<typeof spacing>
 export type BackgroundColorToken = StyleXTokenKeys<typeof backgroundColors>

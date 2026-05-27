@@ -36,8 +36,10 @@ export const OrbitThemeBinder = ({
     'div',
     {
       ...themeProps,
-      style: { display: 'contents' },
+      style: { ...(themeProps?.style ?? {}), display: 'contents' },
     },
+    children,
+  )
     children,
   )
 }
